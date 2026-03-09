@@ -1,0 +1,175 @@
+name: Build & Deploy
+
+on:
+  push:
+    branches: [master]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Hostinger VPS
+        env:
+          HOSTINGER_API_KEY: ${{ secrets.HOSTINGER_API_KEY }}
+          HOSTINGER_VM_ID: ${{ secrets.HOSTINGER_VM_ID }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+          MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+        run: |
+          COMPOSE_CONTENT=$(cat <<'COMPOSE_EOF'
+          networks:
+            web:
+              external: true
+              name: traefik_web
+            internal:
+              driver: bridge
+
+          volumes:
+            neo4j_data:
+            neo4j_logs:
+            mongodb_data:
+            redis_data:
+            minio_data:
+
+          services:
+            app:
+              image: ghcr.io/maceeeee/thearchitect:latest
+              container_name: thearchitect-app
+              restart: unless-stopped
+              environment:
+                - NODE_ENV=production
+                - PORT=4000
+                - CLIENT_URL=https://thearchitect.site
+                - JWT_SECRET=PLACEHOLDER_JWT
+                - JWT_EXPIRES_IN=7d
+                - JWT_REFRESH_SECRET=PLACEHOLDER_JWT_REFRESH
+                - JWT_REFRESH_EXPIRES_IN=30d
+                - MONGODB_URI=mongodb://thearchitect:PLACEHOLDER_MONGO@mongodb:27017/thearchitect?authSource=admin
+                - NEO4J_URI=bolt://neo4j:7687
+                - NEO4J_USER=neo4j
+                - NEO4J_PASSWORD=PLACEHOLDER_NEO4J
+                - REDIS_HOST=redis
+                - REDIS_PORT=6379
+                - REDIS_PASSWORD=PLACEHOLDER_REDIS
+                - MINIO_ENDPOINT=minio
+                - MINIO_PORT=9000
+                - MINIO_ACCESS_KEY=PLACEHOLDER_MINIO_AK
+                - MINIO_SECRET_KEY=PLACEHOLDER_MINIO_SK
+                - MINIO_BUCKET=thearchitect-files
+              labels:
+                - traefik.enable=true
+                - "traefik.http.routers.thearchitect.rule=Host(`thearchitect.site`) || Host(`www.thearchitect.site`)"
+                - traefik.http.routers.thearchitect.entrypoints=websecure
+                - traefik.http.routers.thearchitect.tls.certresolver=myresolver
+                - traefik.http.services.thearchitect.loadbalancer.server.port=4000
+              networks:
+                - web
+                - internal
+              depends_on:
+                - mongodb
+                - neo4j
+                - redis
+                - minio
+
+            mongodb:
+              image: mongo:7
+              container_name: thearchitect-mongodb
+              restart: unless-stopped
+              environment:
+                - MONGO_INITDB_ROOT_USERNAME=thearchitect
+                - MONGO_INITDB_ROOT_PASSWORD=PLACEHOLDER_MONGO
+                - MONGO_INITDB_DATABASE=thearchitect
+              volumes:
+                - mongodb_data:/data/db
+              networks:
+                - internal
+
+            neo4j:
+              image: neo4j:5-community
+              container_name: thearchitect-neo4j
+              restart: unless-stopped
+              environment:
+                - NEO4J_AUTH=neo4j/PLACEHOLDER_NEO4J
+                - NEO4J_PLUGINS=["apoc"]
+              volumes:
+                - neo4j_data:/data
+                - neo4j_logs:/logs
+              networks:
+                - internal
+
+            redis:
+              image: redis:7-alpine
+              container_name: thearchitect-redis
+              restart: unless-stopped
+              command: redis-server --requirepass PLACEHOLDER_REDIS
+              volumes:
+                - redis_data:/data
+              networks:
+                - internal
+
+            minio:
+              image: minio/minio:latest
+              container_name: thearchitect-minio
+              restart: unless-stopped
+              environment:
+                - MINIO_ROOT_USER=PLACEHOLDER_MINIO_AK
+                - MINIO_ROOT_PASSWORD=PLACEHOLDER_MINIO_SK
+              command: server /data --console-address ":9001"
+              volumes:
+                - minio_data:/data
+              networks:
+                - internal
+          COMPOSE_EOF
+          )
+
+          # Replace placeholders with actual secrets
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_JWT_REFRESH/$JWT_REFRESH_SECRET}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_JWT/$JWT_SECRET}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_MONGO/$MONGO_PASSWORD}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_NEO4J/$NEO4J_PASSWORD}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_REDIS/$REDIS_PASSWORD}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_MINIO_AK/$MINIO_ACCESS_KEY}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_MINIO_SK/$MINIO_SECRET_KEY}"
+
+          # Deploy via Hostinger API
+          PAYLOAD=$(jq -n --arg name "thearchitect" --arg content "$COMPOSE_CONTENT" \
+            '{"project_name": $name, "content": $content}')
+
+          curl -sf -X POST \
+            -H "Authorization: Bearer $HOSTINGER_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "https://developers.hostinger.com/api/vps/v1/virtual-machines/$HOSTINGER_VM_ID/docker"

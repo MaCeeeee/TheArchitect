@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -52,6 +53,16 @@ async function main() {
   app.use('/api/projects', aiRoutes);
   app.use('/api/projects', standardsRoutes);
   app.use('/api/projects', xrayRoutes);
+
+  // Serve static client in production
+  if (process.env.NODE_ENV === 'production') {
+    const clientDist = path.join(__dirname, '../../client/dist');
+    app.use(express.static(clientDist));
+    app.get('*', (_req, res, next) => {
+      if (_req.path.startsWith('/api/') || _req.path.startsWith('/socket.io/')) return next();
+      res.sendFile(path.join(clientDist, 'index.html'));
+    });
+  }
 
   // Error handler
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
