@@ -1,0 +1,243 @@
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '../stores/authStore';
+
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
+const api = axios.create({
+  baseURL: API_BASE,
+  timeout: 30_000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+// Request interceptor - attach access token
+api.interceptors.request.use((config) => {
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor - handle token refresh
+let isRefreshing = false;
+let failedQueue: { resolve: (token: string) => void; reject: (err: unknown) => void }[] = [];
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach((p) => {
+    if (error) {
+      p.reject(error);
+    } else {
+      p.resolve(token!);
+    }
+  });
+  failedQueue = [];
+}
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      const errorData = error.response.data as { code?: string } | undefined;
+
+      if (errorData?.code === 'TOKEN_EXPIRED') {
+        if (isRefreshing) {
+          return new Promise((resolve, reject) => {
+            failedQueue.push({
+              resolve: (token: string) => {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+                resolve(api(originalRequest));
+              },
+              reject,
+            });
+          });
+        }
+
+        originalRequest._retry = true;
+        isRefreshing = true;
+
+        try {
+          const refreshToken = useAuthStore.getState().refreshToken;
+          if (!refreshToken) {
+            throw new Error('No refresh token');
+          }
+
+          const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
+          const newAccessToken = data.accessToken;
+
+          useAuthStore.getState().setTokens(newAccessToken, data.refreshToken);
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          processQueue(null, newAccessToken);
+
+          return api(originalRequest);
+        } catch (refreshError) {
+          processQueue(refreshError, null);
+          useAuthStore.getState().logout();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
+        }
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  login: (email: string, password: string) =>
+    api.post('/auth/login', { email, password }),
+
+  register: (email: string, password: string, name: string) =>
+    api.post('/auth/register', { email, password, name }),
+
+  mfaVerify: (mfaToken: string, code: string) =>
+    api.post('/auth/mfa/verify', { mfaToken, code }),
+
+  mfaSetup: () =>
+    api.post('/auth/mfa/setup'),
+
+  mfaConfirm: (code: string) =>
+    api.post('/auth/mfa/confirm', { code }),
+
+  mfaDisable: (password: string) =>
+    api.post('/auth/mfa/disable', { password }),
+
+  me: () =>
+    api.get('/auth/me'),
+
+  logout: () =>
+    api.post('/auth/logout'),
+};
+
+// Project API
+export const projectAPI = {
+  list: () => api.get('/projects'),
+  create: (data: { name: string; description?: string; tags?: string[] }) =>
+    api.post('/projects', data),
+  get: (id: string) => api.get(`/projects/${id}`),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.put(`/projects/${id}`, data),
+  delete: (id: string) => api.delete(`/projects/${id}`),
+  createVersion: (id: string, label: string, snapshot: unknown) =>
+    api.post(`/projects/${id}/versions`, { label, snapshot }),
+};
+
+// Architecture API
+export const architectureAPI = {
+  getElements: (projectId: string) =>
+    api.get(`/projects/${projectId}/elements`),
+  createElement: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/elements`, data),
+  updateElement: (projectId: string, elementId: string, data: Record<string, unknown>) =>
+    api.put(`/projects/${projectId}/elements/${elementId}`, data),
+  deleteElement: (projectId: string, elementId: string) =>
+    api.delete(`/projects/${projectId}/elements/${elementId}`),
+  getDependencies: (projectId: string, elementId: string, depth = 3) =>
+    api.get(`/projects/${projectId}/elements/${elementId}/dependencies?depth=${depth}`),
+  getConnections: (projectId: string) =>
+    api.get(`/projects/${projectId}/connections`),
+  createConnection: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/connections`, data),
+  deleteConnection: (projectId: string, connectionId: string) =>
+    api.delete(`/projects/${projectId}/connections/${connectionId}`),
+  importBPMN: (projectId: string, data: { elements: unknown[]; connections: unknown[] }) =>
+    api.post(`/projects/${projectId}/import/bpmn`, data),
+  importN8n: (projectId: string, data: { elements: unknown[]; connections: unknown[] }) =>
+    api.post(`/projects/${projectId}/import/n8n`, data),
+  fetchN8nWorkflows: (projectId: string, data: { n8nUrl: string; apiKey: string }) =>
+    api.post(`/projects/${projectId}/import/n8n/fetch`, data),
+  fetchN8nWorkflow: (projectId: string, data: { n8nUrl: string; apiKey: string; workflowId: string }) =>
+    api.post(`/projects/${projectId}/import/n8n/fetch`, data),
+};
+
+// Analytics API
+export const analyticsAPI = {
+  getImpact: (projectId: string, elementId: string, depth = 5) =>
+    api.get(`/projects/${projectId}/analytics/impact/${elementId}?depth=${depth}`),
+  getRisk: (projectId: string) =>
+    api.get(`/projects/${projectId}/analytics/risk`),
+  getCost: (projectId: string) =>
+    api.get(`/projects/${projectId}/analytics/cost`),
+  simulate: (projectId: string, params: { baselineCost: number; riskFactors: unknown[]; iterations?: number }) =>
+    api.post(`/projects/${projectId}/analytics/simulate`, params),
+};
+
+// Governance API
+export const governanceAPI = {
+  getApprovals: (projectId: string, status?: string) =>
+    api.get(`/projects/${projectId}/approvals`, { params: status ? { status } : {} }),
+  createApproval: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/approvals`, data),
+  decideApproval: (projectId: string, approvalId: string, decision: string, comment?: string) =>
+    api.put(`/projects/${projectId}/approvals/${approvalId}/decide`, { decision, comment }),
+  cancelApproval: (projectId: string, approvalId: string) =>
+    api.put(`/projects/${projectId}/approvals/${approvalId}/cancel`),
+  getPolicies: (projectId: string) =>
+    api.get(`/projects/${projectId}/policies`),
+  createPolicy: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/policies`, data),
+  updatePolicy: (projectId: string, policyId: string, data: Record<string, unknown>) =>
+    api.put(`/projects/${projectId}/policies/${policyId}`, data),
+  deletePolicy: (projectId: string, policyId: string) =>
+    api.delete(`/projects/${projectId}/policies/${policyId}`),
+  checkCompliance: (projectId: string) =>
+    api.get(`/projects/${projectId}/compliance`),
+  getAuditLog: (projectId: string, params?: { action?: string; limit?: number; offset?: number }) =>
+    api.get(`/projects/${projectId}/audit-log`, { params }),
+};
+
+// Marketplace API
+export const marketplaceAPI = {
+  list: (params?: { category?: string; q?: string; sort?: string }) =>
+    api.get('/marketplace', { params }),
+  get: (templateId: string) =>
+    api.get(`/marketplace/${templateId}`),
+  create: (data: Record<string, unknown>) =>
+    api.post('/marketplace', data),
+  deploy: (templateId: string) =>
+    api.post(`/marketplace/${templateId}/deploy`),
+  rate: (templateId: string, rating: number) =>
+    api.post(`/marketplace/${templateId}/rate`, { rating }),
+};
+
+// Standards API
+export const standardsAPI = {
+  upload: (projectId: string, formData: FormData) =>
+    api.post(`/projects/${projectId}/standards/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000,
+    }),
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/standards`),
+  get: (projectId: string, standardId: string) =>
+    api.get(`/projects/${projectId}/standards/${standardId}`),
+  delete: (projectId: string, standardId: string) =>
+    api.delete(`/projects/${projectId}/standards/${standardId}`),
+  getMappings: (projectId: string, standardId: string) =>
+    api.get(`/projects/${projectId}/standards/${standardId}/mappings`),
+  getMatrix: (projectId: string, standardId: string, sectionIds?: string[]) =>
+    api.get(`/projects/${projectId}/standards/${standardId}/matrix`, {
+      params: sectionIds ? { sectionIds: sectionIds.join(',') } : {},
+    }),
+  upsertMapping: (projectId: string, standardId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/standards/${standardId}/mappings`, data),
+  bulkCreateMappings: (projectId: string, standardId: string, mappings: Record<string, unknown>[]) =>
+    api.post(`/projects/${projectId}/standards/${standardId}/mappings/bulk`, { mappings }),
+  deleteMapping: (projectId: string, standardId: string, mappingId: string) =>
+    api.delete(`/projects/${projectId}/standards/${standardId}/mappings/${mappingId}`),
+};
+
+// Admin API
+export const adminAPI = {
+  getUsers: () => api.get('/admin/users'),
+  updateUserRole: (uid: string, role: string) =>
+    api.put(`/admin/users/${uid}/role`, { role }),
+  getAuditLog: (params?: { action?: string; entityType?: string; limit?: number; offset?: number }) =>
+    api.get('/admin/audit-log', { params }),
+};
+
+export default api;

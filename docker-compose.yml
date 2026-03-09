@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: thearchitect-neo4j
+    ports:
+      - '7474:7474' # Browser
+      - '7687:7687' # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/thearchitect_dev_2024
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:7
+    container_name: thearchitect-mongodb
+    ports:
+      - '27017:27017'
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=thearchitect
+      - MONGO_INITDB_ROOT_PASSWORD=thearchitect_dev_2024
+      - MONGO_INITDB_DATABASE=thearchitect
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: thearchitect-redis
+    ports:
+      - '6379:6379'
+    command: redis-server --requirepass thearchitect_dev_2024
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: thearchitect-minio
+    ports:
+      - '9000:9000'  # API
+      - '9001:9001'  # Console
+    environment:
+      - MINIO_ROOT_USER=thearchitect
+      - MINIO_ROOT_PASSWORD=thearchitect_dev_2024
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  mongodb_data:
+  redis_data:
+  minio_data:

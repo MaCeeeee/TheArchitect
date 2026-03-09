@@ -1,0 +1,93 @@
+import { Canvas } from '@react-three/fiber';
+import { Grid, Environment } from '@react-three/drei';
+import { Suspense } from 'react';
+import LayerPlane from './LayerPlane';
+import ArchitectureElements from './ArchitectureElements';
+import ConnectionLines from './ConnectionLines';
+import CameraControlsWrapper from './CameraControls';
+import ContextMenu3D from './ContextMenu3D';
+import TransformationXRay from './TransformationXRay';
+import XRayHUD from './XRayHUD';
+import CursorOverlay from '../collaboration/CursorOverlay';
+import { useArchitectureStore } from '../../stores/architectureStore';
+import { useXRayStore } from '../../stores/xrayStore';
+
+const LAYER_CONFIG = [
+  { id: 'strategy', label: 'Strategy', y: 12, color: '#ef4444' },
+  { id: 'business', label: 'Business', y: 8, color: '#22c55e' },
+  { id: 'information', label: 'Information / Application', y: 4, color: '#3b82f6' },
+  { id: 'application', label: 'Application', y: 0, color: '#f97316' },
+  { id: 'technology', label: 'Technology', y: -4, color: '#a855f7' },
+] as const;
+
+export default function Scene() {
+  const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
+  const clearSelection = useArchitectureStore((s) => s.clearSelection);
+  const closeContextMenu = useArchitectureStore((s) => s.closeContextMenu);
+  const isXRayActive = useXRayStore((s) => s.isActive);
+
+  const handleCanvasClick = () => {
+    clearSelection();
+    closeContextMenu();
+  };
+
+  return (
+    <div className="relative w-full h-full">
+      <Canvas
+        camera={{ position: [20, 15, 20], fov: 60, near: 0.1, far: 1000 }}
+        gl={{ antialias: true, alpha: false }}
+        style={{ background: isXRayActive ? '#080e1a' : '#0f172a' }}
+        onPointerMissed={handleCanvasClick}
+      >
+        <Suspense fallback={null}>
+          <ambientLight intensity={isXRayActive ? 0.25 : 0.4} />
+          <directionalLight position={[10, 20, 10]} intensity={isXRayActive ? 0.5 : 0.8} castShadow />
+          <pointLight position={[-10, 10, -10]} intensity={0.3} color="#7c3aed" />
+
+          {LAYER_CONFIG.map(
+            (layer) =>
+              visibleLayers.has(layer.id) && (
+                <LayerPlane
+                  key={layer.id}
+                  layerId={layer.id}
+                  label={layer.label}
+                  yPosition={layer.y}
+                  color={layer.color}
+                />
+              )
+          )}
+
+          <ArchitectureElements />
+          <ConnectionLines />
+          {!isXRayActive && <CursorOverlay />}
+
+          {/* TransformationXRay renders its own lights, sub-views, and HUD */}
+          <TransformationXRay />
+
+          {/* Dim grid in X-Ray mode */}
+          <Grid
+            args={[50, 50]}
+            position={[0, -6, 0]}
+            cellSize={1}
+            cellThickness={isXRayActive ? 0.2 : 0.5}
+            cellColor={isXRayActive ? '#0f172a' : '#1e293b'}
+            sectionSize={5}
+            sectionThickness={isXRayActive ? 0.3 : 1}
+            sectionColor={isXRayActive ? '#1e293b' : '#334155'}
+            fadeDistance={50}
+            infiniteGrid
+          />
+
+          <CameraControlsWrapper />
+          <Environment preset="night" />
+        </Suspense>
+      </Canvas>
+
+      {/* Context menu overlay - hide in X-Ray mode */}
+      {!isXRayActive && <ContextMenu3D />}
+
+      {/* X-Ray HUD - rendered OUTSIDE Canvas so it stays fixed on screen */}
+      {isXRayActive && <XRayHUD />}
+    </div>
+  );
+}
