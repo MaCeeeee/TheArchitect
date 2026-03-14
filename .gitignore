@@ -31,3 +31,6 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Agent skills (installed locally)
+.agents/
