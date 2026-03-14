@@ -9,6 +9,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  bio: string;
+  avatarUrl: string;
   role: UserRole;
   permissions: string[];
   mfaEnabled: boolean;
@@ -20,6 +22,19 @@ export interface UserPreferences {
   theme: 'dark' | 'light';
   language: string;
   timezone: string;
+  notifications: {
+    emailOnApproval: boolean;
+    emailOnMention: boolean;
+    emailOnProjectUpdate: boolean;
+    inAppOnApproval: boolean;
+    inAppOnMention: boolean;
+    inAppOnProjectUpdate: boolean;
+  };
+  accessibility: {
+    fontSize: 'small' | 'medium' | 'large';
+    reduceMotion: boolean;
+    highContrast: boolean;
+  };
 }
 
 export interface Session {

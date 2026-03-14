@@ -18,6 +18,7 @@ import marketplaceRoutes from './routes/marketplace.routes';
 import aiRoutes from './routes/ai.routes';
 import standardsRoutes from './routes/standards.routes';
 import xrayRoutes from './routes/xray.routes';
+import settingsRoutes from './routes/settings.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 
 dotenv.config();
@@ -53,6 +54,7 @@ async function main() {
   app.use('/api/projects', aiRoutes);
   app.use('/api/projects', standardsRoutes);
   app.use('/api/projects', xrayRoutes);
+  app.use('/api/settings', settingsRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

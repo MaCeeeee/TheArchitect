@@ -5,6 +5,7 @@ import LoginPage from './components/security/LoginPage';
 import OAuthCallbackPage from './components/security/OAuthCallbackPage';
 import DashboardPage from './components/ui/DashboardPage';
 import ProjectView from './components/ui/ProjectView';
+import SettingsPage from './components/settings/SettingsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -27,6 +28,8 @@ export default function App() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="project/:projectId" element={<ProjectView />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/:section" element={<SettingsPage />} />
       </Route>
     </Routes>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FolderTree, Search, Plus, ChevronRight, ChevronDown, Eye, EyeOff,
   Settings, BookOpen, BarChart3, Shield, Store, Sparkles, X,
@@ -57,6 +58,7 @@ const NAV_ITEMS = [
 ] as const;
 
 export default function Sidebar() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showPalette, setShowPalette] = useState(false);
   const elements = useArchitectureStore((s) => s.elements);
@@ -112,7 +114,13 @@ export default function Sidebar() {
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
-            onClick={() => setSidebarPanel(item.id as typeof sidebarPanel)}
+            onClick={() => {
+              if (item.id === 'settings') {
+                navigate('/settings');
+              } else {
+                setSidebarPanel(item.id as typeof sidebarPanel);
+              }
+            }}
             className={`flex-1 flex items-center justify-center p-2.5 transition ${
               sidebarPanel === item.id
                 ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
@@ -211,7 +219,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      {sidebarPanel === 'settings' && <SettingsPanel />}
+      {/* Settings now has its own route at /settings */}
     </aside>
   );
 }
@@ -289,43 +297,6 @@ function AnalyticsPanel() {
         {tab === 'monte' && <MonteCarloSimulation />}
         {tab === 'scenario' && <ScenarioComparison />}
         {tab === 'capacity' && <CapacityPlanning />}
-      </div>
-    </div>
-  );
-}
-
-function SettingsPanel() {
-  const { viewMode, setViewMode, showMinimap, toggleMinimap } = useUIStore();
-
-  return (
-    <div className="flex-1 overflow-y-auto p-3 space-y-3">
-      <h4 className="text-[10px] font-semibold uppercase text-[#64748b]">Display</h4>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-[#94a3b8]">View Mode</span>
-          <select
-            value={viewMode}
-            onChange={(e) => setViewMode(e.target.value as '3d' | '2d-topdown' | 'layer')}
-            className="bg-[#0f172a] border border-[#334155] rounded px-2 py-0.5 text-[10px] text-white outline-none"
-          >
-            <option value="3d">3D</option>
-            <option value="2d-topdown">2D Top-Down</option>
-            <option value="layer">Layer View</option>
-          </select>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-[#94a3b8]">Minimap</span>
-          <button onClick={toggleMinimap} className={`text-[10px] px-2 py-0.5 rounded ${showMinimap ? 'bg-[#7c3aed] text-white' : 'bg-[#334155] text-[#64748b]'}`}>
-            {showMinimap ? 'On' : 'Off'}
-          </button>
-        </div>
-      </div>
-
-      <h4 className="text-[10px] font-semibold uppercase text-[#64748b] pt-2 border-t border-[#334155]">About</h4>
-      <div className="text-[10px] text-[#64748b] space-y-1">
-        <p><span className="text-white">TheArchitect</span> v0.1.0</p>
-        <p>Enterprise Architecture Management</p>
-        <p>TOGAF 10 Compliant</p>
       </div>
     </div>
   );

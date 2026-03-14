@@ -231,6 +231,32 @@ export const standardsAPI = {
     api.delete(`/projects/${projectId}/standards/${standardId}/mappings/${mappingId}`),
 };
 
+// Settings API
+export const settingsAPI = {
+  getProfile: () => api.get('/settings/profile'),
+  updateProfile: (data: { name?: string; bio?: string; avatarUrl?: string }) =>
+    api.put('/settings/profile', data),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.put('/settings/password', { currentPassword, newPassword }),
+  deleteAccount: (password: string) =>
+    api.delete('/settings/account', { data: { password } }),
+  getPreferences: () => api.get('/settings/preferences'),
+  updatePreferences: (data: Record<string, unknown>) =>
+    api.put('/settings/preferences', data),
+  getOAuthProviders: () => api.get('/settings/oauth-providers'),
+  unlinkOAuthProvider: (provider: string) =>
+    api.delete(`/settings/oauth-providers/${provider}`),
+  getSessions: () => api.get('/settings/sessions'),
+  revokeSession: (sessionId: string) =>
+    api.delete(`/settings/sessions/${sessionId}`),
+  getApiKeys: () => api.get('/settings/api-keys'),
+  createApiKey: (data: { name: string; permissions?: string[]; expiresInDays?: number }) =>
+    api.post('/settings/api-keys', data),
+  revokeApiKey: (keyId: string) =>
+    api.delete(`/settings/api-keys/${keyId}`),
+  getBilling: () => api.get('/settings/billing'),
+};
+
 // Admin API
 export const adminAPI = {
   getUsers: () => api.get('/admin/users'),
