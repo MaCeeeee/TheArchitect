@@ -2,6 +2,8 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+RUN apk add --no-cache python3 make g++
+
 COPY package.json package-lock.json turbo.json tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/server/package.json packages/server/
@@ -13,7 +15,10 @@ COPY packages/shared/ packages/shared/
 COPY packages/server/ packages/server/
 COPY packages/client/ packages/client/
 
-RUN npx turbo run build
+# Build sequentially: shared -> server + client
+RUN npm run --workspace=packages/shared build \
+    && npm run --workspace=packages/server build \
+    && npm run --workspace=packages/client build
 
 # Stage 2: Production
 FROM node:22-alpine AS production
