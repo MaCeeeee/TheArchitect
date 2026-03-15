@@ -63,7 +63,7 @@ export class EmergenceTracker {
     persona: AgentPersona,
   ): void {
     this.personas.set(agentId, persona);
-    this.totalRoundsElapsed = Math.max(this.totalRoundsElapsed, round);
+    this.totalRoundsElapsed = Math.max(this.totalRoundsElapsed, round + 1);
 
     // Ensure rounds array is large enough
     while (this.rounds.length <= round) {
