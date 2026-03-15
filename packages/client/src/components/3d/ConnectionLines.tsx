@@ -18,6 +18,7 @@ const CONNECTION_COLORS: Record<string, string> = {
   stored_in: '#3b82f6',
   integrates: '#f59e0b',
   orchestrated_by: '#ec4899',
+  cross_architecture: '#fbbf24',
 };
 
 function FlowParticle({ curve, color, speed, offset }: {
@@ -40,6 +41,36 @@ function FlowParticle({ curve, color, speed, offset }: {
       <sphereGeometry args={[0.08, 8, 8]} />
       <meshBasicMaterial color={color} transparent opacity={0.9} />
     </mesh>
+  );
+}
+
+function CrossArchitectureLine({ points, color, lineWidth, opacity }: {
+  points: THREE.Vector3[];
+  color: string;
+  lineWidth: number;
+  opacity: number;
+}) {
+  // Render every other segment for a dashed effect
+  const segments: THREE.Vector3[][] = [];
+  for (let i = 0; i < points.length - 1; i += 2) {
+    const seg = [points[i]];
+    if (i + 1 < points.length) seg.push(points[i + 1]);
+    if (seg.length === 2) segments.push(seg);
+  }
+
+  return (
+    <group>
+      {segments.map((seg, i) => (
+        <Line
+          key={i}
+          points={seg}
+          color={color}
+          lineWidth={lineWidth}
+          transparent
+          opacity={opacity}
+        />
+      ))}
+    </group>
   );
 }
 
@@ -99,8 +130,10 @@ export default function ConnectionLines() {
           target.position3D.x, target.position3D.y + targetYOffset, target.position3D.z
         );
 
+        const isCrossArchitecture = conn.type === 'cross_architecture';
+
         const mid = start.clone().lerp(end, 0.5);
-        mid.y += 1.5;
+        mid.y += isCrossArchitecture ? 4 : 1.5;
 
         const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
         const points = curve.getPoints(32);
@@ -173,6 +206,11 @@ export default function ConnectionLines() {
             lineColor = '#22c55e';
             opacity = Math.max(opacity, 0.3);
           }
+        } else if (isCrossArchitecture) {
+          lineColor = '#fbbf24';
+          lineWidth = isSelected ? 3 : 2;
+          opacity = isSelected ? 1 : 0.6;
+          showParticles = true;
         } else {
           lineColor = isSelected ? '#ffffff' : isHighlighted ? connColor : '#64748b';
           lineWidth = isSelected ? 3 : isHighlighted ? 2 : 1.5;
@@ -182,17 +220,21 @@ export default function ConnectionLines() {
 
         return (
           <group key={conn.id}>
-            <Line
-              points={points}
-              color={lineColor}
-              lineWidth={lineWidth}
-              transparent
-              opacity={opacity}
-            />
+            {isCrossArchitecture ? (
+              <CrossArchitectureLine points={points} color={lineColor} lineWidth={lineWidth} opacity={opacity} />
+            ) : (
+              <Line
+                points={points}
+                color={lineColor}
+                lineWidth={lineWidth}
+                transparent
+                opacity={opacity}
+              />
+            )}
             {showParticles && (
               <>
-                <FlowParticle curve={curve} color={isXRayActive ? lineColor : connColor} speed={isXRayActive ? 0.5 : 0.3} offset={0} />
-                <FlowParticle curve={curve} color={isXRayActive ? lineColor : connColor} speed={isXRayActive ? 0.5 : 0.3} offset={0.5} />
+                <FlowParticle curve={curve} color={isXRayActive ? lineColor : connColor} speed={isCrossArchitecture ? 0.2 : isXRayActive ? 0.5 : 0.3} offset={0} />
+                <FlowParticle curve={curve} color={isXRayActive ? lineColor : connColor} speed={isCrossArchitecture ? 0.2 : isXRayActive ? 0.5 : 0.3} offset={0.5} />
               </>
             )}
           </group>

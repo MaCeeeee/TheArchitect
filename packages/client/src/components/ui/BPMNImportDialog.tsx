@@ -1,14 +1,18 @@
 import { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { X, Upload, FileCode, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, Upload, FileCode, AlertCircle, CheckCircle2, Layers, GitMerge } from 'lucide-react';
 import { parseBPMN } from '../../utils/bpmnParser';
 import { useArchitectureStore } from '../../stores/architectureStore';
-import { architectureAPI } from '../../services/api';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { architectureAPI, workspaceAPI } from '../../services/api';
+import { findSharedElements } from '../../utils/workspaceMatcher';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
 }
+
+type ImportMode = 'new_workspace' | 'merge';
 
 export default function BPMNImportDialog({ isOpen, onClose }: Props) {
   const { projectId } = useParams();
@@ -16,8 +20,18 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
   const [preview, setPreview] = useState<{ elements: number; connections: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [xmlContent, setXmlContent] = useState<string>('');
+  const [importMode, setImportMode] = useState<ImportMode>('new_workspace');
+  const [mergeTargetId, setMergeTargetId] = useState<string>('');
+  const [workspaceName, setWorkspaceName] = useState<string>('');
   const setElements = useArchitectureStore((s) => s.setElements);
   const setConnections = useArchitectureStore((s) => s.setConnections);
+  const importElements = useArchitectureStore((s) => s.importElements);
+  const elements = useArchitectureStore((s) => s.elements);
+  const connections = useArchitectureStore((s) => s.connections);
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const addWorkspace = useWorkspaceStore((s) => s.addWorkspace);
+  const getNextOffsetX = useWorkspaceStore((s) => s.getNextOffsetX);
+  const getNextColor = useWorkspaceStore((s) => s.getNextColor);
 
   const handleFileChange = useCallback(async (selectedFile: File) => {
     setFile(selectedFile);
@@ -48,17 +62,48 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
     if (!xmlContent || !projectId) return;
     try {
       const result = parseBPMN(xmlContent);
+      const isNew = importMode === 'new_workspace';
+
+      const offsetX = isNew ? getNextOffsetX() : (workspaces.find((ws) => ws.id === mergeTargetId)?.offsetX ?? 0);
+      const color = isNew ? getNextColor() : '';
+      const wsId = isNew ? `ws-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : mergeTargetId;
+      const name = workspaceName || file?.name?.replace(/\.(bpmn|xml)$/i, '') || 'BPMN Import';
+
+      // Offset element positions by workspace X
+      const offsetElements = result.elements.map((el) => ({
+        ...el,
+        workspaceId: wsId,
+        position3D: { ...el.position3D, x: el.position3D.x + offsetX },
+      }));
+
+      if (isNew) {
+        // Create workspace locally
+        addWorkspace({ id: wsId, name, projectId, source: 'bpmn', color, offsetX, createdAt: new Date().toISOString() });
+
+        // Persist workspace to server
+        await workspaceAPI.create(projectId, { name, source: 'bpmn', color, offsetX }).catch(() => {});
+      }
+
+      // Import elements into local store
+      importElements(offsetElements, result.connections, wsId);
+
+      // Detect shared elements across workspaces
+      if (isNew) {
+        const crossConnections = findSharedElements(offsetElements, elements, connections);
+        if (crossConnections.length > 0) {
+          const store = useArchitectureStore.getState();
+          for (const conn of crossConnections) {
+            store.addConnection(conn);
+          }
+        }
+      }
+
+      // Sync elements with server (send offset positions + workspaceId)
       await architectureAPI.importBPMN(projectId, {
-        elements: result.elements,
+        elements: offsetElements,
         connections: result.connections,
       });
-      // Reload from server to get canonical IDs
-      const [elemRes, connRes] = await Promise.all([
-        architectureAPI.getElements(projectId),
-        architectureAPI.getConnections(projectId),
-      ]);
-      setElements(elemRes.data.data || []);
-      setConnections(connRes.data.data || []);
+
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
@@ -114,6 +159,61 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
               <span className="text-xs text-green-300">
                 Found {preview.elements} elements and {preview.connections} connections
               </span>
+            </div>
+          )}
+
+          {/* Workspace selection */}
+          {preview && (
+            <div className="space-y-3">
+              <label className="block text-xs font-medium text-[#94a3b8]">Import Target</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setImportMode('new_workspace')}
+                  className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
+                    importMode === 'new_workspace'
+                      ? 'border-[#7c3aed] bg-[#7c3aed]/10 text-white'
+                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                  }`}
+                >
+                  <Layers size={14} />
+                  New Workspace
+                </button>
+                <button
+                  onClick={() => setImportMode('merge')}
+                  disabled={workspaces.length === 0}
+                  className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
+                    importMode === 'merge'
+                      ? 'border-[#7c3aed] bg-[#7c3aed]/10 text-white'
+                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                  } disabled:opacity-30`}
+                >
+                  <GitMerge size={14} />
+                  Merge into Existing
+                </button>
+              </div>
+
+              {importMode === 'new_workspace' && (
+                <input
+                  type="text"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  placeholder={file?.name?.replace(/\.(bpmn|xml)$/i, '') || 'Workspace name'}
+                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white placeholder:text-[#475569] outline-none focus:border-[#7c3aed] transition"
+                />
+              )}
+
+              {importMode === 'merge' && workspaces.length > 0 && (
+                <select
+                  value={mergeTargetId}
+                  onChange={(e) => setMergeTargetId(e.target.value)}
+                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white outline-none focus:border-[#7c3aed] transition"
+                >
+                  <option value="">-- Select workspace --</option>
+                  {workspaces.map((ws) => (
+                    <option key={ws.id} value={ws.id}>{ws.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 

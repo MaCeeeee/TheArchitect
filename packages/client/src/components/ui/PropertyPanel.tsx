@@ -49,7 +49,7 @@ export default function PropertyPanel() {
   };
 
   return (
-    <aside className="w-72 border-l border-[#334155] bg-[#1e293b] overflow-y-auto">
+    <aside className="w-72 border-l border-[#334155] bg-[#1e293b] overflow-y-auto h-full">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[#334155] p-4">
         <h3 className="text-sm font-semibold text-white truncate">{element.name}</h3>
@@ -100,7 +100,7 @@ export default function PropertyPanel() {
           {relatedConnections.length === 0 ? (
             <p className="text-xs text-[#64748b]">No connections</p>
           ) : (
-            <div className="space-y-1">
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
               {relatedConnections.map((conn) => {
                 const isSource = conn.sourceId === element.id;
                 const otherId = isSource ? conn.targetId : conn.sourceId;

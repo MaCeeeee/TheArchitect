@@ -5,13 +5,16 @@ import Scene from '../3d/Scene';
 import PropertyPanel from './PropertyPanel';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
-import { architectureAPI } from '../../services/api';
+import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
   const setElements = useArchitectureStore((s) => s.setElements);
   const setConnections = useArchitectureStore((s) => s.setConnections);
   const setProjectId = useArchitectureStore((s) => s.setProjectId);
+  const setProjectName = useArchitectureStore((s) => s.setProjectName);
+  const setWorkspaces = useWorkspaceStore((s) => s.setWorkspaces);
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +30,26 @@ export default function ProjectView() {
     Promise.all([
       architectureAPI.getElements(projectId),
       architectureAPI.getConnections(projectId),
+      projectAPI.get(projectId),
+      workspaceAPI.list(projectId).catch(() => ({ data: { data: [] } })),
     ])
-      .then(([elemRes, connRes]) => {
+      .then(([elemRes, connRes, projRes, wsRes]) => {
         if (cancelled) return;
         setElements(elemRes.data.data || []);
         setConnections(connRes.data.data || []);
+        setProjectName(projRes.data.data?.name || projRes.data.name || null);
+        const serverWorkspaces = wsRes.data.data || [];
+        if (serverWorkspaces.length > 0) {
+          setWorkspaces(serverWorkspaces.map((ws: any) => ({
+            id: ws._id || ws.id,
+            name: ws.name,
+            projectId: ws.projectId,
+            source: ws.source,
+            color: ws.color,
+            offsetX: ws.offsetX,
+            createdAt: ws.createdAt,
+          })));
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -47,7 +65,7 @@ export default function ProjectView() {
     return () => {
       cancelled = true;
     };
-  }, [projectId, setElements, setConnections, setProjectId]);
+  }, [projectId, setElements, setConnections, setProjectId, setProjectName, setWorkspaces]);
 
   if (loading) {
     return (

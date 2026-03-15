@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser>(
     avatarUrl: { type: String, default: '' },
     role: {
       type: String,
-      enum: ['chief_architect', 'enterprise_architect', 'data_architect', 'business_architect', 'viewer'],
+      enum: ['chief_architect', 'enterprise_architect', 'solution_architect', 'data_architect', 'business_architect', 'analyst', 'viewer'],
       default: 'viewer',
     },
     permissions: [{ type: String }],

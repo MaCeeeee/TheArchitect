@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useMatch } from 'react-router-dom';
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -18,6 +19,7 @@ import {
   Lightbulb,
   Workflow,
   ScanEye,
+  Users,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -25,6 +27,7 @@ import { useXRayStore } from '../../stores/xrayStore';
 import { fitToScreen } from '../3d/CameraControls';
 import UserPresence from '../collaboration/UserPresence';
 import { useCollaborationStore } from '../../stores/collaborationStore';
+import ProjectCollaborators from './ProjectCollaborators';
 
 interface ToolbarProps {
   onOpenBPMNImport: () => void;
@@ -41,6 +44,9 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
     toggleChat,
     toggleMinimap,
   } = useUIStore();
+  const navigate = useNavigate();
+  const isProjectView = useMatch('/project/:projectId');
+  const projectName = useArchitectureStore((s) => s.projectName);
 
   const undo = useArchitectureStore((s) => s.undo);
   const redo = useArchitectureStore((s) => s.redo);
@@ -50,8 +56,10 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
   const isScenarioMode = useArchitectureStore((s) => s.isScenarioMode);
   const setScenarioMode = useArchitectureStore((s) => s.setScenarioMode);
 
+  const projectId = useArchitectureStore((s) => s.projectId);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const toggleXRay = useXRayStore((s) => s.toggleXRay);
+  const [showCollaborators, setShowCollaborators] = useState(false);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -91,8 +99,23 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
 
         <div className="mx-2 h-5 w-px bg-[#334155]" />
 
-        <span className="text-sm font-semibold text-[#7c3aed]">TheArchitect</span>
-        <span className="text-xs text-[#94a3b8]">Enterprise Architecture</span>
+        <button onClick={() => navigate('/')} className="flex items-center gap-1.5 hover:opacity-80 transition" title="Back to Dashboard">
+          <span className="text-sm font-semibold text-[#7c3aed]">TheArchitect</span>
+          {!isProjectView && <span className="text-xs text-[#94a3b8]">Enterprise Architecture</span>}
+        </button>
+        {isProjectView && projectName && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#475569]">/</span>
+            <span className="text-sm font-medium text-white">{projectName}</span>
+            <button
+              onClick={() => setShowCollaborators(true)}
+              className="ml-1.5 rounded p-1 text-[#64748b] hover:text-white hover:bg-[#334155] transition"
+              title="Project Members"
+            >
+              <Users size={14} />
+            </button>
+          </div>
+        )}
 
         <div className="ml-4">
           <UserPresence />
@@ -153,6 +176,14 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
         <ToolbarButton icon={<Lightbulb size={16} />} title="Tour" onClick={onOpenWalkthrough} />
         <ToolbarButton icon={<Download size={16} />} title="Export" />
       </div>
+
+      {projectId && (
+        <ProjectCollaborators
+          isOpen={showCollaborators}
+          onClose={() => setShowCollaborators(false)}
+          projectId={projectId}
+        />
+      )}
     </header>
   );
 }

@@ -19,6 +19,7 @@ export interface ArchitectureElement {
   status: 'current' | 'target' | 'transitional' | 'retired';
   position3D: Position3D;
   metadata: Record<string, unknown>;
+  workspaceId?: string;
 }
 
 export interface Connection {
@@ -37,6 +38,7 @@ interface HistoryEntry {
 
 interface ArchitectureState {
   projectId: string | null;
+  projectName: string | null;
   elements: ArchitectureElement[];
   connections: Connection[];
   selectedElementId: string | null;
@@ -54,6 +56,7 @@ interface ArchitectureState {
   canRedo: boolean;
 
   setProjectId: (projectId: string | null) => void;
+  setProjectName: (name: string | null) => void;
   setElements: (elements: ArchitectureElement[]) => void;
   addElement: (element: ArchitectureElement) => void;
   updateElement: (id: string, changes: Partial<ArchitectureElement>) => void;
@@ -77,6 +80,11 @@ interface ArchitectureState {
   openContextMenu: (x: number, y: number, elementId: string) => void;
   closeContextMenu: () => void;
   setDragging: (dragging: boolean) => void;
+
+  importElements: (elements: ArchitectureElement[], connections: Connection[], workspaceId: string) => void;
+  getElementsByWorkspace: (workspaceId: string) => ArchitectureElement[];
+  removeWorkspaceElements: (workspaceId: string) => void;
+  clearProject: () => void;
 }
 
 const ALL_LAYERS = new Set(['strategy', 'business', 'information', 'application', 'technology']);
@@ -84,6 +92,7 @@ const MAX_HISTORY = 50;
 
 export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
   projectId: null,
+  projectName: null,
   elements: [],
   connections: [],
   selectedElementId: null,
@@ -142,6 +151,7 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
   },
 
   setProjectId: (projectId) => set({ projectId }),
+  setProjectName: (name) => set({ projectName: name }),
   setElements: (elements) => set({ elements }),
   addElement: (element) => {
     get().pushHistory();
@@ -241,4 +251,48 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
   openContextMenu: (x, y, elementId) => set({ contextMenu: { x, y, elementId } }),
   closeContextMenu: () => set({ contextMenu: null }),
   setDragging: (dragging) => set({ isDragging: dragging }),
+
+  importElements: (newElements, newConnections, workspaceId) => {
+    get().pushHistory();
+    const tagged = newElements.map((el) => ({ ...el, workspaceId }));
+    set((state) => ({
+      elements: [...state.elements, ...tagged],
+      connections: [...state.connections, ...newConnections],
+    }));
+  },
+
+  getElementsByWorkspace: (workspaceId) => {
+    return get().elements.filter((el) => el.workspaceId === workspaceId);
+  },
+
+  removeWorkspaceElements: (workspaceId) => {
+    get().pushHistory();
+    set((state) => {
+      const removedIds = new Set(
+        state.elements.filter((el) => el.workspaceId === workspaceId).map((el) => el.id)
+      );
+      return {
+        elements: state.elements.filter((el) => el.workspaceId !== workspaceId),
+        connections: state.connections.filter(
+          (c) => !removedIds.has(c.sourceId) && !removedIds.has(c.targetId)
+        ),
+      };
+    });
+  },
+
+  clearProject: () => {
+    set({
+      projectId: null,
+      projectName: null,
+      elements: [],
+      connections: [],
+      selectedElementId: null,
+      selectedConnectionId: null,
+      selectedElementIds: new Set<string>(),
+      history: [],
+      historyIndex: -1,
+      canUndo: false,
+      canRedo: false,
+    });
+  },
 }));

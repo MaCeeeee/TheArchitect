@@ -37,6 +37,7 @@ export interface ArchitectureElement {
   position3D: Position3D;
   metadata: Record<string, unknown>;
   projectId: string;
+  workspaceId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,10 +46,24 @@ export interface Connection {
   id: string;
   sourceId: string;
   targetId: string;
-  type: string;
+  type: ConnectionType;
   label?: string;
   weight?: number;
   metadata?: Record<string, unknown>;
+}
+
+export type ConnectionType = 'connects_to' | 'data_flow' | 'cross_architecture';
+
+export type WorkspaceSource = 'bpmn' | 'n8n' | 'manual' | 'archimate';
+
+export interface Workspace {
+  id: string;
+  name: string;
+  projectId: string;
+  source: WorkspaceSource;
+  color: string;
+  offsetX: number;
+  createdAt: string;
 }
 
 export type ADMPhase =
@@ -87,3 +102,6 @@ export interface XRayElementData {
   dependencyDepth: number;
   isCriticalPath: boolean;
 }
+
+// Re-export simulation types
+export type * from './simulation.types';

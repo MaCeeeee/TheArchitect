@@ -19,6 +19,8 @@ import aiRoutes from './routes/ai.routes';
 import standardsRoutes from './routes/standards.routes';
 import xrayRoutes from './routes/xray.routes';
 import settingsRoutes from './routes/settings.routes';
+import workspaceRoutes from './routes/workspace.routes';
+import simulationRoutes from './routes/simulation.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 
 dotenv.config();
@@ -55,6 +57,8 @@ async function main() {
   app.use('/api/projects', standardsRoutes);
   app.use('/api/projects', xrayRoutes);
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/workspaces', workspaceRoutes);
+  app.use('/api/projects', simulationRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

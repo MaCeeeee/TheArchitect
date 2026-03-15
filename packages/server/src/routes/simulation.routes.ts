@@ -1,0 +1,340 @@
+import { Router, Request, Response } from 'express';
+import { z } from 'zod';
+import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { PERMISSIONS } from '@thearchitect/shared';
+import { SimulationRun } from '../models/SimulationRun';
+import { MiroFishEngine } from '../services/mirofish/engine';
+import { getDefaultPersonas, getAllPresetPersonas } from '../services/mirofish/personas';
+import type { SimulationStreamEvent } from '@thearchitect/shared/src/types/simulation.types';
+
+const router = Router();
+
+// Running engines (for cancellation)
+const activeEngines = new Map<string, MiroFishEngine>();
+
+// ─── Validation ───
+
+const CreateSimulationSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  scenarioType: z.enum([
+    'cloud_migration', 'mna_integration', 'technology_refresh',
+    'cost_optimization', 'org_restructure', 'custom',
+  ]),
+  scenarioDescription: z.string().min(10).max(5000),
+  maxRounds: z.number().int().min(1).max(10).default(5),
+  targetElementIds: z.array(z.string()).default([]),
+  agents: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    stakeholderType: z.enum(['c_level', 'business_unit', 'it_ops', 'data_team', 'external']),
+    visibleLayers: z.array(z.string()),
+    visibleDomains: z.array(z.string()),
+    maxGraphDepth: z.number().int().min(1).max(10).default(5),
+    budgetConstraint: z.number().optional(),
+    riskThreshold: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+    expectedCapacity: z.number().int().min(1).max(20).default(5),
+    roundToMonthFactor: z.number().min(0.5).max(6).optional(),
+    priorities: z.array(z.string()),
+    systemPromptSuffix: z.string().default(''),
+  })).optional(),
+});
+
+// ─── POST / — Create and start simulation ───
+
+router.post(
+  '/:projectId/simulations',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const parsed = CreateSimulationSchema.parse(req.body);
+
+      const agents = parsed.agents || getDefaultPersonas();
+
+      const config = {
+        agents: agents as any,
+        maxRounds: parsed.maxRounds,
+        targetElementIds: parsed.targetElementIds,
+        scenarioDescription: parsed.scenarioDescription,
+        scenarioType: parsed.scenarioType,
+        name: parsed.name,
+      };
+
+      const run = await SimulationRun.create({
+        projectId,
+        createdBy: (req as any).user._id,
+        name: parsed.name || `${parsed.scenarioType} simulation`,
+        status: 'running',
+        scenarioType: parsed.scenarioType,
+        config,
+        rounds: [],
+        totalTokensUsed: 0,
+        totalDurationMs: 0,
+      });
+
+      // Start simulation in background
+      const engine = new MiroFishEngine();
+      activeEngines.set(run._id.toString(), engine);
+
+      const startTime = Date.now();
+
+      engine
+        .runSimulation(projectId, config, async (event) => {
+          // Persist rounds incrementally
+          if (event.type === 'round_end') {
+            await SimulationRun.findByIdAndUpdate(run._id, {
+              $set: {
+                rounds: engine.getRounds(),
+                totalTokensUsed: engine.getTotalTokensUsed(),
+              },
+            });
+          }
+        })
+        .then(async (result) => {
+          await SimulationRun.findByIdAndUpdate(run._id, {
+            status: 'completed',
+            result,
+            rounds: engine.getRounds(),
+            totalTokensUsed: engine.getTotalTokensUsed(),
+            totalDurationMs: Date.now() - startTime,
+          });
+          activeEngines.delete(run._id.toString());
+        })
+        .catch(async (err) => {
+          console.error('[MiroFish] Simulation failed:', err.message);
+          await SimulationRun.findByIdAndUpdate(run._id, {
+            status: 'failed',
+            result: { error: err.message },
+            totalDurationMs: Date.now() - startTime,
+          });
+          activeEngines.delete(run._id.toString());
+        });
+
+      res.status(201).json({
+        id: run._id,
+        status: 'running',
+        streamUrl: `/api/projects/${projectId}/simulations/${run._id}/stream`,
+      });
+    } catch (err: any) {
+      if (err.name === 'ZodError') {
+        return res.status(400).json({ error: 'Invalid simulation config', details: err.errors });
+      }
+      console.error('[MiroFish] Create error:', err.message);
+      res.status(500).json({ error: 'Failed to create simulation' });
+    }
+  },
+);
+
+// ─── GET / — List simulation runs ───
+
+router.get(
+  '/:projectId/simulations',
+  authenticate,
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(50, parseInt(req.query.limit as string) || 20);
+
+      const runs = await SimulationRun.find({ projectId })
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .select('name status scenarioType result.outcome result.fatigue.rating rounds createdAt')
+        .lean();
+
+      const total = await SimulationRun.countDocuments({ projectId });
+
+      const summaries = runs.map((run: any) => ({
+        id: run._id,
+        name: run.name,
+        status: run.status,
+        scenarioType: run.scenarioType,
+        outcome: run.result?.outcome,
+        fatigueRating: run.result?.fatigue?.rating,
+        totalRounds: run.rounds?.length || 0,
+        createdAt: run.createdAt,
+      }));
+
+      res.json({ runs: summaries, total, page, limit });
+    } catch (err: any) {
+      console.error('[MiroFish] List error:', err.message);
+      res.status(500).json({ error: 'Failed to list simulations' });
+    }
+  },
+);
+
+// ─── GET /personas — List available preset personas ───
+// IMPORTANT: Must be before /:runId routes to avoid "personas" matching as runId
+
+router.get(
+  '/:projectId/simulations/personas',
+  authenticate,
+  async (_req: Request, res: Response) => {
+    res.json({ personas: getAllPresetPersonas() });
+  },
+);
+
+// ─── GET /:runId — Get simulation details ───
+
+router.get(
+  '/:projectId/simulations/:runId',
+  authenticate,
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const run = await SimulationRun.findOne({
+        _id: req.params.runId,
+        projectId: req.params.projectId,
+      }).lean();
+
+      if (!run) {
+        return res.status(404).json({ error: 'Simulation run not found' });
+      }
+
+      res.json(run);
+    } catch (err: any) {
+      console.error('[MiroFish] Get error:', err.message);
+      res.status(500).json({ error: 'Failed to get simulation' });
+    }
+  },
+);
+
+// ─── GET /:runId/stream — SSE stream for active simulation ───
+
+router.get(
+  '/:projectId/simulations/:runId/stream',
+  authenticate,
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const run = await SimulationRun.findOne({
+        _id: req.params.runId,
+        projectId: req.params.projectId,
+      });
+
+      if (!run) {
+        return res.status(404).json({ error: 'Simulation run not found' });
+      }
+
+      // SSE headers
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+
+      if (run.status === 'completed' || run.status === 'failed' || run.status === 'cancelled') {
+        // Already finished — send result immediately
+        if (run.result) {
+          res.write(`data: ${JSON.stringify({ type: 'complete', result: run.result })}\n\n`);
+        }
+        res.write('data: [DONE]\n\n');
+        res.end();
+        return;
+      }
+
+      // For running simulations, poll for updates
+      const runId = run._id.toString();
+      let lastRoundCount = 0;
+
+      const interval = setInterval(async () => {
+        try {
+          const current = await SimulationRun.findById(runId).lean() as any;
+          if (!current) {
+            clearInterval(interval);
+            res.write('data: [DONE]\n\n');
+            res.end();
+            return;
+          }
+
+          // Send new rounds
+          if (current.rounds && current.rounds.length > lastRoundCount) {
+            for (let i = lastRoundCount; i < current.rounds.length; i++) {
+              res.write(`data: ${JSON.stringify({ type: 'round_data', round: current.rounds[i] })}\n\n`);
+            }
+            lastRoundCount = current.rounds.length;
+          }
+
+          // Check if done
+          if (current.status === 'completed' || current.status === 'failed' || current.status === 'cancelled') {
+            clearInterval(interval);
+            if (current.result) {
+              res.write(`data: ${JSON.stringify({ type: 'complete', result: current.result })}\n\n`);
+            }
+            res.write('data: [DONE]\n\n');
+            res.end();
+          }
+        } catch {
+          // Silently continue polling
+        }
+      }, 1000);
+
+      req.on('close', () => {
+        clearInterval(interval);
+      });
+    } catch (err: any) {
+      console.error('[MiroFish] Stream error:', err.message);
+      res.status(500).json({ error: 'Failed to stream simulation' });
+    }
+  },
+);
+
+// ─── POST /:runId/cancel — Cancel running simulation ───
+
+router.post(
+  '/:projectId/simulations/:runId/cancel',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const runId = String(req.params.runId);
+      const engine = activeEngines.get(runId);
+      if (engine) {
+        engine.cancel();
+        activeEngines.delete(runId);
+      }
+
+      await SimulationRun.findByIdAndUpdate(runId, { status: 'cancelled' });
+      res.json({ status: 'cancelled' });
+    } catch (err: any) {
+      console.error('[MiroFish] Cancel error:', err.message);
+      res.status(500).json({ error: 'Failed to cancel simulation' });
+    }
+  },
+);
+
+// ─── DELETE /:runId — Delete simulation run ───
+
+router.delete(
+  '/:projectId/simulations/:runId',
+  authenticate,
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const result = await SimulationRun.findOneAndDelete({
+        _id: String(req.params.runId),
+        projectId: String(req.params.projectId),
+      });
+
+      if (!result) {
+        return res.status(404).json({ error: 'Simulation run not found' });
+      }
+
+      res.json({ deleted: true });
+    } catch (err: any) {
+      console.error('[MiroFish] Delete error:', err.message);
+      res.status(500).json({ error: 'Failed to delete simulation' });
+    }
+  },
+);
+
+export default router;

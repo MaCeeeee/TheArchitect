@@ -124,6 +124,14 @@ export const projectAPI = {
   delete: (id: string) => api.delete(`/projects/${id}`),
   createVersion: (id: string, label: string, snapshot: unknown) =>
     api.post(`/projects/${id}/versions`, { label, snapshot }),
+  getCollaborators: (id: string) =>
+    api.get(`/projects/${id}/collaborators`),
+  addCollaborator: (id: string, email: string, role: string) =>
+    api.post(`/projects/${id}/collaborators`, { email, role }),
+  updateCollaborator: (id: string, userId: string, role: string) =>
+    api.put(`/projects/${id}/collaborators/${userId}`, { role }),
+  removeCollaborator: (id: string, userId: string) =>
+    api.delete(`/projects/${id}/collaborators/${userId}`),
 };
 
 // Architecture API
@@ -152,6 +160,17 @@ export const architectureAPI = {
     api.post(`/projects/${projectId}/import/n8n/fetch`, data),
   fetchN8nWorkflow: (projectId: string, data: { n8nUrl: string; apiKey: string; workflowId: string }) =>
     api.post(`/projects/${projectId}/import/n8n/fetch`, data),
+};
+
+// Workspace API
+export const workspaceAPI = {
+  list: (projectId: string) => api.get(`/workspaces/${projectId}`),
+  create: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/workspaces/${projectId}`, data),
+  update: (projectId: string, workspaceId: string, data: Record<string, unknown>) =>
+    api.put(`/workspaces/${projectId}/${workspaceId}`, data),
+  delete: (projectId: string, workspaceId: string) =>
+    api.delete(`/workspaces/${projectId}/${workspaceId}`),
 };
 
 // Analytics API
@@ -264,6 +283,23 @@ export const adminAPI = {
     api.put(`/admin/users/${uid}/role`, { role }),
   getAuditLog: (params?: { action?: string; entityType?: string; limit?: number; offset?: number }) =>
     api.get('/admin/audit-log', { params }),
+};
+
+export const simulationAPI = {
+  list: (projectId: string, page = 1, limit = 20) =>
+    api.get(`/projects/${projectId}/simulations`, { params: { page, limit } }),
+  get: (projectId: string, runId: string) =>
+    api.get(`/projects/${projectId}/simulations/${runId}`),
+  create: (projectId: string, config: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/simulations`, config),
+  cancel: (projectId: string, runId: string) =>
+    api.post(`/projects/${projectId}/simulations/${runId}/cancel`),
+  delete: (projectId: string, runId: string) =>
+    api.delete(`/projects/${projectId}/simulations/${runId}`),
+  getPersonas: (projectId: string) =>
+    api.get(`/projects/${projectId}/simulations/personas`),
+  streamUrl: (projectId: string, runId: string) =>
+    `${API_BASE}/projects/${projectId}/simulations/${runId}/stream`,
 };
 
 export default api;

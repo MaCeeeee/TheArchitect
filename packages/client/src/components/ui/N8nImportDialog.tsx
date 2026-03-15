@@ -1,9 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { X, Upload, Workflow, AlertCircle, CheckCircle2, Globe, Key, RefreshCw } from 'lucide-react';
+import { X, Upload, Workflow, AlertCircle, CheckCircle2, Globe, Key, RefreshCw, Layers, GitMerge } from 'lucide-react';
 import { parseN8nWorkflow } from '../../utils/n8nParser';
 import { useArchitectureStore } from '../../stores/architectureStore';
-import { architectureAPI } from '../../services/api';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { architectureAPI, workspaceAPI } from '../../services/api';
+import { findSharedElements } from '../../utils/workspaceMatcher';
 
 interface Props {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface Props {
 }
 
 type Tab = 'upload' | 'api';
+type ImportMode = 'new_workspace' | 'merge';
 
 interface WorkflowListItem {
   id: string;
@@ -29,6 +32,11 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
   const [preview, setPreview] = useState<{ elements: number; connections: number; layers: Record<string, number> } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Workspace selection state
+  const [importMode, setImportMode] = useState<ImportMode>('new_workspace');
+  const [mergeTargetId, setMergeTargetId] = useState<string>('');
+  const [workspaceName, setWorkspaceName] = useState<string>('');
+
   // API tab state
   const [n8nUrl, setN8nUrl] = useState('');
   const [apiKey, setApiKey] = useState('');
@@ -39,6 +47,13 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
 
   const setElements = useArchitectureStore((s) => s.setElements);
   const setConnections = useArchitectureStore((s) => s.setConnections);
+  const importElementsAction = useArchitectureStore((s) => s.importElements);
+  const existingElements = useArchitectureStore((s) => s.elements);
+  const existingConnections = useArchitectureStore((s) => s.connections);
+  const allWorkspaces = useWorkspaceStore((s) => s.workspaces);
+  const addWorkspace = useWorkspaceStore((s) => s.addWorkspace);
+  const getNextOffsetX = useWorkspaceStore((s) => s.getNextOffsetX);
+  const getNextColor = useWorkspaceStore((s) => s.getNextColor);
 
   const parseAndPreview = useCallback((input: string | object) => {
     setError(null);
@@ -140,17 +155,47 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
     if (!source || !projectId) return;
     try {
       const result = parseN8nWorkflow(source);
+      const isNew = importMode === 'new_workspace';
+
+      const offsetX = isNew ? getNextOffsetX() : (allWorkspaces.find((ws) => ws.id === mergeTargetId)?.offsetX ?? 0);
+      const color = isNew ? getNextColor() : '';
+      const wsId = isNew ? `ws-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` : mergeTargetId;
+      const name = workspaceName || file?.name?.replace(/\.json$/i, '') || 'n8n Workflow';
+
+      const offsetElements = result.elements.map((el) => ({
+        ...el,
+        workspaceId: wsId,
+        position3D: { ...el.position3D, x: el.position3D.x + offsetX },
+      }));
+
+      if (isNew) {
+        // Create workspace locally
+        addWorkspace({ id: wsId, name, projectId, source: 'n8n', color, offsetX, createdAt: new Date().toISOString() });
+
+        // Persist workspace to server
+        await workspaceAPI.create(projectId, { name, source: 'n8n', color, offsetX }).catch(() => {});
+      }
+
+      // Import elements into local store
+      importElementsAction(offsetElements, result.connections, wsId);
+
+      // Detect shared elements across workspaces
+      if (isNew) {
+        const crossConnections = findSharedElements(offsetElements, existingElements, existingConnections);
+        if (crossConnections.length > 0) {
+          const store = useArchitectureStore.getState();
+          for (const conn of crossConnections) {
+            store.addConnection(conn);
+          }
+        }
+      }
+
+      // Sync elements with server (send offset positions + workspaceId)
       await architectureAPI.importN8n(projectId, {
-        elements: result.elements,
+        elements: offsetElements,
         connections: result.connections,
       });
-      // Reload from server to get canonical IDs
-      const [elemRes, connRes] = await Promise.all([
-        architectureAPI.getElements(projectId),
-        architectureAPI.getConnections(projectId),
-      ]);
-      setElements(elemRes.data.data || []);
-      setConnections(connRes.data.data || []);
+
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
@@ -302,6 +347,61 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                   </span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Workspace selection */}
+          {preview && (
+            <div className="space-y-3">
+              <label className="block text-xs font-medium text-[#94a3b8]">Import Target</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setImportMode('new_workspace')}
+                  className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
+                    importMode === 'new_workspace'
+                      ? 'border-[#f97316] bg-[#f97316]/10 text-white'
+                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                  }`}
+                >
+                  <Layers size={14} />
+                  New Workspace
+                </button>
+                <button
+                  onClick={() => setImportMode('merge')}
+                  disabled={allWorkspaces.length === 0}
+                  className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
+                    importMode === 'merge'
+                      ? 'border-[#f97316] bg-[#f97316]/10 text-white'
+                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                  } disabled:opacity-30`}
+                >
+                  <GitMerge size={14} />
+                  Merge into Existing
+                </button>
+              </div>
+
+              {importMode === 'new_workspace' && (
+                <input
+                  type="text"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  placeholder={file?.name?.replace(/\.json$/i, '') || 'Workspace name'}
+                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white placeholder:text-[#475569] outline-none focus:border-[#f97316] transition"
+                />
+              )}
+
+              {importMode === 'merge' && allWorkspaces.length > 0 && (
+                <select
+                  value={mergeTargetId}
+                  onChange={(e) => setMergeTargetId(e.target.value)}
+                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white outline-none focus:border-[#f97316] transition"
+                >
+                  <option value="">-- Select workspace --</option>
+                  {allWorkspaces.map((ws) => (
+                    <option key={ws.id} value={ws.id}>{ws.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 

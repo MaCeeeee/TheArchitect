@@ -9,6 +9,7 @@ import SecuritySection from './SecuritySection';
 import ApiKeysSection from './ApiKeysSection';
 import AccessibilitySection from './AccessibilitySection';
 import BillingSection from './BillingSection';
+import UsersSection from './UsersSection';
 
 const SECTION_MAP: Record<string, React.ComponentType> = {
   profile: ProfileSection,
@@ -19,6 +20,7 @@ const SECTION_MAP: Record<string, React.ComponentType> = {
   'api-keys': ApiKeysSection,
   accessibility: AccessibilitySection,
   billing: BillingSection,
+  users: UsersSection,
 };
 
 export default function SettingsPage() {

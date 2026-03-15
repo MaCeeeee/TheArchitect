@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, FolderOpen, Loader2, AlertCircle, X } from 'lucide-react';
+import { Plus, FolderOpen, Loader2, AlertCircle, X, Trash2 } from 'lucide-react';
 import { projectAPI } from '../../services/api';
+import { useArchitectureStore } from '../../stores/architectureStore';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 interface Project {
   _id: string;
@@ -23,7 +25,14 @@ export default function DashboardPage() {
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Delete confirmation
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
+    // Clear stale project data when returning to dashboard
+    useArchitectureStore.getState().clearProject();
+    useWorkspaceStore.getState().setWorkspaces([]);
     loadProjects();
   }, []);
 
@@ -38,6 +47,21 @@ export default function DashboardPage() {
       setError('Failed to load projects');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await projectAPI.delete(deleteTarget._id);
+      setDeleteTarget(null);
+      loadProjects();
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      setError('Failed to delete project');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -110,7 +134,7 @@ export default function DashboardPage() {
               <div
                 key={project._id}
                 onClick={() => navigate(`/project/${project._id}`)}
-                className="flex items-center gap-4 rounded-lg border border-[#334155] bg-[#1e293b] p-4 cursor-pointer hover:border-[#7c3aed] transition"
+                className="group flex items-center gap-4 rounded-lg border border-[#334155] bg-[#1e293b] p-4 cursor-pointer hover:border-[#7c3aed] transition"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#7c3aed]/20">
                   <FolderOpen size={20} className="text-[#7c3aed]" />
@@ -121,13 +145,57 @@ export default function DashboardPage() {
                     <p className="text-xs text-[#94a3b8] truncate">{project.description}</p>
                   )}
                 </div>
-                {project.updatedAt && (
-                  <span className="text-xs text-[#64748b] shrink-0">
-                    {new Date(project.updatedAt).toLocaleDateString()}
-                  </span>
-                )}
+                <div className="flex items-center gap-3 shrink-0">
+                  {project.updatedAt && (
+                    <span className="text-xs text-[#64748b]">
+                      {new Date(project.updatedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(project); }}
+                    className="p-1.5 rounded text-[#64748b] hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition"
+                    title="Delete project"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Delete confirmation dialog */}
+        {deleteTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="w-full max-w-sm rounded-xl border border-[#334155] bg-[#1e293b] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[#334155] px-5 py-4">
+                <h2 className="text-sm font-semibold text-white">Delete Project</h2>
+                <button onClick={() => setDeleteTarget(null)} className="text-[#94a3b8] hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-[#94a3b8]">
+                  Are you sure you want to delete <span className="text-white font-medium">"{deleteTarget.name}"</span>?
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-3 border-t border-[#334155] px-5 py-4">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  className="rounded-md px-4 py-2 text-xs text-[#94a3b8] hover:text-white transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-md bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50 transition"
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

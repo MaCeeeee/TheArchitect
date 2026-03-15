@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard,
+  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users,
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -13,8 +13,10 @@ const SECTIONS = [
   { id: 'api-keys', label: 'API Keys', icon: Key },
   { id: 'accessibility', label: 'Accessibility', icon: Accessibility },
   { id: 'billing', label: 'Billing', icon: CreditCard },
+  { id: 'users', label: 'Users', icon: Users },
 ] as const;
 
+const ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
 const BILLING_ROLES = ['chief_architect', 'enterprise_architect'];
 
 export default function SettingsSidebar() {
@@ -23,9 +25,11 @@ export default function SettingsSidebar() {
   const active = section || 'profile';
   const role = useAuthStore((s) => s.user?.role);
 
-  const visibleSections = SECTIONS.filter(
-    (s) => s.id !== 'billing' || BILLING_ROLES.includes(role || '')
-  );
+  const visibleSections = SECTIONS.filter((s) => {
+    if (s.id === 'billing') return BILLING_ROLES.includes(role || '');
+    if (s.id === 'users') return ADMIN_ROLES.includes(role || '');
+    return true;
+  });
 
   return (
     <nav className="w-56 shrink-0 border-r border-[#334155] bg-[#1e293b] p-4 space-y-1">

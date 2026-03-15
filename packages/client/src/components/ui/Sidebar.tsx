@@ -17,6 +17,7 @@ import ApprovalWorkflow from '../governance/ApprovalWorkflow';
 import AuditTrail from '../governance/AuditTrail';
 import PolicyManager from '../governance/PolicyManager';
 import ScenarioComparison from '../simulation/ScenarioComparison';
+import SimulationPanel from '../simulation/SimulationPanel';
 import CapacityPlanning from '../simulation/CapacityPlanning';
 import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
 import TemplateMarketplace from '../marketplace/TemplateMarketplace';
@@ -61,6 +62,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [showPalette, setShowPalette] = useState(false);
+  const projectId = useArchitectureStore((s) => s.projectId);
   const elements = useArchitectureStore((s) => s.elements);
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
   const toggleLayer = useArchitectureStore((s) => s.toggleLayer);
@@ -135,36 +137,46 @@ export default function Sidebar() {
 
       {sidebarPanel === 'explorer' && (
         <>
-          {/* Search */}
-          <div className="p-3">
-            <div className="flex items-center gap-2 rounded-md bg-[#0f172a] px-3 py-1.5">
-              <Search size={14} className="text-[#94a3b8]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search elements..."
-                className="flex-1 bg-transparent text-xs text-white placeholder:text-[#64748b] outline-none"
-              />
+          {!projectId ? (
+            <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+              <FolderTree size={32} className="text-[#334155] mb-3" />
+              <p className="text-sm font-medium text-[#64748b]">No project open</p>
+              <p className="text-xs text-[#475569] mt-1">Open a project from the dashboard to explore its architecture elements.</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Search */}
+              <div className="p-3">
+                <div className="flex items-center gap-2 rounded-md bg-[#0f172a] px-3 py-1.5">
+                  <Search size={14} className="text-[#94a3b8]" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search elements..."
+                    className="flex-1 bg-transparent text-xs text-white placeholder:text-[#64748b] outline-none"
+                  />
+                </div>
+              </div>
 
-          {/* Layer toggles & elements */}
-          <div className="flex-1 overflow-y-auto px-2">
-            {elementsByLayer.map((layer) => (
-              <LayerSection
-                key={layer.id}
-                layer={layer}
-                isVisible={visibleLayers.has(layer.id)}
-                onToggleVisibility={() => toggleLayer(layer.id)}
-                selectedElementId={selectedElementId}
-                onSelectElement={handleElementClick}
-              />
-            ))}
-          </div>
+              {/* Layer toggles & elements */}
+              <div className="flex-1 overflow-y-auto px-2">
+                {elementsByLayer.map((layer) => (
+                  <LayerSection
+                    key={layer.id}
+                    layer={layer}
+                    isVisible={visibleLayers.has(layer.id)}
+                    onToggleVisibility={() => toggleLayer(layer.id)}
+                    selectedElementId={selectedElementId}
+                    onSelectElement={handleElementClick}
+                  />
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Add element button + palette */}
-          <div className="border-t border-[#334155] p-3 relative">
+          {projectId && <div className="border-t border-[#334155] p-3 relative">
             {showPalette && (
               <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 max-h-64 overflow-y-auto rounded-lg border border-[#334155] bg-[#0f172a] shadow-xl">
                 <div className="flex items-center justify-between px-3 py-2 border-b border-[#334155]">
@@ -193,7 +205,7 @@ export default function Sidebar() {
               <Plus size={14} />
               Add Element
             </button>
-          </div>
+          </div>}
         </>
       )}
 
@@ -295,7 +307,7 @@ function AnalyticsPanel() {
         {tab === 'impact' && <ImpactAnalysis />}
         {tab === 'cost' && <CostOptimization />}
         {tab === 'monte' && <MonteCarloSimulation />}
-        {tab === 'scenario' && <ScenarioComparison />}
+        {tab === 'scenario' && <SimulationPanel />}
         {tab === 'capacity' && <CapacityPlanning />}
       </div>
     </div>

@@ -28,7 +28,7 @@ router.get('/users', async (_req: Request, res: Response) => {
 router.put('/users/:uid/role', requireRole('chief_architect'), async (req: Request, res: Response) => {
   try {
     const { role } = req.body;
-    const validRoles = ['chief_architect', 'enterprise_architect', 'data_architect', 'business_architect', 'viewer'];
+    const validRoles = ['chief_architect', 'enterprise_architect', 'solution_architect', 'data_architect', 'business_architect', 'analyst', 'viewer'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }

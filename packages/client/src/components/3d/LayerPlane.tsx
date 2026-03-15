@@ -9,6 +9,8 @@ interface LayerPlaneProps {
   label: string;
   yPosition: number;
   color: string;
+  offsetX?: number;
+  workspaceName?: string;
 }
 
 function computeLayerRiskLevel(
@@ -30,7 +32,7 @@ function computeLayerRiskLevel(
   return { avgRisk: totalRisk / layerElements.length, maxRisk, count: layerElements.length };
 }
 
-export default function LayerPlane({ layerId, label, yPosition, color }: LayerPlaneProps) {
+export default function LayerPlane({ layerId, label, yPosition, color, offsetX = 0, workspaceName }: LayerPlaneProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const xraySubView = useXRayStore((s) => s.subView);
@@ -58,7 +60,7 @@ export default function LayerPlane({ layerId, label, yPosition, color }: LayerPl
   }, [riskInfo]);
 
   return (
-    <group position={[0, yPosition, 0]}>
+    <group position={[offsetX, yPosition, 0]}>
       <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[30, 30]} />
         <meshStandardMaterial
@@ -78,6 +80,27 @@ export default function LayerPlane({ layerId, label, yPosition, color }: LayerPl
           opacity={riskInfo && riskInfo.avgRisk >= 5 ? 0.6 : 0.3}
         />
       </lineSegments>
+
+      {/* Workspace name label (shown on top layer only) */}
+      {workspaceName && (
+        <Html
+          position={[0, 0.3, -18]}
+          center
+          style={{
+            color: planeColor,
+            fontSize: '14px',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            pointerEvents: 'none',
+            opacity: 0.9,
+          }}
+        >
+          {workspaceName}
+        </Html>
+      )}
 
       {/* Layer label */}
       <Html

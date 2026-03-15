@@ -5,6 +5,7 @@ import axios from 'axios';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 
@@ -53,6 +54,9 @@ const CreateConnectionSchema = z.object({
 
 // All routes require authentication
 router.use(authenticate);
+
+// All routes with :projectId require project membership
+router.use('/:projectId', requireProjectAccess('viewer'));
 
 // Get all elements for a project
 router.get(
@@ -338,6 +342,7 @@ router.post(
             description: $description, layer: $layer, togafDomain: $togafDomain,
             maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
             posX: $posX, posY: $posY, posZ: $posZ,
+            workspaceId: $workspaceId,
             metadataJson: $metadataJson,
             createdAt: datetime(), updatedAt: datetime()
           })`,
@@ -355,6 +360,7 @@ router.post(
             posX: el.position3D?.x || 0,
             posY: el.position3D?.y || 0,
             posZ: el.position3D?.z || 0,
+            workspaceId: el.workspaceId || '',
             metadataJson: JSON.stringify(el.metadata || {}),
           }
         );
@@ -409,6 +415,7 @@ router.post(
             description: $description, layer: $layer, togafDomain: $togafDomain,
             maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
             posX: $posX, posY: $posY, posZ: $posZ,
+            workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'n8n',
             createdAt: datetime(), updatedAt: datetime()
           })`,
@@ -426,6 +433,7 @@ router.post(
             posX: el.position3D?.x || 0,
             posY: el.position3D?.y || 0,
             posZ: el.position3D?.z || 0,
+            workspaceId: el.workspaceId || '',
             metadataJson: JSON.stringify(el.metadata || {}),
           }
         );

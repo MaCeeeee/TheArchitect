@@ -9,8 +9,11 @@ import ContextMenu3D from './ContextMenu3D';
 import TransformationXRay from './TransformationXRay';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
+import WorkspaceBar from '../ui/WorkspaceBar';
+import Minimap from '../ui/Minimap';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
 
 const LAYER_CONFIG = [
   { id: 'strategy', label: 'Strategy', y: 12, color: '#ef4444' },
@@ -25,6 +28,7 @@ export default function Scene() {
   const clearSelection = useArchitectureStore((s) => s.clearSelection);
   const closeContextMenu = useArchitectureStore((s) => s.closeContextMenu);
   const isXRayActive = useXRayStore((s) => s.isActive);
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
 
   const handleCanvasClick = () => {
     clearSelection();
@@ -44,17 +48,22 @@ export default function Scene() {
           <directionalLight position={[10, 20, 10]} intensity={isXRayActive ? 0.5 : 0.8} castShadow />
           <pointLight position={[-10, 10, -10]} intensity={0.3} color="#7c3aed" />
 
-          {LAYER_CONFIG.map(
-            (layer) =>
-              visibleLayers.has(layer.id) && (
-                <LayerPlane
-                  key={layer.id}
-                  layerId={layer.id}
-                  label={layer.label}
-                  yPosition={layer.y}
-                  color={layer.color}
-                />
-              )
+          {/* Render layer planes per workspace (or once if no workspaces) */}
+          {(workspaces.length > 0 ? workspaces : [{ id: 'default', name: '', offsetX: 0 }]).map((ws) =>
+            LAYER_CONFIG.map(
+              (layer) =>
+                visibleLayers.has(layer.id) && (
+                  <LayerPlane
+                    key={`${ws.id}-${layer.id}`}
+                    layerId={layer.id}
+                    label={layer.label}
+                    yPosition={layer.y}
+                    color={layer.color}
+                    offsetX={ws.offsetX}
+                    workspaceName={layer.id === 'strategy' && workspaces.length > 1 ? ws.name : undefined}
+                  />
+                )
+            )
           )}
 
           <ArchitectureElements />
@@ -85,6 +94,12 @@ export default function Scene() {
 
       {/* Context menu overlay - hide in X-Ray mode */}
       {!isXRayActive && <ContextMenu3D />}
+
+      {/* Workspace navigation bar */}
+      {!isXRayActive && <WorkspaceBar />}
+
+      {/* Minimap */}
+      {!isXRayActive && workspaces.length > 1 && <Minimap />}
 
       {/* X-Ray HUD - rendered OUTSIDE Canvas so it stays fixed on screen */}
       {isXRayActive && <XRayHUD />}

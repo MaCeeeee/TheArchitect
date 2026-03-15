@@ -1,9 +1,13 @@
 export type UserRole =
   | 'chief_architect'
   | 'enterprise_architect'
+  | 'solution_architect'
   | 'data_architect'
   | 'business_architect'
+  | 'analyst'
   | 'viewer';
+
+export type ProjectRole = 'owner' | 'editor' | 'reviewer' | 'viewer';
 
 export interface User {
   id: string;
@@ -46,7 +50,7 @@ export interface Session {
 
 export interface Collaborator {
   userId: string;
-  role: UserRole;
+  role: ProjectRole;
   joinedAt: string;
 }
 
