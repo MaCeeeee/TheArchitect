@@ -1,22 +1,37 @@
-networks:
-  web:
-    external: true
-    name: traefik_web
-  internal:
-    driver: bridge
-
 volumes:
   neo4j_data:
   neo4j_logs:
   mongodb_data:
   redis_data:
   minio_data:
+  caddy_data:
+  caddy_config:
 
 services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
   app:
-    build: .
+    build:
+      context: /tmp/thearchitect-src
+      dockerfile: Dockerfile
+    image: thearchitect-app:latest
     container_name: thearchitect-app
     restart: unless-stopped
+    expose:
+      - "4000"
     environment:
       - NODE_ENV=production
       - PORT=4000
@@ -41,15 +56,11 @@ services:
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-claude-haiku-4-5-20251001}
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.thearchitect.rule=Host(`thearchitect.site`) || Host(`www.thearchitect.site`)
-      - traefik.http.routers.thearchitect.entrypoints=websecure
-      - traefik.http.routers.thearchitect.tls.certresolver=myresolver
-      - traefik.http.services.thearchitect.loadbalancer.server.port=4000
-    networks:
-      - web
-      - internal
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-TheArchitect <noreply@thearchitect.site>}
     depends_on:
       - mongodb
       - neo4j
@@ -66,8 +77,6 @@ services:
       - MONGO_INITDB_DATABASE=thearchitect
     volumes:
       - mongodb_data:/data/db
-    networks:
-      - internal
 
   neo4j:
     image: neo4j:5-community
@@ -79,8 +88,6 @@ services:
     volumes:
       - neo4j_data:/data
       - neo4j_logs:/logs
-    networks:
-      - internal
 
   redis:
     image: redis:7-alpine
@@ -89,8 +96,6 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    networks:
-      - internal
 
   minio:
     image: minio/minio:latest
@@ -102,5 +107,3 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
-    networks:
-      - internal
