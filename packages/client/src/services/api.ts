@@ -80,6 +80,11 @@ api.interceptors.response.use(
           isRefreshing = false;
         }
       }
+
+      // Generic 401 (invalid token, missing token, etc.) — logout and redirect
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
@@ -111,6 +116,12 @@ export const authAPI = {
 
   logout: () =>
     api.post('/auth/logout'),
+
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }),
+
+  resetPassword: (token: string, password: string) =>
+    api.post('/auth/reset-password', { token, password }),
 };
 
 // Project API

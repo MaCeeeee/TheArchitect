@@ -5,6 +5,7 @@ import { User } from '../models/User';
 // Types are extended via src/types/express.d.ts
 
 const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'thearchitect-dev-refresh-secret-change-in-production';
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
@@ -60,5 +61,13 @@ export function generateAccessToken(userId: string, role: string): string {
 }
 
 export function generateRefreshToken(userId: string, role: string): string {
-  return jwt.sign({ userId, role, type: 'refresh' }, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign({ userId, role, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+}
+
+export function verifyRefreshToken(token: string) {
+  return jwt.verify(token, JWT_REFRESH_SECRET) as {
+    userId: string;
+    role: string;
+    type: string;
+  };
 }

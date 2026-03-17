@@ -17,6 +17,8 @@ export interface IUser extends Document {
   permissions: string[];
   mfaEnabled: boolean;
   mfaSecret?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   oauthProviders: IOAuthProvider[];
   preferences: {
     theme: string;
@@ -55,6 +57,8 @@ const userSchema = new Schema<IUser>(
     permissions: [{ type: String }],
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
+    passwordResetToken: { type: String },
+    passwordResetExpires: { type: Date },
     oauthProviders: [
       {
         provider: { type: String, enum: ['google', 'github', 'microsoft'], required: true },

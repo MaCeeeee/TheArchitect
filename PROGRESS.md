@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-15
+> Letztes Update: 2026-03-16
 
 ---
 
@@ -390,6 +390,75 @@ Post-Implementation Usability Review Skill, der implementierte Features auf maxi
 
 ---
 
+## 8. HTTPS & Caddy Reverse Proxy
+
+### Problemstellung
+Die Seite `https://thearchitect.site` war nicht erreichbar. Die App lief auf dem VPS direkt auf Port 80 (`http://76.13.150.49`), aber es gab keinen HTTPS-Terminator. Die `docker-compose.prod.yml` referenzierte Traefik-Labels, aber kein Traefik-Container existierte auf dem VPS.
+
+### Status: ✅ Implementiert
+
+#### Diagnose
+
+| Problem | Status | Ergebnis |
+|---|---|---|
+| DNS `thearchitect.site` → `76.13.150.49` | ✅ Korrekt | A-Record zeigt auf VPS |
+| HTTP auf Port 80 | ✅ Funktionierte | App direkt auf Port 80 gemapped |
+| HTTPS auf Port 443 | ❌ Timeout | Kein Reverse Proxy, Port 443 geschlossen |
+| Traefik-Container | ❌ Fehlte | Nur App + DBs deployed, kein SSL-Terminator |
+
+#### Lösungsversuch 1: Traefik (gescheitert)
+
+| Schritt | Status | Ergebnis |
+|---|---|---|
+| Traefik via Hostinger API deployen | ✅ Container lief | Port 443 offen |
+| Traefik Docker-Provider Label-Discovery | ❌ | 404 auf alle Routen — Traefik erkannte App-Container nicht |
+| Verschiedene Netzwerk-Konfigurationen getestet | ❌ | Separate Networks, Default Network, `name:` Directive — nichts half |
+| **Fazit:** Traefik Docker-Socket-Provider inkompatibel mit Hostinger VPS | — | Wahrscheinlich Socket-Permissions oder Container-Isolation |
+
+#### Lösungsversuch 2: Caddy (erfolgreich)
+
+| Komponente | Status | Datei/Ort |
+|---|---|---|
+| Caddy 2 Alpine Container | ✅ | `docker-compose.yml` auf VPS |
+| Caddyfile (3 Zeilen) | ✅ | `/docker/thearchitect/Caddyfile` |
+| Let's Encrypt Zertifikat (auto-provisioned) | ✅ | Issuer: Let's Encrypt E7, gültig bis 2026-06-14 |
+| HTTP → HTTPS Redirect (308) | ✅ | Automatisch durch Caddy |
+| HTTP/2 + HTTP/3 (QUIC) | ✅ | `alt-svc: h3=":443"` |
+| App `CLIENT_URL` auf HTTPS umgestellt | ✅ | `CLIENT_URL=https://thearchitect.site` |
+| CORS Origin auf HTTPS | ✅ | `access-control-allow-origin: https://thearchitect.site` |
+
+#### Aktuelle Docker-Architektur auf VPS
+
+```
+Internet → Caddy (:80/:443) → App (:4000) → MongoDB/Neo4j/Redis/MinIO
+           ↑ SSL Termination      ↑ expose only
+           ↑ HTTP→HTTPS Redirect  ↑ kein Port-Mapping
+```
+
+| Container | Image | Funktion |
+|-----------|-------|----------|
+| `caddy` | `caddy:2-alpine` | Reverse Proxy, SSL, HTTP/2+3 |
+| `thearchitect-app` | `thearchitect-app:latest` | Node.js App (Port 4000 intern) |
+| `thearchitect-mongodb` | `mongo:7` | Dokumenten-DB |
+| `thearchitect-neo4j` | `neo4j:5-community` | Graph-DB |
+| `thearchitect-redis` | `redis:7-alpine` | Sessions/Cache |
+| `thearchitect-minio` | `minio/minio:latest` | Datei-Storage |
+
+#### Lessons Learned Skill
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `deploy-to-hostinger` Skill (10 Lessons Learned) | ✅ | `.agents/skills/deploy-to-hostinger/SKILL.md` |
+
+**Key Lessons:**
+1. Hostinger API `docker compose down` löscht auch Images — nur via SSH verwenden
+2. Traefik Docker-Provider funktioniert nicht auf Hostinger VPS — Caddy nutzen
+3. API-Aktionen können 10+ Min. hängen — SSH ist zuverlässiger
+4. Web-Terminal garbled lange Pastes — `tee` mit Heredoc nutzen
+5. Caddy: 3 Zeilen Caddyfile vs. Traefik: Labels + Docker-Socket + Netzwerk-Config
+
+---
+
 ## Bekannte offene Punkte
 
 1. **Workspace-Persistenz testen** — Fix implementiert, aber noch nicht live verifiziert.
@@ -399,7 +468,7 @@ Post-Implementation Usability Review Skill, der implementierte Features auf maxi
 5. **Cross-Architecture Connections serverseitig** — Shared Elements nur lokal, nicht auf dem Server persistiert.
 6. **Einladungssystem (Phase 5)** — E-Mail-Einladungen, zeitlich begrenzter Zugang für Berater — geplant, nicht implementiert.
 7. **Audit Trail UI (Phase 6)** — Admin Audit-Log Sektion mit Filtern — geplant, nicht implementiert.
-8. **Deployment** — Alle Änderungen sind lokal, nicht auf dem VPS deployed.
+8. ~~**Deployment**~~ — ✅ HTTPS via Caddy auf `thearchitect.site` live (2026-03-16).
 
 ### MiroFish — Geplante Phasen
 
@@ -418,6 +487,16 @@ Post-Implementation Usability Review Skill, der implementierte Features auf maxi
 - `packages/shared` — ✅ 0 TypeScript-Fehler
 - `packages/client` — ✅ 0 TypeScript-Fehler
 - `packages/server` — ✅ 0 TypeScript-Fehler
+
+---
+
+## Deployment-Status
+
+- **URL:** `https://thearchitect.site` — ✅ Live mit HTTPS
+- **VPS:** Hostinger KVM 2 (76.13.150.49), Ubuntu 24.04 + Docker
+- **Reverse Proxy:** Caddy 2 (Let's Encrypt, auto-renewal)
+- **SSL:** Let's Encrypt E7, gültig bis 2026-06-14
+- **Compose:** `/docker/thearchitect/docker-compose.yml` (6 Container)
 
 ---
 

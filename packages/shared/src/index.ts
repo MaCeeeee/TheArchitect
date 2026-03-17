@@ -5,3 +5,4 @@ export * from './types/api.types';
 export * from './types/settings.types';
 export * from './constants/togaf.constants';
 export * from './constants/permissions.constants';
+export * from './constants/password.constants';

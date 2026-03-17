@@ -1,12 +1,14 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import type { IUser } from '../models/User';
 import {
   authenticate,
   generateAccessToken,
   generateRefreshToken,
+  verifyRefreshToken,
 } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
@@ -19,6 +21,8 @@ import {
   exchangeMicrosoftCode,
   type OAuthProfile,
 } from '../services/oauth.service';
+import { isPasswordValid } from '@thearchitect/shared';
+import { sendPasswordResetEmail } from '../services/email.service';
 
 const router = Router();
 
@@ -32,8 +36,8 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
     }
-    if (password.length < 8) {
-      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    if (!isPasswordValid(password)) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character' });
     }
 
     const existing = await User.findOne({ email });
@@ -135,12 +139,11 @@ router.post('/mfa/verify', authLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'MFA token and code are required' });
     }
 
-    // Decode the pending MFA token
+    // Decode the pending MFA token (signed with access token secret)
     let decoded: { userId: string; role: string };
     try {
-      const jwt = await import('jsonwebtoken');
       const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
-      decoded = jwt.default.verify(mfaToken, JWT_SECRET) as { userId: string; role: string };
+      decoded = jwt.verify(mfaToken, JWT_SECRET) as { userId: string; role: string };
     } catch {
       return res.status(401).json({ error: 'Invalid or expired MFA token' });
     }
@@ -296,14 +299,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Refresh token required' });
     }
 
-    const jwt = await import('jsonwebtoken');
-    const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
-
-    const decoded = jwt.default.verify(refreshToken, JWT_SECRET) as {
-      userId: string;
-      role: string;
-      type: string;
-    };
+    const decoded = verifyRefreshToken(refreshToken);
 
     if (decoded.type !== 'refresh') {
       return res.status(401).json({ error: 'Invalid token type' });
@@ -347,6 +343,93 @@ router.post('/logout', authenticate, async (req: Request, res: Response) => {
     userAgent: req.get('user-agent') || '',
   });
   res.json({ success: true });
+});
+
+// ─── Forgot / Reset Password ─────────────────────────────────────────────────
+
+const forgotLimiter = rateLimit({ windowMs: 15 * 60_000, max: 5, name: 'forgot' });
+
+router.post('/forgot-password', forgotLimiter, async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Always return success to prevent email enumeration
+    const successMsg = { message: 'If an account exists with this email, a reset link has been sent.' };
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user || !user.passwordHash) {
+      return res.json(successMsg);
+    }
+
+    // Generate secure token, hash it for storage
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
+    user.passwordResetToken = hashedToken;
+    user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await user.save();
+
+    await sendPasswordResetEmail(user.email, rawToken);
+
+    await createAuditEntry({
+      userId: user._id.toString(),
+      action: 'password_reset_requested',
+      entityType: 'auth',
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    res.json(successMsg);
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: 'Failed to process request' });
+  }
+});
+
+router.post('/reset-password', authLimiter, async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+
+    if (!isPasswordValid(password)) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters and contain uppercase, lowercase, number, and special character' });
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    user.passwordHash = await bcrypt.hash(password, 12);
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save();
+
+    await createAuditEntry({
+      userId: user._id.toString(),
+      action: 'password_reset_completed',
+      entityType: 'auth',
+      riskLevel: 'high',
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    res.json({ message: 'Password has been reset successfully' });
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: 'Failed to reset password' });
+  }
 });
 
 // ─── OAuth SSO ───────────────────────────────────────────────────────────────
