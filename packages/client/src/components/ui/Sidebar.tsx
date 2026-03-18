@@ -28,7 +28,7 @@ const LAYER_CONFIG = [
   { id: 'business', label: 'Business', color: '#22c55e' },
   { id: 'information', label: 'Information', color: '#3b82f6' },
   { id: 'application', label: 'Application', color: '#f97316' },
-  { id: 'technology', label: 'Technology', color: '#a855f7' },
+  { id: 'technology', label: 'Technology', color: '#00ff41' },
 ];
 
 const ELEMENT_PALETTE: { type: string; label: string; layer: ArchitectureElement['layer']; togafDomain: ArchitectureElement['togafDomain'] }[] = [
@@ -110,9 +110,9 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-[#334155] bg-[#1e293b]">
+    <aside className="flex h-full w-64 flex-col border-r border-[#1a2a1a] bg-[#111111]">
       {/* Navigation tabs */}
-      <div className="flex border-b border-[#334155]">
+      <div className="flex border-b border-[#1a2a1a]">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
@@ -125,8 +125,8 @@ export default function Sidebar() {
             }}
             className={`flex-1 flex items-center justify-center p-2.5 transition ${
               sidebarPanel === item.id
-                ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
-                : 'text-[#94a3b8] hover:text-white'
+                ? 'text-[#00ff41] border-b-2 border-[#00ff41]'
+                : 'text-[#7a8a7a] hover:text-white'
             }`}
             title={item.label}
           >
@@ -139,22 +139,22 @@ export default function Sidebar() {
         <>
           {!projectId ? (
             <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-              <FolderTree size={32} className="text-[#334155] mb-3" />
-              <p className="text-sm font-medium text-[#64748b]">No project open</p>
-              <p className="text-xs text-[#475569] mt-1">Open a project from the dashboard to explore its architecture elements.</p>
+              <FolderTree size={32} className="text-[#1a2a1a] mb-3" />
+              <p className="text-sm font-medium text-[#4a5a4a]">No project open</p>
+              <p className="text-xs text-[#3a4a3a] mt-1">Open a project from the dashboard to explore its architecture elements.</p>
             </div>
           ) : (
             <>
               {/* Search */}
               <div className="p-3">
-                <div className="flex items-center gap-2 rounded-md bg-[#0f172a] px-3 py-1.5">
-                  <Search size={14} className="text-[#94a3b8]" />
+                <div className="flex items-center gap-2 rounded-md bg-[#0a0a0a] px-3 py-1.5">
+                  <Search size={14} className="text-[#7a8a7a]" />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search elements..."
-                    className="flex-1 bg-transparent text-xs text-white placeholder:text-[#64748b] outline-none"
+                    className="flex-1 bg-transparent text-xs text-white placeholder:text-[#4a5a4a] outline-none"
                   />
                 </div>
               </div>
@@ -176,12 +176,12 @@ export default function Sidebar() {
           )}
 
           {/* Add element button + palette */}
-          {projectId && <div className="border-t border-[#334155] p-3 relative">
+          {projectId && <div className="border-t border-[#1a2a1a] p-3 relative">
             {showPalette && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 max-h-64 overflow-y-auto rounded-lg border border-[#334155] bg-[#0f172a] shadow-xl">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-[#334155]">
+              <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 max-h-64 overflow-y-auto rounded-lg border border-[#1a2a1a] bg-[#0a0a0a] shadow-xl">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a1a]">
                   <span className="text-xs font-medium text-white">Add Element</span>
-                  <button onClick={() => setShowPalette(false)} className="text-[#94a3b8] hover:text-white">
+                  <button onClick={() => setShowPalette(false)} className="text-[#7a8a7a] hover:text-white">
                     <X size={14} />
                   </button>
                 </div>
@@ -189,18 +189,18 @@ export default function Sidebar() {
                   <button
                     key={item.type}
                     onClick={() => handleAddElement(item)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#1e293b] hover:text-white transition"
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[#7a8a7a] hover:bg-[#111111] hover:text-white transition"
                   >
                     <div className="h-2 w-2 rounded-full" style={{ backgroundColor: LAYER_CONFIG.find((l) => l.id === item.layer)?.color }} />
                     {item.label}
-                    <span className="ml-auto text-[10px] text-[#475569]">{item.layer}</span>
+                    <span className="ml-auto text-[10px] text-[#3a4a3a]">{item.layer}</span>
                   </button>
                 ))}
               </div>
             )}
             <button
               onClick={() => setShowPalette(!showPalette)}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed] px-3 py-2 text-xs font-medium text-white hover:bg-[#6d28d9] transition"
+              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#00ff41] px-3 py-2 text-xs font-medium text-black hover:bg-[#00cc33] transition"
             >
               <Plus size={14} />
               Add Element
@@ -257,15 +257,15 @@ function GovernancePanel() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex border-b border-[#334155]">
+      <div className="flex border-b border-[#1a2a1a]">
         {GOVERNANCE_TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 px-1 py-2 text-[10px] font-medium transition ${
               tab === t.id
-                ? 'text-white border-b-2 border-[#7c3aed]'
-                : 'text-[#64748b] hover:text-[#94a3b8]'
+                ? 'text-white border-b-2 border-[#00ff41]'
+                : 'text-[#4a5a4a] hover:text-[#7a8a7a]'
             }`}
           >
             {t.label}
@@ -287,15 +287,15 @@ function AnalyticsPanel() {
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="flex border-b border-[#334155]">
+      <div className="flex border-b border-[#1a2a1a]">
         {ANALYTICS_TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex-1 px-1 py-2 text-[10px] font-medium transition ${
               tab === t.id
-                ? 'text-white border-b-2 border-[#7c3aed]'
-                : 'text-[#64748b] hover:text-[#94a3b8]'
+                ? 'text-white border-b-2 border-[#00ff41]'
+                : 'text-[#4a5a4a] hover:text-[#7a8a7a]'
             }`}
           >
             {t.label}
@@ -327,14 +327,14 @@ function LayerSection({
 
   return (
     <div className="mb-1">
-      <div className="flex items-center gap-1 rounded px-1 py-1 hover:bg-[#0f172a]">
-        <button onClick={() => setIsOpen(!isOpen)} className="text-[#94a3b8]">
+      <div className="flex items-center gap-1 rounded px-1 py-1 hover:bg-[#0a0a0a]">
+        <button onClick={() => setIsOpen(!isOpen)} className="text-[#7a8a7a]">
           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </button>
         <div className="h-2 w-2 rounded-full" style={{ backgroundColor: layer.color }} />
-        <span className="flex-1 text-xs font-medium text-[#f1f5f9]">{layer.label}</span>
-        <span className="text-[10px] text-[#64748b] mr-1">{layer.elements.length}</span>
-        <button onClick={onToggleVisibility} className="text-[#94a3b8] hover:text-white">
+        <span className="flex-1 text-xs font-medium text-[#e0e0e0]">{layer.label}</span>
+        <span className="text-[10px] text-[#4a5a4a] mr-1">{layer.elements.length}</span>
+        <button onClick={onToggleVisibility} className="text-[#7a8a7a] hover:text-white">
           {isVisible ? <Eye size={12} /> : <EyeOff size={12} />}
         </button>
       </div>
@@ -347,8 +347,8 @@ function LayerSection({
               onClick={() => onSelectElement(el.id)}
               className={`flex w-full items-center gap-2 rounded px-2 py-1 text-xs transition ${
                 selectedElementId === el.id
-                  ? 'bg-[#7c3aed]/20 text-[#a78bfa]'
-                  : 'text-[#94a3b8] hover:bg-[#0f172a] hover:text-white'
+                  ? 'bg-[#00ff41]/20 text-[#33ff66] shadow-[0_0_10px_rgba(0,255,65,0.15)]'
+                  : 'text-[#7a8a7a] hover:bg-[#0a0a0a] hover:text-white'
               }`}
             >
               <span className="truncate">{el.name}</span>

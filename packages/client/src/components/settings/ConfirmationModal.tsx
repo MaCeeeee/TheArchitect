@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ConfirmationModalProps {
   title: string;
@@ -23,6 +24,7 @@ export default function ConfirmationModal({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const trapRef = useFocusTrap(true, onClose);
 
   const handleConfirm = async () => {
     if (requirePassword && !password) {
@@ -42,16 +44,16 @@ export default function ConfirmationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-md rounded-lg border border-[#334155] bg-[#1e293b] p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true" aria-label={title} ref={trapRef}>
+      <div className="w-full max-w-md rounded-lg border border-[#1a2a1a] bg-[#111111] p-6 shadow-xl animate-[scaleIn_200ms_ease-out]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white">
+          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-sm text-[#94a3b8] mb-4">{message}</p>
+        <p className="text-sm text-[#7a8a7a] mb-4">{message}</p>
 
         {requirePassword && (
           <input
@@ -59,7 +61,7 @@ export default function ConfirmationModal({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-sm text-white placeholder:text-[#64748b] outline-none focus:border-[#7c3aed] mb-4"
+            className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#4a5a4a] outline-none focus:border-[#00ff41] mb-4"
           />
         )}
 
@@ -68,7 +70,7 @@ export default function ConfirmationModal({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-md border border-[#334155] px-4 py-2 text-sm text-[#94a3b8] hover:text-white transition"
+            className="rounded-md border border-[#1a2a1a] px-4 py-2 text-sm text-[#7a8a7a] hover:text-white transition"
           >
             Cancel
           </button>
@@ -76,7 +78,7 @@ export default function ConfirmationModal({
             onClick={handleConfirm}
             disabled={loading}
             className={`rounded-md px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
-              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#7c3aed] hover:bg-[#6d28d9]'
+              danger ? 'bg-red-600 hover:bg-red-700' : 'bg-[#00ff41] hover:bg-[#00cc33]'
             }`}
           >
             {loading ? 'Processing...' : confirmLabel}

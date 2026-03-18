@@ -47,29 +47,29 @@ export default function RiskDashboard() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Shield size={14} className="text-[#ef4444]" />
           Risk Dashboard
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">Architecture risk assessment overview</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">Architecture risk assessment overview</p>
       </div>
 
       {/* Risk summary cards */}
       <div className="grid grid-cols-2 gap-2 p-3">
-        <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
+        <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
           <div className="flex items-center gap-1.5 mb-1">
-            <Activity size={12} className="text-[#94a3b8]" />
-            <span className="text-[10px] text-[#64748b]">Avg Risk Score</span>
+            <Activity size={12} className="text-[#7a8a7a]" />
+            <span className="text-[10px] text-[#4a5a4a]">Avg Risk Score</span>
           </div>
           <div className="text-lg font-bold" style={{ color: getRiskColor(riskData.average) }}>
             {riskData.average}
           </div>
         </div>
-        <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
+        <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
           <div className="flex items-center gap-1.5 mb-1">
             <AlertTriangle size={12} className="text-[#ef4444]" />
-            <span className="text-[10px] text-[#64748b]">Critical + High</span>
+            <span className="text-[10px] text-[#4a5a4a]">Critical + High</span>
           </div>
           <div className="text-lg font-bold text-[#ef4444]">{riskData.critical + riskData.high}</div>
         </div>
@@ -77,8 +77,8 @@ export default function RiskDashboard() {
 
       {/* Risk distribution bar */}
       <div className="px-3 pb-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Distribution</h4>
-        <div className="flex h-4 rounded-full overflow-hidden bg-[#0f172a]">
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Distribution</h4>
+        <div className="flex h-4 rounded-full overflow-hidden bg-[#0a0a0a]">
           {riskData.critical > 0 && (
             <div
               className="h-full bg-[#ef4444]"
@@ -117,20 +117,20 @@ export default function RiskDashboard() {
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-1">
               <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-              <span className="text-[9px] text-[#64748b]">{item.label}: {item.count}</span>
+              <span className="text-[9px] text-[#4a5a4a]">{item.label}: {item.count}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Top risks */}
-      <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2 flex items-center gap-1">
+      <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2 flex items-center gap-1">
           <TrendingDown size={10} /> Highest Risk Elements
         </h4>
         <div className="space-y-1.5">
           {riskData.elements.slice(0, 10).map((el) => (
-            <div key={el.id} className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
+            <div key={el.id} className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-white font-medium truncate flex-1">{el.name}</span>
                 <span
@@ -141,12 +141,12 @@ export default function RiskDashboard() {
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[9px] text-[#475569] capitalize">{el.type.replace(/_/g, ' ')}</span>
-                <span className="text-[9px] text-[#475569]">{el.outDegree} deps</span>
-                <span className="text-[9px] text-[#475569]">{el.inDegree} dependents</span>
+                <span className="text-[9px] text-[#3a4a3a] capitalize">{el.type.replace(/_/g, ' ')}</span>
+                <span className="text-[9px] text-[#3a4a3a]">{el.outDegree} deps</span>
+                <span className="text-[9px] text-[#3a4a3a]">{el.inDegree} dependents</span>
               </div>
               {/* Risk bar */}
-              <div className="mt-1.5 h-1 rounded-full bg-[#334155]">
+              <div className="mt-1.5 h-1 rounded-full bg-[#1a2a1a]">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -162,7 +162,7 @@ export default function RiskDashboard() {
 
       {elements.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#64748b] text-center">No elements to assess</p>
+          <p className="text-xs text-[#4a5a4a] text-center">No elements to assess</p>
         </div>
       )}
     </div>

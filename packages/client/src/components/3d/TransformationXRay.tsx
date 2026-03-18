@@ -50,7 +50,7 @@ export default function TransformationXRay() {
   return (
     <group>
       {/* Extra ambient light for X-Ray mode visibility */}
-      <ambientLight intensity={0.3} color="#7c3aed" />
+      <ambientLight intensity={0.3} color="#00ff41" />
       <pointLight position={[0, 25, 0]} intensity={0.4} color="#3b82f6" distance={60} />
 
       {/* Sub-view specific visuals */}

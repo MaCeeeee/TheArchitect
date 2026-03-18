@@ -1,0 +1,1040 @@
+{
+  "version": 1,
+  "skills": {
+    "accessibility-compliance": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "36d3b046163c42251732b3127c042f6b8eb7d91fcbf7ef9ae79fde79e9c99369"
+    },
+    "adapt": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "cc2a4e3b438553622819d2e02b996e67c6685a93de8974e3b4189c14a5414237"
+    },
+    "airflow-dag-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e9d046b8fe708e5f1c435d386b103b3033487b35dce36532871a47dc419e8886"
+    },
+    "algorithmic-art": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "5c2804e8f0d4944c7ce6939a2e4afdcf0cb69c966a505481ed8b96e20bb32eee"
+    },
+    "angular-migration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f9d81476e0f743d804aab855e978a88d135b4f7fefb0912733a94b95e8538fa7"
+    },
+    "animate": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "d9678700cc105ae1af98763fb4f85168ba398395d241aae336ef421836d9dd82"
+    },
+    "anti-reversing-techniques": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "dc780e541982b17178af7b8c7ae700b4f24d56c4dcede312d16220b08326a25d"
+    },
+    "api-design-principles": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3316239df2bdcb41e992857b8142e0239e6964564dd5d7224e470c2ab350a03c"
+    },
+    "architecture-decision-records": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "bffeafc71791924809ca9e24bfe3f18e87b2a060dbe5484468b4ff06c8e693b2"
+    },
+    "architecture-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b92f11750a7cf9a6e5fa005ff72b0ae4f6aa45adc684193537d82ecb6e4eefd8"
+    },
+    "async-python-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e2c6c594828cbbf4f0c181eedcf2bd39a2a49b4f087942b295faf36cdc88c423"
+    },
+    "attack-tree-construction": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1b3eb8844b681218b506727ad63d9849686a94b902ef323a2d9b3d5636fcf34e"
+    },
+    "audit": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "49cbdf9ca35de3c03d060363207d70fd40b6ec7390e67710887ca43976244b2c"
+    },
+    "auth-implementation-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d38d7eef32534d75370b72be089faee9f58e84a33b7273d601e42eb308017dfb"
+    },
+    "backtesting-frameworks": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d6a1704ca435018bd441ef4472e843bf6a2e9dbf3e8b75a0aae9c95e66efe7bd"
+    },
+    "bash-defensive-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "33de6a9e8260a7a5f772c5bf1e389b5207318a17a3a0a13160066c5e76a059d3"
+    },
+    "bats-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e6be7fe904eb3a20308f21c76cbdf96a4e5ac3c6ece8dc54c18023e97d1652d1"
+    },
+    "bazel-build-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b0a7a3f3c7051c10dea6a228a8585fb54422dc0a9746615dd27d7061f080b26d"
+    },
+    "billing-automation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2d496e36801e17d2ec2951859592b7fe5e80643c02384a98425672800389b282"
+    },
+    "binary-analysis-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f59bd6d2d34ffe42503dd2d33660d8a40a720f70a7bb0bca8d06aaca42db44a8"
+    },
+    "bolder": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "210d2d6c071512370613d3816ee58b256b0c5ea69f74b1363584059a8b2d3669"
+    },
+    "brainstorming": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "13b0b2aa645c340d54fb7e91d7ff5d1417a4d10c9d4c381b4b0fd629a6398155"
+    },
+    "brand-guidelines": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "4aa754f4f7fc54ac3e7f6e2fb55c0e2fb14b7d70da077b41a86bd1889ff9094c"
+    },
+    "canvas-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "a2fe47d24b3fd8e52faef731fff099c557e698083cd644b2e5695cc4dd8c7715"
+    },
+    "changelog-automation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "186f3db6c967bd19ff6ffeeb5d6cae84f7443cdae50835b57f61449a5696e7a4"
+    },
+    "ckm:banner-design": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "7bbf0f48704f5c40436e3466d7ef9bcbafe35a84eb8c3e9d0ab76408a57bac5c"
+    },
+    "ckm:brand": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "89c8579d232e6e14152a8b898d49eb94f59aa7288ed8ca103cd3b38cb082e00a"
+    },
+    "ckm:design": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "2020e511bb6fbc1dbc233d1da335ec7e8cb553d6e321d34cec4555efcc9ec8f1"
+    },
+    "ckm:design-system": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "49b8308dc428c66b0983f4b3d102c522c495f62538121064d1e82a040b1afd2c"
+    },
+    "ckm:slides": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "6d753831914ed6703b7222153f2710efc2f195f0ab24fd2119c76c2b6d1a6ba1"
+    },
+    "ckm:ui-styling": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "9ae38e4e201f338b6150e462b98a2db0f2ae7c180c77e8cfb1d33eba9d33bf33"
+    },
+    "clarify": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "848b37fa3e6445008d9a521930a539a9cf9bac254c0419f80f2757010d4d46db"
+    },
+    "claude-api": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "ae0442705d2ce9338f91fffafa423172abfa85c7c9b85f13dece6cdc9b1681cc"
+    },
+    "code-review-excellence": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0f585a4ad2f6d8353069ca9051c6f0e8865abb9d3a6a268d423784c3c3852962"
+    },
+    "colorize": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "c6ad8d7ae05771fee9232b72a16a42180e0e111c7372795f9009bf1cc52ccb95"
+    },
+    "competitive-landscape": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ccfb3bc9849d87ae88c7707cdc6b2be1d65e7d77a4c2e7107c123941bbcb8ca6"
+    },
+    "context-driven-development": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3c1f0ac51a407035a55d114fd621e4a078ee7764831f6d46be8865bf2fd5d5ef"
+    },
+    "cost-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b0b1d4e8aa01a3befa06323cf244497b62bbc450d8b96f8085187ac04a3de9d6"
+    },
+    "cqrs-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e5cc10b9f389e4744069b7f455923d59ffa56a7fa07d2b8488a5b1ec86d5f305"
+    },
+    "critique": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "d1498e1b023ab9df934905b5e7ad0979bfee47d81bca174364c7889f7190013a"
+    },
+    "data-quality-frameworks": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "69d0a5c31b68a336c5a6d8f23f98637dd9ba51fbbe56317650910bbe8b26f833"
+    },
+    "data-storytelling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "eca30a8c6e0931beb9688484381eae2864358158edf6bfed1072927d2b2ff582"
+    },
+    "database-migration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "535c07f27fc92339bd3e1c4c9eb1a3e1d129180358fb78915df5933ea361c383"
+    },
+    "dbt-transformation-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9b0374786cb8db1c5dda878681bc953e97d5d200b33d2b06ace9ac13db1270e9"
+    },
+    "debugging-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4946473a374cc2caf51871e51e40051025703517bb578ce9b01b6cadf72a0c0e"
+    },
+    "defi-protocol-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "bfb56b8fd2ee13a0407c4832d074f334588b5164696b6d56257eadea47d3a98a"
+    },
+    "delight": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "629c6efc3d12ab63bdadcf6674aa2a56f12848242c619f00b8f54f0f468bf928"
+    },
+    "dependency-upgrade": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "48ee1ca8e94666736fe6f39723f091dca3b26487e9da4bd933cd3a8b3951ac46"
+    },
+    "deploy-to-vercel": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "d2b5bcc7c09fdb649129ffc7dd7b647ec1b155736974b974292675afd588cb39"
+    },
+    "deployment-pipeline-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c7dddefd50c9904a883b7471fb64b7b129e976d5d3c6066b3545cac13a324d16"
+    },
+    "design-system-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5f8c9b187e77fcb31db78da2f7b55f905dcd2357454624cac93f00c766ace346"
+    },
+    "dispatching-parallel-agents": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "e21044ae7496fc285f1df9ff3fb518a3a20bea6f5216c1f59f4987e12c769a0a"
+    },
+    "distill": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "4fb24ad0ca7e75497cc25d98cf1de636a1acbbe0da919c75daab846ec63ba305"
+    },
+    "distributed-tracing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "00107a1bfd2f4b0d09fbf76a87c779d92ee74bbdc3936b2d283461824e6cfd91"
+    },
+    "doc-coauthoring": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b964e4c3ffe13f66f76dd7919073e60c7aec622cd8a8363bb36323188100cf8e"
+    },
+    "docx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "6962db07127ee540a56e4677f65576d0727668a1d67f7da8bc978f10791c2bfe"
+    },
+    "dotnet-backend-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b9af7afad1aba77bf12adfc523062292b11f629de5c4595a68ae0bb2103f0a28"
+    },
+    "e2e-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "37ea37e42a81c926ebd81924691a15fb657df7c8a52b863c34967e5ab99cdc22"
+    },
+    "embedding-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "69fb6c7c234d1d643dc840d4dfde524e32ee7f00ff586126326a9072354f4088"
+    },
+    "employment-contract-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "95e8a53af543b4af65dc74efd85bce3fad97877908f1b7d44de2f52b92abcd9e"
+    },
+    "error-handling-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "824c53fa080765f05862d3ec0ef829aaff9f8d544f9de0039b8fcafa6bc1a899"
+    },
+    "event-store-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "702c669f452ef05dd5e4b00f65473889d91d23faaa689a5139d223e2f0467a0a"
+    },
+    "executing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "2f709d1a2c7564f8ce6a9bb707e7f5451117ba80f8e8e2302662c29bc61246a6"
+    },
+    "extract": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "b01b8be227a2a094e4b65f340c5a767bdbfd27d8bf2ccee4f75c203e44a5a592"
+    },
+    "fastapi-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8fdfb9bad6aef892b4f16ef3b07ef5eea3b0497d37eeaeddb07244d657cc8711"
+    },
+    "finishing-a-development-branch": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "9edba9a38684c060fdc38290f640e1dc0c37de286723ac9be73bacacf7cd6f3d"
+    },
+    "frontend-design": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "5316f00e012e2d4a81f996adda009b6862a6684af4f6eef3f46a69f456121c6a"
+    },
+    "gdpr-data-handling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "168cc9708309cdecdbb7f618ab564d2897efc65715abc472a77265479e517c50"
+    },
+    "git-advanced-workflows": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c42c3059154889e4f80818407c6634197eefe87dc752d6a0cad8cfc2391550bb"
+    },
+    "github-actions-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8604814828637308a8cdc45c53e647f0029395328184937312330e4b8e8c587f"
+    },
+    "gitlab-ci-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3491c468d0bf90ddf274a41a0a62539f6ce17cbcce0d5a9f268f24065f565d72"
+    },
+    "gitops-workflow": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e8df22024090440fce624e6a99faca4b66aa267a428b5a63a0c0416fa4eb2629"
+    },
+    "go-concurrency-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3d1d2b19d6ab828573dbab1f614519901a9925cc20938ca98a6f807d6548bfed"
+    },
+    "godot-gdscript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3dbda48b5d5a2724aea04903db84f2fb76d6979c9f9a3e73932c6ae10f4505e1"
+    },
+    "grafana-dashboards": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e9b692daf06faf96fa28b2b98f50b362e68b974db5ab503963a610c719cda79b"
+    },
+    "harden": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "69cecc4f28fb2f140652669bd45cc492744ad5c3c45083f5e0be5b0a5ef8acd0"
+    },
+    "helm-chart-scaffolding": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "227baa46e7fcf59448b7f670ba504a0dbd6ae0e5d80338c066037e01b2b15755"
+    },
+    "hybrid-cloud-networking": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "5f187c89dcc77d6c2da1a0368ebeb4b61128232053c70c4c4063fcacfc31353a"
+    },
+    "hybrid-search-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "6154f05d5f388612f0fa19fa7b3d2b1c03bcf5e7d968641df118f09cb9c14f72"
+    },
+    "incident-runbook-templates": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "6f57be2635c18509c6f1e36ec8175d69f5fecd50c6356332935a568f13fbd820"
+    },
+    "interaction-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1fac9a5aff8463e98b935a0a1b48452d71afcfa50a3bc4b7af9510bfdd8a1731"
+    },
+    "internal-comms": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b36b333bee983462008af46d74689ae5832c2f79ae5f2c18680ee82f6e6bef56"
+    },
+    "istio-traffic-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "188b7478edfd2166f1c4af24550aa9ca5dc93e90f4b1469d56cb1760e93ee6e2"
+    },
+    "javascript-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d101563edd4d9c61c11eb75e583862e47babd497c442924c6ac757052477f76e"
+    },
+    "k8s-manifest-generator": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "64ded08ae46246e5d7b34840d45ecb762d63a28740e03dd6f09db1d8fb136276"
+    },
+    "k8s-security-policies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "47d2fe175423c7bc4f26019b3acf0ea7d3f37159172a217466c50b8d1b83cbb4"
+    },
+    "kpi-dashboard-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "794d224f736d59551566cd604fc528b6cc1d638569652829b4b0a9b7ee6d7b24"
+    },
+    "langchain-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8bcb9750c6e564da50f8a6b4e8a9b60030a48a1323e5dee64c37469d3192c683"
+    },
+    "linkerd-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "30707431b0d9fde5be78fa47da0dad8c782e742adeeb4e10986e27e1ddddae0a"
+    },
+    "llm-evaluation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e6ecef1dfafd90f7aed14b1ef54c4ced5c84183416e36b03bcb657e3fe8f5098"
+    },
+    "market-sizing-analysis": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "6057683d7b0ef54bae41abc81fd987760a83242b2c346047a458e1d7ef94d345"
+    },
+    "mcp-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "fc68038c900eb801f73ff96130c9f9dba533cc94212ed8435833242f196dedcf"
+    },
+    "memory-forensics": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "082e9e851d3870b91116dbd6e13368b31de183807e5b1be8a155c63bdda5c77b"
+    },
+    "memory-safety-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "69876e154d9fc72702a0844ee944b1bba4f05d2d4c247ae1248d247d3190b162"
+    },
+    "microservices-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ad3f082b4d343294249d4407f1019d98004d659c5d1b4a1bd5feb5ee0378589e"
+    },
+    "ml-pipeline-workflow": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fe1d420e796cfbe9a1cb0134cf2615d9fc78f4fae82d1c4faaea9b6e18313040"
+    },
+    "mobile-android-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0dfa08663016e0faa2db0611420bd5c17ba2d635a057e17a6b71c2a0c3f2ed79"
+    },
+    "mobile-ios-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3902f919488d8ddc983e157bbcd5f16b739b84eeaab57002bf52b7f9601ed6ad"
+    },
+    "modern-javascript-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d70f1ca67d23cc2c1e0bd3191a1da3875394316dfa87c4871370face4265a0ad"
+    },
+    "monorepo-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "082be44c6320ce348b19c33f08f527ad604eed2da48f92e8c7010e206d5450cd"
+    },
+    "mtls-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7d935c889837f6ea2337edf1bee0283f8d520524429eeeddb70a97c602abdcc6"
+    },
+    "multi-cloud-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "622045104622c547e42414b73c017ebb6463202fcc2ecf097fe0fb0ba1c4c04d"
+    },
+    "multi-reviewer-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9e2f76e06a3a0d4e76b4955469b9ca65951a1f0229c39ec961b1e8ff8a03a31e"
+    },
+    "nextjs-app-router-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d2f0a7065f7418fdb3ae88559f1f1426f40c26f2b5aebcd394797418d4bb3b04"
+    },
+    "nft-standards": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c883a841507a4fb8e6eb0dbf802c98a613ebc92a9aae2a581e459700577953e6"
+    },
+    "nodejs-backend-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c47fd9547c1b847b9fc11ebf7832f955bf81e62bff097b607d1497be8722e226"
+    },
+    "normalize": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "a2d2c28085b46b1b0a97aa4133a4df5fec9cf77a7c3cef275b901065e11bc080"
+    },
+    "nx-workspace-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c998c269c46455ad2bd9a1b61fb7db9ced887ddca40c2f3e54a610c6d9f9b09c"
+    },
+    "on-call-handoff-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c9cbd26470de8468be9378257b2f04c000929c4ad068421b56bff397ea0f5496"
+    },
+    "onboard": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "a6d7f5c09cb2828e622fbb8fa1467bc70b041519ffed2198d9de627325d97b66"
+    },
+    "openapi-spec-generation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8f7638e66dfc477e490ebd6e3199ee2bd2bbbce568e75124a2d578f75187906b"
+    },
+    "optimize": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "278796e7d0b6febea9a53705f741f47d473cc4725684a5e0bd75fd4a99791b1c"
+    },
+    "parallel-debugging": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f3ecac29dca6b28b0fb32a22b37f80a0e3ec3fd7dd1e7ebf869095f9a9b996b8"
+    },
+    "parallel-feature-development": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4ad12905237c5b7d7430766201c3cd37a99671786207b73613dd940fb7ac7470"
+    },
+    "paypal-integration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "878a5bf72335496ec60ec1d24964bc9829b5a9d6ec9c97447c257704703b91ff"
+    },
+    "pci-compliance": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8568ca52c38a6c0ba59214c83f651737d1f362557fda014b5a7cf15ffe848bcf"
+    },
+    "pdf": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "cfbc539377088ca7e44a813b30c306327385bbd973cd7a721e1743f60837dd62"
+    },
+    "polish": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "72c2426ac9540884eb5032bb438324bb344d0e2dd2b80f300a9fb49fe38d624e"
+    },
+    "postgresql-table-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0728424e6f56972333bd60e4f45da0322ac6db273744d863aa2b94f1e95d61ec"
+    },
+    "postmortem-writing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7f6acc1b040295456eaab0bf26e4f0710cd6bae40f3ee236dac4b4a763115818"
+    },
+    "pptx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "6b8b859d26f93aa059c9870d1ab76b44ab69e3d6757ce4a03cc94cb760888073"
+    },
+    "projection-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "578b6c555930a8a1670a59743c37da06668ca5191c0f43aa24b597545cfb6c7b"
+    },
+    "prometheus-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0731ebfe9c14a68e50e5ec852dad8e732545afb73d192fb452b816f865dc5571"
+    },
+    "prompt-engineering-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "53ca5b03a78c3d0c8117eaf330b73d83d06ed0d66789490ca8a263ce92849d22"
+    },
+    "protocol-reverse-engineering": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9937cd621efd79a150ee15df6b6532fd08688b09484989466845b692271dd7ac"
+    },
+    "python-anti-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1f9a75f8f8bfb4baeced54c254f29301f2fa162b8befc92b509fd27d10f0eba6"
+    },
+    "python-background-jobs": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fad6a58871cfac542c5fd457585cf42f65cd64b6cff81ff52f9bd0b4e3f8e36a"
+    },
+    "python-code-style": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "35ed0c437f33462187b0a89da8e5bfe9ac259dbc8731257c5445f1a5e1229acf"
+    },
+    "python-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "a7b8fa332a3550fac69fcca491f75d61ce879fbc1274454c9be729b1462f8406"
+    },
+    "python-design-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b70500bae0d16740d8a359be63c4645a0ab0f9b839d11d181c45d20958313698"
+    },
+    "python-error-handling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "05d1fd2762d38e6afac8533e28554038e27fc8620b2df63f1e806de3c4d77fe3"
+    },
+    "python-observability": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2c0db2a638bf3145be591f085d17b98d62d204e5f674c305070def055c779068"
+    },
+    "python-packaging": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d58fd1575049f188e50b6a73c44ecb6a11bb044ea9bf0bd4d4315bd9a2734cef"
+    },
+    "python-performance-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2a11c79dcd94b5424261b44247ab03a8365cbe62f05f9b52500211db8fda98f9"
+    },
+    "python-project-structure": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2f4f560964af8ecad4d54666c044baa54671d0abd1136c848b539befe24db170"
+    },
+    "python-resilience": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2f109425df447de4618fed93808ecea89e037c07ab1d2676cf7349d0d320c885"
+    },
+    "python-resource-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "74e97b123578f66e6c333ca930bcd0d623bb508ccca693b114b630cb2596365e"
+    },
+    "python-testing-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "c9ac74e0ecade3d4aacc89b8eb9eec63d9125a3a02e4bac9781ae0ca371227ad"
+    },
+    "python-type-safety": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f011d9018935ae01209f30c0a0f9d2f15f3058867baeb7a8c820bc54c8394645"
+    },
+    "quieter": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "139b3e3c9d43b79b4e6ccffaeb874265bc916d7d90662950e9f05581d6e0c06a"
+    },
+    "rag-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fcf8874b44501e34362a3c31e231f922f3ea1376c8afaf92e8550f88287e1ca2"
+    },
+    "react-modernization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "11facc88acf2a1920b9b77d88e7efa109a00577dbf37d1adefca549eb3244d6c"
+    },
+    "react-native-architecture": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f9a0f18d522b307981b6f188b8501c9c9326adeb8aca5b46b679731dc69681ae"
+    },
+    "react-native-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "f75e8c7bd9ffd77a29b74eece63806ff87f8723c30744c5cb90f8baab388d18e"
+    },
+    "react-state-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7c63f9bf6ce2e2884b2da61e899a2701068b53ef6e87fc29e3c04a199e3092cb"
+    },
+    "receiving-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "2760c85d4f4117b0006e7ba755f4bbd61f8f4c185f347999763c97f507274e30"
+    },
+    "requesting-code-review": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "246e65cd72a7e360987d94e6c61564ce6d71c6361d1784d529d70e4cbbe8522d"
+    },
+    "responsive-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0977c17696ab66ea613ce5b83c856bc7cd01332d98ae237dac7539840fe96187"
+    },
+    "risk-metrics-calculation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "8f1b5209ae3880297eaac5f7b438c3bf9eee0363d5bdefd1a1b8d324142f060e"
+    },
+    "rust-async-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1e68b5edfa95069e54af75acf2a34634a5d0266021fa4af3b9706eaec5b6207e"
+    },
+    "saga-orchestration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "328bb47ac47b40c97cd313740050e78b177dee94f42a958c904ffdc9c48ed217"
+    },
+    "sast-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "1798dca8633f65696ce5e9ccac1f0ca1bb811d820da7b17f34514f43b181ec72"
+    },
+    "screen-reader-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9cb1ea131a4b36edd54f42a6995a8b93bac2b08a9cf56be9d2397d6f98b479d0"
+    },
+    "secrets-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3260008952025bac99ba56ab53eba990dd6a520d6f93960e0471dc777d6d2d79"
+    },
+    "security-requirement-extraction": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "58355374dea00ec5a732711a0586adb06ca6d1ef148e6ca16950e4e0a0a9643e"
+    },
+    "service-mesh-observability": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "df9c95d37d8a7bffb8e19152912e7a8cd317ddd9bf3279739b01f881dfebeb74"
+    },
+    "shellcheck-configuration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9da2f34ada78a603bb2f611602af6f351d3dfe84e9bb73d6f800acab76ecd5aa"
+    },
+    "similarity-search-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3f057d0714eb6685f95c72046732b368ee1e77f5252d14102c69a4c3b376a475"
+    },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "b122f4d1e91aa1d83027e050b5b37c3156203ee85458d7b1360bc48167c9e02a"
+    },
+    "slack-gif-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "146d0f407e3f04aac0378b74bb238833b24bbd5e6387b932e82cfbf228f219b4"
+    },
+    "slo-implementation": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "42401f6f1039dcf20db7c872135632ed7725a4dbdfa840e03d72c51eae7ae0b1"
+    },
+    "solidity-security": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "6e5da171c220c6e8b8abae8e31c77f532812d6739d597f6f4a043ca2b7044f1e"
+    },
+    "spark-optimization": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "64a08e0fd03ec1aed2d589eb6dad6fcc42fd9d9b09c9ffaa116ca2f9f0a70785"
+    },
+    "sql-optimization-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "53d0e34ed28c0cb9d9829d37e9fc9dd49bbfbbfce6f7c68f88a45c2cb34b9f60"
+    },
+    "startup-financial-modeling": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "30cb6bb2c58dbecbea2d41d3a808e7c66d5d213ff300e3aa7d257e7d0ac61a5d"
+    },
+    "startup-metrics-framework": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9304b61f87e8269998928064dee8704419e853b651bde4d2b36b986b66b6c018"
+    },
+    "stride-analysis-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7839fabcde6da18aff8a30677fbbdf31a856e2474f746d02d193de7d63dd4e51"
+    },
+    "stripe-integration": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "2ea87d17f71bbc8fb206af2e90d8345c9a978ee36c7874bcccdb0fdd8cdd745c"
+    },
+    "subagent-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "a197f8e5fba5ea59013e1adbaa90dd42db35de8f074feca200c8038de584a83b"
+    },
+    "systematic-debugging": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "72e9ab72627e4fd8ed26a582e82309a98ecdc4f6e1c99418430ac05682c9e91d"
+    },
+    "tailwind-design-system": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7ff2f4650597e98ca4cd8f01231fb432ab4d187d6b12e641485aa871a04448cc"
+    },
+    "task-coordination-strategies": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "ed4d1652bdc81a055e2ab2e13bf288836c3a6174009d9a780e4dd4b4be42d1ae"
+    },
+    "teach-impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "computedHash": "61855594bf79bc5b2665cfca3580b93840cfe645872c5a2deeaa5ad336570d5a"
+    },
+    "team-communication-protocols": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "4d516f704f962e8731ba905b2505c313cae9442e9baf8528d0409481df051be5"
+    },
+    "team-composition-analysis": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "54aa90e61d7e0d80093d34d794c6e2708081714b7881ab2c5ac10dfef436c564"
+    },
+    "team-composition-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fa13c60eb0c26da5a8f169182718261074c876c6d51b5dd8215a3de768841f4c"
+    },
+    "template-skill": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "38c88f722b574a922311d334a70c2008a2a5b896f06eaa75516d716e5725b26f"
+    },
+    "temporal-python-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "749b486daa5a8c68d33dff3e3fbc523cec2728db729bdd9366f2c8bcabc8f992"
+    },
+    "terraform-module-library": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "06b1fc009e4a7d26160a6fa2838b43218f40f8ef481cd89714245d5a67244b6e"
+    },
+    "test-driven-development": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "126f1ebf6ccd414f42544f6e83d8cc5adb089e1108eaffb7c400701e37eecd9f"
+    },
+    "theme-factory": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "93e78aa44f8fa00bb2c0608f400de1e1dcd6494611dd8ea27c867654240c7bcd"
+    },
+    "threat-mitigation-mapping": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "b2d4ee1f9b75989778a4206a91355e45addda2eba8dbc97a5e1874701fc791d3"
+    },
+    "track-management": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "7f086653348bd02f86992a189c8fe78bede343cea1724a7c2ea701e6a4d76b04"
+    },
+    "turborepo-caching": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e0891d5543574b98be4224ce970b4b08507e3b61a4444cd6db9eee2fc79570ca"
+    },
+    "typescript-advanced-types": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "3a3be8c925f96ac4e1280db28a01677e7ca5197f3792de2bbf35ab3bb324b6dd"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "computedHash": "0a413bf988d06481f69bb81df2070741c3ba12dd9f1be2706d57f259c905992d"
+    },
+    "unity-ecs-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "e67fd60e82074a1a2882774b05c8938111c4b1b370eecc6698e6adb7787ae928"
+    },
+    "using-git-worktrees": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "52bbb4b6e80918e83e92a1514f3b3757712154c2a8a42de24919e48a794c54fc"
+    },
+    "using-superpowers": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "5ed84a512f8664cc440ff26b19a0087eae6b2979e9e79cb26366b7f7b134e758"
+    },
+    "uv-package-manager": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "87a2e612ac3d006670060bec64939b667bed40bb1ed5e6012ba1cc80307020ab"
+    },
+    "vector-index-tuning": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "fa395b1b6e013871422e9fc00373438862de494cd036b834f2a027369c7616f5"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "afeca00ac2f492d88fdd010e73d91719a5b57c564bb4a73325b0bd77e11323ab"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "2e9088a7333666d8c2833b8ff58bd51b955501c42b4c7244f72b4cbf22dafcc4"
+    },
+    "verification-before-completion": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "9b446f0c7fe1cfb560b1d34439523b1a76d5f177290007b2c053a1c749a4a8ba"
+    },
+    "visual-design-foundations": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "9f0f44bd206036f17f69cf78f3f3b5f9c0e0118672574ffd35c4c34c3d574d16"
+    },
+    "wcag-audit-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "df495bdd3466d293e019fa191422d0a3e6cb9c50f275189a70d9da25add075ac"
+    },
+    "web-artifacts-builder": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "143730c6db11d82d8c5db4d0cf8f435421983f1fc510b24f77ee9a0e8bae7704"
+    },
+    "web-component-design": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "784a5a753400c54579a62974bdd867c6455555d1a7f806de8483ea5da899d154"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "web3-testing": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "0ce43e3b74391be7e8a8ccdccc7b2c3a686052aedeb5612d8bffcbf93ac6c722"
+    },
+    "webapp-testing": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "cf8e5916d474886bd67b09691247f43f331523008b7d366064bc607ab42d6302"
+    },
+    "workflow-orchestration-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "d12e6620618a62f76928b3eadc24720953581ea47700fe92ba07aa511e338617"
+    },
+    "workflow-patterns": {
+      "source": "wshobson/agents",
+      "sourceType": "github",
+      "computedHash": "55e043c64a3b5255da0818d9723730d64a23c359744da56983edc7c1a1a4c628"
+    },
+    "writing-plans": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "9f61b9b7da1eabc3254d7d0dc079c2a7512c26a42d26e9aca598f0355ecf1dee"
+    },
+    "writing-skills": {
+      "source": "obra/superpowers",
+      "sourceType": "github",
+      "computedHash": "7cd0c064b5a62ffdc9cfff539a7b4d8d4a7792c8f0d544436bea021f08632e7b"
+    },
+    "xlsx": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "computedHash": "efd0c8011cf0677d8075cf93867ecec804f9a8754a777e1d2fdb46197e9c247f"
+    }
+  }
+}

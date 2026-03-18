@@ -20,7 +20,7 @@ const LAYER_CONFIG = [
   { id: 'business', label: 'Business', y: 8, color: '#22c55e' },
   { id: 'information', label: 'Information / Application', y: 4, color: '#3b82f6' },
   { id: 'application', label: 'Application', y: 0, color: '#f97316' },
-  { id: 'technology', label: 'Technology', y: -4, color: '#a855f7' },
+  { id: 'technology', label: 'Technology', y: -4, color: '#00ff41' },
 ] as const;
 
 export default function Scene() {
@@ -40,13 +40,13 @@ export default function Scene() {
       <Canvas
         camera={{ position: [20, 15, 20], fov: 60, near: 0.1, far: 1000 }}
         gl={{ antialias: true, alpha: false }}
-        style={{ background: isXRayActive ? '#080e1a' : '#0f172a' }}
+        style={{ background: isXRayActive ? '#080e1a' : '#0a0a0a' }}
         onPointerMissed={handleCanvasClick}
       >
         <Suspense fallback={null}>
           <ambientLight intensity={isXRayActive ? 0.25 : 0.4} />
           <directionalLight position={[10, 20, 10]} intensity={isXRayActive ? 0.5 : 0.8} castShadow />
-          <pointLight position={[-10, 10, -10]} intensity={0.3} color="#7c3aed" />
+          <pointLight position={[-10, 10, -10]} intensity={0.3} color="#00ff41" />
 
           {/* Render layer planes per workspace (or once if no workspaces) */}
           {(workspaces.length > 0 ? workspaces : [{ id: 'default', name: '', offsetX: 0 }]).map((ws) =>
@@ -79,10 +79,10 @@ export default function Scene() {
             position={[0, -6, 0]}
             cellSize={1}
             cellThickness={isXRayActive ? 0.2 : 0.5}
-            cellColor={isXRayActive ? '#0f172a' : '#1e293b'}
+            cellColor={isXRayActive ? '#0a0a0a' : '#111111'}
             sectionSize={5}
             sectionThickness={isXRayActive ? 0.3 : 1}
-            sectionColor={isXRayActive ? '#1e293b' : '#334155'}
+            sectionColor={isXRayActive ? '#111111' : '#1a2a1a'}
             fadeDistance={50}
             infiniteGrid
           />

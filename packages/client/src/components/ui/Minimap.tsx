@@ -21,8 +21,8 @@ export default function Minimap() {
   };
 
   return (
-    <div className="absolute bottom-4 right-4 z-30 rounded-lg border border-[#334155] bg-[#1e293b]/90 backdrop-blur-sm p-3 shadow-xl">
-      <div className="text-[9px] text-[#64748b] uppercase tracking-wider mb-2 font-medium">
+    <div className="absolute bottom-4 right-4 z-30 rounded-lg border border-[#1a2a1a] bg-[#111111]/90 backdrop-blur-sm p-3 shadow-xl">
+      <div className="text-[9px] text-[#4a5a4a] uppercase tracking-wider mb-2 font-medium">
         Workspaces
       </div>
       <div className="relative" style={{ width: 180, height: 60 }}>

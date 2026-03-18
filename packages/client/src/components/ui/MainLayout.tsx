@@ -19,7 +19,7 @@ export default function MainLayout() {
   const [showMFASetup, setShowMFASetup] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#0f172a]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#0a0a0a]">
       {/* Sidebar */}
       {isSidebarOpen && <Sidebar />}
 

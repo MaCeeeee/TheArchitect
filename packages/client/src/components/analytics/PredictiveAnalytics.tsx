@@ -134,27 +134,27 @@ export default function PredictiveAnalytics() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <Brain size={14} className="text-[#8b5cf6]" />
+          <Brain size={14} className="text-[#00ff41]" />
           Predictive Analytics
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">Architecture health and Monte Carlo simulation</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">Architecture health and Monte Carlo simulation</p>
       </div>
 
       {/* Health metrics */}
       <div className="p-3 space-y-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] flex items-center gap-1">
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] flex items-center gap-1">
           <Target size={10} /> Architecture Health
         </h4>
 
         {/* Completeness gauge */}
-        <div className="rounded-md border border-[#334155] bg-[#0f172a] p-3">
+        <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] text-[#94a3b8]">Completeness</span>
+            <span className="text-[10px] text-[#7a8a7a]">Completeness</span>
             <span className="text-sm font-bold text-white">{metrics.completeness}%</span>
           </div>
-          <div className="h-2 rounded-full bg-[#334155]">
+          <div className="h-2 rounded-full bg-[#1a2a1a]">
             <div
               className="h-full rounded-full transition-all"
               style={{
@@ -168,21 +168,21 @@ export default function PredictiveAnalytics() {
         <div className="grid grid-cols-2 gap-2">
           <MetricCard label="Avg Maturity" value={`${metrics.avgMaturity}/5`} color="#3b82f6" />
           <MetricCard label="SPOF Count" value={metrics.spofCount} color={metrics.spofCount > 0 ? '#ef4444' : '#22c55e'} />
-          <MetricCard label="Elements" value={metrics.elementCount} color="#94a3b8" />
-          <MetricCard label="Connections" value={metrics.connectionCount} color="#94a3b8" />
+          <MetricCard label="Elements" value={metrics.elementCount} color="#7a8a7a" />
+          <MetricCard label="Connections" value={metrics.connectionCount} color="#7a8a7a" />
         </div>
       </div>
 
       {/* Monte Carlo */}
-      <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2 flex items-center gap-1">
+      <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2 flex items-center gap-1">
           <Shuffle size={10} /> Monte Carlo Cost Simulation
         </h4>
 
         <button
           onClick={runSimulation}
           disabled={isRunning || elements.length === 0}
-          className="w-full rounded-md bg-[#8b5cf6] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#7c3aed] disabled:opacity-30 transition mb-3"
+          className="w-full rounded-md bg-[#00ff41] px-3 py-1.5 text-[10px] font-medium text-black hover:bg-[#00ff41] disabled:opacity-30 transition mb-3"
         >
           {isRunning ? 'Running 5,000 iterations...' : 'Run Simulation'}
         </button>
@@ -190,23 +190,23 @@ export default function PredictiveAnalytics() {
         {simResult && (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-1">
-              <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
-                <div className="text-[9px] text-[#64748b]">P10 (Best)</div>
+              <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+                <div className="text-[9px] text-[#4a5a4a]">P10 (Best)</div>
                 <div className="text-xs font-bold text-[#22c55e]">{formatCost(simResult.p10)}</div>
               </div>
-              <div className="rounded-md border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 p-1.5 text-center">
-                <div className="text-[9px] text-[#64748b]">P50 (Median)</div>
+              <div className="rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 p-1.5 text-center">
+                <div className="text-[9px] text-[#4a5a4a]">P50 (Median)</div>
                 <div className="text-xs font-bold text-white">{formatCost(simResult.p50)}</div>
               </div>
-              <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
-                <div className="text-[9px] text-[#64748b]">P90 (Worst)</div>
+              <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+                <div className="text-[9px] text-[#4a5a4a]">P90 (Worst)</div>
                 <div className="text-xs font-bold text-[#ef4444]">{formatCost(simResult.p90)}</div>
               </div>
             </div>
 
             {/* Distribution chart (ASCII-style bar chart) */}
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
-              <div className="text-[9px] text-[#64748b] mb-1">Cost Distribution (5K iterations)</div>
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+              <div className="text-[9px] text-[#4a5a4a] mb-1">Cost Distribution (5K iterations)</div>
               <div className="flex items-end gap-px h-16">
                 {simResult.distribution.map((d, i) => {
                   const maxCount = Math.max(...simResult.distribution.map((dd) => dd.count));
@@ -214,7 +214,7 @@ export default function PredictiveAnalytics() {
                   return (
                     <div
                       key={i}
-                      className="flex-1 rounded-t-sm bg-[#8b5cf6]"
+                      className="flex-1 rounded-t-sm bg-[#00ff41]"
                       style={{ height: `${height}%`, opacity: 0.4 + (height / 100) * 0.6 }}
                       title={`${d.bucket}K: ${d.count} runs`}
                     />
@@ -222,12 +222,12 @@ export default function PredictiveAnalytics() {
                 })}
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-[8px] text-[#475569]">{formatCost(simResult.p10)}</span>
-                <span className="text-[8px] text-[#475569]">{formatCost(simResult.p90)}</span>
+                <span className="text-[8px] text-[#3a4a3a]">{formatCost(simResult.p10)}</span>
+                <span className="text-[8px] text-[#3a4a3a]">{formatCost(simResult.p90)}</span>
               </div>
             </div>
 
-            <div className="text-[9px] text-[#475569] text-center">
+            <div className="text-[9px] text-[#3a4a3a] text-center">
               Std Dev: {formatCost(simResult.stdDev)} | Mean: {formatCost(simResult.mean)}
             </div>
           </div>
@@ -239,8 +239,8 @@ export default function PredictiveAnalytics() {
 
 function MetricCard({ label, value, color }: { label: string; value: string | number; color: string }) {
   return (
-    <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
-      <span className="text-[10px] text-[#64748b]">{label}</span>
+    <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+      <span className="text-[10px] text-[#4a5a4a]">{label}</span>
       <div className="text-sm font-bold" style={{ color }}>{value}</div>
     </div>
   );

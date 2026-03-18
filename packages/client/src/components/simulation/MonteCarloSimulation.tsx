@@ -100,9 +100,9 @@ export default function MonteCarloSimulation() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <Dice5 size={14} className="text-[#8b5cf6]" />
+          <Dice5 size={14} className="text-[#00ff41]" />
           Monte Carlo Simulation
         </h3>
       </div>
@@ -110,11 +110,11 @@ export default function MonteCarloSimulation() {
       {/* Config */}
       <div className="p-3 space-y-2">
         <div>
-          <label className="text-[9px] text-[#64748b] block mb-1">Scenario</label>
+          <label className="text-[9px] text-[#4a5a4a] block mb-1">Scenario</label>
           <select
             value={config.scenario}
             onChange={(e) => setConfig({ ...config, scenario: e.target.value as SimConfig['scenario'] })}
-            className="w-full bg-[#0f172a] border border-[#334155] rounded px-2 py-1 text-[10px] text-white outline-none"
+            className="w-full bg-[#0a0a0a] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
           >
             <option value="cost">Cost Estimation</option>
             <option value="risk">Risk Assessment</option>
@@ -122,11 +122,11 @@ export default function MonteCarloSimulation() {
           </select>
         </div>
         <div>
-          <label className="text-[9px] text-[#64748b] block mb-1">Iterations</label>
+          <label className="text-[9px] text-[#4a5a4a] block mb-1">Iterations</label>
           <select
             value={config.iterations}
             onChange={(e) => setConfig({ ...config, iterations: parseInt(e.target.value) })}
-            className="w-full bg-[#0f172a] border border-[#334155] rounded px-2 py-1 text-[10px] text-white outline-none"
+            className="w-full bg-[#0a0a0a] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
           >
             <option value="1000">1,000</option>
             <option value="5000">5,000</option>
@@ -137,7 +137,7 @@ export default function MonteCarloSimulation() {
         <button
           onClick={runSimulation}
           disabled={running || elements.length === 0}
-          className="w-full rounded-md bg-[#8b5cf6] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#7c3aed] disabled:opacity-30 transition flex items-center justify-center gap-1"
+          className="w-full rounded-md bg-[#00ff41] px-3 py-1.5 text-[10px] font-medium text-black hover:bg-[#00ff41] disabled:opacity-30 transition flex items-center justify-center gap-1"
         >
           <Play size={10} />
           {running ? `Running ${config.iterations.toLocaleString()} iterations...` : 'Run Simulation'}
@@ -146,25 +146,25 @@ export default function MonteCarloSimulation() {
 
       {/* Results */}
       {result && (
-        <div className="px-3 pb-3 space-y-2 border-t border-[#334155] pt-3">
+        <div className="px-3 pb-3 space-y-2 border-t border-[#1a2a1a] pt-3">
           <div className="grid grid-cols-3 gap-1">
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
-              <div className="text-[9px] text-[#64748b]">P10</div>
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+              <div className="text-[9px] text-[#4a5a4a]">P10</div>
               <div className="text-xs font-bold text-[#22c55e]">{formatValue(result.p10)}</div>
             </div>
-            <div className="rounded-md border border-[#8b5cf6]/30 bg-[#8b5cf6]/10 p-1.5 text-center">
-              <div className="text-[9px] text-[#64748b]">P50</div>
+            <div className="rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 p-1.5 text-center">
+              <div className="text-[9px] text-[#4a5a4a]">P50</div>
               <div className="text-xs font-bold text-white">{formatValue(result.p50)}</div>
             </div>
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
-              <div className="text-[9px] text-[#64748b]">P90</div>
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+              <div className="text-[9px] text-[#4a5a4a]">P90</div>
               <div className="text-xs font-bold text-[#ef4444]">{formatValue(result.p90)}</div>
             </div>
           </div>
 
           {/* Distribution */}
-          <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
-            <div className="text-[9px] text-[#64748b] mb-1 flex items-center gap-1">
+          <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+            <div className="text-[9px] text-[#4a5a4a] mb-1 flex items-center gap-1">
               <BarChart3 size={8} /> Distribution
             </div>
             <div className="flex items-end gap-px h-14">
@@ -174,7 +174,7 @@ export default function MonteCarloSimulation() {
                 return (
                   <div
                     key={i}
-                    className="flex-1 rounded-t-sm bg-[#8b5cf6]"
+                    className="flex-1 rounded-t-sm bg-[#00ff41]"
                     style={{ height: `${height}%`, opacity: 0.4 + (height / 100) * 0.6 }}
                     title={`${d.bucket}: ${d.count}`}
                   />
@@ -183,7 +183,7 @@ export default function MonteCarloSimulation() {
             </div>
           </div>
 
-          <div className="text-[9px] text-[#475569] text-center">
+          <div className="text-[9px] text-[#3a4a3a] text-center">
             Mean: {formatValue(result.mean)} | StdDev: {formatValue(result.stdDev)}
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function MonteCarloSimulation() {
 
       {elements.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#64748b] text-center">Add elements to run simulation</p>
+          <p className="text-xs text-[#4a5a4a] text-center">Add elements to run simulation</p>
         </div>
       )}
     </div>

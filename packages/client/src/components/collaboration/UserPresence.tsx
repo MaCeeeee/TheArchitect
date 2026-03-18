@@ -19,12 +19,12 @@ export default function UserPresence() {
       {/* Online users */}
       {onlineUsers.length > 0 && (
         <div className="flex items-center gap-1">
-          <Users size={12} className="text-[#64748b]" />
+          <Users size={12} className="text-[#4a5a4a]" />
           <div className="flex -space-x-1.5">
             {onlineUsers.slice(0, 5).map((user) => (
               <div
                 key={user.userId}
-                className="w-5 h-5 rounded-full border-2 border-[#1e293b] flex items-center justify-center text-[8px] font-bold text-white"
+                className="w-5 h-5 rounded-full border-2 border-[#111111] flex items-center justify-center text-[8px] font-bold text-white"
                 style={{ backgroundColor: user.color }}
                 title={user.userName}
               >
@@ -32,7 +32,7 @@ export default function UserPresence() {
               </div>
             ))}
             {onlineUsers.length > 5 && (
-              <div className="w-5 h-5 rounded-full border-2 border-[#1e293b] bg-[#334155] flex items-center justify-center text-[8px] text-[#94a3b8]">
+              <div className="w-5 h-5 rounded-full border-2 border-[#111111] bg-[#1a2a1a] flex items-center justify-center text-[8px] text-[#7a8a7a]">
                 +{onlineUsers.length - 5}
               </div>
             )}

@@ -31,5 +31,6 @@ const auditLogSchema = new Schema<IAuditLog>({
 auditLogSchema.index({ userId: 1, timestamp: -1 });
 auditLogSchema.index({ projectId: 1, timestamp: -1 });
 auditLogSchema.index({ action: 1 });
+auditLogSchema.index({ riskLevel: 1, timestamp: -1 });
 
 export const AuditLog = mongoose.model<IAuditLog>('AuditLog', auditLogSchema);

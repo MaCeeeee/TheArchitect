@@ -12,9 +12,9 @@ const CONNECTION_COLORS: Record<string, string> = {
   implements: '#f97316',
   data_flow: '#06b6d4',
   triggers: '#eab308',
-  uses: '#8b5cf6',
+  uses: '#00ff41',
   produces: '#06b6d4',
-  runs_on: '#a855f7',
+  runs_on: '#00ff41',
   stored_in: '#3b82f6',
   integrates: '#f59e0b',
   orchestrated_by: '#ec4899',
@@ -111,7 +111,7 @@ export default function ConnectionLines() {
         const isSelected = selectedConnectionId === conn.id;
         const isHighlighted =
           selectedElementId === conn.sourceId || selectedElementId === conn.targetId;
-        const connColor = CONNECTION_COLORS[conn.type] || '#64748b';
+        const connColor = CONNECTION_COLORS[conn.type] || '#4a5a4a';
 
         // Apply X-Ray risk displacement to connection endpoints
         let sourceYOffset = 0;
@@ -166,7 +166,7 @@ export default function ConnectionLines() {
             opacity = 0.4;
             showParticles = false;
           } else {
-            lineColor = '#334155';
+            lineColor = '#1a2a1a';
             lineWidth = 0.8;
             opacity = 0.15;
             showParticles = false;
@@ -193,7 +193,7 @@ export default function ConnectionLines() {
             opacity = 0.25;
             showParticles = false;
           } else {
-            lineColor = '#334155';
+            lineColor = '#1a2a1a';
             lineWidth = 0.6;
             opacity = 0.1;
             showParticles = false;
@@ -212,7 +212,7 @@ export default function ConnectionLines() {
           opacity = isSelected ? 1 : 0.6;
           showParticles = true;
         } else {
-          lineColor = isSelected ? '#ffffff' : isHighlighted ? connColor : '#64748b';
+          lineColor = isSelected ? '#ffffff' : isHighlighted ? connColor : '#4a5a4a';
           lineWidth = isSelected ? 3 : isHighlighted ? 2 : 1.5;
           opacity = isSelected ? 1 : isHighlighted ? 0.8 : 0.4;
           showParticles = isHighlighted || isSelected;

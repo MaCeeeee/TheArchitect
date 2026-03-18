@@ -26,12 +26,12 @@ export default function BusinessArchitecture() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <div className="h-2 w-2 rounded-full bg-[#22c55e]" />
           Business Architecture
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">ADM Phase B - Business capabilities, processes, and value streams</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">ADM Phase B - Business capabilities, processes, and value streams</p>
       </div>
 
       {/* Summary stats */}
@@ -45,11 +45,11 @@ export default function BusinessArchitecture() {
       {/* Capability Maturity Heatmap */}
       {capabilities.length > 0 && (
         <div className="px-3 pb-3">
-          <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Capability Maturity</h4>
+          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Capability Maturity</h4>
           <div className="space-y-1">
             {capabilities.map((cap) => (
               <div key={cap.id} className="flex items-center gap-2">
-                <span className="text-[10px] text-[#94a3b8] truncate flex-1 min-w-0">{cap.name}</span>
+                <span className="text-[10px] text-[#7a8a7a] truncate flex-1 min-w-0">{cap.name}</span>
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((level) => (
                     <div
@@ -58,7 +58,7 @@ export default function BusinessArchitecture() {
                       style={{
                         backgroundColor: level <= cap.maturityLevel
                           ? MATURITY_COLORS[cap.maturityLevel - 1]
-                          : '#1e293b',
+                          : '#111111',
                       }}
                     />
                   ))}
@@ -71,15 +71,15 @@ export default function BusinessArchitecture() {
 
       {/* Value Streams */}
       {valueStreams.length > 0 && (
-        <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-          <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Value Streams</h4>
+        <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Value Streams</h4>
           {valueStreams.map((vs) => (
-            <div key={vs.id} className="rounded-md border border-[#334155] bg-[#0f172a] p-2 mb-2">
+            <div key={vs.id} className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2 mb-2">
               <div className="text-xs text-white font-medium">{vs.name}</div>
-              <div className="text-[10px] text-[#64748b] mt-0.5">{vs.description || 'No description'}</div>
+              <div className="text-[10px] text-[#4a5a4a] mt-0.5">{vs.description || 'No description'}</div>
               <div className="flex items-center gap-1 mt-1">
                 <RiskBadge level={vs.riskLevel} />
-                <span className="text-[10px] text-[#475569]">Maturity: {vs.maturityLevel}/5</span>
+                <span className="text-[10px] text-[#3a4a3a]">Maturity: {vs.maturityLevel}/5</span>
               </div>
             </div>
           ))}
@@ -88,12 +88,12 @@ export default function BusinessArchitecture() {
 
       {/* Business Services */}
       {services.length > 0 && (
-        <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-          <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Business Services</h4>
+        <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Business Services</h4>
           {services.map((svc) => (
             <div key={svc.id} className="flex items-center gap-2 py-1">
               <div className="h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
-              <span className="text-[10px] text-[#94a3b8] flex-1 truncate">{svc.name}</span>
+              <span className="text-[10px] text-[#7a8a7a] flex-1 truncate">{svc.name}</span>
               <RiskBadge level={svc.riskLevel} />
             </div>
           ))}
@@ -102,7 +102,7 @@ export default function BusinessArchitecture() {
 
       {businessElements.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#64748b] text-center">
+          <p className="text-xs text-[#4a5a4a] text-center">
             No business architecture elements yet.<br />
             Add Business Capabilities, Processes, or Value Streams from the Explorer.
           </p>
@@ -114,10 +114,10 @@ export default function BusinessArchitecture() {
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
   return (
-    <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
+    <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
       <div className="flex items-center gap-1.5 mb-1" style={{ color }}>
         {icon}
-        <span className="text-[10px] text-[#64748b]">{label}</span>
+        <span className="text-[10px] text-[#4a5a4a]">{label}</span>
       </div>
       <div className="text-sm font-semibold text-white">{value}</div>
     </div>

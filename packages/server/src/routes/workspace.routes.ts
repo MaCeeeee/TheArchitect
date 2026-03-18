@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { Workspace } from '../models/Workspace';
+import { runCypher } from '../config/neo4j';
 
 const router = Router();
 
@@ -56,16 +57,23 @@ router.put('/:projectId/:workspaceId', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/workspaces/:projectId/:workspaceId — delete a workspace
+// DELETE /api/workspaces/:projectId/:workspaceId — delete workspace + cascade Neo4j elements
 router.delete('/:projectId/:workspaceId', async (req: Request, res: Response) => {
   try {
+    const { projectId, workspaceId } = req.params;
     const result = await Workspace.findOneAndDelete({
-      _id: req.params.workspaceId,
-      projectId: req.params.projectId,
+      _id: workspaceId,
+      projectId,
     });
     if (!result) {
       return res.status(404).json({ error: 'Workspace not found' });
     }
+    // Cascade: delete all Neo4j elements and their connections for this workspace
+    await runCypher(
+      `MATCH (e:Element { projectId: $projectId, workspaceId: $workspaceId })
+       DETACH DELETE e`,
+      { projectId, workspaceId }
+    );
     res.json({ message: 'Workspace deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete workspace' });

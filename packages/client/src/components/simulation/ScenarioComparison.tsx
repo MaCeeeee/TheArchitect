@@ -63,12 +63,12 @@ export default function ScenarioComparison() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <GitCompare size={14} className="text-[#06b6d4]" />
           Scenario Comparison
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">Compare architecture states</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">Compare architecture states</p>
       </div>
 
       {/* Create scenario */}
@@ -84,16 +84,16 @@ export default function ScenarioComparison() {
 
       {/* Scenario list */}
       <div className="px-3 pb-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-1">Scenarios ({allScenarios.length})</h4>
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-1">Scenarios ({allScenarios.length})</h4>
         <div className="space-y-1">
           {allScenarios.map((sc) => (
-            <div key={sc.id} className="flex items-center gap-2 rounded-md border border-[#334155] bg-[#0f172a] px-2 py-1.5">
+            <div key={sc.id} className="flex items-center gap-2 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-2 py-1.5">
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] text-white truncate">{sc.name}</div>
-                <div className="text-[9px] text-[#475569]">{sc.elements.length} elements</div>
+                <div className="text-[9px] text-[#3a4a3a]">{sc.elements.length} elements</div>
               </div>
               {sc.id !== 'current' && (
-                <button onClick={() => deleteScenario(sc.id)} className="text-[#475569] hover:text-[#ef4444]">
+                <button onClick={() => deleteScenario(sc.id)} className="text-[#3a4a3a] hover:text-[#ef4444]">
                   <Trash2 size={10} />
                 </button>
               )}
@@ -104,19 +104,19 @@ export default function ScenarioComparison() {
 
       {/* Compare selector */}
       {allScenarios.length >= 2 && (
-        <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-          <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Compare</h4>
+        <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Compare</h4>
           <div className="flex items-center gap-1">
             <select
-              className="flex-1 bg-[#0f172a] border border-[#334155] rounded px-1.5 py-1 text-[10px] text-white outline-none"
+              className="flex-1 bg-[#0a0a0a] border border-[#1a2a1a] rounded px-1.5 py-1 text-[10px] text-white outline-none"
               value={selectedPair?.[0] || ''}
               onChange={(e) => setSelectedPair([e.target.value, selectedPair?.[1] || allScenarios[1]?.id || ''])}
             >
               {allScenarios.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
-            <ArrowRight size={12} className="text-[#475569] shrink-0" />
+            <ArrowRight size={12} className="text-[#3a4a3a] shrink-0" />
             <select
-              className="flex-1 bg-[#0f172a] border border-[#334155] rounded px-1.5 py-1 text-[10px] text-white outline-none"
+              className="flex-1 bg-[#0a0a0a] border border-[#1a2a1a] rounded px-1.5 py-1 text-[10px] text-white outline-none"
               value={selectedPair?.[1] || ''}
               onChange={(e) => setSelectedPair([selectedPair?.[0] || 'current', e.target.value])}
             >
@@ -126,7 +126,7 @@ export default function ScenarioComparison() {
 
           <button
             onClick={() => setSelectedPair([allScenarios[0].id, allScenarios[allScenarios.length > 1 ? 1 : 0].id])}
-            className="mt-2 w-full rounded-md bg-[#334155] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#475569] transition"
+            className="mt-2 w-full rounded-md bg-[#1a2a1a] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#3a4a3a] transition"
           >
             Compare
           </button>
@@ -135,20 +135,20 @@ export default function ScenarioComparison() {
 
       {/* Diff results */}
       {diff && (
-        <div className="px-3 pb-3 border-t border-[#334155] pt-3 space-y-2">
+        <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3 space-y-2">
           <h4 className="text-[10px] font-semibold text-white">{diff.aName} vs {diff.bName}</h4>
           <div className="grid grid-cols-3 gap-1">
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
               <div className="text-xs font-bold text-[#22c55e]">{diff.added.length}</div>
-              <div className="text-[9px] text-[#64748b]">Added</div>
+              <div className="text-[9px] text-[#4a5a4a]">Added</div>
             </div>
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
               <div className="text-xs font-bold text-[#eab308]">{diff.changed.length}</div>
-              <div className="text-[9px] text-[#64748b]">Changed</div>
+              <div className="text-[9px] text-[#4a5a4a]">Changed</div>
             </div>
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-1.5 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
               <div className="text-xs font-bold text-[#ef4444]">{diff.removed.length}</div>
-              <div className="text-[9px] text-[#64748b]">Removed</div>
+              <div className="text-[9px] text-[#4a5a4a]">Removed</div>
             </div>
           </div>
 
@@ -156,7 +156,7 @@ export default function ScenarioComparison() {
             <div>
               <span className="text-[9px] text-[#22c55e] font-semibold">+ Added</span>
               {diff.added.slice(0, 5).map((el) => (
-                <div key={el.id} className="text-[9px] text-[#94a3b8] ml-2 truncate">{el.name}</div>
+                <div key={el.id} className="text-[9px] text-[#7a8a7a] ml-2 truncate">{el.name}</div>
               ))}
             </div>
           )}
@@ -164,7 +164,7 @@ export default function ScenarioComparison() {
             <div>
               <span className="text-[9px] text-[#ef4444] font-semibold">- Removed</span>
               {diff.removed.slice(0, 5).map((el) => (
-                <div key={el.id} className="text-[9px] text-[#94a3b8] ml-2 truncate">{el.name}</div>
+                <div key={el.id} className="text-[9px] text-[#7a8a7a] ml-2 truncate">{el.name}</div>
               ))}
             </div>
           )}

@@ -28,25 +28,25 @@ export default function ApplicationArchitecture() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <div className="h-2 w-2 rounded-full bg-[#f97316]" />
           Application Architecture
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">ADM Phase C - Application portfolio, components, and services</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">ADM Phase C - Application portfolio, components, and services</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-2 p-3">
         <StatCard icon={<AppWindow size={14} />} label="Applications" value={apps.length} color="#f97316" />
-        <StatCard icon={<Layers size={14} />} label="Components" value={components.length} color="#8b5cf6" />
+        <StatCard icon={<Layers size={14} />} label="Components" value={components.length} color="#00ff41" />
         <StatCard icon={<TrendingUp size={14} />} label="Services" value={services.length} color="#06b6d4" />
         <StatCard icon={<AlertTriangle size={14} />} label="High Risk" value={highRiskCount} color="#ef4444" />
       </div>
 
       {/* Portfolio Matrix */}
       <div className="px-3 pb-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Portfolio Matrix</h4>
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Portfolio Matrix</h4>
         <div className="grid grid-cols-2 gap-1">
           <QuadrantCell label="Invest" count={portfolioQuadrants.invest.length} color="#22c55e" items={portfolioQuadrants.invest} />
           <QuadrantCell label="Tolerate" count={portfolioQuadrants.tolerate.length} color="#eab308" items={portfolioQuadrants.tolerate} />
@@ -57,18 +57,18 @@ export default function ApplicationArchitecture() {
 
       {/* Application list */}
       {apps.length > 0 && (
-        <div className="px-3 pb-3 border-t border-[#334155] pt-3">
-          <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-2">Applications</h4>
+        <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
+          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Applications</h4>
           <div className="space-y-1.5">
             {apps.map((app) => (
-              <div key={app.id} className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
+              <div key={app.id} className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-white font-medium">{app.name}</span>
                   <LifecycleBadge maturity={app.maturityLevel} risk={app.riskLevel} />
                 </div>
-                <p className="text-[10px] text-[#64748b] mt-0.5">{app.description || 'No description'}</p>
+                <p className="text-[10px] text-[#4a5a4a] mt-0.5">{app.description || 'No description'}</p>
                 <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-[9px] text-[#475569]">Maturity: {app.maturityLevel}/5</span>
+                  <span className="text-[9px] text-[#3a4a3a]">Maturity: {app.maturityLevel}/5</span>
                   <span className={`text-[9px] capitalize ${
                     app.riskLevel === 'critical' ? 'text-red-400' :
                     app.riskLevel === 'high' ? 'text-orange-400' :
@@ -85,7 +85,7 @@ export default function ApplicationArchitecture() {
 
       {appElements.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#64748b] text-center">
+          <p className="text-xs text-[#4a5a4a] text-center">
             No application architecture elements yet.<br />
             Add Applications, Components, or Services from the Explorer.
           </p>
@@ -97,8 +97,8 @@ export default function ApplicationArchitecture() {
 
 function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number; color: string }) {
   return (
-    <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
-      <div className="flex items-center gap-1.5 mb-1" style={{ color }}>{icon}<span className="text-[10px] text-[#64748b]">{label}</span></div>
+    <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+      <div className="flex items-center gap-1.5 mb-1" style={{ color }}>{icon}<span className="text-[10px] text-[#4a5a4a]">{label}</span></div>
       <div className="text-sm font-semibold text-white">{value}</div>
     </div>
   );
@@ -106,15 +106,15 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
 
 function QuadrantCell({ label, count, color, items }: { label: string; count: number; color: string; items: { name: string }[] }) {
   return (
-    <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2" style={{ borderLeftColor: color, borderLeftWidth: 2 }}>
+    <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2" style={{ borderLeftColor: color, borderLeftWidth: 2 }}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-[10px] font-medium" style={{ color }}>{label}</span>
         <span className="text-xs font-bold text-white">{count}</span>
       </div>
       {items.slice(0, 2).map((item, i) => (
-        <div key={i} className="text-[9px] text-[#64748b] truncate">{item.name}</div>
+        <div key={i} className="text-[9px] text-[#4a5a4a] truncate">{item.name}</div>
       ))}
-      {items.length > 2 && <div className="text-[9px] text-[#475569]">+{items.length - 2} more</div>}
+      {items.length > 2 && <div className="text-[9px] text-[#3a4a3a]">+{items.length - 2} more</div>}
     </div>
   );
 }

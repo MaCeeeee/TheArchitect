@@ -184,6 +184,16 @@ export const workspaceAPI = {
     api.delete(`/workspaces/${projectId}/${workspaceId}`),
 };
 
+// Report API
+export const reportAPI = {
+  downloadExecutive: (projectId: string) =>
+    api.get(`/projects/${projectId}/reports/executive`, { responseType: 'blob' }),
+  downloadSimulation: (projectId: string, runId: string) =>
+    api.get(`/projects/${projectId}/reports/simulation`, { params: { runId }, responseType: 'blob' }),
+  downloadInventory: (projectId: string) =>
+    api.get(`/projects/${projectId}/reports/inventory`, { responseType: 'blob' }),
+};
+
 // Analytics API
 export const analyticsAPI = {
   getImpact: (projectId: string, elementId: string, depth = 5) =>
@@ -292,8 +302,14 @@ export const adminAPI = {
   getUsers: () => api.get('/admin/users'),
   updateUserRole: (uid: string, role: string) =>
     api.put(`/admin/users/${uid}/role`, { role }),
-  getAuditLog: (params?: { action?: string; entityType?: string; limit?: number; offset?: number }) =>
-    api.get('/admin/audit-log', { params }),
+  getAuditLog: (params?: {
+    action?: string; entityType?: string; riskLevel?: string;
+    startDate?: string; endDate?: string; userSearch?: string;
+    limit?: number; offset?: number;
+  }) => api.get('/admin/audit-log', { params }),
+  getAuditLogStats: () => api.get('/admin/audit-log/stats'),
+  exportAuditLog: (params?: Record<string, string>) =>
+    api.get('/admin/audit-log/export', { params, responseType: 'blob' as const }),
 };
 
 export const simulationAPI = {

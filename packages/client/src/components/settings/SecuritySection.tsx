@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useAuthStore } from '../../stores/authStore';
 import { authAPI } from '../../services/api';
@@ -28,6 +29,7 @@ export default function SecuritySection() {
       setMfaSetupOpen(true);
     } catch {
       setMfaError('Failed to initialize MFA setup');
+      toast.error('Failed to initialize MFA setup');
     }
   };
 
@@ -39,8 +41,10 @@ export default function SecuritySection() {
       updateUser({ mfaEnabled: true });
       setMfaSetupOpen(false);
       setMfaCode('');
+      toast.success('Two-factor authentication enabled');
     } catch {
       setMfaError('Invalid code. Please try again.');
+      toast.error('Invalid code. Please try again.');
     } finally {
       setMfaLoading(false);
     }
@@ -54,8 +58,10 @@ export default function SecuritySection() {
       updateUser({ mfaEnabled: false });
       setShowDisable(false);
       setDisablePassword('');
+      toast.success('Two-factor authentication disabled');
     } catch {
       setMfaError('Invalid password');
+      toast.error('Invalid password');
     } finally {
       setMfaLoading(false);
     }
@@ -64,16 +70,16 @@ export default function SecuritySection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Security</h2>
-      <p className="text-sm text-[#64748b] mb-6">Manage two-factor authentication and active sessions.</p>
+      <p className="text-sm text-[#4a5a4a] mb-6">Manage two-factor authentication and active sessions.</p>
 
       <div className="space-y-6">
         {/* MFA */}
-        <div className="rounded-lg border border-[#334155] bg-[#1e293b] p-5">
+        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
           <div className="flex items-center gap-3 mb-4">
-            <ShieldCheck size={20} className={user?.mfaEnabled ? 'text-green-400' : 'text-[#64748b]'} />
+            <ShieldCheck size={20} className={user?.mfaEnabled ? 'text-green-400' : 'text-[#4a5a4a]'} />
             <div>
               <h3 className="text-sm font-semibold text-white">Two-Factor Authentication</h3>
-              <p className="text-xs text-[#64748b]">
+              <p className="text-xs text-[#4a5a4a]">
                 {user?.mfaEnabled ? 'Enabled — your account is protected' : 'Not enabled — add an extra layer of security'}
               </p>
             </div>
@@ -82,7 +88,7 @@ export default function SecuritySection() {
           {!user?.mfaEnabled && !mfaSetupOpen && (
             <button
               onClick={handleSetupMFA}
-              className="rounded-md bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d28d9] transition"
+              className="rounded-md bg-[#00ff41] px-4 py-2 text-sm font-medium text-black hover:bg-[#00cc33] transition"
             >
               Enable 2FA
             </button>
@@ -90,7 +96,7 @@ export default function SecuritySection() {
 
           {mfaSetupOpen && (
             <div className="space-y-3 mt-4">
-              <p className="text-sm text-[#94a3b8]">Scan this QR code with your authenticator app:</p>
+              <p className="text-sm text-[#7a8a7a]">Scan this QR code with your authenticator app:</p>
               {qrCode && <img src={qrCode} alt="QR Code" className="h-48 w-48 rounded bg-white p-2" />}
               <div className="flex gap-2 max-w-xs">
                 <input
@@ -99,12 +105,12 @@ export default function SecuritySection() {
                   onChange={(e) => setMfaCode(e.target.value)}
                   placeholder="Enter 6-digit code"
                   maxLength={6}
-                  className="flex-1 rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-sm text-white outline-none focus:border-[#7c3aed]"
+                  className="flex-1 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
                 />
                 <button
                   onClick={handleConfirmMFA}
                   disabled={mfaLoading || mfaCode.length !== 6}
-                  className="rounded-md bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d28d9] transition disabled:opacity-50"
+                  className="rounded-md bg-[#00ff41] px-4 py-2 text-sm font-medium text-black hover:bg-[#00cc33] transition disabled:opacity-50"
                 >
                   Verify
                 </button>
@@ -123,14 +129,14 @@ export default function SecuritySection() {
 
           {showDisable && (
             <div className="space-y-3 mt-4">
-              <p className="text-sm text-[#94a3b8]">Enter your password to disable 2FA:</p>
+              <p className="text-sm text-[#7a8a7a]">Enter your password to disable 2FA:</p>
               <div className="flex gap-2 max-w-xs">
                 <input
                   type="password"
                   value={disablePassword}
                   onChange={(e) => setDisablePassword(e.target.value)}
                   placeholder="Password"
-                  className="flex-1 rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-sm text-white outline-none focus:border-[#7c3aed]"
+                  className="flex-1 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
                 />
                 <button
                   onClick={handleDisableMFA}
@@ -147,28 +153,28 @@ export default function SecuritySection() {
         </div>
 
         {/* Sessions */}
-        <div className="rounded-lg border border-[#334155] bg-[#1e293b] p-5">
+        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Active Sessions</h3>
           {sessions.length === 0 ? (
-            <p className="text-sm text-[#64748b]">No active sessions found.</p>
+            <p className="text-sm text-[#4a5a4a]">No active sessions found.</p>
           ) : (
             <div className="space-y-3">
               {sessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between rounded-md border border-[#334155] bg-[#0f172a] px-4 py-3">
+                <div key={session.id} className="flex items-center justify-between rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Monitor size={16} className="text-[#94a3b8]" />
+                    <Monitor size={16} className="text-[#7a8a7a]" />
                     <div>
                       <p className="text-sm text-white">
                         {session.device}
                         {session.current && <span className="ml-2 text-xs text-green-400">(current)</span>}
                       </p>
-                      <p className="text-xs text-[#64748b]">{session.ip} — Last active: {new Date(session.lastActive).toLocaleString()}</p>
+                      <p className="text-xs text-[#4a5a4a]">{session.ip} — Last active: {new Date(session.lastActive).toLocaleString()}</p>
                     </div>
                   </div>
                   {!session.current && (
                     <button
                       onClick={() => revokeSession(session.id)}
-                      className="text-[#94a3b8] hover:text-red-400 transition"
+                      className="text-[#7a8a7a] hover:text-red-400 transition"
                       title="Revoke session"
                     >
                       <Trash2 size={14} />

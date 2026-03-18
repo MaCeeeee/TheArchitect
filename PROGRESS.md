@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-16
+> Letztes Update: 2026-03-18 (Phase 6: Audit Trail UI)
 
 ---
 
@@ -459,16 +459,334 @@ Internet → Caddy (:80/:443) → App (:4000) → MongoDB/Neo4j/Redis/MinIO
 
 ---
 
+## 9. Secure Auth UX Overhaul
+
+### Problemstellung
+Login/Register war die erste Seite für neue Benutzer, hatte aber keine Passwort-Stärkenanzeige, kein Show/Hide, keine Confirm-Feld, kein Forgot-Password-Flow, und teilte JWT-Secrets für Access- und Refresh-Tokens. Außerdem fehlte ein visuell ansprechender Hintergrund.
+
+### Status: ✅ Implementiert & Deployed
+
+#### Backend Security
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Shared Password Policy (5 Checks: length, upper, lower, digit, special) | ✅ | `packages/shared/src/constants/password.constants.ts` |
+| Separate `JWT_REFRESH_SECRET` für Refresh-Tokens | ✅ | `packages/server/src/middleware/auth.middleware.ts` |
+| `verifyRefreshToken()` Export | ✅ | `packages/server/src/middleware/auth.middleware.ts` |
+| Forgot-Password Endpoint (SHA-256 Token, 1h Expiry, no email enumeration) | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| Reset-Password Endpoint (Token + Policy Validation) | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| Rate Limiting: 20/15min auth, 5/15min forgot-password | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| Email Service (SMTP + dev fallback) | ✅ | `packages/server/src/services/email.service.ts` |
+| User Model: `passwordResetToken`, `passwordResetExpires` | ✅ | `packages/server/src/models/User.ts` |
+
+#### Frontend UX
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Password Show/Hide Toggle (Eye/EyeOff) | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| 5-Segment Strength Indicator + Checklist | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Confirm Password mit Live-Match-Validation | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Forgot Password Mode + Sent-Confirmation | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Reset Password Page (Token from URL) | ✅ | `packages/client/src/components/security/ResetPasswordPage.tsx` |
+| AuthLayout (shared wrapper mit Outlet) | ✅ | `packages/client/src/components/security/AuthLayout.tsx` |
+| WebGL2 Procedural Shader Background | ✅ | `packages/client/src/components/ui/atc-shader.tsx` |
+| Glassmorphism Card (`bg-[#1e293b]/80 backdrop-blur-xl`) | ✅ | `packages/client/src/components/security/AuthLayout.tsx` |
+| Autofocus via Refs | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+
+#### RBAC Fix
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Viewer-Rolle: `PROJECT_CREATE` + Element/Connection CRUD hinzugefügt | ✅ | `packages/shared/src/constants/permissions.constants.ts` |
+| Behebt 403 für neue Google OAuth User beim Projekt-Erstellen | ✅ | — |
+
+#### Tests
+
+| Komponente | Status | Datei |
+|---|---|---|
+| 31 Integration Tests (11 Describe Blocks) | ✅ | `packages/server/src/__tests__/auth.test.ts` |
+| Jest Config (ts-jest, 15s timeout) | ✅ | `packages/server/jest.config.ts` |
+
+#### Vite Build Fix
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `optimizeDeps.include` für shared CJS→ESM interop | ✅ | `packages/client/vite.config.ts` |
+| `build.commonjsOptions.include` | ✅ | `packages/client/vite.config.ts` |
+
+---
+
+## 10. Docker Deployment Overhaul
+
+### Problemstellung
+`docker-compose.prod.yml` referenzierte Traefik-Labels und externe Networks, die nicht existierten. Build-Context war falsch. Hostinger Firewall blockierte Ports 80/443.
+
+### Status: ✅ Behoben & Live
+
+| Komponente | Status | Beschreibung |
+|---|---|---|
+| Traefik-Labels entfernt | ✅ | Keine externen Networks mehr |
+| Caddy Reverse Proxy hinzugefügt | ✅ | Auto-HTTPS, Let's Encrypt |
+| Build-Context: `/tmp/thearchitect-src` | ✅ | Git-Clone als Source |
+| SMTP Env-Variablen | ✅ | Für Password-Reset-Emails |
+| Caddyfile: `thearchitect.site, www.thearchitect.site` | ✅ | Beide Domains |
+| Hostinger Firewall: Port 22/80/443 TCP Allow | ✅ | Muss im hPanel konfiguriert werden |
+| `.env` auf VPS | ✅ | `/docker/thearchitect/.env` |
+
+---
+
+## 11. PDF Report Export
+
+### Problemstellung
+Stakeholder (C-Level, Board) nutzen TheArchitect nicht direkt — sie brauchen Reports als PDF. Es gab keine Export-Funktion.
+
+### Status: ✅ Implementiert & Getestet
+
+#### Server: PDF-Generierung (PDFKit)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Executive Summary Renderer (Metrics, Risk-Tabelle, Cost, Compliance) | ✅ | `packages/server/src/services/report.service.ts` |
+| Simulation Report Renderer (Fatigue Scorecard, Agent-Analyse, Bottlenecks) | ✅ | `packages/server/src/services/report.service.ts` |
+| Architecture Inventory Renderer (Layer-gruppierte Tabellen) | ✅ | `packages/server/src/services/report.service.ts` |
+| Shared Helpers (drawHeader, drawTable, drawMetricCard, drawBarChart, drawRiskBadge) | ✅ | `packages/server/src/services/report.service.ts` |
+| Report Route (`GET /:projectId/reports/:type`) | ✅ | `packages/server/src/routes/report.routes.ts` |
+| Auth: `authenticate` + `requireProjectAccess('viewer')` | ✅ | `packages/server/src/routes/report.routes.ts` |
+| Route in Express registriert | ✅ | `packages/server/src/index.ts` |
+
+#### Client: Download-Integration
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `reportAPI` (downloadExecutive, downloadSimulation, downloadInventory) | ✅ | `packages/client/src/services/api.ts` |
+| Toolbar Export-Dropdown (Executive Summary, Architecture Inventory) | ✅ | `packages/client/src/components/ui/Toolbar.tsx` |
+| SimulationPanel "Export PDF" Button | ✅ | `packages/client/src/components/simulation/SimulationPanel.tsx` |
+| Blob Download Pattern (createObjectURL → anchor click → revokeObjectURL) | ✅ | Toolbar.tsx, SimulationPanel.tsx |
+
+#### Tests (7/7 bestanden)
+
+| # | Test | Ergebnis |
+|---|------|----------|
+| 1 | Ungültiger Type (`/reports/foo`) | ✅ 400 |
+| 2 | Simulation ohne `runId` | ✅ 400 |
+| 3 | Ohne Auth-Token | ✅ 401 |
+| 4 | Executive Summary PDF | ✅ 200, 6.3 KB, valides PDF |
+| 5 | Architecture Inventory PDF | ✅ 200, 3.1 KB, valides PDF |
+| 6 | Simulation mit ungültiger `runId` | ✅ 500, "not found" |
+| 7 | Leeres Projekt | ✅ Kein Crash, Fallback-Inhalte |
+
+---
+
+## 12. Matrix Theme Redesign
+
+### Problemstellung
+"TheArchitect" ist eine Anlehnung an den Architekten aus Matrix Reloaded. Das UI nutzte ein Purple-Accent-Schema (#7c3aed) — das passte nicht zur Matrix-Identität.
+
+### Status: ✅ Implementiert
+
+#### Farbpalette
+
+| Rolle | Alt (Purple) | Neu (Matrix) |
+|-------|-------------|--------------|
+| Primary Accent | `#7c3aed` | `#00ff41` (Phosphor-Grün) |
+| Primary Hover | `#6d28d9` | `#00cc33` |
+| Primary Light | `#a78bfa` | `#33ff66` |
+| Darkest BG | `#0f172a` | `#0a0a0a` (Fast-Schwarz) |
+| Panel BG | `#1e293b` | `#111111` |
+| Border | `#334155` | `#1a2a1a` (Grünstich) |
+| Muted Text | `#94a3b8` | `#7a8a7a` |
+| Dim Text | `#64748b` | `#4a5a4a` |
+| Technology Layer | `#a855f7` | `#00ff41` |
+
+#### Scope
+
+| Metrik | Wert |
+|--------|------|
+| Dateien geändert | 44+ |
+| Farbersetzungen | ~780 |
+| Verbleibende Purple-Referenzen | 0 |
+
+#### Glow-Effekte
+
+| Element | Effekt |
+|---------|--------|
+| Login Buttons | `shadow-[0_0_15px_rgba(0,255,65,0.3)]` |
+| Input Focus | `focus:shadow-[0_0_10px_rgba(0,255,65,0.2)]` |
+| "TheArchitect" Logo | `text-shadow: 0 0 10px rgba(0,255,65,0.5)` |
+| View-Mode aktiv | `shadow-[0_0_10px_rgba(0,255,65,0.3)]` |
+| Dashboard Cards Hover | `hover:shadow-[0_0_15px_rgba(0,255,65,0.15)]` |
+| Sidebar aktives Element | `shadow-[0_0_10px_rgba(0,255,65,0.15)]` |
+
+#### Kontrast-Fix
+Alle Buttons mit `bg-[#00ff41]` haben `text-black` statt `text-white` für Lesbarkeit.
+
+#### 3D + PDF
+- Scene.tsx / TransformationXRay.tsx: Grünes Licht statt lila
+- report.service.ts: ACCENT auf `#00ff41`
+
+---
+
+## 13. UI/UX Excellence Overhaul
+
+### Problemstellung
+UI/UX-Audit deckte erhebliche Lücken auf: Toast-System kaum genutzt, keine Skeleton-Screens, keine Modal-Animationen, kein Error Boundary, inkonsistente Confirmation-Dialogs, minimale Accessibility.
+
+### Status: ✅ Implementiert
+
+#### Toast-System (react-hot-toast)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Toaster Matrix-Styling (dunkler BG, grünes Icon) | ✅ | `packages/client/src/main.tsx` |
+| DashboardPage: Create/Delete/Load Toasts | ✅ | `packages/client/src/components/ui/DashboardPage.tsx` |
+| Toolbar: Export PDF Toasts | ✅ | `packages/client/src/components/ui/Toolbar.tsx` |
+| SimulationPanel: Export Toasts | ✅ | `packages/client/src/components/simulation/SimulationPanel.tsx` |
+| BPMNImportDialog: Import Success/Error | ✅ | `packages/client/src/components/ui/BPMNImportDialog.tsx` |
+| N8nImportDialog: Import Success/Error | ✅ | `packages/client/src/components/ui/N8nImportDialog.tsx` |
+| ProjectCollaborators: Add/Remove/Role Toasts | ✅ | `packages/client/src/components/ui/ProjectCollaborators.tsx` |
+| PolicyManager: Create/Update/Delete Toasts | ✅ | `packages/client/src/components/governance/PolicyManager.tsx` |
+| PropertyPanel: Delete Toast | ✅ | `packages/client/src/components/ui/PropertyPanel.tsx` |
+| WorkspaceBar: Delete Toast | ✅ | `packages/client/src/components/ui/WorkspaceBar.tsx` |
+| Settings (8 Sections): Save/Error Toasts | ✅ | `packages/client/src/components/settings/*.tsx` |
+| **Gesamt: ~38 Toast-Calls in 15 Dateien** | | |
+
+#### Error Boundary
+
+| Komponente | Status | Datei |
+|---|---|---|
+| ErrorBoundary Class Component | ✅ | `packages/client/src/components/ui/ErrorBoundary.tsx` |
+| Matrix-styled Fallback UI (Try Again, Reload, Error Details) | ✅ | `packages/client/src/components/ui/ErrorBoundary.tsx` |
+| In App.tsx um Router gewickelt | ✅ | `packages/client/src/App.tsx` |
+
+#### Skeleton Loading
+
+| Komponente | Status | Datei |
+|---|---|---|
+| SkeletonLine, SkeletonCard, SkeletonTable, SkeletonList Primitives | ✅ | `packages/client/src/components/ui/Skeleton.tsx` |
+| DashboardPage: 3x SkeletonCard statt Spinner | ✅ | `packages/client/src/components/ui/DashboardPage.tsx` |
+| ProjectView: Matrix-styled Loading-Spinner mit Glow | ✅ | `packages/client/src/components/ui/ProjectView.tsx` |
+
+#### Modal-Animationen (CSS @keyframes)
+
+| Animation | Beschreibung |
+|-----------|--------------|
+| `fadeIn` (150ms) | Backdrop Fade-In |
+| `scaleIn` (200ms) | Content Scale 0.95→1.0 + Fade |
+
+Angewendet auf: BPMNImportDialog, N8nImportDialog, DashboardPage (Delete-Dialog, Create-Dialog), ProjectCollaborators, Walkthrough, ConfirmationModal
+
+#### Confirmation Dialogs
+
+| Komponente | Art | Datei |
+|---|---|---|
+| PropertyPanel: Inline-Confirm ("Delete" / "Cancel") | ✅ | `packages/client/src/components/ui/PropertyPanel.tsx` |
+| WorkspaceBar: Inline "Yes/No" Confirm | ✅ | `packages/client/src/components/ui/WorkspaceBar.tsx` |
+
+#### Accessibility (a11y)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `useFocusTrap` Hook (Tab-Cycling, Escape, Auto-Focus) | ✅ | `packages/client/src/hooks/useFocusTrap.ts` |
+| ConfirmationModal: Focus-Trap + `role="dialog"` + `aria-modal` | ✅ | `packages/client/src/components/settings/ConfirmationModal.tsx` |
+| Alle Modals: `role="dialog"` + `aria-modal="true"` | ✅ | 6 Modal-Dateien |
+| Toolbar: `aria-label` auf Icon-only Buttons | ✅ | `packages/client/src/components/ui/Toolbar.tsx` |
+
+---
+
+## 14. Audit Trail UI (Phase 6)
+
+### Problemstellung
+Audit-Logging existierte End-to-End im Backend (`createAuditEntry` Middleware auf ~15 Routes, AuditLog Mongoose Model, `GET /admin/audit-log`), aber es fehlte eine vollwertige Admin-UI in den Settings. Der existierende `AuditLogViewer` hatte nur einen Action-Filter und war nicht in die Settings-Seite integriert.
+
+### Status: ✅ Implementiert & Getestet
+
+#### Backend-Erweiterungen
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `buildAuditFilter()` — Gemeinsame Filterfunktion | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| Filter: `riskLevel` (low/medium/high/critical) | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| Filter: `startDate` / `endDate` (Zeitraum) | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| Filter: `userSearch` (Name/Email Textsuche, 2-Schritt mit User-Lookup) | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| `GET /admin/audit-log` — find + countDocuments parallelisiert | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| `GET /admin/audit-log/stats` — Aggregierte Counts nach Risk Level | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| `GET /admin/audit-log/export` — CSV-Download (max 10.000 Einträge) | ✅ | `packages/server/src/routes/admin.routes.ts` |
+| Index `{ riskLevel: 1, timestamp: -1 }` | ✅ | `packages/server/src/models/AuditLog.ts` |
+
+#### API Client
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `adminAPI.getAuditLog()` — erweiterte Filter-Parameter | ✅ | `packages/client/src/services/api.ts` |
+| `adminAPI.getAuditLogStats()` — Stats abrufen | ✅ | `packages/client/src/services/api.ts` |
+| `adminAPI.exportAuditLog()` — CSV als Blob | ✅ | `packages/client/src/services/api.ts` |
+
+#### Client: AuditLogsSection UI
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Stats Bar (5 Cards: Total, Low, Medium, High, Critical mit farbigen Dots) | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| 6 Filter: Action, Entity Type, Risk Level, Date From/To, User Search (300ms Debounce) | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| Tabelle: 7 Spalten (Timestamp, User, Action, Entity Type, Entity ID, Risk, IP) | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| Farbcodierte Action-Badges (20 Action-Typen) + Risk-Level-Dots | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| Expandierbare Zeilen (Before/After JSON-Diff, User Agent, volle Entity ID) | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| Page-Number Pagination mit Ellipsis (`<< 1 2 ... 5 [6] 7 ... 20 >>`) | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| CSV Export mit Toast-Feedback | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+| Clear Filters Button | ✅ | `packages/client/src/components/settings/AuditLogsSection.tsx` |
+
+#### Settings-Integration
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Sidebar: "Audit Logs" Eintrag mit FileText-Icon | ✅ | `packages/client/src/components/settings/SettingsSidebar.tsx` |
+| Sidebar: Nur für Admin-Rollen sichtbar (chief_architect, enterprise_architect) | ✅ | `packages/client/src/components/settings/SettingsSidebar.tsx` |
+| SettingsPage: `SECTION_MAP` Registrierung | ✅ | `packages/client/src/components/settings/SettingsPage.tsx` |
+| SettingsPage: Breiterer Container `max-w-6xl` für Audit-Tabelle | ✅ | `packages/client/src/components/settings/SettingsPage.tsx` |
+
+#### Tests (34/34 bestanden)
+
+| # | Test | Ergebnis |
+|---|------|----------|
+| 0.1–0.3 | Setup: Register Admin + Viewer, Promote to chief_architect (MongoDB) | ✅ |
+| 1.1 | Unauthenticated → 401 auf audit-log | ✅ |
+| 1.2 | Viewer-Rolle → 403 auf audit-log | ✅ |
+| 1.3–1.4 | Unauthenticated → 401 auf stats + export | ✅ |
+| 2.1 | Default Listing (data, total, limit, offset) | ✅ |
+| 2.2 | Limit/Offset werden respektiert | ✅ |
+| 2.3 | Limit cap bei 500 | ✅ |
+| 2.4–2.6 | Filter: action, entityType, riskLevel | ✅ |
+| 2.7 | Filter: Date Range (startDate/endDate) | ✅ |
+| 2.8 | Filter: userSearch (Name/Email) | ✅ |
+| 2.9 | Combined Filters: nonexistent → 0 results | ✅ |
+| 2.10 | userId populated mit name + email | ✅ |
+| 2.11 | Sortierung: timestamp descending | ✅ |
+| 3.1–3.3 | Stats: alle Risk Levels, Total = Summe, non-negative | ✅ |
+| 4.1–4.2 | CSV: Content-Type text/csv, Content-Disposition attachment | ✅ |
+| 4.3–4.4 | CSV: korrekter Header, 8 Spalten | ✅ |
+| 4.5 | CSV: Filter werden respektiert | ✅ |
+| 4.6 | CSV: Viewer → 403 | ✅ |
+| 5.1–5.2 | Audit Entries existieren, Required Fields vorhanden | ✅ |
+| 6.1–6.4 | Pagination: Offset 0, verschiedene Seiten, konsistenter Total, Beyond-Total | ✅ |
+| 7.1 | Cleanup: Test-User gelöscht | ✅ |
+
+**Testdatei:** `packages/server/src/__tests__/audit.test.ts`
+**Ausführen:** `cd packages/server && npx jest src/__tests__/audit.test.ts --forceExit`
+
+---
+
 ## Bekannte offene Punkte
 
 1. **Workspace-Persistenz testen** — Fix implementiert, aber noch nicht live verifiziert.
-2. **Deduplizierung** — Kein Schutz gegen mehrfachen Import desselben Workflows.
-3. **Workspace-Löschung serverseitig** — `WorkspaceBar` löscht lokal, aber Server-seitige Löschung der zugehörigen Elemente fehlt.
+2. ~~**Deduplizierung**~~ — ✅ Duplicate Detection bei BPMN/n8n Import (Name+Type Matching, Skip in Merge Mode).
+3. ~~**Workspace-Löschung serverseitig**~~ — ✅ Cascade Delete (Neo4j DETACH DELETE + Server API).
 4. **Deep Links** — Direkte URL zu einem Workspace (`/project/:id/workspace/:wsId`) existiert nicht.
-5. **Cross-Architecture Connections serverseitig** — Shared Elements nur lokal, nicht auf dem Server persistiert.
+5. ~~**Cross-Architecture Connections serverseitig**~~ — ✅ Bereits persistiert via `addConnection` → `createConnection`.
 6. **Einladungssystem (Phase 5)** — E-Mail-Einladungen, zeitlich begrenzter Zugang für Berater — geplant, nicht implementiert.
-7. **Audit Trail UI (Phase 6)** — Admin Audit-Log Sektion mit Filtern — geplant, nicht implementiert.
+7. ~~**Audit Trail UI (Phase 6)**~~ — ✅ Admin Audit-Log Sektion mit 6 Filtern, Stats, CSV-Export, expandierbaren Zeilen (siehe Abschnitt 14).
 8. ~~**Deployment**~~ — ✅ HTTPS via Caddy auf `thearchitect.site` live (2026-03-16).
+9. ~~**PDF Report Export**~~ — ✅ 3 Report-Typen (Executive, Simulation, Inventory) mit PDFKit.
+10. ~~**Matrix Theme**~~ — ✅ Komplettes Rebranding von Purple zu Matrix-Grün.
+11. ~~**UI/UX Overhaul**~~ — ✅ Toasts, Error Boundary, Skeletons, Modal-Animationen, Confirmations, a11y.
 
 ### MiroFish — Geplante Phasen
 
@@ -477,7 +795,7 @@ Internet → Caddy (:80/:443) → App (:4000) → MongoDB/Neo4j/Redis/MinIO
 11. **Phase 2: X-Ray Integration** — SimulationOverlay auf Risk/Cost-Heatmap, pulsierend bei Deltas.
 12. **Phase 3: Custom Persona Editor** — Name, Layers, Constraints frei konfigurierbar.
 13. **Phase 3: Run-Vergleich** — Zwei Simulationsläufe nebeneinander vergleichen.
-14. **Phase 3: PDF-Export** — Simulation Report als PDF.
+14. ~~**Phase 3: PDF-Export**~~ — ✅ Implementiert (siehe Abschnitt 11).
 15. **Phase 3: Monte Carlo Integration** — Simulation-Ergebnisse als verhaltensbasierte Risk Factors in `runMonteCarloSimulation()`.
 
 ---
@@ -503,5 +821,5 @@ Internet → Caddy (:80/:443) → App (:4000) → MongoDB/Neo4j/Redis/MinIO
 ## Git-Status
 
 **Branch:** `master`
-**Letzter Commit:** `6d9408b` — Fix off-by-one in EmergenceTracker totalRoundsElapsed
+**Letzter Commit:** `ee7c1b0` — Add www subdomain to Caddyfile for both domain variants
 **Remote:** `origin/master` — up to date

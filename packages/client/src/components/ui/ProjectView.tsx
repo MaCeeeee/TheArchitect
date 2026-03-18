@@ -69,9 +69,9 @@ export default function ProjectView() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 size={24} className="animate-spin text-[#7c3aed]" />
-        <span className="ml-2 text-sm text-[#94a3b8]">Loading architecture...</span>
+      <div className="flex h-full items-center justify-center flex-col gap-3">
+        <div className="h-8 w-8 rounded-full border-2 border-[#1a2a1a] border-t-[#00ff41] animate-spin" />
+        <span className="text-sm text-[#7a8a7a]" style={{ textShadow: '0 0 8px rgba(0,255,65,0.3)' }}>Loading architecture...</span>
       </div>
     );
   }

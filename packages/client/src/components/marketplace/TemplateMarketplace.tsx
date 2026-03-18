@@ -46,7 +46,7 @@ export default function TemplateMarketplace() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Store size={14} className="text-[#f97316]" />
           Template Marketplace
@@ -55,14 +55,14 @@ export default function TemplateMarketplace() {
 
       {/* Search */}
       <div className="p-3">
-        <div className="flex items-center gap-2 rounded-md bg-[#0f172a] px-3 py-1.5 border border-[#334155]">
-          <Search size={12} className="text-[#94a3b8]" />
+        <div className="flex items-center gap-2 rounded-md bg-[#0a0a0a] px-3 py-1.5 border border-[#1a2a1a]">
+          <Search size={12} className="text-[#7a8a7a]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search templates..."
-            className="flex-1 bg-transparent text-[10px] text-white placeholder:text-[#64748b] outline-none"
+            className="flex-1 bg-transparent text-[10px] text-white placeholder:text-[#4a5a4a] outline-none"
           />
         </div>
       </div>
@@ -76,7 +76,7 @@ export default function TemplateMarketplace() {
             className={`px-2 py-0.5 rounded-full text-[9px] capitalize transition ${
               category === c
                 ? 'bg-[#f97316] text-white'
-                : 'bg-[#0f172a] text-[#64748b] hover:text-white border border-[#334155]'
+                : 'bg-[#0a0a0a] text-[#4a5a4a] hover:text-white border border-[#1a2a1a]'
             }`}
           >
             {c.replace(/_/g, ' ')}
@@ -87,13 +87,13 @@ export default function TemplateMarketplace() {
       {/* Template list */}
       <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
         {filtered.map((t) => (
-          <div key={t.id} className="rounded-md border border-[#334155] bg-[#0f172a] p-2.5">
+          <div key={t.id} className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2.5">
             <div className="flex items-start justify-between mb-1">
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] text-white font-medium truncate">{t.name}</div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[8px] text-[#f97316] capitalize bg-[#f97316]/10 px-1 rounded">{t.category.replace(/_/g, ' ')}</span>
-                  <span className="text-[8px] text-[#64748b]">{t.industry}</span>
+                  <span className="text-[8px] text-[#4a5a4a]">{t.industry}</span>
                 </div>
               </div>
               <div className="flex items-center gap-0.5">
@@ -101,9 +101,9 @@ export default function TemplateMarketplace() {
                 <span className="text-[9px] text-[#eab308]">{t.rating}</span>
               </div>
             </div>
-            <p className="text-[9px] text-[#64748b] mb-2 line-clamp-2">{t.description}</p>
+            <p className="text-[9px] text-[#4a5a4a] mb-2 line-clamp-2">{t.description}</p>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 text-[8px] text-[#475569]">
+              <div className="flex items-center gap-3 text-[8px] text-[#3a4a3a]">
                 <span>{t.elements} elements</span>
                 <span>{t.connections} connections</span>
                 <span><Download size={8} className="inline" /> {t.downloads}</span>
@@ -116,12 +116,12 @@ export default function TemplateMarketplace() {
                 {deploying === t.id ? 'Deploying...' : t.free ? 'Deploy' : 'Purchase'}
               </button>
             </div>
-            <div className="text-[8px] text-[#475569] mt-1">by {t.author}</div>
+            <div className="text-[8px] text-[#3a4a3a] mt-1">by {t.author}</div>
           </div>
         ))}
 
         {filtered.length === 0 && (
-          <p className="text-[10px] text-[#64748b] text-center py-6">No templates found</p>
+          <p className="text-[10px] text-[#4a5a4a] text-center py-6">No templates found</p>
         )}
       </div>
     </div>

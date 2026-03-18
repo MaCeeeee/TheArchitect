@@ -14,9 +14,13 @@ import {
   Shield,
   BarChart3,
   History,
+  Download,
+  Loader2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { reportAPI } from '../../services/api';
 import type { AgentPersona, ScenarioType, FatigueRating } from '@thearchitect/shared/src/types/simulation.types';
 
 const SCENARIO_TYPES: { value: ScenarioType; label: string; icon: typeof Brain }[] = [
@@ -74,7 +78,7 @@ export default function SimulationPanel() {
   const {
     isRunning, currentRound, currentAgent, streamingText,
     fatigueReport, fatigueTimeline, emergenceEvents, emergenceMetrics,
-    liveFeed, runs, riskOverlay, costOverlay, showOverlay,
+    liveFeed, runs, riskOverlay, costOverlay, showOverlay, activeRunId,
     startSimulation, cancelSimulation, loadRuns, selectRun, toggleOverlay, clearSimulation,
   } = useSimulationStore();
 
@@ -121,14 +125,14 @@ export default function SimulationPanel() {
   return (
     <div className="flex flex-col h-full text-sm">
       {/* Tab bar */}
-      <div className="flex border-b border-[#334155] px-2">
+      <div className="flex border-b border-[#1a2a1a] px-2">
         {(['config', 'results', 'history'] as ViewMode[]).map((mode) => (
           <button
             key={mode}
             onClick={() => mode === 'history' ? handleLoadHistory() : setViewMode(mode)}
             className={`px-3 py-2 text-xs font-medium capitalize ${
               viewMode === mode
-                ? 'text-[#7c3aed] border-b-2 border-[#7c3aed]'
+                ? 'text-[#00ff41] border-b-2 border-[#00ff41]'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -175,6 +179,8 @@ export default function SimulationPanel() {
             showOverlay={showOverlay}
             onToggleOverlay={toggleOverlay}
             onNewRun={() => setViewMode('config')}
+            projectId={projectId}
+            runId={activeRunId}
           />
         )}
 
@@ -212,7 +218,7 @@ function ConfigView({
 }) {
   return (
     <>
-      <div className="flex items-center gap-2 text-[#7c3aed]">
+      <div className="flex items-center gap-2 text-[#00ff41]">
         <Brain size={16} />
         <span className="font-semibold">MiroFish Simulation</span>
       </div>
@@ -223,7 +229,7 @@ function ConfigView({
         <select
           value={scenarioType}
           onChange={(e) => setScenarioType(e.target.value as ScenarioType)}
-          className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1.5 text-xs"
+          className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs"
         >
           {SCENARIO_TYPES.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
@@ -238,7 +244,7 @@ function ConfigView({
           value={scenarioDescription}
           onChange={(e) => setScenarioDescription(e.target.value)}
           placeholder="e.g., We are migrating our legacy ERP to a cloud-native platform while simultaneously integrating an acquired company's data systems..."
-          className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1.5 text-xs h-20 resize-none"
+          className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs h-20 resize-none"
         />
       </div>
 
@@ -250,7 +256,7 @@ function ConfigView({
         <input
           type="range" min={2} max={10} value={maxRounds}
           onChange={(e) => setMaxRounds(parseInt(e.target.value))}
-          className="w-full accent-[#7c3aed]"
+          className="w-full accent-[#00ff41]"
         />
       </div>
 
@@ -261,19 +267,19 @@ function ConfigView({
         </label>
         <div className="space-y-1">
           {agents.map((agent) => (
-            <div key={agent.id} className="bg-[#1e293b] border border-[#334155] rounded">
+            <div key={agent.id} className="bg-[#111111] border border-[#1a2a1a] rounded">
               <button
                 onClick={() => setExpandedAgent(expandedAgent === agent.id ? null : agent.id)}
                 className="w-full flex items-center justify-between px-2 py-1.5 text-xs"
               >
                 <div className="flex items-center gap-2">
-                  <Shield size={12} className="text-[#7c3aed]" />
+                  <Shield size={12} className="text-[#00ff41]" />
                   <span>{agent.name}</span>
                 </div>
                 {expandedAgent === agent.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               </button>
               {expandedAgent === agent.id && (
-                <div className="px-2 pb-2 text-xs text-gray-400 space-y-1 border-t border-[#334155]">
+                <div className="px-2 pb-2 text-xs text-gray-400 space-y-1 border-t border-[#1a2a1a]">
                   <div className="pt-1">Layers: {agent.visibleLayers.join(', ')}</div>
                   <div>Budget: ${agent.budgetConstraint?.toLocaleString() || 'unlimited'}</div>
                   <div>Risk Threshold: {agent.riskThreshold || 'none'}</div>
@@ -290,7 +296,7 @@ function ConfigView({
       <button
         onClick={onStart}
         disabled={!scenarioDescription.trim()}
-        className="w-full flex items-center justify-center gap-2 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white px-3 py-2 rounded text-xs font-medium transition-colors"
+        className="w-full flex items-center justify-center gap-2 bg-[#00ff41] hover:bg-[#00cc33] disabled:opacity-40 text-black px-3 py-2 rounded text-xs font-medium transition-colors"
       >
         <Play size={14} />
         Run Simulation
@@ -327,9 +333,9 @@ function RunningView({
         </button>
       </div>
 
-      <div className="w-full bg-[#1e293b] rounded-full h-1.5">
+      <div className="w-full bg-[#111111] rounded-full h-1.5">
         <div
-          className="bg-[#7c3aed] h-1.5 rounded-full transition-all"
+          className="bg-[#00ff41] h-1.5 rounded-full transition-all"
           style={{ width: `${((currentRound + 1) / maxRounds) * 100}%` }}
         />
       </div>
@@ -337,7 +343,7 @@ function RunningView({
       {/* Current Agent */}
       {currentAgent && (
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-2 h-2 rounded-full bg-[#7c3aed] animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-[#00ff41] animate-pulse" />
           <span className="text-gray-300">{currentAgent} is thinking...</span>
         </div>
       )}
@@ -356,7 +362,7 @@ function RunningView({
 
       {/* Streaming reasoning */}
       {streamingText && (
-        <div className="bg-[#1e293b] border border-[#334155] rounded p-2 text-xs text-gray-300 max-h-32 overflow-y-auto">
+        <div className="bg-[#111111] border border-[#1a2a1a] rounded p-2 text-xs text-gray-300 max-h-32 overflow-y-auto">
           {streamingText}
         </div>
       )}
@@ -387,6 +393,7 @@ function RunningView({
 function ResultsView({
   fatigueReport, emergenceMetrics, emergenceEvents,
   riskOverlay, costOverlay, showOverlay, onToggleOverlay, onNewRun,
+  projectId, runId,
 }: {
   fatigueReport: any;
   emergenceMetrics: any;
@@ -396,7 +403,30 @@ function ResultsView({
   showOverlay: boolean;
   onToggleOverlay: () => void;
   onNewRun: () => void;
+  projectId: string | null;
+  runId: string | null;
 }) {
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportPDF = async () => {
+    if (!projectId || !runId) return;
+    setExportLoading(true);
+    try {
+      const { data } = await reportAPI.downloadSimulation(projectId, runId);
+      const url = URL.createObjectURL(data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TheArchitect-simulation-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Simulation report downloaded');
+    } catch (err) {
+      console.error('[SimulationPanel] Failed to export PDF:', err);
+      toast.error('Failed to export simulation report');
+    } finally {
+      setExportLoading(false);
+    }
+  };
   if (!fatigueReport) {
     return (
       <div className="text-xs text-gray-400 p-4 text-center">
@@ -443,7 +473,7 @@ function ResultsView({
 
       {/* Recommendation */}
       {fatigueReport.recommendation && (
-        <div className="bg-[#1e293b] border border-[#334155] rounded p-2 text-xs text-gray-300">
+        <div className="bg-[#111111] border border-[#1a2a1a] rounded p-2 text-xs text-gray-300">
           <div className="text-xs text-gray-400 mb-1 font-medium">Recommendation</div>
           {fatigueReport.recommendation}
         </div>
@@ -454,7 +484,7 @@ function ResultsView({
         <div className="text-xs text-gray-400 mb-1 font-medium">Stakeholder Fatigue</div>
         <div className="space-y-1.5">
           {fatigueReport.perAgent?.map((agent: any) => (
-            <div key={agent.agentId} className="bg-[#1e293b] rounded p-2">
+            <div key={agent.agentId} className="bg-[#111111] rounded p-2">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-gray-300">{agent.agentName}</span>
                 <span style={{ color: FATIGUE_COLORS[agent.fatigueIndex >= 0.8 ? 'red' : agent.fatigueIndex >= 0.6 ? 'orange' : agent.fatigueIndex >= 0.3 ? 'yellow' : 'green'] }}>
@@ -483,7 +513,7 @@ function ResultsView({
           <div className="text-xs text-gray-400 mb-1 font-medium">Bottleneck Elements</div>
           <div className="space-y-1">
             {fatigueReport.perElement.slice(0, 5).map((el: any) => (
-              <div key={el.elementId} className="bg-[#1e293b] rounded px-2 py-1.5 text-xs">
+              <div key={el.elementId} className="bg-[#111111] rounded px-2 py-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-300 truncate">{el.elementName}</span>
                   <span className="text-orange-400 ml-2">
@@ -518,16 +548,24 @@ function ResultsView({
           onClick={onToggleOverlay}
           className={`flex-1 text-xs px-2 py-1.5 rounded border transition-colors ${
             showOverlay
-              ? 'bg-[#7c3aed]/20 border-[#7c3aed] text-[#7c3aed]'
-              : 'bg-[#1e293b] border-[#334155] text-gray-400 hover:text-gray-200'
+              ? 'bg-[#00ff41]/20 border-[#00ff41] text-[#00ff41]'
+              : 'bg-[#111111] border-[#1a2a1a] text-gray-400 hover:text-gray-200'
           }`}
         >
           <BarChart3 size={12} className="inline mr-1" />
           {showOverlay ? 'Hide' : 'Show'} Overlay
         </button>
         <button
+          onClick={handleExportPDF}
+          disabled={exportLoading || !projectId || !runId}
+          className="flex-1 text-xs px-2 py-1.5 rounded bg-[#111111] border border-[#1a2a1a] text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
+        >
+          {exportLoading ? <Loader2 size={12} className="inline mr-1 animate-spin" /> : <Download size={12} className="inline mr-1" />}
+          Export PDF
+        </button>
+        <button
           onClick={onNewRun}
-          className="flex-1 text-xs px-2 py-1.5 rounded bg-[#1e293b] border border-[#334155] text-gray-400 hover:text-gray-200 transition-colors"
+          className="flex-1 text-xs px-2 py-1.5 rounded bg-[#111111] border border-[#1a2a1a] text-gray-400 hover:text-gray-200 transition-colors"
         >
           <Play size={12} className="inline mr-1" />
           New Run
@@ -559,7 +597,7 @@ function HistoryView({ runs, projectId, onSelect }: {
         <button
           key={run.id}
           onClick={() => onSelect(run.id)}
-          className="w-full bg-[#1e293b] border border-[#334155] rounded p-2 text-left hover:border-[#7c3aed]/50 transition-colors"
+          className="w-full bg-[#111111] border border-[#1a2a1a] rounded p-2 text-left hover:border-[#00ff41]/50 transition-colors"
         >
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-300 truncate">{run.name}</span>
@@ -588,7 +626,7 @@ function FactorBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[10px] text-gray-500 w-16 truncate">{label}</span>
-      <div className="flex-1 bg-[#0f172a] rounded-full h-1">
+      <div className="flex-1 bg-[#0a0a0a] rounded-full h-1">
         <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-[10px] text-gray-500 w-7 text-right">{pct.toFixed(0)}%</span>
@@ -598,7 +636,7 @@ function FactorBar({ label, value }: { label: string; value: number }) {
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-[#0f172a] rounded p-1.5">
+    <div className="bg-[#0a0a0a] rounded p-1.5">
       <div className="text-[10px] text-gray-500">{label}</div>
       <div className="text-xs text-gray-200 font-medium">{value}</div>
     </div>

@@ -10,12 +10,12 @@ import ViewpointSelector from './ViewpointSelector';
 type TOGAFTab = 'adm' | 'business' | 'data' | 'application' | 'technology' | 'viewpoints';
 
 const TABS: { id: TOGAFTab; label: string; icon: typeof Compass; color: string }[] = [
-  { id: 'adm', label: 'ADM', icon: Compass, color: '#7c3aed' },
+  { id: 'adm', label: 'ADM', icon: Compass, color: '#00ff41' },
   { id: 'business', label: 'Business', icon: Building2, color: '#22c55e' },
   { id: 'data', label: 'Data', icon: Database, color: '#3b82f6' },
   { id: 'application', label: 'Apps', icon: AppWindow, color: '#f97316' },
-  { id: 'technology', label: 'Tech', icon: Server, color: '#a855f7' },
-  { id: 'viewpoints', label: 'Views', icon: Eye, color: '#94a3b8' },
+  { id: 'technology', label: 'Tech', icon: Server, color: '#00ff41' },
+  { id: 'viewpoints', label: 'Views', icon: Eye, color: '#7a8a7a' },
 ];
 
 export default function TOGAF10Framework() {
@@ -24,7 +24,7 @@ export default function TOGAF10Framework() {
   return (
     <div className="flex flex-col h-full">
       {/* Sub-tabs */}
-      <div className="flex border-b border-[#334155] overflow-x-auto">
+      <div className="flex border-b border-[#1a2a1a] overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -34,7 +34,7 @@ export default function TOGAF10Framework() {
               className={`flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition border-b-2 ${
                 activeTab === tab.id
                   ? 'border-current text-white'
-                  : 'border-transparent text-[#64748b] hover:text-[#94a3b8]'
+                  : 'border-transparent text-[#4a5a4a] hover:text-[#7a8a7a]'
               }`}
               style={activeTab === tab.id ? { color: tab.color } : undefined}
             >

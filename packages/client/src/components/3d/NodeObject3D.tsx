@@ -10,7 +10,7 @@ const LAYER_COLORS: Record<string, string> = {
   business: '#22c55e',
   information: '#3b82f6',
   application: '#f97316',
-  technology: '#a855f7',
+  technology: '#00ff41',
 };
 
 const TYPE_GEOMETRY: Record<string, 'box' | 'sphere' | 'cylinder' | 'cone'> = {
@@ -51,7 +51,7 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
   const setDraggingStore = useArchitectureStore((s) => s.setDragging);
 
   const isSelected = selectedId === element.id || selectedIds.has(element.id);
-  const baseColor = LAYER_COLORS[element.layer] || '#64748b';
+  const baseColor = LAYER_COLORS[element.layer] || '#4a5a4a';
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
 
   // X-Ray mode state
@@ -293,7 +293,7 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
             border: `1px solid ${color}`,
             borderRadius: '6px',
             padding: '4px 10px',
-            color: '#f1f5f9',
+            color: '#e0e0e0',
             fontSize: '11px',
             fontWeight: 500,
             whiteSpace: 'nowrap',
@@ -320,7 +320,7 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
               )}
             </div>
           ) : (
-            <div style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px' }}>
+            <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '2px' }}>
               {element.type.replace(/_/g, ' ')}
             </div>
           )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { governanceAPI } from '../../services/api';
 
 interface PolicyRule {
@@ -66,8 +67,10 @@ export default function PolicyManager() {
     setPolicies((prev) => prev.map((p) => p._id === id ? { ...p, enabled } : p));
     try {
       await governanceAPI.updatePolicy(projectId, id, { enabled });
+      toast.success('Policy updated');
     } catch {
       setPolicies((prev) => prev.map((p) => p._id === id ? { ...p, enabled: !enabled } : p));
+      toast.error('Failed to toggle policy');
       setError('Failed to toggle policy');
     }
   };
@@ -93,7 +96,9 @@ export default function PolicyManager() {
       setNewDescription('');
       setRuleMessage('');
       await loadPolicies();
+      toast.success('Policy created');
     } catch {
+      toast.error('Failed to create policy');
       setError('Failed to create policy');
     } finally {
       setCreating(false);
@@ -105,7 +110,9 @@ export default function PolicyManager() {
     try {
       await governanceAPI.deletePolicy(projectId, id);
       setPolicies((prev) => prev.filter((p) => p._id !== id));
+      toast.success('Policy deleted');
     } catch {
+      toast.error('Failed to delete policy');
       setError('Failed to delete policy');
     }
   };
@@ -117,26 +124,26 @@ export default function PolicyManager() {
   };
 
   const categoryColors: Record<string, string> = {
-    architecture: '#a855f7', security: '#ef4444', naming: '#3b82f6',
-    compliance: '#22c55e', data: '#06b6d4', custom: '#94a3b8',
+    architecture: '#00ff41', security: '#ef4444', naming: '#3b82f6',
+    compliance: '#22c55e', data: '#06b6d4', custom: '#7a8a7a',
   };
 
   const enabledCount = policies.filter((p) => p.enabled).length;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <ScrollText size={14} className="text-[#06b6d4]" />
           Policy Manager
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">{enabledCount}/{policies.length} policies active</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">{enabledCount}/{policies.length} policies active</p>
       </div>
 
       <div className="p-3">
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="w-full rounded-md bg-[#334155] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#475569] transition flex items-center justify-center gap-1"
+          className="w-full rounded-md bg-[#1a2a1a] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1"
         >
           <Plus size={10} />
           Create Policy
@@ -145,19 +152,19 @@ export default function PolicyManager() {
 
       {showCreate && (
         <div className="px-3 pb-3">
-          <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2 space-y-2">
+          <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2 space-y-2">
             <input
               autoFocus
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Policy name"
-              className="w-full bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none focus:border-[#7c3aed]"
+              className="w-full bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#00ff41]"
             />
             <div className="flex gap-1">
-              <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none">
+              <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="flex-1 bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none">
+              <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="flex-1 bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
                 {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -165,17 +172,17 @@ export default function PolicyManager() {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none focus:border-[#7c3aed]"
+              className="w-full bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#00ff41]"
             />
 
             {/* Rule */}
-            <div className="border-t border-[#334155] pt-2">
-              <span className="text-[9px] text-[#64748b] font-semibold uppercase">Rule</span>
+            <div className="border-t border-[#1a2a1a] pt-2">
+              <span className="text-[9px] text-[#4a5a4a] font-semibold uppercase">Rule</span>
               <div className="flex gap-1 mt-1">
-                <select value={ruleField} onChange={(e) => setRuleField(e.target.value)} className="flex-1 bg-[#1e293b] rounded px-1 py-1 text-[10px] text-white border border-[#334155] outline-none">
+                <select value={ruleField} onChange={(e) => setRuleField(e.target.value)} className="flex-1 bg-[#111111] rounded px-1 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
                   {FIELDS.map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>
-                <select value={ruleOperator} onChange={(e) => setRuleOperator(e.target.value)} className="flex-1 bg-[#1e293b] rounded px-1 py-1 text-[10px] text-white border border-[#334155] outline-none">
+                <select value={ruleOperator} onChange={(e) => setRuleOperator(e.target.value)} className="flex-1 bg-[#111111] rounded px-1 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
                   {OPERATORS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
                 </select>
               </div>
@@ -183,13 +190,13 @@ export default function PolicyManager() {
                 value={ruleValue}
                 onChange={(e) => setRuleValue(e.target.value)}
                 placeholder="Expected value"
-                className="w-full bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none focus:border-[#7c3aed] mt-1"
+                className="w-full bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#00ff41] mt-1"
               />
               <input
                 value={ruleMessage}
                 onChange={(e) => setRuleMessage(e.target.value)}
                 placeholder="Violation message"
-                className="w-full bg-[#1e293b] rounded px-2 py-1 text-[10px] text-white border border-[#334155] outline-none focus:border-[#7c3aed] mt-1"
+                className="w-full bg-[#111111] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#00ff41] mt-1"
               />
             </div>
 
@@ -197,11 +204,11 @@ export default function PolicyManager() {
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim() || !ruleMessage.trim() || creating}
-                className="flex-1 rounded bg-[#7c3aed] px-2 py-1 text-[10px] text-white hover:bg-[#6d28d9] disabled:opacity-50"
+                className="flex-1 rounded bg-[#00ff41] px-2 py-1 text-[10px] text-black hover:bg-[#00cc33] disabled:opacity-50"
               >
                 {creating ? 'Saving...' : 'Save'}
               </button>
-              <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#334155] px-2 py-1 text-[10px] text-[#94a3b8] hover:bg-[#475569]">
+              <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#1a2a1a] px-2 py-1 text-[10px] text-[#7a8a7a] hover:bg-[#3a4a3a]">
                 Cancel
               </button>
             </div>
@@ -224,37 +231,37 @@ export default function PolicyManager() {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {policies.map((p) => (
-            <div key={p._id} className="px-3 py-2 border-b border-[#334155]/30 hover:bg-[#0f172a] transition group">
+            <div key={p._id} className="px-3 py-2 border-b border-[#1a2a1a]/30 hover:bg-[#0a0a0a] transition group">
               <div className="flex items-center gap-2">
                 {severityIcon(p.severity)}
                 <span className="text-[10px] text-white font-medium flex-1 truncate">{p.name}</span>
                 <button
                   onClick={() => handleDelete(p._id)}
-                  className="opacity-0 group-hover:opacity-100 text-[#64748b] hover:text-[#ef4444] transition p-0.5"
+                  className="opacity-0 group-hover:opacity-100 text-[#4a5a4a] hover:text-[#ef4444] transition p-0.5"
                   title="Delete policy"
                 >
                   <Trash2 size={10} />
                 </button>
-                <button onClick={() => togglePolicy(p._id, !p.enabled)} className="text-[#94a3b8]">
+                <button onClick={() => togglePolicy(p._id, !p.enabled)} className="text-[#7a8a7a]">
                   {p.enabled
                     ? <ToggleRight size={16} className="text-[#22c55e]" />
-                    : <ToggleLeft size={16} className="text-[#475569]" />}
+                    : <ToggleLeft size={16} className="text-[#3a4a3a]" />}
                 </button>
               </div>
               <div className="flex items-center gap-2 mt-1 ml-4">
                 <span
                   className="text-[8px] px-1 rounded capitalize"
-                  style={{ color: categoryColors[p.category] || '#94a3b8', backgroundColor: `${categoryColors[p.category] || '#94a3b8'}20` }}
+                  style={{ color: categoryColors[p.category] || '#7a8a7a', backgroundColor: `${categoryColors[p.category] || '#7a8a7a'}20` }}
                 >
                   {p.category}
                 </span>
-                <span className="text-[8px] text-[#475569]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
+                <span className="text-[8px] text-[#3a4a3a]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
               </div>
-              {p.description && <p className="text-[9px] text-[#64748b] mt-1 ml-4">{p.description}</p>}
+              {p.description && <p className="text-[9px] text-[#4a5a4a] mt-1 ml-4">{p.description}</p>}
             </div>
           ))}
           {policies.length === 0 && (
-            <p className="text-[10px] text-[#64748b] text-center py-6">No policies yet. Create one to start.</p>
+            <p className="text-[10px] text-[#4a5a4a] text-center py-6">No policies yet. Create one to start.</p>
           )}
         </div>
       )}

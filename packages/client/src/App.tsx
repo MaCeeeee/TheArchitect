@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import MainLayout from './components/ui/MainLayout';
 import AuthLayout from './components/security/AuthLayout';
 import LoginPage from './components/security/LoginPage';
@@ -17,6 +18,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <Routes>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
@@ -37,5 +39,6 @@ export default function App() {
         <Route path="settings/:section" element={<SettingsPage />} />
       </Route>
     </Routes>
+    </ErrorBoundary>
   );
 }

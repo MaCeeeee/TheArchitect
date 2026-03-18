@@ -17,7 +17,7 @@ const VIEWPOINTS: ViewpointDef[] = [
     id: 'all', name: 'All Elements', description: 'Show all architecture elements across all layers',
     domainFilter: ['business', 'data', 'application', 'technology'],
     layerFilter: ['strategy', 'business', 'information', 'application', 'technology'],
-    icon: 'grid', color: '#94a3b8',
+    icon: 'grid', color: '#7a8a7a',
   },
   {
     id: 'business', name: 'Business View', description: 'Business capabilities, processes, value streams, and services',
@@ -41,7 +41,7 @@ const VIEWPOINTS: ViewpointDef[] = [
     id: 'technology', name: 'Technology Standards', description: 'Infrastructure, platforms, and technology components',
     domainFilter: ['technology'],
     layerFilter: ['technology'],
-    icon: 'cpu', color: '#a855f7',
+    icon: 'cpu', color: '#00ff41',
   },
   {
     id: 'migration', name: 'Migration View', description: 'Elements by status: current, target, transitional, retired',
@@ -79,8 +79,8 @@ export default function ViewpointSelector({ onViewpointChange }: Props) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
-        <h4 className="text-[10px] font-semibold uppercase text-[#64748b] flex items-center gap-1.5">
+      <div className="p-3 border-b border-[#1a2a1a]">
+        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] flex items-center gap-1.5">
           <Eye size={12} />
           Viewpoints
         </h4>
@@ -100,7 +100,7 @@ export default function ViewpointSelector({ onViewpointChange }: Props) {
               key={vp.id}
               onClick={() => handleSelect(vp)}
               className={`flex w-full items-start gap-2 rounded-lg p-2 text-left transition ${
-                isActive ? 'bg-[#7c3aed]/10 border border-[#7c3aed]/30' : 'hover:bg-[#0f172a] border border-transparent'
+                isActive ? 'bg-[#00ff41]/10 border border-[#00ff41]/30' : 'hover:bg-[#0a0a0a] border border-transparent'
               }`}
             >
               <div
@@ -111,12 +111,12 @@ export default function ViewpointSelector({ onViewpointChange }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className={`text-xs font-medium ${isActive ? 'text-white' : 'text-[#94a3b8]'}`}>
+                  <span className={`text-xs font-medium ${isActive ? 'text-white' : 'text-[#7a8a7a]'}`}>
                     {vp.name}
                   </span>
-                  <span className="text-[10px] text-[#475569]">{elementCount}</span>
+                  <span className="text-[10px] text-[#3a4a3a]">{elementCount}</span>
                 </div>
-                <p className="text-[10px] text-[#64748b] mt-0.5">{vp.description}</p>
+                <p className="text-[10px] text-[#4a5a4a] mt-0.5">{vp.description}</p>
               </div>
             </button>
           );
@@ -124,17 +124,17 @@ export default function ViewpointSelector({ onViewpointChange }: Props) {
       </div>
 
       {/* Active filters */}
-      <div className="mt-auto border-t border-[#334155] p-3">
+      <div className="mt-auto border-t border-[#1a2a1a] p-3">
         <div className="flex items-center gap-1.5 mb-1.5">
-          <Filter size={12} className="text-[#64748b]" />
-          <span className="text-[10px] font-semibold uppercase text-[#64748b]">Active Layers</span>
+          <Filter size={12} className="text-[#4a5a4a]" />
+          <span className="text-[10px] font-semibold uppercase text-[#4a5a4a]">Active Layers</span>
         </div>
         <div className="flex flex-wrap gap-1">
           {['strategy', 'business', 'information', 'application', 'technology'].map((layer) => (
             <span
               key={layer}
               className={`text-[9px] px-1.5 py-0.5 rounded-full capitalize ${
-                visibleLayers.has(layer) ? 'bg-[#334155] text-white' : 'bg-[#0f172a] text-[#475569]'
+                visibleLayers.has(layer) ? 'bg-[#1a2a1a] text-white' : 'bg-[#0a0a0a] text-[#3a4a3a]'
               }`}
             >
               {layer}

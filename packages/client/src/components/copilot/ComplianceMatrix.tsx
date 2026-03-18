@@ -64,14 +64,14 @@ interface ComplianceMatrixProps {
 // ─── Helpers ───
 
 function getCellColor(cell: MatrixCell) {
-  if (cell.total === 0) return 'bg-[#1e293b] text-[#475569]';
+  if (cell.total === 0) return 'bg-[#111111] text-[#3a4a3a]';
   if (cell.gap > 0) return 'bg-red-500/10 text-red-400 border-red-500/20';
   if (cell.partial > 0) return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
   return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 }
 
 function getCellIcon(cell: MatrixCell) {
-  if (cell.total === 0) return <Minus size={10} className="text-[#475569]" />;
+  if (cell.total === 0) return <Minus size={10} className="text-[#3a4a3a]" />;
   if (cell.gap > 0) return <XCircle size={10} className="text-red-400" />;
   if (cell.partial > 0) return <AlertTriangle size={10} className="text-yellow-400" />;
   return <CheckCircle2 size={10} className="text-emerald-400" />;
@@ -82,7 +82,7 @@ function getStatusIcon(status: string) {
     case 'compliant': return <CheckCircle2 size={10} className="text-emerald-400" />;
     case 'partial': return <AlertTriangle size={10} className="text-yellow-400" />;
     case 'gap': return <XCircle size={10} className="text-red-400" />;
-    default: return <Minus size={10} className="text-[#475569]" />;
+    default: return <Minus size={10} className="text-[#3a4a3a]" />;
   }
 }
 
@@ -272,7 +272,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
   if (!matrix) {
     return (
       <div className="flex items-center justify-center h-full p-4">
-        <p className="text-xs text-[#64748b]">Matrix konnte nicht geladen werden.</p>
+        <p className="text-xs text-[#4a5a4a]">Matrix konnte nicht geladen werden.</p>
       </div>
     );
   }
@@ -289,7 +289,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
     return (
       <div className="flex flex-col h-full">
         {/* Drilldown Header */}
-        <div className="p-2 border-b border-[#334155]">
+        <div className="p-2 border-b border-[#1a2a1a]">
           <button
             onClick={() => setDrilldown(null)}
             className="flex items-center gap-1 text-[10px] text-[#38bdf8] hover:text-white mb-1 transition"
@@ -300,7 +300,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
           <p className="text-[11px] font-medium text-white">
             §{drilldown.sectionNumber} {drilldown.sectionTitle}
           </p>
-          <p className="text-[9px] text-[#64748b]">
+          <p className="text-[9px] text-[#4a5a4a]">
             × {drilldown.layer.charAt(0).toUpperCase() + drilldown.layer.slice(1)} Layer
           </p>
         </div>
@@ -309,15 +309,15 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
           {drillMappings.length === 0 && !showAddForm && (
             <div className="text-center py-4">
-              <XCircle size={20} className="text-[#475569] mx-auto mb-1" />
-              <p className="text-[10px] text-[#64748b]">Keine Zuordnungen für diese Kombination.</p>
+              <XCircle size={20} className="text-[#3a4a3a] mx-auto mb-1" />
+              <p className="text-[10px] text-[#4a5a4a]">Keine Zuordnungen für diese Kombination.</p>
             </div>
           )}
 
           {drillMappings.map((mapping) => (
             <div
               key={mapping._id}
-              className="rounded border border-[#334155] bg-[#0f172a] p-2"
+              className="rounded border border-[#1a2a1a] bg-[#0a0a0a] p-2"
             >
               {editingId === mapping._id ? (
                 /* Edit Mode */
@@ -329,7 +329,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
-                    className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-[10px] text-white outline-none"
+                    className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
                   >
                     <option value="compliant">Compliant</option>
                     <option value="partial">Partial</option>
@@ -341,7 +341,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     placeholder="Notiz..."
-                    className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#475569] outline-none"
+                    className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#3a4a3a] outline-none"
                   />
                   <div className="flex gap-1">
                     <button
@@ -352,7 +352,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded bg-[#334155] text-[#94a3b8] hover:bg-[#475569] transition"
+                      className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[#7a8a7a] hover:bg-[#3a4a3a] transition"
                     >
                       <X size={10} /> Abbrechen
                     </button>
@@ -368,12 +368,12 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                       <span className="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded">AI</span>
                     )}
                   </div>
-                  <p className="text-[9px] text-[#64748b] mt-0.5 capitalize">Status: {mapping.status}</p>
+                  <p className="text-[9px] text-[#4a5a4a] mt-0.5 capitalize">Status: {mapping.status}</p>
                   {mapping.notes && (
-                    <p className="text-[9px] text-[#94a3b8] mt-0.5">{mapping.notes}</p>
+                    <p className="text-[9px] text-[#7a8a7a] mt-0.5">{mapping.notes}</p>
                   )}
                   {mapping.confidence > 0 && (
-                    <p className="text-[9px] text-[#475569] mt-0.5">
+                    <p className="text-[9px] text-[#3a4a3a] mt-0.5">
                       Confidence: {Math.round(mapping.confidence * 100)}%
                     </p>
                   )}
@@ -384,13 +384,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                         setEditStatus(mapping.status);
                         setEditNotes(mapping.notes);
                       }}
-                      className="text-[9px] text-[#64748b] hover:text-white flex items-center gap-0.5 transition"
+                      className="text-[9px] text-[#4a5a4a] hover:text-white flex items-center gap-0.5 transition"
                     >
                       <Edit3 size={8} /> Bearbeiten
                     </button>
                     <button
                       onClick={() => handleDeleteMapping(mapping._id)}
-                      className="text-[9px] text-[#64748b] hover:text-red-400 flex items-center gap-0.5 transition"
+                      className="text-[9px] text-[#4a5a4a] hover:text-red-400 flex items-center gap-0.5 transition"
                     >
                       <Trash2 size={8} /> Entfernen
                     </button>
@@ -402,11 +402,11 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
 
           {/* Add Mapping Form */}
           {showAddForm ? (
-            <div className="rounded border border-[#38bdf8]/30 bg-[#0f172a] p-2 space-y-1.5">
+            <div className="rounded border border-[#38bdf8]/30 bg-[#0a0a0a] p-2 space-y-1.5">
               <select
                 value={addElementId}
                 onChange={(e) => setAddElementId(e.target.value)}
-                className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-[10px] text-white outline-none"
+                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
               >
                 <option value="">Element wählen...</option>
                 {unmappedElements.map((e) => (
@@ -416,7 +416,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
               <select
                 value={addStatus}
                 onChange={(e) => setAddStatus(e.target.value)}
-                className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-[10px] text-white outline-none"
+                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
               >
                 <option value="compliant">Compliant</option>
                 <option value="partial">Partial</option>
@@ -428,7 +428,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 value={addNotes}
                 onChange={(e) => setAddNotes(e.target.value)}
                 placeholder="Notiz (optional)..."
-                className="w-full bg-[#1e293b] border border-[#334155] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#475569] outline-none"
+                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#3a4a3a] outline-none"
               />
               <div className="flex gap-1">
                 <button
@@ -440,7 +440,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 </button>
                 <button
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 text-[10px] py-1 rounded bg-[#334155] text-[#94a3b8] hover:bg-[#475569] transition"
+                  className="flex-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[#7a8a7a] hover:bg-[#3a4a3a] transition"
                 >
                   Abbrechen
                 </button>
@@ -449,7 +449,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
           ) : (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center gap-1 text-[10px] py-1.5 rounded border border-dashed border-[#334155] text-[#64748b] hover:border-[#38bdf8] hover:text-[#38bdf8] transition"
+              className="w-full flex items-center justify-center gap-1 text-[10px] py-1.5 rounded border border-dashed border-[#1a2a1a] text-[#4a5a4a] hover:border-[#38bdf8] hover:text-[#38bdf8] transition"
             >
               <Plus size={10} />
               Element zuordnen
@@ -473,11 +473,11 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-2 border-b border-[#334155] flex items-center justify-between">
+      <div className="p-2 border-b border-[#1a2a1a] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="text-[#64748b] hover:text-white transition"
+            className="text-[#4a5a4a] hover:text-white transition"
           >
             <ArrowLeft size={12} />
           </button>
@@ -501,7 +501,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       <div className="flex-1 overflow-auto p-2">
         {sections.length === 0 || layers.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-xs text-[#64748b]">
+            <p className="text-xs text-[#4a5a4a]">
               {layers.length === 0
                 ? 'Keine Architektur-Elemente vorhanden. Erstelle zuerst Elemente.'
                 : 'Keine Sections ausgewählt. Wähle Abschnitte im Standards-Tab.'}
@@ -512,13 +512,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left text-[9px] text-[#64748b] font-normal p-1 border-b border-[#334155] sticky top-0 bg-[#1e293b]">
+                  <th className="text-left text-[9px] text-[#4a5a4a] font-normal p-1 border-b border-[#1a2a1a] sticky top-0 bg-[#111111]">
                     Section
                   </th>
                   {layers.map((layer) => (
                     <th
                       key={layer}
-                      className="text-center text-[9px] text-[#64748b] font-normal p-1 border-b border-[#334155] capitalize sticky top-0 bg-[#1e293b]"
+                      className="text-center text-[9px] text-[#4a5a4a] font-normal p-1 border-b border-[#1a2a1a] capitalize sticky top-0 bg-[#111111]"
                     >
                       {layer}
                     </th>
@@ -528,7 +528,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
               <tbody>
                 {sections.map((section) => (
                   <tr key={section.id}>
-                    <td className="text-[9px] text-[#94a3b8] p-1 border-b border-[#1e293b] max-w-[100px] truncate" title={`§${section.number} ${section.title}`}>
+                    <td className="text-[9px] text-[#7a8a7a] p-1 border-b border-[#111111] max-w-[100px] truncate" title={`§${section.number} ${section.title}`}>
                       §{section.number}
                     </td>
                     {layers.map((layer) => {
@@ -537,13 +537,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                       );
                       if (!cell) {
                         return (
-                          <td key={layer} className="p-1 border-b border-[#1e293b]">
-                            <div className="w-full h-6 bg-[#1e293b] rounded" />
+                          <td key={layer} className="p-1 border-b border-[#111111]">
+                            <div className="w-full h-6 bg-[#111111] rounded" />
                           </td>
                         );
                       }
                       return (
-                        <td key={layer} className="p-0.5 border-b border-[#1e293b]">
+                        <td key={layer} className="p-0.5 border-b border-[#111111]">
                           <button
                             onClick={() =>
                               setDrilldown({
@@ -569,21 +569,21 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 ))}
                 {/* Score Row */}
                 <tr>
-                  <td className="text-[9px] text-[#64748b] font-medium p-1 border-t border-[#334155]">
+                  <td className="text-[9px] text-[#4a5a4a] font-medium p-1 border-t border-[#1a2a1a]">
                     Score
                   </td>
                   {layers.map((layer) => {
                     const score = getLayerScore(cells, layer);
                     const color =
                       score < 0
-                        ? 'text-[#475569]'
+                        ? 'text-[#3a4a3a]'
                         : score >= 70
                           ? 'text-emerald-400'
                           : score >= 40
                             ? 'text-yellow-400'
                             : 'text-red-400';
                     return (
-                      <td key={layer} className="text-center p-1 border-t border-[#334155]">
+                      <td key={layer} className="text-center p-1 border-t border-[#1a2a1a]">
                         <span className={`text-[9px] font-medium ${color}`}>
                           {score < 0 ? '—' : `${score}%`}
                         </span>
@@ -598,19 +598,19 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
             <div className="flex items-center gap-3 mt-3 px-1">
               <div className="flex items-center gap-1">
                 <CheckCircle2 size={8} className="text-emerald-400" />
-                <span className="text-[8px] text-[#64748b]">Compliant</span>
+                <span className="text-[8px] text-[#4a5a4a]">Compliant</span>
               </div>
               <div className="flex items-center gap-1">
                 <AlertTriangle size={8} className="text-yellow-400" />
-                <span className="text-[8px] text-[#64748b]">Partial</span>
+                <span className="text-[8px] text-[#4a5a4a]">Partial</span>
               </div>
               <div className="flex items-center gap-1">
                 <XCircle size={8} className="text-red-400" />
-                <span className="text-[8px] text-[#64748b]">Gap</span>
+                <span className="text-[8px] text-[#4a5a4a]">Gap</span>
               </div>
               <div className="flex items-center gap-1">
-                <Minus size={8} className="text-[#475569]" />
-                <span className="text-[8px] text-[#64748b]">Leer</span>
+                <Minus size={8} className="text-[#3a4a3a]" />
+                <span className="text-[8px] text-[#4a5a4a]">Leer</span>
               </div>
             </div>
           </div>

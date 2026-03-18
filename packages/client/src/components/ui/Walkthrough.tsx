@@ -48,17 +48,17 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
   const isLast = step === STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-xl border border-[#334155] bg-[#1e293b] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
+      <div className="w-full max-w-md rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#334155] px-5 py-3">
+        <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-3">
           <div className="flex items-center gap-2">
             <Lightbulb size={16} className="text-[#eab308]" />
-            <span className="text-xs text-[#94a3b8]">
+            <span className="text-xs text-[#7a8a7a]">
               Step {step + 1} of {STEPS.length}
             </span>
           </div>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white">
+          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -66,7 +66,7 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
         {/* Content */}
         <div className="p-6">
           <h3 className="text-lg font-semibold text-white mb-3">{currentStep.title}</h3>
-          <p className="text-sm text-[#94a3b8] leading-relaxed">{currentStep.description}</p>
+          <p className="text-sm text-[#7a8a7a] leading-relaxed">{currentStep.description}</p>
         </div>
 
         {/* Progress */}
@@ -76,7 +76,7 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
               <div
                 key={i}
                 className={`h-1 flex-1 rounded-full transition ${
-                  i <= step ? 'bg-[#7c3aed]' : 'bg-[#334155]'
+                  i <= step ? 'bg-[#00ff41]' : 'bg-[#1a2a1a]'
                 }`}
               />
             ))}
@@ -84,10 +84,10 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-[#334155] px-5 py-3">
+        <div className="flex items-center justify-between border-t border-[#1a2a1a] px-5 py-3">
           <button
             onClick={onClose}
-            className="text-xs text-[#64748b] hover:text-[#94a3b8] transition"
+            className="text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition"
           >
             Skip Tour
           </button>
@@ -95,7 +95,7 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
             {step > 0 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-[#94a3b8] hover:bg-[#334155] transition"
+                className="flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-[#7a8a7a] hover:bg-[#1a2a1a] transition"
               >
                 <ChevronLeft size={14} />
                 Back
@@ -106,7 +106,7 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
                 if (isLast) onClose();
                 else setStep(step + 1);
               }}
-              className="flex items-center gap-1 rounded-md bg-[#7c3aed] px-4 py-1.5 text-xs font-medium text-white hover:bg-[#6d28d9] transition"
+              className="flex items-center gap-1 rounded-md bg-[#00ff41] px-4 py-1.5 text-xs font-medium text-black hover:bg-[#00cc33] transition"
             >
               {isLast ? 'Get Started' : 'Next'}
               {!isLast && <ChevronRight size={14} />}

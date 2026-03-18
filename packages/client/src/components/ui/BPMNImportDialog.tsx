@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { X, Upload, FileCode, AlertCircle, CheckCircle2, Layers, GitMerge } from 'lucide-react';
 import { parseBPMN } from '../../utils/bpmnParser';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -23,6 +24,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
   const [importMode, setImportMode] = useState<ImportMode>('new_workspace');
   const [mergeTargetId, setMergeTargetId] = useState<string>('');
   const [workspaceName, setWorkspaceName] = useState<string>('');
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const setElements = useArchitectureStore((s) => s.setElements);
   const setConnections = useArchitectureStore((s) => s.setConnections);
   const importElements = useArchitectureStore((s) => s.importElements);
@@ -58,11 +60,49 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
     }
   }, [handleFileChange]);
 
+  const checkDuplicates = useCallback(() => {
+    if (!xmlContent) return;
+    try {
+      const result = parseBPMN(xmlContent);
+      const targetWsId = importMode === 'merge' ? mergeTargetId : null;
+      const targetElements = targetWsId
+        ? elements.filter((el) => el.workspaceId === targetWsId)
+        : elements;
+      const existingKeys = new Set(
+        targetElements.map((el) => `${el.name.trim().toLowerCase()}::${el.type}`)
+      );
+      const dupes = result.elements.filter((el) =>
+        existingKeys.has(`${el.name.trim().toLowerCase()}::${el.type}`)
+      );
+      setDuplicateCount(dupes.length);
+    } catch { setDuplicateCount(0); }
+  }, [xmlContent, importMode, mergeTargetId, elements]);
+
   const handleImport = async () => {
     if (!xmlContent || !projectId) return;
     try {
       const result = parseBPMN(xmlContent);
       const isNew = importMode === 'new_workspace';
+
+      // Skip duplicate elements when merging
+      const targetWsId = isNew ? null : mergeTargetId;
+      let filteredElements = result.elements;
+      let filteredConnections = result.connections;
+      if (targetWsId) {
+        const targetElements = elements.filter((el) => el.workspaceId === targetWsId);
+        const existingKeys = new Set(
+          targetElements.map((el) => `${el.name.trim().toLowerCase()}::${el.type}`)
+        );
+        const removedIds = new Set<string>();
+        filteredElements = result.elements.filter((el) => {
+          const key = `${el.name.trim().toLowerCase()}::${el.type}`;
+          if (existingKeys.has(key)) { removedIds.add(el.id); return false; }
+          return true;
+        });
+        filteredConnections = result.connections.filter(
+          (c) => !removedIds.has(c.sourceId) && !removedIds.has(c.targetId)
+        );
+      }
 
       const offsetX = isNew ? getNextOffsetX() : (workspaces.find((ws) => ws.id === mergeTargetId)?.offsetX ?? 0);
       const color = isNew ? getNextColor() : '';
@@ -70,7 +110,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
       const name = workspaceName || file?.name?.replace(/\.(bpmn|xml)$/i, '') || 'BPMN Import';
 
       // Offset element positions by workspace X
-      const offsetElements = result.elements.map((el) => ({
+      const offsetElements = filteredElements.map((el) => ({
         ...el,
         workspaceId: wsId,
         position3D: { ...el.position3D, x: el.position3D.x + offsetX },
@@ -85,7 +125,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
       }
 
       // Import elements into local store
-      importElements(offsetElements, result.connections, wsId);
+      importElements(offsetElements, filteredConnections, wsId);
 
       // Detect shared elements across workspaces
       if (isNew) {
@@ -101,27 +141,29 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
       // Sync elements with server (send offset positions + workspaceId)
       await architectureAPI.importBPMN(projectId, {
         elements: offsetElements,
-        connections: result.connections,
+        connections: filteredConnections,
       });
 
       onClose();
+      toast.success('BPMN import complete');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
+      toast.error('Import failed');
     }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-lg rounded-xl border border-[#334155] bg-[#1e293b] shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
+      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#334155] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
           <div className="flex items-center gap-2">
-            <FileCode size={18} className="text-[#7c3aed]" />
+            <FileCode size={18} className="text-[#00ff41]" />
             <h2 className="text-sm font-semibold text-white">Import BPMN 2.0</h2>
           </div>
-          <button onClick={onClose} className="text-[#94a3b8] hover:text-white">
+          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -132,14 +174,14 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[#334155] bg-[#0f172a] p-8 hover:border-[#7c3aed] transition cursor-pointer"
+            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[#1a2a1a] bg-[#0a0a0a] p-8 hover:border-[#00ff41] transition cursor-pointer"
             onClick={() => document.getElementById('bpmn-file-input')?.click()}
           >
-            <Upload size={32} className="text-[#64748b]" />
-            <p className="text-sm text-[#94a3b8]">
+            <Upload size={32} className="text-[#4a5a4a]" />
+            <p className="text-sm text-[#7a8a7a]">
               {file ? file.name : 'Drop BPMN file here or click to browse'}
             </p>
-            <p className="text-xs text-[#64748b]">Supports .bpmn and .xml files</p>
+            <p className="text-xs text-[#4a5a4a]">Supports .bpmn and .xml files</p>
             <input
               id="bpmn-file-input"
               type="file"
@@ -165,14 +207,14 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
           {/* Workspace selection */}
           {preview && (
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-[#94a3b8]">Import Target</label>
+              <label className="block text-xs font-medium text-[#7a8a7a]">Import Target</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setImportMode('new_workspace')}
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'new_workspace'
-                      ? 'border-[#7c3aed] bg-[#7c3aed]/10 text-white'
-                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                      ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
+                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
                   }`}
                 >
                   <Layers size={14} />
@@ -183,8 +225,8 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                   disabled={workspaces.length === 0}
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'merge'
-                      ? 'border-[#7c3aed] bg-[#7c3aed]/10 text-white'
-                      : 'border-[#334155] text-[#94a3b8] hover:border-[#475569]'
+                      ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
+                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
                   } disabled:opacity-30`}
                 >
                   <GitMerge size={14} />
@@ -198,7 +240,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   placeholder={file?.name?.replace(/\.(bpmn|xml)$/i, '') || 'Workspace name'}
-                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white placeholder:text-[#475569] outline-none focus:border-[#7c3aed] transition"
+                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition"
                 />
               )}
 
@@ -206,7 +248,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-xs text-white outline-none focus:border-[#7c3aed] transition"
+                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] transition"
                 >
                   <option value="">-- Select workspace --</option>
                   {workspaces.map((ws) => (
@@ -214,6 +256,17 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                   ))}
                 </select>
               )}
+            </div>
+          )}
+
+          {/* Duplicate warning */}
+          {preview && duplicateCount > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
+              <AlertCircle size={16} className="text-yellow-400 shrink-0" />
+              <span className="text-xs text-yellow-300">
+                {duplicateCount} duplicate element{duplicateCount > 1 ? 's' : ''} found (same name + type).
+                {importMode === 'merge' ? ' Duplicates will be skipped.' : ' Consider merging instead.'}
+              </span>
             </div>
           )}
 
@@ -227,17 +280,24 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-[#334155] px-5 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-xs text-[#94a3b8] hover:text-white transition"
+            className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
           >
             Cancel
           </button>
           <button
+            onClick={() => { checkDuplicates(); }}
+            disabled={!preview}
+            className="rounded-md border border-[#1a2a1a] px-4 py-2 text-xs text-[#7a8a7a] hover:text-white hover:border-[#3a4a3a] disabled:opacity-50 transition"
+          >
+            Check Duplicates
+          </button>
+          <button
             onClick={handleImport}
             disabled={!preview}
-            className="rounded-md bg-[#7c3aed] px-4 py-2 text-xs font-medium text-white hover:bg-[#6d28d9] disabled:opacity-50 transition"
+            className="rounded-md bg-[#00ff41] px-4 py-2 text-xs font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition"
           >
             Import
           </button>

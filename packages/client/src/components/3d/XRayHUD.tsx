@@ -51,7 +51,7 @@ export default function XRayHUD() {
         </div>
 
         {/* Sub-view toggle pills */}
-        <div className="flex gap-0.5 rounded-lg bg-[#0f172a]/95 border border-[#334155] p-0.5">
+        <div className="flex gap-0.5 rounded-lg bg-[#0a0a0a]/95 border border-[#1a2a1a] p-0.5">
           {(Object.keys(SUB_VIEW_LABELS) as XRaySubView[]).map((view) => (
             <button
               key={view}
@@ -59,7 +59,7 @@ export default function XRayHUD() {
               className="rounded-md px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all"
               style={{
                 background: subView === view ? SUB_VIEW_LABELS[view].color + '30' : 'transparent',
-                color: subView === view ? SUB_VIEW_LABELS[view].color : '#64748b',
+                color: subView === view ? SUB_VIEW_LABELS[view].color : '#4a5a4a',
               }}
             >
               {view}
@@ -122,10 +122,10 @@ export default function XRayHUD() {
       {/* Bottom-right: AI Narrative */}
       {aiNarrative && (
         <div
-          className="absolute bottom-4 right-4 z-20 max-w-[360px] rounded-lg border border-[#7c3aed] p-3"
+          className="absolute bottom-4 right-4 z-20 max-w-[360px] rounded-lg border border-[#00ff41] p-3"
           style={{ background: 'rgba(15, 23, 42, 0.95)' }}
         >
-          <div className="text-[9px] font-bold text-[#7c3aed] tracking-widest uppercase mb-1.5">
+          <div className="text-[9px] font-bold text-[#00ff41] tracking-widest uppercase mb-1.5">
             AI INSIGHT
           </div>
           <div className="text-[11px] text-[#cbd5e1] leading-relaxed">
@@ -140,13 +140,13 @@ export default function XRayHUD() {
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div
-      className="rounded-lg border border-[#334155] px-3 py-2"
+      className="rounded-lg border border-[#1a2a1a] px-3 py-2"
       style={{
         background: 'rgba(15, 23, 42, 0.95)',
         borderLeft: `3px solid ${color}`,
       }}
     >
-      <div className="text-[9px] font-semibold text-[#64748b] uppercase tracking-wider mb-0.5">
+      <div className="text-[9px] font-semibold text-[#4a5a4a] uppercase tracking-wider mb-0.5">
         {label}
       </div>
       <div

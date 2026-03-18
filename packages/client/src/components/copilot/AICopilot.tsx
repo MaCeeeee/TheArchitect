@@ -113,7 +113,7 @@ function formatInline(text: string): (string | JSX.Element)[] {
     if (match[2]) {
       parts.push(<strong key={match.index} className="font-semibold text-white">{match[2]}</strong>);
     } else if (match[3]) {
-      parts.push(<code key={match.index} className="bg-[#334155] text-[#e2e8f0] px-1 rounded text-[10px]">{match[3]}</code>);
+      parts.push(<code key={match.index} className="bg-[#1a2a1a] text-[#d0d0d0] px-1 rounded text-[10px]">{match[3]}</code>);
     }
     lastIndex = regex.lastIndex;
   }
@@ -291,8 +291,8 @@ export default function AICopilot() {
   if (!projectId) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-6">
-        <Sparkles size={24} className="text-[#475569] mb-2" />
-        <p className="text-xs text-[#64748b] text-center">Öffne zuerst ein Projekt, um den AI Copilot zu nutzen.</p>
+        <Sparkles size={24} className="text-[#3a4a3a] mb-2" />
+        <p className="text-xs text-[#4a5a4a] text-center">Öffne zuerst ein Projekt, um den AI Copilot zu nutzen.</p>
       </div>
     );
   }
@@ -300,7 +300,7 @@ export default function AICopilot() {
   return (
     <div className="flex flex-col h-full">
       {/* Tab Bar */}
-      <div className="flex border-b border-[#334155]">
+      <div className="flex border-b border-[#1a2a1a]">
         {([
           { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat' },
           { id: 'standards' as Tab, icon: FileText, label: 'Standards' },
@@ -311,8 +311,8 @@ export default function AICopilot() {
             onClick={() => setActiveTab(tab.id)}
             className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition border-b-2 ${
               activeTab === tab.id
-                ? 'text-white border-[#a855f7]'
-                : 'text-[#64748b] border-transparent hover:text-[#94a3b8]'
+                ? 'text-white border-[#00ff41]'
+                : 'text-[#4a5a4a] border-transparent hover:text-[#7a8a7a]'
             }`}
           >
             <tab.icon size={12} />
@@ -332,7 +332,7 @@ export default function AICopilot() {
               </span>
               <button
                 onClick={() => { setChatStandardId(undefined); setChatSectionIds([]); }}
-                className="text-[9px] text-[#475569] hover:text-white transition"
+                className="text-[9px] text-[#3a4a3a] hover:text-white transition"
               >
                 Entfernen
               </button>
@@ -342,13 +342,13 @@ export default function AICopilot() {
           {/* Chat Header */}
           <div className="px-3 py-2 flex items-center justify-between">
             <h3 className="text-[11px] font-semibold text-white flex items-center gap-1.5">
-              <Sparkles size={12} className="text-[#a855f7]" />
+              <Sparkles size={12} className="text-[#00ff41]" />
               AI Copilot
             </h3>
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="text-[#64748b] hover:text-[#94a3b8] transition p-0.5"
+                className="text-[#4a5a4a] hover:text-[#7a8a7a] transition p-0.5"
                 title="Chat leeren"
               >
                 <Trash2 size={12} />
@@ -361,9 +361,9 @@ export default function AICopilot() {
             {messages.length === 0 ? (
               <div className="p-3 space-y-3">
                 <div className="text-center py-3">
-                  <Sparkles size={24} className="text-[#a855f7] mx-auto mb-2" />
-                  <p className="text-xs text-[#94a3b8]">Wie kann ich dir helfen?</p>
-                  <p className="text-[10px] text-[#475569] mt-1">Wähle eine Aktion oder stelle eine Frage</p>
+                  <Sparkles size={24} className="text-[#00ff41] mx-auto mb-2" />
+                  <p className="text-xs text-[#7a8a7a]">Wie kann ich dir helfen?</p>
+                  <p className="text-[10px] text-[#3a4a3a] mt-1">Wähle eine Aktion oder stelle eine Frage</p>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {QUICK_ACTIONS.map((action) => (
@@ -371,10 +371,10 @@ export default function AICopilot() {
                       key={action.label}
                       onClick={() => sendMessage(action.prompt)}
                       disabled={isStreaming}
-                      className="flex flex-col items-center gap-1.5 rounded-lg border border-[#334155] bg-[#0f172a] p-2.5 text-center hover:border-[#7c3aed] hover:bg-[#1e293b] transition disabled:opacity-50"
+                      className="flex flex-col items-center gap-1.5 rounded-lg border border-[#1a2a1a] bg-[#0a0a0a] p-2.5 text-center hover:border-[#00ff41] hover:bg-[#111111] transition disabled:opacity-50"
                     >
-                      <action.icon size={16} className="text-[#a855f7]" />
-                      <span className="text-[10px] text-[#94a3b8] leading-tight">{action.label}</span>
+                      <action.icon size={16} className="text-[#00ff41]" />
+                      <span className="text-[10px] text-[#7a8a7a] leading-tight">{action.label}</span>
                     </button>
                   ))}
                 </div>
@@ -386,16 +386,16 @@ export default function AICopilot() {
                     <div
                       className={`max-w-[90%] rounded-lg px-2.5 py-1.5 ${
                         msg.role === 'user'
-                          ? 'bg-[#7c3aed] text-white'
-                          : 'bg-[#0f172a] text-[#cbd5e1] border border-[#334155]'
+                          ? 'bg-[#00ff41] text-black'
+                          : 'bg-[#0a0a0a] text-[#cbd5e1] border border-[#1a2a1a]'
                       }`}
                     >
                       {msg.role === 'user' ? (
                         <p className="text-[11px] leading-relaxed">{msg.content}</p>
                       ) : msg.content === '' ? (
                         <div className="flex items-center gap-1.5 py-1">
-                          <Loader2 size={10} className="animate-spin text-[#a855f7]" />
-                          <span className="text-[10px] text-[#64748b]">Denkt nach...</span>
+                          <Loader2 size={10} className="animate-spin text-[#00ff41]" />
+                          <span className="text-[10px] text-[#4a5a4a]">Denkt nach...</span>
                         </div>
                       ) : (
                         <div>{renderMarkdown(msg.content)}</div>
@@ -427,8 +427,8 @@ export default function AICopilot() {
           )}
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="p-2 border-t border-[#334155]">
-            <div className="flex items-center gap-1.5 rounded-lg bg-[#0f172a] border border-[#334155] px-2.5 py-1.5 focus-within:border-[#7c3aed] transition">
+          <form onSubmit={handleSubmit} className="p-2 border-t border-[#1a2a1a]">
+            <div className="flex items-center gap-1.5 rounded-lg bg-[#0a0a0a] border border-[#1a2a1a] px-2.5 py-1.5 focus-within:border-[#00ff41] transition">
               <input
                 ref={inputRef}
                 type="text"
@@ -436,12 +436,12 @@ export default function AICopilot() {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Frage stellen..."
                 disabled={isStreaming}
-                className="flex-1 bg-transparent text-[11px] text-white placeholder:text-[#475569] outline-none disabled:opacity-50"
+                className="flex-1 bg-transparent text-[11px] text-white placeholder:text-[#3a4a3a] outline-none disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isStreaming}
-                className="text-[#7c3aed] hover:text-[#a855f7] disabled:text-[#334155] transition"
+                className="text-[#00ff41] hover:text-[#00ff41] disabled:text-[#1a2a1a] transition"
               >
                 {isStreaming ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
               </button>
@@ -473,9 +473,9 @@ export default function AICopilot() {
       ) : activeTab === 'matrix' && (
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center">
-            <Grid3X3 size={24} className="text-[#475569] mx-auto mb-2" />
-            <p className="text-xs text-[#64748b]">Wähle zuerst einen Standard im Standards-Tab</p>
-            <p className="text-[10px] text-[#475569] mt-1">und klicke auf "Matrix".</p>
+            <Grid3X3 size={24} className="text-[#3a4a3a] mx-auto mb-2" />
+            <p className="text-xs text-[#4a5a4a]">Wähle zuerst einen Standard im Standards-Tab</p>
+            <p className="text-[10px] text-[#3a4a3a] mt-1">und klicke auf "Matrix".</p>
           </div>
         </div>
       )}

@@ -24,7 +24,7 @@ const ACTION_COLORS: Record<string, string> = {
   import_bpmn: '#f97316',
   login_success: '#06b6d4',
   login_failed: '#ef4444',
-  mfa_enabled: '#8b5cf6',
+  mfa_enabled: '#00ff41',
   mfa_disabled: '#eab308',
   change_user_role: '#ec4899',
 };
@@ -74,21 +74,21 @@ export default function AuditLogViewer() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-[#334155] flex items-center justify-between">
+      <div className="p-3 border-b border-[#1a2a1a] flex items-center justify-between">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <FileText size={14} className="text-[#7c3aed]" />
+          <FileText size={14} className="text-[#00ff41]" />
           Audit Log
         </h3>
-        <span className="text-[10px] text-[#64748b]">{total} entries</span>
+        <span className="text-[10px] text-[#4a5a4a]">{total} entries</span>
       </div>
 
       {/* Filter */}
-      <div className="p-2 border-b border-[#334155] flex items-center gap-2">
-        <Filter size={12} className="text-[#64748b]" />
+      <div className="p-2 border-b border-[#1a2a1a] flex items-center gap-2">
+        <Filter size={12} className="text-[#4a5a4a]" />
         <select
           value={filterAction}
           onChange={(e) => { setFilterAction(e.target.value); setOffset(0); }}
-          className="flex-1 bg-[#0f172a] border border-[#334155] rounded text-[10px] text-[#94a3b8] px-2 py-1 outline-none"
+          className="flex-1 bg-[#0a0a0a] border border-[#1a2a1a] rounded text-[10px] text-[#7a8a7a] px-2 py-1 outline-none"
         >
           <option value="">All Actions</option>
           <option value="create_element">Create Element</option>
@@ -107,39 +107,39 @@ export default function AuditLogViewer() {
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center p-6">
-            <span className="text-xs text-[#64748b]">Loading...</span>
+            <span className="text-xs text-[#4a5a4a]">Loading...</span>
           </div>
         ) : logs.length === 0 ? (
           <div className="flex items-center justify-center p-6">
-            <span className="text-xs text-[#64748b]">No audit entries found</span>
+            <span className="text-xs text-[#4a5a4a]">No audit entries found</span>
           </div>
         ) : (
           logs.map((log) => (
-            <div key={log._id} className="px-3 py-2 border-b border-[#1e293b] hover:bg-[#1e293b]/50">
+            <div key={log._id} className="px-3 py-2 border-b border-[#111111] hover:bg-[#111111]/50">
               <div className="flex items-center justify-between mb-0.5">
                 <div className="flex items-center gap-2">
                   <span
                     className="text-[9px] px-1.5 py-0.5 rounded font-medium"
                     style={{
-                      backgroundColor: `${ACTION_COLORS[log.action] || '#64748b'}20`,
-                      color: ACTION_COLORS[log.action] || '#64748b',
+                      backgroundColor: `${ACTION_COLORS[log.action] || '#4a5a4a'}20`,
+                      color: ACTION_COLORS[log.action] || '#4a5a4a',
                     }}
                   >
                     {log.action.replace(/_/g, ' ')}
                   </span>
                   <span
                     className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: RISK_COLORS[log.riskLevel] || '#64748b' }}
+                    style={{ backgroundColor: RISK_COLORS[log.riskLevel] || '#4a5a4a' }}
                   />
                 </div>
-                <span className="text-[9px] text-[#475569]">
+                <span className="text-[9px] text-[#3a4a3a]">
                   {new Date(log.timestamp).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[#94a3b8]">{getUserName(log.userId)}</span>
+                <span className="text-[10px] text-[#7a8a7a]">{getUserName(log.userId)}</span>
                 {log.entityId && (
-                  <span className="text-[9px] text-[#475569] font-mono">{log.entityId.slice(0, 8)}</span>
+                  <span className="text-[9px] text-[#3a4a3a] font-mono">{log.entityId.slice(0, 8)}</span>
                 )}
               </div>
             </div>
@@ -149,21 +149,21 @@ export default function AuditLogViewer() {
 
       {/* Pagination */}
       {total > limit && (
-        <div className="p-2 border-t border-[#334155] flex items-center justify-between">
+        <div className="p-2 border-t border-[#1a2a1a] flex items-center justify-between">
           <button
             onClick={() => setOffset(Math.max(0, offset - limit))}
             disabled={offset === 0}
-            className="text-[10px] text-[#64748b] hover:text-white disabled:opacity-30 flex items-center gap-0.5"
+            className="text-[10px] text-[#4a5a4a] hover:text-white disabled:opacity-30 flex items-center gap-0.5"
           >
             <ChevronLeft size={12} /> Prev
           </button>
-          <span className="text-[10px] text-[#475569]">
+          <span className="text-[10px] text-[#3a4a3a]">
             {offset + 1}-{Math.min(offset + limit, total)} of {total}
           </span>
           <button
             onClick={() => setOffset(offset + limit)}
             disabled={offset + limit >= total}
-            className="text-[10px] text-[#64748b] hover:text-white disabled:opacity-30 flex items-center gap-0.5"
+            className="text-[10px] text-[#4a5a4a] hover:text-white disabled:opacity-30 flex items-center gap-0.5"
           >
             Next <ChevronRight size={12} />
           </button>

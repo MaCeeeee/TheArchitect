@@ -50,13 +50,13 @@ export default function MFASetup({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-md rounded-xl border border-[#334155] bg-[#1e293b] p-6">
+      <div className="w-full max-w-md rounded-xl border border-[#1a2a1a] bg-[#111111] p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Shield size={18} className="text-[#7c3aed]" />
+            <Shield size={18} className="text-[#00ff41]" />
             <h2 className="text-sm font-semibold text-white">Setup Two-Factor Authentication</h2>
           </div>
-          <button onClick={onClose} className="text-[#64748b] hover:text-white">
+          <button onClick={onClose} className="text-[#4a5a4a] hover:text-white">
             <X size={16} />
           </button>
         </div>
@@ -65,14 +65,14 @@ export default function MFASetup({ isOpen, onClose }: Props) {
 
         {step === 'init' && (
           <div className="space-y-4">
-            <p className="text-xs text-[#94a3b8]">
+            <p className="text-xs text-[#7a8a7a]">
               Add an extra layer of security to your account with a TOTP authenticator app
               (Google Authenticator, Authy, 1Password, etc.).
             </p>
             <button
               onClick={handleSetup}
               disabled={loading}
-              className="w-full rounded-md bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d28d9] disabled:opacity-50 transition"
+              className="w-full rounded-md bg-[#00ff41] px-4 py-2 text-sm font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition"
             >
               {loading ? 'Setting up...' : 'Begin Setup'}
             </button>
@@ -81,7 +81,7 @@ export default function MFASetup({ isOpen, onClose }: Props) {
 
         {step === 'verify' && (
           <div className="space-y-4">
-            <p className="text-xs text-[#94a3b8]">
+            <p className="text-xs text-[#7a8a7a]">
               Scan this QR code with your authenticator app:
             </p>
             {qrCode && (
@@ -89,25 +89,25 @@ export default function MFASetup({ isOpen, onClose }: Props) {
                 <img src={qrCode} alt="MFA QR Code" className="w-48 h-48" />
               </div>
             )}
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2">
-              <p className="text-[10px] text-[#64748b] mb-1">Or enter this secret manually:</p>
-              <code className="text-xs text-[#94a3b8] font-mono break-all select-all">{secret}</code>
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+              <p className="text-[10px] text-[#4a5a4a] mb-1">Or enter this secret manually:</p>
+              <code className="text-xs text-[#7a8a7a] font-mono break-all select-all">{secret}</code>
             </div>
             <div>
-              <label className="block text-xs font-medium text-[#94a3b8] mb-1.5">Verification Code</label>
+              <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Verification Code</label>
               <input
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 placeholder="000000"
                 maxLength={6}
-                className="w-full rounded-md border border-[#334155] bg-[#0f172a] px-3 py-2 text-sm text-white text-center tracking-[0.5em] font-mono outline-none focus:border-[#7c3aed] transition"
+                className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white text-center tracking-[0.5em] font-mono outline-none focus:border-[#00ff41] transition"
               />
             </div>
             <button
               onClick={handleVerify}
               disabled={loading || code.length < 6}
-              className="w-full rounded-md bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white hover:bg-[#6d28d9] disabled:opacity-50 transition"
+              className="w-full rounded-md bg-[#00ff41] px-4 py-2 text-sm font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition"
             >
               {loading ? 'Verifying...' : 'Verify & Enable'}
             </button>
@@ -120,12 +120,12 @@ export default function MFASetup({ isOpen, onClose }: Props) {
               <Check size={24} className="text-green-400" />
             </div>
             <p className="text-sm text-white font-medium">MFA Enabled Successfully</p>
-            <p className="text-xs text-[#94a3b8]">
+            <p className="text-xs text-[#7a8a7a]">
               Your account is now protected with two-factor authentication.
             </p>
             <button
               onClick={onClose}
-              className="w-full rounded-md bg-[#334155] px-4 py-2 text-sm font-medium text-white hover:bg-[#475569] transition"
+              className="w-full rounded-md bg-[#1a2a1a] px-4 py-2 text-sm font-medium text-white hover:bg-[#3a4a3a] transition"
             >
               Done
             </button>

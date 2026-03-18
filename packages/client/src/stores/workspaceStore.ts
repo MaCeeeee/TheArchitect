@@ -16,7 +16,7 @@ const WORKSPACE_COLORS = [
   '#3b82f6', // blue
   '#22c55e', // green
   '#f97316', // orange
-  '#a855f7', // purple
+  '#00ff41', // purple
   '#ef4444', // red
   '#06b6d4', // cyan
   '#eab308', // yellow

@@ -92,23 +92,23 @@ export default function ImpactAnalysis() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Zap size={14} className="text-[#f97316]" />
           Impact Analysis
         </h3>
-        <p className="text-[10px] text-[#64748b] mt-1">Analyze cascading effects of element changes</p>
+        <p className="text-[10px] text-[#4a5a4a] mt-1">Analyze cascading effects of element changes</p>
       </div>
 
       {/* Selected element */}
-      <div className="p-3 border-b border-[#334155]">
+      <div className="p-3 border-b border-[#1a2a1a]">
         {selectedElement ? (
-          <div className="rounded-md border border-[#7c3aed]/30 bg-[#7c3aed]/10 p-2">
+          <div className="rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 p-2">
             <span className="text-xs text-white font-medium">{selectedElement.name}</span>
-            <span className="text-[9px] text-[#94a3b8] ml-2">{selectedElement.type}</span>
+            <span className="text-[9px] text-[#7a8a7a] ml-2">{selectedElement.type}</span>
           </div>
         ) : (
-          <p className="text-[10px] text-[#64748b]">Select an element to analyze its impact</p>
+          <p className="text-[10px] text-[#4a5a4a]">Select an element to analyze its impact</p>
         )}
 
         <button
@@ -125,26 +125,26 @@ export default function ImpactAnalysis() {
         <div className="p-3 space-y-3">
           {/* Summary */}
           <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2 text-center">
               <div className="text-sm font-bold text-white">{analysisResult.direct.length}</div>
-              <div className="text-[9px] text-[#64748b]">Direct</div>
+              <div className="text-[9px] text-[#4a5a4a]">Direct</div>
             </div>
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2 text-center">
               <div className="text-sm font-bold text-white">{analysisResult.transitive.length}</div>
-              <div className="text-[9px] text-[#64748b]">Transitive</div>
+              <div className="text-[9px] text-[#4a5a4a]">Transitive</div>
             </div>
-            <div className="rounded-md border border-[#334155] bg-[#0f172a] p-2 text-center">
+            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2 text-center">
               <div className="text-sm font-bold text-[#f97316]">
                 {analysisResult.direct.length + analysisResult.transitive.length}
               </div>
-              <div className="text-[9px] text-[#64748b]">Total</div>
+              <div className="text-[9px] text-[#4a5a4a]">Total</div>
             </div>
           </div>
 
           {/* Direct impact */}
           {analysisResult.direct.length > 0 && (
             <div>
-              <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-1.5 flex items-center gap-1">
+              <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-1.5 flex items-center gap-1">
                 <AlertTriangle size={10} /> Direct Impact
               </h4>
               {analysisResult.direct.map((item) => (
@@ -156,14 +156,14 @@ export default function ImpactAnalysis() {
           {/* Transitive impact */}
           {analysisResult.transitive.length > 0 && (
             <div>
-              <h4 className="text-[10px] font-semibold uppercase text-[#64748b] mb-1.5 flex items-center gap-1">
+              <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-1.5 flex items-center gap-1">
                 <ArrowRight size={10} /> Cascading Impact
               </h4>
               {analysisResult.transitive.slice(0, 10).map((item) => (
                 <ImpactRow key={item.elementId} item={item} getScoreColor={getScoreColor} />
               ))}
               {analysisResult.transitive.length > 10 && (
-                <p className="text-[9px] text-[#475569] mt-1">
+                <p className="text-[9px] text-[#3a4a3a] mt-1">
                   +{analysisResult.transitive.length - 10} more elements affected
                 </p>
               )}
@@ -174,7 +174,7 @@ export default function ImpactAnalysis() {
 
       {!analysisResult && !selectedId && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#64748b] text-center">
+          <p className="text-xs text-[#4a5a4a] text-center">
             Select an element in the 3D view, then run impact analysis
           </p>
         </div>
@@ -185,13 +185,13 @@ export default function ImpactAnalysis() {
 
 function ImpactRow({ item, getScoreColor }: { item: ImpactResult; getScoreColor: (s: number) => string }) {
   return (
-    <div className="flex items-center gap-2 py-1 px-1 rounded hover:bg-[#1e293b]">
+    <div className="flex items-center gap-2 py-1 px-1 rounded hover:bg-[#111111]">
       <div
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ backgroundColor: getScoreColor(item.impactScore) }}
       />
       <span className="text-[10px] text-white flex-1 truncate">{item.name}</span>
-      <span className="text-[9px] text-[#475569] capitalize">{item.layer}</span>
+      <span className="text-[9px] text-[#3a4a3a] capitalize">{item.layer}</span>
       <span
         className="text-[9px] font-mono font-bold"
         style={{ color: getScoreColor(item.impactScore) }}
