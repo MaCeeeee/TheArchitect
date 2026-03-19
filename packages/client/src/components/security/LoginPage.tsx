@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useAuthStore } from '../../stores/authStore';
 import { authAPI } from '../../services/api';
+import api from '../../services/api';
 import { Shield, Eye, EyeOff, Check, X, ArrowLeft, Mail } from 'lucide-react';
 import {
   PASSWORD_CHECKS,
@@ -39,6 +41,29 @@ export default function LoginPage() {
       emailRef.current?.focus();
     }
   }, [mode]);
+
+  // Google Identity Services login
+  const googleLogin = useGoogleLogin({
+    flow: 'implicit',
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        setError('');
+        // Exchange Google access token for our JWT via backend
+        const { data } = await api.post('/api/auth/oauth/google/token', {
+          credential: tokenResponse.access_token,
+          flow: 'implicit',
+        });
+        login(data.user, data.accessToken, data.refreshToken);
+        navigate('/');
+      } catch {
+        setError('Google authentication failed');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: () => setError('Google login was cancelled'),
+  });
 
   // OAuth error from redirect
   useEffect(() => {
@@ -399,7 +424,7 @@ export default function LoginPage() {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => { window.location.href = '/api/auth/oauth/google'; }}
+                  onClick={() => googleLogin()}
                   className={btnOAuth}
                   title="Sign in with Google"
                 >

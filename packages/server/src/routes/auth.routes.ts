@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
 import type { IUser } from '../models/User';
 import {
@@ -552,6 +553,74 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('[OAuth] Google callback error:', err);
     return redirectWithError(res, 'Google authentication failed');
+  }
+});
+
+// ── Google Identity Services (ID Token) ──────────────
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+router.post('/oauth/google/token', authLimiter, async (req: Request, res: Response) => {
+  const { credential, flow } = req.body;
+  if (!credential) {
+    return res.status(400).json({ error: 'Missing credential' });
+  }
+
+  try {
+    let profile: { provider: 'google'; providerId: string; email: string; name: string };
+
+    if (flow === 'implicit') {
+      // Implicit flow: credential is an access token → fetch user info from Google
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${credential}` },
+      });
+      if (!response.ok) {
+        return res.status(401).json({ error: 'Invalid Google access token' });
+      }
+      const userInfo = await response.json() as { sub: string; email?: string; name?: string };
+      if (!userInfo.email) {
+        return res.status(400).json({ error: 'No email in Google profile' });
+      }
+      profile = {
+        provider: 'google',
+        providerId: userInfo.sub,
+        email: userInfo.email,
+        name: userInfo.name || userInfo.email.split('@')[0],
+      };
+    } else {
+      // ID Token flow (One-Tap): credential is a JWT → verify with Google
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        return res.status(400).json({ error: 'Invalid token payload' });
+      }
+      profile = {
+        provider: 'google',
+        providerId: payload.sub!,
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
+      };
+    }
+
+    const user = await findOrCreateOAuthUser(profile);
+    const accessToken = generateAccessToken(user._id.toString(), user.role);
+    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+
+    createAuditEntry({
+      userId: user._id.toString(),
+      action: 'oauth_login_success',
+      entityType: 'auth',
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    return res.json({ accessToken, refreshToken, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+  } catch (err) {
+    console.error('[OAuth] Google token verification error:', err);
+    return res.status(401).json({ error: 'Google authentication failed' });
   }
 });
 

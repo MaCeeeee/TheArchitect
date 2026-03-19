@@ -27,6 +27,8 @@ services:
     build:
       context: /tmp/thearchitect-src
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
     image: thearchitect-app:latest
     container_name: thearchitect-app
     restart: unless-stopped

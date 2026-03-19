@@ -16,6 +16,8 @@ COPY packages/server/ packages/server/
 COPY packages/client/ packages/client/
 
 # Build sequentially: shared -> server + client
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run --workspace=packages/shared build \
     && npm run --workspace=packages/server build \
     && npm run --workspace=packages/client build
