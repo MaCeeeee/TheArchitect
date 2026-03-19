@@ -184,6 +184,29 @@ export const workspaceAPI = {
     api.delete(`/workspaces/${projectId}/${workspaceId}`),
 };
 
+// Invitation API
+export const invitationAPI = {
+  // Project-scoped
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/invitations`),
+  create: (projectId: string, email: string, role: string) =>
+    api.post(`/projects/${projectId}/invitations`, { email, role }),
+  resend: (projectId: string, invitationId: string) =>
+    api.post(`/projects/${projectId}/invitations/${invitationId}/resend`),
+  cancel: (projectId: string, invitationId: string) =>
+    api.delete(`/projects/${projectId}/invitations/${invitationId}`),
+  // Token-based (public)
+  getByToken: (token: string) =>
+    api.get(`/invitations/by-token/${token}`),
+  accept: (token: string) =>
+    api.post(`/invitations/by-token/${token}/accept`),
+  decline: (token: string) =>
+    api.post(`/invitations/by-token/${token}/decline`),
+  // Current user's pending invitations
+  mine: () =>
+    api.get('/invitations/mine'),
+};
+
 // Report API
 export const reportAPI = {
   downloadExecutive: (projectId: string) =>

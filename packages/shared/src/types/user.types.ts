@@ -54,6 +54,23 @@ export interface Collaborator {
   joinedAt: string;
 }
 
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled';
+
+export interface ProjectInvitation {
+  id: string;
+  projectId: string;
+  projectName: string;
+  invitedEmail: string;
+  inviterUserId: string;
+  inviterName: string;
+  role: ProjectRole;
+  status: InvitationStatus;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  respondedAt?: string;
+}
+
 export interface OnlineUser {
   userId: string;
   userName: string;

@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-18 (Phase 6: Audit Trail UI)
+> Letztes Update: 2026-03-19 (Email Invitation System)
 
 ---
 
@@ -774,6 +774,154 @@ Audit-Logging existierte End-to-End im Backend (`createAuditEntry` Middleware au
 
 ---
 
+## 15. Google Identity Services Login
+
+### Problemstellung
+Der Google Login nutzte den klassischen OAuth 2.0 Redirect-Flow: Klick → Redirect zu Google → Callback-URL → zurück zur App. Das erforderte pro Umgebung (localhost, Produktion) eine konfigurierte Callback-URL in der Google Cloud Console und serverseitige Redirect-Logik. Für Nutzer bedeutete das 3-4 Seitenwechsel und für Entwickler umständliche Callback-URL-Pflege.
+
+### Status: ✅ Implementiert & Getestet
+
+#### Architektur-Wechsel
+
+| Aspekt | Vorher (OAuth 2.0 Redirect) | Jetzt (Google Identity Services) |
+|--------|---------------------------|----------------------------------|
+| Flow | Server-Redirect → Google → Callback → Token | Pop-up → Auth-Code → `postmessage` → Token |
+| Seitenwechsel | 3-4 | 0 (Pop-up) |
+| Callback-URL nötig | Ja, pro Umgebung | Nein |
+| Server-Config | `GOOGLE_CALLBACK_URL` env | Nicht nötig |
+| Google Console | JavaScript Origins + Redirect URIs | Nur JavaScript Origins |
+
+#### Server: Token-Endpoint
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `POST /auth/oauth/google/token` Endpoint | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| Auth-Code Flow: Code → `postmessage` → Google Token Exchange | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| ID-Token Flow: Direktes Token-Verify (One-Tap) | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| `google-auth-library` für Token-Verifizierung | ✅ | `packages/server/package.json` |
+| Error-Logging bei fehlgeschlagenem Token-Exchange | ✅ | `packages/server/src/routes/auth.routes.ts` |
+| Audit-Entry bei erfolgreichem Login | ✅ | `packages/server/src/routes/auth.routes.ts` |
+
+#### Client: Pop-up Login
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `@react-oauth/google` Paket | ✅ | `packages/client/package.json` |
+| `GoogleOAuthProvider` in App-Root | ✅ | `packages/client/src/main.tsx` |
+| `useGoogleLogin` Hook (auth-code flow) | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Google SVG-Icon Button (eigenes Styling) | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Token-Response → authStore login → navigate | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+
+#### Docker/Deployment
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `VITE_GOOGLE_CLIENT_ID` als Docker Build-Arg | ✅ | `Dockerfile` |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` in Compose | ✅ | `docker-compose.prod.yml` |
+
+#### Google Cloud Console Konfiguration
+
+| Einstellung | Wert |
+|---|---|
+| Autorisierte JavaScript-Quellen | `https://thearchitect.site`, `https://www.thearchitect.site`, `http://localhost:3000` |
+| Autorisierte Weiterleitungs-URIs | Nicht mehr benötigt |
+| App-Name (Consent Screen) | `N8N_Server` → sollte auf `TheArchitect` geändert werden |
+
+#### Alte Redirect-Routes (noch vorhanden, nicht mehr genutzt)
+
+Die alten `GET /oauth/google` und `GET /oauth/google/callback` Routes bleiben als Fallback bestehen, werden aber vom Client nicht mehr aufgerufen.
+
+---
+
+## 16. Email Invitation System (Phase 5)
+
+### Problemstellung
+Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten. Es gab keinen Weg, externe Personen (Berater, Stakeholder) per E-Mail einzuladen. Das gesamte RBAC-System mit Projekt-Rollen war damit in der Praxis nicht nutzbar für teamübergreifende Zusammenarbeit.
+
+### Status: ✅ Implementiert
+
+#### Shared Types
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `ProjectInvitation` Interface | ✅ | `packages/shared/src/types/user.types.ts` |
+| `InvitationStatus` Type (pending/accepted/declined/expired/cancelled) | ✅ | `packages/shared/src/types/user.types.ts` |
+| `PROJECT_MANAGE_COLLABORATORS` auf alle Rollen erweitert | ✅ | `packages/shared/src/constants/permissions.constants.ts` |
+
+#### Server: Invitation Model
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `Invitation` Mongoose Schema | ✅ | `packages/server/src/models/Invitation.ts` |
+| Index: `{projectId, status}` | ✅ | `packages/server/src/models/Invitation.ts` |
+| Index: `{invitedEmail, status}` | ✅ | `packages/server/src/models/Invitation.ts` |
+| Index: `{token}` (unique) | ✅ | `packages/server/src/models/Invitation.ts` |
+| TTL-Index: `{expiresAt}` (automatische Bereinigung) | ✅ | `packages/server/src/models/Invitation.ts` |
+
+#### Server: API Routes
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `POST /:id/invitations` — Einladung erstellen + E-Mail senden | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `GET /:id/invitations` — Pending Invitations pro Projekt | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `POST /:id/invitations/:invitationId/resend` — E-Mail erneut senden | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `DELETE /:id/invitations/:invitationId` — Einladung zurückziehen | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `GET /invitations/by-token/:token` — Details per Token (public) | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `POST /invitations/by-token/:token/accept` — Annehmen (auth) | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `POST /invitations/by-token/:token/decline` — Ablehnen (auth) | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| `GET /invitations/mine` — Eigene Einladungen | ✅ | `packages/server/src/routes/invitation.routes.ts` |
+| Routes in Express registriert | ✅ | `packages/server/src/index.ts` |
+
+#### Server: Security
+
+| Komponente | Status | Beschreibung |
+|---|---|---|
+| Token-Hashing | ✅ | SHA-256 Hash in DB, Raw-Token nur in E-Mail |
+| Token-Regeneration bei Resend | ✅ | Neuer Token bei jedem Resend (alter wird ungültig) |
+| E-Mail-Abgleich bei Accept/Decline | ✅ | Nur der eingeladene E-Mail-Inhaber kann annehmen/ablehnen |
+| Duplicate-Check | ✅ | Keine doppelten Pending-Einladungen pro E-Mail+Projekt |
+| Owner/Collaborator-Check | ✅ | Kann nicht Owner oder bestehenden Collaborator einladen |
+| RBAC | ✅ | `requirePermission` + `requireProjectAccess('editor')` |
+| Audit-Logging | ✅ | create/accept/decline/cancel werden geloggt |
+| 7-Tage-Ablauf + TTL | ✅ | Automatische MongoDB-Bereinigung abgelaufener Einladungen |
+
+#### Server: E-Mail-Template
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `sendProjectInvitationEmail()` | ✅ | `packages/server/src/services/email.service.ts` |
+| Matrix-Theme (Grün statt Purple) | ✅ | `packages/server/src/services/email.service.ts` |
+| Kontext-Text: Was ist TheArchitect | ✅ | `packages/server/src/services/email.service.ts` |
+| Rollen-Beschreibung (Editor/Reviewer/Viewer) | ✅ | `packages/server/src/services/email.service.ts` |
+| CTA: "Accept Invitation" | ✅ | `packages/server/src/services/email.service.ts` |
+| Dev-Fallback: Console-Logging | ✅ | `packages/server/src/services/email.service.ts` |
+| Password-Reset-Template auf Matrix-Farben aktualisiert | ✅ | `packages/server/src/services/email.service.ts` |
+
+#### Client: API & UI
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `invitationAPI` (create, list, resend, cancel, getByToken, accept, decline, mine) | ✅ | `packages/client/src/services/api.ts` |
+| ProjectCollaborators: "Invite" statt "Add" | ✅ | `packages/client/src/components/ui/ProjectCollaborators.tsx` |
+| ProjectCollaborators: Pending Invitations Section | ✅ | `packages/client/src/components/ui/ProjectCollaborators.tsx` |
+| ProjectCollaborators: Resend + Cancel Buttons | ✅ | `packages/client/src/components/ui/ProjectCollaborators.tsx` |
+| InvitationPage: Accept/Decline unter `/invitations/:token` | ✅ | `packages/client/src/components/security/InvitationPage.tsx` |
+| InvitationPage: Login-Required State mit Redirect | ✅ | `packages/client/src/components/security/InvitationPage.tsx` |
+| InvitationPage: E-Mail-Mismatch Warning | ✅ | `packages/client/src/components/security/InvitationPage.tsx` |
+| LoginPage: `redirect` Query-Parameter Support | ✅ | `packages/client/src/components/security/LoginPage.tsx` |
+| Route in App.tsx registriert | ✅ | `packages/client/src/App.tsx` |
+
+#### Flow
+
+1. Projekt-Editor/Owner klickt "Invite" im Members-Dialog → E-Mail + Rolle eingeben
+2. Server: Token generieren, SHA-256 hashen, in DB speichern, Raw-Token per E-Mail senden
+3. Empfänger: Klickt Link → `/invitations/:token`
+4. Falls nicht eingeloggt → Login/Register mit Redirect zurück zur Einladung
+5. Accept → wird als Collaborator mit der eingeladenen Rolle hinzugefügt → "Open Project"
+6. Decline → Einladung als abgelehnt markiert
+
+---
+
 ## Bekannte offene Punkte
 
 1. **Workspace-Persistenz testen** — Fix implementiert, aber noch nicht live verifiziert.
@@ -781,12 +929,14 @@ Audit-Logging existierte End-to-End im Backend (`createAuditEntry` Middleware au
 3. ~~**Workspace-Löschung serverseitig**~~ — ✅ Cascade Delete (Neo4j DETACH DELETE + Server API).
 4. **Deep Links** — Direkte URL zu einem Workspace (`/project/:id/workspace/:wsId`) existiert nicht.
 5. ~~**Cross-Architecture Connections serverseitig**~~ — ✅ Bereits persistiert via `addConnection` → `createConnection`.
-6. **Einladungssystem (Phase 5)** — E-Mail-Einladungen, zeitlich begrenzter Zugang für Berater — geplant, nicht implementiert.
+6. ~~**Einladungssystem (Phase 5)**~~ — ✅ E-Mail-Einladungen mit Token-basiertem Accept/Decline, SHA-256 Token-Hashing, Audit-Logging (siehe Abschnitt 16).
 7. ~~**Audit Trail UI (Phase 6)**~~ — ✅ Admin Audit-Log Sektion mit 6 Filtern, Stats, CSV-Export, expandierbaren Zeilen (siehe Abschnitt 14).
 8. ~~**Deployment**~~ — ✅ HTTPS via Caddy auf `thearchitect.site` live (2026-03-16).
 9. ~~**PDF Report Export**~~ — ✅ 3 Report-Typen (Executive, Simulation, Inventory) mit PDFKit.
 10. ~~**Matrix Theme**~~ — ✅ Komplettes Rebranding von Purple zu Matrix-Grün.
 11. ~~**UI/UX Overhaul**~~ — ✅ Toasts, Error Boundary, Skeletons, Modal-Animationen, Confirmations, a11y.
+12. ~~**Google Login**~~ — ✅ Umgestellt auf Google Identity Services (Pop-up statt Redirect, keine Callback-URLs mehr nötig).
+13. **Google Consent Screen App-Name** — Noch "N8N_Server", sollte auf "TheArchitect" geändert werden (Google Cloud Console → Branding).
 
 ### MiroFish — Geplante Phasen
 
@@ -821,5 +971,5 @@ Audit-Logging existierte End-to-End im Backend (`createAuditEntry` Middleware au
 ## Git-Status
 
 **Branch:** `master`
-**Letzter Commit:** `ee7c1b0` — Add www subdomain to Caddyfile for both domain variants
+**Letzter Commit:** `b0a4a09` — Replace Google OAuth redirect flow with Google Identity Services
 **Remote:** `origin/master` — up to date

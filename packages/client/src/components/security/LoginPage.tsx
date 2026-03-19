@@ -30,6 +30,7 @@ export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
   const emailRef = useRef<HTMLInputElement>(null);
   const mfaRef = useRef<HTMLInputElement>(null);
 
@@ -42,20 +43,19 @@ export default function LoginPage() {
     }
   }, [mode]);
 
-  // Google Identity Services login
+  // Google Identity Services
   const googleLogin = useGoogleLogin({
-    flow: 'implicit',
-    onSuccess: async (tokenResponse) => {
+    flow: 'auth-code',
+    onSuccess: async (codeResponse) => {
       try {
         setIsLoading(true);
         setError('');
-        // Exchange Google access token for our JWT via backend
-        const { data } = await api.post('/api/auth/oauth/google/token', {
-          credential: tokenResponse.access_token,
-          flow: 'implicit',
+        const { data } = await api.post('/auth/oauth/google/token', {
+          credential: codeResponse.code,
+          flow: 'auth-code',
         });
         login(data.user, data.accessToken, data.refreshToken);
-        navigate('/');
+        navigate(redirectTo);
       } catch {
         setError('Google authentication failed');
       } finally {
@@ -98,7 +98,7 @@ export default function LoginPage() {
       }
 
       login(data.user, data.accessToken, data.refreshToken);
-      navigate('/');
+      navigate(redirectTo);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Login failed';
       setError(msg);
@@ -127,7 +127,7 @@ export default function LoginPage() {
     try {
       const { data } = await authAPI.register(email, password, name);
       login(data.user, data.accessToken, data.refreshToken);
-      navigate('/');
+      navigate(redirectTo);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Registration failed';
       setError(msg);
@@ -144,7 +144,7 @@ export default function LoginPage() {
     try {
       const { data } = await authAPI.mfaVerify(mfaToken, mfaCode);
       login(data.user, data.accessToken, data.refreshToken);
-      navigate('/');
+      navigate(redirectTo);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Invalid code';
       setError(msg);

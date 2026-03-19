@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
-import { X, UserPlus, Loader2, AlertCircle, Crown, Trash2 } from 'lucide-react';
+import { X, UserPlus, Loader2, AlertCircle, Crown, Trash2, Mail, RotateCw, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { projectAPI } from '../../services/api';
+import { projectAPI, invitationAPI } from '../../services/api';
 
 interface CollaboratorEntry {
   userId: { _id: string; name: string; email: string } | string;
   role: string;
   joinedAt: string;
+}
+
+interface PendingInvitation {
+  _id: string;
+  invitedEmail: string;
+  role: string;
+  expiresAt: string;
+  createdAt: string;
+  inviterUserId?: { name: string; email: string };
 }
 
 interface Props {
@@ -30,6 +39,7 @@ const ROLE_BADGE_COLORS: Record<string, string> = {
 
 export default function ProjectCollaborators({ isOpen, onClose, projectId }: Props) {
   const [collaborators, setCollaborators] = useState<CollaboratorEntry[]>([]);
+  const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [ownerId, setOwnerId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,39 +48,72 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
   const [email, setEmail] = useState('');
   const [newRole, setNewRole] = useState('viewer');
   const [adding, setAdding] = useState(false);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) loadCollaborators();
+    if (isOpen) loadAll();
   }, [isOpen, projectId]);
 
-  const loadCollaborators = async () => {
+  const loadAll = async () => {
     setLoading(true);
     setError(null);
     try {
-      const { data } = await projectAPI.getCollaborators(projectId);
-      setCollaborators(data.data || []);
-      setOwnerId(data.ownerId || '');
+      const [collabRes, inviteRes] = await Promise.all([
+        projectAPI.getCollaborators(projectId),
+        invitationAPI.list(projectId).catch(() => ({ data: { data: [] } })),
+      ]);
+      setCollaborators(collabRes.data.data || []);
+      setOwnerId(collabRes.data.ownerId || '');
+      setInvitations(inviteRes.data.data || []);
     } catch {
-      setError('Failed to load collaborators');
+      setError('Failed to load members');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAdd = async () => {
+  const handleInvite = async () => {
     if (!email.trim()) return;
     setAdding(true);
     setError(null);
     try {
-      const { data } = await projectAPI.addCollaborator(projectId, email.trim(), newRole);
-      setCollaborators((prev) => [...prev, data]);
+      const { data } = await invitationAPI.create(projectId, email.trim(), newRole);
+      setInvitations((prev) => [data, ...prev]);
       setEmail('');
-      toast.success('Collaborator added');
+      toast.success(`Invitation sent to ${email.trim()}`);
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to add collaborator');
-      setError(err.response?.data?.error || 'Failed to add collaborator');
+      const msg = err.response?.data?.error || 'Failed to send invitation';
+      // If user exists and can be added directly, fall back to direct add
+      if (msg === 'User not found') {
+        toast.error('Failed to send invitation');
+      } else {
+        toast.error(msg);
+      }
+      setError(msg);
     } finally {
       setAdding(false);
+    }
+  };
+
+  const handleResend = async (invitationId: string) => {
+    setResendingId(invitationId);
+    try {
+      await invitationAPI.resend(projectId, invitationId);
+      toast.success('Invitation resent');
+    } catch {
+      toast.error('Failed to resend invitation');
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleCancelInvitation = async (invitationId: string) => {
+    try {
+      await invitationAPI.cancel(projectId, invitationId);
+      setInvitations((prev) => prev.filter((i) => i._id !== invitationId));
+      toast.success('Invitation cancelled');
+    } catch {
+      toast.error('Failed to cancel invitation');
     }
   };
 
@@ -86,7 +129,6 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
       toast.success('Role updated');
     } catch {
       toast.error('Failed to update role');
-      setError('Failed to update role');
     }
   };
 
@@ -102,15 +144,20 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
       toast.success('Collaborator removed');
     } catch {
       toast.error('Failed to remove collaborator');
-      setError('Failed to remove collaborator');
     }
+  };
+
+  const daysUntil = (dateStr: string) => {
+    const diff = new Date(dateStr).getTime() - Date.now();
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+    return days <= 0 ? 'Expired' : `${days}d left`;
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl animate-[scaleIn_200ms_ease-out]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
           <h2 className="text-sm font-semibold text-white">Project Members</h2>
@@ -127,14 +174,14 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
             </div>
           )}
 
-          {/* Add collaborator */}
+          {/* Invite form */}
           <div className="flex gap-2">
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
-              placeholder="Email address..."
+              onKeyDown={(e) => { if (e.key === 'Enter') handleInvite(); }}
+              placeholder="Invite by email..."
               className="flex-1 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition"
             />
             <select
@@ -147,22 +194,22 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
               ))}
             </select>
             <button
-              onClick={handleAdd}
+              onClick={handleInvite}
               disabled={adding || !email.trim()}
               className="flex items-center gap-1.5 rounded-md bg-[#00ff41] px-3 py-2 text-xs font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition"
             >
-              {adding ? <Loader2 size={14} className="animate-spin" /> : <UserPlus size={14} />}
-              Add
+              {adding ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+              Invite
             </button>
           </div>
 
-          {/* Members list */}
+          {/* Content */}
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 size={18} className="animate-spin text-[#00ff41]" />
             </div>
           ) : (
-            <div className="space-y-1 max-h-64 overflow-y-auto">
+            <div className="space-y-1 max-h-80 overflow-y-auto">
               {/* Owner */}
               {ownerId && (
                 <div className="flex items-center gap-3 rounded-md px-3 py-2.5 bg-[#0a0a0a]">
@@ -174,10 +221,7 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
                 </div>
               )}
 
-              {collaborators.length === 0 && (
-                <p className="text-xs text-[#4a5a4a] text-center py-4">No collaborators yet</p>
-              )}
-
+              {/* Active Collaborators */}
               {collaborators.map((c) => {
                 const user = typeof c.userId === 'string'
                   ? { _id: c.userId, name: 'Unknown', email: '' }
@@ -210,6 +254,57 @@ export default function ProjectCollaborators({ isOpen, onClose, projectId }: Pro
                   </div>
                 );
               })}
+
+              {/* Pending Invitations */}
+              {invitations.length > 0 && (
+                <>
+                  <div className="pt-3 pb-1 px-1">
+                    <p className="text-[10px] font-medium text-[#4a5a4a] uppercase tracking-wider">Pending Invitations</p>
+                  </div>
+                  {invitations.map((inv) => (
+                    <div key={inv._id} className="flex items-center gap-3 rounded-md px-3 py-2.5 hover:bg-[#0a0a0a] transition group border border-dashed border-[#1a2a1a]">
+                      <div className="h-7 w-7 rounded-full bg-[#1a2a1a]/50 flex items-center justify-center shrink-0">
+                        <Mail size={12} className="text-[#4a5a4a]" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-[#7a8a7a] truncate">{inv.invitedEmail}</p>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${ROLE_BADGE_COLORS[inv.role] || ROLE_BADGE_COLORS.viewer}`}>
+                            {inv.role}
+                          </span>
+                          <span className="flex items-center gap-0.5 text-[10px] text-[#4a5a4a]">
+                            <Clock size={9} />
+                            {daysUntil(inv.expiresAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleResend(inv._id)}
+                        disabled={resendingId === inv._id}
+                        className="p-1 rounded text-[#3a4a3a] hover:text-[#00ff41] hover:bg-[#00ff41]/10 opacity-0 group-hover:opacity-100 transition"
+                        title="Resend invitation"
+                      >
+                        {resendingId === inv._id ? (
+                          <Loader2 size={12} className="animate-spin" />
+                        ) : (
+                          <RotateCw size={12} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleCancelInvitation(inv._id)}
+                        className="p-1 rounded text-[#3a4a3a] hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition"
+                        title="Cancel invitation"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {collaborators.length === 0 && invitations.length === 0 && (
+                <p className="text-xs text-[#4a5a4a] text-center py-4">No collaborators yet. Invite someone above.</p>
+              )}
             </div>
           )}
         </div>

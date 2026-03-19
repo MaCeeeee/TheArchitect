@@ -6,6 +6,7 @@ import AuthLayout from './components/security/AuthLayout';
 import LoginPage from './components/security/LoginPage';
 import OAuthCallbackPage from './components/security/OAuthCallbackPage';
 import ResetPasswordPage from './components/security/ResetPasswordPage';
+import InvitationPage from './components/security/InvitationPage';
 import DashboardPage from './components/ui/DashboardPage';
 import ProjectView from './components/ui/ProjectView';
 import SettingsPage from './components/settings/SettingsPage';
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
       <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+      <Route path="/invitations/:token" element={<InvitationPage />} />
       <Route
         path="/"
         element={
