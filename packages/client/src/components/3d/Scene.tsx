@@ -7,6 +7,7 @@ import ConnectionLines from './ConnectionLines';
 import CameraControlsWrapper from './CameraControls';
 import ContextMenu3D from './ContextMenu3D';
 import TransformationXRay from './TransformationXRay';
+import AgentAvatars3D from './AgentAvatars3D';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
 import WorkspaceBar from '../ui/WorkspaceBar';
@@ -72,6 +73,9 @@ export default function Scene() {
 
           {/* TransformationXRay renders its own lights, sub-views, and HUD */}
           <TransformationXRay />
+
+          {/* MiroFish Agent Avatars (visible during/after simulation) */}
+          <AgentAvatars3D />
 
           {/* Dim grid in X-Ray mode */}
           <Grid

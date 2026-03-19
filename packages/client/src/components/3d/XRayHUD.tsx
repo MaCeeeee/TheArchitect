@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import { useXRayStore, type XRaySubView } from '../../stores/xrayStore';
+import { useSimulationStore } from '../../stores/simulationStore';
 
 const SUB_VIEW_LABELS: Record<XRaySubView, { label: string; color: string }> = {
   risk: { label: 'RISK TOPOLOGY', color: '#ef4444' },
   cost: { label: 'COST GRAVITY', color: '#22c55e' },
   timeline: { label: 'TRANSFORMATION TIMELINE', color: '#06b6d4' },
+  simulation: { label: 'SIMULATION DELTAS', color: '#a855f7' },
 };
 
 function formatCurrency(n: number): string {
@@ -21,6 +24,18 @@ export default function XRayHUD() {
   const subView = useXRayStore((s) => s.subView);
   const setSubView = useXRayStore((s) => s.setSubView);
   const aiNarrative = useXRayStore((s) => s.aiNarrative);
+
+  // Simulation data for the simulation sub-view
+  const hasSimulationResult = useSimulationStore((s) => s.activeRun?.result != null);
+  const fatigueReport = useSimulationStore((s) => s.fatigueReport);
+  const emergenceMetrics = useSimulationStore((s) => s.emergenceMetrics);
+
+  // Dynamically available views — simulation only when result exists
+  const availableViews = useMemo<XRaySubView[]>(() => {
+    const base: XRaySubView[] = ['risk', 'cost', 'timeline'];
+    if (hasSimulationResult) base.push('simulation');
+    return base;
+  }, [hasSimulationResult]);
 
   const viewInfo = SUB_VIEW_LABELS[subView];
 
@@ -52,7 +67,7 @@ export default function XRayHUD() {
 
         {/* Sub-view toggle pills */}
         <div className="flex gap-0.5 rounded-lg bg-[#0a0a0a]/95 border border-[#1a2a1a] p-0.5">
-          {(Object.keys(SUB_VIEW_LABELS) as XRaySubView[]).map((view) => (
+          {availableViews.map((view) => (
             <button
               key={view}
               onClick={() => setSubView(view)}
@@ -62,7 +77,7 @@ export default function XRayHUD() {
                 color: subView === view ? SUB_VIEW_LABELS[view].color : '#4a5a4a',
               }}
             >
-              {view}
+              {view === 'simulation' ? 'sim' : view}
             </button>
           ))}
         </div>
@@ -70,7 +85,35 @@ export default function XRayHUD() {
 
       {/* Bottom-left: 4-number metrics panel - context-aware per sub-view */}
       <div className="absolute bottom-4 left-4 z-20 grid grid-cols-2 gap-2 w-[280px]">
-        {subView === 'cost' ? (
+        {subView === 'simulation' && fatigueReport && emergenceMetrics ? (
+          <>
+            <MetricCard
+              label="Fatigue Index"
+              value={`${(fatigueReport.globalIndex * 100).toFixed(0)}%`}
+              color={
+                fatigueReport.rating === 'red' ? '#ef4444'
+                  : fatigueReport.rating === 'orange' ? '#f97316'
+                    : fatigueReport.rating === 'yellow' ? '#eab308'
+                      : '#22c55e'
+              }
+            />
+            <MetricCard
+              label="Deadlocks"
+              value={`${emergenceMetrics.deadlockCount}`}
+              color={emergenceMetrics.deadlockCount > 0 ? '#ef4444' : '#22c55e'}
+            />
+            <MetricCard
+              label="Consensus"
+              value={`${(emergenceMetrics.consensusScore * 100).toFixed(0)}%`}
+              color={emergenceMetrics.consensusScore >= 0.5 ? '#22c55e' : '#eab308'}
+            />
+            <MetricCard
+              label="Projected Delay"
+              value={`+${fatigueReport.totalProjectedDelayMonths} mo`}
+              color={fatigueReport.totalProjectedDelayMonths > 3 ? '#ef4444' : '#3b82f6'}
+            />
+          </>
+        ) : subView === 'cost' ? (
           <>
             <MetricCard
               label="Total Cost (TCO)"
@@ -119,8 +162,20 @@ export default function XRayHUD() {
         )}
       </div>
 
-      {/* Bottom-right: AI Narrative */}
-      {aiNarrative && (
+      {/* Bottom-right: AI Narrative / Simulation Recommendation */}
+      {subView === 'simulation' && fatigueReport?.recommendation ? (
+        <div
+          className="absolute bottom-4 right-4 z-20 max-w-[360px] rounded-lg border border-[#a855f7] p-3"
+          style={{ background: 'rgba(15, 23, 42, 0.95)' }}
+        >
+          <div className="text-[9px] font-bold text-[#a855f7] tracking-widest uppercase mb-1.5">
+            SIMULATION INSIGHT
+          </div>
+          <div className="text-[11px] text-[#cbd5e1] leading-relaxed">
+            {fatigueReport.recommendation}
+          </div>
+        </div>
+      ) : aiNarrative ? (
         <div
           className="absolute bottom-4 right-4 z-20 max-w-[360px] rounded-lg border border-[#00ff41] p-3"
           style={{ background: 'rgba(15, 23, 42, 0.95)' }}
@@ -132,7 +187,7 @@ export default function XRayHUD() {
             {aiNarrative}
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

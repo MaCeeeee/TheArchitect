@@ -4,6 +4,7 @@ import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
+import { useSimulationStore } from '../../stores/simulationStore';
 
 const LAYER_COLORS: Record<string, string> = {
   strategy: '#ef4444',
@@ -64,6 +65,11 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
     return xrayElementData.get(element.id) || null;
   }, [isXRayActive, xrayElementData, element.id]);
 
+  // Simulation overlay data (only used in simulation X-Ray sub-view)
+  const simRiskDelta = useSimulationStore((s) => s.riskOverlay.get(element.id) ?? 0);
+  const simCostDelta = useSimulationStore((s) => s.costOverlay.get(element.id) ?? 0);
+  const simCombinedDelta = simRiskDelta + simCostDelta;
+
   // In X-Ray mode: color based on sub-view
   const color = useMemo(() => {
     if (!isXRayActive || !xrayData) return baseColor;
@@ -82,8 +88,13 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
       if (cost >= 15000) return '#3b82f6';
       return '#22c55e';
     }
+    if (xraySubView === 'simulation') {
+      if (simCombinedDelta < -0.5) return '#22c55e';
+      if (simCombinedDelta > 0.5) return '#ef4444';
+      return '#4a5a4a';
+    }
     return baseColor;
-  }, [isXRayActive, xrayData, xraySubView, baseColor]);
+  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta]);
 
   // X-Ray vertical displacement (risk view only)
   const xrayYOffset = useMemo(() => {
@@ -98,7 +109,11 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
 
     if (isXRayActive && xrayData) {
       // X-Ray mode animations
-      if (xrayData.isCriticalPath) {
+      if (xraySubView === 'simulation' && Math.abs(simCombinedDelta) > 2) {
+        // Large delta elements pulse
+        const pulse = 1 + Math.sin(state.clock.elapsedTime * 3) * 0.1;
+        meshRef.current.scale.lerp(new THREE.Vector3(pulse, pulse, pulse), 0.15);
+      } else if (xrayData.isCriticalPath) {
         // Critical path elements pulse
         const pulse = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.08;
         meshRef.current.scale.lerp(new THREE.Vector3(pulse, pulse, pulse), 0.15);
@@ -219,16 +234,17 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
     if (isXRayActive && xrayData) {
       if (xraySubView === 'risk' && xrayData.riskScore < 3) return 0.5;
       if (xraySubView === 'cost') {
-        // Ghost effect: retired elements fade out heavily
         if (element.status === 'retired') return 0.15;
-        // Cheap elements are slightly dimmed
         if (xrayData.estimatedCost < 10000) return 0.5;
         return 0.9;
+      }
+      if (xraySubView === 'simulation') {
+        return Math.abs(simCombinedDelta) > 0.1 ? 1 : 0.3;
       }
       if (element.status === 'retired') return 0.25;
     }
     return element.status === 'retired' ? 0.4 : 1;
-  }, [isXRayActive, xrayData, xraySubView, element.status]);
+  }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta]);
 
   return (
     <group position={[element.position3D.x, element.position3D.y + xrayYOffset, element.position3D.z]}>

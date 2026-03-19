@@ -569,23 +569,42 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
   try {
     let profile: { provider: 'google'; providerId: string; email: string; name: string };
 
-    if (flow === 'implicit') {
-      // Implicit flow: credential is an access token → fetch user info from Google
-      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers: { Authorization: `Bearer ${credential}` },
+    if (flow === 'auth-code') {
+      // Auth-code flow: exchange code for tokens, then verify ID token
+      const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: credential,
+          client_id: process.env.GOOGLE_CLIENT_ID,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          redirect_uri: 'postmessage',
+          grant_type: 'authorization_code',
+        }),
       });
-      if (!response.ok) {
-        return res.status(401).json({ error: 'Invalid Google access token' });
+      if (!tokenRes.ok) {
+        const errBody = await tokenRes.text();
+        console.error('[OAuth] Google token exchange failed:', tokenRes.status, errBody);
+        return res.status(401).json({ error: 'Failed to exchange authorization code' });
       }
-      const userInfo = await response.json() as { sub: string; email?: string; name?: string };
-      if (!userInfo.email) {
-        return res.status(400).json({ error: 'No email in Google profile' });
+      const tokens = await tokenRes.json() as { id_token?: string };
+      if (!tokens.id_token) {
+        return res.status(401).json({ error: 'No ID token received from Google' });
+      }
+      // Verify the ID token
+      const ticket = await googleClient.verifyIdToken({
+        idToken: tokens.id_token,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) {
+        return res.status(400).json({ error: 'Invalid token payload' });
       }
       profile = {
         provider: 'google',
-        providerId: userInfo.sub,
-        email: userInfo.email,
-        name: userInfo.name || userInfo.email.split('@')[0],
+        providerId: payload.sub!,
+        email: payload.email,
+        name: payload.name || payload.email.split('@')[0],
       };
     } else {
       // ID Token flow (One-Tap): credential is a JWT → verify with Google

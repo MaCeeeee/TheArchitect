@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { useXRayStore } from '../../stores/xrayStore';
 import RiskTopology from './RiskTopology';
 import CostGravity from './CostGravity';
+import SimulationTopology from './SimulationTopology';
 
 /**
  * TransformationXRay is the main orchestrator for X-Ray mode.
@@ -56,6 +57,7 @@ export default function TransformationXRay() {
       {/* Sub-view specific visuals */}
       {subView === 'risk' && <RiskTopology />}
       {subView === 'cost' && <CostGravity />}
+      {subView === 'simulation' && <SimulationTopology />}
     </group>
   );
 }

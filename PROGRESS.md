@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-19 (Email Invitation System)
+> Letztes Update: 2026-03-19 (MiroFish Phase 2 — Emergence Dashboard, Agent Avatars 3D, X-Ray Integration)
 
 ---
 
@@ -353,6 +353,82 @@ Bestehende Analytics (Risk, Impact, Cost, Monte Carlo) berechnen Metriken rein a
 1. **CP bei Risiko am Limit:** Agent der genau sein `riskThreshold` vorschlägt bekommt CP=1.0 — korrekt aber streng
 2. **Budget@Risk Pauschale:** $20K pro Konfliktrunde — könnte durch tatsächliche `estimatedCostImpact` ersetzt werden
 3. **Projected Delay bei Konsens:** Zeigt Delay aus früheren Konfliktrunden an, auch wenn Konsens erreicht wurde
+
+---
+
+## 5b. MiroFish Phase 2: Emergence Dashboard, Agent Avatars 3D, X-Ray Integration
+
+### Beschreibung
+Phase 2 erweitert die MiroFish-Simulation um visuelle Tiefe: Ein Emergence Dashboard zeigt zeitliche Muster und Agent-Konflikte, 3D-Avatare machen Agenten im Raum sichtbar, und eine neue X-Ray-Ansicht projiziert Simulationsergebnisse als Heatmap auf die Architektur.
+
+### Status: ✅ Implementiert und verifiziert (50/50 Tests bestanden)
+
+#### Feature A: Emergence Dashboard
+
+| Komponente | Status | Datei |
+|---|---|---|
+| EmergenceDashboard (3 collapsible Sektionen) | ✅ | `packages/client/src/components/simulation/EmergenceDashboard.tsx` |
+| Sektion 1: Emergence Timeline (horizontal scrollbar, farbige Event-Dots) | ✅ | EmergenceDashboard.tsx |
+| Sektion 2: Agent-vs-Agent Conflict Heatmap (NxN Grid) | ✅ | EmergenceDashboard.tsx |
+| Sektion 3: Agent Position Timeline (approve/reject/modify/abstain) | ✅ | EmergenceDashboard.tsx |
+| "Emergence" Tab in SimulationPanel (nur bei aktivem Run) | ✅ | `packages/client/src/components/simulation/SimulationPanel.tsx` |
+| Empty State Handling | ✅ | EmergenceDashboard.tsx |
+
+#### Feature B: Agent Avatars 3D
+
+| Komponente | Status | Datei |
+|---|---|---|
+| AgentAvatars3D (Gate: isRunning OR showOverlay+result) | ✅ | `packages/client/src/components/3d/AgentAvatars3D.tsx` |
+| Transluzente Agent-Spheres mit LAYER_Y Positionierung | ✅ | AgentAvatars3D.tsx |
+| Puls-Animation bei aktivem Agent (scale ±0.2, emissive ±0.2) | ✅ | AgentAvatars3D.tsx |
+| AgentBeam: QuadraticBezierCurve3 + Traveling Particle | ✅ | AgentAvatars3D.tsx |
+| Html Labels (Agent Name + DEI Pattern) | ✅ | AgentAvatars3D.tsx |
+| 6 Agent-Farben (cyan, purple, rose, amber, teal, orange) | ✅ | AgentAvatars3D.tsx |
+| Mount in Scene.tsx nach TransformationXRay | ✅ | `packages/client/src/components/3d/Scene.tsx` |
+
+#### Feature C: X-Ray Simulation Sub-View
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `XRaySubView` erweitert um `'simulation'` | ✅ | `packages/client/src/stores/xrayStore.ts` |
+| SimulationTopology: Delta-Ringe (grün/rot, pulsierend) | ✅ | `packages/client/src/components/3d/SimulationTopology.tsx` |
+| SimulationTopology: Delta-Beams (vertikal, Höhe ∝ delta) | ✅ | SimulationTopology.tsx |
+| SimulationTopology: DeadlockAura (rote wireframe Sphere) | ✅ | SimulationTopology.tsx |
+| SimulationTopology: ConsensusAura (grüne Sphere) | ✅ | SimulationTopology.tsx |
+| NodeObject3D: Simulation Sub-View Coloring (grün/rot/grau) | ✅ | `packages/client/src/components/3d/NodeObject3D.tsx` |
+| NodeObject3D: Opacity 1.0 bei Delta, 0.3 ohne | ✅ | NodeObject3D.tsx |
+| NodeObject3D: Puls bei abs(delta) > 2 | ✅ | NodeObject3D.tsx |
+| TransformationXRay: SimulationTopology Mount | ✅ | `packages/client/src/components/3d/TransformationXRay.tsx` |
+| XRayHUD: Simulation Pill (dynamisch, nur bei Result) | ✅ | `packages/client/src/components/3d/XRayHUD.tsx` |
+| XRayHUD: Simulation Metrics (Fatigue, Deadlocks, Consensus, Delay) | ✅ | XRayHUD.tsx |
+| XRayHUD: Simulation Insight Panel (purple border) | ✅ | XRayHUD.tsx |
+
+#### Test-Suite: `mirofish-phase2.test.ts`
+
+| # | Describe Block | Tests | Status |
+|---|---|---|---|
+| 0 | Setup (User, Project, 5 Elements) | 3 | ✅ |
+| 1 | Simulation API Contract (Personas, Create, Complete, Validate) | 4 | ✅ |
+| 2 | Emergence Dashboard Data Integrity (Turns, Events, Fatigue, Conflict, Timeline) | 5 | ✅ |
+| 3 | X-Ray Simulation Overlay (Deltas, FatigueReport, EmergenceMetrics) | 5 | ✅ |
+| 4 | Edge Cases (Validation, Auth, 404, List, Delete) | 7 | ✅ |
+| 5 | Usability Checklist — Steve Jobs Test (10 Kriterien) | 10 | ✅ |
+| 6 | Static Analysis — Component Structure (14 Checks) | 14 | ✅ |
+| 7 | Cleanup | 2 | ✅ |
+| | **Gesamt** | **50** | **✅ 50/50** |
+
+#### Neue Dateien (3)
+- `packages/client/src/components/simulation/EmergenceDashboard.tsx`
+- `packages/client/src/components/3d/AgentAvatars3D.tsx`
+- `packages/client/src/components/3d/SimulationTopology.tsx`
+
+#### Modifizierte Dateien (6)
+- `packages/client/src/components/simulation/SimulationPanel.tsx` — Emergence Tab
+- `packages/client/src/stores/xrayStore.ts` — XRaySubView type
+- `packages/client/src/components/3d/Scene.tsx` — AgentAvatars3D mount
+- `packages/client/src/components/3d/NodeObject3D.tsx` — Simulation sub-view coloring
+- `packages/client/src/components/3d/TransformationXRay.tsx` — SimulationTopology mount
+- `packages/client/src/components/3d/XRayHUD.tsx` — Simulation pill + metrics
 
 ---
 
@@ -940,9 +1016,9 @@ Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten
 
 ### MiroFish — Geplante Phasen
 
-9. **Phase 2: EmergenceDashboard** — Timeline-Ansicht der Emergence-Events, Agent-vs-Agent Heatmap, Sub-Tab unter Scenarios.
-10. **Phase 2: AgentAvatars 3D** — Transluzente Spheres über Layern, Pulsier-Animation bei Reasoning, Verbindungslinien zu adressierten Elementen.
-11. **Phase 2: X-Ray Integration** — SimulationOverlay auf Risk/Cost-Heatmap, pulsierend bei Deltas.
+9. ~~**Phase 2: EmergenceDashboard**~~ — ✅ Timeline, Agent-vs-Agent Heatmap, Position Timeline, Emergence Tab.
+10. ~~**Phase 2: AgentAvatars 3D**~~ — ✅ Transluzente Spheres, Puls-Animation, Bezier-Verbindungslinien mit Traveling Particles.
+11. ~~**Phase 2: X-Ray Integration**~~ — ✅ SimulationTopology, Delta-Ringe/Beams, Deadlock/Consensus Auras, HUD Metrics.
 12. **Phase 3: Custom Persona Editor** — Name, Layers, Constraints frei konfigurierbar.
 13. **Phase 3: Run-Vergleich** — Zwei Simulationsläufe nebeneinander vergleichen.
 14. ~~**Phase 3: PDF-Export**~~ — ✅ Implementiert (siehe Abschnitt 11).
@@ -971,5 +1047,5 @@ Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten
 ## Git-Status
 
 **Branch:** `master`
-**Letzter Commit:** `b0a4a09` — Replace Google OAuth redirect flow with Google Identity Services
-**Remote:** `origin/master` — up to date
+**Letzter Commit:** MiroFish Phase 2 — Emergence Dashboard, Agent Avatars 3D, X-Ray Integration
+**Remote:** `origin/master`

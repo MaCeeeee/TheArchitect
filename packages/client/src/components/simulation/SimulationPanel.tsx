@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { reportAPI } from '../../services/api';
+import EmergenceDashboard from './EmergenceDashboard';
 import type { AgentPersona, ScenarioType, FatigueRating } from '@thearchitect/shared/src/types/simulation.types';
 
 const SCENARIO_TYPES: { value: ScenarioType; label: string; icon: typeof Brain }[] = [
@@ -71,14 +72,14 @@ const FATIGUE_BG: Record<FatigueRating, string> = {
   red: 'bg-red-500/10 border-red-500/30',
 };
 
-type ViewMode = 'config' | 'running' | 'results' | 'history';
+type ViewMode = 'config' | 'running' | 'results' | 'emergence' | 'history';
 
 export default function SimulationPanel() {
   const projectId = useArchitectureStore((s) => s.projectId);
   const {
     isRunning, currentRound, currentAgent, streamingText,
     fatigueReport, fatigueTimeline, emergenceEvents, emergenceMetrics,
-    liveFeed, runs, riskOverlay, costOverlay, showOverlay, activeRunId,
+    liveFeed, runs, riskOverlay, costOverlay, showOverlay, activeRunId, activeRun,
     startSimulation, cancelSimulation, loadRuns, selectRun, toggleOverlay, clearSimulation,
   } = useSimulationStore();
 
@@ -126,7 +127,7 @@ export default function SimulationPanel() {
     <div className="flex flex-col h-full text-sm">
       {/* Tab bar */}
       <div className="flex border-b border-[#1a2a1a] px-2">
-        {(['config', 'results', 'history'] as ViewMode[]).map((mode) => (
+        {(['config', 'results', ...(activeRun ? ['emergence'] : []), 'history'] as ViewMode[]).map((mode) => (
           <button
             key={mode}
             onClick={() => mode === 'history' ? handleLoadHistory() : setViewMode(mode)}
@@ -183,6 +184,8 @@ export default function SimulationPanel() {
             runId={activeRunId}
           />
         )}
+
+        {viewMode === 'emergence' && <EmergenceDashboard />}
 
         {viewMode === 'history' && (
           <HistoryView

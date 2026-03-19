@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useArchitectureStore, ArchitectureElement, Connection } from './architectureStore';
 
-export type XRaySubView = 'risk' | 'cost' | 'timeline';
+export type XRaySubView = 'risk' | 'cost' | 'timeline' | 'simulation';
 
 export interface XRayMetrics {
   totalRiskExposure: number;
