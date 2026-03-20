@@ -33,7 +33,9 @@ import { reportAPI } from '../../services/api';
 import { fitToScreen } from '../3d/CameraControls';
 import UserPresence from '../collaboration/UserPresence';
 import { useCollaborationStore } from '../../stores/collaborationStore';
+import { useAdvisorStore } from '../../stores/advisorStore';
 import ProjectCollaborators from './ProjectCollaborators';
+import HealthScoreRing from '../copilot/HealthScoreRing';
 
 interface ToolbarProps {
   onOpenBPMNImport: () => void;
@@ -65,6 +67,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
   const projectId = useArchitectureStore((s) => s.projectId);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const toggleXRay = useXRayStore((s) => s.toggleXRay);
+  const advisorHealthScore = useAdvisorStore((s) => s.healthScore);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [exportLoading, setExportLoading] = useState<string | null>(null);
@@ -157,6 +160,11 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
             >
               <Users size={14} />
             </button>
+            {advisorHealthScore && (
+              <div className="ml-2 border-l border-[#1a2a1a] pl-2">
+                <HealthScoreRing score={advisorHealthScore} compact />
+              </div>
+            )}
           </div>
         )}
 

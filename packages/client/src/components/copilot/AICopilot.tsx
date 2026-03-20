@@ -3,10 +3,13 @@ import { useParams } from 'react-router-dom';
 import {
   Sparkles, Send, ClipboardCheck, AlertTriangle, BookOpen, Lightbulb,
   Loader2, RotateCcw, Trash2, AlertCircle, MessageSquare, FileText, Grid3X3,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { useAdvisorStore } from '../../stores/advisorStore';
 import StandardsManager from './StandardsManager';
 import ComplianceMatrix from './ComplianceMatrix';
+import AdvisorPanel from './AdvisorPanel';
 
 // ─── Types ───
 
@@ -16,7 +19,7 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'standards' | 'matrix';
+type Tab = 'chat' | 'standards' | 'matrix' | 'advisor';
 
 // ─── Quick Actions ───
 
@@ -128,7 +131,9 @@ function formatInline(text: string): (string | JSX.Element)[] {
 export default function AICopilot() {
   const { projectId } = useParams();
   const token = useAuthStore((s) => s.token);
-  const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const [activeTab, setActiveTab] = useState<Tab>('advisor');
+  const advisorInsights = useAdvisorStore((s) => s.insights);
+  const advisorBadge = advisorInsights.filter((i) => i.severity === 'critical' || i.severity === 'high').length;
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -302,14 +307,15 @@ export default function AICopilot() {
       {/* Tab Bar */}
       <div className="flex border-b border-[#1a2a1a]">
         {([
-          { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat' },
-          { id: 'standards' as Tab, icon: FileText, label: 'Standards' },
-          { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix' },
+          { id: 'advisor' as Tab, icon: ShieldAlert, label: 'Advisor', badge: advisorBadge },
+          { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat', badge: 0 },
+          { id: 'standards' as Tab, icon: FileText, label: 'Standards', badge: 0 },
+          { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix', badge: 0 },
         ]).map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition border-b-2 relative ${
               activeTab === tab.id
                 ? 'text-white border-[#00ff41]'
                 : 'text-[#4a5a4a] border-transparent hover:text-[#7a8a7a]'
@@ -317,11 +323,22 @@ export default function AICopilot() {
           >
             <tab.icon size={12} />
             {tab.label}
+            {tab.badge > 0 && (
+              <span className="absolute -top-0.5 right-1 bg-red-500 text-white text-[7px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                {tab.badge > 9 ? '9+' : tab.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'advisor' && (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <AdvisorPanel />
+        </div>
+      )}
+
       {activeTab === 'chat' && (
         <div className="flex flex-col flex-1 min-h-0">
           {/* Standard Context Indicator */}

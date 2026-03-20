@@ -352,4 +352,11 @@ export const simulationAPI = {
     `${API_BASE}/projects/${projectId}/simulations/${runId}/stream`,
 };
 
+export const advisorAPI = {
+  scan: (projectId: string) =>
+    api.get(`/projects/${projectId}/advisor/scan`),
+  health: (projectId: string) =>
+    api.get(`/projects/${projectId}/advisor/health`),
+};
+
 export default api;
