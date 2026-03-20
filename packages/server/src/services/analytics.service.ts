@@ -166,8 +166,11 @@ export async function estimateCosts(projectId: string): Promise<{
 }> {
   const records = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
+     OPTIONAL MATCH (e)-[r]-(other:ArchitectureElement {projectId: $projectId})
      RETURN e.id as id, e.name as name, e.type as type, e.status as status,
-            e.togafDomain as domain, e.maturityLevel as maturity, e.riskLevel as riskLevel`,
+            e.togafDomain as domain, e.maturityLevel as maturity, e.riskLevel as riskLevel,
+            e.metadataJson as metadataJson, e.sourceImport as sourceImport,
+            count(DISTINCT other) as connectionCount`,
     { projectId }
   );
 
@@ -176,10 +179,25 @@ export async function estimateCosts(projectId: string): Promise<{
     const status = r.get('status') || 'current';
     const domain = r.get('domain') || 'technology';
     const maturity = r.get('maturity')?.toNumber?.() || 3;
+    const connectionCount = r.get('connectionCount')?.toNumber?.() || 0;
 
-    const baseCost = getBaseCost(type, domain);
-    const statusMultiplier = status === 'retired' ? 0.2 : status === 'transitional' ? 1.5 : status === 'target' ? 1.8 : 1.0;
-    const estimatedCost = Math.round(baseCost * statusMultiplier);
+    // Parse metadata for source detection
+    let metadata: Record<string, unknown> = {};
+    try {
+      const raw = r.get('metadataJson');
+      if (raw) metadata = JSON.parse(raw);
+    } catch { /* ignore */ }
+    const source = (metadata.source as string) || r.get('sourceImport') || '';
+
+    let estimatedCost: number;
+    if (source === 'n8n' && metadata.n8nType) {
+      const n8n = estimateN8nCost(
+        metadata.n8nType as string, connectionCount, r.get('riskLevel') || 'low', status,
+      );
+      estimatedCost = n8n.cost;
+    } else {
+      estimatedCost = estimateEnterpriseCost(type, domain, status, maturity, connectionCount);
+    }
 
     const optimizationPotential = status === 'retired' ? estimatedCost * 0.9
       : maturity <= 2 ? estimatedCost * 0.3
@@ -333,4 +351,99 @@ function getBaseCost(type: string, domain: string): number {
     value_stream: 8000,
   };
   return costs[type] || (domain === 'technology' ? 25000 : 10000);
+}
+
+// ─── N8n Cost Model ───
+
+const N8N_HOURLY_RATE = 100; // EUR per developer hour
+
+export function getN8nNodeCategory(n8nType: string): string {
+  if (/trigger/i.test(n8nType)) return 'Trigger';
+  if (/httpRequest|http$/i.test(n8nType)) return 'API';
+  if (/postgres|mongo|mysql|redis|neo4j|mariadb|sqlite/i.test(n8nType)) return 'Datenbank';
+  if (/openAi|anthropic|ollama|langchain|mistral/i.test(n8nType)) return 'LLM';
+  if (/\.code$|\.function$|executeCommand/i.test(n8nType)) return 'Code';
+  if (/slack|gmail|notion|discord|telegram|jira|salesforce|hubspot/i.test(n8nType)) return 'SaaS';
+  if (/s3|ftp|minio|googleDrive|dropbox|oneDrive/i.test(n8nType)) return 'Storage';
+  if (/rabbitmq|kafka|amqp|sqs/i.test(n8nType)) return 'Queue';
+  if (/\.if$|\.switch$|\.merge$|\.set$|\.filter$|splitInBatches|splitOut/i.test(n8nType)) return 'Logic';
+  if (/stickyNote|noOp/i.test(n8nType)) return 'Passiv';
+  return 'Node';
+}
+
+export function getN8nEffortHours(n8nType: string): number {
+  const category = getN8nNodeCategory(n8nType);
+  const hours: Record<string, number> = {
+    Passiv: 0.1,      // Sticky notes, no-op → almost zero effort
+    Logic: 0.5,        // Config click
+    Trigger: 1,        // Webhook URL check
+    SaaS: 2,           // API key swap + test
+    API: 3,            // Endpoint + auth + mapping
+    Code: 4,           // Review logic, test edge cases
+    Storage: 4,        // Path remapping + permissions
+    LLM: 6,            // Prompt compatibility testing
+    Queue: 6,          // Queue topology changes
+    Datenbank: 8,      // Schema validation + data migration
+  };
+  return hours[category] ?? 2;
+}
+
+function estimateN8nCost(
+  n8nType: string, connectionCount: number, riskLevel: string, status: string,
+): { cost: number; hours: number } {
+  const baseHours = getN8nEffortHours(n8nType);
+  const complexityMult = 1 + connectionCount * 0.15;
+  const riskMult: Record<string, number> = { low: 1.0, medium: 1.2, high: 1.5, critical: 2.0 };
+  const statusMult: Record<string, number> = { retired: 0.2, transitional: 1.0, target: 1.3, current: 1.0 };
+  const totalHours = baseHours * complexityMult * (riskMult[riskLevel] || 1.0) * (statusMult[status] || 1.0);
+  return { cost: Math.round(totalHours * N8N_HOURLY_RATE), hours: Math.round(totalHours * 10) / 10 };
+}
+
+function estimateEnterpriseCost(
+  type: string, domain: string, status: string, maturity: number, connectionCount: number,
+): number {
+  const baseCost = getBaseCost(type, domain);
+  const statusMult: Record<string, number> = { retired: 0.2, transitional: 1.5, target: 1.8, current: 1.0 };
+  const maturityMult = maturity >= 4 ? 0.8 : maturity <= 2 ? 1.2 : 1.0;
+  const depPremium = 1 + connectionCount * 0.05;
+  return Math.round(baseCost * (statusMult[status] || 1.0) * maturityMult * depPremium);
+}
+
+// ─── Topology Complexity (Batch) ───
+
+export async function computeTopologyBatch(
+  projectId: string, elementIds: string[],
+): Promise<Map<string, number>> {
+  if (elementIds.length === 0) return new Map();
+
+  const records = await runCypher(
+    `UNWIND $elementIds AS eid
+     MATCH (e:ArchitectureElement {id: eid, projectId: $projectId})
+     OPTIONAL MATCH (e)-[:CONNECTS_TO]->(dep:ArchitectureElement {projectId: $projectId})
+     OPTIONAL MATCH (inc:ArchitectureElement {projectId: $projectId})-[:CONNECTS_TO]->(e)
+     OPTIONAL MATCH path = (e)-[:CONNECTS_TO*2..5]->(trans:ArchitectureElement {projectId: $projectId})
+     RETURN eid,
+            count(DISTINCT dep) as fanOut,
+            count(DISTINCT inc) as fanIn,
+            count(DISTINCT trans) as blastRadius,
+            CASE WHEN max(length(path)) IS NULL THEN 0 ELSE max(length(path)) END as maxDepth`,
+    { projectId, elementIds },
+  );
+
+  const result = new Map<string, number>();
+  for (const r of records) {
+    const fanOut = r.get('fanOut')?.toNumber?.() || 0;
+    const fanIn = r.get('fanIn')?.toNumber?.() || 0;
+    const blast = r.get('blastRadius')?.toNumber?.() || 0;
+    const depth = r.get('maxDepth')?.toNumber?.() || 0;
+
+    const complexity = 1.0
+      + fanOut * 0.08
+      + fanIn * 0.12
+      + blast * 0.03
+      + depth * 0.10;
+
+    result.set(r.get('eid'), Math.min(complexity, 10.0));
+  }
+  return result;
 }

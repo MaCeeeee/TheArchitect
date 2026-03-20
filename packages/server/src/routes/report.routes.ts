@@ -5,7 +5,7 @@ import { generateReport, ReportType } from '../services/report.service';
 
 const router = Router();
 
-const VALID_TYPES: ReportType[] = ['executive', 'simulation', 'inventory'];
+const VALID_TYPES: ReportType[] = ['executive', 'simulation', 'inventory', 'roadmap'];
 
 // GET /api/projects/:projectId/reports/:type
 router.get(
@@ -17,6 +17,7 @@ router.get(
       const projectId = req.params.projectId as string;
       const type = req.params.type as string;
       const runId = req.query.runId as string | undefined;
+      const roadmapId = req.query.roadmapId as string | undefined;
 
       if (!VALID_TYPES.includes(type as ReportType)) {
         return res.status(400).json({ error: `Invalid report type. Must be one of: ${VALID_TYPES.join(', ')}` });
@@ -26,8 +27,13 @@ router.get(
         return res.status(400).json({ error: 'runId query parameter is required for simulation reports' });
       }
 
+      if (type === 'roadmap' && !roadmapId) {
+        return res.status(400).json({ error: 'roadmapId query parameter is required for roadmap reports' });
+      }
+
       const doc = await generateReport(projectId, type as ReportType, {
         runId: runId || undefined,
+        roadmapId: roadmapId || undefined,
       });
 
       const date = new Date().toISOString().split('T')[0];

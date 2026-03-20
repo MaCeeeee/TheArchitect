@@ -5,6 +5,7 @@ import { getXRaySummary, XRaySummary } from './xray.service';
 import { assessRisk, estimateCosts, RiskAssessment } from './analytics.service';
 import { checkCompliance, ComplianceReport } from './compliance.service';
 import { runCypher } from '../config/neo4j';
+import { TransformationRoadmap } from '../models/TransformationRoadmap';
 
 // ─── Colors ──────────────────────────────────────────────
 const ACCENT = '#00ff41';
@@ -463,14 +464,124 @@ async function renderInventoryReport(doc: PDFKit.PDFDocument, project: { name: s
   }
 }
 
+// ─── Roadmap Report ──────────────────────────────────────
+
+async function renderRoadmapReport(doc: PDFKit.PDFDocument, project: { name: string }, roadmapId: string) {
+  const roadmap = await TransformationRoadmap.findById(roadmapId).lean();
+  if (!roadmap) throw new Error('Roadmap not found');
+
+  const subtitle = `Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+  const strategyLabel = (roadmap.config as any)?.strategy || 'balanced';
+
+  // Page 1: Executive Summary
+  drawHeader(doc, `Transformation Roadmap — ${project.name}`, subtitle);
+  drawFooter(doc, 1);
+
+  drawSectionTitle(doc, 'Executive Summary');
+
+  const summary = roadmap.summary as any || {};
+  const costConfidence = summary.costConfidence || {};
+  const metricY = doc.y;
+  const cardW = (CONTENT_W - 10) / 2;
+
+  drawMetricCard(doc, MARGIN, metricY, cardW, 'Total Cost (P50)',
+    formatNumber(costConfidence.p50 || summary.totalCost || 0), '#f97316');
+  drawMetricCard(doc, MARGIN + cardW + 10, metricY, cardW, 'Duration',
+    `${summary.totalDurationMonths || 0} months`, '#3b82f6');
+  drawMetricCard(doc, MARGIN, metricY + 60, cardW, 'Risk Reduction',
+    `-${summary.riskReduction || 0}%`, '#22c55e');
+  drawMetricCard(doc, MARGIN + cardW + 10, metricY + 60, cardW, 'Violations Fixed',
+    `${summary.complianceImprovement || 0}`, '#a855f7');
+  doc.y = metricY + 130;
+
+  // Strategy & Config
+  doc.font('Helvetica').fontSize(9).fillColor(DARK);
+  doc.text(`Strategy: ${strategyLabel.charAt(0).toUpperCase() + strategyLabel.slice(1)}`, MARGIN, doc.y);
+  doc.text(`Waves: ${summary.waveCount || 0}  |  Elements: ${summary.totalElements || 0}`, MARGIN, doc.y);
+  if (costConfidence.p10 && costConfidence.p90) {
+    doc.text(`Cost Range: ${formatNumber(costConfidence.p10)} (P10) — ${formatNumber(costConfidence.p90)} (P90)`, MARGIN, doc.y);
+  }
+  doc.moveDown();
+
+  // Wave Summary Table
+  const waves = (roadmap.waves as any[]) || [];
+  if (waves.length > 0) {
+    drawSectionTitle(doc, 'Wave Overview');
+    const waveRows = waves.map((w: any) => [
+      `Wave ${w.waveNumber}`,
+      w.name || '-',
+      `${w.elements?.length || 0}`,
+      formatNumber(w.metrics?.totalCost || 0),
+      `${w.estimatedDurationMonths || 0} mo`,
+      `${(w.metrics?.riskDelta || 0) > 0 ? '+' : ''}${(w.metrics?.riskDelta || 0).toFixed(0)}%`,
+    ]);
+    drawTable(doc, ['Wave', 'Name', 'Elements', 'Cost', 'Duration', 'Risk Delta'],
+      waveRows, [60, 140, 60, 80, 65, 90], 'Transformation Roadmap');
+  }
+
+  // Page 2+: Wave Details
+  for (const wave of waves) {
+    addNewPage(doc, `Transformation Roadmap — ${project.name}`, subtitle);
+    drawSectionTitle(doc, `Wave ${wave.waveNumber}: ${wave.name || 'Unnamed'}`);
+
+    if (wave.description) {
+      doc.font('Helvetica').fontSize(9).fillColor(DARK).text(wave.description, MARGIN, doc.y, { width: CONTENT_W });
+      doc.moveDown(0.5);
+    }
+
+    // Wave metrics
+    const wMetrics = wave.metrics || {};
+    const wMetricY = doc.y;
+    const cardW3 = (CONTENT_W - 20) / 3;
+    drawMetricCard(doc, MARGIN, wMetricY, cardW3, 'Cost', formatNumber(wMetrics.totalCost || 0));
+    drawMetricCard(doc, MARGIN + cardW3 + 10, wMetricY, cardW3, 'Duration', `${wave.estimatedDurationMonths || 0} months`);
+    drawMetricCard(doc, MARGIN + (cardW3 + 10) * 2, wMetricY, cardW3, 'Risk Delta',
+      `${(wMetrics.riskDelta || 0) > 0 ? '+' : ''}${(wMetrics.riskDelta || 0).toFixed(0)}%`,
+      (wMetrics.riskDelta || 0) < 0 ? '#22c55e' : '#ef4444');
+    doc.y = wMetricY + 70;
+
+    // Elements table
+    const elements = wave.elements || [];
+    if (elements.length > 0) {
+      const elementRows = elements.map((el: any) => [
+        el.name || '-',
+        el.type || '-',
+        `${el.currentStatus} → ${el.targetStatus}`,
+        (el.riskScore || 0).toFixed(1),
+        formatNumber(el.estimatedCost || 0),
+      ]);
+      drawTable(doc, ['Name', 'Type', 'Transition', 'Risk', 'Cost'],
+        elementRows, [140, 90, 120, 50, 95], 'Transformation Roadmap');
+    }
+
+    // Recommendation
+    if (wave.recommendation) {
+      checkPageBreak(doc, 60);
+      drawSectionTitle(doc, 'Recommendation');
+      doc.font('Helvetica').fontSize(9).fillColor(DARK).text(wave.recommendation, MARGIN, doc.y, { width: CONTENT_W });
+      doc.moveDown();
+    }
+
+    // Risk mitigations
+    if (wave.riskMitigations && wave.riskMitigations.length > 0) {
+      checkPageBreak(doc, 40);
+      drawSectionTitle(doc, 'Risk Mitigations');
+      for (const m of wave.riskMitigations) {
+        doc.font('Helvetica').fontSize(9).fillColor(DARK).text(`• ${m}`, MARGIN + 10, doc.y, { width: CONTENT_W - 10 });
+      }
+      doc.moveDown();
+    }
+  }
+}
+
 // ─── Main Export ─────────────────────────────────────────
 
-export type ReportType = 'executive' | 'simulation' | 'inventory';
+export type ReportType = 'executive' | 'simulation' | 'inventory' | 'roadmap';
 
 export async function generateReport(
   projectId: string,
   type: ReportType,
-  options?: { runId?: string }
+  options?: { runId?: string; roadmapId?: string }
 ): Promise<PDFKit.PDFDocument> {
   const project = await Project.findById(projectId).lean();
   if (!project) throw new Error('Project not found');
@@ -501,6 +612,11 @@ export async function generateReport(
     case 'inventory':
       await renderInventoryReport(doc, project, projectId);
       break;
+    case 'roadmap': {
+      if (!options?.roadmapId) throw new Error('roadmapId is required for roadmap reports');
+      await renderRoadmapReport(doc, project, options.roadmapId);
+      break;
+    }
     default:
       throw new Error(`Unknown report type: ${type}`);
   }

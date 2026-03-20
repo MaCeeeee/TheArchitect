@@ -22,6 +22,7 @@ import CapacityPlanning from '../simulation/CapacityPlanning';
 import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
 import TemplateMarketplace from '../marketplace/TemplateMarketplace';
 import AICopilot from '../copilot/AICopilot';
+import RoadmapPanel from '../analytics/RoadmapPanel';
 
 const LAYER_CONFIG = [
   { id: 'strategy', label: 'Strategy', color: '#ef4444' },
@@ -243,6 +244,7 @@ const ANALYTICS_TABS = [
   { id: 'monte', label: 'Simulate' },
   { id: 'scenario', label: 'Scenarios' },
   { id: 'capacity', label: 'Capacity' },
+  { id: 'roadmap', label: 'Roadmap' },
 ] as const;
 
 const GOVERNANCE_TABS = [
@@ -283,7 +285,7 @@ function GovernancePanel() {
 }
 
 function AnalyticsPanel() {
-  const [tab, setTab] = useState<'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity'>('risk');
+  const [tab, setTab] = useState<'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'roadmap'>('risk');
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -309,6 +311,7 @@ function AnalyticsPanel() {
         {tab === 'monte' && <MonteCarloSimulation />}
         {tab === 'scenario' && <SimulationPanel />}
         {tab === 'capacity' && <CapacityPlanning />}
+        {tab === 'roadmap' && <RoadmapPanel />}
       </div>
     </div>
   );

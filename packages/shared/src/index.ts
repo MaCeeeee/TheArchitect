@@ -7,3 +7,4 @@ export * from './constants/togaf.constants';
 export * from './constants/permissions.constants';
 export * from './constants/password.constants';
 export * from './types/advisor.types';
+export * from './types/roadmap.types';

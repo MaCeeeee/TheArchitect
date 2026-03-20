@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-20 (Test-Suite Ergebnisse + AI Architecture Advisor Anforderungsanalyse)
+> Letztes Update: 2026-03-20 (AI Architecture Advisor implementiert & verifiziert — 62/62 Tests)
 
 ---
 
@@ -1006,6 +1006,136 @@ Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten
 
 ---
 
+## 17. AI Architecture Advisor
+
+### Beschreibung
+Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu einem einheitlichen Health Score und priorisierten Architektur-Insights synthesiert. Schließt die Lücke zwischen isolierten Analyse-Services und konkreten Handlungsempfehlungen.
+
+### Status: ✅ Implementiert & Verifiziert (62/62 Tests)
+
+#### Shared Types
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `AdvisorInsight` Interface (id, category, severity, title, description, affectedElements, suggestedAction, effort, impact) | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| `HealthScore` Interface (total, trend, trendDelta, factors, timestamp) | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| `AdvisorScanResult` Interface | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| `InsightSeverity` (critical, high, warning, info) | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| `InsightCategory` (9 Typen) | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| `RemediationAction`, `HealthScoreFactor`, `AffectedElement` | ✅ | `packages/shared/src/types/advisor.types.ts` |
+| Re-Export über `shared/index.ts` | ✅ | `packages/shared/src/index.ts` |
+
+#### Server: Advisor Service (Orchestrator)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `runAdvisorScan(projectId)` — Orchestriert alle 9 Detektoren parallel | ✅ | `packages/server/src/services/advisor.service.ts` |
+| Single Neo4j Query: Alle Elemente mit inDegree/outDegree | ✅ | `packages/server/src/services/advisor.service.ts` |
+| `calculateHealthScore()` — 5 gewichtete Faktoren | ✅ | `packages/server/src/services/advisor.service.ts` |
+| Nutzt bestehende Services: `assessRisk()`, `checkCompliance()`, `estimateCosts()` | ✅ | `packages/server/src/services/advisor.service.ts` |
+| Insights sortiert nach Severity (critical first), max 20 | ✅ | `packages/server/src/services/advisor.service.ts` |
+
+#### Health Score — 5-Faktor-Berechnung
+
+| Faktor | Gewicht | Datenquelle |
+|--------|---------|-------------|
+| Dependency Risk | 30% | `assessRisk()` → avgRiskScore |
+| Compliance | 25% | `checkCompliance()` → complianceScore |
+| Connectivity (Orphans) | 20% | Neo4j → orphanCount / totalElements |
+| Lifecycle Health | 15% | Element.status Verteilung (Penalty für retired/transitional) |
+| Cost Efficiency | 10% | `estimateCosts()` → optimizationPotential |
+
+#### 9 Detector-Module
+
+| # | Detector | Severity | Quelle |
+|---|----------|----------|--------|
+| 1 | **Single Point of Failure** | critical/high | Neo4j: inDegree > 4 |
+| 2 | **Orphan Elements** | warning | Neo4j: degree = 0 |
+| 3 | **Circular Dependencies** | high | Neo4j: Cycle Detection `[*2..6]` |
+| 4 | **Compliance Violations** | varies | `checkCompliance()` |
+| 5 | **Stale Transitions** | warning | status=transitional, updatedAt > 90 Tage |
+| 6 | **Risk Concentration** | high | Layer mit >60% high/critical Risk |
+| 7 | **Cost Hotspots** | info | Top-3 nach Optimierungspotenzial |
+| 8 | **Maturity Gaps** | warning/info | maturity ≤ 2 bei current-Status |
+| 9 | **MiroFish Conflicts** | high | Simulation Deadlocks + Fatigue |
+
+#### Server: API Routes
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `GET /:projectId/advisor/scan` — Full Scan (alle Detektoren + Health Score) | ✅ | `packages/server/src/routes/advisor.routes.ts` |
+| `GET /:projectId/advisor/health` — Nur Health Score | ✅ | `packages/server/src/routes/advisor.routes.ts` |
+| Auth: `authenticate` + `requirePermission(ANALYTICS_VIEW)` | ✅ | `packages/server/src/routes/advisor.routes.ts` |
+| Routes in Express registriert | ✅ | `packages/server/src/index.ts` |
+
+#### Client: Store & API
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `advisorStore` (Zustand): healthScore, insights, isScanning, error | ✅ | `packages/client/src/stores/advisorStore.ts` |
+| `scan(projectId)` Action → API Call → State Update | ✅ | `packages/client/src/stores/advisorStore.ts` |
+| `advisorAPI.scan()`, `advisorAPI.health()` | ✅ | `packages/client/src/services/api.ts` |
+
+#### Client: UI-Komponenten
+
+| Komponente | Status | Datei |
+|---|---|---|
+| **HealthScoreRing** — SVG Ring mit Compact (20px) + Full (64px) Modus | ✅ | `packages/client/src/components/copilot/HealthScoreRing.tsx` |
+| Farben: Grün (#00ff41) ≥70, Gelb (#eab308) 40-70, Rot (#ef4444) <40 | ✅ | HealthScoreRing.tsx |
+| Trend-Pfeil (TrendingUp/TrendingDown/Minus) mit Delta | ✅ | HealthScoreRing.tsx |
+| **InsightCard** — Expandierbare Karte mit Severity-Farben | ✅ | `packages/client/src/components/copilot/InsightCard.tsx` |
+| Affected Elements (klickbar → `advisor:navigate` Event) | ✅ | InsightCard.tsx |
+| Effort/Impact Tags, Suggested Action | ✅ | InsightCard.tsx |
+| **AdvisorPanel** — Haupt-UI (Health Score + Faktor-Bars + Severity Summary + Insight-Liste) | ✅ | `packages/client/src/components/copilot/AdvisorPanel.tsx` |
+| Auto-Scan bei Mount (wenn keine Daten) | ✅ | AdvisorPanel.tsx |
+| Loading State, Error State, Empty State ("No issues found") | ✅ | AdvisorPanel.tsx |
+
+#### Integration in bestehende UI
+
+| Komponente | Status | Datei |
+|---|---|---|
+| AICopilot: "Advisor" als neuer Default-Tab (vor Chat, Standards, Compliance) | ✅ | `packages/client/src/components/copilot/AICopilot.tsx` |
+| AICopilot: Badge-Count (Critical + High Insights) | ✅ | AICopilot.tsx |
+| Toolbar: Compact HealthScoreRing neben Projektname | ✅ | `packages/client/src/components/ui/Toolbar.tsx` |
+
+#### Tests (62/62 bestanden)
+
+| # | Describe Block | Tests | Status |
+|---|---|---|---|
+| 0 | Setup (Users, Project, 7 Elements, 6 Connections) | 5 | ✅ |
+| 1 | API Contract (Scan, Health, Auth 401, Invalid Project) | 4 | ✅ |
+| 2 | Health Score Integrity (Range, 5 Factors, Weights, Trend) | 8 | ✅ |
+| 3 | Detector Results (Structure, SPOF, Orphans, Cost, Maturity) | 11 | ✅ |
+| 4 | Edge Cases (Empty Project, Duration, Concurrency, Unique IDs) | 6 | ✅ |
+| 5 | Usability / Steve Jobs Test (Colors, Names, Actions, Factors) | 8 | ✅ |
+| 6 | Static Analysis (15 Checks: Files, Exports, Theme, No Duplication) | 15 | ✅ |
+| 7 | Integration Verification (Element Count, Changes, Data Sources) | 3 | ✅ |
+| 8 | Cleanup | 2 | ✅ |
+
+**Testdatei:** `packages/server/src/__tests__/advisor.test.ts`
+**Ausführen:** `cd packages/server && npx jest src/__tests__/advisor.test.ts --forceExit`
+
+#### Neue Dateien (8)
+
+- `packages/shared/src/types/advisor.types.ts`
+- `packages/server/src/services/advisor.service.ts`
+- `packages/server/src/routes/advisor.routes.ts`
+- `packages/server/src/__tests__/advisor.test.ts`
+- `packages/client/src/stores/advisorStore.ts`
+- `packages/client/src/components/copilot/AdvisorPanel.tsx`
+- `packages/client/src/components/copilot/HealthScoreRing.tsx`
+- `packages/client/src/components/copilot/InsightCard.tsx`
+
+#### Modifizierte Dateien (5)
+
+- `packages/shared/src/index.ts` — Advisor Types Export
+- `packages/server/src/index.ts` — Advisor Routes Mount
+- `packages/client/src/services/api.ts` — advisorAPI
+- `packages/client/src/components/copilot/AICopilot.tsx` — Advisor Tab (Default)
+- `packages/client/src/components/ui/Toolbar.tsx` — Health Score Badge
+
+---
+
 ## Bekannte offene Punkte
 
 1. **Workspace-Persistenz testen** — Fix implementiert, aber noch nicht live verifiziert.
@@ -1036,7 +1166,7 @@ Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten
 
 | # | Feature | Impact | Effort | Status |
 |---|---------|--------|--------|--------|
-| 1 | **AI Architecture Advisor** — Proaktive Insights, Health Score, 1-Klick Remediation | ★★★★★ | Medium | 📋 Anforderungen definiert |
+| 1 | ~~**AI Architecture Advisor**~~ | ★★★★★ | Medium | ✅ Implementiert |
 | 2 | **Transformation Roadmap Generator** — AI-gestützte Migrationsplanung aus Graph-Daten | ★★★★★ | Medium-High | 💡 Konzept |
 | 3 | **Interactive Dependency Explorer** — Neo4j Graph als 2D Force-Directed Visualization | ★★★★☆ | Low-Medium | 💡 Konzept |
 | 4 | **Portfolio Dashboard** — Multi-Projekt KPI Tracking mit Zeitreihen-Trends | ★★★★☆ | Medium | 💡 Konzept |
@@ -1067,5 +1197,5 @@ Collaborators konnten nur hinzugefügt werden, wenn sie bereits ein Konto hatten
 ## Git-Status
 
 **Branch:** `master`
-**Letzter Commit:** Test-Suite + AI Architecture Advisor Anforderungsanalyse
-**Remote:** `origin/master`
+**Letzter Commit:** `2d9810d` — Add AI Architecture Advisor: proactive health scoring and insight detection
+**Remote:** `origin/master` (up to date)

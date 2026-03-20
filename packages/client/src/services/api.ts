@@ -359,4 +359,21 @@ export const advisorAPI = {
     api.get(`/projects/${projectId}/advisor/health`),
 };
 
+export const roadmapAPI = {
+  generate: (projectId: string, config: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/roadmaps`, config),
+  getCandidates: (projectId: string) =>
+    api.get(`/projects/${projectId}/roadmaps/candidates`),
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/roadmaps`),
+  get: (projectId: string, roadmapId: string) =>
+    api.get(`/projects/${projectId}/roadmaps/${roadmapId}`),
+  delete: (projectId: string, roadmapId: string) =>
+    api.delete(`/projects/${projectId}/roadmaps/${roadmapId}`),
+  regenerate: (projectId: string, roadmapId: string, config: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/roadmaps/${roadmapId}/regenerate`, config),
+  downloadPDF: (projectId: string, roadmapId: string) =>
+    api.get(`/projects/${projectId}/reports/roadmap`, { params: { roadmapId }, responseType: 'blob' }),
+};
+
 export default api;
