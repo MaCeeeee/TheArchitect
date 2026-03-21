@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { architectureAPI } from '../services/api';
+import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
+import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
 
 export interface Position3D {
   x: number;
@@ -12,8 +14,8 @@ export interface ArchitectureElement {
   type: string;
   name: string;
   description: string;
-  layer: 'strategy' | 'business' | 'information' | 'application' | 'technology';
-  togafDomain: 'business' | 'data' | 'application' | 'technology';
+  layer: ArchitectureLayer;
+  togafDomain: TOGAFDomain;
   maturityLevel: number;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
   status: 'current' | 'target' | 'transitional' | 'retired';
@@ -87,7 +89,7 @@ interface ArchitectureState {
   clearProject: () => void;
 }
 
-const ALL_LAYERS = new Set(['strategy', 'business', 'information', 'application', 'technology']);
+const ALL_LAYERS = new Set(ARCHITECTURE_LAYERS.map(l => l.id));
 const MAX_HISTORY = 50;
 
 export const useArchitectureStore = create<ArchitectureState>((set, get) => ({

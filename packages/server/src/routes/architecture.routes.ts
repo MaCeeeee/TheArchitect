@@ -18,13 +18,22 @@ const Position3DSchema = z.object({
   z: z.number(),
 });
 
+const LayerEnum = z.enum([
+  'motivation', 'strategy', 'business', 'information', 'application',
+  'technology', 'physical', 'implementation_migration',
+]);
+
+const TOGAFDomainEnum = z.enum([
+  'business', 'data', 'application', 'technology', 'motivation', 'implementation',
+]);
+
 const CreateElementSchema = z.object({
   id: z.string().optional(),
   type: z.string().min(1),
   name: z.string().min(1).max(200),
   description: z.string().default(''),
-  layer: z.enum(['strategy', 'business', 'information', 'application', 'technology']),
-  togafDomain: z.enum(['business', 'data', 'application', 'technology']),
+  layer: LayerEnum,
+  togafDomain: TOGAFDomainEnum,
   maturityLevel: z.number().int().min(1).max(5).default(1),
   riskLevel: z.enum(['low', 'medium', 'high', 'critical']).default('low'),
   status: z.enum(['current', 'target', 'transitional', 'retired']).default('current'),
@@ -35,8 +44,8 @@ const CreateElementSchema = z.object({
 const UpdateElementSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().optional(),
-  layer: z.enum(['strategy', 'business', 'information', 'application', 'technology']).optional(),
-  togafDomain: z.enum(['business', 'data', 'application', 'technology']).optional(),
+  layer: LayerEnum.optional(),
+  togafDomain: TOGAFDomainEnum.optional(),
   maturityLevel: z.number().int().min(1).max(5).optional(),
   riskLevel: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['current', 'target', 'transitional', 'retired']).optional(),
@@ -493,6 +502,79 @@ router.post(
       const msg = err instanceof Error ? err.message : 'Failed to fetch from n8n';
       console.error('n8n fetch error:', msg);
       res.status(502).json({ success: false, error: msg });
+    }
+  }
+);
+
+// CSV Import endpoint (same pattern as BPMN/n8n import)
+router.post(
+  '/:projectId/import/csv',
+  requirePermission(PERMISSIONS.ELEMENT_CREATE),
+  audit({ action: 'import_csv', entityType: 'project', riskLevel: 'medium' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { elements, connections } = req.body;
+
+      if (!Array.isArray(elements) || !Array.isArray(connections)) {
+        res.status(400).json({ success: false, error: 'Invalid import data' });
+        return;
+      }
+
+      for (const el of elements) {
+        const id = el.id || uuid();
+        await runCypher(
+          `CREATE (e:ArchitectureElement {
+            id: $id, projectId: $projectId, type: $type, name: $name,
+            description: $description, layer: $layer, togafDomain: $togafDomain,
+            maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
+            posX: $posX, posY: $posY, posZ: $posZ,
+            workspaceId: $workspaceId,
+            metadataJson: $metadataJson, sourceImport: 'csv',
+            createdAt: datetime(), updatedAt: datetime()
+          })`,
+          {
+            id,
+            projectId,
+            type: el.type,
+            name: el.name,
+            description: el.description || '',
+            layer: el.layer,
+            togafDomain: el.togafDomain,
+            maturityLevel: el.maturityLevel || 3,
+            riskLevel: el.riskLevel || 'low',
+            status: el.status || 'current',
+            posX: el.position3D?.x || 0,
+            posY: el.position3D?.y || 0,
+            posZ: el.position3D?.z || 0,
+            workspaceId: el.workspaceId || '',
+            metadataJson: JSON.stringify(el.metadata || {}),
+          }
+        );
+      }
+
+      for (const conn of connections) {
+        const connectionId = conn.id || uuid();
+        await runCypher(
+          `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+          {
+            sourceId: conn.sourceId,
+            targetId: conn.targetId,
+            connectionId,
+            type: conn.type || 'association',
+            label: conn.label || '',
+          }
+        );
+      }
+
+      res.status(201).json({
+        success: true,
+        data: { elementsCreated: elements.length, connectionsCreated: connections.length },
+      });
+    } catch (err) {
+      console.error('CSV import error:', err);
+      res.status(500).json({ success: false, error: 'Failed to import CSV data' });
     }
   }
 );

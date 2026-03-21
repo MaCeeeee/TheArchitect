@@ -4,7 +4,7 @@ export interface Workspace {
   id: string;
   name: string;
   projectId: string;
-  source: 'bpmn' | 'n8n' | 'manual' | 'archimate';
+  source: 'bpmn' | 'n8n' | 'manual' | 'archimate' | 'csv';
   color: string;
   offsetX: number;
   createdAt: string;

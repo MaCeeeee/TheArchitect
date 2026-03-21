@@ -1,0 +1,128 @@
+name,type,layer,togafDomain,description,status,riskLevel,maturityLevel
+Enterprise Architecture Management,business_capability,strategy,business,"Core capability: manage enterprise architecture lifecycle across TOGAF domains",current,low,4
+3D Visualization & Navigation,business_capability,strategy,business,"Capability: immersive 3D architecture visualization with layer planes and fly-to navigation",current,low,4
+AI-Powered Analytics,business_capability,strategy,business,"Capability: AI-driven risk analysis, impact assessment, predictive analytics, and roadmap generation",current,medium,3
+Governance & Compliance,business_capability,strategy,business,"Capability: policy management, approval workflows, compliance dashboards, and audit trails",current,low,3
+Multi-Stakeholder Simulation,business_capability,strategy,business,"Capability: MiroFish multi-agent debate simulation with custom personas and scenario comparison",current,medium,3
+Template Marketplace,business_capability,strategy,business,"Capability: community-driven architecture template sharing and deployment",current,low,2
+Architecture Lifecycle Management,value_stream,strategy,business,"Value stream: from current-state capture through gap analysis to target-state realization",current,low,3
+Digital Transformation Planning,value_stream,strategy,business,"Value stream: strategic planning with Monte Carlo simulation and transformation roadmaps",current,low,3
+Import Architecture Data,process,business,business,"Process: import architecture elements from BPMN, n8n workflows, CSV, or manual entry",current,low,4
+Run MiroFish Simulation,process,business,business,"Process: configure agents, run multi-round debate, collect validated actions per element",current,medium,3
+Generate Transformation Roadmap,process,business,business,"Process: 3-layer cost model analysis with Beta-PERT Monte Carlo and wave-based roadmap",current,low,3
+Execute Advisor Scan,process,business,business,"Process: AI Architecture Advisor scans elements for health scoring and proactive insights",current,low,3
+Export PDF Report,process,business,business,"Process: generate PDF reports with architecture snapshots and analysis results",current,low,3
+Manage Users & Roles,process,business,business,"Process: user registration, role assignment, MFA setup, and session management",current,low,4
+Configure Project Settings,process,business,business,"Process: project creation, team membership, preferences, and workspace configuration",current,low,4
+Architecture Visualization Service,business_service,business,business,"Service: renders 3D architecture views with layer planes, element meshes, and connection beams",current,low,4
+Stakeholder Simulation Service,business_service,business,business,"Service: orchestrates MiroFish multi-agent simulation rounds with SSE live feed",current,medium,3
+Compliance Assessment Service,business_service,business,business,"Service: evaluates architecture compliance against configurable policy rules",current,low,3
+Risk Analysis Service,business_service,business,business,"Service: calculates risk scores using Bayesian cascade and Kolmogorov-Smirnov drift detection",current,medium,3
+ArchitectureElement,data_entity,information,data,"Entity: core architecture element with type, layer, position3D, risk, maturity, and metadata",current,low,4
+Connection,data_entity,information,data,"Entity: relationship between elements with type (ArchiMate 3.2) and optional label",current,low,4
+Project,data_entity,information,data,"Entity: project container with name, description, team membership, and settings",current,low,4
+User,data_entity,information,data,"Entity: user account with credentials, roles, preferences, OAuth links, and MFA config",current,low,4
+SimulationRun,data_entity,information,data,"Entity: MiroFish run with config, rounds, agent turns, validated actions, and consensus result",current,low,3
+CustomPersona,data_entity,information,data,"Entity: user-defined simulation agent persona with traits, focus areas, and visible layers",current,low,3
+Workspace,data_entity,information,data,"Entity: workspace grouping imported elements by source (BPMN, n8n, CSV) with offset positioning",current,low,3
+AuditLog,data_entity,information,data,"Entity: immutable audit trail entry with action, user, IP, timestamp, and risk level",current,low,4
+ArchitectureSnapshot,data_entity,information,data,"Entity: point-in-time snapshot of architecture state for scenario comparison",current,low,3
+AdvisorInsight,data_entity,information,data,"Entity: AI-generated insight with category, severity, affected elements, and recommendation",current,low,3
+RoadmapWave,data_entity,information,data,"Entity: transformation wave with elements, cost estimates, timeline, and dependencies",current,low,3
+Neo4j Graph Model,data_model,information,data,"Model: graph database schema for elements (nodes) and connections (relationships) with properties",current,low,4
+MongoDB Document Model,data_model,information,data,"Model: document schemas for users, projects, simulations, personas, audit logs, and settings",current,low,4
+Redis Cache Model,data_model,information,data,"Model: session storage pattern with key format session:{userId}:{sessionId} and TTL",current,low,4
+TheArchitect Frontend,application,application,application,"Application: React 18 SPA with Three.js 3D visualization, Zustand state, and Tailwind CSS",current,low,4
+TheArchitect Backend,application,application,application,"Application: Express.js API server with Passport.js auth, Socket.IO realtime, and multi-DB",current,low,4
+MiroFish Engine,application_component,application,application,"Component: multi-agent simulation engine with configurable personas and round-based debate",current,medium,3
+AI Architecture Advisor,application_component,application,application,"Component: proactive health scoring with pattern detection and insight generation",current,medium,3
+Stochastic Engine,application_component,application,application,"Component: Kolmogorov axiom validation, Bayesian cascade risk, K-S drift detection, Beta-PERT Monte Carlo",current,medium,3
+Roadmap Generator,application_component,application,application,"Component: 3-layer cost model with interactive TOGAF gap analysis and wave planning",current,low,3
+BPMN Parser,application_component,application,application,"Component: XML parser mapping BPMN 2.0 elements to ArchiMate architecture elements",current,low,4
+n8n Parser,application_component,application,application,"Component: JSON parser mapping n8n workflow nodes to ArchiMate elements with type inference",current,low,4
+CSV Parser,application_component,application,application,"Component: RFC 4180 CSV parser with type inference and auto-grid positioning",current,low,3
+PDF Export Service,application_component,application,application,"Component: server-side PDF generation with architecture snapshots and analysis data",current,low,3
+Auth Module,application_component,application,application,"Component: JWT access/refresh tokens, MFA via TOTP, OAuth (Google/GitHub/Microsoft)",current,low,4
+Architecture CRUD Service,application_component,application,application,"Component: Neo4j-backed CRUD for elements and connections with Zod validation",current,low,4
+REST API Gateway,application_service,application,application,"Service: Express.js REST API at /api/* with JWT auth middleware and RBAC",current,low,4
+SSE Streaming Service,application_service,application,application,"Service: Server-Sent Events for MiroFish live simulation feed",current,low,3
+WebSocket Real-time Service,application_service,application,application,"Service: Socket.IO for real-time collaboration, presence, and team chat",current,low,3
+Node.js v22,technology_component,technology,technology,"Runtime: Node.js v22 LTS with ES modules and native fetch",current,low,4
+Vite,technology_component,technology,technology,"Build tool: Vite 6 with React plugin, HMR, and production bundling",current,low,4
+Docker,technology_component,technology,technology,"Container: multi-stage Docker build with Alpine base for production deployment",current,low,4
+Turbo,technology_component,technology,technology,"Build system: Turborepo for monorepo task orchestration with dependency-aware caching",current,low,4
+MongoDB Server,infrastructure,technology,technology,"Infrastructure: MongoDB 7 for document storage (users, projects, simulations, audit)",current,low,4
+Neo4j Graph Database,infrastructure,technology,technology,"Infrastructure: Neo4j 5 for graph storage of architecture elements and connections",current,medium,4
+Redis Session Store,infrastructure,technology,technology,"Infrastructure: Redis 7 for session storage, caching, and pub/sub",current,low,4
+MinIO Object Storage,infrastructure,technology,technology,"Infrastructure: S3-compatible object storage for file uploads and architecture snapshots",current,low,3
+Caddy Reverse Proxy,infrastructure,technology,technology,"Infrastructure: Caddy 2 reverse proxy with automatic HTTPS and request routing",current,low,4
+Hostinger VPS,platform_service,technology,technology,"Platform: Hostinger KVM 2 VPS (Ubuntu 24.04) with Docker runtime",current,low,4
+GitHub Repository,platform_service,technology,technology,"Platform: GitHub repository for source code, CI/CD workflows, and issue tracking",current,low,4
+---CONNECTIONS---
+sourceName,targetName,type,label
+Enterprise Architecture Management,Architecture Lifecycle Management,composition,defines
+Enterprise Architecture Management,Digital Transformation Planning,composition,defines
+3D Visualization & Navigation,Architecture Visualization Service,realization,realized by
+AI-Powered Analytics,Risk Analysis Service,realization,realized by
+AI-Powered Analytics,Generate Transformation Roadmap,realization,realized by
+Governance & Compliance,Compliance Assessment Service,realization,realized by
+Multi-Stakeholder Simulation,Stakeholder Simulation Service,realization,realized by
+Multi-Stakeholder Simulation,Run MiroFish Simulation,realization,realized by
+Template Marketplace,Import Architecture Data,serving,enables
+Architecture Lifecycle Management,Import Architecture Data,flow,feeds into
+Architecture Lifecycle Management,Execute Advisor Scan,flow,triggers
+Digital Transformation Planning,Generate Transformation Roadmap,flow,triggers
+Digital Transformation Planning,Run MiroFish Simulation,flow,triggers
+Import Architecture Data,ArchitectureElement,access,creates
+Import Architecture Data,Connection,access,creates
+Import Architecture Data,Workspace,access,creates
+Run MiroFish Simulation,SimulationRun,access,creates
+Run MiroFish Simulation,CustomPersona,access,reads
+Generate Transformation Roadmap,RoadmapWave,access,creates
+Generate Transformation Roadmap,ArchitectureElement,access,reads
+Execute Advisor Scan,AdvisorInsight,access,creates
+Execute Advisor Scan,ArchitectureElement,access,reads
+Export PDF Report,ArchitectureSnapshot,access,reads
+Manage Users & Roles,User,access,manages
+Manage Users & Roles,AuditLog,access,creates
+Configure Project Settings,Project,access,manages
+Architecture Visualization Service,TheArchitect Frontend,assignment,runs on
+Stakeholder Simulation Service,TheArchitect Backend,assignment,runs on
+Compliance Assessment Service,TheArchitect Backend,assignment,runs on
+Risk Analysis Service,TheArchitect Backend,assignment,runs on
+TheArchitect Frontend,REST API Gateway,serving,consumes
+TheArchitect Frontend,SSE Streaming Service,serving,consumes
+TheArchitect Frontend,WebSocket Real-time Service,serving,consumes
+TheArchitect Backend,REST API Gateway,composition,exposes
+TheArchitect Backend,SSE Streaming Service,composition,exposes
+TheArchitect Backend,WebSocket Real-time Service,composition,exposes
+MiroFish Engine,TheArchitect Backend,composition,part of
+AI Architecture Advisor,TheArchitect Backend,composition,part of
+Stochastic Engine,TheArchitect Backend,composition,part of
+Roadmap Generator,TheArchitect Backend,composition,part of
+BPMN Parser,TheArchitect Frontend,composition,part of
+n8n Parser,TheArchitect Frontend,composition,part of
+CSV Parser,TheArchitect Frontend,composition,part of
+PDF Export Service,TheArchitect Backend,composition,part of
+Auth Module,TheArchitect Backend,composition,part of
+Architecture CRUD Service,TheArchitect Backend,composition,part of
+Architecture CRUD Service,Neo4j Graph Database,serving,queries
+Architecture CRUD Service,ArchitectureElement,access,persists
+Auth Module,MongoDB Server,serving,queries
+Auth Module,Redis Session Store,serving,manages sessions
+Auth Module,User,access,authenticates
+MiroFish Engine,SimulationRun,access,persists
+AI Architecture Advisor,AdvisorInsight,access,persists
+Stochastic Engine,ArchitectureElement,access,analyzes
+Roadmap Generator,RoadmapWave,access,persists
+PDF Export Service,MinIO Object Storage,serving,stores files
+TheArchitect Backend,Node.js v22,assignment,runs on
+TheArchitect Frontend,Vite,assignment,built by
+Docker,Hostinger VPS,assignment,deployed on
+Turbo,GitHub Repository,assignment,orchestrates
+MongoDB Server,Docker,assignment,containerized
+Neo4j Graph Database,Docker,assignment,containerized
+Redis Session Store,Docker,assignment,containerized
+MinIO Object Storage,Docker,assignment,containerized
+Caddy Reverse Proxy,Docker,assignment,containerized
+Caddy Reverse Proxy,Hostinger VPS,assignment,deployed on

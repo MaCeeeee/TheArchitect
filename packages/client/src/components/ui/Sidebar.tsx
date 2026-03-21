@@ -23,31 +23,33 @@ import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
 import TemplateMarketplace from '../marketplace/TemplateMarketplace';
 import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
+import { ARCHITECTURE_LAYERS, ELEMENT_TYPES, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
+import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
 
-const LAYER_CONFIG = [
-  { id: 'strategy', label: 'Strategy', color: '#ef4444' },
-  { id: 'business', label: 'Business', color: '#22c55e' },
-  { id: 'information', label: 'Information', color: '#3b82f6' },
-  { id: 'application', label: 'Application', color: '#f97316' },
-  { id: 'technology', label: 'Technology', color: '#00ff41' },
-];
+const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({ id: l.id, label: l.label, color: l.color }));
 
-const ELEMENT_PALETTE: { type: string; label: string; layer: ArchitectureElement['layer']; togafDomain: ArchitectureElement['togafDomain'] }[] = [
-  { type: 'business_capability', label: 'Business Capability', layer: 'business', togafDomain: 'business' },
-  { type: 'process', label: 'Business Process', layer: 'business', togafDomain: 'business' },
-  { type: 'value_stream', label: 'Value Stream', layer: 'business', togafDomain: 'business' },
-  { type: 'business_service', label: 'Business Service', layer: 'business', togafDomain: 'business' },
-  { type: 'application', label: 'Application', layer: 'application', togafDomain: 'application' },
-  { type: 'application_component', label: 'App Component', layer: 'application', togafDomain: 'application' },
-  { type: 'application_service', label: 'App Service', layer: 'application', togafDomain: 'application' },
-  { type: 'data_entity', label: 'Data Entity', layer: 'information', togafDomain: 'data' },
-  { type: 'data_model', label: 'Data Model', layer: 'information', togafDomain: 'data' },
-  { type: 'technology_component', label: 'Tech Component', layer: 'technology', togafDomain: 'technology' },
-  { type: 'infrastructure', label: 'Infrastructure', layer: 'technology', togafDomain: 'technology' },
-  { type: 'platform_service', label: 'Platform Service', layer: 'technology', togafDomain: 'technology' },
-];
+// Map ElementType → default layer using ELEMENT_TYPES + ARCHITECTURE_LAYERS
+const DOMAIN_TO_LAYER: Record<string, string> = {
+  business: 'business',
+  data: 'information',
+  application: 'application',
+  technology: 'technology',
+  motivation: 'motivation',
+  implementation: 'implementation_migration',
+};
 
-const LAYER_Y: Record<string, number> = { strategy: 12, business: 8, information: 4, application: 0, technology: -4 };
+// Strategy-layer types (capabilities, value streams, resources, courses of action)
+const STRATEGY_TYPES = new Set(['business_capability', 'value_stream', 'resource', 'course_of_action']);
+// Physical-layer types
+const PHYSICAL_TYPES = new Set(['equipment', 'facility', 'distribution_network', 'material']);
+
+const ELEMENT_PALETTE = ELEMENT_TYPES.map(et => {
+  let layer: ArchitectureLayer;
+  if (STRATEGY_TYPES.has(et.type)) layer = 'strategy';
+  else if (PHYSICAL_TYPES.has(et.type)) layer = 'physical';
+  else layer = (DOMAIN_TO_LAYER[et.domain] || 'application') as ArchitectureLayer;
+  return { type: et.type, label: et.label, layer, togafDomain: et.domain as TOGAFDomain };
+});
 
 const NAV_ITEMS = [
   { id: 'explorer', icon: FolderTree, label: 'Explorer' },

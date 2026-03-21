@@ -25,6 +25,7 @@ import {
   BarChart3,
   ListTree,
   Loader2,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -40,10 +41,11 @@ import HealthScoreRing from '../copilot/HealthScoreRing';
 interface ToolbarProps {
   onOpenBPMNImport: () => void;
   onOpenN8nImport: () => void;
+  onOpenCSVImport: () => void;
   onOpenWalkthrough: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkthrough }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenWalkthrough }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -214,6 +216,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenWalkt
         <ToolbarButton icon={<Maximize size={16} />} title="Fit to Screen (F)" onClick={() => fitToScreen(elements)} />
         <ToolbarButton icon={<Upload size={16} />} title="Import BPMN" onClick={onOpenBPMNImport} />
         <ToolbarButton icon={<Workflow size={16} />} title="Import n8n" onClick={onOpenN8nImport} />
+        <ToolbarButton icon={<FileSpreadsheet size={16} />} title="Import CSV" onClick={onOpenCSVImport} />
         <div className="mx-1 h-5 w-px bg-[#1a2a1a]" />
         <XRayButton isActive={isXRayActive} onClick={toggleXRay} />
         <ToolbarButton

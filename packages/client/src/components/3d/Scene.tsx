@@ -15,14 +15,14 @@ import Minimap from '../ui/Minimap';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 
-const LAYER_CONFIG = [
-  { id: 'strategy', label: 'Strategy', y: 12, color: '#ef4444' },
-  { id: 'business', label: 'Business', y: 8, color: '#22c55e' },
-  { id: 'information', label: 'Information / Application', y: 4, color: '#3b82f6' },
-  { id: 'application', label: 'Application', y: 0, color: '#f97316' },
-  { id: 'technology', label: 'Technology', y: -4, color: '#00ff41' },
-] as const;
+const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({
+  id: l.id,
+  label: l.label,
+  y: l.yPosition,
+  color: l.color,
+}));
 
 export default function Scene() {
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);

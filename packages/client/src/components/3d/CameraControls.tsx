@@ -156,7 +156,7 @@ export default function CameraControlsWrapper() {
       makeDefault
       enabled={!isDragging}
       minDistance={5}
-      maxDistance={300}
+      maxDistance={400}
       maxPolarAngle={Math.PI / 2.1}
       enableDamping
       dampingFactor={0.05}

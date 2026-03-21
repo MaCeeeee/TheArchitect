@@ -4,14 +4,7 @@ import { Html, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
-
-const LAYER_Y: Record<string, number> = {
-  strategy: 12,
-  business: 8,
-  information: 4,
-  application: 0,
-  technology: -4,
-};
+import { LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 
 const AGENT_COLORS = ['#06b6d4', '#a855f7', '#f43f5e', '#eab308', '#22d3ee', '#f97316'];
 

@@ -68,15 +68,7 @@ function mapNodeType(n8nType: string): ElementMapping {
   return DEFAULT_MAPPING;
 }
 
-// ── Layer Y positions (match TOGAF constants) ───────────
-
-const LAYER_Y: Record<string, number> = {
-  strategy: 12,
-  business: 8,
-  information: 4,
-  application: 0,
-  technology: -4,
-};
+import { LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 
 function generateId(): string {
   return `n8n-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;

@@ -4,6 +4,7 @@ import Toolbar from './Toolbar';
 import Sidebar from './Sidebar';
 import BPMNImportDialog from './BPMNImportDialog';
 import N8nImportDialog from './N8nImportDialog';
+import CSVImportDialog from './CSVImportDialog';
 import Walkthrough from './Walkthrough';
 import TeamChat from '../collaboration/TeamChat';
 import MFASetup from '../security/MFASetup';
@@ -15,6 +16,7 @@ export default function MainLayout() {
   const toggleChat = useUIStore((s) => s.toggleChat);
   const [showBPMNImport, setShowBPMNImport] = useState(false);
   const [showN8nImport, setShowN8nImport] = useState(false);
+  const [showCSVImport, setShowCSVImport] = useState(false);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [showMFASetup, setShowMFASetup] = useState(false);
 
@@ -28,6 +30,7 @@ export default function MainLayout() {
         <Toolbar
           onOpenBPMNImport={() => setShowBPMNImport(true)}
           onOpenN8nImport={() => setShowN8nImport(true)}
+          onOpenCSVImport={() => setShowCSVImport(true)}
           onOpenWalkthrough={() => setShowWalkthrough(true)}
         />
         <main className="flex-1 relative">
@@ -40,6 +43,7 @@ export default function MainLayout() {
       {/* Modals */}
       <BPMNImportDialog isOpen={showBPMNImport} onClose={() => setShowBPMNImport(false)} />
       <N8nImportDialog isOpen={showN8nImport} onClose={() => setShowN8nImport(false)} />
+      <CSVImportDialog isOpen={showCSVImport} onClose={() => setShowCSVImport(false)} />
       <Walkthrough isOpen={showWalkthrough} onClose={() => setShowWalkthrough(false)} />
       <MFASetup isOpen={showMFASetup} onClose={() => setShowMFASetup(false)} />
     </div>

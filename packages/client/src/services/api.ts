@@ -171,6 +171,8 @@ export const architectureAPI = {
     api.post(`/projects/${projectId}/import/n8n/fetch`, data),
   fetchN8nWorkflow: (projectId: string, data: { n8nUrl: string; apiKey: string; workflowId: string }) =>
     api.post(`/projects/${projectId}/import/n8n/fetch`, data),
+  importCSV: (projectId: string, data: { elements: unknown[]; connections: unknown[] }) =>
+    api.post(`/projects/${projectId}/import/csv`, data),
 };
 
 // Workspace API

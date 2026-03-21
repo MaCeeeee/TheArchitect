@@ -32,13 +32,7 @@ const BPMN_TYPE_MAPPING: Record<string, { type: string; layer: ArchitectureEleme
   'bpmn:inclusiveGateway': { type: 'process', layer: 'business', togafDomain: 'business' },
 };
 
-const LAYER_Y: Record<string, number> = {
-  strategy: 12,
-  business: 8,
-  information: 4,
-  application: 0,
-  technology: -4,
-};
+import { LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 
 function generateId(): string {
   return `bpmn-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
