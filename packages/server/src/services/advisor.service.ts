@@ -1,7 +1,9 @@
 import { runCypher } from '../config/neo4j';
 import { assessRisk, estimateCosts } from './analytics.service';
 import { checkCompliance } from './compliance.service';
+import { propagateCascadeRisk, kolmogorovSmirnovTest, getThresholds } from './stochastic.service';
 import { SimulationRun } from '../models/SimulationRun';
+import { ArchitectureSnapshot } from '../models/ArchitectureSnapshot';
 import type {
   AdvisorInsight,
   AdvisorScanResult,
@@ -9,6 +11,7 @@ import type {
   HealthScoreFactor,
   InsightSeverity,
   AffectedElement,
+  RoadmapStrategy,
 } from '@thearchitect/shared';
 
 // ─── Element Shape from Neo4j ───
@@ -70,6 +73,8 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     costInsights,
     maturityInsights,
     mirofishInsights,
+    cascadeInsights,
+    driftInsights,
   ] = await Promise.all([
     detectSPOF(elements),
     detectOrphans(elements),
@@ -80,6 +85,8 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     detectCostHotspots(projectId),
     detectMaturityGaps(elements),
     detectMiroFishConflicts(projectId),
+    detectCascadeRisks(projectId, elements),
+    detectArchitectureDrift(projectId, elements),
   ]);
 
   const allInsights = [
@@ -92,6 +99,8 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     ...costInsights,
     ...maturityInsights,
     ...mirofishInsights,
+    ...cascadeInsights,
+    ...driftInsights,
   ];
 
   // Sort by severity priority, then by affected elements count
@@ -486,6 +495,133 @@ async function detectMiroFishConflicts(projectId: string): Promise<AdvisorInsigh
           description: fatigueReport.recommendation as string || 'Simulation shows significant stakeholder resistance.',
           affectedElements: [],
           effort: 'high',
+          impact: 'high',
+        });
+      }
+    }
+
+    return insights;
+  } catch {
+    return [];
+  }
+}
+
+// ─── Detector 10: Cascade Risk (Bayesian Propagation) ───
+
+async function detectCascadeRisks(
+  projectId: string,
+  elements: GraphElement[],
+  strategy: RoadmapStrategy = 'balanced',
+): Promise<AdvisorInsight[]> {
+  try {
+    const thresholds = getThresholds(strategy);
+    const insights: AdvisorInsight[] = [];
+
+    // Check top hub elements (highest inDegree) for cascade potential
+    const hubs = elements
+      .filter((e) => e.inDegree >= 3)
+      .sort((a, b) => b.inDegree - a.inDegree)
+      .slice(0, 5);
+
+    for (const hub of hubs) {
+      const result = await propagateCascadeRisk(projectId, hub.id);
+      if (result.maxCascadeProbability <= thresholds.cascadeHighThreshold) continue;
+
+      const severity: InsightSeverity =
+        result.maxCascadeProbability > thresholds.cascadeCriticalThreshold ? 'critical' : 'high';
+
+      const topAffected = result.affectedElements.slice(0, 3);
+      const pctStr = (p: number) => `${(p * 100).toFixed(1)}%`;
+
+      insights.push({
+        id: `cascade-${hub.id}`,
+        category: 'cascade_risk',
+        severity,
+        title: `Cascade risk from ${hub.name}`,
+        description: topAffected
+          .map((a) => `${hub.name} failure increases ${a.name} failure probability to ${pctStr(a.conditionalProbability)}`)
+          .join('. '),
+        affectedElements: [
+          toAffected(hub),
+          ...topAffected.map((a) => ({
+            elementId: a.elementId,
+            name: a.name,
+            type: '',
+            layer: '',
+          })),
+        ],
+        suggestedAction: {
+          type: 'add_connection' as const,
+          label: 'Add redundancy',
+          elementId: hub.id,
+        },
+        effort: 'high',
+        impact: 'high',
+      });
+    }
+
+    return insights.slice(0, 3);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Detector 11: Architecture Drift (K-S Test) ───
+
+async function detectArchitectureDrift(
+  projectId: string,
+  elements: GraphElement[],
+): Promise<AdvisorInsight[]> {
+  try {
+    // Get latest baseline snapshot
+    const baseline = await ArchitectureSnapshot.findOne(
+      { projectId, type: 'baseline' },
+      {},
+      { sort: { createdAt: -1 } },
+    );
+
+    if (!baseline) return []; // No baseline yet, nothing to compare
+
+    // Build current distributions
+    const currentDegrees = elements.map((e) => e.inDegree + e.outDegree);
+    const riskMap: Record<string, number> = { low: 1, medium: 2, high: 3, critical: 4 };
+    const currentRisks = elements.map((e) => riskMap[e.riskLevel] || 1);
+
+    const insights: AdvisorInsight[] = [];
+
+    // K-S test on degree distribution
+    if (baseline.degreeDistribution.length >= 5 && currentDegrees.length >= 5) {
+      const ksResult = kolmogorovSmirnovTest(baseline.degreeDistribution, currentDegrees);
+
+      if (ksResult.significant) {
+        const severity: InsightSeverity = ksResult.pValue < 0.01 ? 'critical' : 'high';
+        insights.push({
+          id: 'drift-degree',
+          category: 'architecture_drift',
+          severity,
+          title: 'Architecture topology drift detected',
+          description: `Connection patterns have shifted significantly since last baseline (D=${ksResult.statistic.toFixed(3)}, p=${ksResult.pValue.toFixed(4)}). This may indicate unplanned structural changes.`,
+          affectedElements: [],
+          effort: 'medium',
+          impact: 'high',
+        });
+      }
+    }
+
+    // K-S test on risk score distribution
+    if (baseline.riskScoreDistribution.length >= 5 && currentRisks.length >= 5) {
+      const ksResult = kolmogorovSmirnovTest(baseline.riskScoreDistribution, currentRisks);
+
+      if (ksResult.significant) {
+        const severity: InsightSeverity = ksResult.pValue < 0.01 ? 'critical' : 'high';
+        insights.push({
+          id: 'drift-risk',
+          category: 'architecture_drift',
+          severity,
+          title: 'Risk profile drift detected',
+          description: `Risk distribution has changed significantly since last baseline (D=${ksResult.statistic.toFixed(3)}, p=${ksResult.pValue.toFixed(4)}). Review recent changes for unintended risk increases.`,
+          affectedElements: [],
+          effort: 'medium',
           impact: 'high',
         });
       }

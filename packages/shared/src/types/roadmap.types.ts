@@ -1,4 +1,5 @@
 import type { ElementStatus } from './architecture.types';
+import type { PlateauStabilityResult } from './stochastic.types';
 
 // ─── Strategy ───
 export type RoadmapStrategy = 'conservative' | 'balanced' | 'aggressive';
@@ -10,6 +11,7 @@ export interface RoadmapConfig {
   targetStates: Record<string, ElementStatus>; // elementId → desired status
   includeAIRecommendations: boolean;
   customConstraints?: string;
+  autoInsertTransitionalStates?: boolean;
 }
 
 // ─── Wave Element ───
@@ -62,6 +64,7 @@ export interface RoadmapSummary {
   complianceImprovement: number; // violations resolved
   waveCount: number;
   costConfidence: { p10: number; p50: number; p90: number };
+  plateauStability?: PlateauStabilityResult[];
 }
 
 // ─── Full Roadmap ───

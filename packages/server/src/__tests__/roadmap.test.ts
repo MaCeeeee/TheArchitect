@@ -409,10 +409,10 @@ describe('2. Algorithm Correctness — Graph Topologies', () => {
 
   // 2e) Wide Fan-Out (1 foundation → 10 dependents)
   test('2.9 Create fan-out project (1 → 10)', async () => {
-    const elements = [{ name: 'Foundation', riskLevel: 'critical' as const }];
+    const elements: Array<{ name: string; riskLevel: string }> = [{ name: 'Foundation', riskLevel: 'critical' }];
     const connections: Array<{ sourceIdx: number; targetIdx: number }> = [];
     for (let i = 1; i <= 10; i++) {
-      elements.push({ name: `Dep-${i}`, riskLevel: 'high' as const });
+      elements.push({ name: `Dep-${i}`, riskLevel: 'high' });
       connections.push({ sourceIdx: i, targetIdx: 0 }); // Each dep depends on foundation
     }
     const result = await createTopologyProject('FanOut', elements, connections);

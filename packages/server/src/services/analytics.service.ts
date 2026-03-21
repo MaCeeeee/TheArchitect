@@ -1,4 +1,5 @@
 import { runCypher } from '../config/neo4j';
+import { betaPertDistribution } from './stochastic.service';
 
 export interface ImpactResult {
   elementId: string;
@@ -233,6 +234,7 @@ export function runMonteCarloSimulation(params: {
   baselineCost: number;
   riskFactors: { name: string; probability: number; impactMin: number; impactMax: number }[];
   iterations: number;
+  distributionType?: 'uniform' | 'beta-pert';
 }): {
   mean: number;
   median: number;
@@ -243,9 +245,18 @@ export function runMonteCarloSimulation(params: {
   distribution: { bucket: number; count: number }[];
   riskContributions: { name: string; avgImpact: number; frequency: number }[];
 } {
-  const { baselineCost, riskFactors, iterations = 10000 } = params;
+  const { baselineCost, riskFactors, iterations = 10000, distributionType = 'beta-pert' } = params;
   const results: number[] = [];
   const riskHits: Record<string, { totalImpact: number; hits: number }> = {};
+
+  // Pre-build samplers for each risk factor
+  const samplers = riskFactors.map((rf) => {
+    if (distributionType === 'beta-pert') {
+      const mode = rf.impactMin + (rf.impactMax - rf.impactMin) * 0.35; // mode skewed toward min
+      return betaPertDistribution(rf.impactMin, mode, rf.impactMax);
+    }
+    return () => rf.impactMin + Math.random() * (rf.impactMax - rf.impactMin);
+  });
 
   for (const rf of riskFactors) {
     riskHits[rf.name] = { totalImpact: 0, hits: 0 };
@@ -254,9 +265,10 @@ export function runMonteCarloSimulation(params: {
   for (let i = 0; i < iterations; i++) {
     let totalCost = baselineCost;
 
-    for (const rf of riskFactors) {
+    for (let k = 0; k < riskFactors.length; k++) {
+      const rf = riskFactors[k];
       if (Math.random() < rf.probability) {
-        const impact = rf.impactMin + Math.random() * (rf.impactMax - rf.impactMin);
+        const impact = samplers[k]();
         totalCost += impact;
         riskHits[rf.name].totalImpact += impact;
         riskHits[rf.name].hits++;

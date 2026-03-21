@@ -12,7 +12,9 @@ export type InsightCategory =
   | 'cost_hotspot'
   | 'missing_connection'
   | 'maturity_gap'
-  | 'mirofish_conflict';
+  | 'mirofish_conflict'
+  | 'cascade_risk'
+  | 'architecture_drift';
 
 export type RemediationActionType =
   | 'retire_element'

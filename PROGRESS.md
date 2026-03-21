@@ -1,6 +1,86 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-20 (AI Architecture Advisor implementiert & verifiziert — 62/62 Tests)
+> Letztes Update: 2026-03-21 (Kolmogorov Stochastic Engine implementiert & verifiziert — 48/48 Tests)
+
+---
+
+## 0. Kolmogorov Stochastic Engine
+
+### Problemstellung
+Die bestehenden Services (Impact Analysis, Risk Assessment, Monte Carlo) arbeiten deterministisch oder mit uniformer Verteilung. Es fehlt eine formale stochastische Schicht: probabilistische Kanten im Graph, Bayes'sche Kaskadenrisiko-Propagation, K-S-Test für Architecture Drift Detection, und axiomenkonforme Wahrscheinlichkeitsraum-Validierung.
+
+### Status: ✅ Implementiert & Verifiziert (48/48 Tests)
+
+#### Neue Dateien
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Stochastic Types (11 Interfaces + Strategy-Thresholds) | ✅ | `packages/shared/src/types/stochastic.types.ts` |
+| Stochastic Core Service (5 Kernfunktionen) | ✅ | `packages/server/src/services/stochastic.service.ts` |
+| Architecture Snapshot Model (MongoDB) | ✅ | `packages/server/src/models/ArchitectureSnapshot.ts` |
+| Stochastic Test Suite (48 Tests, 9 Sektionen) | ✅ | `packages/server/src/__tests__/stochastic.test.ts` |
+
+#### Kernfunktionen
+
+| Funktion | Beschreibung | Status |
+|---|---|---|
+| `validateProbabilitySpace()` | Kolmogorov-Axiome I (≥0), II (Σ=1), III (Additivität) | ✅ 10 Tests |
+| `betaPertDistribution()` | Asymmetrische Kostenschätzung (ersetzt Uniform in Monte Carlo) | ✅ 6 Tests |
+| `kolmogorovSmirnovTest()` | Zweiseitiger K-S-Test, D_n + p-Wert (Architecture Drift) | ✅ 8 Tests |
+| `propagateCascadeRisk()` | Bayes'sche Graph-Propagation + logistische Dämpfung (Neo4j) | ✅ |
+| `calculatePlateauStability()` | Joint Probability, strategy-abhängige Schwellenwerte | ✅ 8 Tests |
+
+#### Integrationen
+
+| Integration | Beschreibung | Status |
+|---|---|---|
+| Monte Carlo Beta-PERT | `runMonteCarloSimulation` default `beta-pert` statt `uniform` | ✅ 6 Tests |
+| Advisor Detektor #10 | Cascade Risk — Bayes'sche Kaskadenerkennung für Hub-Elemente | ✅ |
+| Advisor Detektor #11 | Architecture Drift — K-S-Test auf Degree/Risk-Verteilungen | ✅ |
+| Roadmap Plateau-Stabilität | `summary.plateauStability` pro Wave, strategy-abhängig | ✅ 4 Tests |
+| Architecture Snapshots | Baseline bei Roadmap-Generierung, für Drift-Vergleiche | ✅ |
+
+#### Design-Entscheidungen
+
+| Entscheidung | Wahl |
+|---|---|
+| Schwellenwerte | Strategy-abhängig (conservative/balanced/aggressive) |
+| Neo4j Kanten-Gewichte | Hybrid: Heuristik + Defaults, `confidenceLevel` pro Kante, lazy init |
+| Transitional States | Konfigurierbar: `autoInsertTransitionalStates` Flag (default: warn-only) |
+| K-S Drift Baselines | Snapshot-basiert (Langzeit) + Wave-basiert (kurzfristig) |
+
+#### Strategy-Schwellenwerte
+
+| Strategy | Plateau P(Fail) | Cascade Critical | Cascade High |
+|---|---|---|---|
+| conservative | < 3% | > 10% | > 5% |
+| balanced | < 5% | > 15% | > 8% |
+| aggressive | < 8% | > 25% | > 12% |
+
+#### Modifizierte Dateien
+
+- `packages/shared/src/types/roadmap.types.ts` — `plateauStability`, `autoInsertTransitionalStates`
+- `packages/shared/src/types/advisor.types.ts` — `cascade_risk`, `architecture_drift` Kategorien
+- `packages/shared/src/index.ts` — Re-Export stochastic types
+- `packages/server/src/services/analytics.service.ts` — Beta-PERT in Monte Carlo
+- `packages/server/src/services/advisor.service.ts` — 2 neue Detektoren (#10, #11)
+- `packages/server/src/services/roadmap.service.ts` — Plateau-Stabilität + Snapshot-Erstellung
+
+#### Testergebnisse
+
+```
+48/48 Tests bestanden (0.27s)
+
+Sektion 1: Kolmogorov Axiom Validation     — 10/10 ✅
+Sektion 2: Beta-PERT Distribution          —  6/6  ✅
+Sektion 3: Kolmogorov-Smirnov Test         —  8/8  ✅
+Sektion 4: Plateau Stability               —  8/8  ✅
+Sektion 5: Monte Carlo Beta-PERT           —  6/6  ✅
+Sektion 6: Advisor Cascade & Drift         —  2/2  ✅
+Sektion 7: Roadmap Plateau Stability       —  4/4  ✅
+Sektion 8: Architecture Snapshot           —  1/1  ✅
+Sektion 9: Strategy Thresholds             —  3/3  ✅
+```
 
 ---
 

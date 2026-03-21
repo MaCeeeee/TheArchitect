@@ -4,6 +4,7 @@ import {
   getN8nNodeCategory, getN8nEffortHours,
   RiskAssessment, CostEstimate,
 } from './analytics.service';
+import { calculatePlateauStability } from './stochastic.service';
 import { checkCompliance, ComplianceReport } from './compliance.service';
 import { runAdvisorScan } from './advisor.service';
 import { buildProjectContext } from './ai.service';
@@ -127,9 +128,26 @@ export async function generateRoadmap(
     await generateRecommendations(waves, projectId, config);
 
     // 6. Calculate summary with Monte Carlo
-    const summary = calculateSummary(waves, enrichment);
+    const summary = calculateSummary(waves, enrichment, config);
 
-    // 7. Persist
+    // 7. Save architecture baseline snapshot for drift detection
+    try {
+      const { ArchitectureSnapshot } = await import('../models/ArchitectureSnapshot');
+      const topologyValues = [...enrichment.topologyMap.values()];
+      const riskScores = [...enrichment.riskMap.values()].map((r) => r.riskScore);
+      await ArchitectureSnapshot.create({
+        projectId,
+        type: 'baseline',
+        degreeDistribution: topologyValues,
+        riskScoreDistribution: riskScores,
+        elementCount: enrichment.riskMap.size,
+        connectionCount: topologyValues.reduce((s, d) => s + d, 0),
+      });
+    } catch {
+      // Non-critical, don't block roadmap generation
+    }
+
+    // 8. Persist
     const insightIds = enrichment.advisorInsightIds;
     await TransformationRoadmap.findByIdAndUpdate(doc._id, {
       status: 'completed',
@@ -880,7 +898,7 @@ function applyRuleBasedForWave(wave: RoadmapWave, strategy: string): void {
 
 // ─── Summary Calculation ───
 
-function calculateSummary(waves: RoadmapWave[], data: EnrichmentData): RoadmapSummary {
+function calculateSummary(waves: RoadmapWave[], data: EnrichmentData, config?: RoadmapConfig): RoadmapSummary {
   const totalCost = waves.reduce((s, w) => s + w.metrics.totalCost, 0);
   const totalDurationMonths = waves.reduce((s, w) => s + w.estimatedDurationMonths, 0);
   const totalElements = waves.reduce((s, w) => s + w.metrics.elementCount, 0);
@@ -917,6 +935,25 @@ function calculateSummary(waves: RoadmapWave[], data: EnrichmentData): RoadmapSu
     };
   }
 
+  // Plateau stability per wave
+  const strategy = config?.strategy || 'balanced';
+  const autoInsert = config?.autoInsertTransitionalStates || false;
+  const plateauStability = waves.map((wave) => {
+    const plateauStates = wave.elements.map((el) => ({
+      elementId: el.elementId,
+      name: el.name,
+      failureProbability: el.riskScore / 10, // normalize 1-10 to 0-1
+      dependsOnElementIds: el.dependsOnElementIds,
+      cascadeWeight: el.topologyComplexity ? el.topologyComplexity / 5 : 1.0,
+    }));
+    return calculatePlateauStability(
+      plateauStates,
+      strategy,
+      autoInsert,
+      wave.metrics.avgFatigue || 1.0,
+    );
+  });
+
   return {
     totalCost,
     totalDurationMonths,
@@ -925,6 +962,7 @@ function calculateSummary(waves: RoadmapWave[], data: EnrichmentData): RoadmapSu
     complianceImprovement,
     waveCount: waves.length,
     costConfidence,
+    plateauStability,
   };
 }
 
