@@ -1,4 +1,30 @@
 name,type,layer,togafDomain,description,status,riskLevel,maturityLevel
+Enterprise Architect,stakeholder,motivation,motivation,"Primary user: models and manages enterprise architecture across TOGAF domains",current,low,4
+CTO / CIO,stakeholder,motivation,motivation,"Executive sponsor: strategic technology decisions and architecture governance",current,low,4
+Compliance Officer,stakeholder,motivation,motivation,"Ensures regulatory and policy compliance across the architecture",current,low,3
+Development Team,stakeholder,motivation,motivation,"Builds and maintains the TheArchitect platform",current,low,4
+Digital Transformation Pressure,driver,motivation,motivation,"Organizations need structured transformation planning to stay competitive",current,medium,3
+Architecture Complexity,driver,motivation,motivation,"Growing IT landscapes require visual and layered architecture management",current,medium,3
+Regulatory Compliance Need,driver,motivation,motivation,"Legal and industry mandates require formal architecture governance",current,medium,3
+Current Tooling Fragmented,assessment,motivation,motivation,"Existing EA tools lack 3D visualization, AI analytics, and multi-agent simulation",current,high,2
+Manual Analysis Error-Prone,assessment,motivation,motivation,"Manual architecture reviews miss cross-layer dependencies and risk cascades",current,high,2
+Unified EA Platform,goal,motivation,motivation,"Single platform for all enterprise architecture management needs",current,low,3
+TOGAF 10 Compliance,goal,motivation,motivation,"Full alignment with TOGAF 10 ADM and ArchiMate 3.2 specification",current,low,3
+AI-Augmented Decisions,goal,motivation,motivation,"AI-powered risk analysis, impact assessment, and roadmap recommendations",current,medium,3
+Real-time Collaboration,goal,motivation,motivation,"Multiple architects working simultaneously on shared architecture models",current,low,3
+Reduced Architecture Review Time,outcome,motivation,motivation,"Faster reviews through 3D visualization and AI-powered advisor insights",current,low,3
+Better Risk Visibility,outcome,motivation,motivation,"Proactive risk detection via Bayesian cascade and K-S drift analysis",current,low,3
+Faster Transformation Planning,outcome,motivation,motivation,"Automated roadmap generation with Monte Carlo cost simulation",current,low,3
+Single Source of Truth,principle,motivation,motivation,"One authoritative architecture repository per organization",current,low,4
+ArchiMate 3.2 Standard,principle,motivation,motivation,"All elements and relationships follow the ArchiMate 3.2 specification",current,low,4
+Automation First,principle,motivation,motivation,"Automate analysis, risk scoring, and recommendations wherever possible",current,low,3
+3D Visualization Requirement,requirement,motivation,motivation,"Architecture must be viewable as interactive 3D model with layer planes",current,low,4
+Multi-Agent Simulation Requirement,requirement,motivation,motivation,"Stakeholder perspectives must be simulatable via multi-agent debate",current,low,3
+RBAC Authorization,requirement,motivation,motivation,"Role-based access control for all operations and data",current,low,4
+Audit Trail Requirement,requirement,motivation,motivation,"All changes must be logged with user, IP, timestamp, and risk level",current,low,4
+Import Interoperability,requirement,motivation,motivation,"Must import from BPMN 2.0, n8n workflows, CSV, and ArchiMate exchange",current,low,3
+Browser-Based Delivery,constraint,motivation,motivation,"Must run in modern browsers without desktop installation",current,low,4
+Self-Hosted Option,constraint,motivation,motivation,"Must support on-premise Docker deployment on customer infrastructure",current,low,4
 Enterprise Architecture Management,business_capability,strategy,business,"Core capability: manage enterprise architecture lifecycle across TOGAF domains",current,low,4
 3D Visualization & Navigation,business_capability,strategy,business,"Capability: immersive 3D architecture visualization with layer planes and fly-to navigation",current,low,4
 AI-Powered Analytics,business_capability,strategy,business,"Capability: AI-driven risk analysis, impact assessment, predictive analytics, and roadmap generation",current,medium,3
@@ -7,6 +33,13 @@ Multi-Stakeholder Simulation,business_capability,strategy,business,"Capability: 
 Template Marketplace,business_capability,strategy,business,"Capability: community-driven architecture template sharing and deployment",current,low,2
 Architecture Lifecycle Management,value_stream,strategy,business,"Value stream: from current-state capture through gap analysis to target-state realization",current,low,3
 Digital Transformation Planning,value_stream,strategy,business,"Value stream: strategic planning with Monte Carlo simulation and transformation roadmaps",current,low,3
+Architecture Team Resources,resource,strategy,business,"Skilled architects, AI compute budget, and cloud infrastructure resources",current,low,3
+Adopt AI-First Architecture,course_of_action,strategy,business,"Strategic decision to integrate AI across all EA analysis and recommendation workflows",current,medium,3
+Enterprise Architect (Actor),business_actor,business,business,"Person who creates and manages architecture models in the platform",current,low,4
+Solution Architect (Actor),business_actor,business,business,"Person who designs application-level solutions within the architecture",current,low,3
+Project Owner (Role),business_role,business,business,"Role: full control over project elements, settings, and team membership",current,low,4
+Viewer (Role),business_role,business,business,"Role: read-only access to architecture views and reports",current,low,4
+Editor (Role),business_role,business,business,"Role: can create and modify elements but not manage project settings",current,low,4
 Import Architecture Data,process,business,business,"Process: import architecture elements from BPMN, n8n workflows, CSV, or manual entry",current,low,4
 Run MiroFish Simulation,process,business,business,"Process: configure agents, run multi-round debate, collect validated actions per element",current,medium,3
 Generate Transformation Roadmap,process,business,business,"Process: 3-layer cost model analysis with Beta-PERT Monte Carlo and wave-based roadmap",current,low,3
@@ -18,6 +51,10 @@ Architecture Visualization Service,business_service,business,business,"Service: 
 Stakeholder Simulation Service,business_service,business,business,"Service: orchestrates MiroFish multi-agent simulation rounds with SSE live feed",current,medium,3
 Compliance Assessment Service,business_service,business,business,"Service: evaluates architecture compliance against configurable policy rules",current,low,3
 Risk Analysis Service,business_service,business,business,"Service: calculates risk scores using Bayesian cascade and Kolmogorov-Smirnov drift detection",current,medium,3
+Architecture Changed,business_event,business,business,"Event: triggered when architecture elements are added, modified, or removed",current,low,4
+Simulation Completed,business_event,business,business,"Event: triggered when MiroFish simulation run finishes all debate rounds",current,low,3
+Architecture Model,business_object,business,business,"Object: the complete architecture model of an organization across all TOGAF layers",current,low,4
+Compliance Report,business_object,business,business,"Object: compliance assessment output with violations, recommendations, and scores",current,low,3
 ArchitectureElement,data_entity,information,data,"Entity: core architecture element with type, layer, position3D, risk, maturity, and metadata",current,low,4
 Connection,data_entity,information,data,"Entity: relationship between elements with type (ArchiMate 3.2) and optional label",current,low,4
 Project,data_entity,information,data,"Entity: project container with name, description, team membership, and settings",current,low,4
@@ -51,6 +88,7 @@ Node.js v22,technology_component,technology,technology,"Runtime: Node.js v22 LTS
 Vite,technology_component,technology,technology,"Build tool: Vite 6 with React plugin, HMR, and production bundling",current,low,4
 Docker,technology_component,technology,technology,"Container: multi-stage Docker build with Alpine base for production deployment",current,low,4
 Turbo,technology_component,technology,technology,"Build system: Turborepo for monorepo task orchestration with dependency-aware caching",current,low,4
+Linux Ubuntu 24.04,system_software,technology,technology,"Operating system running on VPS and as base for Docker containers",current,low,4
 MongoDB Server,infrastructure,technology,technology,"Infrastructure: MongoDB 7 for document storage (users, projects, simulations, audit)",current,low,4
 Neo4j Graph Database,infrastructure,technology,technology,"Infrastructure: Neo4j 5 for graph storage of architecture elements and connections",current,medium,4
 Redis Session Store,infrastructure,technology,technology,"Infrastructure: Redis 7 for session storage, caching, and pub/sub",current,low,4
@@ -58,8 +96,63 @@ MinIO Object Storage,infrastructure,technology,technology,"Infrastructure: S3-co
 Caddy Reverse Proxy,infrastructure,technology,technology,"Infrastructure: Caddy 2 reverse proxy with automatic HTTPS and request routing",current,low,4
 Hostinger VPS,platform_service,technology,technology,"Platform: Hostinger KVM 2 VPS (Ubuntu 24.04) with Docker runtime",current,low,4
 GitHub Repository,platform_service,technology,technology,"Platform: GitHub repository for source code, CI/CD workflows, and issue tracking",current,low,4
+Docker Image: TheArchitect,artifact,technology,technology,"Artifact: multi-stage Docker build output deployed to production VPS",current,low,4
+Docker Image: Neo4j,artifact,technology,technology,"Artifact: official Neo4j 5 container image from Docker Hub",current,low,4
+Internet / HTTPS,communication_network,technology,technology,"Network: public internet access via HTTPS with Caddy TLS termination",current,low,4
+Internal Docker Network,communication_network,technology,technology,"Network: private Docker bridge network for inter-container communication",current,low,4
+Phase 1: Core Platform,work_package,implementation_migration,implementation,"Work package: React 3D frontend, Express API, Neo4j/MongoDB, auth, RBAC (completed)",current,low,4
+Phase 2: MiroFish Simulation,work_package,implementation_migration,implementation,"Work package: multi-agent debate engine with personas and scenario comparison (completed)",current,low,4
+Phase 3: AI Analytics Suite,work_package,implementation_migration,implementation,"Work package: Stochastic Engine, AI Advisor, Roadmap Generator (completed)",current,low,3
+Phase 4: Governance & Marketplace,work_package,implementation_migration,implementation,"Work package: compliance dashboards, approval workflows, audit trail, template marketplace (in progress)",current,medium,2
+Phase 5: ArchiMate 3.2 & Self-Test,work_package,implementation_migration,implementation,"Work package: full ArchiMate expansion, CSV import, recursive self-architecture testing",current,low,3
+Current Platform State,plateau,implementation_migration,implementation,"Plateau: Phases 1-3 complete — core platform with simulation and AI analytics operational",current,low,3
+Target Platform State,plateau,implementation_migration,implementation,"Plateau: full TOGAF 10 EA platform with governance, marketplace, and ArchiMate 3.2 compliance",target,low,4
 ---CONNECTIONS---
 sourceName,targetName,type,label
+Enterprise Architect,Unified EA Platform,influence,needs
+CTO / CIO,Unified EA Platform,influence,sponsors
+CTO / CIO,AI-Augmented Decisions,influence,demands
+Compliance Officer,TOGAF 10 Compliance,influence,requires
+Development Team,Adopt AI-First Architecture,influence,implements
+Digital Transformation Pressure,Unified EA Platform,influence,drives
+Architecture Complexity,3D Visualization & Navigation,influence,motivates
+Regulatory Compliance Need,Governance & Compliance,influence,mandates
+Current Tooling Fragmented,Unified EA Platform,influence,justifies
+Manual Analysis Error-Prone,AI-Augmented Decisions,influence,justifies
+Unified EA Platform,Enterprise Architecture Management,realization,realized by
+TOGAF 10 Compliance,ArchiMate 3.2 Standard,realization,realized by
+AI-Augmented Decisions,AI-Powered Analytics,realization,realized by
+Real-time Collaboration,WebSocket Real-time Service,realization,realized by
+Unified EA Platform,Reduced Architecture Review Time,realization,produces
+AI-Augmented Decisions,Better Risk Visibility,realization,produces
+AI-Augmented Decisions,Faster Transformation Planning,realization,produces
+Single Source of Truth,3D Visualization Requirement,realization,guides
+ArchiMate 3.2 Standard,Import Interoperability,realization,guides
+Automation First,Multi-Agent Simulation Requirement,realization,guides
+Automation First,AI-Augmented Decisions,influence,motivates
+Browser-Based Delivery,TheArchitect Frontend,influence,constrains
+Self-Hosted Option,Docker,influence,constrains
+3D Visualization Requirement,3D Visualization & Navigation,realization,realized by
+Multi-Agent Simulation Requirement,Multi-Stakeholder Simulation,realization,realized by
+RBAC Authorization,Auth Module,realization,realized by
+Audit Trail Requirement,AuditLog,realization,realized by
+Import Interoperability,Import Architecture Data,realization,realized by
+Enterprise Architect,Enterprise Architect (Actor),association,is
+CTO / CIO,Project Owner (Role),association,fulfills
+Enterprise Architect (Actor),Project Owner (Role),assignment,assigned
+Solution Architect (Actor),Editor (Role),assignment,assigned
+Project Owner (Role),Configure Project Settings,assignment,performs
+Editor (Role),Import Architecture Data,assignment,performs
+Viewer (Role),Architecture Visualization Service,serving,uses
+Architecture Changed,Execute Advisor Scan,triggering,triggers
+Simulation Completed,Export PDF Report,triggering,triggers
+Architecture Model,ArchitectureElement,realization,represented by
+Architecture Model,Connection,realization,represented by
+Compliance Report,AuditLog,access,reads
+Adopt AI-First Architecture,Phase 3: AI Analytics Suite,realization,realized by
+Adopt AI-First Architecture,Phase 5: ArchiMate 3.2 & Self-Test,realization,realized by
+Architecture Team Resources,Phase 4: Governance & Marketplace,assignment,allocated to
+Architecture Team Resources,Phase 5: ArchiMate 3.2 & Self-Test,assignment,allocated to
 Enterprise Architecture Management,Architecture Lifecycle Management,composition,defines
 Enterprise Architecture Management,Digital Transformation Planning,composition,defines
 3D Visualization & Navigation,Architecture Visualization Service,realization,realized by
@@ -116,6 +209,14 @@ AI Architecture Advisor,AdvisorInsight,access,persists
 Stochastic Engine,ArchitectureElement,access,analyzes
 Roadmap Generator,RoadmapWave,access,persists
 PDF Export Service,MinIO Object Storage,serving,stores files
+Linux Ubuntu 24.04,Hostinger VPS,assignment,runs on
+Linux Ubuntu 24.04,Docker,assignment,hosts
+Docker Image: TheArchitect,Docker,assignment,deployed via
+Docker Image: Neo4j,Docker,assignment,deployed via
+Internet / HTTPS,Caddy Reverse Proxy,serving,terminates at
+Internal Docker Network,MongoDB Server,serving,connects
+Internal Docker Network,Neo4j Graph Database,serving,connects
+Internal Docker Network,Redis Session Store,serving,connects
 TheArchitect Backend,Node.js v22,assignment,runs on
 TheArchitect Frontend,Vite,assignment,built by
 Docker,Hostinger VPS,assignment,deployed on
@@ -126,3 +227,16 @@ Redis Session Store,Docker,assignment,containerized
 MinIO Object Storage,Docker,assignment,containerized
 Caddy Reverse Proxy,Docker,assignment,containerized
 Caddy Reverse Proxy,Hostinger VPS,assignment,deployed on
+Current Platform State,Phase 1: Core Platform,aggregation,includes
+Current Platform State,Phase 2: MiroFish Simulation,aggregation,includes
+Current Platform State,Phase 3: AI Analytics Suite,aggregation,includes
+Target Platform State,Phase 4: Governance & Marketplace,aggregation,includes
+Target Platform State,Phase 5: ArchiMate 3.2 & Self-Test,aggregation,includes
+Phase 1: Core Platform,TheArchitect Frontend,realization,delivers
+Phase 1: Core Platform,TheArchitect Backend,realization,delivers
+Phase 2: MiroFish Simulation,MiroFish Engine,realization,delivers
+Phase 3: AI Analytics Suite,Stochastic Engine,realization,delivers
+Phase 3: AI Analytics Suite,AI Architecture Advisor,realization,delivers
+Phase 3: AI Analytics Suite,Roadmap Generator,realization,delivers
+Phase 4: Governance & Marketplace,Compliance Assessment Service,realization,delivers
+Phase 5: ArchiMate 3.2 & Self-Test,CSV Parser,realization,delivers
