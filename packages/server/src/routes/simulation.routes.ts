@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
@@ -6,7 +7,8 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { SimulationRun } from '../models/SimulationRun';
 import { MiroFishEngine } from '../services/mirofish/engine';
-import { getDefaultPersonas, getAllPresetPersonas } from '../services/mirofish/personas';
+import { getDefaultPersonas, getAllPresetPersonas, PRESET_PERSONAS } from '../services/mirofish/personas';
+import { CustomPersona, toAgentPersona } from '../models/CustomPersona';
 import type { SimulationStreamEvent } from '@thearchitect/shared/src/types/simulation.types';
 
 const router = Router();
@@ -169,14 +171,192 @@ router.get(
   },
 );
 
-// ─── GET /personas — List available preset personas ───
+// ─── GET /personas — List preset + custom personas ───
 // IMPORTANT: Must be before /:runId routes to avoid "personas" matching as runId
 
 router.get(
   '/:projectId/simulations/personas',
   authenticate,
-  async (_req: Request, res: Response) => {
-    res.json({ personas: getAllPresetPersonas() });
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user._id;
+      const projectId = req.params.projectId;
+
+      const presets = getAllPresetPersonas();
+
+      const customDocs = await CustomPersona.find({
+        $or: [
+          { userId, scope: 'user' },
+          { projectId, scope: 'project' },
+        ],
+      }).lean();
+
+      const custom = customDocs.map(toAgentPersona);
+
+      res.json({
+        presets,
+        custom,
+        all: [...presets, ...custom],
+      });
+    } catch (err: any) {
+      console.error('[MiroFish] Personas error:', err.message);
+      res.status(500).json({ error: 'Failed to list personas' });
+    }
+  },
+);
+
+// ─── Custom Persona Validation ───
+
+const CustomPersonaSchema = z.object({
+  basedOnPresetId: z.string(),
+  scope: z.enum(['project', 'user']),
+  name: z.string().min(1).max(100),
+  stakeholderType: z.enum(['c_level', 'business_unit', 'it_ops', 'data_team', 'external']),
+  visibleLayers: z.array(z.string()).min(1),
+  visibleDomains: z.array(z.string()).min(1),
+  maxGraphDepth: z.number().int().min(1).max(10).default(5),
+  budgetConstraint: z.number().optional(),
+  riskThreshold: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  expectedCapacity: z.number().int().min(1).max(20),
+  roundToMonthFactor: z.number().min(0.5).max(6).optional(),
+  priorities: z.array(z.string()).min(1),
+  systemPromptSuffix: z.string().default(''),
+  description: z.string().max(500).optional(),
+});
+
+// ─── POST /custom-personas — Create custom persona ───
+
+router.post(
+  '/:projectId/simulations/custom-personas',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const parsed = CustomPersonaSchema.parse(req.body);
+
+      if (!PRESET_PERSONAS[parsed.basedOnPresetId]) {
+        return res.status(400).json({ error: `Unknown preset: ${parsed.basedOnPresetId}` });
+      }
+
+      const doc = await CustomPersona.create({
+        ...parsed,
+        projectId: parsed.scope === 'project' ? req.params.projectId : undefined,
+        userId: (req as any).user._id,
+      });
+
+      res.status(201).json(toAgentPersona(doc));
+    } catch (err: any) {
+      if (err.name === 'ZodError') {
+        return res.status(400).json({ error: 'Invalid persona data', details: err.errors });
+      }
+      console.error('[MiroFish] Create persona error:', err.message);
+      res.status(500).json({ error: 'Failed to create custom persona' });
+    }
+  },
+);
+
+// ─── GET /custom-personas — List custom personas ───
+
+router.get(
+  '/:projectId/simulations/custom-personas',
+  authenticate,
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req as any).user._id;
+      const projectId = req.params.projectId;
+
+      const docs = await CustomPersona.find({
+        $or: [
+          { userId, scope: 'user' },
+          { projectId, scope: 'project' },
+        ],
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      res.json({ personas: docs.map(toAgentPersona), raw: docs });
+    } catch (err: any) {
+      console.error('[MiroFish] List personas error:', err.message);
+      res.status(500).json({ error: 'Failed to list custom personas' });
+    }
+  },
+);
+
+// ─── PATCH /custom-personas/:personaId — Update custom persona ───
+
+router.patch(
+  '/:projectId/simulations/custom-personas/:personaId',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = String((req as any).user._id);
+      const projectId = String(req.params.projectId);
+
+      // Scope-aware query: only find personas the user owns (user-scoped) or that belong to this project (project-scoped)
+      const doc = await CustomPersona.findOne({
+        _id: req.params.personaId,
+        $or: [
+          { scope: 'user', userId },
+          { scope: 'project', projectId },
+        ],
+      });
+      if (!doc) {
+        return res.status(404).json({ error: 'Custom persona not found' });
+      }
+
+      const updates = CustomPersonaSchema.partial().parse(req.body);
+      // Prevent scope/ownership escalation
+      delete (updates as any).scope;
+      delete (updates as any).basedOnPresetId;
+      Object.assign(doc, updates);
+      await doc.save();
+
+      res.json(toAgentPersona(doc));
+    } catch (err: any) {
+      if (err.name === 'ZodError') {
+        return res.status(400).json({ error: 'Invalid persona data', details: err.errors });
+      }
+      console.error('[MiroFish] Update persona error:', err.message);
+      res.status(500).json({ error: 'Failed to update custom persona' });
+    }
+  },
+);
+
+// ─── DELETE /custom-personas/:personaId — Delete custom persona ───
+
+router.delete(
+  '/:projectId/simulations/custom-personas/:personaId',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = String((req as any).user._id);
+      const projectId = String(req.params.projectId);
+
+      // Scope-aware query: only find personas the user owns (user-scoped) or that belong to this project (project-scoped)
+      const doc = await CustomPersona.findOne({
+        _id: req.params.personaId,
+        $or: [
+          { scope: 'user', userId },
+          { scope: 'project', projectId },
+        ],
+      });
+      if (!doc) {
+        return res.status(404).json({ error: 'Custom persona not found' });
+      }
+
+      await doc.deleteOne();
+      res.json({ deleted: true });
+    } catch (err: any) {
+      console.error('[MiroFish] Delete persona error:', err.message);
+      res.status(500).json({ error: 'Failed to delete custom persona' });
+    }
   },
 );
 

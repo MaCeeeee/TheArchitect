@@ -1,6 +1,6 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-21 (Kolmogorov Stochastic Engine implementiert & verifiziert — 48/48 Tests)
+> Letztes Update: 2026-03-21 (MiroFish Phase 3: Custom Persona Editor + Run-Vergleich implementiert)
 
 ---
 
@@ -517,6 +517,160 @@ Phase 2 erweitert die MiroFish-Simulation um visuelle Tiefe: Ein Emergence Dashb
 - `packages/client/src/components/3d/NodeObject3D.tsx` — Simulation sub-view coloring
 - `packages/client/src/components/3d/TransformationXRay.tsx` — SimulationTopology mount
 - `packages/client/src/components/3d/XRayHUD.tsx` — Simulation pill + metrics
+
+---
+
+## 5c. MiroFish Phase 3: Custom Persona Editor + Run-Vergleich
+
+### Beschreibung
+
+Phase 3 schließt zwei Funktionslücken: (A) Custom Persona Editor — Nutzer können Preset-Personas klonen und anpassen (Name, Layers, Budget, Prioritäten, LLM-Verhalten), mit dualer Persistenz (Projekt-scoped für Teams, User-scoped für portable Personas). (B) Run-Vergleich — Side-by-Side Vergleich zweier abgeschlossener Simulationsläufe mit Diff-Highlighting für Fatigue, Bottlenecks, Emergence und Risk/Cost-Deltas.
+
+### Status: ✅ Implementiert (Build erfolgreich)
+
+#### Feature A: Custom Persona Editor
+
+##### Shared Types
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `PersonaScope` Type (`'project' \| 'user'`) | ✅ | `packages/shared/src/types/simulation.types.ts` |
+| `CustomPersona` Interface (extends AgentPersona + scope, basedOnPresetId, userId) | ✅ | `packages/shared/src/types/simulation.types.ts` |
+| `CustomPersonaInput` Interface (Validierungs-Shape für Create/Update) | ✅ | `packages/shared/src/types/simulation.types.ts` |
+
+##### Server: MongoDB Model
+
+| Komponente | Status | Datei |
+|---|---|---|
+| CustomPersona Mongoose Schema (12 Felder) | ✅ | `packages/server/src/models/CustomPersona.ts` |
+| Index `{ userId, scope }` — User-Personas laden | ✅ | `packages/server/src/models/CustomPersona.ts` |
+| Index `{ projectId, scope }` — Projekt-Personas laden | ✅ | `packages/server/src/models/CustomPersona.ts` |
+| `toAgentPersona(doc)` — Konvertiert zu Engine-kompatiblem `AgentPersona` mit `custom_<_id>` Prefix | ✅ | `packages/server/src/models/CustomPersona.ts` |
+
+##### Server: API Routes
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `GET /:projectId/simulations/personas` — Erweitert: gibt `{ presets, custom, all }` zurück | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| `POST /:projectId/simulations/custom-personas` — Erstellen mit basedOnPresetId-Validierung | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| `GET /:projectId/simulations/custom-personas` — User + Projekt scoped | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| `PATCH /:projectId/simulations/custom-personas/:personaId` — Scope-aware Update | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| `DELETE /:projectId/simulations/custom-personas/:personaId` — Scope-aware Delete | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| Zod `CustomPersonaSchema` Validierung | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| IDOR-Schutz: `findOne` mit `$or` Query statt `findById` | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+| Route-Ordering: Custom-Persona-Routes VOR `/:runId` | ✅ | `packages/server/src/routes/simulation.routes.ts` |
+
+##### Client: API & Store
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `simulationAPI.listCustomPersonas()` | ✅ | `packages/client/src/services/api.ts` |
+| `simulationAPI.createCustomPersona()` | ✅ | `packages/client/src/services/api.ts` |
+| `simulationAPI.updateCustomPersona()` | ✅ | `packages/client/src/services/api.ts` |
+| `simulationAPI.deleteCustomPersona()` | ✅ | `packages/client/src/services/api.ts` |
+| Store: `presetPersonas`, `customPersonas` State | ✅ | `packages/client/src/stores/simulationStore.ts` |
+| Store: `loadPersonas(projectId)` Action | ✅ | `packages/client/src/stores/simulationStore.ts` |
+| Store: `createCustomPersona`, `updateCustomPersona`, `deleteCustomPersona` Actions | ✅ | `packages/client/src/stores/simulationStore.ts` |
+
+##### Client: PersonaEditor UI
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Modal-Dialog mit Header ("Clone & Customize" / "Edit Persona") | ✅ | `packages/client/src/components/simulation/PersonaEditor.tsx` |
+| 10 Formularfelder (Name, Scope, StakeholderType, Layers, Domains, Budget, Risk, Capacity, Priorities, SystemPrompt) | ✅ | `PersonaEditor.tsx` |
+| Scope-Selector: Radio-Buttons "Project (shared)" / "Personal (portable)" | ✅ | `PersonaEditor.tsx` |
+| Tag-Input für Priorities (Hinzufügen/Entfernen) | ✅ | `PersonaEditor.tsx` |
+| Validierung: Name, min. 1 Layer, min. 1 Domain, min. 1 Priority | ✅ | `PersonaEditor.tsx` |
+| Matrix-Theme Styling (bg-[#0a0a0a], border-[#1a2a1a], text-[#00ff41]) | ✅ | `PersonaEditor.tsx` |
+
+##### Client: ConfigView Update
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `DEFAULT_PERSONAS` entfernt — Personas via `loadPersonas()` vom Server | ✅ | `SimulationPanel.tsx` |
+| Persona-Picker mit zwei Gruppen: "Preset Personas" + "Custom Personas" | ✅ | `SimulationPanel.tsx` |
+| Persona-Karten mit Add/Clone/Edit/Delete Buttons | ✅ | `SimulationPanel.tsx` |
+| PersonaEditor Modal Integration | ✅ | `SimulationPanel.tsx` |
+
+#### Feature B: Run-Vergleich (Side-by-Side)
+
+##### Comparison Logic
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `RunComparisonData` Interface (fatigue, bottlenecks, emergence, riskCost) | ✅ | `packages/client/src/components/simulation/comparisonUtils.ts` |
+| `computeRunComparison()` Pure Function — Client-seitige Diff-Berechnung | ✅ | `comparisonUtils.ts` |
+| Per-Agent Fatigue Delta (Match by agentId) | ✅ | `comparisonUtils.ts` |
+| Bottleneck Diff: shared/onlyA/onlyB mit Delay- und Conflict-Deltas | ✅ | `comparisonUtils.ts` |
+| Emergence Metrics Vergleich (consensus, deadlocks, rounds, hallucinations) | ✅ | `comparisonUtils.ts` |
+| Risk/Cost Element-Level Deltas | ✅ | `comparisonUtils.ts` |
+| Helper: `diffColor()`, `diffBg()`, `formatDelta()` | ✅ | `comparisonUtils.ts` |
+
+##### Client: Store (Comparison)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `comparisonRunA`, `comparisonRunB`, `comparisonData` State | ✅ | `packages/client/src/stores/simulationStore.ts` |
+| `selectForComparison(projectId, runId, slot)` Action | ✅ | `simulationStore.ts` |
+| `computeComparison()` Action | ✅ | `simulationStore.ts` |
+| `clearComparison()` Action | ✅ | `simulationStore.ts` |
+
+##### Client: RunComparison UI
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Header: Run A (cyan) vs Run B (purple) mit Clear-Button | ✅ | `packages/client/src/components/simulation/RunComparison.tsx` |
+| Outcome Cards (Side-by-Side) | ✅ | `RunComparison.tsx` |
+| Fatigue Scorecard Vergleich mit Delta-Arrows (↓ grün = besser, ↑ rot = schlechter) | ✅ | `RunComparison.tsx` |
+| Per-Agent Fatigue Tabelle (4 Spalten mit Diff-Highlighting) | ✅ | `RunComparison.tsx` |
+| Bottleneck Vergleich: Shared (mit Delta), "RESOLVED" (nur A), "NEW" (nur B) | ✅ | `RunComparison.tsx` |
+| Emergence Metrics Grid (CompareMetric Sub-Component) | ✅ | `RunComparison.tsx` |
+| Emergence Timeline (TimelineColumn Sub-Component, cyan/purple) | ✅ | `RunComparison.tsx` |
+| Risk/Cost Delta Tabelle (5 Spalten, Top 10 Elemente) | ✅ | `RunComparison.tsx` |
+
+##### Client: HistoryView + ViewMode Update
+
+| Komponente | Status | Datei |
+|---|---|---|
+| ViewMode erweitert um `'comparison'` | ✅ | `SimulationPanel.tsx` |
+| "Compare Runs" Toggle-Button in HistoryView | ✅ | `SimulationPanel.tsx` |
+| Checkbox-Selektion (genau 2 abgeschlossene Runs) | ✅ | `SimulationPanel.tsx` |
+| "Compare Selected" Button → `selectForComparison` → `computeComparison` | ✅ | `SimulationPanel.tsx` |
+| Dynamischer "Compare" Tab (nur sichtbar wenn `comparisonData` existiert) | ✅ | `SimulationPanel.tsx` |
+
+#### Sicherheit
+
+| Maßnahme | Status |
+|---|---|
+| IDOR-Schutz: PATCH/DELETE nutzen scope-aware `findOne` mit `$or` Query | ✅ |
+| Scope-/Ownership-Escalation verhindert (scope + basedOnPresetId nicht editierbar) | ✅ |
+| Auth: `authenticate` + `requireProjectAccess('viewer')` für GET, `requirePermission(ANALYTICS_SIMULATE)` für Mutationen | ✅ |
+| Zod-Validierung: `basedOnPresetId` muss in `PRESET_PERSONAS` existieren | ✅ |
+
+#### Design-Entscheidungen
+
+| Entscheidung | Wahl |
+|---|---|
+| Persona-Erstellung | Nur Clone-from-Preset (keine leeren Personas) |
+| ID-Schema | `custom_<mongoId>` Prefix vermeidet Kollisionen mit Preset-IDs |
+| Vergleichs-Berechnung | Client-seitig (beide Runs bereits geladen, kein Server-Endpoint nötig) |
+| Engine-Kompatibilität | Keine Engine-Änderungen — Custom Personas conformieren zu `AgentPersona` Interface |
+| Diff-Farbkonvention | Grün = Verbesserung (Fatigue↓, Consensus↑), Rot = Verschlechterung, Grau = kein signifikanter Delta |
+
+#### Neue Dateien (4)
+
+- `packages/server/src/models/CustomPersona.ts` — Mongoose Model mit Dual-Scope Indexes
+- `packages/client/src/components/simulation/PersonaEditor.tsx` — Modal-Dialog (344 Zeilen)
+- `packages/client/src/components/simulation/comparisonUtils.ts` — Pure Diff-Logik (215 Zeilen)
+- `packages/client/src/components/simulation/RunComparison.tsx` — Side-by-Side UI (304 Zeilen)
+
+#### Modifizierte Dateien (5)
+
+- `packages/shared/src/types/simulation.types.ts` — CustomPersona, PersonaScope, CustomPersonaInput Types
+- `packages/server/src/routes/simulation.routes.ts` — 5 neue Endpoints, Zod Schema, IDOR-Fix
+- `packages/client/src/services/api.ts` — 4 neue simulationAPI Methoden
+- `packages/client/src/stores/simulationStore.ts` — Persona + Comparison State & Actions
+- `packages/client/src/components/simulation/SimulationPanel.tsx` — ConfigView, HistoryView, ViewMode Rewrite
 
 ---
 
@@ -1237,8 +1391,8 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 9. ~~**Phase 2: EmergenceDashboard**~~ — ✅ Timeline, Agent-vs-Agent Heatmap, Position Timeline, Emergence Tab.
 10. ~~**Phase 2: AgentAvatars 3D**~~ — ✅ Transluzente Spheres, Puls-Animation, Bezier-Verbindungslinien mit Traveling Particles.
 11. ~~**Phase 2: X-Ray Integration**~~ — ✅ SimulationTopology, Delta-Ringe/Beams, Deadlock/Consensus Auras, HUD Metrics.
-12. **Phase 3: Custom Persona Editor** — Name, Layers, Constraints frei konfigurierbar.
-13. **Phase 3: Run-Vergleich** — Zwei Simulationsläufe nebeneinander vergleichen.
+12. ~~**Phase 3: Custom Persona Editor**~~ — ✅ Clone-from-Preset, Dual Scope (Project/User), 10 editierbare Felder, IDOR-geschützt.
+13. ~~**Phase 3: Run-Vergleich**~~ — ✅ Side-by-Side mit Fatigue/Bottleneck/Emergence/Risk-Cost Diff-Highlighting.
 14. ~~**Phase 3: PDF-Export**~~ — ✅ Implementiert (siehe Abschnitt 11).
 15. **Phase 3: Monte Carlo Integration** — Simulation-Ergebnisse als verhaltensbasierte Risk Factors in `runMonteCarloSimulation()`.
 
@@ -1250,7 +1404,7 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 | 2 | **Transformation Roadmap Generator** — AI-gestützte Migrationsplanung aus Graph-Daten | ★★★★★ | Medium-High | 💡 Konzept |
 | 3 | **Interactive Dependency Explorer** — Neo4j Graph als 2D Force-Directed Visualization | ★★★★☆ | Low-Medium | 💡 Konzept |
 | 4 | **Portfolio Dashboard** — Multi-Projekt KPI Tracking mit Zeitreihen-Trends | ★★★★☆ | Medium | 💡 Konzept |
-| 5 | **MiroFish Phase 3** — Szenario-Vergleich + Custom Persona Editor | ★★★★☆ | Low-Medium | 💡 Konzept |
+| 5 | ~~**MiroFish Phase 3**~~ — Szenario-Vergleich + Custom Persona Editor | ★★★★☆ | Low-Medium | ✅ Implementiert |
 
 **Detaillierte Anforderungsanalyse:** `.claude/plans/majestic-percolating-fiddle.md`
 

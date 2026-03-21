@@ -350,6 +350,15 @@ export const simulationAPI = {
     api.get(`/projects/${projectId}/simulations/personas`),
   streamUrl: (projectId: string, runId: string) =>
     `${API_BASE}/projects/${projectId}/simulations/${runId}/stream`,
+  // Custom personas
+  listCustomPersonas: (projectId: string) =>
+    api.get(`/projects/${projectId}/simulations/custom-personas`),
+  createCustomPersona: (projectId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/simulations/custom-personas`, data),
+  updateCustomPersona: (projectId: string, personaId: string, data: Record<string, unknown>) =>
+    api.patch(`/projects/${projectId}/simulations/custom-personas/${personaId}`, data),
+  deleteCustomPersona: (projectId: string, personaId: string) =>
+    api.delete(`/projects/${projectId}/simulations/custom-personas/${personaId}`),
 };
 
 export const advisorAPI = {

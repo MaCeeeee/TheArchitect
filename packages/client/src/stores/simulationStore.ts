@@ -10,9 +10,12 @@ import type {
   EmergenceMetrics,
   FatigueReport,
   FatigueRating,
+  AgentPersona,
+  CustomPersona,
   ProposedAction,
   ValidationResult,
 } from '@thearchitect/shared/src/types/simulation.types';
+import { computeRunComparison, type RunComparisonData } from '../components/simulation/comparisonUtils';
 
 interface SimulationState {
   // Active run
@@ -42,6 +45,15 @@ interface SimulationState {
   // Live feed
   liveFeed: LiveFeedEntry[];
 
+  // Personas (Phase 3)
+  presetPersonas: AgentPersona[];
+  customPersonas: CustomPersona[];
+
+  // Run Comparison (Phase 3)
+  comparisonRunA: SimulationRun | null;
+  comparisonRunB: SimulationRun | null;
+  comparisonData: RunComparisonData | null;
+
   // Actions
   startSimulation: (projectId: string, config: SimulationConfig) => Promise<void>;
   cancelSimulation: (projectId: string) => Promise<void>;
@@ -49,6 +61,17 @@ interface SimulationState {
   selectRun: (projectId: string, runId: string) => Promise<void>;
   toggleOverlay: () => void;
   clearSimulation: () => void;
+
+  // Persona actions (Phase 3)
+  loadPersonas: (projectId: string) => Promise<void>;
+  createCustomPersona: (projectId: string, input: Record<string, unknown>) => Promise<void>;
+  updateCustomPersona: (projectId: string, personaId: string, input: Record<string, unknown>) => Promise<void>;
+  deleteCustomPersona: (projectId: string, personaId: string) => Promise<void>;
+
+  // Comparison actions (Phase 3)
+  selectForComparison: (projectId: string, runId: string, slot: 'A' | 'B') => Promise<void>;
+  computeComparison: () => void;
+  clearComparison: () => void;
 }
 
 interface LiveFeedEntry {
@@ -76,6 +99,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   fatigueReport: null,
   fatigueTimeline: [],
   liveFeed: [],
+  presetPersonas: [],
+  customPersonas: [],
+  comparisonRunA: null,
+  comparisonRunB: null,
+  comparisonData: null,
 
   startSimulation: async (projectId, config) => {
     try {
@@ -229,6 +257,79 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       fatigueTimeline: [],
       liveFeed: [],
     }),
+
+  // ─── Persona Actions (Phase 3) ───
+
+  loadPersonas: async (projectId) => {
+    try {
+      const response = await simulationAPI.getPersonas(projectId);
+      set({
+        presetPersonas: response.data.presets || [],
+        customPersonas: response.data.custom || [],
+      });
+    } catch (err) {
+      console.error('[SimulationStore] Load personas error:', err);
+    }
+  },
+
+  createCustomPersona: async (projectId, input) => {
+    try {
+      await simulationAPI.createCustomPersona(projectId, input);
+      await get().loadPersonas(projectId);
+    } catch (err) {
+      console.error('[SimulationStore] Create persona error:', err);
+      throw err;
+    }
+  },
+
+  updateCustomPersona: async (projectId, personaId, input) => {
+    try {
+      await simulationAPI.updateCustomPersona(projectId, personaId, input);
+      await get().loadPersonas(projectId);
+    } catch (err) {
+      console.error('[SimulationStore] Update persona error:', err);
+      throw err;
+    }
+  },
+
+  deleteCustomPersona: async (projectId, personaId) => {
+    try {
+      await simulationAPI.deleteCustomPersona(projectId, personaId);
+      await get().loadPersonas(projectId);
+    } catch (err) {
+      console.error('[SimulationStore] Delete persona error:', err);
+      throw err;
+    }
+  },
+
+  // ─── Comparison Actions (Phase 3) ───
+
+  selectForComparison: async (projectId, runId, slot) => {
+    try {
+      const response = await simulationAPI.get(projectId, runId);
+      const run = response.data;
+      if (slot === 'A') {
+        set({ comparisonRunA: run });
+      } else {
+        set({ comparisonRunB: run });
+      }
+    } catch (err) {
+      console.error('[SimulationStore] Select for comparison error:', err);
+    }
+  },
+
+  computeComparison: () => {
+    const { comparisonRunA, comparisonRunB } = get();
+    if (!comparisonRunA?.result || !comparisonRunB?.result) {
+      set({ comparisonData: null });
+      return;
+    }
+    const data = computeRunComparison(comparisonRunA, comparisonRunB);
+    set({ comparisonData: data });
+  },
+
+  clearComparison: () =>
+    set({ comparisonRunA: null, comparisonRunB: null, comparisonData: null }),
 }));
 
 // ─── Event Processing ───

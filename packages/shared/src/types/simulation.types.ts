@@ -19,6 +19,37 @@ export interface AgentPersona {
   systemPromptSuffix: string;
 }
 
+// ─── Custom Personas ───
+
+export type PersonaScope = 'project' | 'user';
+
+export interface CustomPersona extends AgentPersona {
+  _id?: string;
+  scope: PersonaScope;
+  basedOnPresetId: string;
+  projectId?: string;
+  userId: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CustomPersonaInput {
+  basedOnPresetId: string;
+  scope: PersonaScope;
+  name: string;
+  stakeholderType: StakeholderType;
+  visibleLayers: string[];
+  visibleDomains: string[];
+  maxGraphDepth?: number;
+  budgetConstraint?: number;
+  riskThreshold?: string;
+  expectedCapacity: number;
+  priorities: string[];
+  systemPromptSuffix: string;
+  description?: string;
+}
+
 // ─── Proposed Actions (Structured LLM Output) ───
 
 export type ActionType =
