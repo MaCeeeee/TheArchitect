@@ -31,7 +31,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { reportAPI } from '../../services/api';
-import { fitToScreen } from '../3d/CameraControls';
+import { fitToScreen } from '../3d/ViewModeCamera';
 import UserPresence from '../collaboration/UserPresence';
 import { useCollaborationStore } from '../../stores/collaborationStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
@@ -69,6 +69,26 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   const projectId = useArchitectureStore((s) => s.projectId);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const toggleXRay = useXRayStore((s) => s.toggleXRay);
+
+  // X-Ray guard: auto-switch to 3D when activating X-Ray
+  const handleXRayToggle = () => {
+    if (!isXRayActive && viewMode !== '3d') {
+      setViewMode('3d');
+      toast('Switching to 3D for X-Ray mode', { icon: '🔬' });
+      // Small delay to let camera animate, then toggle
+      setTimeout(() => toggleXRay(), 300);
+      return;
+    }
+    toggleXRay();
+  };
+
+  // Guard: deactivate X-Ray when switching away from 3D
+  const handleSetViewMode = (mode: typeof viewMode) => {
+    if (isXRayActive && mode !== '3d') {
+      toggleXRay();
+    }
+    setViewMode(mode);
+  };
   const advisorHealthScore = useAdvisorStore((s) => s.healthScore);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -122,6 +142,20 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         e.preventDefault();
         redo();
       }
+      // Ctrl+1/2/3 for view mode switching
+      if ((e.ctrlKey || e.metaKey) && e.key === '1') {
+        e.preventDefault();
+        handleSetViewMode('3d');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '2') {
+        e.preventDefault();
+        handleSetViewMode('2d-topdown');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '3') {
+        e.preventDefault();
+        handleSetViewMode('layer');
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const selectedId = useArchitectureStore.getState().selectedElementId;
         if (selectedId) {
@@ -192,19 +226,19 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
           icon={<Box size={16} />}
           label="3D"
           active={viewMode === '3d'}
-          onClick={() => setViewMode('3d')}
+          onClick={() => handleSetViewMode('3d')}
         />
         <ViewModeButton
           icon={<Grid3x3 size={16} />}
           label="2D"
           active={viewMode === '2d-topdown'}
-          onClick={() => setViewMode('2d-topdown')}
+          onClick={() => handleSetViewMode('2d-topdown')}
         />
         <ViewModeButton
           icon={<Layers size={16} />}
           label="Layers"
           active={viewMode === 'layer'}
-          onClick={() => setViewMode('layer')}
+          onClick={() => handleSetViewMode('layer')}
         />
       </div>
 
@@ -218,7 +252,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         <ToolbarButton icon={<Workflow size={16} />} title="Import n8n" onClick={onOpenN8nImport} />
         <ToolbarButton icon={<FileSpreadsheet size={16} />} title="Import CSV" onClick={onOpenCSVImport} />
         <div className="mx-1 h-5 w-px bg-[#1a2a1a]" />
-        <XRayButton isActive={isXRayActive} onClick={toggleXRay} />
+        <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
         <ToolbarButton
           icon={<Play size={16} />}
           title={isScenarioMode ? 'Exit Scenario Mode' : 'Enter Scenario Mode'}

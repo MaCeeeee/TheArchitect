@@ -1,4 +1,4 @@
-import type { ElementStatus } from './architecture.types';
+import type { ElementStatus, Position3D } from './architecture.types';
 import type { PlateauStabilityResult } from './stochastic.types';
 
 // ─── Strategy ───
@@ -127,4 +127,38 @@ export interface CandidatesPreview {
     estimatedCount: number;      // elements with partial data
     heuristicCount: number;      // elements with no data, pure heuristic
   };
+}
+
+// ─── Transformation Plateau Comparison View (TPCV) ───
+
+export interface PlateauElementState {
+  elementId: string;
+  name: string;
+  type: string;
+  layer: string;
+  status: ElementStatus;            // cumulative status at this plateau
+  previousStatus: ElementStatus;    // status at previous plateau
+  isChanged: boolean;               // changed in THIS plateau's wave
+  changeWaveNumber: number | null;  // which wave last changed this element (null = never)
+  riskScore: number;
+  estimatedCost: number;            // cost of the change in the wave (0 if unchanged)
+  position3D: Position3D;           // original element position for spatial layout
+}
+
+export interface PlateauSnapshot {
+  plateauIndex: number;             // 0 = As-Is, 1..N = after wave N
+  label: string;                    // "As-Is" or "Wave N: {name}"
+  waveNumber: number | null;        // null for As-Is
+  elements: Record<string, PlateauElementState>; // elementId → state
+  changedElementIds: string[];      // elementIds changed in THIS wave
+  cumulativeCost: number;           // sum of costs through this plateau
+  cumulativeRiskDelta: number;      // sum of risk deltas through this plateau
+  metrics: WaveMetrics | null;      // wave metrics (null for As-Is)
+}
+
+export interface CrossPlateauDependency {
+  sourceElementId: string;          // element completed in earlier wave
+  sourcePlateauIndex: number;       // plateau where source was completed
+  targetElementId: string;          // element depending on source
+  targetPlateauIndex: number;       // plateau where target is being changed
 }

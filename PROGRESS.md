@@ -1,6 +1,85 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-21 (MiroFish Phase 3: Custom Persona Editor + Run-Vergleich implementiert)
+> Letztes Update: 2026-03-22 (UC-ROADMAP-003 TPCV, View Mode Buttons, RVTM Skill, Linear-Integration, CSV Import ArchiMate 3.2)
+
+---
+
+## 0. UC-ROADMAP-003: Transformation Plateau Comparison View (TPCV)
+
+### Problemstellung
+Der Roadmap Generator erzeugt Waves mit Elementen die von `currentStatus` zu `targetStatus` migrieren — aber es gibt keine visuelle Darstellung der Architektur **über die Zeit**. Der Nutzer sieht Wave-Cards und eine Timeline, aber nicht wie sich die gesamte Architektur Plateau für Plateau verändert. Ziel: As-Is → Wave 1 → Wave 2 → ... → Target nebeneinander im 3D-View, mit sichtbaren Zustandsänderungen, Abhängigkeiten und Gap-Metriken pro Plateau.
+
+### Status: 🔧 In Progress (Sprint 1-3 implementiert, QA ausstehend)
+
+**Linear:** THE-60 (Feature, In Progress, parent=THE-16) → THE-61 bis THE-82 (22 REQs, alle Done)
+
+#### Sprint 1 — Foundation (Types + Computation + Store) ✅
+
+| Komponente | Status | Datei |
+|---|---|---|
+| PlateauSnapshot, PlateauElementState, CrossPlateauDependency Types | ✅ | `packages/shared/src/types/roadmap.types.ts` |
+| computePlateauSnapshots() — pure Function, N+1 Snapshots | ✅ | `packages/client/src/utils/plateauComputation.ts` |
+| computeCrossPlateauDependencies() — Wave-übergreifende Abhängigkeiten | ✅ | `packages/client/src/utils/plateauComputation.ts` |
+| computePlateauSnapshotsMemoized() — Cache by Roadmap-ID+Version+Elements-Ref | ✅ | `packages/client/src/utils/plateauComputation.ts` |
+| Plateau Store State + Actions (activate/deactivate/select/compute/clear) | ✅ | `packages/client/src/stores/roadmapStore.ts` |
+| Unit Tests — plateauComputation (19 Tests) | ✅ | `packages/client/src/utils/plateauComputation.test.ts` |
+| Unit Tests — roadmapStore (14 Tests) | ✅ | `packages/client/src/stores/roadmapStore.test.ts` |
+
+#### Sprint 2 — 3D Rendering ✅
+
+| Komponente | Status | Datei |
+|---|---|---|
+| PlateauElement — Status-Coloring + Change-Glow + LOD | ✅ | `packages/client/src/components/3d/PlateauElement.tsx` |
+| PlateauConnectionLines — Intra + Cross-Plateau Lines | ✅ | `packages/client/src/components/3d/PlateauConnectionLines.tsx` |
+| PlateauRenderer — Orchestrator: Plateaus × Layers × Elements | ✅ | `packages/client/src/components/3d/PlateauRenderer.tsx` |
+| Scene Conditional Rendering — PlateauRenderer statt ArchitectureElements | ✅ | `packages/client/src/components/3d/Scene.tsx` |
+
+#### Sprint 3 — UI Panel + Navigation + Guards ✅
+
+| Komponente | Status | Datei |
+|---|---|---|
+| PlateauBar — Bottom Navigation mit Tabs, Prev/Next/Home, Full/Changed Toggle | ✅ | `packages/client/src/components/ui/PlateauBar.tsx` |
+| PlateauHUD — Top-Right Metrics Overlay (Cost, Risk, Fatigue, Compliance) | ✅ | `packages/client/src/components/ui/PlateauHUD.tsx` |
+| RoadmapPanel Toggle — "Plateau View" Button, ViewMode Guard, Disabled-Tooltip | ✅ | `packages/client/src/components/analytics/RoadmapPanel.tsx` |
+| ViewModeCamera — Plateau Keyboard Navigation (←/→, 1-9, Home) | ✅ | `packages/client/src/components/3d/ViewModeCamera.tsx` |
+| X-Ray Mutual Exclusion — Lazy import() für Cross-Store Deaktivierung | ✅ | `packages/client/src/stores/xrayStore.ts` |
+| ViewMode Guard — Auto-Deaktivierung bei Wechsel weg von 3D | ✅ | `packages/client/src/components/3d/Scene.tsx` |
+
+#### Tests
+
+| Suite | Tests | Status |
+|---|---|---|
+| plateauComputation.test.ts | 19 | ✅ alle grün |
+| roadmapStore.test.ts | 14 | ✅ alle grün |
+| TEST_TPCV.md (manuelle Checkliste) | 47 | ⏳ QA ausstehend |
+| **Gesamt automatisiert** | **33** | ✅ |
+
+#### Bekannte Issues
+
+| Issue | Beschreibung | Prio |
+|---|---|---|
+| 403 Insufficient Permissions | `viewer`-Rolle fehlt `ANALYTICS_SIMULATE` Permission → Roadmap-Generierung blockiert | Must-Fix |
+| viewer-Rolle inkonsistent | `viewer` darf Elemente erstellen/löschen aber keine Roadmaps generieren | Should-Fix |
+| 401 auf projects-Endpoint | Intermittierende Auth-Fehler (möglicherweise Token-Refresh-Timing) | Investigate |
+
+#### Neue Dateien (8)
+1. `packages/client/src/utils/plateauComputation.ts` — Pure Computation Function + Memoization
+2. `packages/client/src/utils/plateauComputation.test.ts` — 19 Unit Tests
+3. `packages/client/src/stores/roadmapStore.test.ts` — 14 Unit Tests
+4. `packages/client/src/components/3d/PlateauElement.tsx` — Element mit Status-Coloring + Change-Glow
+5. `packages/client/src/components/3d/PlateauRenderer.tsx` — Orchestrator: Plateaus × Layers × Elements
+6. `packages/client/src/components/3d/PlateauConnectionLines.tsx` — Intra + Cross-Plateau Lines
+7. `packages/client/src/components/ui/PlateauBar.tsx` — Bottom Navigation Bar
+8. `packages/client/src/components/ui/PlateauHUD.tsx` — Top-Right Metrics Overlay
+
+#### Modifizierte Dateien (7)
+1. `packages/shared/src/types/roadmap.types.ts` — PlateauSnapshot, PlateauElementState Types
+2. `packages/client/src/stores/roadmapStore.ts` — Plateau State + Actions + X-Ray Guard
+3. `packages/client/src/stores/xrayStore.ts` — Mutual Exclusion mit Plateau
+4. `packages/client/src/components/3d/Scene.tsx` — Conditional PlateauRenderer + Bar/HUD
+5. `packages/client/src/components/analytics/RoadmapPanel.tsx` — Toggle Button
+6. `packages/client/src/components/3d/ViewModeCamera.tsx` — Camera + Keyboard Navigation
+7. `packages/client/vite.config.ts` — Vitest Setup
 
 ---
 
@@ -1370,6 +1449,164 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 
 ---
 
+## 18. Transformation Roadmap Generator
+
+### Beschreibung
+AI-gestützte Migrationsplanung mit 3-Layer-Kostenmodell (Infrastructure, License, Personnel), Kahn-Sort-Sequenzierung, Monte Carlo P10/P50/P90 und interaktiver TOGAF Gap Analysis.
+
+### Status: ✅ Implementiert & Verifiziert (90/90 Tests)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| Roadmap Types (Strategy, Wave, CostConfidence, MigrationCandidate) | ✅ | `packages/shared/src/types/roadmap.types.ts` |
+| Roadmap Service (Kahn-Sort, Monte Carlo, 3-Layer Cost) | ✅ | `packages/server/src/services/roadmap.service.ts` |
+| Roadmap Routes (CRUD, Generate, PDF Download) | ✅ | `packages/server/src/routes/roadmap.routes.ts` |
+| Roadmap Store (Zustand) | ✅ | `packages/client/src/stores/roadmapStore.ts` |
+| RoadmapPanel UI (Config, Waves, Timeline, Metrics) | ✅ | `packages/client/src/components/analytics/RoadmapPanel.tsx` |
+| RoadmapTimeline (Gantt-Style Visualisierung) | ✅ | `packages/client/src/components/analytics/RoadmapTimeline.tsx` |
+| WaveCard (Elemente pro Wave, Klick→flyToElement) | ✅ | `packages/client/src/components/analytics/WaveCard.tsx` |
+| MigrationCandidates (TOGAF Gap-Analysis Pre-Step) | ✅ | `packages/client/src/components/analytics/MigrationCandidates.tsx` |
+
+**REQ-Abdeckung:** REQ-F12-01 (Kahn-Sort + Monte Carlo) ✅, REQ-F12-02 (Gap-Analysis Pre-Step) ✅
+
+---
+
+## 19. CSV Import & ArchiMate 3.2 Self-Architecture
+
+### Beschreibung
+CSV-Import für Architektur-Elemente und -Connections mit vollständiger ArchiMate 3.2 Abdeckung. TheArchitect modelliert sich selbst als Referenz-Architektur (108 Elemente, 131 Connections über alle 8 TOGAF-Layer).
+
+### Status: ✅ Implementiert
+
+| Komponente | Status | Datei |
+|---|---|---|
+| CSV Import Dialog (Elements + Connections, Drag&Drop, Preview) | ✅ | `packages/client/src/components/ui/CSVImportDialog.tsx` |
+| CSV Parser (Name, Type, Layer, Domain, Status, Risk, Maturity) | ✅ | Client-seitig |
+| ArchiMate 3.2 Type System (55 Element-Typen, alle Aspekte) | ✅ | `packages/shared/src/types/architecture.types.ts` |
+| TOGAF Constants erweitert (8 Layer, Y-Positionen, Farben) | ✅ | `packages/shared/src/constants/togaf.constants.ts` |
+| Self-Architecture CSV (108 Elements) | ✅ | `packages/client/public/thearchitect-self-architecture.csv` |
+| Self-Architecture Connections CSV (131 Connections) | ✅ | `packages/client/public/thearchitect-self-connections.csv` |
+
+**REQ-Abdeckung:** REQ-F14-01 (CSV-Import) — In Review
+
+---
+
+## 20. View Mode Buttons (3D / 2D / Layer)
+
+### Beschreibung
+Die drei View-Mode-Buttons in der Toolbar waren optisch prominent, aber funktionslos. Implementierung: Ein R3F-Canvas mit drei Kamera/Layout-Konfigurationen — 3D Perspective (bestehend), 2D Top-Down (Orthographic, Swim Lanes), Layer View (Single-Layer-Fokus mit Navigation).
+
+### Status: ✅ Implementiert (nicht committed)
+
+#### Architekturentscheidung
+**Ein Canvas, drei Konfigurationen.** Kamera-Typ, Element-Layout, Licht und Stil ändern sich pro Modus. Alle Interaktionen (Selection, Drag, Context Menu, Property Panel) bleiben erhalten.
+
+#### uiStore Erweiterung
+
+| Komponente | Status | Datei |
+|---|---|---|
+| `focusedLayer: ArchitectureLayer` State | ✅ | `packages/client/src/stores/uiStore.ts` |
+| `setFocusedLayer()` Action | ✅ | `packages/client/src/stores/uiStore.ts` |
+| `ViewMode` Type Export | ✅ | `packages/client/src/stores/uiStore.ts` |
+
+#### Neue Dateien (3)
+
+| Komponente | Status | Datei |
+|---|---|---|
+| **ViewModeCamera** — Perspective/Ortho Switching, Fly-to-Logik, Mode-aware Navigation | ✅ | `packages/client/src/components/3d/ViewModeCamera.tsx` |
+| **useViewPositions** Hook — Layout-Engine (3D=identity, 2D=swim lanes, Layer=single focus) | ✅ | `packages/client/src/hooks/useViewPositions.ts` |
+| **LayerNavigator** — Floating Panel mit 8 TOGAF-Layer, Element-Count-Badges | ✅ | `packages/client/src/components/ui/LayerNavigator.tsx` |
+
+#### Kamera-Modi
+
+| Modus | Kamera | Position | Controls |
+|-------|--------|----------|----------|
+| 3D | Perspective (fov 60) | [20, 15, 20] | OrbitControls (volle Rotation) |
+| 2D | Orthographic | [0, 80, 0] lookAt [0,0,0] | Pan+Zoom only, kein Orbit |
+| Layer | Orthographic | [0, 40, 0] lookAt [0,0,0] | Pan+Zoom, höherer Zoom |
+
+#### Modifizierte Dateien (10)
+
+| Komponente | Änderung | Datei |
+|---|---|---|
+| CameraControls | Re-export von ViewModeCamera (Backwards-Compat) | `components/3d/CameraControls.tsx` |
+| Scene | ViewModeCamera statt CameraControlsWrapper, Conditional Rendering | `components/3d/Scene.tsx` |
+| NodeObject3D | viewPosition Prop, 2D Flat Cards, Always-visible Labels | `components/3d/NodeObject3D.tsx` |
+| ArchitectureElements | useViewPositions Hook, Visibility-Filter | `components/3d/ArchitectureElements.tsx` |
+| ConnectionLines | View-Positionen, Flat Curves in 2D, Intra-Layer-Only in Layer | `components/3d/ConnectionLines.tsx` |
+| LayerPlane | Swim-Lane-Bänder (2D), Enlarged Single-Plane (Layer) | `components/3d/LayerPlane.tsx` |
+| TransformationXRay | Scale-Axis-Labels pro Layer | `components/3d/TransformationXRay.tsx` |
+| Toolbar | X-Ray Guard, Ctrl+1/2/3 Shortcuts, View-Mode Handling | `components/ui/Toolbar.tsx` |
+| Sidebar | flyToElement mit elementId für View-Position-Berechnung | `components/ui/Sidebar.tsx` |
+| RoadmapPanel | flyToElement mit elementId | `components/analytics/RoadmapPanel.tsx` |
+
+#### Besondere Features
+- **Fly-to-Element** mode-aware: berechnet View-Positionen in 2D/Layer via `computeViewPositions()`
+- **2D Swim Lanes**: Layer-Index × -8 Z-Spacing, Element Y=0.1
+- **Layer View**: Nur Elemente des fokussierten Layers sichtbar, LayerNavigator mit Up/Down Navigation
+- **X-Ray Guard**: X-Ray nur in 3D — auto-switch bei Aktivierung aus 2D/Layer
+- **Smooth Transitions**: Camera lerp mit easeInOutCubic beim Moduswechsel
+
+**REQ-Abdeckung:** REQ-F15-01 (3 View-Modi im selben Canvas) — In Review
+
+---
+
+## 21. RVTM Skill & Linear-Integration
+
+### Beschreibung
+Requirements Verification Traceability Matrix (RVTM) als Superpowers-Skill. Automatisch in writing-plans und executing-plans integriert. Zusätzlich: Linear API-Anbindung zum Lesen der Requirements aus dem TheArchitect-Projekt.
+
+### Status: ✅ Implementiert
+
+#### Superpowers Skills
+
+| Komponente | Status | Datei |
+|---|---|---|
+| RVTM Skill (Matrix-Format, Status-Definitionen, Extraction-Heuristik) | ✅ | `.claude/skills/rvtm-traceability/SKILL.md` |
+| writing-plans erweitert (RVTM-Generierung nach Plan) | ✅ | `.claude/skills/writing-plans/SKILL.md` |
+| executing-plans erweitert (RVTM-Update nach jedem Task) | ✅ | `.claude/skills/executing-plans/SKILL.md` |
+
+#### Linear-Integration
+
+| Komponente | Status | Beschreibung |
+|---|---|---|
+| Linear API Key in `.env` | ✅ | `LINEAR_API_KEY` |
+| GraphQL-Zugriff auf Team THE | ✅ | Team ID: `404e1657-492d-464b-9938-895025058d94` |
+| 20 Features (F01–F20) als Parent-Issues | ✅ | THE-5 bis THE-24 |
+| 35 Requirements (REQ-F01-01 bis REQ-F20-01) als Sub-Issues | ✅ | THE-25 bis THE-59 |
+
+#### RVTM mit Scoring-Matrix
+
+| Komponente | Status | Datei |
+|---|---|---|
+| RVTM Markdown (35 REQs, Priority Score, Feature Coverage) | ✅ | `docs/superpowers/rvtm/2026-03-22-thearchitect-rvtm.md` |
+| RVTM CSV (8 Bewertungskriterien, alle Scores) | ✅ | `docs/superpowers/rvtm/2026-03-22-thearchitect-rvtm.csv` |
+
+#### Scoring-Modell (8 × 12,5% = 100%)
+
+| Kriterium | Gewicht |
+|-----------|---------|
+| Business Value | 12,5% |
+| Business Risk | 12,5% |
+| Implementation Challenges | 12,5% |
+| Chance of Success | 12,5% |
+| Compliance | 12,5% |
+| Relationship to Requirements | 12,5% |
+| Urgency | 12,5% |
+| Status | 12,5% |
+
+**Ø Priority Score: 74,2 | Max: 88,6 (REQ-F02-01, REQ-F02-02, REQ-F11-01, REQ-F11-02)**
+
+#### Coverage Summary (Stand 2026-03-22)
+
+| Status | Anzahl | Prozent |
+|--------|--------|---------|
+| Done | 25 | 71% |
+| In Review | 4 | 11% |
+| Backlog | 5 | 14% |
+
+---
+
 ## Bekannte offene Punkte
 
 1. **Workspace-Persistenz testen** — Fix implementiert, aber noch nicht live verifiziert.
@@ -1385,6 +1622,8 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 11. ~~**UI/UX Overhaul**~~ — ✅ Toasts, Error Boundary, Skeletons, Modal-Animationen, Confirmations, a11y.
 12. ~~**Google Login**~~ — ✅ Umgestellt auf Google Identity Services (Pop-up statt Redirect, keine Callback-URLs mehr nötig).
 13. **Google Consent Screen App-Name** — Noch "N8N_Server", sollte auf "TheArchitect" geändert werden (Google Cloud Console → Branding).
+14. **View Mode Buttons** — Implementiert aber noch nicht committed. Build-Verifizierung ausstehend.
+15. **RVTM Scoring-Matrix** — Bidirektionale Synchronisation Linear ↔ Google Sheets noch manuell.
 
 ### MiroFish — Geplante Phasen
 
@@ -1396,17 +1635,31 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 14. ~~**Phase 3: PDF-Export**~~ — ✅ Implementiert (siehe Abschnitt 11).
 15. **Phase 3: Monte Carlo Integration** — Simulation-Ergebnisse als verhaltensbasierte Risk Factors in `runMonteCarloSimulation()`.
 
+### Requirements-Tracking
+
+- **RVTM:** `docs/superpowers/rvtm/2026-03-22-thearchitect-rvtm.md` (35 REQs, 71% Done)
+- **Linear:** Projekt THE, 20 Features (F01–F20), 35 Requirements als Sub-Issues
+- **Scoring:** 8-Kriterien-Matrix (à 12,5% Gewicht), Ø Score 74,2, Max 88,6
+- **Nächste Priorität (Backlog):** REQ-F18-01 Sparx EA/Jira/ServiceNow (Score 82,9)
+
 ### Nächste High-Impact Features (Roadmap)
 
-| # | Feature | Impact | Effort | Status |
-|---|---------|--------|--------|--------|
-| 1 | ~~**AI Architecture Advisor**~~ | ★★★★★ | Medium | ✅ Implementiert |
-| 2 | **Transformation Roadmap Generator** — AI-gestützte Migrationsplanung aus Graph-Daten | ★★★★★ | Medium-High | 💡 Konzept |
-| 3 | **Interactive Dependency Explorer** — Neo4j Graph als 2D Force-Directed Visualization | ★★★★☆ | Low-Medium | 💡 Konzept |
-| 4 | **Portfolio Dashboard** — Multi-Projekt KPI Tracking mit Zeitreihen-Trends | ★★★★☆ | Medium | 💡 Konzept |
-| 5 | ~~**MiroFish Phase 3**~~ — Szenario-Vergleich + Custom Persona Editor | ★★★★☆ | Low-Medium | ✅ Implementiert |
+| # | Feature | Impact | Effort | Status | REQ |
+|---|---------|--------|--------|--------|-----|
+| 1 | ~~**AI Architecture Advisor**~~ | ★★★★★ | Medium | ✅ Done | REQ-F11-01/02 |
+| 2 | ~~**Transformation Roadmap Generator**~~ | ★★★★★ | Medium-High | ✅ Done | REQ-F12-01/02 |
+| 3 | ~~**MiroFish Phase 3**~~ — Persona Editor + Run-Vergleich | ★★★★☆ | Low-Medium | ✅ Done | REQ-F10-01/02 |
+| 4 | ~~**CSV Import & ArchiMate 3.2**~~ | ★★★★☆ | Medium | ✅ In Review | REQ-F14-01 |
+| 5 | ~~**View Mode Buttons (3D/2D/Layer)**~~ | ★★★★☆ | Medium | ✅ In Review | REQ-F15-01 |
+| 6 | ~~**Stochastic Engine (Kolmogorov)**~~ | ★★★★☆ | High | ✅ In Review | REQ-F13-01/02 |
+| 7 | **Sparx EA / Jira / ServiceNow Integration** | ★★★★★ | High | 📋 Backlog | REQ-F18-01 |
+| 8 | **UI & Usability (Task-Completion ≥85%)** | ★★★★☆ | Medium | 📋 Backlog | REQ-F16-01 |
+| 9 | **LOD-System (Aggregation ab ≥50 Elemente)** | ★★★☆☆ | Medium | 📋 Backlog | REQ-F19-01 |
+| 10 | **Openclaw/Nemoclaw Integration** | ★★☆☆☆ | Medium | 📋 Backlog | REQ-F20-01 |
+| 11 | **Application Logo Badges** | ★★☆☆☆ | Low | 📋 Backlog | REQ-F17-01 |
 
-**Detaillierte Anforderungsanalyse:** `.claude/plans/majestic-percolating-fiddle.md`
+**RVTM:** `docs/superpowers/rvtm/2026-03-22-thearchitect-rvtm.md`
+**Scoring-Matrix:** Google Sheets (Owner: Matze Ganzmann)
 
 ---
 
@@ -1431,5 +1684,6 @@ Proaktiver Advisor, der bestehende Analytics (Risk, Compliance, Cost, Graph) zu 
 ## Git-Status
 
 **Branch:** `master`
-**Letzter Commit:** `2d9810d` — Add AI Architecture Advisor: proactive health scoring and insight detection
-**Remote:** `origin/master` (up to date)
+**Letzter Commit:** `2040309` — Expand self-architecture CSV to full ArchiMate 3.2 coverage (108 elements, 131 connections)
+**Uncommitted:** View Mode Buttons (3D/2D/Layer), RVTM Skill, Linear-Integration, X-Ray Scale Labels
+**Remote:** `origin/master`

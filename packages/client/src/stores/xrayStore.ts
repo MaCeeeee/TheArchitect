@@ -30,21 +30,77 @@ const BASE_COSTS: Record<string, number> = {
   application_component: 20000,
   application_service: 15000,
   service: 15000,
+  application_collaboration: 15000,
+  application_interface: 12000,
+  application_function: 18000,
+  application_interaction: 10000,
+  application_process: 15000,
+  application_event: 5000,
+  data_object: 8000,
   technology_component: 30000,
   infrastructure: 80000,
   platform_service: 40000,
+  node: 60000,
+  device: 50000,
+  system_software: 25000,
+  artifact: 5000,
+  communication_network: 45000,
+  path: 10000,
   data_entity: 10000,
   data_model: 8000,
   business_capability: 5000,
   process: 12000,
+  business_service: 10000,
+  business_actor: 0,
+  business_role: 0,
+  business_function: 12000,
+  business_event: 2000,
+  business_object: 3000,
+  business_collaboration: 8000,
+  business_interaction: 5000,
+  business_interface: 5000,
+  contract: 3000,
+  representation: 2000,
+  product: 15000,
   value_stream: 8000,
+  resource: 20000,
+  course_of_action: 5000,
+  // Motivation (no direct cost)
+  stakeholder: 0,
+  driver: 0,
+  assessment: 0,
+  goal: 0,
+  outcome: 0,
+  principle: 0,
+  requirement: 0,
+  constraint: 0,
+  meaning: 0,
+  am_value: 0,
+  // Implementation & Migration
+  work_package: 50000,
+  deliverable: 20000,
+  implementation_event: 5000,
+  plateau: 0,
+  gap: 10000,
+  // Physical
+  equipment: 60000,
+  facility: 200000,
+  distribution_network: 80000,
+  material: 15000,
 };
+
+export interface XRayPosition {
+  x: number;
+  y: number;
+  z: number;
+}
 
 interface XRayState {
   isActive: boolean;
   subView: XRaySubView;
   metrics: XRayMetrics;
   elementData: Map<string, XRayElementData>;
+  xrayPositions: Map<string, XRayPosition>;
   criticalPath: string[];
   aiNarrative: string;
   isLoadingNarrative: boolean;
@@ -52,6 +108,7 @@ interface XRayState {
   toggleXRay: () => void;
   setSubView: (view: XRaySubView) => void;
   recompute: () => void;
+  computePositions: (view: XRaySubView) => void;
   setAINarrative: (text: string) => void;
   setLoadingNarrative: (loading: boolean) => void;
 }
@@ -149,6 +206,7 @@ export const useXRayStore = create<XRayState>((set, get) => ({
   subView: 'risk',
   metrics: { totalRiskExposure: 0, transformationProgress: 0, timeToTarget: 0, decisionConfidence: 0, totalCost: 0, optimizationTotal: 0, costP10: 0, costP50: 0, costP90: 0 },
   elementData: new Map(),
+  xrayPositions: new Map(),
   criticalPath: [],
   aiNarrative: '',
   isLoadingNarrative: false,
@@ -156,12 +214,25 @@ export const useXRayStore = create<XRayState>((set, get) => ({
   toggleXRay: () => {
     const wasActive = get().isActive;
     if (!wasActive) {
+      // Mutual exclusion: deactivate Plateau View if active
+      // Import lazily to avoid circular dependency at module init
+      import('./roadmapStore').then(({ useRoadmapStore }) => {
+        if (useRoadmapStore.getState().isPlateauViewActive) {
+          useRoadmapStore.getState().deactivatePlateauView();
+        }
+      });
       get().recompute();
     }
     set({ isActive: !wasActive });
   },
 
-  setSubView: (view) => set({ subView: view }),
+  setSubView: (view) => {
+    set({ subView: view });
+    // Recompute positions for the new subview
+    if (get().isActive) {
+      get().computePositions(view);
+    }
+  },
 
   setAINarrative: (text) => set({ aiNarrative: text }),
   setLoadingNarrative: (loading) => set({ isLoadingNarrative: loading }),
@@ -253,5 +324,56 @@ export const useXRayStore = create<XRayState>((set, get) => ({
         costP90,
       },
     });
+
+    // Compute scale-based positions for current subView
+    get().computePositions(get().subView);
+  },
+
+  computePositions: (view: XRaySubView) => {
+    const { elements } = useArchitectureStore.getState();
+    const elementData = get().elementData;
+    if (elements.length === 0 || elementData.size === 0) return;
+
+    const SCALE_WIDTH = 24; // Total X spread: -12 to +12
+    const positions = new Map<string, XRayPosition>();
+
+    // Group elements by layer
+    const byLayer = new Map<string, ArchitectureElement[]>();
+    for (const el of elements) {
+      if (!byLayer.has(el.layer)) byLayer.set(el.layer, []);
+      byLayer.get(el.layer)!.push(el);
+    }
+
+    for (const [, layerElements] of byLayer) {
+      // Sort elements by the metric for this view
+      const sorted = [...layerElements].sort((a, b) => {
+        const aData = elementData.get(a.id);
+        const bData = elementData.get(b.id);
+        if (!aData || !bData) return 0;
+
+        if (view === 'risk') return aData.riskScore - bData.riskScore;
+        if (view === 'cost') return aData.estimatedCost - bData.estimatedCost;
+        if (view === 'timeline') {
+          const statusOrder: Record<string, number> = { current: 0, transitional: 1, target: 2, retired: 3 };
+          return (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
+        }
+        return 0;
+      });
+
+      // Place elements along X axis based on sorted position
+      const count = sorted.length;
+      const rowSize = Math.min(count, Math.ceil(SCALE_WIDTH / 2.5)); // Max elements per row
+      for (let i = 0; i < count; i++) {
+        const el = sorted[i];
+        const col = i % rowSize;
+        const row = Math.floor(i / rowSize);
+        // Spread across X axis: normalized position within the scale
+        const x = count <= 1 ? 0 : (col / (rowSize - 1 || 1)) * SCALE_WIDTH - SCALE_WIDTH / 2;
+        const z = row * 3; // Stack rows in Z if overflow
+        positions.set(el.id, { x, y: el.position3D.y, z });
+      }
+    }
+
+    set({ xrayPositions: positions });
   },
 }));

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   Map, Loader2, AlertTriangle, DollarSign, Clock, TrendingDown,
-  Shield, Download, RefreshCw, ChevronDown, Trash2,
+  Shield, Download, RefreshCw, ChevronDown, Trash2, Layers,
 } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
+import { useUIStore } from '../../stores/uiStore';
 import { roadmapAPI } from '../../services/api';
 import type { RoadmapStrategy } from '@thearchitect/shared';
 import { flyToElement } from '../3d/CameraControls';
@@ -22,6 +23,41 @@ function formatCost(n: number) {
   if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `€${(n / 1_000).toFixed(0)}K`;
   return `€${n}`;
+}
+
+function PlateauViewToggle() {
+  const viewMode = useUIStore((s) => s.viewMode);
+  const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
+  const activatePlateauView = useRoadmapStore((s) => s.activatePlateauView);
+  const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
+  const elements = useArchitectureStore((s) => s.elements);
+  const is3D = viewMode === '3d';
+
+  const handleToggle = () => {
+    if (isPlateauActive) {
+      deactivatePlateauView();
+    } else {
+      activatePlateauView(elements);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleToggle}
+      disabled={!is3D}
+      className={`w-full flex items-center justify-center gap-2 py-2 rounded text-xs font-bold transition ${
+        isPlateauActive
+          ? 'bg-[#00ff41] text-black hover:bg-[#00cc33]'
+          : is3D
+            ? 'bg-[#111111] border border-[#1a2a1a] text-[#7a8a7a] hover:text-white hover:border-[#00ff41]'
+            : 'bg-[#111111] border border-[#1a2a1a] text-[#3a4a3a] cursor-not-allowed'
+      }`}
+      title={!is3D ? 'Switch to 3D view to use Plateau View' : isPlateauActive ? 'Exit Plateau View' : 'Compare architecture across transformation plateaus'}
+    >
+      <Layers size={14} />
+      {isPlateauActive ? 'Exit Plateau View' : 'Plateau View'}
+    </button>
+  );
 }
 
 export default function RoadmapPanel() {
@@ -81,7 +117,7 @@ export default function RoadmapPanel() {
   const handleElementClick = (elementId: string) => {
     const el = elements.find((e) => e.id === elementId);
     if (el?.position3D) {
-      flyToElement(el.position3D);
+      flyToElement(el.position3D, el.id);
     }
   };
 
@@ -293,6 +329,11 @@ export default function RoadmapPanel() {
                 selectedWave={selectedWave}
                 onSelectWave={selectWave}
               />
+            )}
+
+            {/* Plateau View Toggle */}
+            {activeRoadmap.status === 'completed' && activeRoadmap.waves.length > 0 && (
+              <PlateauViewToggle />
             )}
 
             {/* Wave Cards */}

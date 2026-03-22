@@ -3,6 +3,11 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
+import type { ViewMode } from '../../stores/uiStore';
+import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
+
+const LAYER_INDEX = new Map<string, number>(ARCHITECTURE_LAYERS.map((l, i) => [l.id, i]));
+const SWIM_LANE_SPACING = 8;
 
 interface LayerPlaneProps {
   layerId: string;
@@ -11,6 +16,7 @@ interface LayerPlaneProps {
   color: string;
   offsetX?: number;
   workspaceName?: string;
+  viewMode?: ViewMode;
 }
 
 function computeLayerRiskLevel(
@@ -32,7 +38,9 @@ function computeLayerRiskLevel(
   return { avgRisk: totalRisk / layerElements.length, maxRisk, count: layerElements.length };
 }
 
-export default function LayerPlane({ layerId, label, yPosition, color, offsetX = 0, workspaceName }: LayerPlaneProps) {
+export default function LayerPlane({ layerId, label, yPosition, color, offsetX = 0, workspaceName, viewMode = '3d' }: LayerPlaneProps) {
+  const is2D = viewMode === '2d-topdown';
+  const isLayer = viewMode === 'layer';
   const meshRef = useRef<THREE.Mesh>(null);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const xraySubView = useXRayStore((s) => s.subView);
@@ -59,30 +67,46 @@ export default function LayerPlane({ layerId, label, yPosition, color, offsetX =
     return 0.03 + (riskInfo.avgRisk / 10) * 0.12;
   }, [riskInfo]);
 
+  // Position and size based on view mode
+  const layerIdx = LAYER_INDEX.get(layerId) ?? 0;
+  const groupPosition: [number, number, number] = is2D
+    ? [offsetX, 0, layerIdx * -SWIM_LANE_SPACING]
+    : isLayer
+      ? [offsetX, 0, 0]
+      : [offsetX, yPosition, 0];
+
+  const planeWidth = is2D ? 60 : isLayer ? 60 : 30;
+  const planeDepth = is2D ? 6 : isLayer ? 60 : 30;
+  const labelPos: [number, number, number] = is2D
+    ? [-30, 0.1, -2.5]
+    : isLayer
+      ? [-30, 0.1, -32]
+      : [-16, 0.1, -16];
+
   return (
-    <group position={[offsetX, yPosition, 0]}>
+    <group position={groupPosition}>
       <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[30, 30]} />
+        <planeGeometry args={[planeWidth, planeDepth]} />
         <meshStandardMaterial
           color={planeColor}
           transparent
-          opacity={planeOpacity}
+          opacity={is2D ? 0.08 + (layerIdx % 2) * 0.04 : isLayer ? 0.06 : planeOpacity}
           side={THREE.DoubleSide}
         />
       </mesh>
 
       {/* Layer border - brighter in X-Ray for high-risk layers */}
       <lineSegments rotation={[-Math.PI / 2, 0, 0]}>
-        <edgesGeometry args={[new THREE.PlaneGeometry(30, 30)]} />
+        <edgesGeometry args={[new THREE.PlaneGeometry(planeWidth, planeDepth)]} />
         <lineBasicMaterial
           color={planeColor}
           transparent
-          opacity={riskInfo && riskInfo.avgRisk >= 5 ? 0.6 : 0.3}
+          opacity={is2D ? 0.4 : (riskInfo && riskInfo.avgRisk >= 5 ? 0.6 : 0.3)}
         />
       </lineSegments>
 
       {/* Workspace name label (shown on top layer only) */}
-      {workspaceName && (
+      {workspaceName && !is2D && !isLayer && (
         <Html
           position={[0, 0.3, -18]}
           center
@@ -104,18 +128,18 @@ export default function LayerPlane({ layerId, label, yPosition, color, offsetX =
 
       {/* Layer label */}
       <Html
-        position={[-16, 0.1, -16]}
+        position={labelPos}
         center={false}
         style={{
           color: planeColor,
-          fontSize: '12px',
-          fontWeight: 600,
+          fontSize: isLayer ? '16px' : is2D ? '13px' : '12px',
+          fontWeight: isLayer ? 700 : 600,
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
           userSelect: 'none',
           pointerEvents: 'none',
-          opacity: 0.7,
+          opacity: is2D ? 0.9 : 0.7,
         }}
       >
         {label}

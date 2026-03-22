@@ -1,10 +1,12 @@
 import { create } from 'zustand';
+import type { ArchitectureLayer } from '@thearchitect/shared';
 
-type ViewMode = '3d' | '2d-topdown' | 'layer';
+export type ViewMode = '3d' | '2d-topdown' | 'layer';
 type SidebarPanel = 'explorer' | 'properties' | 'togaf' | 'analytics' | 'governance' | 'marketplace' | 'copilot' | 'settings' | 'none';
 
 interface UIState {
   viewMode: ViewMode;
+  focusedLayer: ArchitectureLayer;
   sidebarPanel: SidebarPanel;
   isSidebarOpen: boolean;
   isPropertyPanelOpen: boolean;
@@ -13,6 +15,7 @@ interface UIState {
   showMinimap: boolean;
 
   setViewMode: (mode: ViewMode) => void;
+  setFocusedLayer: (layer: ArchitectureLayer) => void;
   setSidebarPanel: (panel: SidebarPanel) => void;
   toggleSidebar: () => void;
   togglePropertyPanel: () => void;
@@ -23,6 +26,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   viewMode: '3d',
+  focusedLayer: 'business',
   sidebarPanel: 'explorer',
   isSidebarOpen: true,
   isPropertyPanelOpen: true,
@@ -31,6 +35,7 @@ export const useUIStore = create<UIState>((set) => ({
   showMinimap: true,
 
   setViewMode: (mode) => set({ viewMode: mode }),
+  setFocusedLayer: (layer) => set({ focusedLayer: layer }),
   setSidebarPanel: (panel) => set({ sidebarPanel: panel }),
   toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),
   togglePropertyPanel: () => set((s) => ({ isPropertyPanelOpen: !s.isPropertyPanelOpen })),

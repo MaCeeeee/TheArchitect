@@ -109,7 +109,7 @@ export default function Sidebar() {
   const handleElementClick = (id: string) => {
     selectElement(id);
     const el = elements.find((e) => e.id === id);
-    if (el) flyToElement(el.position3D);
+    if (el) flyToElement(el.position3D, el.id);
   };
 
   return (

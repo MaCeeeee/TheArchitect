@@ -3,6 +3,7 @@ import { Html } from '@react-three/drei';
 import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
+import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
 
@@ -32,15 +33,17 @@ const TYPE_GEOMETRY: Record<string, 'box' | 'sphere' | 'cylinder' | 'cone'> = {
 
 interface NodeObject3DProps {
   element: ArchitectureElement;
+  viewPosition?: { x: number; y: number; z: number };
 }
 
 const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 
-export default function NodeObject3D({ element }: NodeObject3DProps) {
+export default function NodeObject3D({ element, viewPosition }: NodeObject3DProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const viewMode = useUIStore((s) => s.viewMode);
 
   const selectedId = useArchitectureStore((s) => s.selectedElementId);
   const selectedIds = useArchitectureStore((s) => s.selectedElementIds);
@@ -59,6 +62,7 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
   const isXRayActive = useXRayStore((s) => s.isActive);
   const xraySubView = useXRayStore((s) => s.subView);
   const xrayElementData = useXRayStore((s) => s.elementData);
+  const xrayPositions = useXRayStore((s) => s.xrayPositions);
 
   const xrayData = useMemo(() => {
     if (!isXRayActive) return null;
@@ -88,19 +92,42 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
       if (cost >= 15000) return '#3b82f6';
       return '#22c55e';
     }
+    if (xraySubView === 'timeline') {
+      const statusColors: Record<string, string> = {
+        current: '#3b82f6',
+        transitional: '#f97316',
+        target: '#22c55e',
+        retired: '#6b7280',
+      };
+      return statusColors[element.status] || '#4a5a4a';
+    }
     if (xraySubView === 'simulation') {
       if (simCombinedDelta < -0.5) return '#22c55e';
       if (simCombinedDelta > 0.5) return '#ef4444';
       return '#4a5a4a';
     }
     return baseColor;
-  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta]);
+  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta, element.status]);
 
-  // X-Ray vertical displacement (risk view only)
-  const xrayYOffset = useMemo(() => {
-    if (!isXRayActive || !xrayData || xraySubView !== 'risk') return 0;
-    return -(xrayData.riskScore / 10) * 2;
-  }, [isXRayActive, xrayData, xraySubView]);
+  // X-Ray scale positioning: use precomputed positions when active
+  const xrayPosition = useMemo(() => {
+    if (!isXRayActive) return null;
+    const pos = xrayPositions.get(element.id);
+    if (!pos) return null;
+    // Only apply scale positioning for risk, cost, timeline views
+    if (xraySubView === 'simulation') return null;
+    return pos;
+  }, [isXRayActive, xrayPositions, element.id, xraySubView]);
+
+  const is2DMode = viewMode !== '3d';
+  const isLayerMode = viewMode === 'layer';
+
+  // Final position: X-Ray override > View mode position > Default 3D position
+  const finalPosition = useMemo((): [number, number, number] => {
+    if (xrayPosition) return [xrayPosition.x, xrayPosition.y, xrayPosition.z];
+    if (viewPosition) return [viewPosition.x, viewPosition.y, viewPosition.z];
+    return [element.position3D.x, element.position3D.y, element.position3D.z];
+  }, [xrayPosition, viewPosition, element.position3D]);
 
   const { raycaster, camera, gl } = useThree();
 
@@ -164,9 +191,11 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
     setDragging(true);
     setDraggingStore(true);
     pushHistory();
-    _dragPlane.set(new THREE.Vector3(0, 1, 0), -element.position3D.y);
+    // In 2D/Layer modes, drag on Y=0.1 plane; in 3D, drag on element's Y layer
+    const dragY = is2DMode ? 0.1 : element.position3D.y;
+    _dragPlane.set(new THREE.Vector3(0, 1, 0), -dragY);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  }, [element.position3D.y, pushHistory, setDraggingStore]);
+  }, [element.position3D.y, is2DMode, pushHistory, setDraggingStore]);
 
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (!dragging) return;
@@ -198,6 +227,12 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
   }, [dragging, setDraggingStore]);
 
   const renderGeometry = () => {
+    if (is2DMode) {
+      // Flat card geometry for 2D/Layer views
+      const w = isLayerMode ? 3 : 2;
+      const h = isLayerMode ? 2 : 1.2;
+      return <boxGeometry args={[w, 0.08, h]} />;
+    }
     switch (geometry) {
       case 'sphere':
         return <sphereGeometry args={[0.6, 32, 32]} />;
@@ -247,7 +282,7 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
   }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta]);
 
   return (
-    <group position={[element.position3D.x, element.position3D.y + xrayYOffset, element.position3D.z]}>
+    <group position={finalPosition}>
       <mesh
         ref={meshRef}
         onClick={handleClick}
@@ -287,8 +322,8 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
         </mesh>
       )}
 
-      {/* Risk glow for high/critical */}
-      {(element.riskLevel === 'high' || element.riskLevel === 'critical') && (
+      {/* Risk glow for high/critical (3D only) */}
+      {!is2DMode && (element.riskLevel === 'high' || element.riskLevel === 'critical') && (
         <pointLight
           color={element.riskLevel === 'critical' ? '#ef4444' : '#f97316'}
           intensity={0.5}
@@ -296,27 +331,30 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
         />
       )}
 
-      {/* Label - always visible for notable elements in X-Ray mode */}
-      {(hovered || isSelected || (isXRayActive && xrayData && (
+      {/* Label - always visible in 2D/Layer modes and for notable elements in X-Ray mode */}
+      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData && (
         (xraySubView === 'risk' && xrayData.riskScore >= 7) ||
         (xraySubView === 'cost' && (xrayData.estimatedCost >= 40000 || xrayData.optimizationPotential > 0))
       ))) && (
         <Html
-          position={[0, 1.2, 0]}
+          position={is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center
           style={{
-            background: 'rgba(15, 23, 42, 0.9)',
-            border: `1px solid ${color}`,
+            background: is2DMode ? 'transparent' : 'rgba(15, 23, 42, 0.9)',
+            border: is2DMode ? 'none' : `1px solid ${color}`,
             borderRadius: '6px',
-            padding: '4px 10px',
+            padding: is2DMode ? '2px 4px' : '4px 10px',
             color: '#e0e0e0',
-            fontSize: '11px',
+            fontSize: is2DMode ? '10px' : '11px',
             fontWeight: 500,
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
+            textShadow: is2DMode ? '0 0 4px rgba(0,0,0,0.9)' : 'none',
           }}
         >
-          <div>{element.name}</div>
+          <div style={{ maxWidth: isLayerMode ? '120px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {element.name}
+          </div>
           {isXRayActive && xrayData && xraySubView === 'risk' ? (
             <div style={{ fontSize: '9px', marginTop: '2px', display: 'flex', gap: 8 }}>
               <span style={{ color }}>Risk: {xrayData.riskScore}</span>
@@ -334,6 +372,10 @@ export default function NodeObject3D({ element }: NodeObject3DProps) {
                   ↓ €{xrayData.optimizationPotential >= 1000 ? `${(xrayData.optimizationPotential / 1000).toFixed(0)}K` : xrayData.optimizationPotential} savings
                 </span>
               )}
+            </div>
+          ) : isLayerMode ? (
+            <div style={{ fontSize: '8px', color: '#7a8a7a', marginTop: '1px' }}>
+              {element.type.replace(/_/g, ' ')} · {element.status}
             </div>
           ) : (
             <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '2px' }}>

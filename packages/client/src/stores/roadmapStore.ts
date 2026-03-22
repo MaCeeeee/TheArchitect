@@ -3,7 +3,9 @@ import { roadmapAPI } from '../services/api';
 import type {
   TransformationRoadmap, RoadmapListItem, RoadmapConfig,
   MigrationCandidate, ElementStatus, CandidatesPreview,
+  PlateauSnapshot, CrossPlateauDependency,
 } from '@thearchitect/shared';
+import { computePlateauSnapshotsMemoized, type PlateauInputElement } from '../utils/plateauComputation';
 
 interface RoadmapState {
   roadmaps: RoadmapListItem[];
@@ -20,6 +22,13 @@ interface RoadmapState {
   candidatesLoaded: boolean;
   dataConfidence: CandidatesPreview['dataConfidence'] | null;
 
+  // Plateau Comparison View (TPCV)
+  plateauSnapshots: PlateauSnapshot[];
+  crossPlateauDeps: CrossPlateauDependency[];
+  isPlateauViewActive: boolean;
+  selectedPlateauIndex: number | null;
+  plateauViewMode: 'full' | 'changed-only';
+
   generate: (projectId: string, config: Partial<RoadmapConfig>) => Promise<void>;
   loadList: (projectId: string) => Promise<void>;
   loadRoadmap: (projectId: string, roadmapId: string) => Promise<void>;
@@ -35,6 +44,13 @@ interface RoadmapState {
   clearCandidates: () => void;
   selectByRisk: (minRisk: 'high' | 'critical') => void;
   resetToAutoDetect: () => void;
+
+  // Plateau actions
+  computePlateaus: (elements: PlateauInputElement[]) => void;
+  activatePlateauView: (elements: PlateauInputElement[]) => void;
+  deactivatePlateauView: () => void;
+  selectPlateau: (index: number | null) => void;
+  setPlateauViewMode: (mode: 'full' | 'changed-only') => void;
 }
 
 export const useRoadmapStore = create<RoadmapState>((set, get) => ({
@@ -49,6 +65,13 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
   isCandidatesLoading: false,
   candidatesLoaded: false,
   dataConfidence: null,
+
+  // Plateau state
+  plateauSnapshots: [],
+  crossPlateauDeps: [],
+  isPlateauViewActive: false,
+  selectedPlateauIndex: null,
+  plateauViewMode: 'full',
 
   generate: async (projectId, config) => {
     const { selectedCandidates } = get();
@@ -114,6 +137,11 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
     isCandidatesLoading: false,
     candidatesLoaded: false,
     dataConfidence: null,
+    plateauSnapshots: [],
+    crossPlateauDeps: [],
+    isPlateauViewActive: false,
+    selectedPlateauIndex: null,
+    plateauViewMode: 'full',
   }),
 
   // ─── Candidate Actions ───
@@ -205,5 +233,54 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
       }
       return { selectedCandidates: next };
     });
+  },
+
+  // ─── Plateau Actions ───
+
+  computePlateaus: (elements) => {
+    const { activeRoadmap } = get();
+    if (!activeRoadmap || !elements.length) {
+      set({ plateauSnapshots: [], crossPlateauDeps: [] });
+      return;
+    }
+    const { snapshots, dependencies } = computePlateauSnapshotsMemoized(elements, activeRoadmap);
+    set({ plateauSnapshots: snapshots, crossPlateauDeps: dependencies });
+  },
+
+  activatePlateauView: (elements) => {
+    const { activeRoadmap } = get();
+    if (!activeRoadmap || activeRoadmap.status !== 'completed' || !activeRoadmap.waves.length) return;
+
+    // Mutual exclusion: deactivate X-Ray if active
+    // Import lazily to avoid circular dependency at module init
+    import('./xrayStore').then(({ useXRayStore }) => {
+      if (useXRayStore.getState().isActive) {
+        useXRayStore.getState().toggleXRay();
+      }
+    });
+
+    // Compute plateau snapshots
+    const { snapshots, dependencies } = computePlateauSnapshotsMemoized(elements, activeRoadmap);
+    set({
+      plateauSnapshots: snapshots,
+      crossPlateauDeps: dependencies,
+      isPlateauViewActive: true,
+      selectedPlateauIndex: 0,
+    });
+  },
+
+  deactivatePlateauView: () => {
+    set({
+      isPlateauViewActive: false,
+      selectedPlateauIndex: null,
+    });
+  },
+
+  selectPlateau: (index) => {
+    set({ selectedPlateauIndex: index });
+  },
+
+  setPlateauViewMode: (mode) => {
+    set({ plateauViewMode: mode });
   },
 }));
