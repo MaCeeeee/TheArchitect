@@ -15,6 +15,12 @@ export interface IStandardMapping extends Document {
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  suggestedNewElement?: {
+    name: string;
+    type: string;
+    layer: string;
+    description: string;
+  };
 }
 
 const standardMappingSchema = new Schema<IStandardMapping>(
@@ -39,6 +45,16 @@ const standardMappingSchema = new Schema<IStandardMapping>(
     },
     confidence: { type: Number, default: 0, min: 0, max: 1 },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    suggestedNewElement: {
+      type: {
+        name: { type: String, required: true },
+        type: { type: String, required: true },
+        layer: { type: String, required: true },
+        description: { type: String, default: '' },
+      },
+      required: false,
+      _id: false,
+    },
   },
   { timestamps: true },
 );
