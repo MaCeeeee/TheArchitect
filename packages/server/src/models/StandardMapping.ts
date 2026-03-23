@@ -46,13 +46,10 @@ const standardMappingSchema = new Schema<IStandardMapping>(
     confidence: { type: Number, default: 0, min: 0, max: 1 },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     suggestedNewElement: {
-      type: {
-        name: { type: String, required: true },
-        type: { type: String, required: true },
-        layer: { type: String, required: true },
-        description: { type: String, default: '' },
-      },
-      required: false,
+      name: { type: String },
+      type: { type: String },
+      layer: { type: String },
+      description: { type: String, default: '' },
       _id: false,
     },
   },
