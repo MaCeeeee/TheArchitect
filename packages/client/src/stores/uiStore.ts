@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { ArchitectureLayer } from '@thearchitect/shared';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
-type SidebarPanel = 'explorer' | 'properties' | 'togaf' | 'analytics' | 'governance' | 'marketplace' | 'copilot' | 'settings' | 'none';
+type SidebarPanel = 'explorer' | 'properties' | 'togaf' | 'analytics' | 'governance' | 'compliance' | 'marketplace' | 'copilot' | 'settings' | 'none';
 
 interface UIState {
   viewMode: ViewMode;

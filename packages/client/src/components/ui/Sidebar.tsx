@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderTree, Search, Plus, ChevronRight, ChevronDown, Eye, EyeOff,
-  Settings, BookOpen, BarChart3, Shield, Store, Sparkles, X,
+  Settings, BookOpen, BarChart3, Shield, Store, Sparkles, X, ShieldCheck,
 } from 'lucide-react';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -13,6 +13,7 @@ import RiskDashboard from '../analytics/RiskDashboard';
 import CostOptimization from '../analytics/CostOptimization';
 import PredictiveAnalytics from '../analytics/PredictiveAnalytics';
 import ComplianceDashboard from '../governance/ComplianceDashboard';
+import { CompliancePortfolioView } from '../governance/CompliancePortfolioView';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
 import AuditTrail from '../governance/AuditTrail';
 import PolicyManager from '../governance/PolicyManager';
@@ -56,6 +57,7 @@ const NAV_ITEMS = [
   { id: 'togaf', icon: BookOpen, label: 'TOGAF' },
   { id: 'analytics', icon: BarChart3, label: 'Analytics' },
   { id: 'governance', icon: Shield, label: 'Governance' },
+  { id: 'compliance', icon: ShieldCheck, label: 'Compliance' },
   { id: 'marketplace', icon: Store, label: 'Marketplace' },
   { id: 'copilot', icon: Sparkles, label: 'AI Copilot' },
   { id: 'settings', icon: Settings, label: 'Settings' },
@@ -221,6 +223,12 @@ export default function Sidebar() {
       {sidebarPanel === 'analytics' && <AnalyticsPanel />}
 
       {sidebarPanel === 'governance' && <GovernancePanel />}
+
+      {sidebarPanel === 'compliance' && (
+        <div className="h-full overflow-y-auto">
+          <CompliancePortfolioView />
+        </div>
+      )}
 
       {sidebarPanel === 'marketplace' && (
         <div className="flex-1 overflow-hidden">

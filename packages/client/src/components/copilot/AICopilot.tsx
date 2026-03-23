@@ -10,6 +10,7 @@ import { useAdvisorStore } from '../../stores/advisorStore';
 import StandardsManager from './StandardsManager';
 import ComplianceMatrix from './ComplianceMatrix';
 import AdvisorPanel from './AdvisorPanel';
+import { CompliancePipelineWizard } from './CompliancePipelineWizard';
 
 // ─── Types ───
 
@@ -19,7 +20,7 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'standards' | 'matrix' | 'advisor';
+type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline';
 
 // ─── Quick Actions ───
 
@@ -311,6 +312,7 @@ export default function AICopilot() {
           { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat', badge: 0 },
           { id: 'standards' as Tab, icon: FileText, label: 'Standards', badge: 0 },
           { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix', badge: 0 },
+          { id: 'pipeline' as Tab, icon: ShieldAlert, label: 'Pipeline', badge: 0 },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -496,6 +498,8 @@ export default function AICopilot() {
           </div>
         </div>
       )}
+
+      {activeTab === 'pipeline' && <CompliancePipelineWizard />}
     </div>
   );
 }
