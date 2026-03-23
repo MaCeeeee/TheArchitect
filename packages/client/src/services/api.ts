@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
+import type { PolicyDraft } from '@thearchitect/shared';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -304,6 +305,8 @@ export const compliancePipelineAPI = {
     api.get(`/projects/${projectId}/standards/portfolio`),
   refreshStats: (projectId: string, standardId: string) =>
     api.post(`/projects/${projectId}/standards/${standardId}/refresh-stats`),
+  approvePolicies: (projectId: string, standardId: string, approved: PolicyDraft[]) =>
+    api.post(`/projects/${projectId}/standards/${standardId}/approve-policies`, { approved }),
 };
 
 // Settings API

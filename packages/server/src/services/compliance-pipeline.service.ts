@@ -2,6 +2,7 @@
 import { CompliancePipelineState, ICompliancePipelineState } from '../models/CompliancePipelineState';
 import { StandardMapping } from '../models/StandardMapping';
 import { Standard } from '../models/Standard';
+import { Policy } from '../models/Policy';
 
 /**
  * Get or create pipeline state for a standard.
@@ -57,9 +58,7 @@ export async function refreshMappingStats(
 }
 
 /**
- * Refresh policy stats. Note: Policy.standardId does not exist yet —
- * it will be added in Feature 2 (AI Policy Generation). Until then,
- * this function returns zero-counts. This is intentional and not a bug.
+ * Refresh policy stats from actual Policy documents linked to this standard.
  */
 export async function refreshPolicyStats(
   projectId: string,
@@ -67,12 +66,18 @@ export async function refreshPolicyStats(
 ): Promise<ICompliancePipelineState> {
   const state = await getOrCreatePipelineState(projectId, standardId);
 
-  // Policy.standardId is added in F2 (REQ-CDTP-008). Until then, stats stay at zero.
+  const approvedCount = await Policy.countDocuments({ projectId, standardId, enabled: true });
+
   state.policyStats = {
-    generated: 0,
-    approved: 0,
+    generated: approvedCount,
+    approved: approvedCount,
     rejected: 0,
   };
+
+  // Advance to policies_generated when policies exist and stage is 'mapped'
+  if (approvedCount > 0 && state.stage === 'mapped') {
+    state.stage = 'policies_generated';
+  }
 
   await state.save();
   return state;

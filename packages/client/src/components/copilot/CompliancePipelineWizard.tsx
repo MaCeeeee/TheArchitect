@@ -116,7 +116,12 @@ export function CompliancePipelineWizard() {
       )}
       {selectedItem && currentStageIndex === 1 && (
         <div className="text-xs text-gray-400 bg-[#111827] border border-[#1e293b] rounded p-2">
-          Next: Generate policies from the mapped standard sections.
+          Next: Go to the <span className="text-[#7c3aed] font-medium">Policies</span> tab to generate policy drafts from the mapped standard.
+        </div>
+      )}
+      {selectedItem && currentStageIndex === 2 && (
+        <div className="text-xs text-gray-400 bg-[#111827] border border-[#1e293b] rounded p-2">
+          Next: Generate a compliance-driven roadmap from gaps and policy violations.
         </div>
       )}
     </div>

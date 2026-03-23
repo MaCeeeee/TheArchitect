@@ -11,6 +11,7 @@ import StandardsManager from './StandardsManager';
 import ComplianceMatrix from './ComplianceMatrix';
 import AdvisorPanel from './AdvisorPanel';
 import { CompliancePipelineWizard } from './CompliancePipelineWizard';
+import { PolicyDraftReview } from '../governance/PolicyDraftReview';
 
 // ─── Types ───
 
@@ -20,7 +21,7 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline';
+type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline' | 'policies';
 
 // ─── Quick Actions ───
 
@@ -313,6 +314,7 @@ export default function AICopilot() {
           { id: 'standards' as Tab, icon: FileText, label: 'Standards', badge: 0 },
           { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix', badge: 0 },
           { id: 'pipeline' as Tab, icon: ShieldAlert, label: 'Pipeline', badge: 0 },
+          { id: 'policies' as Tab, icon: FileText, label: 'Policies', badge: 0 },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -500,6 +502,8 @@ export default function AICopilot() {
       )}
 
       {activeTab === 'pipeline' && <CompliancePipelineWizard />}
+
+      {activeTab === 'policies' && <PolicyDraftReview />}
     </div>
   );
 }

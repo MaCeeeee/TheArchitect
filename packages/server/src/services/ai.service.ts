@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
+import type { PolicyDraft } from '@thearchitect/shared';
 
 // ─── Provider Detection ───
 
@@ -523,6 +524,123 @@ include an entry with:
       try {
         fullResponse = '';
         await streamAnthropic(systemPrompt, [{ role: 'user', content: 'Generate the compliance mapping suggestions as JSON.' }], collectChunk, () => {});
+        await parseAndFinish();
+        return;
+      } catch (fallbackErr) {
+        onError(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)));
+        return;
+      }
+    }
+    onError(err instanceof Error ? err : new Error(String(err)));
+  }
+}
+
+// ─── AI Policy Generation from Standard (REQ-CDTP-006) ───
+
+export async function generatePoliciesFromStandard(
+  projectId: string,
+  standardId: string,
+  onChunk: OnChunk,
+  onDone: (drafts: PolicyDraft[]) => void | Promise<void>,
+  onError: OnError,
+): Promise<void> {
+  const provider = detectProvider();
+  if (provider === 'none') {
+    onError(new Error('No AI API key configured'));
+    return;
+  }
+
+  const architectureContext = await buildProjectContext(projectId);
+  const standard = await Standard.findById(standardId);
+  if (!standard) {
+    onError(new Error('Standard not found'));
+    return;
+  }
+
+  // Build section context with full content for policy extraction
+  let charCount = 0;
+  const maxChars = 12000;
+  const sectionLines: string[] = [];
+  for (const section of standard.sections) {
+    if (charCount >= maxChars) break;
+    const content = section.content.slice(0, Math.min(section.content.length, maxChars - charCount));
+    sectionLines.push(`### §${section.number} ${section.title}\n${content}`);
+    charCount += content.length;
+  }
+
+  const systemPrompt = `You are a compliance policy extraction expert. You analyze standard documents and extract machine-evaluable policy rules for an Enterprise Architecture platform.
+
+The platform evaluates policies against architecture elements with these properties:
+- name, type, layer, status, riskLevel, maturityLevel, description
+- layer values: "strategy", "business", "information", "application", "technology"
+- type values: "business_capability", "process", "value_stream", "business_service", "application", "application_component", "application_service", "data_entity", "data_model", "technology_component", "infrastructure", "platform_service"
+- status values: "current", "target", "planned", "retired", "deprecated"
+- riskLevel values: "low", "medium", "high", "critical"
+- maturityLevel: 1-5
+
+Available operators: equals, not_equals, contains, gt, lt, gte, lte, exists, regex
+
+--- ARCHITECTURE CONTEXT ---
+${architectureContext}
+--- END ARCHITECTURE ---
+
+--- STANDARD: ${standard.name} (${standard.version}) ---
+${sectionLines.join('\n\n')}
+--- END STANDARD ---
+
+## Instructions
+For each standard section that contains a checkable requirement, extract one or more policy rules.
+Each policy should be a concrete, machine-evaluable rule — NOT a vague recommendation.
+
+Good examples:
+- "Technology elements must have maturityLevel >= 3" → field: "maturityLevel", operator: "gte", value: 3
+- "All applications must have a description" → field: "description", operator: "exists", value: true
+- "No elements should be in retired status" → field: "status", operator: "not_equals", value: "retired"
+
+Skip sections that are purely informational with no checkable requirement.
+
+Respond with ONLY a JSON array. No other text. Each entry:
+{"name":"...","description":"...","severity":"error|warning|info","scope":{"domains":[],"elementTypes":[],"layers":[]},"rules":[{"field":"...","operator":"...","value":...,"message":"..."}],"sourceSection":"...","sourceSectionTitle":"...","confidence":0.0-1.0}
+
+Set confidence based on how clearly the standard section maps to a concrete, evaluable rule.
+Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" for MAY/recommendations.`;
+
+  let fullResponse = '';
+
+  const collectChunk = (text: string) => {
+    fullResponse += text;
+    onChunk(text);
+  };
+
+  const parseAndFinish = async () => {
+    try {
+      const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const drafts: PolicyDraft[] = JSON.parse(jsonMatch[0]);
+        await onDone(drafts);
+      } else {
+        await onDone([]);
+      }
+    } catch {
+      console.warn('[AI] Failed to parse policy drafts, returning empty');
+      await onDone([]);
+    }
+  };
+
+  const userMessage = 'Extract policy rules from the standard sections as JSON.';
+
+  try {
+    if (provider === 'openai') {
+      await streamOpenAI(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
+    } else {
+      await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
+    }
+    await parseAndFinish();
+  } catch (err) {
+    if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
+      try {
+        fullResponse = '';
+        await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
         await parseAndFinish();
         return;
       } catch (fallbackErr) {

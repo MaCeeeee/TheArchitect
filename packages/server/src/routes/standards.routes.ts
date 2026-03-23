@@ -14,11 +14,13 @@ import {
   bulkCreateMappings,
   deleteMapping,
 } from '../services/standards.service';
-import { generateMappingSuggestions, validateConfidence } from '../services/ai.service';
+import { generateMappingSuggestions, validateConfidence, generatePoliciesFromStandard } from '../services/ai.service';
 import { StandardMapping } from '../models/StandardMapping';
+import { Policy } from '../models/Policy';
 import {
   getOrCreatePipelineState,
   refreshMappingStats,
+  refreshPolicyStats,
   getPipelineStatus,
   getPortfolioOverview,
 } from '../services/compliance-pipeline.service';
@@ -317,6 +319,93 @@ router.post(
       res.status(500).json({ error: 'Failed to refresh stats' });
     }
   }
+);
+
+// ─── AI Policy Generation (SSE) — REQ-CDTP-006 ───
+
+router.post(
+  '/:projectId/standards/:standardId/generate-policies',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({ error: 'AI not configured' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    try {
+      await generatePoliciesFromStandard(
+        pid(req),
+        sid(req),
+        (text) => {
+          res.write(`data: ${JSON.stringify({ text })}\n\n`);
+        },
+        async (drafts) => {
+          res.write(`data: ${JSON.stringify({ drafts, done: true })}\n\n`);
+          res.end();
+        },
+        (err) => {
+          res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+          res.end();
+        },
+      );
+    } catch (err) {
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Policy generation failed' });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: 'Stream failed' })}\n\n`);
+        res.end();
+      }
+    }
+  },
+);
+
+// ─── Approve Policy Drafts — REQ-CDTP-009 ───
+
+router.post(
+  '/:projectId/standards/:standardId/approve-policies',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const { approved } = req.body;
+      if (!Array.isArray(approved) || approved.length === 0) {
+        return res.status(400).json({ error: 'approved array is required' });
+      }
+
+      const userId = getUserId(req);
+      const projectId = pid(req);
+      const standardId = sid(req);
+
+      const policies = await Policy.insertMany(
+        approved.map((draft: Record<string, unknown>) => ({
+          projectId,
+          name: draft.name,
+          description: draft.description || '',
+          category: 'compliance' as const,
+          framework: 'Standard Compliance',
+          severity: draft.severity || 'warning',
+          scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
+          rules: draft.rules || [],
+          standardId,
+          sourceSectionNumber: draft.sourceSection || '',
+          enabled: true,
+          createdBy: userId,
+        }))
+      );
+
+      // Update pipeline state
+      await refreshPolicyStats(projectId, standardId);
+
+      res.status(201).json({ created: policies.length, policies });
+    } catch (err) {
+      console.error('[Standards] Approve policies error:', err);
+      res.status(500).json({ error: 'Failed to approve policies' });
+    }
+  },
 );
 
 // ─── AI Mapping Suggestions (SSE) ───

@@ -21,6 +21,8 @@ export interface IPolicy extends Document {
     layers: string[];
   };
   rules: IPolicyRule[];
+  standardId?: mongoose.Types.ObjectId;
+  sourceSectionNumber?: string;
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -56,11 +58,14 @@ const policySchema = new Schema<IPolicy>(
       layers: [{ type: String }],
     },
     rules: [policyRuleSchema],
+    standardId: { type: Schema.Types.ObjectId, ref: 'Standard' },
+    sourceSectionNumber: { type: String },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }
 );
 
 policySchema.index({ projectId: 1, enabled: 1 });
+policySchema.index({ projectId: 1, standardId: 1 });
 
 export const Policy = mongoose.model<IPolicy>('Policy', policySchema);
