@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 import { useUIStore } from '../../stores/uiStore';
 import { roadmapAPI } from '../../services/api';
 import type { RoadmapStrategy } from '@thearchitect/shared';
@@ -68,23 +69,37 @@ export default function RoadmapPanel() {
     loadCandidates, selectedCandidates, candidatesLoaded,
   } = useRoadmapStore();
 
+  // Compliance store for standard dropdown
+  const { portfolioOverview, loadPortfolio } = useComplianceStore();
+
   // Config state
   const [strategy, setStrategy] = useState<RoadmapStrategy>('balanced');
   const [maxWaves, setMaxWaves] = useState(4);
   const [includeAI, setIncludeAI] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [includeComplianceCandidates, setIncludeComplianceCandidates] = useState(false);
+  const [complianceStandardId, setComplianceStandardId] = useState<string>('');
 
   // Load list + candidates on mount
   useEffect(() => {
     if (projectId) {
       loadList(projectId);
       loadCandidates(projectId);
+      loadPortfolio(projectId);
     }
-  }, [projectId, loadList, loadCandidates]);
+  }, [projectId, loadList, loadCandidates, loadPortfolio]);
 
   const handleGenerate = () => {
     if (!projectId) return;
-    generate(projectId, { strategy, maxWaves, includeAIRecommendations: includeAI });
+    generate(projectId, {
+      strategy,
+      maxWaves,
+      includeAIRecommendations: includeAI,
+      ...(includeComplianceCandidates && {
+        includeComplianceCandidates: true,
+        standardId: complianceStandardId || undefined,
+      }),
+    });
   };
 
   const handleDelete = async (roadmapId: string) => {
@@ -203,6 +218,36 @@ export default function RoadmapPanel() {
               />
               <span className="text-[10px] text-[#7a8a7a]">AI Recommendations</span>
             </label>
+
+            {/* Compliance Candidates Toggle (CDTP F3) */}
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeComplianceCandidates}
+                onChange={(e) => setIncludeComplianceCandidates(e.target.checked)}
+                className="accent-[#7c3aed]"
+              />
+              <span className="text-[10px] text-[#7a8a7a]">Include Compliance Candidates</span>
+            </label>
+
+            {/* Standard Dropdown (visible when compliance candidates enabled) */}
+            {includeComplianceCandidates && portfolioOverview && portfolioOverview.portfolio.length > 0 && (
+              <div className="space-y-1">
+                <label className="text-[10px] text-[#7a8a7a] uppercase tracking-wider">Standard</label>
+                <select
+                  value={complianceStandardId}
+                  onChange={(e) => setComplianceStandardId(e.target.value)}
+                  className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs text-white focus:border-[#7c3aed] outline-none"
+                >
+                  <option value="">All standards</option>
+                  {portfolioOverview.portfolio.map((item) => (
+                    <option key={item.standardId} value={item.standardId}>
+                      {item.standardName} ({item.standardType.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Generate Button */}
             <button

@@ -12,6 +12,10 @@ export interface RoadmapConfig {
   includeAIRecommendations: boolean;
   customConstraints?: string;
   autoInsertTransitionalStates?: boolean;
+  // Compliance-Driven Roadmap (CDTP F3)
+  standardId?: string;
+  includeComplianceCandidates?: boolean;
+  compliancePriorityWeight?: number; // 0-1, default 0.5
 }
 
 // ─── Wave Element ───
@@ -65,6 +69,11 @@ export interface RoadmapSummary {
   waveCount: number;
   costConfidence: { p10: number; p50: number; p90: number };
   plateauStability?: PlateauStabilityResult[];
+  complianceProjection?: Array<{
+    waveNumber: number;
+    projectedPolicyScore: number;
+    projectedCoverageScore: number;
+  }>;
 }
 
 // ─── Full Roadmap ───

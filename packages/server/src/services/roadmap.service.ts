@@ -10,6 +10,9 @@ import { runAdvisorScan } from './advisor.service';
 import { buildProjectContext } from './ai.service';
 import { SimulationRun } from '../models/SimulationRun';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
+import { StandardMapping } from '../models/StandardMapping';
+import { Standard } from '../models/Standard';
+import { Policy } from '../models/Policy';
 import type {
   RoadmapConfig,
   RoadmapWave,
@@ -102,7 +105,23 @@ export async function generateRoadmap(
     enrichment.metadataMap = metadataMap;
 
     // 2. Identify migration candidates
-    const candidates = identifyCandidates(graphNodes, config.targetStates);
+    let candidates = identifyCandidates(graphNodes, config.targetStates);
+
+    // 2a. Merge compliance candidates if requested (REQ-CDTP-014)
+    if (config.includeComplianceCandidates) {
+      const complianceCandidates = await identifyComplianceCandidates(
+        projectId,
+        config.standardId,
+      );
+      // Deduplicate by elementId, keeping higher priority
+      const existingIds = new Set(candidates.map((c) => c.id));
+      for (const cc of complianceCandidates) {
+        if (!existingIds.has(cc.id)) {
+          candidates.push({ ...cc, targetStatus: cc.targetStatus });
+          existingIds.add(cc.id);
+        }
+      }
+    }
 
     if (candidates.length === 0) {
       const emptyRoadmap = buildEmptyRoadmap(doc, config);
@@ -422,6 +441,125 @@ export async function previewCandidates(projectId: string): Promise<CandidatesPr
       heuristicCount: heuristic,
     },
   };
+}
+
+// ─── Compliance-Driven Candidates (CDTP F3: REQ-CDTP-011, REQ-CDTP-012) ───
+
+/**
+ * Identify compliance-driven migration candidates from StandardMapping gaps.
+ * Uses 8-criteria weighted priority scoring per the CDTP spec.
+ */
+export async function identifyComplianceCandidates(
+  projectId: string,
+  standardId?: string,
+): Promise<Array<GraphNode & { targetStatus: string; compliancePriority: number }>> {
+  // Find gap/partial mappings that reference real architecture elements
+  const mappingFilter: Record<string, unknown> = {
+    projectId,
+    status: { $in: ['gap', 'partial'] },
+    elementId: { $ne: '__COVERAGE_GAP__' },
+  };
+  if (standardId) mappingFilter.standardId = standardId;
+
+  const gapMappings = await StandardMapping.find(mappingFilter);
+  if (gapMappings.length === 0) return [];
+
+  // Get unique element IDs
+  const elementIds = [...new Set(gapMappings.map((m) => m.elementId))];
+
+  // Fetch element data from Neo4j
+  const elementRecords = await runCypher(
+    `MATCH (e:ArchitectureElement {projectId: $projectId})
+     WHERE e.id IN $elementIds
+     RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
+            e.status as status, e.riskLevel as riskLevel,
+            e.maturityLevel as maturityLevel, e.description as description
+     LIMIT 200`,
+    { projectId, elementIds },
+  );
+
+  if (elementRecords.length === 0) return [];
+
+  // Fetch connection counts for relation scoring
+  const connRecords = await runCypher(
+    `MATCH (e:ArchitectureElement {projectId: $projectId})
+     WHERE e.id IN $elementIds
+     OPTIONAL MATCH (e)-[r]-()
+     RETURN e.id as id, count(r) as connCount`,
+    { projectId, elementIds },
+  );
+  const connMap = new Map<string, number>();
+  for (const r of connRecords) {
+    const props = r.toObject();
+    connMap.set(String(props.id), Number(props.connCount) || 0);
+  }
+
+  // Count policy violations per element (if policies with standardId exist)
+  const policyFilter: Record<string, unknown> = { projectId, enabled: true };
+  if (standardId) policyFilter.standardId = standardId;
+  const policyCount = await Policy.countDocuments(policyFilter);
+
+  // Count gap mappings per element for urgency
+  const gapCountMap = new Map<string, number>();
+  for (const m of gapMappings) {
+    gapCountMap.set(m.elementId, (gapCountMap.get(m.elementId) || 0) + 1);
+  }
+
+  // Build candidates with 8-criteria scoring
+  const candidates: Array<GraphNode & { targetStatus: string; compliancePriority: number }> = [];
+
+  for (const record of elementRecords) {
+    const props = record.toObject();
+    const id = String(props.id);
+    const riskLevel = String(props.riskLevel || 'medium');
+    const maturityLevel = Number(props.maturityLevel) || 3;
+    const connCount = connMap.get(id) || 0;
+    const gapCount = gapCountMap.get(id) || 0;
+    const status = String(props.status || 'current');
+
+    // 8-criteria weighted scoring (REQ-CDTP-012)
+    const scores = {
+      bizValue:    maturityLevel >= 4 ? 3 : maturityLevel >= 2 ? 6 : 9,     // lower maturity = higher need
+      bizRisk:     riskLevel === 'critical' ? 9 : riskLevel === 'high' ? 7 : riskLevel === 'medium' ? 4 : 2,
+      implChall:   10 - Math.min(connCount, 8),                              // more connections = harder (inverted)
+      success:     maturityLevel >= 3 ? 8 : 5,                               // higher maturity = more likely success
+      compliance:  Math.min(gapCount * 3, 9),                                // more gaps = higher compliance urgency
+      relations:   Math.min(connCount * 2, 9),                               // more connected = more impact
+      urgency:     gapCount >= 3 ? 9 : gapCount >= 2 ? 6 : 3,              // more gaps = more urgent
+      statusScore: status === 'retired' ? 2 : status === 'current' ? 7 : 5, // current elements benefit most
+    };
+
+    // Weighted average (weights from spec)
+    const weights = { bizValue: 0.15, bizRisk: 0.15, implChall: 0.10, success: 0.10, compliance: 0.20, relations: 0.10, urgency: 0.10, statusScore: 0.10 };
+    const priority = Math.round(
+      (scores.bizValue * weights.bizValue +
+       scores.bizRisk * weights.bizRisk +
+       scores.implChall * weights.implChall +
+       scores.success * weights.success +
+       scores.compliance * weights.compliance +
+       scores.relations * weights.relations +
+       scores.urgency * weights.urgency +
+       scores.statusScore * weights.statusScore) * 100
+    ) / 100;
+
+    candidates.push({
+      id,
+      name: String(props.name || ''),
+      type: String(props.type || ''),
+      layer: String(props.layer || ''),
+      togafDomain: String(props.layer || ''),
+      status,
+      riskLevel,
+      dependsOn: [],
+      metadata: {},
+      targetStatus: 'target',
+      compliancePriority: priority,
+    });
+  }
+
+  // Sort by priority descending
+  candidates.sort((a, b) => b.compliancePriority - a.compliancePriority);
+  return candidates;
 }
 
 // ─── Wave Sequencing (Kahn's Topological Sort) ───
@@ -954,6 +1092,22 @@ function calculateSummary(waves: RoadmapWave[], data: EnrichmentData, config?: R
     );
   });
 
+  // Compliance projection per wave (CDTP F3)
+  const complianceProjection = config?.includeComplianceCandidates
+    ? waves.map((wave, i) => {
+        // Each wave resolves some compliance elements; project improvement
+        const resolvedUpToWave = waves.slice(0, i + 1).reduce((s, w) => s + w.metrics.elementCount, 0);
+        const projectedCoverage = totalElements > 0
+          ? Math.round((resolvedUpToWave / totalElements) * 100)
+          : 0;
+        return {
+          waveNumber: wave.waveNumber,
+          projectedPolicyScore: Math.min(projectedCoverage + 10, 100),
+          projectedCoverageScore: projectedCoverage,
+        };
+      })
+    : undefined;
+
   return {
     totalCost,
     totalDurationMonths,
@@ -963,6 +1117,7 @@ function calculateSummary(waves: RoadmapWave[], data: EnrichmentData, config?: R
     waveCount: waves.length,
     costConfidence,
     plateauStability,
+    complianceProjection,
   };
 }
 
