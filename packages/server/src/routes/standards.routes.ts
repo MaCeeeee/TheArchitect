@@ -15,6 +15,12 @@ import {
   deleteMapping,
 } from '../services/standards.service';
 import { generateMappingSuggestions } from '../services/ai.service';
+import {
+  getOrCreatePipelineState,
+  refreshMappingStats,
+  getPipelineStatus,
+  getPortfolioOverview,
+} from '../services/compliance-pipeline.service';
 
 const router = Router();
 router.use(authenticate);
@@ -72,6 +78,9 @@ router.post(
         getUserId(req),
       );
 
+      // Create pipeline state for new standard
+      await getOrCreatePipelineState(pid(req), String(standard._id));
+
       res.status(201).json({
         id: standard._id,
         name: standard.name,
@@ -106,6 +115,40 @@ router.get(
       res.status(500).json({ error: 'Failed to list standards' });
     }
   },
+);
+
+// --- Compliance Pipeline Endpoints (BEFORE :standardId routes) ---
+
+// GET pipeline status for all standards in project
+router.get(
+  '/:projectId/standards/pipeline-status',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = pid(req);
+      const states = await getPipelineStatus(projectId);
+      res.json(states);
+    } catch (err) {
+      console.error('[Pipeline] Status error:', err);
+      res.status(500).json({ error: 'Failed to get pipeline status' });
+    }
+  }
+);
+
+// GET portfolio overview (aggregated)
+router.get(
+  '/:projectId/standards/portfolio',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = pid(req);
+      const overview = await getPortfolioOverview(projectId);
+      res.json(overview);
+    } catch (err) {
+      console.error('[Pipeline] Portfolio error:', err);
+      res.status(500).json({ error: 'Failed to get portfolio' });
+    }
+  }
 );
 
 // Get single standard with sections
@@ -256,6 +299,23 @@ router.delete(
       res.status(500).json({ error: 'Failed to delete mapping' });
     }
   },
+);
+
+// POST refresh mapping stats for a standard
+router.post(
+  '/:projectId/standards/:standardId/refresh-stats',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = pid(req);
+      const standardId = sid(req);
+      const state = await refreshMappingStats(projectId, standardId);
+      res.json(state);
+    } catch (err) {
+      console.error('[Pipeline] Refresh stats error:', err);
+      res.status(500).json({ error: 'Failed to refresh stats' });
+    }
+  }
 );
 
 // ─── AI Mapping Suggestions (SSE) ───
