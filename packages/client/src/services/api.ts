@@ -296,6 +296,16 @@ export const standardsAPI = {
     api.delete(`/projects/${projectId}/standards/${standardId}/mappings/${mappingId}`),
 };
 
+// Compliance Pipeline API
+export const compliancePipelineAPI = {
+  getPipelineStatus: (projectId: string) =>
+    api.get(`/projects/${projectId}/standards/pipeline-status`),
+  getPortfolio: (projectId: string) =>
+    api.get(`/projects/${projectId}/standards/portfolio`),
+  refreshStats: (projectId: string, standardId: string) =>
+    api.post(`/projects/${projectId}/standards/${standardId}/refresh-stats`),
+};
+
 // Settings API
 export const settingsAPI = {
   getProfile: () => api.get('/settings/profile'),
