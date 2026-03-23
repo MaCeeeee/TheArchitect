@@ -39,6 +39,12 @@ interface Mapping {
   notes: string;
   source: 'ai' | 'manual';
   confidence: number;
+  suggestedNewElement?: {
+    name: string;
+    type: string;
+    layer: string;
+    description: string;
+  };
 }
 
 interface ArchElement {
@@ -377,6 +383,11 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                       Confidence: {Math.round(mapping.confidence * 100)}%
                     </p>
                   )}
+                  {mapping.suggestedNewElement && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400 ml-1">
+                      Suggested: {mapping.suggestedNewElement.name}
+                    </span>
+                  )}
                   <div className="flex gap-1 mt-1.5">
                     <button
                       onClick={() => {
@@ -553,12 +564,17 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                                 layer,
                               })
                             }
-                            className={`w-full flex items-center justify-center gap-0.5 rounded py-1 px-1 border transition hover:opacity-80 ${getCellColor(cell)}`}
+                            className={`relative w-full flex items-center justify-center gap-0.5 rounded py-1 px-1 border transition hover:opacity-80 ${getCellColor(cell)}`}
                           >
                             {getCellIcon(cell)}
                             {cell.total > 0 && (
                               <span className="text-[8px]">
                                 {cell.compliant}/{cell.total}
+                              </span>
+                            )}
+                            {(!cell || cell.total === 0) && (
+                              <span className="absolute inset-0 flex items-center justify-center text-[8px] text-red-400/60 font-mono">
+                                GAP
                               </span>
                             )}
                           </button>
