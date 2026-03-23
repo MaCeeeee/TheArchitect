@@ -3,7 +3,7 @@
 **Date:** 2026-03-23
 **Status:** Approved
 **Author:** Claude Opus 4.6 + User
-**Linear Epic:** TBD (to be created)
+**Linear Epic:** To be created as part of implementation (Epic + 7 Features + 38 REQs)
 
 ---
 
@@ -183,7 +183,33 @@ interface ICompliancePipelineState {
 }
 ```
 
-### 4.4 Extended Existing Models
+### 4.4 New Type: PolicyDraft (intermediate, not persisted)
+
+Used by SSE streaming and the PolicyDraftReview UI. Not a MongoDB model — it's the AI output before human approval converts it into a `Policy` document.
+
+```typescript
+interface PolicyDraft {
+  name: string;                    // "Technology elements must have maturityLevel >= 3"
+  description: string;             // Explanation of what this rule checks
+  severity: 'error' | 'warning' | 'info';
+  scope: {
+    domains: string[];             // TOGAF domains to check
+    elementTypes: string[];        // element types to check
+    layers: string[];              // layers to check
+  };
+  rules: Array<{
+    field: string;                 // dot-notation path, e.g., "maturityLevel"
+    operator: 'equals' | 'not_equals' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte' | 'exists' | 'regex';
+    value: unknown;
+    message: string;               // violation message
+  }>;
+  sourceSection: string;           // section number reference, e.g., "6.4.2"
+  sourceSectionTitle: string;      // section title for display
+  confidence: number;              // 0-1, AI confidence in rule extraction
+}
+```
+
+### 4.5 Extended Existing Models
 
 **StandardMapping** — new optional field:
 ```typescript
@@ -235,6 +261,8 @@ complianceProjection?: Array<{
 | GET | `/:projectId/standards/audit-checklists` | List audit checklists | F4 |
 | POST | `/:projectId/standards/audit-checklists` | Create audit checklist | F4 |
 | PATCH | `/:projectId/standards/audit-checklists/:id/items/:itemId` | Update checklist item | F4 |
+| GET | `/:projectId/standards/audit-checklists/:id` | Get single audit checklist | F4 |
+| POST | `/:projectId/standards/:standardId/accept-suggested-element` | Create element from suggestion + update mapping | F5 |
 
 ### 5.2 Modified Endpoints
 
@@ -262,15 +290,16 @@ Orchestrator coordinating existing services:
 
 - `generateMappingSuggestions()` — extended with:
   - Second AI pass: identify sections with NO matching architecture element
-  - Return `coverageGap: true` + `suggestedNewElement` for missing elements
+  - Return `coverageGap: true` + `suggestedNewElement` for missing elements (lightweight: name/type/layer only)
   - Post-processing: validate AI confidence (check layer/type match)
+  - **Scope:** Quick gap detection during mapping — returns flags, not detailed suggestions
 - **NEW** `generatePoliciesFromStandard(standardId, projectId)` — SSE function: standard sections -> PolicyDraft[]
-- **NEW** `suggestMissingElements(projectId, standardId)` — coverage gaps -> SuggestedElement[]
+- **NEW** `suggestMissingElements(projectId, standardId)` — standalone deep analysis for coverage gaps. Takes the `coverageGap: true` mappings from `generateMappingSuggestions()` as input and generates detailed SuggestedElement[] with proposed connections, descriptions, and priority. **Division:** `generateMappingSuggestions` flags gaps; `suggestMissingElements` elaborates them into actionable suggestions.
 
 ### 6.3 Extended: `roadmap.service.ts`
 
-- **NEW** `identifyComplianceCandidates(projectId, standardId?)` — StandardMapping gaps -> MigrationCandidate[] with 8-criteria scoring
-- `identifyCandidates()` — extended with `complianceCandidates` parameter, merge + deduplication
+- **NEW** `identifyComplianceCandidates(projectId, standardId?)` — exported function, queries StandardMapping gaps -> MigrationCandidate[] with 8-criteria scoring
+- `generateRoadmap()` (public entry point, line ~68) — extended to call `identifyComplianceCandidates()` when `config.includeComplianceCandidates === true`, then merges results into the candidate pool inside the existing `identifyCandidates()` flow (which is module-private). Merge deduplicates by elementId, keeping the higher priority.
 - `calculateSummary()` — extended with `complianceProjection[]` per wave
 
 ### 6.4 Extended: `advisor.service.ts`
@@ -373,10 +402,12 @@ Orchestrator coordinating existing services:
 | REQ-CDTP-019 | ComplianceProgressChart UI | System SHALL provide line chart: score over time, actual (solid) + projection (dashed) |
 | REQ-CDTP-020 | AuditChecklist Model | System SHALL provide AuditChecklist model: items with status, evidence, responsibilities |
 | REQ-CDTP-021 | AuditReadinessDashboard UI | System SHALL provide dashboard with portfolio overview, ring charts, deadlines |
-| REQ-CDTP-022 | Maturity Level Tracking | System SHALL track maturity level (1-5) per standard |
+| REQ-CDTP-022 | Maturity Level Tracking | System SHALL track maturity level (1-5) per standard. Computed as: coverage < 20% = 1, < 40% = 2, < 60% = 3, < 80% = 4, >= 80% = 5. Coverage = (compliant + partial*0.5) / totalSections * 100. Manual override allowed. |
 | REQ-CDTP-023 | Audit Deadline + Responsibilities | AuditChecklist SHALL support targetDate, responsibleUserId, assignedTo per item |
 
-### Feature 7: Fault Tree Analysis — LATER PHASE (P3)
+### Feature 7: Fault Tree Analysis — REFERENCE ONLY, NOT IN CURRENT SCOPE (P3)
+
+> **Note:** These requirements are included for reference and future planning only. They are explicitly OUT OF SCOPE for the current implementation cycle. They will be specced in a separate document when prioritized.
 
 | ID | Title | SHALL Statement |
 |----|-------|-----------------|
