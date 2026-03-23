@@ -54,16 +54,16 @@ export default function NotificationsSection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Notifications</h2>
-      <p className="text-sm text-[#4a5a4a] mb-6">Choose how and when you want to be notified.</p>
+      <p className="text-sm text-[var(--text-tertiary)] mb-6">Choose how and when you want to be notified.</p>
 
       <div className="space-y-6">
         {/* Email Notifications */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Email Notifications</h3>
           <div className="space-y-3">
             {(['emailOnApproval', 'emailOnMention', 'emailOnProjectUpdate'] as const).map((key) => (
               <label key={key} className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-[#7a8a7a]">{LABELS[key]}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{LABELS[key]}</span>
                 <button
                   onClick={() => handleToggle(key)}
                   className={`relative h-6 w-11 rounded-full transition ${
@@ -82,12 +82,12 @@ export default function NotificationsSection() {
         </div>
 
         {/* In-App Notifications */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">In-App Notifications</h3>
           <div className="space-y-3">
             {(['inAppOnApproval', 'inAppOnMention', 'inAppOnProjectUpdate'] as const).map((key) => (
               <label key={key} className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-[#7a8a7a]">{LABELS[key]}</span>
+                <span className="text-sm text-[var(--text-secondary)]">{LABELS[key]}</span>
                 <button
                   onClick={() => handleToggle(key)}
                   className={`relative h-6 w-11 rounded-full transition ${

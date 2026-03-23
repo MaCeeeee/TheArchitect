@@ -156,14 +156,14 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
           <div className="flex items-center gap-2">
             <FileCode size={18} className="text-[#00ff41]" />
             <h2 className="text-sm font-semibold text-white">Import BPMN 2.0</h2>
           </div>
-          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -174,14 +174,14 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[#1a2a1a] bg-[#0a0a0a] p-8 hover:border-[#00ff41] transition cursor-pointer"
+            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-8 hover:border-[#00ff41] transition cursor-pointer"
             onClick={() => document.getElementById('bpmn-file-input')?.click()}
           >
-            <Upload size={32} className="text-[#4a5a4a]" />
-            <p className="text-sm text-[#7a8a7a]">
+            <Upload size={32} className="text-[var(--text-tertiary)]" />
+            <p className="text-sm text-[var(--text-secondary)]">
               {file ? file.name : 'Drop BPMN file here or click to browse'}
             </p>
-            <p className="text-xs text-[#4a5a4a]">Supports .bpmn and .xml files</p>
+            <p className="text-xs text-[var(--text-tertiary)]">Supports .bpmn and .xml files</p>
             <input
               id="bpmn-file-input"
               type="file"
@@ -207,14 +207,14 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
           {/* Workspace selection */}
           {preview && (
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-[#7a8a7a]">Import Target</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)]">Import Target</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setImportMode('new_workspace')}
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'new_workspace'
                       ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   }`}
                 >
                   <Layers size={14} />
@@ -226,7 +226,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'merge'
                       ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   } disabled:opacity-30`}
                 >
                   <GitMerge size={14} />
@@ -240,7 +240,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   placeholder={file?.name?.replace(/\.(bpmn|xml)$/i, '') || 'Workspace name'}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#00ff41] transition"
                 />
               )}
 
@@ -248,7 +248,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] transition"
                 >
                   <option value="">-- Select workspace --</option>
                   {workspaces.map((ws) => (
@@ -280,17 +280,17 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
+            className="rounded-md px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition"
           >
             Cancel
           </button>
           <button
             onClick={() => { checkDuplicates(); }}
             disabled={!preview}
-            className="rounded-md border border-[#1a2a1a] px-4 py-2 text-xs text-[#7a8a7a] hover:text-white hover:border-[#3a4a3a] disabled:opacity-50 transition"
+            className="rounded-md border border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white hover:border-[#3a4a3a] disabled:opacity-50 transition"
           >
             Check Duplicates
           </button>

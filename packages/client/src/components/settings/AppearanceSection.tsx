@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import { useSettingsStore } from '../../stores/settingsStore';
 
 const THEMES = [
-  { id: 'dark', label: 'Dark', preview: 'bg-[#0a0a0a]' },
+  { id: 'dark', label: 'Dark', preview: 'bg-[var(--surface-base)]' },
   { id: 'light', label: 'Light', preview: 'bg-white' },
 ];
 
@@ -52,11 +52,11 @@ export default function AppearanceSection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Appearance</h2>
-      <p className="text-sm text-[#4a5a4a] mb-6">Customize the look and feel of TheArchitect.</p>
+      <p className="text-sm text-[var(--text-tertiary)] mb-6">Customize the look and feel of TheArchitect.</p>
 
       <div className="space-y-6">
         {/* Theme */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-3">Theme</h3>
           <div className="flex gap-3">
             {THEMES.map((t) => (
@@ -67,23 +67,23 @@ export default function AppearanceSection() {
                 className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition ${
                   theme === t.id
                     ? 'border-[#00ff41] bg-[#00ff41]/10'
-                    : 'border-[#1a2a1a] hover:border-[#3a4a3a]'
+                    : 'border-[var(--border-subtle)] hover:border-[#3a4a3a]'
                 }`}
               >
-                <div className={`h-16 w-24 rounded-md ${t.preview} border border-[#1a2a1a]`} />
-                <span className="text-xs text-[#7a8a7a]">{t.label}</span>
+                <div className={`h-16 w-24 rounded-md ${t.preview} border border-[var(--border-subtle)]`} />
+                <span className="text-xs text-[var(--text-secondary)]">{t.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Language */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-3">Language</h3>
           <select
             value={language}
             onChange={(e) => handleUpdate('language', e.target.value)}
-            className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+            className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
           >
             {LANGUAGES.map((l) => (
               <option key={l.id} value={l.id}>{l.label}</option>
@@ -92,12 +92,12 @@ export default function AppearanceSection() {
         </div>
 
         {/* Timezone */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-3">Timezone</h3>
           <select
             value={timezone}
             onChange={(e) => handleUpdate('timezone', e.target.value)}
-            className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+            className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
           >
             {TIMEZONES.map((tz) => (
               <option key={tz} value={tz}>{tz}</option>

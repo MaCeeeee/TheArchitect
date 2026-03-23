@@ -42,8 +42,8 @@ export default function AdvisorPanel() {
   if (!projectId) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-6">
-        <ShieldAlert size={24} className="text-[#3a4a3a] mb-2" />
-        <p className="text-xs text-[#4a5a4a] text-center">Open a project to use the Architecture Advisor.</p>
+        <ShieldAlert size={24} className="text-[var(--text-disabled)] mb-2" />
+        <p className="text-xs text-[var(--text-tertiary)] text-center">Open a project to use the Architecture Advisor.</p>
       </div>
     );
   }
@@ -51,7 +51,7 @@ export default function AdvisorPanel() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-3 py-2 flex items-center justify-between border-b border-[#1a2a1a]">
+      <div className="px-3 py-2 flex items-center justify-between border-b border-[var(--border-subtle)]">
         <h3 className="text-[11px] font-semibold text-white flex items-center gap-1.5">
           <ShieldAlert size={12} className="text-[#00ff41]" />
           Architecture Advisor
@@ -59,7 +59,7 @@ export default function AdvisorPanel() {
         <button
           onClick={handleRefresh}
           disabled={isScanning}
-          className="text-[#4a5a4a] hover:text-[#00ff41] disabled:opacity-30 transition p-0.5"
+          className="text-[var(--text-tertiary)] hover:text-[#00ff41] disabled:opacity-30 transition p-0.5"
           title="Refresh scan"
         >
           {isScanning ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
@@ -71,7 +71,7 @@ export default function AdvisorPanel() {
         {isScanning && !healthScore && (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <Loader2 size={24} className="animate-spin text-[#00ff41]" />
-            <p className="text-[10px] text-[#4a5a4a]">Scanning architecture...</p>
+            <p className="text-[10px] text-[var(--text-tertiary)]">Scanning architecture...</p>
           </div>
         )}
 
@@ -87,15 +87,15 @@ export default function AdvisorPanel() {
 
         {/* Health Score */}
         {healthScore && (
-          <div className="px-3 py-3 border-b border-[#1a2a1a]">
+          <div className="px-3 py-3 border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-3">
               <HealthScoreRing score={healthScore} size={64} />
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-[#7a8a7a] mb-1">Health Score</p>
+                <p className="text-[10px] text-[var(--text-secondary)] mb-1">Health Score</p>
                 {/* Factor Bars */}
                 {healthScore.factors.map((f) => (
                   <div key={f.factor} className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[8px] text-[#4a5a4a] w-14 truncate" title={f.factor}>{f.factor}</span>
+                    <span className="text-[8px] text-[var(--text-tertiary)] w-14 truncate" title={f.factor}>{f.factor}</span>
                     <div className="flex-1 h-1 bg-[#1a2a1a] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-500"
@@ -105,7 +105,7 @@ export default function AdvisorPanel() {
                         }}
                       />
                     </div>
-                    <span className="text-[8px] text-[#4a5a4a] w-5 text-right">{f.score}</span>
+                    <span className="text-[8px] text-[var(--text-tertiary)] w-5 text-right">{f.score}</span>
                   </div>
                 ))}
               </div>
@@ -115,7 +115,7 @@ export default function AdvisorPanel() {
 
         {/* Severity Summary */}
         {insights.length > 0 && (
-          <div className="px-3 py-2 flex gap-2 border-b border-[#1a2a1a]">
+          <div className="px-3 py-2 flex gap-2 border-b border-[var(--border-subtle)]">
             {counts.critical > 0 && (
               <span className="flex items-center gap-1 text-[9px] text-red-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> {counts.critical} critical
@@ -156,14 +156,14 @@ export default function AdvisorPanel() {
         {healthScore && insights.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 gap-2">
             <CheckCircle2 size={24} className="text-[#00ff41]" />
-            <p className="text-[10px] text-[#7a8a7a]">No issues found</p>
-            <p className="text-[9px] text-[#3a4a3a]">Your architecture looks healthy</p>
+            <p className="text-[10px] text-[var(--text-secondary)]">No issues found</p>
+            <p className="text-[9px] text-[var(--text-disabled)]">Your architecture looks healthy</p>
           </div>
         )}
 
         {/* Meta Info */}
         {lastScanAt && (
-          <div className="px-3 py-2 text-[8px] text-[#3a4a3a] border-t border-[#1a2a1a]">
+          <div className="px-3 py-2 text-[8px] text-[var(--text-disabled)] border-t border-[var(--border-subtle)]">
             {totalElements} elements scanned in {scanDurationMs}ms
           </div>
         )}

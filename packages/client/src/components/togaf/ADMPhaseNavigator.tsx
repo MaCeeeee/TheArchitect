@@ -142,13 +142,13 @@ export default function ADMPhaseNavigator({ onPhaseSelect }: Props) {
       </div>
 
       {/* Phase list */}
-      <div className="flex-1 overflow-y-auto border-t border-[#1a2a1a]">
+      <div className="flex-1 overflow-y-auto border-t border-[var(--border-subtle)]">
         {ADM_PHASES.map((phase) => (
           <button
             key={phase.phase}
             onClick={() => handlePhaseClick(phase.phase)}
             className={`flex w-full items-center gap-2 px-3 py-2 text-left transition ${
-              selectedPhase === phase.phase ? 'bg-[#0a0a0a]' : 'hover:bg-[#0a0a0a]/50'
+              selectedPhase === phase.phase ? 'bg-[var(--surface-base)]' : 'hover:bg-[var(--surface-base)]/50'
             }`}
           >
             <StatusIcon status={phase.status} color={phase.color} />
@@ -168,21 +168,21 @@ export default function ADMPhaseNavigator({ onPhaseSelect }: Props) {
                 </div>
               )}
             </div>
-            <span className="text-[10px] text-[#4a5a4a]">{phase.completionPercentage}%</span>
+            <span className="text-[10px] text-[var(--text-tertiary)]">{phase.completionPercentage}%</span>
           </button>
         ))}
       </div>
 
       {/* Detail panel */}
       {showDetail && selected && (
-        <div className="border-t border-[#1a2a1a] p-3 max-h-[200px] overflow-y-auto">
+        <div className="border-t border-[var(--border-subtle)] p-3 max-h-[200px] overflow-y-auto">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-white">{selected.name}</h4>
-            <button onClick={() => setShowDetail(false)} className="text-[#4a5a4a] hover:text-white text-xs">
+            <button onClick={() => setShowDetail(false)} className="text-[var(--text-tertiary)] hover:text-white text-xs">
               Hide
             </button>
           </div>
-          <p className="text-[10px] text-[#7a8a7a] mb-2">{selected.description}</p>
+          <p className="text-[10px] text-[var(--text-secondary)] mb-2">{selected.description}</p>
 
           <DetailSection title="Objectives" items={selected.objectives} />
           <DetailSection title="Inputs" items={selected.inputs} />
@@ -196,17 +196,17 @@ export default function ADMPhaseNavigator({ onPhaseSelect }: Props) {
 function StatusIcon({ status, color }: { status: string; color: string }) {
   if (status === 'completed') return <CheckCircle2 size={14} style={{ color }} />;
   if (status === 'in_progress') return <Clock size={14} style={{ color }} />;
-  return <Circle size={14} className="text-[#3a4a3a]" />;
+  return <Circle size={14} className="text-[var(--text-disabled)]" />;
 }
 
 function DetailSection({ title, items }: { title: string; items: string[] }) {
   return (
     <div className="mb-2">
-      <h5 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-1">{title}</h5>
+      <h5 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] mb-1">{title}</h5>
       <ul className="space-y-0.5">
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-1 text-[10px] text-[#7a8a7a]">
-            <ChevronRight size={10} className="mt-0.5 shrink-0 text-[#3a4a3a]" />
+          <li key={i} className="flex items-start gap-1 text-[10px] text-[var(--text-secondary)]">
+            <ChevronRight size={10} className="mt-0.5 shrink-0 text-[var(--text-disabled)]" />
             {item}
           </li>
         ))}

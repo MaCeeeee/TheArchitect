@@ -120,7 +120,7 @@ export function SuggestedElements() {
               className={`border rounded p-2.5 transition-colors ${
                 isCreated
                   ? 'bg-green-500/5 border-green-500/30'
-                  : 'bg-[#111827] border-[#1e293b]'
+                  : 'bg-[#111827] border-[var(--border-subtle)]'
               }`}
             >
               <div className="flex items-start gap-2">
@@ -141,7 +141,7 @@ export function SuggestedElements() {
               {s.connections.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {s.connections.slice(0, 3).map((c, ci) => (
-                    <span key={ci} className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-[#0f172a] text-gray-400">
+                    <span key={ci} className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] text-gray-400">
                       <Link size={8} /> {c.targetName}
                     </span>
                   ))}

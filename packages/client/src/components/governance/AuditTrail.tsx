@@ -84,20 +84,20 @@ export default function AuditTrail() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#1a2a1a]">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <History size={14} className="text-[#00ff41]" />
           Audit Trail
         </h3>
-        <p className="text-[10px] text-[#4a5a4a] mt-1">{total} recorded actions</p>
+        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{total} recorded actions</p>
       </div>
 
       {/* Filter */}
-      <div className="px-3 py-2 border-b border-[#1a2a1a]">
+      <div className="px-3 py-2 border-b border-[var(--border-subtle)]">
         <select
           value={actionFilter}
           onChange={(e) => setActionFilter(e.target.value)}
-          className="w-full bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#00ff41]"
+          className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41]"
         >
           <option value="">All actions</option>
           {uniqueActions.map((a) => (
@@ -121,14 +121,14 @@ export default function AuditTrail() {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {entries.map((entry) => (
-            <div key={entry._id} className="flex items-start gap-2 px-3 py-2 border-b border-[#1a2a1a]/30 hover:bg-[#0a0a0a] transition">
+            <div key={entry._id} className="flex items-start gap-2 px-3 py-2 border-b border-[var(--border-subtle)]/30 hover:bg-[var(--surface-base)] transition">
               <div className="mt-0.5">{actionIcon(entry.action)}</div>
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] text-white truncate">
                   {entry.action.replace(/_/g, ' ')}
-                  {entry.entityType && <span className="text-[#4a5a4a]"> · {entry.entityType}</span>}
+                  {entry.entityType && <span className="text-[var(--text-tertiary)]"> · {entry.entityType}</span>}
                 </div>
-                <div className="text-[8px] text-[#3a4a3a] mt-0.5 flex items-center gap-1">
+                <div className="text-[8px] text-[var(--text-disabled)] mt-0.5 flex items-center gap-1">
                   {getUserName(entry.userId)} · {formatTime(entry.timestamp)}
                   {entry.riskLevel && entry.riskLevel !== 'low' && (
                     <span
@@ -145,7 +145,7 @@ export default function AuditTrail() {
 
           {entries.length === 0 && (
             <div className="flex-1 flex items-center justify-center p-6">
-              <p className="text-xs text-[#4a5a4a] text-center">No audit entries yet</p>
+              <p className="text-xs text-[var(--text-tertiary)] text-center">No audit entries yet</p>
             </div>
           )}
 
@@ -154,7 +154,7 @@ export default function AuditTrail() {
             <button
               onClick={() => loadEntries(offset, true)}
               disabled={loadingMore}
-              className="w-full flex items-center justify-center gap-1 py-2 text-[10px] text-[#7a8a7a] hover:text-white transition"
+              className="w-full flex items-center justify-center gap-1 py-2 text-[10px] text-[var(--text-secondary)] hover:text-white transition"
             >
               {loadingMore ? <Loader2 size={10} className="animate-spin" /> : <ChevronDown size={10} />}
               {loadingMore ? 'Loading...' : `Load more (${total - entries.length} remaining)`}

@@ -31,10 +31,10 @@ export default function AccessibilitySection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Accessibility</h2>
-      <p className="text-sm text-[#4a5a4a] mb-6">Adjust display and interaction settings for your comfort.</p>
+      <p className="text-sm text-[var(--text-tertiary)] mb-6">Adjust display and interaction settings for your comfort.</p>
 
       <div className="space-y-6">
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Font Size</h3>
           <div className="flex gap-3">
             {(['small', 'medium', 'large'] as const).map((size) => (
@@ -44,7 +44,7 @@ export default function AccessibilitySection() {
                 className={`rounded-md px-4 py-2 text-sm capitalize transition ${
                   acc.fontSize === size
                     ? 'bg-[#00ff41] text-black'
-                    : 'border border-[#1a2a1a] text-[#7a8a7a] hover:text-white'
+                    : 'border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white'
                 }`}
               >
                 {size}
@@ -53,11 +53,11 @@ export default function AccessibilitySection() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5 space-y-4">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 space-y-4">
           <label className="flex items-center justify-between cursor-pointer">
             <div>
               <p className="text-sm text-white">Reduce Motion</p>
-              <p className="text-xs text-[#4a5a4a]">Minimize animations and transitions</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Minimize animations and transitions</p>
             </div>
             <button
               onClick={() => handleUpdate('reduceMotion', !acc.reduceMotion)}
@@ -72,7 +72,7 @@ export default function AccessibilitySection() {
           <label className="flex items-center justify-between cursor-pointer">
             <div>
               <p className="text-sm text-white">High Contrast</p>
-              <p className="text-xs text-[#4a5a4a]">Increase contrast for better readability</p>
+              <p className="text-xs text-[var(--text-tertiary)]">Increase contrast for better readability</p>
             </div>
             <button
               onClick={() => handleUpdate('highContrast', !acc.highContrast)}

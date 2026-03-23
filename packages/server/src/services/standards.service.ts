@@ -1,5 +1,32 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse');
+const pdfParseModule = require('pdf-parse');
+
+/**
+ * Wrapper that works with both pdf-parse v1 (function) and v2 (PDFParse class).
+ * Returns { text: string, numpages: number }.
+ */
+async function pdfParse(buffer: Buffer): Promise<{ text: string; numpages: number }> {
+  // v1 API: module exports a function directly
+  if (typeof pdfParseModule === 'function') {
+    return pdfParseModule(buffer);
+  }
+  // v2 API: module exports { PDFParse } class
+  const PDFParse = pdfParseModule.PDFParse;
+  if (!PDFParse) throw new Error('pdf-parse module has no usable export');
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  await parser.load();
+  const numPages = parser.doc?.numPages || 0;
+  let text = '';
+  for (let i = 1; i <= numPages; i++) {
+    try {
+      const items = await parser.doc.getPage(i).then((page: { getTextContent: () => Promise<{ items: Array<{ str: string }> }> }) => page.getTextContent());
+      text += items.items.map((item: { str: string }) => item.str).join(' ') + '\n';
+    } catch {
+      // Skip pages that fail to parse
+    }
+  }
+  return { text, numpages: numPages };
+}
 import { randomUUID } from 'crypto';
 import { Standard, IStandard, IStandardSection } from '../models/Standard';
 import { StandardMapping, IStandardMapping } from '../models/StandardMapping';

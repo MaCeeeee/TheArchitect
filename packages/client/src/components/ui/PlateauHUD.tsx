@@ -9,13 +9,13 @@ function formatCurrency(n: number): string {
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <div
-      className="rounded-lg border border-[#1a2a1a] px-3 py-2"
+      className="rounded-lg border border-[var(--border-subtle)] px-3 py-2"
       style={{
         background: 'rgba(10, 10, 10, 0.95)',
         borderLeft: `3px solid ${color}`,
       }}
     >
-      <div className="text-[9px] font-semibold text-[#4a5a4a] uppercase tracking-wider mb-0.5">
+      <div className="text-[9px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
         {label}
       </div>
       <div

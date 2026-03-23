@@ -81,7 +81,7 @@ export default function MigrationCandidates() {
 
   if (isCandidatesLoading) {
     return (
-      <div className="text-[10px] text-[#4a5a4a] py-2 text-center">
+      <div className="text-[10px] text-[var(--text-tertiary)] py-2 text-center">
         Loading candidates...
       </div>
     );
@@ -99,8 +99,8 @@ export default function MigrationCandidates() {
         className="w-full flex items-center justify-between text-left group"
       >
         <div className="flex items-center gap-1.5">
-          {expanded ? <ChevronDown size={10} className="text-[#00ff41]" /> : <ChevronRight size={10} className="text-[#4a5a4a]" />}
-          <span className="text-[10px] text-[#7a8a7a] uppercase tracking-wider">Migration Scope</span>
+          {expanded ? <ChevronDown size={10} className="text-[#00ff41]" /> : <ChevronRight size={10} className="text-[var(--text-tertiary)]" />}
+          <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Migration Scope</span>
         </div>
         <span className="text-[10px] font-mono" style={{ color: selectedCandidates.size > 0 ? '#00ff41' : '#4a5a4a' }}>
           {selectedCandidates.size}/{candidates.length}
@@ -108,36 +108,36 @@ export default function MigrationCandidates() {
       </button>
 
       {!expanded && (
-        <p className="text-[9px] text-[#4a5a4a] pl-4">
+        <p className="text-[9px] text-[var(--text-tertiary)] pl-4">
           {autoCount} auto-detected — click to customize
         </p>
       )}
 
       {expanded && (
-        <div className="border border-[#1a2a1a] rounded bg-[#0a0f0a]">
+        <div className="border border-[var(--border-subtle)] rounded bg-[#0a0f0a]">
           {/* Quick Actions */}
-          <div className="flex items-center gap-1 p-1.5 border-b border-[#1a2a1a]">
+          <div className="flex items-center gap-1 p-1.5 border-b border-[var(--border-subtle)]">
             <button
               onClick={selectAllCandidates}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[#7a8a7a] hover:text-[#00ff41] transition"
+              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#00ff41] transition"
             >
               All
             </button>
             <button
               onClick={clearCandidates}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[#7a8a7a] hover:text-[#ef4444] transition"
+              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#ef4444] transition"
             >
               None
             </button>
             <button
               onClick={() => selectByRisk('high')}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[#7a8a7a] hover:text-[#f97316] transition flex items-center gap-0.5"
+              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#f97316] transition flex items-center gap-0.5"
             >
               <Zap size={8} /> Risk
             </button>
             <button
               onClick={resetToAutoDetect}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[#7a8a7a] hover:text-[#3b82f6] transition flex items-center gap-0.5"
+              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#3b82f6] transition flex items-center gap-0.5"
             >
               <RotateCcw size={8} /> Auto
             </button>
@@ -153,16 +153,16 @@ export default function MigrationCandidates() {
                   {/* Domain Header */}
                   <button
                     onClick={() => toggleDomain(domain)}
-                    className="w-full flex items-center justify-between px-2 py-1 bg-[#111611] border-b border-[#1a2a1a] hover:bg-[#1a2a1a] transition"
+                    className="w-full flex items-center justify-between px-2 py-1 bg-[#111611] border-b border-[var(--border-subtle)] hover:bg-[#1a2a1a] transition"
                   >
                     <div className="flex items-center gap-1">
                       {isCollapsed
-                        ? <ChevronRight size={8} className="text-[#4a5a4a]" />
+                        ? <ChevronRight size={8} className="text-[var(--text-tertiary)]" />
                         : <ChevronDown size={8} className="text-[#00ff41]" />
                       }
-                      <span className="text-[9px] font-bold text-[#7a8a7a] uppercase">{domain}</span>
+                      <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase">{domain}</span>
                     </div>
-                    <span className="text-[9px] text-[#4a5a4a]">{selectedInDomain}/{items.length}</span>
+                    <span className="text-[9px] text-[var(--text-tertiary)]">{selectedInDomain}/{items.length}</span>
                   </button>
 
                   {/* Elements */}
@@ -202,7 +202,7 @@ export default function MigrationCandidates() {
                               value={targetStatus}
                               onChange={(e) => setCandidateTarget(c.elementId, e.target.value as ElementStatus)}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-[#0a0f0a] border border-[#1a2a1a] rounded text-[9px] px-0.5 py-0"
+                              className="bg-[#0a0f0a] border border-[var(--border-subtle)] rounded text-[9px] px-0.5 py-0"
                               style={{ color: STATUS_COLOR[targetStatus] }}
                             >
                               {TARGET_OPTIONS.map((opt) => (
@@ -231,7 +231,7 @@ export default function MigrationCandidates() {
           </div>
 
           {/* Summary Footer */}
-          <div className="px-2 py-1.5 border-t border-[#1a2a1a] text-[9px] text-[#7a8a7a] space-y-1.5">
+          <div className="px-2 py-1.5 border-t border-[var(--border-subtle)] text-[9px] text-[var(--text-secondary)] space-y-1.5">
             <div>
               <span className="text-[#00ff41] font-mono">{summary.total}</span> selected
               {summary.upgrade > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.upgrade.color }}>{summary.upgrade}× Upgrade</span></span>}

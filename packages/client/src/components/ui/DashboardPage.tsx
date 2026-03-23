@@ -6,6 +6,7 @@ import { SkeletonCard } from './Skeleton';
 import { projectAPI } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import ProjectCard from './ProjectCard';
 
 interface Project {
   _id: string;
@@ -91,7 +92,7 @@ export default function DashboardPage() {
     <div className="h-full overflow-y-auto p-8">
       <div className="mx-auto max-w-4xl">
         <h1 className="text-2xl font-bold text-white mb-1">Welcome to TheArchitect</h1>
-        <p className="text-sm text-[#7a8a7a] mb-8">
+        <p className="text-sm text-[var(--text-secondary)] mb-8">
           Enterprise Architecture Management Platform
         </p>
 
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         )}
 
         {/* Projects list */}
-        <h2 className="text-sm font-semibold text-[#7a8a7a] uppercase tracking-wider mb-3">
+        <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3">
           Projects
         </h2>
 
@@ -134,40 +135,17 @@ export default function DashboardPage() {
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-sm text-[#4a5a4a]">No projects yet. Create your first project to get started.</p>
+            <p className="text-sm text-[var(--text-tertiary)]">No projects yet. Create your first project to get started.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {projects.map((project) => (
-              <div
+              <ProjectCard
                 key={project._id}
+                project={project}
                 onClick={() => navigate(`/project/${project._id}`)}
-                className="group flex items-center gap-4 rounded-lg border border-[#1a2a1a] bg-[#111111] p-4 cursor-pointer hover:border-[#00ff41] hover:shadow-[0_0_15px_rgba(0,255,65,0.15)] transition"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#00ff41]/20">
-                  <FolderOpen size={20} className="text-[#00ff41]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-white">{project.name}</h3>
-                  {project.description && (
-                    <p className="text-xs text-[#7a8a7a] truncate">{project.description}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {project.updatedAt && (
-                    <span className="text-xs text-[#4a5a4a]">
-                      {new Date(project.updatedAt).toLocaleDateString()}
-                    </span>
-                  )}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setDeleteTarget(project); }}
-                    className="p-1.5 rounded text-[#4a5a4a] hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100 transition"
-                    title="Delete project"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
+                onDelete={() => setDeleteTarget(project)}
+              />
             ))}
           </div>
         )}
@@ -175,23 +153,23 @@ export default function DashboardPage() {
         {/* Delete confirmation dialog */}
         {deleteTarget && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-            <div className="w-full max-w-sm rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
+            <div className="w-full max-w-sm rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
                 <h2 className="text-sm font-semibold text-white">Delete Project</h2>
-                <button onClick={() => setDeleteTarget(null)} className="text-[#7a8a7a] hover:text-white">
+                <button onClick={() => setDeleteTarget(null)} className="text-[var(--text-secondary)] hover:text-white">
                   <X size={18} />
                 </button>
               </div>
               <div className="p-5">
-                <p className="text-sm text-[#7a8a7a]">
+                <p className="text-sm text-[var(--text-secondary)]">
                   Are you sure you want to delete <span className="text-white font-medium">"{deleteTarget.name}"</span>?
                   This action cannot be undone.
                 </p>
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-5 py-4">
                 <button
                   onClick={() => setDeleteTarget(null)}
-                  className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
+                  className="rounded-md px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition"
                 >
                   Cancel
                 </button>
@@ -210,16 +188,16 @@ export default function DashboardPage() {
         {/* Create project dialog */}
         {showCreate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-            <div className="w-full max-w-md rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
+            <div className="w-full max-w-md rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
                 <h2 className="text-sm font-semibold text-white">New Project</h2>
-                <button onClick={() => setShowCreate(false)} className="text-[#7a8a7a] hover:text-white">
+                <button onClick={() => setShowCreate(false)} className="text-[var(--text-secondary)] hover:text-white">
                   <X size={18} />
                 </button>
               </div>
               <div className="p-5 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Project Name</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Project Name</label>
                   <input
                     autoFocus
                     type="text"
@@ -227,24 +205,24 @@ export default function DashboardPage() {
                     onChange={(e) => setNewName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreate(); }}
                     placeholder="My Architecture Project"
-                    className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition"
+                    className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#00ff41] transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Description (optional)</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Description (optional)</label>
                   <textarea
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
                     placeholder="Brief description of the project"
                     rows={3}
-                    className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition resize-none"
+                    className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#00ff41] transition resize-none"
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
+              <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-5 py-4">
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
+                  className="rounded-md px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition"
                 >
                   Cancel
                 </button>
@@ -280,7 +258,7 @@ function ActionCard({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center gap-3 rounded-lg border border-[#1a2a1a] bg-[#111111] p-6 text-center hover:border-[#00ff41] hover:shadow-[0_0_15px_rgba(0,255,65,0.15)] transition"
+      className="flex flex-col items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6 text-center hover:border-[#00ff41] hover:shadow-[0_0_15px_rgba(0,255,65,0.15)] transition"
     >
       <div
         className="flex h-12 w-12 items-center justify-center rounded-full"
@@ -290,7 +268,7 @@ function ActionCard({
       </div>
       <div>
         <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <p className="text-xs text-[#7a8a7a] mt-1">{description}</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">{description}</p>
       </div>
     </button>
   );

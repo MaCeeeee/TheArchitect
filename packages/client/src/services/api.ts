@@ -311,6 +311,20 @@ export const compliancePipelineAPI = {
     api.get(`/projects/${projectId}/standards/${standardId}/suggest-elements`),
   acceptSuggestedElement: (projectId: string, standardId: string, data: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/standards/${standardId}/accept-suggested-element`, data),
+  // Compliance Snapshots
+  getSnapshots: (projectId: string, standardId?: string) =>
+    api.get(`/projects/${projectId}/standards/compliance-snapshots`, { params: standardId ? { standardId } : {} }),
+  captureSnapshot: (projectId: string, standardId?: string) =>
+    api.post(`/projects/${projectId}/standards/compliance-snapshots/capture`, { standardId }),
+  // Audit Checklists
+  getAuditChecklists: (projectId: string) =>
+    api.get(`/projects/${projectId}/standards/audit-checklists`),
+  createAuditChecklist: (projectId: string, data: { standardId: string; name: string; targetDate: string; responsibleUserId?: string }) =>
+    api.post(`/projects/${projectId}/standards/audit-checklists`, data),
+  getAuditChecklist: (projectId: string, id: string) =>
+    api.get(`/projects/${projectId}/standards/audit-checklists/${id}`),
+  updateChecklistItem: (projectId: string, checklistId: string, itemId: string, data: Record<string, unknown>) =>
+    api.patch(`/projects/${projectId}/standards/audit-checklists/${checklistId}/items/${itemId}`, data),
 };
 
 // Settings API

@@ -67,16 +67,16 @@ export default function ContextMenu3D() {
   return (
     <div
       ref={ref}
-      className="absolute z-50 min-w-[180px] rounded-lg border border-[#1a2a1a] bg-[#111111] py-1 shadow-xl"
+      className="absolute z-50 min-w-[180px] rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] py-1 shadow-xl"
       style={{ left: contextMenu.x, top: contextMenu.y }}
     >
-      <div className="px-3 py-1.5 border-b border-[#1a2a1a]">
+      <div className="px-3 py-1.5 border-b border-[var(--border-subtle)]">
         <p className="text-xs font-medium text-white truncate">{element.name}</p>
-        <p className="text-[10px] text-[#4a5a4a]">{element.type.replace(/_/g, ' ')}</p>
+        <p className="text-[10px] text-[var(--text-tertiary)]">{element.type.replace(/_/g, ' ')}</p>
       </div>
       {items.map((item, i) => {
         if ('divider' in item) {
-          return <div key={i} className="my-1 border-t border-[#1a2a1a]" />;
+          return <div key={i} className="my-1 border-t border-[var(--border-subtle)]" />;
         }
         const Icon = item.icon;
         return (
@@ -86,7 +86,7 @@ export default function ContextMenu3D() {
             className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-xs transition ${
               item.danger
                 ? 'text-red-400 hover:bg-red-500/10'
-                : 'text-[#7a8a7a] hover:bg-[#1a2a1a] hover:text-white'
+                : 'text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white'
             }`}
           >
             <Icon size={14} />

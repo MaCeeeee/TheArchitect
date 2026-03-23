@@ -24,7 +24,7 @@ export default function TOGAF10Framework() {
   return (
     <div className="flex flex-col h-full">
       {/* Sub-tabs */}
-      <div className="flex border-b border-[#1a2a1a] overflow-x-auto">
+      <div className="flex border-b border-[var(--border-subtle)] overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           return (
@@ -34,7 +34,7 @@ export default function TOGAF10Framework() {
               className={`flex items-center gap-1 px-2.5 py-2 text-[10px] font-medium whitespace-nowrap transition border-b-2 ${
                 activeTab === tab.id
                   ? 'border-current text-white'
-                  : 'border-transparent text-[#4a5a4a] hover:text-[#7a8a7a]'
+                  : 'border-transparent text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
               }`}
               style={activeTab === tab.id ? { color: tab.color } : undefined}
             >

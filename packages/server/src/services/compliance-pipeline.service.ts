@@ -3,6 +3,8 @@ import { CompliancePipelineState, ICompliancePipelineState } from '../models/Com
 import { StandardMapping } from '../models/StandardMapping';
 import { Standard } from '../models/Standard';
 import { Policy } from '../models/Policy';
+import { ComplianceSnapshot, IComplianceSnapshot } from '../models/ComplianceSnapshot';
+import { checkCompliance } from './compliance.service';
 
 /**
  * Get or create pipeline state for a standard.
@@ -130,4 +132,103 @@ export async function getPortfolioOverview(projectId: string) {
     trackedStandards: states.length,
     portfolio,
   };
+}
+
+/**
+ * Compute maturity level from coverage (REQ-CDTP-022).
+ * Coverage = (compliant + partial*0.5) / totalSections * 100
+ */
+export function computeMaturityLevel(
+  compliant: number,
+  partial: number,
+  total: number,
+): number {
+  if (total === 0) return 1;
+  const coverage = ((compliant + partial * 0.5) / total) * 100;
+  if (coverage < 20) return 1;
+  if (coverage < 40) return 2;
+  if (coverage < 60) return 3;
+  if (coverage < 80) return 4;
+  return 5;
+}
+
+/**
+ * Capture a compliance snapshot (REQ-CDTP-017).
+ * If standardId is provided, captures for that standard.
+ * If null, captures overall project score.
+ */
+export async function captureComplianceSnapshot(
+  projectId: string,
+  standardId?: string,
+): Promise<IComplianceSnapshot> {
+  let totalSections = 0;
+  let compliantSections = 0;
+  let partialSections = 0;
+  let gapSections = 0;
+
+  if (standardId) {
+    const standard = await Standard.findById(standardId);
+    if (!standard) throw new Error('Standard not found');
+
+    const mappings = await StandardMapping.find({ projectId, standardId });
+    totalSections = standard.sections.length;
+    compliantSections = mappings.filter((m) => m.status === 'compliant').length;
+    partialSections = mappings.filter((m) => m.status === 'partial').length;
+    gapSections = mappings.filter((m) => m.status === 'gap').length;
+  } else {
+    // Aggregate across all standards
+    const standards = await Standard.find({ projectId });
+    for (const std of standards) {
+      const mappings = await StandardMapping.find({ projectId, standardId: String(std._id) });
+      totalSections += std.sections.length;
+      compliantSections += mappings.filter((m) => m.status === 'compliant').length;
+      partialSections += mappings.filter((m) => m.status === 'partial').length;
+      gapSections += mappings.filter((m) => m.status === 'gap').length;
+    }
+  }
+
+  const coverageScore = totalSections > 0
+    ? Math.round(((compliantSections + partialSections * 0.5) / totalSections) * 100)
+    : 0;
+
+  // Get policy compliance score
+  let policyScore = 100;
+  let totalViolations = 0;
+  try {
+    const report = await checkCompliance(projectId);
+    totalViolations = report.violations?.length || 0;
+    policyScore = report.summary?.complianceScore ?? (totalViolations === 0 ? 100 : Math.max(0, 100 - totalViolations * 5));
+  } catch {
+    // Compliance check may fail if no policies exist
+  }
+
+  const maturityLevel = computeMaturityLevel(compliantSections, partialSections, totalSections);
+
+  const snapshot = await ComplianceSnapshot.create({
+    projectId,
+    standardId: standardId || undefined,
+    type: 'actual',
+    policyComplianceScore: policyScore,
+    standardCoverageScore: coverageScore,
+    totalSections,
+    compliantSections,
+    partialSections,
+    gapSections,
+    totalViolations,
+    maturityLevel,
+  });
+
+  return snapshot;
+}
+
+/**
+ * Get compliance snapshots for a project.
+ */
+export async function getComplianceSnapshots(
+  projectId: string,
+  standardId?: string,
+): Promise<IComplianceSnapshot[]> {
+  const filter: Record<string, unknown> = { projectId };
+  if (standardId) filter.standardId = standardId;
+  return ComplianceSnapshot.find(filter).sort({ createdAt: -1 }).limit(100);
 }

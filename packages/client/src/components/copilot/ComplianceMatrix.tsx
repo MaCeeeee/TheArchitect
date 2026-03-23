@@ -70,14 +70,14 @@ interface ComplianceMatrixProps {
 // ─── Helpers ───
 
 function getCellColor(cell: MatrixCell) {
-  if (cell.total === 0) return 'bg-[#111111] text-[#3a4a3a]';
+  if (cell.total === 0) return 'bg-[var(--surface-raised)] text-[var(--text-disabled)]';
   if (cell.gap > 0) return 'bg-red-500/10 text-red-400 border-red-500/20';
   if (cell.partial > 0) return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
   return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
 }
 
 function getCellIcon(cell: MatrixCell) {
-  if (cell.total === 0) return <Minus size={10} className="text-[#3a4a3a]" />;
+  if (cell.total === 0) return <Minus size={10} className="text-[var(--text-disabled)]" />;
   if (cell.gap > 0) return <XCircle size={10} className="text-red-400" />;
   if (cell.partial > 0) return <AlertTriangle size={10} className="text-yellow-400" />;
   return <CheckCircle2 size={10} className="text-emerald-400" />;
@@ -88,7 +88,7 @@ function getStatusIcon(status: string) {
     case 'compliant': return <CheckCircle2 size={10} className="text-emerald-400" />;
     case 'partial': return <AlertTriangle size={10} className="text-yellow-400" />;
     case 'gap': return <XCircle size={10} className="text-red-400" />;
-    default: return <Minus size={10} className="text-[#3a4a3a]" />;
+    default: return <Minus size={10} className="text-[var(--text-disabled)]" />;
   }
 }
 
@@ -202,7 +202,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
         }
       }
     } catch {
-      setError('AI-Vorschläge konnten nicht generiert werden');
+      setError('Failed to generate AI suggestions');
     } finally {
       setSuggesting(false);
     }
@@ -263,7 +263,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       await standardsAPI.deleteMapping(projectId, standardId, mappingId);
       await loadMatrix();
     } catch {
-      setError('Mapping konnte nicht gelöscht werden');
+      setError('Failed to delete mapping');
     }
   };
 
@@ -278,7 +278,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
   if (!matrix) {
     return (
       <div className="flex items-center justify-center h-full p-4">
-        <p className="text-xs text-[#4a5a4a]">Matrix konnte nicht geladen werden.</p>
+        <p className="text-xs text-[var(--text-tertiary)]">Matrix konnte nicht geladen werden.</p>
       </div>
     );
   }
@@ -295,18 +295,18 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
     return (
       <div className="flex flex-col h-full">
         {/* Drilldown Header */}
-        <div className="p-2 border-b border-[#1a2a1a]">
+        <div className="p-2 border-b border-[var(--border-subtle)]">
           <button
             onClick={() => setDrilldown(null)}
             className="flex items-center gap-1 text-[10px] text-[#38bdf8] hover:text-white mb-1 transition"
           >
             <ArrowLeft size={10} />
-            Zurück zur Matrix
+            Back to Matrix
           </button>
           <p className="text-[11px] font-medium text-white">
             §{drilldown.sectionNumber} {drilldown.sectionTitle}
           </p>
-          <p className="text-[9px] text-[#4a5a4a]">
+          <p className="text-[9px] text-[var(--text-tertiary)]">
             × {drilldown.layer.charAt(0).toUpperCase() + drilldown.layer.slice(1)} Layer
           </p>
         </div>
@@ -315,15 +315,15 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
         <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
           {drillMappings.length === 0 && !showAddForm && (
             <div className="text-center py-4">
-              <XCircle size={20} className="text-[#3a4a3a] mx-auto mb-1" />
-              <p className="text-[10px] text-[#4a5a4a]">Keine Zuordnungen für diese Kombination.</p>
+              <XCircle size={20} className="text-[var(--text-disabled)] mx-auto mb-1" />
+              <p className="text-[10px] text-[var(--text-tertiary)]">No mappings for this combination.</p>
             </div>
           )}
 
           {drillMappings.map((mapping) => (
             <div
               key={mapping._id}
-              className="rounded border border-[#1a2a1a] bg-[#0a0a0a] p-2"
+              className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2"
             >
               {editingId === mapping._id ? (
                 /* Edit Mode */
@@ -335,7 +335,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                   <select
                     value={editStatus}
                     onChange={(e) => setEditStatus(e.target.value)}
-                    className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
+                    className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
                   >
                     <option value="compliant">Compliant</option>
                     <option value="partial">Partial</option>
@@ -347,20 +347,20 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                     value={editNotes}
                     onChange={(e) => setEditNotes(e.target.value)}
                     placeholder="Notiz..."
-                    className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#3a4a3a] outline-none"
+                    className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white placeholder:text-[var(--text-disabled)] outline-none"
                   />
                   <div className="flex gap-1">
                     <button
                       onClick={() => handleUpdateMapping(mapping._id)}
                       className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded bg-[#38bdf8]/10 text-[#38bdf8] hover:bg-[#38bdf8]/20 transition"
                     >
-                      <Check size={10} /> Speichern
+                      <Check size={10} /> Save
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
-                      className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[#7a8a7a] hover:bg-[#3a4a3a] transition"
+                      className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:bg-[#3a4a3a] transition"
                     >
-                      <X size={10} /> Abbrechen
+                      <X size={10} /> Cancel
                     </button>
                   </div>
                 </div>
@@ -374,12 +374,12 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                       <span className="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded">AI</span>
                     )}
                   </div>
-                  <p className="text-[9px] text-[#4a5a4a] mt-0.5 capitalize">Status: {mapping.status}</p>
+                  <p className="text-[9px] text-[var(--text-tertiary)] mt-0.5 capitalize">Status: {mapping.status}</p>
                   {mapping.notes && (
-                    <p className="text-[9px] text-[#7a8a7a] mt-0.5">{mapping.notes}</p>
+                    <p className="text-[9px] text-[var(--text-secondary)] mt-0.5">{mapping.notes}</p>
                   )}
                   {mapping.confidence > 0 && (
-                    <p className="text-[9px] text-[#3a4a3a] mt-0.5">
+                    <p className="text-[9px] text-[var(--text-disabled)] mt-0.5">
                       Confidence: {Math.round(mapping.confidence * 100)}%
                     </p>
                   )}
@@ -395,13 +395,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                         setEditStatus(mapping.status);
                         setEditNotes(mapping.notes);
                       }}
-                      className="text-[9px] text-[#4a5a4a] hover:text-white flex items-center gap-0.5 transition"
+                      className="text-[9px] text-[var(--text-tertiary)] hover:text-white flex items-center gap-0.5 transition"
                     >
-                      <Edit3 size={8} /> Bearbeiten
+                      <Edit3 size={8} /> Edit
                     </button>
                     <button
                       onClick={() => handleDeleteMapping(mapping._id)}
-                      className="text-[9px] text-[#4a5a4a] hover:text-red-400 flex items-center gap-0.5 transition"
+                      className="text-[9px] text-[var(--text-tertiary)] hover:text-red-400 flex items-center gap-0.5 transition"
                     >
                       <Trash2 size={8} /> Entfernen
                     </button>
@@ -413,13 +413,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
 
           {/* Add Mapping Form */}
           {showAddForm ? (
-            <div className="rounded border border-[#38bdf8]/30 bg-[#0a0a0a] p-2 space-y-1.5">
+            <div className="rounded border border-[#38bdf8]/30 bg-[var(--surface-base)] p-2 space-y-1.5">
               <select
                 value={addElementId}
                 onChange={(e) => setAddElementId(e.target.value)}
-                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
               >
-                <option value="">Element wählen...</option>
+                <option value="">Select element...</option>
                 {unmappedElements.map((e) => (
                   <option key={e.id} value={e.id}>{e.name} [{e.type}]</option>
                 ))}
@@ -427,7 +427,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
               <select
                 value={addStatus}
                 onChange={(e) => setAddStatus(e.target.value)}
-                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
               >
                 <option value="compliant">Compliant</option>
                 <option value="partial">Partial</option>
@@ -439,7 +439,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 value={addNotes}
                 onChange={(e) => setAddNotes(e.target.value)}
                 placeholder="Notiz (optional)..."
-                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white placeholder:text-[#3a4a3a] outline-none"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white placeholder:text-[var(--text-disabled)] outline-none"
               />
               <div className="flex gap-1">
                 <button
@@ -451,16 +451,16 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 </button>
                 <button
                   onClick={() => setShowAddForm(false)}
-                  className="flex-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[#7a8a7a] hover:bg-[#3a4a3a] transition"
+                  className="flex-1 text-[10px] py-1 rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:bg-[#3a4a3a] transition"
                 >
-                  Abbrechen
+                  Cancel
                 </button>
               </div>
             </div>
           ) : (
             <button
               onClick={() => setShowAddForm(true)}
-              className="w-full flex items-center justify-center gap-1 text-[10px] py-1.5 rounded border border-dashed border-[#1a2a1a] text-[#4a5a4a] hover:border-[#38bdf8] hover:text-[#38bdf8] transition"
+              className="w-full flex items-center justify-center gap-1 text-[10px] py-1.5 rounded border border-dashed border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:border-[#38bdf8] hover:text-[#38bdf8] transition"
             >
               <Plus size={10} />
               Element zuordnen
@@ -484,11 +484,11 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-2 border-b border-[#1a2a1a] flex items-center justify-between">
+      <div className="p-2 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
             onClick={onBack}
-            className="text-[#4a5a4a] hover:text-white transition"
+            className="text-[var(--text-tertiary)] hover:text-white transition"
           >
             <ArrowLeft size={12} />
           </button>
@@ -504,7 +504,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
           ) : (
             <Sparkles size={10} />
           )}
-          AI Vorschläge
+          AI Suggestions
         </button>
       </div>
 
@@ -512,10 +512,10 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       <div className="flex-1 overflow-auto p-2">
         {sections.length === 0 || layers.length === 0 ? (
           <div className="text-center py-6">
-            <p className="text-xs text-[#4a5a4a]">
+            <p className="text-xs text-[var(--text-tertiary)]">
               {layers.length === 0
-                ? 'Keine Architektur-Elemente vorhanden. Erstelle zuerst Elemente.'
-                : 'Keine Sections ausgewählt. Wähle Abschnitte im Standards-Tab.'}
+                ? 'No architecture elements found. Create elements first.'
+                : 'No sections selected. Choose sections in the Standards tab.'}
             </p>
           </div>
         ) : (
@@ -523,13 +523,13 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left text-[9px] text-[#4a5a4a] font-normal p-1 border-b border-[#1a2a1a] sticky top-0 bg-[#111111]">
+                  <th className="text-left text-[9px] text-[var(--text-tertiary)] font-normal p-1 border-b border-[var(--border-subtle)] sticky top-0 bg-[var(--surface-raised)]">
                     Section
                   </th>
                   {layers.map((layer) => (
                     <th
                       key={layer}
-                      className="text-center text-[9px] text-[#4a5a4a] font-normal p-1 border-b border-[#1a2a1a] capitalize sticky top-0 bg-[#111111]"
+                      className="text-center text-[9px] text-[var(--text-tertiary)] font-normal p-1 border-b border-[var(--border-subtle)] capitalize sticky top-0 bg-[var(--surface-raised)]"
                     >
                       {layer}
                     </th>
@@ -539,7 +539,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
               <tbody>
                 {sections.map((section) => (
                   <tr key={section.id}>
-                    <td className="text-[9px] text-[#7a8a7a] p-1 border-b border-[#111111] max-w-[100px] truncate" title={`§${section.number} ${section.title}`}>
+                    <td className="text-[9px] text-[var(--text-secondary)] p-1 border-b border-[#111111] max-w-[100px] truncate" title={`§${section.number} ${section.title}`}>
                       §{section.number}
                     </td>
                     {layers.map((layer) => {
@@ -549,7 +549,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                       if (!cell) {
                         return (
                           <td key={layer} className="p-1 border-b border-[#111111]">
-                            <div className="w-full h-6 bg-[#111111] rounded" />
+                            <div className="w-full h-6 bg-[var(--surface-raised)] rounded" />
                           </td>
                         );
                       }
@@ -585,21 +585,21 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
                 ))}
                 {/* Score Row */}
                 <tr>
-                  <td className="text-[9px] text-[#4a5a4a] font-medium p-1 border-t border-[#1a2a1a]">
+                  <td className="text-[9px] text-[var(--text-tertiary)] font-medium p-1 border-t border-[var(--border-subtle)]">
                     Score
                   </td>
                   {layers.map((layer) => {
                     const score = getLayerScore(cells, layer);
                     const color =
                       score < 0
-                        ? 'text-[#3a4a3a]'
+                        ? 'text-[var(--text-disabled)]'
                         : score >= 70
                           ? 'text-emerald-400'
                           : score >= 40
                             ? 'text-yellow-400'
                             : 'text-red-400';
                     return (
-                      <td key={layer} className="text-center p-1 border-t border-[#1a2a1a]">
+                      <td key={layer} className="text-center p-1 border-t border-[var(--border-subtle)]">
                         <span className={`text-[9px] font-medium ${color}`}>
                           {score < 0 ? '—' : `${score}%`}
                         </span>
@@ -614,19 +614,19 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
             <div className="flex items-center gap-3 mt-3 px-1">
               <div className="flex items-center gap-1">
                 <CheckCircle2 size={8} className="text-emerald-400" />
-                <span className="text-[8px] text-[#4a5a4a]">Compliant</span>
+                <span className="text-[8px] text-[var(--text-tertiary)]">Compliant</span>
               </div>
               <div className="flex items-center gap-1">
                 <AlertTriangle size={8} className="text-yellow-400" />
-                <span className="text-[8px] text-[#4a5a4a]">Partial</span>
+                <span className="text-[8px] text-[var(--text-tertiary)]">Partial</span>
               </div>
               <div className="flex items-center gap-1">
                 <XCircle size={8} className="text-red-400" />
-                <span className="text-[8px] text-[#4a5a4a]">Gap</span>
+                <span className="text-[8px] text-[var(--text-tertiary)]">Gap</span>
               </div>
               <div className="flex items-center gap-1">
-                <Minus size={8} className="text-[#3a4a3a]" />
-                <span className="text-[8px] text-[#4a5a4a]">Leer</span>
+                <Minus size={8} className="text-[var(--text-disabled)]" />
+                <span className="text-[8px] text-[var(--text-tertiary)]">Leer</span>
               </div>
             </div>
           </div>

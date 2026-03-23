@@ -100,7 +100,7 @@ export default function MonteCarloSimulation() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#1a2a1a]">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Dice5 size={14} className="text-[#00ff41]" />
           Monte Carlo Simulation
@@ -110,11 +110,11 @@ export default function MonteCarloSimulation() {
       {/* Config */}
       <div className="p-3 space-y-2">
         <div>
-          <label className="text-[9px] text-[#4a5a4a] block mb-1">Scenario</label>
+          <label className="text-[9px] text-[var(--text-tertiary)] block mb-1">Scenario</label>
           <select
             value={config.scenario}
             onChange={(e) => setConfig({ ...config, scenario: e.target.value as SimConfig['scenario'] })}
-            className="w-full bg-[#0a0a0a] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
+            className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
           >
             <option value="cost">Cost Estimation</option>
             <option value="risk">Risk Assessment</option>
@@ -122,11 +122,11 @@ export default function MonteCarloSimulation() {
           </select>
         </div>
         <div>
-          <label className="text-[9px] text-[#4a5a4a] block mb-1">Iterations</label>
+          <label className="text-[9px] text-[var(--text-tertiary)] block mb-1">Iterations</label>
           <select
             value={config.iterations}
             onChange={(e) => setConfig({ ...config, iterations: parseInt(e.target.value) })}
-            className="w-full bg-[#0a0a0a] border border-[#1a2a1a] rounded px-2 py-1 text-[10px] text-white outline-none"
+            className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
           >
             <option value="1000">1,000</option>
             <option value="5000">5,000</option>
@@ -146,25 +146,25 @@ export default function MonteCarloSimulation() {
 
       {/* Results */}
       {result && (
-        <div className="px-3 pb-3 space-y-2 border-t border-[#1a2a1a] pt-3">
+        <div className="px-3 pb-3 space-y-2 border-t border-[var(--border-subtle)] pt-3">
           <div className="grid grid-cols-3 gap-1">
-            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
-              <div className="text-[9px] text-[#4a5a4a]">P10</div>
+            <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
+              <div className="text-[9px] text-[var(--text-tertiary)]">P10</div>
               <div className="text-xs font-bold text-[#22c55e]">{formatValue(result.p10)}</div>
             </div>
             <div className="rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 p-1.5 text-center">
-              <div className="text-[9px] text-[#4a5a4a]">P50</div>
+              <div className="text-[9px] text-[var(--text-tertiary)]">P50</div>
               <div className="text-xs font-bold text-white">{formatValue(result.p50)}</div>
             </div>
-            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
-              <div className="text-[9px] text-[#4a5a4a]">P90</div>
+            <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
+              <div className="text-[9px] text-[var(--text-tertiary)]">P90</div>
               <div className="text-xs font-bold text-[#ef4444]">{formatValue(result.p90)}</div>
             </div>
           </div>
 
           {/* Distribution */}
-          <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
-            <div className="text-[9px] text-[#4a5a4a] mb-1 flex items-center gap-1">
+          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
+            <div className="text-[9px] text-[var(--text-tertiary)] mb-1 flex items-center gap-1">
               <BarChart3 size={8} /> Distribution
             </div>
             <div className="flex items-end gap-px h-14">
@@ -183,7 +183,7 @@ export default function MonteCarloSimulation() {
             </div>
           </div>
 
-          <div className="text-[9px] text-[#3a4a3a] text-center">
+          <div className="text-[9px] text-[var(--text-disabled)] text-center">
             Mean: {formatValue(result.mean)} | StdDev: {formatValue(result.stdDev)}
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function MonteCarloSimulation() {
 
       {elements.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#4a5a4a] text-center">Add elements to run simulation</p>
+          <p className="text-xs text-[var(--text-tertiary)] text-center">Add elements to run simulation</p>
         </div>
       )}
     </div>

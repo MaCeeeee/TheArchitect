@@ -43,11 +43,11 @@ export default function PlateauBar() {
   };
 
   return (
-    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-lg border border-[#1a2a1a] bg-[#0a0a0a]/90 backdrop-blur-sm px-2 py-1.5 shadow-xl">
+    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]/90 backdrop-blur-sm px-2 py-1.5 shadow-xl">
       {/* Fit all */}
       <button
         onClick={handleFitAll}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-[#00ff41] hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-[#00ff41] hover:bg-[#1a2a1a] transition"
         title="Fit all plateaus (Home)"
       >
         <Home size={14} />
@@ -56,7 +56,7 @@ export default function PlateauBar() {
       {/* Previous */}
       <button
         onClick={handlePrev}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
         title="Previous plateau (←)"
       >
         <ChevronLeft size={14} />
@@ -74,7 +74,7 @@ export default function PlateauBar() {
               className={`relative flex flex-col items-center rounded-md px-2.5 py-1 text-xs cursor-pointer transition ${
                 isActive
                   ? 'bg-[#1a2a1a] border border-[#00ff41]/50'
-                  : 'text-[#7a8a7a] hover:text-white hover:bg-[#1a2a1a]/50 border border-transparent'
+                  : 'text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a]/50 border border-transparent'
               }`}
               style={isActive ? { boxShadow: '0 0 8px rgba(0,255,65,0.15)' } : undefined}
             >
@@ -84,7 +84,7 @@ export default function PlateauBar() {
                 {isAsIs ? 'As-Is' : `W${snapshot.waveNumber}`}
               </span>
               {!isAsIs && (
-                <span className="text-[8px] text-[#4a5a4a] mt-0.5">
+                <span className="text-[8px] text-[var(--text-tertiary)] mt-0.5">
                   {snapshot.changedElementIds.length > 0 && (
                     <span className={isActive ? 'text-[#00ff41]/70' : ''}>
                       {snapshot.changedElementIds.length}
@@ -108,7 +108,7 @@ export default function PlateauBar() {
       {/* Next */}
       <button
         onClick={handleNext}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
         title="Next plateau (→)"
       >
         <ChevronRight size={14} />
@@ -123,7 +123,7 @@ export default function PlateauBar() {
         className={`flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition ${
           plateauViewMode === 'changed-only'
             ? 'text-[#00ff41] bg-[#00ff41]/10'
-            : 'text-[#4a5a4a] hover:text-white'
+            : 'text-[var(--text-tertiary)] hover:text-white'
         }`}
         title={plateauViewMode === 'full' ? 'Show changed elements only' : 'Show all elements'}
       >

@@ -34,7 +34,7 @@ export default function SettingsSidebar() {
   });
 
   return (
-    <nav className="w-56 shrink-0 border-r border-[#1a2a1a] bg-[#111111] p-4 space-y-1">
+    <nav className="w-56 shrink-0 border-r border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 space-y-1">
       {visibleSections.map((s) => (
         <button
           key={s.id}
@@ -42,7 +42,7 @@ export default function SettingsSidebar() {
           className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition ${
             active === s.id
               ? 'bg-[#00ff41]/20 text-[#33ff66]'
-              : 'text-[#7a8a7a] hover:bg-[#0a0a0a] hover:text-white'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-base)] hover:text-white'
           }`}
         >
           <s.icon size={16} />

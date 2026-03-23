@@ -142,7 +142,7 @@ export default function SimulationPanel() {
   return (
     <div className="flex flex-col h-full text-sm">
       {/* Tab bar */}
-      <div className="flex border-b border-[#1a2a1a] px-2">
+      <div className="flex border-b border-[var(--border-subtle)] px-2">
         {tabs.map((mode) => (
           <button
             key={mode}
@@ -302,7 +302,7 @@ function ConfigView({
         <select
           value={scenarioType}
           onChange={(e) => setScenarioType(e.target.value as ScenarioType)}
-          className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs"
+          className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1.5 text-xs"
         >
           {SCENARIO_TYPES.map((s) => (
             <option key={s.value} value={s.value}>{s.label}</option>
@@ -317,7 +317,7 @@ function ConfigView({
           value={scenarioDescription}
           onChange={(e) => setScenarioDescription(e.target.value)}
           placeholder="e.g., We are migrating our legacy ERP to a cloud-native platform while simultaneously integrating an acquired company's data systems..."
-          className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs h-20 resize-none"
+          className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1.5 text-xs h-20 resize-none"
         />
       </div>
 
@@ -348,7 +348,7 @@ function ConfigView({
         </div>
         <div className="space-y-1">
           {agents.map((agent) => (
-            <div key={agent.id} className="bg-[#111111] border border-[#1a2a1a] rounded">
+            <div key={agent.id} className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded">
               <div className="flex items-center justify-between px-2 py-1.5">
                 <button
                   onClick={() => setExpandedAgent(expandedAgent === agent.id ? null : agent.id)}
@@ -378,7 +378,7 @@ function ConfigView({
                 </div>
               </div>
               {expandedAgent === agent.id && (
-                <div className="px-2 pb-2 text-xs text-gray-400 space-y-1 border-t border-[#1a2a1a]">
+                <div className="px-2 pb-2 text-xs text-gray-400 space-y-1 border-t border-[var(--border-subtle)]">
                   <div className="pt-1">Layers: {agent.visibleLayers.join(', ')}</div>
                   <div>Budget: ${agent.budgetConstraint?.toLocaleString() || 'unlimited'}</div>
                   <div>Risk Threshold: {agent.riskThreshold || 'none'}</div>
@@ -393,7 +393,7 @@ function ConfigView({
 
       {/* Persona Picker (expandable) */}
       {showPersonaPicker && (
-        <div className="bg-[#0a0a0a] border border-[#1a2a1a] rounded p-2 space-y-2">
+        <div className="bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded p-2 space-y-2">
           <div className="text-xs text-gray-400 font-medium">Available Personas</div>
 
           {/* Presets */}
@@ -401,7 +401,7 @@ function ConfigView({
             <div>
               <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Presets</div>
               {presetPersonas.filter((p) => !agents.some((a) => a.id === p.id)).map((persona) => (
-                <div key={persona.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[#111111] rounded">
+                <div key={persona.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[var(--surface-raised)] rounded">
                   <span className="text-gray-300">{persona.name}</span>
                   <div className="flex gap-1">
                     <button
@@ -412,7 +412,7 @@ function ConfigView({
                     </button>
                     <button
                       onClick={() => handleClone(persona)}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-[#111111] text-gray-400 hover:text-[#00ff41]"
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] text-gray-400 hover:text-[#00ff41]"
                     >
                       Clone
                     </button>
@@ -427,7 +427,7 @@ function ConfigView({
             <div>
               <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Custom</div>
               {customPersonas.map((persona) => (
-                <div key={persona.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[#111111] rounded">
+                <div key={persona.id} className="flex items-center justify-between px-2 py-1 text-xs hover:bg-[var(--surface-raised)] rounded">
                   <span className="text-gray-300">{persona.name}</span>
                   <div className="flex gap-1">
                     {!agents.some((a) => a.id === persona.id) && (
@@ -440,13 +440,13 @@ function ConfigView({
                     )}
                     <button
                       onClick={() => handleEdit(persona)}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-[#111111] text-gray-400 hover:text-cyan-400"
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] text-gray-400 hover:text-cyan-400"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDeleteCustom(persona)}
-                      className="text-[10px] px-1.5 py-0.5 rounded bg-[#111111] text-gray-400 hover:text-red-400"
+                      className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-raised)] text-gray-400 hover:text-red-400"
                     >
                       Del
                     </button>
@@ -521,7 +521,7 @@ function RunningView({
         </button>
       </div>
 
-      <div className="w-full bg-[#111111] rounded-full h-1.5">
+      <div className="w-full bg-[var(--surface-raised)] rounded-full h-1.5">
         <div
           className="bg-[#00ff41] h-1.5 rounded-full transition-all"
           style={{ width: `${((currentRound + 1) / maxRounds) * 100}%` }}
@@ -550,7 +550,7 @@ function RunningView({
 
       {/* Streaming reasoning */}
       {streamingText && (
-        <div className="bg-[#111111] border border-[#1a2a1a] rounded p-2 text-xs text-gray-300 max-h-32 overflow-y-auto">
+        <div className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded p-2 text-xs text-gray-300 max-h-32 overflow-y-auto">
           {streamingText}
         </div>
       )}
@@ -661,7 +661,7 @@ function ResultsView({
 
       {/* Recommendation */}
       {fatigueReport.recommendation && (
-        <div className="bg-[#111111] border border-[#1a2a1a] rounded p-2 text-xs text-gray-300">
+        <div className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded p-2 text-xs text-gray-300">
           <div className="text-xs text-gray-400 mb-1 font-medium">Recommendation</div>
           {fatigueReport.recommendation}
         </div>
@@ -672,7 +672,7 @@ function ResultsView({
         <div className="text-xs text-gray-400 mb-1 font-medium">Stakeholder Fatigue</div>
         <div className="space-y-1.5">
           {fatigueReport.perAgent?.map((agent: any) => (
-            <div key={agent.agentId} className="bg-[#111111] rounded p-2">
+            <div key={agent.agentId} className="bg-[var(--surface-raised)] rounded p-2">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-gray-300">{agent.agentName}</span>
                 <span style={{ color: FATIGUE_COLORS[agent.fatigueIndex >= 0.8 ? 'red' : agent.fatigueIndex >= 0.6 ? 'orange' : agent.fatigueIndex >= 0.3 ? 'yellow' : 'green'] }}>
@@ -701,7 +701,7 @@ function ResultsView({
           <div className="text-xs text-gray-400 mb-1 font-medium">Bottleneck Elements</div>
           <div className="space-y-1">
             {fatigueReport.perElement.slice(0, 5).map((el: any) => (
-              <div key={el.elementId} className="bg-[#111111] rounded px-2 py-1.5 text-xs">
+              <div key={el.elementId} className="bg-[var(--surface-raised)] rounded px-2 py-1.5 text-xs">
                 <div className="flex justify-between">
                   <span className="text-gray-300 truncate">{el.elementName}</span>
                   <span className="text-orange-400 ml-2">
@@ -737,7 +737,7 @@ function ResultsView({
           className={`flex-1 text-xs px-2 py-1.5 rounded border transition-colors ${
             showOverlay
               ? 'bg-[#00ff41]/20 border-[#00ff41] text-[#00ff41]'
-              : 'bg-[#111111] border-[#1a2a1a] text-gray-400 hover:text-gray-200'
+              : 'bg-[var(--surface-raised)] border-[var(--border-subtle)] text-gray-400 hover:text-gray-200'
           }`}
         >
           <BarChart3 size={12} className="inline mr-1" />
@@ -746,14 +746,14 @@ function ResultsView({
         <button
           onClick={handleExportPDF}
           disabled={exportLoading || !projectId || !runId}
-          className="flex-1 text-xs px-2 py-1.5 rounded bg-[#111111] border border-[#1a2a1a] text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
+          className="flex-1 text-xs px-2 py-1.5 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-gray-400 hover:text-gray-200 transition-colors disabled:opacity-50"
         >
           {exportLoading ? <Loader2 size={12} className="inline mr-1 animate-spin" /> : <Download size={12} className="inline mr-1" />}
           Export PDF
         </button>
         <button
           onClick={onNewRun}
-          className="flex-1 text-xs px-2 py-1.5 rounded bg-[#111111] border border-[#1a2a1a] text-gray-400 hover:text-gray-200 transition-colors"
+          className="flex-1 text-xs px-2 py-1.5 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-gray-400 hover:text-gray-200 transition-colors"
         >
           <Play size={12} className="inline mr-1" />
           New Run
@@ -832,19 +832,19 @@ function HistoryView({ runs, projectId, onSelect, onCompare }: {
               <button
                 onClick={() => run.status === 'completed' && toggleSelection(run.id)}
                 disabled={run.status !== 'completed'}
-                className={`w-full bg-[#111111] border rounded p-2 text-left transition-colors ${
+                className={`w-full bg-[var(--surface-raised)] border rounded p-2 text-left transition-colors ${
                   selectedIds.includes(run.id)
                     ? 'border-cyan-500/60 bg-cyan-500/5'
                     : run.status === 'completed'
-                    ? 'border-[#1a2a1a] hover:border-cyan-500/30'
-                    : 'border-[#1a2a1a] opacity-40 cursor-not-allowed'
+                    ? 'border-[var(--border-subtle)] hover:border-cyan-500/30'
+                    : 'border-[var(--border-subtle)] opacity-40 cursor-not-allowed'
                 }`}
               >
                 <div className="flex items-center gap-2 text-xs">
                   <div className={`w-4 h-4 rounded border flex items-center justify-center ${
                     selectedIds.includes(run.id)
                       ? 'border-cyan-500 bg-cyan-500/20'
-                      : 'border-[#1a2a1a]'
+                      : 'border-[var(--border-subtle)]'
                   }`}>
                     {selectedIds.includes(run.id) && (
                       <div className="w-2 h-2 rounded-sm bg-cyan-400" />
@@ -865,7 +865,7 @@ function HistoryView({ runs, projectId, onSelect, onCompare }: {
             ) : (
               <button
                 onClick={() => onSelect(run.id)}
-                className="w-full bg-[#111111] border border-[#1a2a1a] rounded p-2 text-left hover:border-[#00ff41]/50 transition-colors"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded p-2 text-left hover:border-[#00ff41]/50 transition-colors"
               >
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-300 truncate">{run.name}</span>
@@ -897,7 +897,7 @@ function FactorBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-[10px] text-gray-500 w-16 truncate">{label}</span>
-      <div className="flex-1 bg-[#0a0a0a] rounded-full h-1">
+      <div className="flex-1 bg-[var(--surface-base)] rounded-full h-1">
         <div className="h-1 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
       </div>
       <span className="text-[10px] text-gray-500 w-7 text-right">{pct.toFixed(0)}%</span>
@@ -907,7 +907,7 @@ function FactorBar({ label, value }: { label: string; value: number }) {
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-[#0a0a0a] rounded p-1.5">
+    <div className="bg-[var(--surface-base)] rounded p-1.5">
       <div className="text-[10px] text-gray-500">{label}</div>
       <div className="text-xs text-gray-200 font-medium">{value}</div>
     </div>

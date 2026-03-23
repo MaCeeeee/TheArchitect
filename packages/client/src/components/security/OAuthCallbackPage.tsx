@@ -33,10 +33,10 @@ export default function OAuthCallbackPage() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-[#0a0a0a]">
+    <div className="flex h-screen w-screen items-center justify-center bg-[var(--surface-base)]">
       <div className="text-center">
         <div className="mx-auto mb-4 h-12 w-12 rounded-full border-2 border-[#00ff41] border-t-transparent animate-spin" />
-        <p className="text-sm text-[#7a8a7a]">Completing sign in...</p>
+        <p className="text-sm text-[var(--text-secondary)]">Completing sign in...</p>
       </div>
     </div>
   );

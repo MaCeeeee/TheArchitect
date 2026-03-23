@@ -70,11 +70,11 @@ export default function WorkspaceBar() {
   };
 
   return (
-    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-lg border border-[#1a2a1a] bg-[#111111]/90 backdrop-blur-sm px-2 py-1.5 shadow-xl">
+    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)]/90 backdrop-blur-sm px-2 py-1.5 shadow-xl">
       {/* Fit all button */}
       <button
         onClick={() => fitAllWorkspaces(workspaces)}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
         title="Fit all workspaces (Home)"
       >
         <Home size={14} />
@@ -83,7 +83,7 @@ export default function WorkspaceBar() {
       {/* Previous */}
       <button
         onClick={handlePrev}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
         title="Previous workspace (←)"
       >
         <ChevronLeft size={14} />
@@ -97,7 +97,7 @@ export default function WorkspaceBar() {
             className={`group relative flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs cursor-pointer transition ${
               ws.id === activeWorkspaceId
                 ? 'bg-[#1a2a1a] text-white'
-                : 'text-[#7a8a7a] hover:text-white hover:bg-[#1a2a1a]/50'
+                : 'text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a]/50'
             }`}
             onClick={() => handleSelectWorkspace(ws.id)}
             onDoubleClick={() => handleDoubleClick(ws.id, ws.name)}
@@ -125,14 +125,14 @@ export default function WorkspaceBar() {
             ) : (
               <>
                 <span className="max-w-[100px] truncate">{ws.name}</span>
-                <span className="text-[10px] text-[#4a5a4a]">
+                <span className="text-[10px] text-[var(--text-tertiary)]">
                   ({getElementCount(ws.id)})
                 </span>
               </>
             )}
 
             {/* Keyboard hint */}
-            <span className="hidden group-hover:inline text-[9px] text-[#3a4a3a] ml-0.5">
+            <span className="hidden group-hover:inline text-[9px] text-[var(--text-disabled)] ml-0.5">
               {index + 1}
             </span>
 
@@ -140,8 +140,8 @@ export default function WorkspaceBar() {
             {confirmDeleteId === ws.id ? (
               <span className="flex items-center gap-1 text-[9px]" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => handleDelete(ws.id)} className="text-red-400 hover:text-red-300 font-medium">Yes</button>
-                <span className="text-[#3a4a3a]">/</span>
-                <button onClick={() => setConfirmDeleteId(null)} className="text-[#7a8a7a] hover:text-white">No</button>
+                <span className="text-[var(--text-disabled)]">/</span>
+                <button onClick={() => setConfirmDeleteId(null)} className="text-[var(--text-secondary)] hover:text-white">No</button>
               </span>
             ) : (
               <button
@@ -149,7 +149,7 @@ export default function WorkspaceBar() {
                   e.stopPropagation();
                   setConfirmDeleteId(ws.id);
                 }}
-                className="hidden group-hover:flex items-center justify-center rounded p-0.5 text-[#4a5a4a] hover:text-red-400 transition"
+                className="hidden group-hover:flex items-center justify-center rounded p-0.5 text-[var(--text-tertiary)] hover:text-red-400 transition"
               >
                 <X size={10} />
               </button>
@@ -161,7 +161,7 @@ export default function WorkspaceBar() {
       {/* Next */}
       <button
         onClick={handleNext}
-        className="flex items-center justify-center rounded p-1.5 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+        className="flex items-center justify-center rounded p-1.5 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
         title="Next workspace (→)"
       >
         <ChevronRight size={14} />

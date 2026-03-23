@@ -23,13 +23,17 @@ import {
   refreshPolicyStats,
   getPipelineStatus,
   getPortfolioOverview,
+  captureComplianceSnapshot,
+  getComplianceSnapshots,
 } from '../services/compliance-pipeline.service';
+import { AuditChecklist } from '../models/AuditChecklist';
 
 const router = Router();
 router.use(authenticate);
 
 function getUserId(req: Request): string {
-  return (req as unknown as { user: { userId: string } }).user.userId;
+  const user = req.user as unknown as { _id: { toString(): string }; userId?: string };
+  return user.userId || user._id.toString();
 }
 function pid(req: Request): string {
   return String(req.params.projectId);
@@ -150,6 +154,165 @@ router.get(
     } catch (err) {
       console.error('[Pipeline] Portfolio error:', err);
       res.status(500).json({ error: 'Failed to get portfolio' });
+    }
+  }
+);
+
+// ─── Compliance Snapshots (REQ-CDTP-016, REQ-CDTP-017) ───
+
+// GET snapshot timeline for project
+router.get(
+  '/:projectId/standards/compliance-snapshots',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const standardId = req.query.standardId ? String(req.query.standardId) : undefined;
+      const snapshots = await getComplianceSnapshots(pid(req), standardId);
+      res.json(snapshots);
+    } catch (err) {
+      console.error('[Compliance] Snapshots error:', err);
+      res.status(500).json({ error: 'Failed to get snapshots' });
+    }
+  }
+);
+
+// POST capture a new snapshot
+router.post(
+  '/:projectId/standards/compliance-snapshots/capture',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const standardId = req.body.standardId || undefined;
+      const snapshot = await captureComplianceSnapshot(pid(req), standardId);
+      res.status(201).json(snapshot);
+    } catch (err) {
+      console.error('[Compliance] Capture snapshot error:', err);
+      res.status(500).json({ error: 'Failed to capture snapshot' });
+    }
+  }
+);
+
+// ─── Audit Checklists (REQ-CDTP-020, REQ-CDTP-021, REQ-CDTP-023) ───
+
+// GET all audit checklists for project
+router.get(
+  '/:projectId/standards/audit-checklists',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const checklists = await AuditChecklist.find({ projectId: pid(req) })
+        .sort({ targetDate: 1 })
+        .populate('responsibleUserId', 'name email');
+      res.json(checklists);
+    } catch (err) {
+      console.error('[Audit] List checklists error:', err);
+      res.status(500).json({ error: 'Failed to list audit checklists' });
+    }
+  }
+);
+
+// POST create audit checklist (auto-generates items from standard sections)
+router.post(
+  '/:projectId/standards/audit-checklists',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const { standardId, name, targetDate, responsibleUserId } = req.body;
+      if (!standardId || !name || !targetDate) {
+        return res.status(400).json({ error: 'standardId, name, and targetDate are required' });
+      }
+
+      const { Standard } = await import('../models/Standard');
+      const standard = await Standard.findById(standardId);
+      if (!standard) return res.status(404).json({ error: 'Standard not found' });
+
+      const crypto = await import('crypto');
+      const items = standard.sections.map((s) => ({
+        id: crypto.randomUUID(),
+        sectionNumber: s.number,
+        title: s.title,
+        status: 'not_started' as const,
+        evidence: [],
+        notes: '',
+      }));
+
+      const checklist = await AuditChecklist.create({
+        projectId: pid(req),
+        standardId,
+        name,
+        targetDate: new Date(targetDate),
+        responsibleUserId: responsibleUserId || undefined,
+        items,
+        overallReadiness: 0,
+      });
+
+      res.status(201).json(checklist);
+    } catch (err) {
+      console.error('[Audit] Create checklist error:', err);
+      res.status(500).json({ error: 'Failed to create audit checklist' });
+    }
+  }
+);
+
+// GET single audit checklist
+router.get(
+  '/:projectId/standards/audit-checklists/:id',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const checklist = await AuditChecklist.findOne({
+        _id: req.params.id,
+        projectId: pid(req),
+      }).populate('responsibleUserId', 'name email');
+      if (!checklist) return res.status(404).json({ error: 'Checklist not found' });
+      res.json(checklist);
+    } catch (err) {
+      console.error('[Audit] Get checklist error:', err);
+      res.status(500).json({ error: 'Failed to get audit checklist' });
+    }
+  }
+);
+
+// PATCH update a checklist item (status, evidence, notes)
+router.patch(
+  '/:projectId/standards/audit-checklists/:id/items/:itemId',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const checklist = await AuditChecklist.findOne({
+        _id: req.params.id,
+        projectId: pid(req),
+      });
+      if (!checklist) return res.status(404).json({ error: 'Checklist not found' });
+
+      const item = checklist.items.find((i) => i.id === req.params.itemId);
+      if (!item) return res.status(404).json({ error: 'Item not found' });
+
+      const { status, evidence, notes, assignedTo, dueDate } = req.body;
+      if (status) item.status = status;
+      if (evidence) item.evidence = evidence;
+      if (notes !== undefined) item.notes = notes;
+      if (assignedTo !== undefined) item.assignedTo = assignedTo || undefined;
+      if (dueDate !== undefined) item.dueDate = dueDate ? new Date(dueDate) : undefined;
+
+      // Recalculate overall readiness
+      const total = checklist.items.length;
+      if (total > 0) {
+        const weights: Record<string, number> = {
+          not_started: 0,
+          in_progress: 0.25,
+          evidence_collected: 0.75,
+          verified: 1,
+        };
+        const score = checklist.items.reduce((sum, i) => sum + (weights[i.status] || 0), 0);
+        checklist.overallReadiness = Math.round((score / total) * 100);
+      }
+
+      await checklist.save();
+      res.json(checklist);
+    } catch (err) {
+      console.error('[Audit] Update item error:', err);
+      res.status(500).json({ error: 'Failed to update checklist item' });
     }
   }
 );

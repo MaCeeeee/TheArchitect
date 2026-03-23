@@ -36,19 +36,19 @@ export default class ErrorBoundary extends Component<Props, State> {
     const { error, showDetails } = this.state;
 
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#0a0a0a]">
+      <div className="flex h-screen w-screen items-center justify-center bg-[var(--surface-base)]">
         <div className="max-w-md text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/10">
             <AlertTriangle size={32} className="text-red-400" />
           </div>
 
           <h1
-            className="mb-2 text-xl font-semibold text-[#e0e0e0]"
+            className="mb-2 text-xl font-semibold text-[var(--text-primary)]"
             style={{ textShadow: '0 0 10px rgba(0,255,65,0.3)' }}
           >
             Something went wrong
           </h1>
-          <p className="mb-6 text-sm text-[#7a8a7a]">
+          <p className="mb-6 text-sm text-[var(--text-secondary)]">
             An unexpected error occurred. You can try again or reload the page.
           </p>
 
@@ -61,7 +61,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             </button>
             <button
               onClick={this.handleReload}
-              className="flex items-center gap-1.5 rounded-lg border border-[#1a2a1a] bg-[#111111] px-4 py-2 text-sm text-[#e0e0e0] hover:bg-[#1a2a1a] transition"
+              className="flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[#1a2a1a] transition"
             >
               <RefreshCw size={14} />
               Reload Page
@@ -72,13 +72,13 @@ export default class ErrorBoundary extends Component<Props, State> {
             <div>
               <button
                 onClick={() => this.setState({ showDetails: !showDetails })}
-                className="flex items-center gap-1 mx-auto text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                className="flex items-center gap-1 mx-auto text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
               >
                 {showDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 {showDetails ? 'Hide' : 'Show'} error details
               </button>
               {showDetails && (
-                <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[#1a2a1a] bg-[#111111] p-3 text-left text-xs text-red-400/80 font-mono">
+                <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-3 text-left text-xs text-red-400/80 font-mono">
                   {error.message}
                   {error.stack && `\n\n${error.stack}`}
                 </pre>

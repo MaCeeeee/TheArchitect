@@ -45,11 +45,11 @@ export default function RunComparison({ data, onClear }: Props) {
 
       {/* Outcome */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-[#111111] rounded p-2 text-center">
+        <div className="bg-[var(--surface-raised)] rounded p-2 text-center">
           <div className="text-[10px] text-gray-500">Run A Outcome</div>
           <div className="text-xs text-gray-200 font-medium capitalize">{data.outcomeA}</div>
         </div>
-        <div className="bg-[#111111] rounded p-2 text-center">
+        <div className="bg-[var(--surface-raised)] rounded p-2 text-center">
           <div className="text-[10px] text-gray-500">Run B Outcome</div>
           <div className="text-xs text-gray-200 font-medium capitalize">{data.outcomeB}</div>
         </div>
@@ -60,7 +60,7 @@ export default function RunComparison({ data, onClear }: Props) {
         <div className="text-xs text-gray-400 mb-2 font-medium">Fatigue Comparison</div>
         <div className="grid grid-cols-3 gap-2">
           {/* Run A */}
-          <div className="bg-[#111111] rounded p-2 border border-cyan-500/20">
+          <div className="bg-[var(--surface-raised)] rounded p-2 border border-cyan-500/20">
             <div className="text-[10px] text-cyan-400 mb-1">Run A</div>
             <div className="text-xl font-bold" style={{ color: FATIGUE_COLORS[data.fatigue.ratingA] }}>
               {(data.fatigue.globalA * 100).toFixed(0)}%
@@ -74,7 +74,7 @@ export default function RunComparison({ data, onClear }: Props) {
           </div>
 
           {/* Delta */}
-          <div className="bg-[#0a0a0a] rounded p-2 flex flex-col items-center justify-center">
+          <div className="bg-[var(--surface-base)] rounded p-2 flex flex-col items-center justify-center">
             <div className="text-[10px] text-gray-500 mb-1">Delta</div>
             <DeltaArrow delta={data.fatigue.delta} />
             <div className={`text-sm font-bold ${diffColor(data.fatigue.delta)}`}>
@@ -89,7 +89,7 @@ export default function RunComparison({ data, onClear }: Props) {
           </div>
 
           {/* Run B */}
-          <div className="bg-[#111111] rounded p-2 border border-purple-500/20">
+          <div className="bg-[var(--surface-raised)] rounded p-2 border border-purple-500/20">
             <div className="text-[10px] text-purple-400 mb-1">Run B</div>
             <div className="text-xl font-bold" style={{ color: FATIGUE_COLORS[data.fatigue.ratingB] }}>
               {(data.fatigue.globalB * 100).toFixed(0)}%
@@ -108,8 +108,8 @@ export default function RunComparison({ data, onClear }: Props) {
       {data.fatigue.perAgent.length > 0 && (
         <div>
           <div className="text-xs text-gray-400 mb-2 font-medium">Per-Agent Fatigue</div>
-          <div className="bg-[#111111] rounded overflow-hidden">
-            <div className="grid grid-cols-4 gap-1 px-2 py-1 text-[10px] text-gray-500 border-b border-[#1a2a1a]">
+          <div className="bg-[var(--surface-raised)] rounded overflow-hidden">
+            <div className="grid grid-cols-4 gap-1 px-2 py-1 text-[10px] text-gray-500 border-b border-[var(--border-subtle)]">
               <span>Agent</span>
               <span className="text-center">Run A</span>
               <span className="text-center">Run B</span>
@@ -139,7 +139,7 @@ export default function RunComparison({ data, onClear }: Props) {
           <div className="space-y-1">
             {/* Shared bottlenecks */}
             {data.bottlenecks.shared.map((el) => (
-              <div key={el.elementId} className={`bg-[#111111] rounded px-2 py-1.5 text-xs ${diffBg(el.delayDeltaMonths)}`}>
+              <div key={el.elementId} className={`bg-[var(--surface-raised)] rounded px-2 py-1.5 text-xs ${diffBg(el.delayDeltaMonths)}`}>
                 <div className="flex justify-between">
                   <span className="text-gray-300 truncate">{el.name}</span>
                   <span className={`ml-2 font-medium ${diffColor(el.delayDeltaMonths)}`}>
@@ -221,8 +221,8 @@ export default function RunComparison({ data, onClear }: Props) {
       {data.riskCost.elements.length > 0 && (
         <div>
           <div className="text-xs text-gray-400 mb-2 font-medium">Risk & Cost Deltas</div>
-          <div className="bg-[#111111] rounded overflow-hidden text-xs">
-            <div className="grid grid-cols-5 gap-1 px-2 py-1 text-[10px] text-gray-500 border-b border-[#1a2a1a]">
+          <div className="bg-[var(--surface-raised)] rounded overflow-hidden text-xs">
+            <div className="grid grid-cols-5 gap-1 px-2 py-1 text-[10px] text-gray-500 border-b border-[var(--border-subtle)]">
               <span className="col-span-1">Element</span>
               <span className="text-center">Risk A</span>
               <span className="text-center">Risk B</span>
@@ -248,7 +248,7 @@ export default function RunComparison({ data, onClear }: Props) {
 // ─── Sub-components ───
 
 function DeltaArrow({ delta }: { delta: number }) {
-  if (Math.abs(delta) < 0.01) return <Minus size={16} className="text-[#7a8a7a]" />;
+  if (Math.abs(delta) < 0.01) return <Minus size={16} className="text-[var(--text-secondary)]" />;
   return delta < 0 ? (
     <TrendingDown size={16} className="text-green-400" />
   ) : (
@@ -262,7 +262,7 @@ function CompareMetric({
   label: string; valueA: string; valueB: string; delta: number; invert?: boolean;
 }) {
   return (
-    <div className="bg-[#0a0a0a] rounded p-1.5">
+    <div className="bg-[var(--surface-base)] rounded p-1.5">
       <div className="text-[10px] text-gray-500">{label}</div>
       <div className="flex items-center justify-between text-xs mt-0.5">
         <span className="text-cyan-400">{valueA}</span>
@@ -281,7 +281,7 @@ function TimelineColumn({ label, events, color }: {
   const borderColor = color === 'cyan' ? 'border-cyan-500/20' : 'border-purple-500/20';
 
   return (
-    <div className={`bg-[#111111] rounded p-2 border ${borderColor}`}>
+    <div className={`bg-[var(--surface-raised)] rounded p-2 border ${borderColor}`}>
       <div className={`text-[10px] mb-1.5 ${color === 'cyan' ? 'text-cyan-400' : 'text-purple-400'}`}>
         {label} ({events.length} events)
       </div>

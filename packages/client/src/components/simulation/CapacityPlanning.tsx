@@ -56,7 +56,7 @@ export default function CapacityPlanning() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#1a2a1a]">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <Server size={14} className="text-[#00ff41]" />
           Capacity Planning
@@ -65,19 +65,19 @@ export default function CapacityPlanning() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 gap-2 p-3">
-        <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+        <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
           <div className="flex items-center gap-1.5 mb-1">
-            <Gauge size={12} className="text-[#7a8a7a]" />
-            <span className="text-[10px] text-[#4a5a4a]">Avg Utilization</span>
+            <Gauge size={12} className="text-[var(--text-secondary)]" />
+            <span className="text-[10px] text-[var(--text-tertiary)]">Avg Utilization</span>
           </div>
           <div className="text-lg font-bold" style={{ color: utilizationColor(capacityData.avgUtilization) }}>
             {capacityData.avgUtilization}%
           </div>
         </div>
-        <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+        <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
           <div className="flex items-center gap-1.5 mb-1">
             <AlertTriangle size={12} className="text-[#ef4444]" />
-            <span className="text-[10px] text-[#4a5a4a]">Bottlenecks</span>
+            <span className="text-[10px] text-[var(--text-tertiary)]">Bottlenecks</span>
           </div>
           <div className="text-lg font-bold text-[#ef4444]">{capacityData.bottleneckCount}</div>
         </div>
@@ -85,12 +85,12 @@ export default function CapacityPlanning() {
 
       {/* Resource list */}
       <div className="px-3 pb-3">
-        <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2 flex items-center gap-1">
+        <h4 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] mb-2 flex items-center gap-1">
           <TrendingUp size={10} /> Resource Utilization
         </h4>
         <div className="space-y-2">
           {capacityData.items.map((item, i) => (
-            <div key={i} className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-2">
+            <div key={i} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-[10px] text-white truncate flex-1">{item.name}</span>
                 <span className="text-[10px] font-bold font-mono" style={{ color: utilizationColor(item.utilization) }}>
@@ -104,9 +104,9 @@ export default function CapacityPlanning() {
                 />
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[8px] text-[#3a4a3a] capitalize">{item.type.replace(/_/g, ' ')}</span>
-                <span className="text-[8px] text-[#3a4a3a]">{item.currentLoad}/{item.maxCapacity} load</span>
-                <span className={`text-[8px] ${item.trend === 'growing' ? 'text-[#ef4444]' : item.trend === 'declining' ? 'text-[#22c55e]' : 'text-[#4a5a4a]'}`}>
+                <span className="text-[8px] text-[var(--text-disabled)] capitalize">{item.type.replace(/_/g, ' ')}</span>
+                <span className="text-[8px] text-[var(--text-disabled)]">{item.currentLoad}/{item.maxCapacity} load</span>
+                <span className={`text-[8px] ${item.trend === 'growing' ? 'text-[#ef4444]' : item.trend === 'declining' ? 'text-[#22c55e]' : 'text-[var(--text-tertiary)]'}`}>
                   {item.trend === 'growing' ? '↑' : item.trend === 'declining' ? '↓' : '→'} {item.trend}
                 </span>
                 {item.bottleneck && (
@@ -120,7 +120,7 @@ export default function CapacityPlanning() {
 
       {capacityData.items.length === 0 && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#4a5a4a] text-center">No infrastructure elements</p>
+          <p className="text-xs text-[var(--text-tertiary)] text-center">No infrastructure elements</p>
         </div>
       )}
     </div>

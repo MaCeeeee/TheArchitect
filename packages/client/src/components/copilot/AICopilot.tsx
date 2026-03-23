@@ -2,17 +2,12 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Sparkles, Send, ClipboardCheck, AlertTriangle, BookOpen, Lightbulb,
-  Loader2, RotateCcw, Trash2, AlertCircle, MessageSquare, FileText, Grid3X3,
+  Loader2, RotateCcw, Trash2, AlertCircle, MessageSquare,
   ShieldAlert,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
-import StandardsManager from './StandardsManager';
-import ComplianceMatrix from './ComplianceMatrix';
 import AdvisorPanel from './AdvisorPanel';
-import { CompliancePipelineWizard } from './CompliancePipelineWizard';
-import { PolicyDraftReview } from '../governance/PolicyDraftReview';
-import { SuggestedElements } from './SuggestedElements';
 
 // ─── Types ───
 
@@ -22,18 +17,18 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline' | 'policies' | 'elements';
+type Tab = 'chat' | 'advisor';
 
 // ─── Quick Actions ───
 
 const QUICK_ACTIONS = [
   {
-    label: 'Architektur prüfen',
+    label: 'Review Architecture',
     icon: ClipboardCheck,
     prompt: 'Review my current architecture. What is well-structured and what needs improvement? Focus on the most impactful issues.',
   },
   {
-    label: 'Was fehlt?',
+    label: 'What\'s Missing?',
     icon: AlertTriangle,
     prompt: 'Analyze what is missing from my architecture. Which element types or connections should I add? Are there orphaned elements or gaps between layers?',
   },
@@ -43,7 +38,7 @@ const QUICK_ACTIONS = [
     prompt: 'I am new to TOGAF. Based on my current project, explain which ADM phase I am likely in and what I should focus on next. Keep it simple and practical.',
   },
   {
-    label: 'Nächste Schritte',
+    label: 'Next Steps',
     icon: Lightbulb,
     prompt: 'Based on the current state of my architecture, what are the 3 most important things I should do next? Be specific about which elements to add or modify.',
   },
@@ -144,12 +139,6 @@ export default function AICopilot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  // Standards state
-  const [selectedStandardId, setSelectedStandardId] = useState<string | undefined>();
-  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
-  const [matrixStandardId, setMatrixStandardId] = useState<string | null>(null);
-  const [matrixSectionIds, setMatrixSectionIds] = useState<string[]>([]);
 
   // Active standard context for chat
   const [chatStandardId, setChatStandardId] = useState<string | undefined>();
@@ -278,29 +267,11 @@ export default function AICopilot() {
   };
 
   // Standards → Chat: AI Abgleich
-  const handleAnalyze = (standardId: string, sectionIds: string[], standardName: string) => {
-    setActiveTab('chat');
-    const prompt = `Analysiere meine Architektur gegen den Standard "${standardName}". Welche Anforderungen sind erfüllt, welche fehlen? Gib konkrete Handlungsempfehlungen mit Abschnitts-Referenzen.`;
-    sendMessage(prompt, standardId, sectionIds);
-  };
-
-  // Standards → Matrix view
-  const handleMatrixView = (standardId: string, sectionIds: string[]) => {
-    setMatrixStandardId(standardId);
-    setMatrixSectionIds(sectionIds);
-    setActiveTab('matrix');
-  };
-
-  const handleSelectionChange = (standardId: string | undefined, sectionIds: string[]) => {
-    setSelectedStandardId(standardId);
-    setSelectedSectionIds(sectionIds);
-  };
-
   if (!projectId) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-6">
-        <Sparkles size={24} className="text-[#3a4a3a] mb-2" />
-        <p className="text-xs text-[#4a5a4a] text-center">Öffne zuerst ein Projekt, um den AI Copilot zu nutzen.</p>
+        <Sparkles size={24} className="text-[var(--text-disabled)] mb-2" />
+        <p className="text-xs text-[var(--text-tertiary)] text-center">Open a project first to use the AI Copilot.</p>
       </div>
     );
   }
@@ -308,15 +279,10 @@ export default function AICopilot() {
   return (
     <div className="flex flex-col h-full">
       {/* Tab Bar */}
-      <div className="flex border-b border-[#1a2a1a]">
+      <div className="flex border-b border-[var(--border-subtle)]">
         {([
           { id: 'advisor' as Tab, icon: ShieldAlert, label: 'Advisor', badge: advisorBadge },
           { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat', badge: 0 },
-          { id: 'standards' as Tab, icon: FileText, label: 'Standards', badge: 0 },
-          { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix', badge: 0 },
-          { id: 'pipeline' as Tab, icon: ShieldAlert, label: 'Pipeline', badge: 0 },
-          { id: 'policies' as Tab, icon: FileText, label: 'Policies', badge: 0 },
-          { id: 'elements' as Tab, icon: Sparkles, label: 'Elements', badge: 0 },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -324,7 +290,7 @@ export default function AICopilot() {
             className={`flex-1 flex items-center justify-center gap-1 py-2 text-[10px] transition border-b-2 relative ${
               activeTab === tab.id
                 ? 'text-white border-[#00ff41]'
-                : 'text-[#4a5a4a] border-transparent hover:text-[#7a8a7a]'
+                : 'text-[var(--text-tertiary)] border-transparent hover:text-[var(--text-secondary)]'
             }`}
           >
             <tab.icon size={12} />
@@ -351,11 +317,11 @@ export default function AICopilot() {
           {chatStandardId && (
             <div className="px-3 py-1.5 bg-[#38bdf8]/5 border-b border-[#38bdf8]/20 flex items-center justify-between">
               <span className="text-[9px] text-[#38bdf8]">
-                ISO-Kontext aktiv ({chatSectionIds.length} Abschnitte)
+                ISO context active ({chatSectionIds.length} sections)
               </span>
               <button
                 onClick={() => { setChatStandardId(undefined); setChatSectionIds([]); }}
-                className="text-[9px] text-[#3a4a3a] hover:text-white transition"
+                className="text-[9px] text-[var(--text-disabled)] hover:text-white transition"
               >
                 Entfernen
               </button>
@@ -371,8 +337,8 @@ export default function AICopilot() {
             {messages.length > 0 && (
               <button
                 onClick={clearChat}
-                className="text-[#4a5a4a] hover:text-[#7a8a7a] transition p-0.5"
-                title="Chat leeren"
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition p-0.5"
+                title="Clear Chat"
               >
                 <Trash2 size={12} />
               </button>
@@ -385,8 +351,8 @@ export default function AICopilot() {
               <div className="p-3 space-y-3">
                 <div className="text-center py-3">
                   <Sparkles size={24} className="text-[#00ff41] mx-auto mb-2" />
-                  <p className="text-xs text-[#7a8a7a]">Wie kann ich dir helfen?</p>
-                  <p className="text-[10px] text-[#3a4a3a] mt-1">Wähle eine Aktion oder stelle eine Frage</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Wie kann ich dir helfen?</p>
+                  <p className="text-[10px] text-[var(--text-disabled)] mt-1">Choose an action or ask a question</p>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {QUICK_ACTIONS.map((action) => (
@@ -394,10 +360,10 @@ export default function AICopilot() {
                       key={action.label}
                       onClick={() => sendMessage(action.prompt)}
                       disabled={isStreaming}
-                      className="flex flex-col items-center gap-1.5 rounded-lg border border-[#1a2a1a] bg-[#0a0a0a] p-2.5 text-center hover:border-[#00ff41] hover:bg-[#111111] transition disabled:opacity-50"
+                      className="flex flex-col items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center hover:border-[#00ff41] hover:bg-[var(--surface-raised)] transition disabled:opacity-50"
                     >
                       <action.icon size={16} className="text-[#00ff41]" />
-                      <span className="text-[10px] text-[#7a8a7a] leading-tight">{action.label}</span>
+                      <span className="text-[10px] text-[var(--text-secondary)] leading-tight">{action.label}</span>
                     </button>
                   ))}
                 </div>
@@ -410,7 +376,7 @@ export default function AICopilot() {
                       className={`max-w-[90%] rounded-lg px-2.5 py-1.5 ${
                         msg.role === 'user'
                           ? 'bg-[#00ff41] text-black'
-                          : 'bg-[#0a0a0a] text-[#cbd5e1] border border-[#1a2a1a]'
+                          : 'bg-[var(--surface-base)] text-[#cbd5e1] border border-[var(--border-subtle)]'
                       }`}
                     >
                       {msg.role === 'user' ? (
@@ -418,7 +384,7 @@ export default function AICopilot() {
                       ) : msg.content === '' ? (
                         <div className="flex items-center gap-1.5 py-1">
                           <Loader2 size={10} className="animate-spin text-[#00ff41]" />
-                          <span className="text-[10px] text-[#4a5a4a]">Denkt nach...</span>
+                          <span className="text-[10px] text-[var(--text-tertiary)]">Thinking...</span>
                         </div>
                       ) : (
                         <div>{renderMarkdown(msg.content)}</div>
@@ -450,16 +416,16 @@ export default function AICopilot() {
           )}
 
           {/* Input */}
-          <form onSubmit={handleSubmit} className="p-2 border-t border-[#1a2a1a]">
-            <div className="flex items-center gap-1.5 rounded-lg bg-[#0a0a0a] border border-[#1a2a1a] px-2.5 py-1.5 focus-within:border-[#00ff41] transition">
+          <form onSubmit={handleSubmit} className="p-2 border-t border-[var(--border-subtle)]">
+            <div className="flex items-center gap-1.5 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2.5 py-1.5 focus-within:border-[#00ff41] transition">
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Frage stellen..."
+                placeholder="Ask a question..."
                 disabled={isStreaming}
-                className="flex-1 bg-transparent text-[11px] text-white placeholder:text-[#3a4a3a] outline-none disabled:opacity-50"
+                className="flex-1 bg-transparent text-[11px] text-white placeholder:text-[var(--text-disabled)] outline-none disabled:opacity-50"
               />
               <button
                 type="submit"
@@ -473,41 +439,6 @@ export default function AICopilot() {
         </div>
       )}
 
-      {activeTab === 'standards' && (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <StandardsManager
-            onAnalyze={handleAnalyze}
-            onMatrixView={handleMatrixView}
-            selectedStandardId={selectedStandardId}
-            selectedSectionIds={selectedSectionIds}
-            onSelectionChange={handleSelectionChange}
-          />
-        </div>
-      )}
-
-      {activeTab === 'matrix' && matrixStandardId ? (
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ComplianceMatrix
-            standardId={matrixStandardId}
-            sectionIds={matrixSectionIds.length > 0 ? matrixSectionIds : undefined}
-            onBack={() => setActiveTab('standards')}
-          />
-        </div>
-      ) : activeTab === 'matrix' && (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="text-center">
-            <Grid3X3 size={24} className="text-[#3a4a3a] mx-auto mb-2" />
-            <p className="text-xs text-[#4a5a4a]">Wähle zuerst einen Standard im Standards-Tab</p>
-            <p className="text-[10px] text-[#3a4a3a] mt-1">und klicke auf "Matrix".</p>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'pipeline' && <CompliancePipelineWizard />}
-
-      {activeTab === 'policies' && <PolicyDraftReview />}
-
-      {activeTab === 'elements' && <SuggestedElements />}
     </div>
   );
 }

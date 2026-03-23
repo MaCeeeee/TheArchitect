@@ -172,9 +172,9 @@ export default function LoginPage() {
   const strengthLabel = getPasswordStrengthLabel(passwordScore);
   const strengthColor = getPasswordStrengthColor(passwordScore);
 
-  const inputClass = 'w-full rounded-lg border border-[#1a2a1a] bg-[#0a0a0a]/70 px-3 py-2.5 text-sm text-white placeholder:text-[#4a5a4a] outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41]/30 focus:shadow-[0_0_10px_rgba(0,255,65,0.2)] transition-all';
+  const inputClass = 'w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]/70 px-3 py-2.5 text-sm text-white placeholder:text-[var(--text-tertiary)] outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41]/30 focus:shadow-[0_0_10px_rgba(0,255,65,0.2)] transition-all';
   const btnPrimary = 'w-full rounded-lg bg-[#00ff41] px-4 py-2.5 text-sm font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition-all active:scale-[0.98] shadow-[0_0_15px_rgba(0,255,65,0.3)]';
-  const btnOAuth = 'w-full flex items-center justify-center gap-2.5 rounded-lg border border-[#1a2a1a] bg-[#0a0a0a]/70 px-4 py-2.5 text-sm text-[#d0d0d0] hover:border-[#3a4a3a] hover:bg-[#111111]/70 transition-all active:scale-[0.98]';
+  const btnOAuth = 'w-full flex items-center justify-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]/70 px-4 py-2.5 text-sm text-[#d0d0d0] hover:border-[#3a4a3a] hover:bg-[var(--surface-raised)]/70 transition-all active:scale-[0.98]';
 
   return (
     <>
@@ -185,7 +185,7 @@ export default function LoginPage() {
                 <Shield size={20} className="text-[#00ff41]" />
                 <h2 className="text-sm font-semibold text-white">Two-Factor Authentication</h2>
               </div>
-              <p className="text-xs text-[#7a8a7a]">Enter the 6-digit code from your authenticator app.</p>
+              <p className="text-xs text-[var(--text-secondary)]">Enter the 6-digit code from your authenticator app.</p>
               {error && <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</p>}
               <input
                 ref={mfaRef}
@@ -200,7 +200,7 @@ export default function LoginPage() {
               <button type="submit" disabled={isLoading || mfaCode.length < 6} className={btnPrimary}>
                 {isLoading ? 'Verifying...' : 'Verify'}
               </button>
-              <button type="button" onClick={() => switchMode('login')} className="w-full flex items-center justify-center gap-1 text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition">
+              <button type="button" onClick={() => switchMode('login')} className="w-full flex items-center justify-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition">
                 <ArrowLeft size={12} /> Back to login
               </button>
             </form>
@@ -210,7 +210,7 @@ export default function LoginPage() {
           {mode === 'forgot' && (
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <h2 className="text-sm font-semibold text-white">Reset Password</h2>
-              <p className="text-xs text-[#7a8a7a]">Enter your email address and we'll send you a link to reset your password.</p>
+              <p className="text-xs text-[var(--text-secondary)]">Enter your email address and we'll send you a link to reset your password.</p>
               {error && <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</p>}
               <input
                 ref={emailRef}
@@ -225,7 +225,7 @@ export default function LoginPage() {
               <button type="submit" disabled={isLoading} className={btnPrimary}>
                 {isLoading ? 'Sending...' : 'Send Reset Link'}
               </button>
-              <button type="button" onClick={() => switchMode('login')} className="w-full flex items-center justify-center gap-1 text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition">
+              <button type="button" onClick={() => switchMode('login')} className="w-full flex items-center justify-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition">
                 <ArrowLeft size={12} /> Back to login
               </button>
             </form>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                 <Mail size={24} className="text-[#00ff41]" />
               </div>
               <h2 className="text-sm font-semibold text-white">Check Your Email</h2>
-              <p className="text-xs text-[#7a8a7a] leading-relaxed">
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 If an account exists for <strong className="text-[#d0d0d0]">{email}</strong>, you'll receive a password reset link shortly.
               </p>
               <button type="button" onClick={() => switchMode('login')} className={btnPrimary}>
@@ -263,7 +263,7 @@ export default function LoginPage() {
                 {/* Name (register only) */}
                 {mode === 'register' && (
                   <div>
-                    <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Name</label>
+                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Name</label>
                     <input
                       type="text"
                       value={name}
@@ -278,7 +278,7 @@ export default function LoginPage() {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Email</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Email</label>
                   <input
                     ref={emailRef}
                     type="email"
@@ -294,7 +294,7 @@ export default function LoginPage() {
                 {/* Password */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-[#7a8a7a]">Password</label>
+                    <label className="text-xs font-medium text-[var(--text-secondary)]">Password</label>
                     {mode === 'login' && (
                       <button
                         type="button"
@@ -318,7 +318,7 @@ export default function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
                       tabIndex={-1}
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -331,7 +331,7 @@ export default function LoginPage() {
                   <div className="space-y-2">
                     {/* Strength bar */}
                     <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-[#111111] rounded-full overflow-hidden flex gap-0.5">
+                      <div className="flex-1 h-1.5 bg-[var(--surface-raised)] rounded-full overflow-hidden flex gap-0.5">
                         {[1, 2, 3, 4, 5].map((i) => (
                           <div
                             key={i}
@@ -355,9 +355,9 @@ export default function LoginPage() {
                             {passed ? (
                               <Check size={12} className="text-emerald-400 shrink-0" />
                             ) : (
-                              <X size={12} className="text-[#4a5a4a] shrink-0" />
+                              <X size={12} className="text-[var(--text-tertiary)] shrink-0" />
                             )}
-                            <span className={`text-[11px] ${passed ? 'text-emerald-400' : 'text-[#4a5a4a]'}`}>
+                            <span className={`text-[11px] ${passed ? 'text-emerald-400' : 'text-[var(--text-tertiary)]'}`}>
                               {check.label}
                             </span>
                           </div>
@@ -370,7 +370,7 @@ export default function LoginPage() {
                 {/* Confirm Password (register only) */}
                 {mode === 'register' && (
                   <div>
-                    <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Confirm Password</label>
+                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Confirm Password</label>
                     <div className="relative">
                       <input
                         type={showConfirm ? 'text' : 'password'}
@@ -388,7 +388,7 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirm(!showConfirm)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
                         tabIndex={-1}
                       >
                         {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -413,10 +413,10 @@ export default function LoginPage() {
               {/* Divider */}
               <div className="relative my-5">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-[#1a2a1a]" />
+                  <div className="w-full border-t border-[var(--border-subtle)]" />
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-transparent px-2 text-[#4a5a4a]">or continue with</span>
+                  <span className="bg-transparent px-2 text-[var(--text-tertiary)]">or continue with</span>
                 </div>
               </div>
 
@@ -466,7 +466,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
-                className="w-full mt-4 text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                className="w-full mt-4 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
               >
                 {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Sign in'}
               </button>

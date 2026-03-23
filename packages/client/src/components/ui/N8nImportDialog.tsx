@@ -249,24 +249,24 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
           <div className="flex items-center gap-2">
             <Workflow size={18} className="text-[#f97316]" />
             <h2 className="text-sm font-semibold text-white">Import n8n Workflow</h2>
           </div>
-          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white">
             <X size={18} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-[#1a2a1a]">
+        <div className="flex border-b border-[var(--border-subtle)]">
           <button
             onClick={() => { setTab('upload'); setError(null); }}
             className={`flex-1 px-4 py-2.5 text-xs font-medium transition ${
-              tab === 'upload' ? 'text-white border-b-2 border-[#f97316]' : 'text-[#4a5a4a] hover:text-[#7a8a7a]'
+              tab === 'upload' ? 'text-white border-b-2 border-[#f97316]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             JSON Upload
@@ -274,7 +274,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
           <button
             onClick={() => { setTab('api'); setError(null); }}
             className={`flex-1 px-4 py-2.5 text-xs font-medium transition ${
-              tab === 'api' ? 'text-white border-b-2 border-[#f97316]' : 'text-[#4a5a4a] hover:text-[#7a8a7a]'
+              tab === 'api' ? 'text-white border-b-2 border-[#f97316]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             n8n API
@@ -289,11 +289,11 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
               <div
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
-                className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[#1a2a1a] bg-[#0a0a0a] p-6 hover:border-[#f97316] transition cursor-pointer"
+                className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-6 hover:border-[#f97316] transition cursor-pointer"
                 onClick={() => document.getElementById('n8n-file-input')?.click()}
               >
-                <Upload size={28} className="text-[#4a5a4a]" />
-                <p className="text-sm text-[#7a8a7a]">
+                <Upload size={28} className="text-[var(--text-tertiary)]" />
+                <p className="text-sm text-[var(--text-secondary)]">
                   {file ? file.name : 'Drop n8n workflow .json or click to browse'}
                 </p>
                 <input
@@ -307,13 +307,13 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
 
               {/* Or paste JSON */}
               <div>
-                <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Or paste workflow JSON</label>
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Or paste workflow JSON</label>
                 <textarea
                   value={jsonText}
                   onChange={(e) => handleTextChange(e.target.value)}
                   placeholder='{"name": "My Workflow", "nodes": [...], "connections": {...}}'
                   rows={4}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white font-mono placeholder:text-[#3a4a3a] outline-none focus:border-[#f97316] transition resize-none"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white font-mono placeholder:text-[var(--text-disabled)] outline-none focus:border-[#f97316] transition resize-none"
                 />
               </div>
             </>
@@ -321,7 +321,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
             <>
               {/* n8n URL + API Key */}
               <div>
-                <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                   <Globe size={12} className="inline mr-1" />n8n Instance URL
                 </label>
                 <input
@@ -329,11 +329,11 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                   value={n8nUrl}
                   onChange={(e) => setN8nUrl(e.target.value)}
                   placeholder="https://your-n8n.example.com"
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#f97316] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#f97316] transition"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                   <Key size={12} className="inline mr-1" />API Key
                 </label>
                 <input
@@ -341,13 +341,13 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="n8n API key"
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#f97316] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#f97316] transition"
                 />
               </div>
               <button
                 onClick={handleFetchWorkflows}
                 disabled={!n8nUrl || !apiKey || isFetching}
-                className="w-full flex items-center justify-center gap-2 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-4 py-2 text-xs text-[#d0d0d0] hover:border-[#f97316] disabled:opacity-50 transition"
+                className="w-full flex items-center justify-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-4 py-2 text-xs text-[#d0d0d0] hover:border-[#f97316] disabled:opacity-50 transition"
               >
                 <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
                 {isFetching ? 'Loading...' : 'Load Workflows'}
@@ -356,11 +356,11 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
               {/* Workflow list */}
               {workflows.length > 0 && (
                 <div>
-                  <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Select Workflow</label>
+                  <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Select Workflow</label>
                   <select
                     value={selectedWorkflowId}
                     onChange={(e) => handleSelectWorkflow(e.target.value)}
-                    className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#f97316] transition"
+                    className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#f97316] transition"
                   >
                     <option value="">-- Choose a workflow --</option>
                     {workflows.map((w) => (
@@ -385,7 +385,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
               </div>
               <div className="flex flex-wrap gap-2 mt-1">
                 {Object.entries(preview.layers).map(([layer, count]) => (
-                  <span key={layer} className="rounded-full bg-[#0a0a0a] px-2 py-0.5 text-[10px] text-[#7a8a7a]">
+                  <span key={layer} className="rounded-full bg-[var(--surface-base)] px-2 py-0.5 text-[10px] text-[var(--text-secondary)]">
                     {layer}: {count}
                   </span>
                 ))}
@@ -396,14 +396,14 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
           {/* Workspace selection */}
           {preview && (
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-[#7a8a7a]">Import Target</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)]">Import Target</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setImportMode('new_workspace')}
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'new_workspace'
                       ? 'border-[#f97316] bg-[#f97316]/10 text-white'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   }`}
                 >
                   <Layers size={14} />
@@ -415,7 +415,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'merge'
                       ? 'border-[#f97316] bg-[#f97316]/10 text-white'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   } disabled:opacity-30`}
                 >
                   <GitMerge size={14} />
@@ -429,7 +429,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   placeholder={file?.name?.replace(/\.json$/i, '') || 'Workspace name'}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#f97316] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#f97316] transition"
                 />
               )}
 
@@ -437,7 +437,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white outline-none focus:border-[#f97316] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#f97316] transition"
                 >
                   <option value="">-- Select workspace --</option>
                   {allWorkspaces.map((ws) => (
@@ -469,17 +469,17 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
+            className="rounded-md px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition"
           >
             Cancel
           </button>
           <button
             onClick={() => { checkDuplicates(); }}
             disabled={!preview}
-            className="rounded-md border border-[#1a2a1a] px-4 py-2 text-xs text-[#7a8a7a] hover:text-white hover:border-[#3a4a3a] disabled:opacity-50 transition"
+            className="rounded-md border border-[var(--border-subtle)] px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white hover:border-[#3a4a3a] disabled:opacity-50 transition"
           >
             Check Duplicates
           </button>

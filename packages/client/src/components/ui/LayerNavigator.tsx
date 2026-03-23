@@ -38,14 +38,14 @@ export default function LayerNavigator() {
       <button
         onClick={goPrev}
         disabled={currentIdx <= 0}
-        className="rounded p-1 text-[#7a8a7a] hover:text-white hover:bg-[#1a2a1a] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        className="rounded p-1 text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a] disabled:opacity-30 disabled:cursor-not-allowed transition"
         title="Previous Layer (Arrow Up)"
       >
         <ChevronUp size={16} />
       </button>
 
       {/* Layer stack */}
-      <div className="flex flex-col gap-0.5 rounded-lg bg-[#111111]/90 border border-[#1a2a1a] p-1.5 backdrop-blur-sm">
+      <div className="flex flex-col gap-0.5 rounded-lg bg-[var(--surface-raised)]/90 border border-[var(--border-subtle)] p-1.5 backdrop-blur-sm">
         {ARCHITECTURE_LAYERS.map((layer) => {
           const count = layerCounts.get(layer.id) || 0;
           const isFocused = layer.id === focusedLayer;
@@ -57,7 +57,7 @@ export default function LayerNavigator() {
               className={`group flex items-center gap-2 rounded px-2 py-1 text-[10px] font-medium transition ${
                 isFocused
                   ? 'bg-[#1a2a1a] text-white'
-                  : 'text-[#4a5a4a] hover:text-[#7a8a7a] hover:bg-[#0f0f0f]'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[#0f0f0f]'
               }`}
               title={`${layer.label} (${count} elements)`}
             >
@@ -80,7 +80,7 @@ export default function LayerNavigator() {
               {/* Count badge */}
               {count > 0 && (
                 <span className={`ml-auto text-[9px] tabular-nums ${
-                  isFocused ? 'text-[#00ff41]' : 'text-[#3a4a3a]'
+                  isFocused ? 'text-[#00ff41]' : 'text-[var(--text-disabled)]'
                 }`}>
                   {count}
                 </span>
@@ -94,7 +94,7 @@ export default function LayerNavigator() {
       <button
         onClick={goNext}
         disabled={currentIdx >= ARCHITECTURE_LAYERS.length - 1}
-        className="rounded p-1 text-[#7a8a7a] hover:text-white hover:bg-[#1a2a1a] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        className="rounded p-1 text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a] disabled:opacity-30 disabled:cursor-not-allowed transition"
         title="Next Layer (Arrow Down)"
       >
         <ChevronDown size={16} />

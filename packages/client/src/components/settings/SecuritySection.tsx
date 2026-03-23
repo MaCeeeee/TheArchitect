@@ -70,16 +70,16 @@ export default function SecuritySection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Security</h2>
-      <p className="text-sm text-[#4a5a4a] mb-6">Manage two-factor authentication and active sessions.</p>
+      <p className="text-sm text-[var(--text-tertiary)] mb-6">Manage two-factor authentication and active sessions.</p>
 
       <div className="space-y-6">
         {/* MFA */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <div className="flex items-center gap-3 mb-4">
-            <ShieldCheck size={20} className={user?.mfaEnabled ? 'text-green-400' : 'text-[#4a5a4a]'} />
+            <ShieldCheck size={20} className={user?.mfaEnabled ? 'text-green-400' : 'text-[var(--text-tertiary)]'} />
             <div>
               <h3 className="text-sm font-semibold text-white">Two-Factor Authentication</h3>
-              <p className="text-xs text-[#4a5a4a]">
+              <p className="text-xs text-[var(--text-tertiary)]">
                 {user?.mfaEnabled ? 'Enabled — your account is protected' : 'Not enabled — add an extra layer of security'}
               </p>
             </div>
@@ -96,7 +96,7 @@ export default function SecuritySection() {
 
           {mfaSetupOpen && (
             <div className="space-y-3 mt-4">
-              <p className="text-sm text-[#7a8a7a]">Scan this QR code with your authenticator app:</p>
+              <p className="text-sm text-[var(--text-secondary)]">Scan this QR code with your authenticator app:</p>
               {qrCode && <img src={qrCode} alt="QR Code" className="h-48 w-48 rounded bg-white p-2" />}
               <div className="flex gap-2 max-w-xs">
                 <input
@@ -105,7 +105,7 @@ export default function SecuritySection() {
                   onChange={(e) => setMfaCode(e.target.value)}
                   placeholder="Enter 6-digit code"
                   maxLength={6}
-                  className="flex-1 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+                  className="flex-1 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
                 />
                 <button
                   onClick={handleConfirmMFA}
@@ -129,14 +129,14 @@ export default function SecuritySection() {
 
           {showDisable && (
             <div className="space-y-3 mt-4">
-              <p className="text-sm text-[#7a8a7a]">Enter your password to disable 2FA:</p>
+              <p className="text-sm text-[var(--text-secondary)]">Enter your password to disable 2FA:</p>
               <div className="flex gap-2 max-w-xs">
                 <input
                   type="password"
                   value={disablePassword}
                   onChange={(e) => setDisablePassword(e.target.value)}
                   placeholder="Password"
-                  className="flex-1 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+                  className="flex-1 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
                 />
                 <button
                   onClick={handleDisableMFA}
@@ -153,28 +153,28 @@ export default function SecuritySection() {
         </div>
 
         {/* Sessions */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Active Sessions</h3>
           {sessions.length === 0 ? (
-            <p className="text-sm text-[#4a5a4a]">No active sessions found.</p>
+            <p className="text-sm text-[var(--text-tertiary)]">No active sessions found.</p>
           ) : (
             <div className="space-y-3">
               {sessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-4 py-3">
+                <div key={session.id} className="flex items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Monitor size={16} className="text-[#7a8a7a]" />
+                    <Monitor size={16} className="text-[var(--text-secondary)]" />
                     <div>
                       <p className="text-sm text-white">
                         {session.device}
                         {session.current && <span className="ml-2 text-xs text-green-400">(current)</span>}
                       </p>
-                      <p className="text-xs text-[#4a5a4a]">{session.ip} — Last active: {new Date(session.lastActive).toLocaleString()}</p>
+                      <p className="text-xs text-[var(--text-tertiary)]">{session.ip} — Last active: {new Date(session.lastActive).toLocaleString()}</p>
                     </div>
                   </div>
                   {!session.current && (
                     <button
                       onClick={() => revokeSession(session.id)}
-                      className="text-[#7a8a7a] hover:text-red-400 transition"
+                      className="text-[var(--text-secondary)] hover:text-red-400 transition"
                       title="Revoke session"
                     >
                       <Trash2 size={14} />

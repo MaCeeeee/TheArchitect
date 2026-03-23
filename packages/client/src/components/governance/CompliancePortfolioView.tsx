@@ -88,7 +88,7 @@ export function CompliancePortfolioView() {
     <div className="p-3 space-y-3">
       {/* Portfolio Summary */}
       <div className="flex gap-3 text-xs">
-        <div className="bg-[#111827] border border-[#1e293b] rounded px-3 py-2 flex-1">
+        <div className="bg-[#111827] border border-[var(--border-subtle)] rounded px-3 py-2 flex-1">
           <span className="text-gray-500">Standards</span>
           <span className="text-white font-mono ml-2">
             {portfolioOverview.trackedStandards}/{portfolioOverview.totalStandards}
@@ -100,7 +100,7 @@ export function CompliancePortfolioView() {
       {portfolioOverview.portfolio.map((item) => (
         <div
           key={item.standardId}
-          className="bg-[#111827] border border-[#1e293b] rounded-lg p-3 hover:border-[#334155] transition-colors cursor-pointer"
+          className="bg-[#111827] border border-[var(--border-subtle)] rounded-lg p-3 hover:border-[var(--border-subtle)] transition-colors cursor-pointer"
         >
           <div className="flex items-start justify-between mb-2">
             <div>
@@ -120,7 +120,7 @@ export function CompliancePortfolioView() {
           </div>
 
           {/* Mapping stats bar */}
-          <div className="mt-2 flex gap-1 h-1.5 rounded-full overflow-hidden bg-[#1e293b]">
+          <div className="mt-2 flex gap-1 h-1.5 rounded-full overflow-hidden bg-[var(--surface-overlay)]">
             {item.mappingStats.total > 0 && (
               <>
                 <div

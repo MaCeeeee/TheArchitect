@@ -64,7 +64,7 @@ export default function StandardsManager({
       const { data } = await standardsAPI.list(projectId);
       setStandards(data);
     } catch {
-      setError('Standards konnten nicht geladen werden');
+      setError('Failed to load standards');
     } finally {
       setLoading(false);
     }
@@ -121,7 +121,7 @@ export default function StandardsManager({
 
       await loadStandards();
     } catch {
-      setError('Upload fehlgeschlagen. Bitte versuche es erneut.');
+      setError('Upload failed. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -136,7 +136,7 @@ export default function StandardsManager({
         onSelectionChange?.(undefined, []);
       }
     } catch {
-      setError('Löschen fehlgeschlagen');
+      setError('Delete failed');
     }
   };
 
@@ -162,7 +162,7 @@ export default function StandardsManager({
   if (!projectId) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <p className="text-xs text-[#4a5a4a]">Öffne zuerst ein Projekt.</p>
+        <p className="text-xs text-[var(--text-tertiary)]">Open a project first.</p>
       </div>
     );
   }
@@ -170,7 +170,7 @@ export default function StandardsManager({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-[#1a2a1a] flex items-center justify-between">
+      <div className="p-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <FileText size={14} className="text-[#38bdf8]" />
           Standards
@@ -180,42 +180,42 @@ export default function StandardsManager({
           className="text-[10px] text-[#38bdf8] hover:text-white flex items-center gap-1 transition"
         >
           <Upload size={10} />
-          Hochladen
+          Upload
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {/* Upload Form */}
         {showUpload && (
-          <form onSubmit={handleUpload} className="p-3 border-b border-[#1a2a1a] bg-[#0a0a0a] space-y-2">
+          <form onSubmit={handleUpload} className="p-3 border-b border-[var(--border-subtle)] bg-[var(--surface-base)] space-y-2">
             <div>
-              <label className="text-[10px] text-[#4a5a4a] block mb-0.5">Name *</label>
+              <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Name *</label>
               <input
                 type="text"
                 value={uploadName}
                 onChange={(e) => setUploadName(e.target.value)}
                 placeholder="z.B. ISO 26262"
-                className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[11px] text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#38bdf8]"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
                 required
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-[#4a5a4a] block mb-0.5">Version</label>
+                <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Version</label>
                 <input
                   type="text"
                   value={uploadVersion}
                   onChange={(e) => setUploadVersion(e.target.value)}
                   placeholder="z.B. 2018"
-                  className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[11px] text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#38bdf8]"
+                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-[#4a5a4a] block mb-0.5">Typ</label>
+                <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Typ</label>
                 <select
                   value={uploadType}
                   onChange={(e) => setUploadType(e.target.value)}
-                  className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1 text-[11px] text-white outline-none focus:border-[#38bdf8]"
+                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white outline-none focus:border-[#38bdf8]"
                 >
                   <option value="iso">ISO</option>
                   <option value="aspice">ASPICE</option>
@@ -225,12 +225,12 @@ export default function StandardsManager({
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-[#4a5a4a] block mb-0.5">PDF-Datei *</label>
+              <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">PDF-Datei *</label>
               <input
                 type="file"
                 accept=".pdf"
                 onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                className="w-full text-[10px] text-[#7a8a7a] file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-[#1a2a1a] file:text-white hover:file:bg-[#3a4a3a]"
+                className="w-full text-[10px] text-[var(--text-secondary)] file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-[#1a2a1a] file:text-white hover:file:bg-[#3a4a3a]"
                 required
               />
             </div>
@@ -242,12 +242,12 @@ export default function StandardsManager({
               {uploading ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  Verarbeite PDF...
+                  Processing PDF...
                 </>
               ) : (
                 <>
                   <Upload size={12} />
-                  Hochladen
+                  Upload
                 </>
               )}
             </button>
@@ -272,9 +272,9 @@ export default function StandardsManager({
           </div>
         ) : standards.length === 0 ? (
           <div className="text-center py-8 px-4">
-            <FileText size={24} className="text-[#3a4a3a] mx-auto mb-2" />
-            <p className="text-xs text-[#4a5a4a]">Noch keine Standards hochgeladen.</p>
-            <p className="text-[10px] text-[#3a4a3a] mt-1">
+            <FileText size={24} className="text-[var(--text-disabled)] mx-auto mb-2" />
+            <p className="text-xs text-[var(--text-tertiary)]">Noch keine Standards hochgeladen.</p>
+            <p className="text-[10px] text-[var(--text-disabled)] mt-1">
               Lade ISO-Standards oder ASPICE PAM als PDF hoch, um sie mit deiner Architektur abzugleichen.
             </p>
           </div>
@@ -290,31 +290,31 @@ export default function StandardsManager({
                 <div
                   key={std._id}
                   className={`rounded-lg border ${
-                    isSelected ? 'border-[#38bdf8]/50 bg-[#0c4a6e]/20' : 'border-[#1a2a1a] bg-[#0a0a0a]'
+                    isSelected ? 'border-[#38bdf8]/50 bg-[#0c4a6e]/20' : 'border-[var(--border-subtle)] bg-[var(--surface-base)]'
                   }`}
                 >
                   {/* Standard Header */}
                   <div
-                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-[#111111] rounded-t-lg transition"
+                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-[var(--surface-raised)] rounded-t-lg transition"
                     onClick={() => toggleExpand(std._id)}
                   >
                     {isExpanded ? (
-                      <ChevronDown size={12} className="text-[#4a5a4a] shrink-0" />
+                      <ChevronDown size={12} className="text-[var(--text-tertiary)] shrink-0" />
                     ) : (
-                      <ChevronRight size={12} className="text-[#4a5a4a] shrink-0" />
+                      <ChevronRight size={12} className="text-[var(--text-tertiary)] shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[11px] font-medium text-white truncate">{std.name}</span>
                         {std.version && (
-                          <span className="text-[9px] text-[#4a5a4a] bg-[#111111] px-1 rounded">v{std.version}</span>
+                          <span className="text-[9px] text-[var(--text-tertiary)] bg-[var(--surface-raised)] px-1 rounded">v{std.version}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] text-[#3a4a3a]">{std.pageCount} S.</span>
-                        <span className="text-[9px] text-[#3a4a3a]">{std.type.toUpperCase()}</span>
+                        <span className="text-[9px] text-[var(--text-disabled)]">{std.pageCount} S.</span>
+                        <span className="text-[9px] text-[var(--text-disabled)]">{std.type.toUpperCase()}</span>
                         {selectedCount > 0 && (
-                          <span className="text-[9px] text-[#38bdf8]">{selectedCount} ausgewählt</span>
+                          <span className="text-[9px] text-[#38bdf8]">{selectedCount} selected</span>
                         )}
                       </div>
                     </div>
@@ -323,8 +323,8 @@ export default function StandardsManager({
                         e.stopPropagation();
                         handleDelete(std._id);
                       }}
-                      className="text-[#3a4a3a] hover:text-red-400 transition p-0.5"
-                      title="Standard löschen"
+                      className="text-[var(--text-disabled)] hover:text-red-400 transition p-0.5"
+                      title="Delete standard"
                     >
                       <Trash2 size={10} />
                     </button>
@@ -332,7 +332,7 @@ export default function StandardsManager({
 
                   {/* Expanded: Sections + Actions */}
                   {isExpanded && (
-                    <div className="border-t border-[#1a2a1a]">
+                    <div className="border-t border-[var(--border-subtle)]">
                       {/* Section Selection */}
                       {sections.length > 0 ? (
                         <div className="p-2 space-y-0.5 max-h-[200px] overflow-y-auto">
@@ -341,8 +341,8 @@ export default function StandardsManager({
                             className="text-[9px] text-[#38bdf8] hover:text-white mb-1 transition"
                           >
                             {isSelected && selectedSectionIds.length === sections.length
-                              ? 'Alle abwählen'
-                              : 'Alle auswählen'}
+                              ? 'Deselect all'
+                              : 'Select all'}
                           </button>
                           {sections.map((section) => {
                             const checked = isSelected && selectedSectionIds.includes(section.id);
@@ -350,15 +350,15 @@ export default function StandardsManager({
                               <button
                                 key={section.id}
                                 onClick={() => toggleSection(std._id, section.id)}
-                                className="flex items-center gap-1.5 w-full text-left py-0.5 hover:bg-[#111111] rounded px-1 transition"
+                                className="flex items-center gap-1.5 w-full text-left py-0.5 hover:bg-[var(--surface-raised)] rounded px-1 transition"
                                 style={{ paddingLeft: `${4 + section.level * 8}px` }}
                               >
                                 {checked ? (
                                   <CheckSquare size={10} className="text-[#38bdf8] shrink-0" />
                                 ) : (
-                                  <Square size={10} className="text-[#3a4a3a] shrink-0" />
+                                  <Square size={10} className="text-[var(--text-disabled)] shrink-0" />
                                 )}
-                                <span className={`text-[10px] truncate ${checked ? 'text-white' : 'text-[#7a8a7a]'}`}>
+                                <span className={`text-[10px] truncate ${checked ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
                                   §{section.number} {section.title}
                                 </span>
                               </button>
@@ -372,10 +372,10 @@ export default function StandardsManager({
                       )}
 
                       {/* Actions */}
-                      <div className="p-2 border-t border-[#1a2a1a] flex gap-1.5">
+                      <div className="p-2 border-t border-[var(--border-subtle)] flex gap-1.5">
                         <button
                           onClick={() => onMatrixView(std._id, isSelected ? selectedSectionIds : [])}
-                          className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 rounded bg-[#111111] border border-[#1a2a1a] text-[#7a8a7a] hover:border-[#38bdf8] hover:text-white transition"
+                          className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#38bdf8] hover:text-white transition"
                         >
                           <Search size={10} />
                           Matrix

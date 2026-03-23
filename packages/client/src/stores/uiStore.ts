@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { ArchitectureLayer } from '@thearchitect/shared';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
-type SidebarPanel = 'explorer' | 'properties' | 'togaf' | 'analytics' | 'governance' | 'compliance' | 'marketplace' | 'copilot' | 'settings' | 'none';
+type SidebarPanel = 'explorer' | 'architect' | 'analyze' | 'copilot' | 'none';
 
 interface UIState {
   viewMode: ViewMode;
@@ -13,6 +13,9 @@ interface UIState {
   showWalkthrough: boolean;
   showChat: boolean;
   showMinimap: boolean;
+  showMissionControl: boolean;
+  showComplianceOverlay: boolean;
+  complianceOverlaySection: string;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -22,6 +25,9 @@ interface UIState {
   setShowWalkthrough: (show: boolean) => void;
   toggleChat: () => void;
   toggleMinimap: () => void;
+  toggleMissionControl: () => void;
+  openComplianceOverlay: (section?: string) => void;
+  closeComplianceOverlay: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -33,6 +39,9 @@ export const useUIStore = create<UIState>((set) => ({
   showWalkthrough: false,
   showChat: false,
   showMinimap: true,
+  showMissionControl: false,
+  showComplianceOverlay: false,
+  complianceOverlaySection: 'pipeline',
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setFocusedLayer: (layer) => set({ focusedLayer: layer }),
@@ -42,4 +51,7 @@ export const useUIStore = create<UIState>((set) => ({
   setShowWalkthrough: (show) => set({ showWalkthrough: show }),
   toggleChat: () => set((s) => ({ showChat: !s.showChat })),
   toggleMinimap: () => set((s) => ({ showMinimap: !s.showMinimap })),
+  toggleMissionControl: () => set((s) => ({ showMissionControl: !s.showMissionControl })),
+  openComplianceOverlay: (section) => set({ showComplianceOverlay: true, complianceOverlaySection: section || 'pipeline' }),
+  closeComplianceOverlay: () => set({ showComplianceOverlay: false }),
 }));

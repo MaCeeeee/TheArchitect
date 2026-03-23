@@ -195,7 +195,7 @@ export function computeRunComparison(
  *  For consensus: positive delta = improvement. */
 export function diffColor(delta: number, invert = false): string {
   const threshold = 0.01;
-  if (Math.abs(delta) < threshold) return 'text-[#7a8a7a]';
+  if (Math.abs(delta) < threshold) return 'text-[var(--text-secondary)]';
   const improved = invert ? delta > 0 : delta < 0;
   return improved ? 'text-green-400' : 'text-red-400';
 }

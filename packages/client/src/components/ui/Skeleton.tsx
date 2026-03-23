@@ -9,7 +9,7 @@ export function SkeletonLine({ width = '100%', height = '12px' }: { width?: stri
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-4 space-y-3">
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 space-y-3">
       <div className="flex items-center gap-3">
         <div className="h-10 w-10 animate-pulse rounded-lg bg-[#1a2a1a]" />
         <div className="flex-1 space-y-2">
@@ -30,7 +30,7 @@ export function SkeletonTable({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
   return (
     <div className="space-y-2">
       {/* Header */}
-      <div className="flex gap-3 pb-2 border-b border-[#1a2a1a]">
+      <div className="flex gap-3 pb-2 border-b border-[var(--border-subtle)]">
         {Array.from({ length: cols }).map((_, i) => (
           <SkeletonLine key={i} width={`${100 / cols}%`} height="10px" />
         ))}

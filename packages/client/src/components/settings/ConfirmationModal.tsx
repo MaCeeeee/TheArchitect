@@ -45,15 +45,15 @@ export default function ConfirmationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true" aria-label={title} ref={trapRef}>
-      <div className="w-full max-w-md rounded-lg border border-[#1a2a1a] bg-[#111111] p-6 shadow-xl animate-[scaleIn_200ms_ease-out]">
+      <div className="w-full max-w-md rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6 shadow-xl animate-[scaleIn_200ms_ease-out]">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">{title}</h3>
-          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white">
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-sm text-[#7a8a7a] mb-4">{message}</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">{message}</p>
 
         {requirePassword && (
           <input
@@ -61,7 +61,7 @@ export default function ConfirmationModal({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder:text-[#4a5a4a] outline-none focus:border-[#00ff41] mb-4"
+            className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-tertiary)] outline-none focus:border-[#00ff41] mb-4"
           />
         )}
 
@@ -70,7 +70,7 @@ export default function ConfirmationModal({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="rounded-md border border-[#1a2a1a] px-4 py-2 text-sm text-[#7a8a7a] hover:text-white transition"
+            className="rounded-md border border-[var(--border-subtle)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition"
           >
             Cancel
           </button>

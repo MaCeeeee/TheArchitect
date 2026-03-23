@@ -61,7 +61,7 @@ export default function ComplianceDashboard() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#1a2a1a]">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
         <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
           <ShieldCheck size={14} className="text-[#22c55e]" />
           Compliance Dashboard
@@ -95,14 +95,14 @@ export default function ComplianceDashboard() {
         <>
           {/* Score */}
           <div className="px-3 pb-3">
-            <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-3 text-center">
+            <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-center">
               <div
                 className="text-2xl font-bold"
                 style={{ color: report.summary.complianceScore >= 80 ? '#22c55e' : report.summary.complianceScore >= 50 ? '#eab308' : '#ef4444' }}
               >
                 {report.summary.complianceScore}%
               </div>
-              <div className="text-[9px] text-[#4a5a4a] mt-1">Compliance Score</div>
+              <div className="text-[9px] text-[var(--text-tertiary)] mt-1">Compliance Score</div>
               <div className="h-2 rounded-full bg-[#1a2a1a] mt-2">
                 <div
                   className="h-full rounded-full transition-all"
@@ -112,31 +112,31 @@ export default function ComplianceDashboard() {
                   }}
                 />
               </div>
-              <div className="text-[8px] text-[#3a4a3a] mt-1">
+              <div className="text-[8px] text-[var(--text-disabled)] mt-1">
                 {report.totalElements} elements, {report.totalPolicies} policies checked
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-1 mt-2">
-              <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+              <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
                 <div className="text-xs font-bold text-[#ef4444]">{report.summary.errors}</div>
-                <div className="text-[9px] text-[#4a5a4a]">Errors</div>
+                <div className="text-[9px] text-[var(--text-tertiary)]">Errors</div>
               </div>
-              <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+              <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
                 <div className="text-xs font-bold text-[#eab308]">{report.summary.warnings}</div>
-                <div className="text-[9px] text-[#4a5a4a]">Warnings</div>
+                <div className="text-[9px] text-[var(--text-tertiary)]">Warnings</div>
               </div>
-              <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-1.5 text-center">
+              <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
                 <div className="text-xs font-bold text-[#3b82f6]">{report.summary.infos}</div>
-                <div className="text-[9px] text-[#4a5a4a]">Info</div>
+                <div className="text-[9px] text-[var(--text-tertiary)]">Info</div>
               </div>
             </div>
           </div>
 
           {/* By Category */}
           {Object.keys(report.byCategory).length > 0 && (
-            <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
-              <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">By Category</h4>
+            <div className="px-3 pb-3 border-t border-[var(--border-subtle)] pt-3">
+              <h4 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] mb-2">By Category</h4>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(report.byCategory).map(([cat, count]) => (
                   <span
@@ -153,21 +153,21 @@ export default function ComplianceDashboard() {
 
           {/* Violations */}
           {report.violations.length > 0 && (
-            <div className="px-3 pb-3 border-t border-[#1a2a1a] pt-3">
-              <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a] mb-2">Violations ({report.violations.length})</h4>
+            <div className="px-3 pb-3 border-t border-[var(--border-subtle)] pt-3">
+              <h4 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)] mb-2">Violations ({report.violations.length})</h4>
               <div className="space-y-1">
                 {report.violations.slice(0, 20).map((v, i) => (
-                  <div key={i} className="flex items-start gap-1.5 py-1 px-1 rounded hover:bg-[#111111]">
+                  <div key={i} className="flex items-start gap-1.5 py-1 px-1 rounded hover:bg-[var(--surface-raised)]">
                     {severityIcon(v.severity)}
                     <div className="flex-1 min-w-0">
                       <span className="text-[10px] text-white block truncate">{v.elementName}</span>
-                      <span className="text-[9px] text-[#4a5a4a]">{v.message}</span>
-                      <span className="text-[8px] text-[#3a4a3a] block">Policy: {v.policyName} · Field: {v.field}</span>
+                      <span className="text-[9px] text-[var(--text-tertiary)]">{v.message}</span>
+                      <span className="text-[8px] text-[var(--text-disabled)] block">Policy: {v.policyName} · Field: {v.field}</span>
                     </div>
                   </div>
                 ))}
                 {report.violations.length > 20 && (
-                  <p className="text-[9px] text-[#3a4a3a] text-center">+{report.violations.length - 20} more</p>
+                  <p className="text-[9px] text-[var(--text-disabled)] text-center">+{report.violations.length - 20} more</p>
                 )}
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function ComplianceDashboard() {
 
       {!report && !loading && (
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[#4a5a4a] text-center">Click "Run Compliance Check" to analyze your architecture against defined policies.</p>
+          <p className="text-xs text-[var(--text-tertiary)] text-center">Click "Run Compliance Check" to analyze your architecture against defined policies.</p>
         </div>
       )}
     </div>

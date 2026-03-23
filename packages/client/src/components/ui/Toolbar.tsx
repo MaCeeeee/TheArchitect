@@ -37,6 +37,7 @@ import { useCollaborationStore } from '../../stores/collaborationStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
 import ProjectCollaborators from './ProjectCollaborators';
 import HealthScoreRing from '../copilot/HealthScoreRing';
+import { Crosshair } from 'lucide-react';
 
 interface ToolbarProps {
   onOpenBPMNImport: () => void;
@@ -53,6 +54,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
     toggleSidebar,
     toggleChat,
     toggleMinimap,
+    toggleMissionControl,
   } = useUIStore();
   const navigate = useNavigate();
   const isProjectView = useMatch('/project/:projectId');
@@ -168,12 +170,12 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   }, [undo, redo]);
 
   return (
-    <header className="flex h-12 items-center justify-between border-b border-[#1a2a1a] bg-[#111111] px-4">
+    <header className="flex h-12 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4">
       {/* Left section */}
       <div className="flex items-center gap-2">
         <button
           onClick={toggleSidebar}
-          className="rounded p-1.5 hover:bg-[#1a2a1a] text-[#7a8a7a] hover:text-white transition"
+          className="rounded p-1.5 hover:bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-white transition"
           title={isSidebarOpen ? 'Close Sidebar' : 'Open Sidebar'}
         >
           {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
@@ -183,24 +185,32 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
 
         <button onClick={() => navigate('/')} className="flex items-center gap-1.5 hover:opacity-80 transition" title="Back to Dashboard">
           <span className="text-sm font-semibold text-[#00ff41]" style={{ textShadow: '0 0 10px rgba(0,255,65,0.5)' }}>TheArchitect</span>
-          {!isProjectView && <span className="text-xs text-[#7a8a7a]">Enterprise Architecture</span>}
+          {!isProjectView && <span className="text-xs text-[var(--text-secondary)]">Enterprise Architecture</span>}
         </button>
         {isProjectView && projectName && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[#3a4a3a]">/</span>
+            <span className="text-[var(--text-disabled)]">/</span>
             <span className="text-sm font-medium text-white">{projectName}</span>
             <button
               onClick={() => setShowCollaborators(true)}
-              className="ml-1.5 rounded p-1 text-[#4a5a4a] hover:text-white hover:bg-[#1a2a1a] transition"
+              className="ml-1.5 rounded p-1 text-[var(--text-tertiary)] hover:text-white hover:bg-[#1a2a1a] transition"
               title="Project Members"
             >
               <Users size={14} />
             </button>
             {advisorHealthScore && (
-              <div className="ml-2 border-l border-[#1a2a1a] pl-2">
+              <div className="ml-2 border-l border-[var(--border-subtle)] pl-2">
                 <HealthScoreRing score={advisorHealthScore} compact />
               </div>
             )}
+            <button
+              onClick={toggleMissionControl}
+              className="ml-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium text-[var(--status-purple)] hover:bg-[var(--status-purple)]/10 transition"
+              title="Mission Control"
+            >
+              <Crosshair size={12} />
+              Mission
+            </button>
           </div>
         )}
 
@@ -221,7 +231,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
       </div>
 
       {/* Center section - View modes */}
-      <div className="flex items-center gap-1 rounded-lg bg-[#0a0a0a] p-0.5">
+      <div className="flex items-center gap-1 rounded-lg bg-[var(--surface-base)] p-0.5">
         <ViewModeButton
           icon={<Box size={16} />}
           label="3D"
@@ -269,7 +279,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
             onClick={() => setShowExportMenu(!showExportMenu)}
           />
           {showExportMenu && projectId && (
-            <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-[#1a2a1a] bg-[#111111] py-1 shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] py-1 shadow-xl z-50">
               <button
                 onClick={() => handleExport('executive')}
                 disabled={!!exportLoading}
@@ -289,7 +299,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
                 {exportLoading === 'inventory' && <Loader2 size={12} className="ml-auto animate-spin" />}
               </button>
               <div className="mx-2 my-1 h-px bg-[#1a2a1a]" />
-              <div className="px-3 py-1.5 text-[10px] text-[#4a5a4a]">
+              <div className="px-3 py-1.5 text-[10px] text-[var(--text-tertiary)]">
                 Simulation reports can be exported from the Simulation panel
               </div>
             </div>
@@ -325,7 +335,7 @@ function ViewModeButton({
       className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition ${
         active
           ? 'bg-[#00ff41] text-black shadow-[0_0_10px_rgba(0,255,65,0.3)]'
-          : 'text-[#7a8a7a] hover:text-white hover:bg-[#111111]'
+          : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--surface-raised)]'
       }`}
     >
       {icon}
@@ -357,8 +367,8 @@ function ToolbarButton({
         active
           ? 'bg-[#00ff41]/20 text-[#33ff66]'
           : disabled
-            ? 'text-[#3a4a3a] cursor-not-allowed'
-            : 'text-[#7a8a7a] hover:bg-[#1a2a1a] hover:text-white'
+            ? 'text-[var(--text-disabled)] cursor-not-allowed'
+            : 'text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white'
       }`}
     >
       {icon}
@@ -374,7 +384,7 @@ function XRayButton({ isActive, onClick }: { isActive: boolean; onClick: () => v
       className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition ${
         isActive
           ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30'
-          : 'text-[#7a8a7a] hover:bg-[#1a2a1a] hover:text-white border border-transparent'
+          : 'text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent'
       }`}
     >
       <ScanEye size={16} />
@@ -389,7 +399,7 @@ function ChatButton({ onClick }: { onClick: () => void }) {
     <button
       onClick={onClick}
       title="Chat"
-      className="relative rounded p-1.5 text-[#7a8a7a] hover:bg-[#1a2a1a] hover:text-white transition"
+      className="relative rounded p-1.5 text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white transition"
     >
       <MessageSquare size={16} />
       {unreadCount > 0 && (

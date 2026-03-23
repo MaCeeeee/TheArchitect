@@ -50,38 +50,38 @@ export default function AccountSection() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-white mb-1">Account</h2>
-      <p className="text-sm text-[#4a5a4a] mb-6">Manage your account security and settings.</p>
+      <p className="text-sm text-[var(--text-tertiary)] mb-6">Manage your account security and settings.</p>
 
       <div className="space-y-6">
         {/* Change Password */}
-        <div className="rounded-lg border border-[#1a2a1a] bg-[#111111] p-5">
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-white mb-4">Change Password</h3>
           <div className="space-y-3 max-w-md">
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Current Password</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Current Password</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
               />
             </div>
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">New Password</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">New Password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
               />
             </div>
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Confirm New Password</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
+                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white outline-none focus:border-[#00ff41]"
               />
             </div>
 
@@ -102,9 +102,9 @@ export default function AccountSection() {
         </div>
 
         {/* Danger Zone */}
-        <div className="rounded-lg border border-red-900/50 bg-[#111111] p-5">
+        <div className="rounded-lg border border-red-900/50 bg-[var(--surface-raised)] p-5">
           <h3 className="text-sm font-semibold text-red-400 mb-2">Danger Zone</h3>
-          <p className="text-sm text-[#7a8a7a] mb-4">
+          <p className="text-sm text-[var(--text-secondary)] mb-4">
             Once you delete your account, there is no going back. All your data will be permanently removed.
           </p>
           <button

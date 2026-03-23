@@ -112,20 +112,20 @@ export default function PersonaEditor({
       aria-modal="true"
     >
       <div
-        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-[#0a0a0a] border border-[#1a2a1a] rounded-lg shadow-2xl"
+        className="w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded-lg shadow-2xl"
         style={{ animation: 'scaleIn 200ms ease-out' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#1a2a1a]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div>
             <h2 className="text-lg font-semibold text-white">
               {isEditing ? 'Edit Persona' : 'Clone & Customize'}
             </h2>
             {!isEditing && (
-              <p className="text-sm text-[#7a8a7a]">Based on: {basePersona.name}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Based on: {basePersona.name}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-1 text-[#7a8a7a] hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1 text-[var(--text-secondary)] hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -135,18 +135,18 @@ export default function PersonaEditor({
           {/* Name + Scope Row */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Name</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={100}
-                className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
               />
             </div>
             {!isEditing && (
               <div>
-                <label className="block text-sm text-[#7a8a7a] mb-1">Scope</label>
+                <label className="block text-sm text-[var(--text-secondary)] mb-1">Scope</label>
                 <div className="flex gap-3 mt-2">
                   {(['project', 'user'] as PersonaScope[]).map((s) => (
                     <label key={s} className="flex items-center gap-2 cursor-pointer">
@@ -168,11 +168,11 @@ export default function PersonaEditor({
 
           {/* Stakeholder Type */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-1">Stakeholder Type</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Stakeholder Type</label>
             <select
               value={stakeholderType}
               onChange={(e) => setStakeholderType(e.target.value as AgentPersona['stakeholderType'])}
-              className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
             >
               {STAKEHOLDER_TYPES.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
@@ -182,7 +182,7 @@ export default function PersonaEditor({
 
           {/* Visible Layers */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-2">Visible Layers</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">Visible Layers</label>
             <div className="flex flex-wrap gap-2">
               {LAYERS.map((layer) => (
                 <button
@@ -191,7 +191,7 @@ export default function PersonaEditor({
                   className={`px-3 py-1 rounded text-sm capitalize transition-colors ${
                     visibleLayers.includes(layer)
                       ? 'bg-[#00ff41]/20 text-[#00ff41] border border-[#00ff41]/40'
-                      : 'bg-[#111111] text-[#7a8a7a] border border-[#1a2a1a] hover:border-[#00ff41]/30'
+                      : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:border-[#00ff41]/30'
                   }`}
                 >
                   {layer}
@@ -202,7 +202,7 @@ export default function PersonaEditor({
 
           {/* Visible Domains */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-2">Visible Domains</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">Visible Domains</label>
             <div className="flex flex-wrap gap-2">
               {DOMAINS.map((domain) => (
                 <button
@@ -211,7 +211,7 @@ export default function PersonaEditor({
                   className={`px-3 py-1 rounded text-sm capitalize transition-colors ${
                     visibleDomains.includes(domain)
                       ? 'bg-[#00ff41]/20 text-[#00ff41] border border-[#00ff41]/40'
-                      : 'bg-[#111111] text-[#7a8a7a] border border-[#1a2a1a] hover:border-[#00ff41]/30'
+                      : 'bg-[var(--surface-raised)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:border-[#00ff41]/30'
                   }`}
                 >
                   {domain}
@@ -223,22 +223,22 @@ export default function PersonaEditor({
           {/* Budget + Risk + Capacity Row */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Budget ($)</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Budget ($)</label>
               <input
                 type="number"
                 value={budgetConstraint}
                 onChange={(e) => setBudgetConstraint(Number(e.target.value))}
                 min={0}
                 step={10000}
-                className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Risk Threshold</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Risk Threshold</label>
               <select
                 value={riskThreshold}
                 onChange={(e) => setRiskThreshold(e.target.value as typeof RISK_LEVELS[number])}
-                className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
               >
                 {RISK_LEVELS.map((r) => (
                   <option key={r} value={r}>{r}</option>
@@ -246,21 +246,21 @@ export default function PersonaEditor({
               </select>
             </div>
             <div>
-              <label className="block text-sm text-[#7a8a7a] mb-1">Capacity (1-20)</label>
+              <label className="block text-sm text-[var(--text-secondary)] mb-1">Capacity (1-20)</label>
               <input
                 type="number"
                 value={expectedCapacity}
                 onChange={(e) => setExpectedCapacity(Math.min(20, Math.max(1, Number(e.target.value))))}
                 min={1}
                 max={20}
-                className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
+                className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white focus:border-[#00ff41]/50 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Priorities */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-2">Priorities</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-2">Priorities</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {priorities.map((p) => (
                 <span
@@ -284,11 +284,11 @@ export default function PersonaEditor({
                 onChange={(e) => setNewPriority(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addPriority())}
                 placeholder="Add priority..."
-                className="flex-1 px-3 py-1.5 bg-[#111111] border border-[#1a2a1a] rounded text-white text-sm focus:border-[#00ff41]/50 focus:outline-none"
+                className="flex-1 px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white text-sm focus:border-[#00ff41]/50 focus:outline-none"
               />
               <button
                 onClick={addPriority}
-                className="px-3 py-1.5 bg-[#111111] border border-[#1a2a1a] rounded text-[#00ff41] hover:bg-[#00ff41]/10 transition-colors"
+                className="px-3 py-1.5 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-[#00ff41] hover:bg-[#00ff41]/10 transition-colors"
               >
                 <Plus size={16} />
               </button>
@@ -297,35 +297,35 @@ export default function PersonaEditor({
 
           {/* System Prompt Suffix */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-1">Persona Behavior (LLM Instructions)</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Persona Behavior (LLM Instructions)</label>
             <textarea
               value={systemPromptSuffix}
               onChange={(e) => setSystemPromptSuffix(e.target.value)}
               rows={4}
               placeholder="Describe how this stakeholder thinks and acts..."
-              className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white text-sm resize-none focus:border-[#00ff41]/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white text-sm resize-none focus:border-[#00ff41]/50 focus:outline-none"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm text-[#7a8a7a] mb-1">Description (optional)</label>
+            <label className="block text-sm text-[var(--text-secondary)] mb-1">Description (optional)</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={500}
               placeholder="Why was this persona customized?"
-              className="w-full px-3 py-2 bg-[#111111] border border-[#1a2a1a] rounded text-white text-sm focus:border-[#00ff41]/50 focus:outline-none"
+              className="w-full px-3 py-2 bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded text-white text-sm focus:border-[#00ff41]/50 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#1a2a1a]">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-subtle)]">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-[#7a8a7a] hover:text-white transition-colors"
+            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
           >
             Cancel
           </button>

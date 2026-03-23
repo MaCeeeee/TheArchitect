@@ -50,8 +50,8 @@ function PlateauViewToggle() {
         isPlateauActive
           ? 'bg-[#00ff41] text-black hover:bg-[#00cc33]'
           : is3D
-            ? 'bg-[#111111] border border-[#1a2a1a] text-[#7a8a7a] hover:text-white hover:border-[#00ff41]'
-            : 'bg-[#111111] border border-[#1a2a1a] text-[#3a4a3a] cursor-not-allowed'
+            ? 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[#00ff41]'
+            : 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-disabled)] cursor-not-allowed'
       }`}
       title={!is3D ? 'Switch to 3D view to use Plateau View' : isPlateauActive ? 'Exit Plateau View' : 'Compare architecture across transformation plateaus'}
     >
@@ -138,7 +138,7 @@ export default function RoadmapPanel() {
 
   if (!projectId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-[#4a5a4a] text-xs p-4">
+      <div className="flex flex-col items-center justify-center h-full text-[var(--text-tertiary)] text-xs p-4">
         <Map size={24} className="mb-2" />
         <p>Select a project to generate a transformation roadmap.</p>
       </div>
@@ -162,7 +162,7 @@ export default function RoadmapPanel() {
 
             {/* Strategy Selection */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-[#7a8a7a] uppercase tracking-wider">Strategy</label>
+              <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Strategy</label>
               <div className="grid grid-cols-3 gap-1">
                 {(Object.keys(STRATEGY_INFO) as RoadmapStrategy[]).map((s) => {
                   const info = STRATEGY_INFO[s];
@@ -174,7 +174,7 @@ export default function RoadmapPanel() {
                       className={`px-2 py-1.5 rounded text-[10px] font-medium transition border ${
                         isActive
                           ? 'text-white border-current'
-                          : 'text-[#4a5a4a] border-[#1a2a1a] hover:text-[#7a8a7a]'
+                          : 'text-[var(--text-tertiary)] border-[var(--border-subtle)] hover:text-[var(--text-secondary)]'
                       }`}
                       style={isActive ? { borderColor: info.color, color: info.color } : undefined}
                     >
@@ -183,7 +183,7 @@ export default function RoadmapPanel() {
                   );
                 })}
               </div>
-              <p className="text-[9px] text-[#4a5a4a]">{STRATEGY_INFO[strategy].desc}</p>
+              <p className="text-[9px] text-[var(--text-tertiary)]">{STRATEGY_INFO[strategy].desc}</p>
             </div>
 
             {/* Migration Scope (TOGAF Gap Analysis) */}
@@ -192,7 +192,7 @@ export default function RoadmapPanel() {
             {/* Max Waves */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] text-[#7a8a7a] uppercase tracking-wider">Max Waves</label>
+                <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Max Waves</label>
                 <span className="text-[10px] text-[#00ff41] font-mono">{maxWaves}</span>
               </div>
               <input
@@ -203,7 +203,7 @@ export default function RoadmapPanel() {
                 onChange={(e) => setMaxWaves(Number(e.target.value))}
                 className="w-full accent-[#00ff41] h-1"
               />
-              <div className="flex justify-between text-[9px] text-[#4a5a4a]">
+              <div className="flex justify-between text-[9px] text-[var(--text-tertiary)]">
                 <span>2</span><span>8</span>
               </div>
             </div>
@@ -216,7 +216,7 @@ export default function RoadmapPanel() {
                 onChange={(e) => setIncludeAI(e.target.checked)}
                 className="accent-[#00ff41]"
               />
-              <span className="text-[10px] text-[#7a8a7a]">AI Recommendations</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">AI Recommendations</span>
             </label>
 
             {/* Compliance Candidates Toggle (CDTP F3) */}
@@ -227,17 +227,17 @@ export default function RoadmapPanel() {
                 onChange={(e) => setIncludeComplianceCandidates(e.target.checked)}
                 className="accent-[#7c3aed]"
               />
-              <span className="text-[10px] text-[#7a8a7a]">Include Compliance Candidates</span>
+              <span className="text-[10px] text-[var(--text-secondary)]">Include Compliance Candidates</span>
             </label>
 
             {/* Standard Dropdown (visible when compliance candidates enabled) */}
             {includeComplianceCandidates && portfolioOverview && portfolioOverview.portfolio.length > 0 && (
               <div className="space-y-1">
-                <label className="text-[10px] text-[#7a8a7a] uppercase tracking-wider">Standard</label>
+                <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Standard</label>
                 <select
                   value={complianceStandardId}
                   onChange={(e) => setComplianceStandardId(e.target.value)}
-                  className="w-full bg-[#111111] border border-[#1a2a1a] rounded px-2 py-1.5 text-xs text-white focus:border-[#7c3aed] outline-none"
+                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1.5 text-xs text-white focus:border-[#7c3aed] outline-none"
                 >
                   <option value="">All standards</option>
                   {portfolioOverview.portfolio.map((item) => (
@@ -267,13 +267,13 @@ export default function RoadmapPanel() {
           <div className="flex flex-col items-center justify-center py-8 text-[#00ff41]">
             <Loader2 size={24} className="animate-spin mb-2" />
             <p className="text-xs">Generating roadmap...</p>
-            <p className="text-[9px] text-[#4a5a4a] mt-1">Analyzing dependencies, risks, and costs</p>
+            <p className="text-[9px] text-[var(--text-tertiary)] mt-1">Analyzing dependencies, risks, and costs</p>
           </div>
         )}
 
         {/* Loading State */}
         {isLoading && !isGenerating && (
-          <div className="flex items-center justify-center py-8 text-[#4a5a4a]">
+          <div className="flex items-center justify-center py-8 text-[var(--text-tertiary)]">
             <Loader2 size={18} className="animate-spin" />
           </div>
         )}
@@ -295,13 +295,13 @@ export default function RoadmapPanel() {
                   >
                     {activeRoadmap.config.strategy}
                   </span>
-                  <span className="text-[9px] text-[#4a5a4a]">v{activeRoadmap.version}</span>
+                  <span className="text-[9px] text-[var(--text-tertiary)]">v{activeRoadmap.version}</span>
                 </div>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleDownloadPDF}
-                  className="p-1 rounded hover:bg-[#1a2a1a] text-[#4a5a4a] hover:text-[#00ff41] transition"
+                  className="p-1 rounded hover:bg-[#1a2a1a] text-[var(--text-tertiary)] hover:text-[#00ff41] transition"
                   title="Download PDF"
                 >
                   <Download size={14} />
@@ -316,7 +316,7 @@ export default function RoadmapPanel() {
                       });
                     }
                   }}
-                  className="p-1 rounded hover:bg-[#1a2a1a] text-[#4a5a4a] hover:text-[#00ff41] transition"
+                  className="p-1 rounded hover:bg-[#1a2a1a] text-[var(--text-tertiary)] hover:text-[#00ff41] transition"
                   title="Regenerate"
                 >
                   <RefreshCw size={14} />
@@ -327,13 +327,13 @@ export default function RoadmapPanel() {
             {/* Summary Metrics */}
             {activeRoadmap.summary && (
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 p-2 rounded bg-[#111111] border border-[#1a2a1a]">
+                <div className="flex items-center gap-2 p-2 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)]">
                   <DollarSign size={14} className="text-[#f59e0b]" />
                   <div>
                     <div className="text-[11px] font-medium text-white">
                       {formatCost(activeRoadmap.summary.costConfidence?.p50 || activeRoadmap.summary.totalCost)}
                     </div>
-                    <div className="text-[9px] text-[#4a5a4a]">
+                    <div className="text-[9px] text-[var(--text-tertiary)]">
                       Cost (P50)
                       {activeRoadmap.summary.costConfidence && (
                         <span className="ml-1">
@@ -343,25 +343,25 @@ export default function RoadmapPanel() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-[#111111] border border-[#1a2a1a]">
+                <div className="flex items-center gap-2 p-2 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)]">
                   <Clock size={14} className="text-[#3b82f6]" />
                   <div>
                     <div className="text-[11px] font-medium text-white">{activeRoadmap.summary.totalDurationMonths} months</div>
-                    <div className="text-[9px] text-[#4a5a4a]">Duration</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Duration</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-[#111111] border border-[#1a2a1a]">
+                <div className="flex items-center gap-2 p-2 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)]">
                   <TrendingDown size={14} className="text-[#22c55e]" />
                   <div>
                     <div className="text-[11px] font-medium text-white">-{activeRoadmap.summary.riskReduction}%</div>
-                    <div className="text-[9px] text-[#4a5a4a]">Risk Reduction</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Risk Reduction</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-2 rounded bg-[#111111] border border-[#1a2a1a]">
+                <div className="flex items-center gap-2 p-2 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)]">
                   <Shield size={14} className="text-[#a855f7]" />
                   <div>
                     <div className="text-[11px] font-medium text-white">{activeRoadmap.summary.complianceImprovement}</div>
-                    <div className="text-[9px] text-[#4a5a4a]">Violations Fixed</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Violations Fixed</div>
                   </div>
                 </div>
               </div>
@@ -384,7 +384,7 @@ export default function RoadmapPanel() {
             {/* Wave Cards */}
             {activeRoadmap.waves && activeRoadmap.waves.length > 0 && (
               <div className="space-y-2">
-                <div className="text-[10px] font-medium text-[#7a8a7a] uppercase tracking-wider px-1">
+                <div className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider px-1">
                   Waves ({activeRoadmap.waves.length})
                 </div>
                 {activeRoadmap.waves.map((wave) => (
@@ -401,7 +401,7 @@ export default function RoadmapPanel() {
 
             {/* Empty waves */}
             {activeRoadmap.waves && activeRoadmap.waves.length === 0 && (
-              <div className="flex flex-col items-center py-6 text-[#4a5a4a] text-[11px]">
+              <div className="flex flex-col items-center py-6 text-[var(--text-tertiary)] text-[11px]">
                 <Map size={20} className="mb-2" />
                 <p>No migration candidates found.</p>
                 <p className="text-[9px] mt-1">Add elements with transitional or retired status to generate waves.</p>
@@ -411,7 +411,7 @@ export default function RoadmapPanel() {
             {/* Back to config */}
             <button
               onClick={() => useRoadmapStore.setState({ activeRoadmap: null, selectedWave: null })}
-              className="w-full py-1.5 rounded border border-[#1a2a1a] text-[10px] text-[#7a8a7a] hover:text-white hover:border-[#2a3a2a] transition"
+              className="w-full py-1.5 rounded border border-[var(--border-subtle)] text-[10px] text-[var(--text-secondary)] hover:text-white hover:border-[#2a3a2a] transition"
             >
               New Roadmap
             </button>
@@ -423,7 +423,7 @@ export default function RoadmapPanel() {
           <div className="space-y-1">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-1 text-[10px] text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+              className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
             >
               <ChevronDown size={10} className={`transition ${showHistory ? '' : '-rotate-90'}`} />
               History ({roadmaps.length})
@@ -436,7 +436,7 @@ export default function RoadmapPanel() {
                     className={`flex items-center gap-2 px-2 py-1.5 rounded text-[10px] cursor-pointer transition ${
                       activeRoadmap?.id === r.id
                         ? 'bg-[#0a1a0a] border border-[#00ff41] text-white'
-                        : 'bg-[#111111] border border-[#1a2a1a] text-[#7a8a7a] hover:border-[#2a3a2a]'
+                        : 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#2a3a2a]'
                     }`}
                   >
                     <button
@@ -444,14 +444,14 @@ export default function RoadmapPanel() {
                       className="flex-1 text-left truncate"
                     >
                       <span className="font-medium">{r.name}</span>
-                      <span className="ml-2 text-[#4a5a4a]">v{r.version}</span>
-                      <span className="ml-2 text-[#4a5a4a]">
+                      <span className="ml-2 text-[var(--text-tertiary)]">v{r.version}</span>
+                      <span className="ml-2 text-[var(--text-tertiary)]">
                         {new Date(r.createdAt).toLocaleDateString()}
                       </span>
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}
-                      className="p-0.5 rounded hover:bg-[#2a1a1a] text-[#4a5a4a] hover:text-red-400 transition"
+                      className="p-0.5 rounded hover:bg-[#2a1a1a] text-[var(--text-tertiary)] hover:text-red-400 transition"
                     >
                       <Trash2 size={10} />
                     </button>

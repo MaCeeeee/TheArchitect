@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Toolbar from './Toolbar';
 import Sidebar from './Sidebar';
+import BreadcrumbBar from './BreadcrumbBar';
 import BPMNImportDialog from './BPMNImportDialog';
 import N8nImportDialog from './N8nImportDialog';
 import CSVImportDialog from './CSVImportDialog';
@@ -21,7 +22,7 @@ export default function MainLayout() {
   const [showMFASetup, setShowMFASetup] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#0a0a0a]">
+    <div className="flex h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
       {/* Sidebar */}
       {isSidebarOpen && <Sidebar />}
 
@@ -33,6 +34,7 @@ export default function MainLayout() {
           onOpenCSVImport={() => setShowCSVImport(true)}
           onOpenWalkthrough={() => setShowWalkthrough(true)}
         />
+        <BreadcrumbBar />
         <main className="flex-1 relative">
           <Outlet />
           {/* Collaboration overlays */}

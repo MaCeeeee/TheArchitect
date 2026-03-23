@@ -15,7 +15,7 @@ export default function HealthScoreRing({ score, size = 64, compact = false }: H
   const bgStroke = '#1a2a1a';
 
   const TrendIcon = score.trend === 'up' ? TrendingUp : score.trend === 'down' ? TrendingDown : Minus;
-  const trendColor = score.trend === 'up' ? 'text-[#00ff41]' : score.trend === 'down' ? 'text-red-400' : 'text-[#4a5a4a]';
+  const trendColor = score.trend === 'up' ? 'text-[#00ff41]' : score.trend === 'down' ? 'text-red-400' : 'text-[var(--text-tertiary)]';
 
   if (compact) {
     return (

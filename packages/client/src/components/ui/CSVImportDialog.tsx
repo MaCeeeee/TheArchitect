@@ -134,14 +134,14 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-[fadeIn_150ms_ease-out]" role="dialog" aria-modal="true">
-      <div className="w-full max-w-lg rounded-xl border border-[#1a2a1a] bg-[#111111] shadow-2xl">
+      <div className="w-full max-w-lg rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-5 py-4">
           <div className="flex items-center gap-2">
             <FileSpreadsheet size={18} className="text-[#00ff41]" />
             <h2 className="text-sm font-semibold text-white">Import CSV</h2>
           </div>
-          <button onClick={onClose} className="text-[#7a8a7a] hover:text-white">
+          <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -155,7 +155,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
               className={`flex-1 rounded-md border px-3 py-1.5 text-xs transition ${
                 fileMode === 'combined'
                   ? 'border-[#00ff41] bg-[#00ff41]/10 text-[#00ff41]'
-                  : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                  : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
               }`}
             >
               Combined File
@@ -165,7 +165,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
               className={`flex-1 rounded-md border px-3 py-1.5 text-xs transition ${
                 fileMode === 'separate'
                   ? 'border-[#00ff41] bg-[#00ff41]/10 text-[#00ff41]'
-                  : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                  : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
               }`}
             >
               Separate Files
@@ -176,14 +176,14 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
           <div
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[#1a2a1a] bg-[#0a0a0a] p-6 hover:border-[#00ff41] transition cursor-pointer"
+            className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-6 hover:border-[#00ff41] transition cursor-pointer"
             onClick={() => document.getElementById('csv-file-input')?.click()}
           >
-            <Upload size={28} className="text-[#4a5a4a]" />
-            <p className="text-sm text-[#7a8a7a]">
+            <Upload size={28} className="text-[var(--text-tertiary)]" />
+            <p className="text-sm text-[var(--text-secondary)]">
               {file ? file.name : fileMode === 'combined' ? 'Drop CSV file (elements + connections)' : 'Drop elements CSV file'}
             </p>
-            <p className="text-[10px] text-[#4a5a4a]">
+            <p className="text-[10px] text-[var(--text-tertiary)]">
               Header: name, type, layer, togafDomain, description, status, riskLevel, maturityLevel
             </p>
             <input
@@ -201,13 +201,13 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
           {/* Connections file (separate mode) */}
           {fileMode === 'separate' && (
             <div
-              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[#1a2a1a] bg-[#0a0a0a] p-4 hover:border-[#00ff41] transition cursor-pointer"
+              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-4 hover:border-[#00ff41] transition cursor-pointer"
               onClick={() => document.getElementById('csv-conn-input')?.click()}
             >
-              <p className="text-xs text-[#7a8a7a]">
+              <p className="text-xs text-[var(--text-secondary)]">
                 {connectionsFile ? connectionsFile.name : 'Drop connections CSV (optional)'}
               </p>
-              <p className="text-[10px] text-[#4a5a4a]">
+              <p className="text-[10px] text-[var(--text-tertiary)]">
                 Header: sourceName, targetName, type, label
               </p>
               <input
@@ -264,14 +264,14 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
           {/* Workspace selection */}
           {preview && (
             <div className="space-y-3">
-              <label className="block text-xs font-medium text-[#7a8a7a]">Import Target</label>
+              <label className="block text-xs font-medium text-[var(--text-secondary)]">Import Target</label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setImportMode('new_workspace')}
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'new_workspace'
                       ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   }`}
                 >
                   <Layers size={14} />
@@ -283,7 +283,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
                   className={`flex-1 flex items-center gap-2 rounded-md border px-3 py-2 text-xs transition ${
                     importMode === 'merge'
                       ? 'border-[#00ff41] bg-[#00ff41]/10 text-black'
-                      : 'border-[#1a2a1a] text-[#7a8a7a] hover:border-[#3a4a3a]'
+                      : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#3a4a3a]'
                   } disabled:opacity-30`}
                 >
                   <GitMerge size={14} />
@@ -297,7 +297,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
                   value={workspaceName}
                   onChange={(e) => setWorkspaceName(e.target.value)}
                   placeholder={file?.name?.replace(/\.csv$/i, '') || 'Workspace name'}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white placeholder:text-[#3a4a3a] outline-none focus:border-[#00ff41] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#00ff41] transition"
                 />
               )}
 
@@ -305,7 +305,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
                 <select
                   value={mergeTargetId}
                   onChange={(e) => setMergeTargetId(e.target.value)}
-                  className="w-full rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] transition"
+                  className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] transition"
                 >
                   <option value="">-- Select workspace --</option>
                   {workspaces.map((ws) => (
@@ -326,10 +326,10 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-[#1a2a1a] px-5 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-[var(--border-subtle)] px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-md px-4 py-2 text-xs text-[#7a8a7a] hover:text-white transition"
+            className="rounded-md px-4 py-2 text-xs text-[var(--text-secondary)] hover:text-white transition"
           >
             Cancel
           </button>

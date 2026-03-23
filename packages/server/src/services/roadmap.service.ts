@@ -143,6 +143,37 @@ export async function generateRoadmap(
     // 4. Enrich waves with metrics
     const waves = enrichWaves(rawWaves, enrichment, config.strategy);
 
+    // 4a. Attach suggested new elements from coverage gaps (REQ-CDTP-027)
+    if (config.includeComplianceCandidates) {
+      const gapFilter: Record<string, unknown> = {
+        projectId,
+        elementId: '__COVERAGE_GAP__',
+        'suggestedNewElement.name': { $exists: true },
+      };
+      if (config.standardId) gapFilter.standardId = config.standardId;
+      const gapMappings = await StandardMapping.find(gapFilter);
+
+      if (gapMappings.length > 0) {
+        // Distribute gap suggestions across waves (round-robin starting from wave 1)
+        for (let i = 0; i < gapMappings.length; i++) {
+          const gap = gapMappings[i];
+          const waveIdx = i % waves.length;
+          const sne = gap.suggestedNewElement as { name: string; type: string; layer: string; description: string } | undefined;
+          if (!sne) continue;
+          if (!waves[waveIdx].suggestedNewElements) {
+            waves[waveIdx].suggestedNewElements = [];
+          }
+          waves[waveIdx].suggestedNewElements!.push({
+            name: sne.name,
+            type: sne.type,
+            layer: sne.layer,
+            description: sne.description || '',
+            sectionNumber: gap.sectionNumber || '',
+          });
+        }
+      }
+    }
+
     // 5. Generate recommendations (AI or rule-based)
     await generateRecommendations(waves, projectId, config);
 

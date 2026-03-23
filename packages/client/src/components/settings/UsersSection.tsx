@@ -82,7 +82,7 @@ export default function UsersSection() {
   return (
     <div>
       <h2 className="text-lg font-semibold text-white">User Management</h2>
-      <p className="text-sm text-[#7a8a7a] mt-1 mb-6">
+      <p className="text-sm text-[var(--text-secondary)] mt-1 mb-6">
         Manage platform users, assign roles, and monitor account status.
       </p>
 
@@ -94,42 +94,42 @@ export default function UsersSection() {
       )}
 
       {/* Search */}
-      <div className="flex items-center gap-2 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-3 py-2 mb-4">
-        <Search size={14} className="text-[#7a8a7a]" />
+      <div className="flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 mb-4">
+        <Search size={14} className="text-[var(--text-secondary)]" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or email..."
-          className="flex-1 bg-transparent text-sm text-white placeholder:text-[#3a4a3a] outline-none"
+          className="flex-1 bg-transparent text-sm text-white placeholder:text-[var(--text-disabled)] outline-none"
         />
-        <span className="text-xs text-[#3a4a3a]">{filtered.length} users</span>
+        <span className="text-xs text-[var(--text-disabled)]">{filtered.length} users</span>
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 py-12 justify-center">
           <Loader2 size={18} className="animate-spin text-[#00ff41]" />
-          <span className="text-sm text-[#7a8a7a]">Loading users...</span>
+          <span className="text-sm text-[var(--text-secondary)]">Loading users...</span>
         </div>
       ) : (
-        <div className="rounded-lg border border-[#1a2a1a] overflow-hidden">
+        <div className="rounded-lg border border-[var(--border-subtle)] overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-[1fr_1fr_160px_80px] gap-4 px-4 py-2.5 bg-[#0a0a0a] border-b border-[#1a2a1a]">
-            <span className="text-xs font-medium text-[#4a5a4a] uppercase tracking-wider">Name</span>
-            <span className="text-xs font-medium text-[#4a5a4a] uppercase tracking-wider">Email</span>
-            <span className="text-xs font-medium text-[#4a5a4a] uppercase tracking-wider">Role</span>
-            <span className="text-xs font-medium text-[#4a5a4a] uppercase tracking-wider">MFA</span>
+          <div className="grid grid-cols-[1fr_1fr_160px_80px] gap-4 px-4 py-2.5 bg-[var(--surface-base)] border-b border-[var(--border-subtle)]">
+            <span className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Name</span>
+            <span className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Email</span>
+            <span className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Role</span>
+            <span className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">MFA</span>
           </div>
 
           {/* Rows */}
           <div className="max-h-[480px] overflow-y-auto">
             {filtered.length === 0 ? (
-              <div className="py-8 text-center text-sm text-[#4a5a4a]">No users found</div>
+              <div className="py-8 text-center text-sm text-[var(--text-tertiary)]">No users found</div>
             ) : (
               filtered.map((user) => (
                 <div
                   key={user._id}
-                  className="grid grid-cols-[1fr_1fr_160px_80px] gap-4 items-center px-4 py-3 border-b border-[#1a2a1a] last:border-b-0 hover:bg-[#111111]/50 transition"
+                  className="grid grid-cols-[1fr_1fr_160px_80px] gap-4 items-center px-4 py-3 border-b border-[var(--border-subtle)] last:border-b-0 hover:bg-[var(--surface-raised)]/50 transition"
                 >
                   {/* Name + Avatar */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -141,21 +141,21 @@ export default function UsersSection() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm text-white truncate">{user.name || 'Unnamed'}</p>
-                      <p className="text-xs text-[#3a4a3a]">
+                      <p className="text-xs text-[var(--text-disabled)]">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
                   {/* Email */}
-                  <span className="text-sm text-[#7a8a7a] truncate">{user.email}</span>
+                  <span className="text-sm text-[var(--text-secondary)] truncate">{user.email}</span>
 
                   {/* Role dropdown */}
                   <select
                     value={user.role}
                     onChange={(e) => handleRoleChange(user._id, e.target.value)}
                     disabled={changingRole === user._id}
-                    className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-2 py-1.5 text-xs text-white outline-none focus:border-[#00ff41] transition disabled:opacity-50"
+                    className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5 text-xs text-white outline-none focus:border-[#00ff41] transition disabled:opacity-50"
                   >
                     {ROLES.map((r) => (
                       <option key={r.value} value={r.value}>
@@ -166,8 +166,8 @@ export default function UsersSection() {
 
                   {/* MFA */}
                   <div className="flex items-center gap-1.5">
-                    <Shield size={12} className={user.mfaEnabled ? 'text-emerald-400' : 'text-[#3a4a3a]'} />
-                    <span className={`text-xs ${user.mfaEnabled ? 'text-emerald-400' : 'text-[#3a4a3a]'}`}>
+                    <Shield size={12} className={user.mfaEnabled ? 'text-emerald-400' : 'text-[var(--text-disabled)]'} />
+                    <span className={`text-xs ${user.mfaEnabled ? 'text-emerald-400' : 'text-[var(--text-disabled)]'}`}>
                       {user.mfaEnabled ? 'On' : 'Off'}
                     </span>
                   </div>

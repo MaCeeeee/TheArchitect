@@ -23,7 +23,7 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
 
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-medium text-[#7a8a7a] uppercase tracking-wider px-1">
+      <div className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider px-1">
         Timeline
       </div>
 
@@ -40,7 +40,7 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
                 className={`flex flex-col items-center rounded-lg p-2 transition-all min-w-[80px] ${
                   isSelected
                     ? 'bg-[#0a1a0a] border border-[#00ff41] shadow-[0_0_8px_rgba(0,255,65,0.15)]'
-                    : `${RISK_BG(wave.metrics.riskDelta)} border border-[#1a2a1a] hover:border-[#2a3a2a]`
+                    : `${RISK_BG(wave.metrics.riskDelta)} border border-[var(--border-subtle)] hover:border-[#2a3a2a]`
                 }`}
               >
                 {/* Cost bar */}
@@ -55,10 +55,10 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
                 </div>
 
                 {/* Wave label */}
-                <span className={`text-[10px] font-bold ${isSelected ? 'text-[#00ff41]' : 'text-[#7a8a7a]'}`}>
+                <span className={`text-[10px] font-bold ${isSelected ? 'text-[#00ff41]' : 'text-[var(--text-secondary)]'}`}>
                   W{wave.waveNumber}
                 </span>
-                <span className="text-[9px] text-[#4a5a4a] truncate max-w-[70px]">
+                <span className="text-[9px] text-[var(--text-tertiary)] truncate max-w-[70px]">
                   {wave.elements.length} items
                 </span>
                 <span className="text-[9px] text-[#f59e0b]">{formatCost(wave.metrics.totalCost)}</span>
@@ -76,7 +76,7 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
 
       {/* Cumulative progress bar */}
       <div className="px-1">
-        <div className="flex h-2 rounded-full overflow-hidden bg-[#0a0a0a]">
+        <div className="flex h-2 rounded-full overflow-hidden bg-[var(--surface-base)]">
           {waves.map((wave) => {
             const widthPct = (wave.metrics.totalCost / waves.reduce((s, w) => s + w.metrics.totalCost, 0)) * 100;
             return (

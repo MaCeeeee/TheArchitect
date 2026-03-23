@@ -36,7 +36,7 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
       className={`border rounded-lg transition-all ${
         isSelected
           ? 'border-[#00ff41] bg-[#0a1a0a]'
-          : 'border-[#1a2a1a] bg-[#111111] hover:border-[#2a3a2a]'
+          : 'border-[var(--border-subtle)] bg-[var(--surface-raised)] hover:border-[#2a3a2a]'
       }`}
     >
       {/* Header */}
@@ -47,7 +47,7 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
         {expanded ? (
           <ChevronDown size={14} className="text-[#00ff41] shrink-0" />
         ) : (
-          <ChevronRight size={14} className="text-[#4a5a4a] shrink-0" />
+          <ChevronRight size={14} className="text-[var(--text-tertiary)] shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -59,7 +59,7 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
           <p className="text-[10px] text-[#6a7a6a] mt-0.5 truncate">{wave.description}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0 text-[10px]">
-          <span className="text-[#7a8a7a]">{wave.elements.length} items</span>
+          <span className="text-[var(--text-secondary)]">{wave.elements.length} items</span>
           <span className="text-[#f59e0b]">{formatCost(wave.metrics.totalCost)}</span>
           <span className="text-[#3b82f6]">{wave.estimatedDurationMonths}mo</span>
         </div>
@@ -67,30 +67,30 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-[#1a2a1a]">
+        <div className="px-3 pb-3 space-y-3 border-t border-[var(--border-subtle)]">
           {/* Metrics Row */}
           <div className="grid grid-cols-4 gap-2 pt-2">
             <div className="text-center">
               <DollarSign size={12} className="mx-auto text-[#f59e0b] mb-0.5" />
               <div className="text-[10px] font-medium text-white">{formatCost(wave.metrics.totalCost)}</div>
-              <div className="text-[9px] text-[#4a5a4a]">Cost</div>
+              <div className="text-[9px] text-[var(--text-tertiary)]">Cost</div>
             </div>
             <div className="text-center">
               <Clock size={12} className="mx-auto text-[#3b82f6] mb-0.5" />
               <div className="text-[10px] font-medium text-white">{wave.estimatedDurationMonths} mo</div>
-              <div className="text-[9px] text-[#4a5a4a]">Duration</div>
+              <div className="text-[9px] text-[var(--text-tertiary)]">Duration</div>
             </div>
             <div className="text-center">
               <AlertTriangle size={12} className="mx-auto text-[#22c55e] mb-0.5" />
               <div className="text-[10px] font-medium text-white">
                 {wave.metrics.riskDelta > 0 ? '+' : ''}{wave.metrics.riskDelta.toFixed(0)}%
               </div>
-              <div className="text-[9px] text-[#4a5a4a]">Risk Delta</div>
+              <div className="text-[9px] text-[var(--text-tertiary)]">Risk Delta</div>
             </div>
             <div className="text-center">
               <Shield size={12} className="mx-auto text-[#a855f7] mb-0.5" />
               <div className="text-[10px] font-medium text-white">{wave.metrics.complianceImpact}</div>
-              <div className="text-[9px] text-[#4a5a4a]">Violations</div>
+              <div className="text-[9px] text-[var(--text-tertiary)]">Violations</div>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
           {wave.metrics.avgFatigue > 0 && (
             <div className="flex items-center gap-2 text-[10px]">
               <Users size={11} className="text-[#f97316]" />
-              <span className="text-[#7a8a7a]">Stakeholder Fatigue:</span>
+              <span className="text-[var(--text-secondary)]">Stakeholder Fatigue:</span>
               <div className="flex-1 h-1.5 bg-[#1a2a1a] rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full"
@@ -108,18 +108,18 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
                   }}
                 />
               </div>
-              <span className="text-[#7a8a7a]">{(wave.metrics.avgFatigue * 100).toFixed(0)}%</span>
+              <span className="text-[var(--text-secondary)]">{(wave.metrics.avgFatigue * 100).toFixed(0)}%</span>
             </div>
           )}
 
           {/* Elements */}
           <div className="space-y-1">
-            <div className="text-[10px] font-medium text-[#7a8a7a] uppercase tracking-wider">Elements</div>
+            <div className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Elements</div>
             {wave.elements.map((el) => (
               <button
                 key={el.elementId}
                 onClick={() => onElementClick?.(el.elementId)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded bg-[#0a0a0a] hover:bg-[#1a1a1a] transition text-left"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded bg-[var(--surface-base)] hover:bg-[#1a1a1a] transition text-left"
               >
                 <div
                   className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -130,19 +130,19 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
                   <span style={{ color: STATUS_COLORS[el.currentStatus] || '#7a8a7a' }}>
                     {el.currentStatus}
                   </span>
-                  <ArrowRight size={8} className="text-[#4a5a4a]" />
+                  <ArrowRight size={8} className="text-[var(--text-tertiary)]" />
                   <span style={{ color: STATUS_COLORS[el.targetStatus] || '#7a8a7a' }}>
                     {el.targetStatus}
                   </span>
                 </div>
-                <span className="text-[9px] text-[#4a5a4a]">{formatCost(el.estimatedCost)}</span>
+                <span className="text-[9px] text-[var(--text-tertiary)]">{formatCost(el.estimatedCost)}</span>
               </button>
             ))}
           </div>
 
           {/* Recommendation */}
           {wave.recommendation && (
-            <div className="flex gap-2 p-2 rounded bg-[#0a1a0a] border border-[#1a2a1a]">
+            <div className="flex gap-2 p-2 rounded bg-[#0a1a0a] border border-[var(--border-subtle)]">
               <Lightbulb size={12} className="text-[#00ff41] shrink-0 mt-0.5" />
               <p className="text-[10px] text-[#b0c0b0] leading-relaxed">{wave.recommendation}</p>
             </div>
@@ -155,7 +155,7 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
                 <AlertTriangle size={10} /> Risk Mitigations
               </div>
               {wave.riskMitigations.map((m, i) => (
-                <p key={i} className="text-[10px] text-[#7a8a7a] pl-4">• {m}</p>
+                <p key={i} className="text-[10px] text-[var(--text-secondary)] pl-4">• {m}</p>
               ))}
             </div>
           )}

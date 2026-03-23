@@ -166,7 +166,7 @@ export function PolicyDraftReview() {
 
       {/* Generation Progress */}
       {isGeneratingPolicies && (
-        <div className="bg-[#111827] border border-[#1e293b] rounded p-3">
+        <div className="bg-[#111827] border border-[var(--border-subtle)] rounded p-3">
           <div className="flex items-center gap-2 text-sm text-[#38bdf8] mb-2">
             <Loader2 size={14} className="animate-spin" />
             Analyzing standard sections...
@@ -212,7 +212,7 @@ export function PolicyDraftReview() {
                       ? 'bg-green-500/5 border-green-500/30'
                       : ds.status === 'rejected'
                       ? 'bg-red-500/5 border-red-500/30 opacity-60'
-                      : 'bg-[#111827] border-[#1e293b]'
+                      : 'bg-[#111827] border-[var(--border-subtle)]'
                   }`}
                 >
                   {/* Header */}
@@ -256,7 +256,7 @@ export function PolicyDraftReview() {
                   {isExpanded && (
                     <div className="mt-2 space-y-1">
                       {ds.draft.rules.map((rule, ri) => (
-                        <div key={ri} className="text-[10px] bg-[#0f172a] rounded px-2 py-1.5 font-mono text-gray-300">
+                        <div key={ri} className="text-[10px] bg-[var(--surface-raised)] rounded px-2 py-1.5 font-mono text-gray-300">
                           <span className="text-[#38bdf8]">{rule.field}</span>
                           {' '}<span className="text-[#7c3aed]">{rule.operator}</span>
                           {' '}<span className="text-green-400">{JSON.stringify(rule.value)}</span>

@@ -132,7 +132,7 @@ export default function ApprovalWorkflow() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[#1a2a1a]">
+      <div className="p-3 border-b border-[var(--border-subtle)]">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
             <ClipboardCheck size={14} className="text-[#3b82f6]" />
@@ -140,7 +140,7 @@ export default function ApprovalWorkflow() {
           </h3>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="rounded p-1 text-[#7a8a7a] hover:text-white hover:bg-[#1a2a1a] transition"
+            className="rounded p-1 text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a] transition"
             title="Create Approval"
           >
             <Plus size={14} />
@@ -150,19 +150,19 @@ export default function ApprovalWorkflow() {
 
       {/* Create Form */}
       {showCreate && (
-        <div className="p-3 border-b border-[#1a2a1a] space-y-2">
+        <div className="p-3 border-b border-[var(--border-subtle)] space-y-2">
           <input
             autoFocus
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Approval title"
-            className="w-full bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#3b82f6]"
+            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
           />
           <div className="flex gap-1">
-            <select value={newType} onChange={(e) => setNewType(e.target.value)} className="flex-1 bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
+            <select value={newType} onChange={(e) => setNewType(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
               {TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
             </select>
-            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="flex-1 bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none">
+            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
@@ -170,14 +170,14 @@ export default function ApprovalWorkflow() {
             value={newApproverName}
             onChange={(e) => setNewApproverName(e.target.value)}
             placeholder="Approver name"
-            className="w-full bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#3b82f6]"
+            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
           />
           <textarea
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Description (optional)"
             rows={2}
-            className="w-full bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#3b82f6] resize-none"
+            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
           />
           <div className="flex gap-1">
             <button
@@ -187,7 +187,7 @@ export default function ApprovalWorkflow() {
             >
               {creating ? 'Creating...' : 'Create'}
             </button>
-            <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#1a2a1a] px-2 py-1 text-[10px] text-[#7a8a7a] hover:bg-[#3a4a3a]">
+            <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#1a2a1a] px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:bg-[#3a4a3a]">
               Cancel
             </button>
           </div>
@@ -195,13 +195,13 @@ export default function ApprovalWorkflow() {
       )}
 
       {/* Filters */}
-      <div className="flex border-b border-[#1a2a1a]">
+      <div className="flex border-b border-[var(--border-subtle)]">
         {(['all', 'pending', 'completed'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`flex-1 px-2 py-1.5 text-[10px] font-medium capitalize ${
-              filter === f ? 'text-white border-b-2 border-[#3b82f6]' : 'text-[#4a5a4a] hover:text-[#7a8a7a]'
+              filter === f ? 'text-white border-b-2 border-[#3b82f6]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
             {f}
@@ -228,19 +228,19 @@ export default function ApprovalWorkflow() {
             <button
               key={a._id}
               onClick={() => setSelected(a._id)}
-              className="flex w-full items-center gap-2 px-3 py-2 border-b border-[#1a2a1a]/50 hover:bg-[#0a0a0a] transition text-left"
+              className="flex w-full items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]/50 hover:bg-[var(--surface-base)] transition text-left"
             >
               {statusIcon(a.status)}
               <div className="flex-1 min-w-0">
                 <div className="text-[10px] text-white truncate">{a.title}</div>
-                <div className="text-[9px] text-[#3a4a3a]">{a.requesterName} · {a.type.replace(/_/g, ' ')}</div>
+                <div className="text-[9px] text-[var(--text-disabled)]">{a.requesterName} · {a.type.replace(/_/g, ' ')}</div>
               </div>
               <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: priorityColor[a.priority] }} />
-              <ChevronRight size={12} className="text-[#3a4a3a]" />
+              <ChevronRight size={12} className="text-[var(--text-disabled)]" />
             </button>
           ))}
           {filtered.length === 0 && (
-            <p className="text-[10px] text-[#4a5a4a] text-center py-6">No approval requests</p>
+            <p className="text-[10px] text-[var(--text-tertiary)] text-center py-6">No approval requests</p>
           )}
         </div>
       ) : (
@@ -249,30 +249,30 @@ export default function ApprovalWorkflow() {
           <button onClick={() => setSelected(null)} className="text-[10px] text-[#3b82f6] hover:underline">
             &larr; Back
           </button>
-          <div className="rounded-md border border-[#1a2a1a] bg-[#0a0a0a] p-3">
+          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3">
             <div className="flex items-center gap-2 mb-2">
               {statusIcon(selectedApproval.status)}
               <span className="text-xs text-white font-medium">{selectedApproval.title}</span>
             </div>
             {selectedApproval.description && (
-              <p className="text-[9px] text-[#7a8a7a] mb-2">{selectedApproval.description}</p>
+              <p className="text-[9px] text-[var(--text-secondary)] mb-2">{selectedApproval.description}</p>
             )}
             <div className="grid grid-cols-2 gap-2 text-[9px]">
-              <div><span className="text-[#4a5a4a]">Type:</span> <span className="text-[#7a8a7a] capitalize">{selectedApproval.type.replace(/_/g, ' ')}</span></div>
-              <div><span className="text-[#4a5a4a]">Priority:</span> <span style={{ color: priorityColor[selectedApproval.priority] }} className="capitalize">{selectedApproval.priority}</span></div>
-              <div><span className="text-[#4a5a4a]">Requester:</span> <span className="text-[#7a8a7a]">{selectedApproval.requesterName}</span></div>
-              <div><span className="text-[#4a5a4a]">Created:</span> <span className="text-[#7a8a7a]">{new Date(selectedApproval.createdAt).toLocaleDateString()}</span></div>
+              <div><span className="text-[var(--text-tertiary)]">Type:</span> <span className="text-[var(--text-secondary)] capitalize">{selectedApproval.type.replace(/_/g, ' ')}</span></div>
+              <div><span className="text-[var(--text-tertiary)]">Priority:</span> <span style={{ color: priorityColor[selectedApproval.priority] }} className="capitalize">{selectedApproval.priority}</span></div>
+              <div><span className="text-[var(--text-tertiary)]">Requester:</span> <span className="text-[var(--text-secondary)]">{selectedApproval.requesterName}</span></div>
+              <div><span className="text-[var(--text-tertiary)]">Created:</span> <span className="text-[var(--text-secondary)]">{new Date(selectedApproval.createdAt).toLocaleDateString()}</span></div>
             </div>
           </div>
 
           {/* Steps */}
-          <h4 className="text-[10px] font-semibold uppercase text-[#4a5a4a]">Approval Steps</h4>
+          <h4 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)]">Approval Steps</h4>
           <div className="space-y-1">
             {selectedApproval.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-2 py-1.5">
+              <div key={i} className="flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5">
                 {statusIcon(step.status)}
                 <span className="text-[10px] text-white flex-1">{step.approverName}</span>
-                <span className="text-[9px] text-[#3a4a3a] capitalize">{step.status}</span>
+                <span className="text-[9px] text-[var(--text-disabled)] capitalize">{step.status}</span>
                 {i === selectedApproval.currentStep && selectedApproval.status === 'pending' && (
                   <span className="text-[8px] bg-[#eab308]/20 text-[#eab308] px-1 rounded">Current</span>
                 )}
@@ -282,13 +282,13 @@ export default function ApprovalWorkflow() {
 
           {/* Actions */}
           {selectedApproval.status === 'pending' && (
-            <div className="space-y-2 pt-2 border-t border-[#1a2a1a]">
+            <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
               <textarea
                 value={decisionComment}
                 onChange={(e) => setDecisionComment(e.target.value)}
                 placeholder="Comment (optional)"
                 rows={2}
-                className="w-full bg-[#0a0a0a] rounded px-2 py-1 text-[10px] text-white border border-[#1a2a1a] outline-none focus:border-[#3b82f6] resize-none"
+                className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
               />
               <div className="flex gap-1">
                 <button
@@ -308,7 +308,7 @@ export default function ApprovalWorkflow() {
               </div>
               <button
                 onClick={() => handleCancel(selectedApproval._id)}
-                className="w-full rounded border border-[#1a2a1a] px-2 py-1 text-[10px] text-[#7a8a7a] hover:text-white hover:border-[#3a4a3a] transition"
+                className="w-full rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:text-white hover:border-[#3a4a3a] transition"
               >
                 Cancel Request
               </button>

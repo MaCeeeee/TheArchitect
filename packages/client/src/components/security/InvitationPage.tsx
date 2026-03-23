@@ -102,24 +102,24 @@ export default function InvitationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--surface-base)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Loading */}
         {state === 'loading' && (
           <div className="flex flex-col items-center gap-4 py-16">
             <Loader2 size={32} className="animate-spin text-[#00ff41]" />
-            <p className="text-sm text-[#7a8a7a]">Loading invitation...</p>
+            <p className="text-sm text-[var(--text-secondary)]">Loading invitation...</p>
           </div>
         )}
 
         {/* Error */}
         {state === 'error' && (
-          <div className="rounded-xl border border-red-500/20 bg-[#111111] p-8 text-center">
+          <div className="rounded-xl border border-red-500/20 bg-[var(--surface-raised)] p-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center">
               <X size={24} className="text-red-400" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">Invitation Error</h2>
-            <p className="text-sm text-[#7a8a7a] mb-6">{errorMsg}</p>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">{errorMsg}</p>
             <button
               onClick={() => navigate('/')}
               className="rounded-md bg-[#1a2a1a] px-6 py-2.5 text-sm text-white hover:bg-[#2a3a2a] transition"
@@ -131,17 +131,17 @@ export default function InvitationPage() {
 
         {/* Login required */}
         {state === 'login_required' && invitation && (
-          <div className="rounded-xl border border-[#1a2a1a] bg-[#111111] p-8 text-center">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#00ff41]/10 flex items-center justify-center">
               <Shield size={24} className="text-[#00ff41]" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">Login Required</h2>
-            <p className="text-sm text-[#7a8a7a] mb-2">
+            <p className="text-sm text-[var(--text-secondary)] mb-2">
               <strong className="text-white">{invitation.inviterName}</strong> invited you to
             </p>
             <p className="text-base font-semibold text-[#00ff41] mb-4">{invitation.projectName}</p>
-            <p className="text-xs text-[#4a5a4a] mb-6">
-              Log in or create an account with <strong className="text-[#7a8a7a]">{invitation.invitedEmail}</strong> to accept this invitation.
+            <p className="text-xs text-[var(--text-tertiary)] mb-6">
+              Log in or create an account with <strong className="text-[var(--text-secondary)]">{invitation.invitedEmail}</strong> to accept this invitation.
             </p>
             <button
               onClick={() => navigate(`/login?redirect=/invitations/${token}`)}
@@ -154,31 +154,31 @@ export default function InvitationPage() {
 
         {/* Invitation details */}
         {state === 'details' && invitation && (
-          <div className="rounded-xl border border-[#1a2a1a] bg-[#111111] overflow-hidden">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-hidden">
             {/* Header */}
-            <div className="bg-[#0a0a0a] border-b border-[#1a2a1a] p-6 text-center">
+            <div className="bg-[var(--surface-base)] border-b border-[var(--border-subtle)] p-6 text-center">
               <div className="mx-auto mb-3 h-12 w-12 rounded-full bg-[#00ff41]/10 flex items-center justify-center">
                 <Mail size={24} className="text-[#00ff41]" />
               </div>
               <h2 className="text-lg font-semibold text-white">Project Invitation</h2>
-              <p className="text-xs text-[#4a5a4a] mt-1">
-                from <strong className="text-[#7a8a7a]">{invitation.inviterName}</strong>
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">
+                from <strong className="text-[var(--text-secondary)]">{invitation.inviterName}</strong>
               </p>
             </div>
 
             {/* Project info */}
             <div className="p-6 space-y-4">
-              <div className="rounded-lg bg-[#0a0a0a] border border-[#1a2a1a] p-4">
+              <div className="rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] p-4">
                 <p className="text-base font-semibold text-white">{invitation.projectName}</p>
                 {invitation.projectDescription && (
-                  <p className="text-xs text-[#4a5a4a] mt-1">{invitation.projectDescription}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-1">{invitation.projectDescription}</p>
                 )}
               </div>
 
-              <div className="rounded-lg bg-[#0a0a0a] border border-[#1a2a1a] p-4">
-                <p className="text-xs text-[#4a5a4a] mb-1">Your role</p>
+              <div className="rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] p-4">
+                <p className="text-xs text-[var(--text-tertiary)] mb-1">Your role</p>
                 <p className="text-sm font-semibold text-[#00ff41]">{roleLabel(invitation.role)}</p>
-                <p className="text-xs text-[#4a5a4a] mt-1">
+                <p className="text-xs text-[var(--text-tertiary)] mt-1">
                   {ROLE_DESCRIPTIONS[invitation.role] || ''}
                 </p>
               </div>
@@ -197,7 +197,7 @@ export default function InvitationPage() {
                 <button
                   onClick={handleDecline}
                   disabled={processing}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-md border border-[#1a2a1a] bg-[#0a0a0a] px-4 py-2.5 text-sm text-[#7a8a7a] hover:text-white hover:border-[#2a3a2a] transition disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:text-white hover:border-[#2a3a2a] transition disabled:opacity-50"
                 >
                   {processing ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                   Decline
@@ -217,12 +217,12 @@ export default function InvitationPage() {
 
         {/* Accepted */}
         {state === 'accepted' && (
-          <div className="rounded-xl border border-[#00ff41]/20 bg-[#111111] p-8 text-center">
+          <div className="rounded-xl border border-[#00ff41]/20 bg-[var(--surface-raised)] p-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#00ff41]/10 flex items-center justify-center">
               <Check size={24} className="text-[#00ff41]" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">Invitation Accepted</h2>
-            <p className="text-sm text-[#7a8a7a] mb-6">
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
               You're now a member of <strong className="text-white">{invitation?.projectName}</strong>
             </p>
             <button
@@ -236,12 +236,12 @@ export default function InvitationPage() {
 
         {/* Declined */}
         {state === 'declined' && (
-          <div className="rounded-xl border border-[#1a2a1a] bg-[#111111] p-8 text-center">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-8 text-center">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-[#1a2a1a] flex items-center justify-center">
-              <X size={24} className="text-[#7a8a7a]" />
+              <X size={24} className="text-[var(--text-secondary)]" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">Invitation Declined</h2>
-            <p className="text-sm text-[#7a8a7a] mb-6">
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
               You've declined the invitation to {invitation?.projectName}.
             </p>
             <button

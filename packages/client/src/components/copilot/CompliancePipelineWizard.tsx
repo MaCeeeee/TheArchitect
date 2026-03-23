@@ -1,15 +1,16 @@
 // packages/client/src/components/copilot/CompliancePipelineWizard.tsx
 import React, { useEffect } from 'react';
-import { Upload, Map, FileCheck, Route, Activity, ChevronRight } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Upload, Map, FileCheck, Route, Activity, ChevronRight, ArrowRight } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
 const PIPELINE_STEPS = [
-  { key: 'uploaded', icon: Upload, label: 'Upload', description: 'Standard uploaded' },
-  { key: 'mapped', icon: Map, label: 'Mapping', description: 'AI auto-mapping' },
-  { key: 'policies_generated', icon: FileCheck, label: 'Policies', description: 'Policy generation' },
-  { key: 'roadmap_ready', icon: Route, label: 'Roadmap', description: 'Compliance roadmap' },
-  { key: 'tracking', icon: Activity, label: 'Tracking', description: 'Progress tracking' },
+  { key: 'uploaded', icon: Upload, label: 'Upload', description: 'Standard uploaded', section: 'standards' },
+  { key: 'mapped', icon: Map, label: 'Mapping', description: 'AI auto-mapping', section: 'matrix' },
+  { key: 'policies_generated', icon: FileCheck, label: 'Policies', description: 'Policy generation', section: 'policies' },
+  { key: 'roadmap_ready', icon: Route, label: 'Roadmap', description: 'Compliance roadmap', section: 'elements' },
+  { key: 'tracking', icon: Activity, label: 'Tracking', description: 'Progress tracking', section: 'progress' },
 ] as const;
 
 const STAGE_INDEX: Record<string, number> = {
@@ -21,9 +22,11 @@ const STAGE_INDEX: Record<string, number> = {
 };
 
 export function CompliancePipelineWizard() {
+  const navigate = useNavigate();
+  const { projectId: paramProjectId } = useParams<{ projectId: string }>();
   const { portfolioOverview, isLoading, loadPortfolio, selectedStandardId, selectStandard } =
     useComplianceStore();
-  const projectId = useArchitectureStore((s) => s.projectId);
+  const projectId = useArchitectureStore((s) => s.projectId) || paramProjectId;
 
   useEffect(() => {
     if (projectId) loadPortfolio(projectId);
@@ -55,7 +58,7 @@ export function CompliancePipelineWizard() {
         <select
           value={selectedStandardId ?? ''}
           onChange={(e) => selectStandard(e.target.value || null)}
-          className="w-full mt-1 bg-[#111827] border border-[#1e293b] rounded px-2 py-1.5 text-xs text-white focus:border-[#38bdf8] outline-none"
+          className="w-full mt-1 bg-[#111827] border border-[var(--border-subtle)] rounded px-2 py-1.5 text-xs text-white focus:border-[#38bdf8] outline-none"
         >
           <option value="">Select a standard...</option>
           {portfolioOverview.portfolio.map((item) => (
@@ -75,15 +78,24 @@ export function CompliancePipelineWizard() {
             const isNext = i === currentStageIndex + 1;
             const Icon = step.icon;
 
+            const isClickable = isCompleted || isCurrent || isNext;
+
             return (
               <div
                 key={step.key}
+                onClick={() => {
+                  if (isClickable) navigate(`/project/${projectId}/compliance/${step.section}`);
+                }}
                 className={`flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors ${
+                  isClickable ? 'cursor-pointer' : 'cursor-default'
+                } ${
                   isCurrent
-                    ? 'bg-[#1e293b] border border-[#38bdf8] text-white'
+                    ? 'bg-[var(--surface-overlay)] border border-[#38bdf8] text-white'
                     : isCompleted
-                    ? 'bg-[#0f1f0f] border border-[#1a3a1a] text-green-400'
-                    : 'bg-[#111827] border border-[#1e293b] text-gray-500'
+                    ? 'bg-[#0f1f0f] border border-[#1a3a1a] text-green-400 hover:border-green-500/40'
+                    : isNext
+                    ? 'bg-[#111827] border border-[var(--border-subtle)] text-gray-400 hover:border-[var(--status-purple)]/40'
+                    : 'bg-[#111827] border border-[var(--border-subtle)] text-gray-500'
                 }`}
               >
                 <Icon size={14} className={isCompleted ? 'text-green-400' : isCurrent ? 'text-[#38bdf8]' : ''} />
@@ -100,7 +112,9 @@ export function CompliancePipelineWizard() {
                   <span className="text-[10px] text-green-500">Done</span>
                 )}
                 {isNext && (
-                  <ChevronRight size={12} className="text-gray-500" />
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--status-purple)]/20 text-[var(--status-purple)]">
+                    Next <ArrowRight size={10} />
+                  </span>
                 )}
               </div>
             );
@@ -108,21 +122,33 @@ export function CompliancePipelineWizard() {
         </div>
       )}
 
-      {/* Action hints per stage */}
+      {/* Actionable next-step hints */}
       {selectedItem && currentStageIndex === 0 && (
-        <div className="text-xs text-gray-400 bg-[#111827] border border-[#1e293b] rounded p-2">
-          Next: Run AI Auto-Mapping in the Matrix tab to detect compliance gaps.
-        </div>
+        <button
+          onClick={() => navigate(`/project/${projectId}/compliance/matrix`)}
+          className="flex items-center justify-between w-full text-xs bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 rounded px-3 py-2.5 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
+        >
+          <span>Next: Run <strong>AI Auto-Mapping</strong> in the Matrix tab</span>
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
       )}
       {selectedItem && currentStageIndex === 1 && (
-        <div className="text-xs text-gray-400 bg-[#111827] border border-[#1e293b] rounded p-2">
-          Next: Go to the <span className="text-[#7c3aed] font-medium">Policies</span> tab to generate policy drafts from the mapped standard.
-        </div>
+        <button
+          onClick={() => navigate(`/project/${projectId}/compliance/policies`)}
+          className="flex items-center justify-between w-full text-xs bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 rounded px-3 py-2.5 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
+        >
+          <span>Next: <strong>Generate Policies</strong> from mapped standard</span>
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
       )}
       {selectedItem && currentStageIndex === 2 && (
-        <div className="text-xs text-gray-400 bg-[#111827] border border-[#1e293b] rounded p-2">
-          Next: Generate a compliance-driven roadmap from gaps and policy violations.
-        </div>
+        <button
+          onClick={() => navigate(`/project/${projectId}/compliance/elements`)}
+          className="flex items-center justify-between w-full text-xs bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 rounded px-3 py-2.5 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
+        >
+          <span>Next: Generate <strong>Compliance Roadmap</strong> from gaps</span>
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
       )}
     </div>
   );

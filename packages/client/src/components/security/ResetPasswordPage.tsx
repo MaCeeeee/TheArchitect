@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
   const strengthLabel = getPasswordStrengthLabel(passwordScore);
   const strengthColor = getPasswordStrengthColor(passwordScore);
 
-  const inputClass = 'w-full rounded-lg border border-[#1a2a1a] bg-[#0a0a0a]/70 px-3 py-2.5 text-sm text-white placeholder:text-[#4a5a4a] outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41]/30 transition-all';
+  const inputClass = 'w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]/70 px-3 py-2.5 text-sm text-white placeholder:text-[var(--text-tertiary)] outline-none focus:border-[#00ff41] focus:ring-1 focus:ring-[#00ff41]/30 transition-all';
   const btnPrimary = 'w-full rounded-lg bg-[#00ff41] px-4 py-2.5 text-sm font-medium text-black hover:bg-[#00cc33] disabled:opacity-50 transition-all active:scale-[0.98]';
 
   return (
@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
                 <Check size={24} className="text-emerald-400" />
               </div>
               <h2 className="text-sm font-semibold text-white">Password Reset Successful</h2>
-              <p className="text-xs text-[#7a8a7a]">Your password has been updated. You can now sign in with your new password.</p>
+              <p className="text-xs text-[var(--text-secondary)]">Your password has been updated. You can now sign in with your new password.</p>
               <button onClick={() => navigate('/login')} className={btnPrimary}>
                 Go to Login
               </button>
@@ -84,13 +84,13 @@ export default function ResetPasswordPage() {
           ) : (
             <form onSubmit={handleReset} className="space-y-4">
               <h2 className="text-sm font-semibold text-white">Set New Password</h2>
-              <p className="text-xs text-[#7a8a7a]">Choose a strong password for your account.</p>
+              <p className="text-xs text-[var(--text-secondary)]">Choose a strong password for your account.</p>
 
               {error && <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</p>}
 
               {/* Password */}
               <div>
-                <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">New Password</label>
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">New Password</label>
                 <div className="relative">
                   <input
                     ref={pwRef}
@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -117,7 +117,7 @@ export default function ResetPasswordPage() {
               {password.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-[#111111] rounded-full overflow-hidden flex gap-0.5">
+                    <div className="flex-1 h-1.5 bg-[var(--surface-raised)] rounded-full overflow-hidden flex gap-0.5">
                       {[1, 2, 3, 4, 5].map((i) => (
                         <div
                           key={i}
@@ -135,8 +135,8 @@ export default function ResetPasswordPage() {
                       const passed = check.test(password);
                       return (
                         <div key={check.label} className="flex items-center gap-1.5">
-                          {passed ? <Check size={12} className="text-emerald-400 shrink-0" /> : <X size={12} className="text-[#4a5a4a] shrink-0" />}
-                          <span className={`text-[11px] ${passed ? 'text-emerald-400' : 'text-[#4a5a4a]'}`}>{check.label}</span>
+                          {passed ? <Check size={12} className="text-emerald-400 shrink-0" /> : <X size={12} className="text-[var(--text-tertiary)] shrink-0" />}
+                          <span className={`text-[11px] ${passed ? 'text-emerald-400' : 'text-[var(--text-tertiary)]'}`}>{check.label}</span>
                         </div>
                       );
                     })}
@@ -146,7 +146,7 @@ export default function ResetPasswordPage() {
 
               {/* Confirm */}
               <div>
-                <label className="block text-xs font-medium text-[#7a8a7a] mb-1.5">Confirm Password</label>
+                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Confirm Password</label>
                 <div className="relative">
                   <input
                     type={showConfirm ? 'text' : 'password'}
@@ -164,7 +164,7 @@ export default function ResetPasswordPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
                     tabIndex={-1}
                   >
                     {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -186,7 +186,7 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="w-full flex items-center justify-center gap-1 text-xs text-[#4a5a4a] hover:text-[#7a8a7a] transition"
+                className="w-full flex items-center justify-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition"
               >
                 <ArrowLeft size={12} /> Back to login
               </button>
