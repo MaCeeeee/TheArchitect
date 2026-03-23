@@ -4,6 +4,8 @@ import { checkCompliance } from './compliance.service';
 import { propagateCascadeRisk, kolmogorovSmirnovTest, getThresholds } from './stochastic.service';
 import { SimulationRun } from '../models/SimulationRun';
 import { ArchitectureSnapshot } from '../models/ArchitectureSnapshot';
+import { Standard } from '../models/Standard';
+import { StandardMapping } from '../models/StandardMapping';
 import type {
   AdvisorInsight,
   AdvisorScanResult,
@@ -75,6 +77,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     mirofishInsights,
     cascadeInsights,
     driftInsights,
+    missingComplianceInsights,
   ] = await Promise.all([
     detectSPOF(elements),
     detectOrphans(elements),
@@ -87,6 +90,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     detectMiroFishConflicts(projectId),
     detectCascadeRisks(projectId, elements),
     detectArchitectureDrift(projectId, elements),
+    detectMissingComplianceElements(projectId),
   ]);
 
   const allInsights = [
@@ -101,6 +105,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     ...mirofishInsights,
     ...cascadeInsights,
     ...driftInsights,
+    ...missingComplianceInsights,
   ];
 
   // Sort by severity priority, then by affected elements count
@@ -622,6 +627,45 @@ async function detectArchitectureDrift(
           description: `Risk distribution has changed significantly since last baseline (D=${ksResult.statistic.toFixed(3)}, p=${ksResult.pValue.toFixed(4)}). Review recent changes for unintended risk increases.`,
           affectedElements: [],
           effort: 'medium',
+          impact: 'high',
+        });
+      }
+    }
+
+    return insights;
+  } catch {
+    return [];
+  }
+}
+
+// ─── Detector #12: Missing Compliance Elements (REQ-CDTP-025) ───
+
+async function detectMissingComplianceElements(projectId: string): Promise<AdvisorInsight[]> {
+  try {
+    const standards = await Standard.find({ projectId });
+    if (standards.length === 0) return [];
+
+    const insights: AdvisorInsight[] = [];
+
+    for (const standard of standards) {
+      const totalSections = standard.sections.length;
+      if (totalSections === 0) continue;
+
+      const mappings = await StandardMapping.find({ projectId, standardId: String(standard._id) });
+      const mappedSectionIds = new Set(mappings.map((m) => m.sectionId));
+      const unmappedCount = standard.sections.filter((s) => !mappedSectionIds.has(s.id)).length;
+      const unmappedPercent = Math.round((unmappedCount / totalSections) * 100);
+
+      if (unmappedPercent > 20) {
+        const severity: InsightSeverity = unmappedPercent > 50 ? 'critical' : unmappedPercent > 35 ? 'high' : 'warning';
+        insights.push({
+          id: `missing-compliance-${standard._id}`,
+          category: 'missing_compliance_element',
+          severity,
+          title: `${standard.name}: ${unmappedPercent}% sections unmapped`,
+          description: `${unmappedCount} of ${totalSections} sections in "${standard.name}" have no architecture element mapping. This indicates significant compliance gaps that need new elements or explicit mappings.`,
+          affectedElements: [],
+          effort: unmappedCount > 10 ? 'high' : 'medium',
           impact: 'high',
         });
       }

@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
+import { StandardMapping } from '../models/StandardMapping';
 import type { PolicyDraft } from '@thearchitect/shared';
 
 // ─── Provider Detection ───
@@ -649,5 +650,86 @@ Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" 
       }
     }
     onError(err instanceof Error ? err : new Error(String(err)));
+  }
+}
+
+// ─── Suggest Missing Elements (REQ-CDTP-024) ───
+
+export interface SuggestedElement {
+  name: string;
+  type: string;
+  layer: string;
+  description: string;
+  sectionNumber: string;
+  sectionTitle: string;
+  priority: 'high' | 'medium' | 'low';
+  connections: Array<{ targetName: string; type: string }>;
+}
+
+export async function suggestMissingElements(
+  projectId: string,
+  standardId: string,
+): Promise<SuggestedElement[]> {
+  const provider = detectProvider();
+  if (provider === 'none') return [];
+
+  // Get coverage gap mappings
+  const gapMappings = await StandardMapping.find({
+    projectId,
+    standardId,
+    elementId: '__COVERAGE_GAP__',
+  });
+
+  if (gapMappings.length === 0) return [];
+
+  const standard = await Standard.findById(standardId);
+  if (!standard) return [];
+
+  // Build gap context
+  const gapLines = gapMappings.map((m) => {
+    const section = standard.sections.find((s) => s.id === m.sectionId);
+    const suggested = m.suggestedNewElement;
+    return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": suggested "${suggested?.name || 'Unknown'}" (${suggested?.type || 'unknown'}, ${suggested?.layer || 'unknown'})`;
+  });
+
+  const architectureContext = await buildProjectContext(projectId);
+
+  const systemPrompt = `You are an Enterprise Architecture expert. Given coverage gaps from a compliance standard mapping, generate detailed element suggestions.
+
+--- ARCHITECTURE ---
+${architectureContext}
+--- END ARCHITECTURE ---
+
+--- STANDARD: ${standard.name} ---
+${gapLines.join('\n')}
+--- END GAPS ---
+
+For each gap, elaborate the suggested element with:
+- A clear, descriptive name following ArchiMate conventions
+- The correct element type and layer
+- A description explaining its purpose
+- Priority: "high" if it's a SHALL/MUST requirement, "medium" for SHOULD, "low" for MAY
+- Proposed connections to existing architecture elements (by name)
+
+Respond with ONLY a JSON array:
+[{"name":"...","type":"...","layer":"...","description":"...","sectionNumber":"...","sectionTitle":"...","priority":"high|medium|low","connections":[{"targetName":"...","type":"depends_on|implements|data_flow"}]}]`;
+
+  let fullResponse = '';
+  const collect = (text: string) => { fullResponse += text; };
+
+  try {
+    if (provider === 'openai') {
+      await streamOpenAI(systemPrompt, [{ role: 'user', content: 'Generate detailed element suggestions for the coverage gaps.' }], collect, () => {});
+    } else {
+      await streamAnthropic(systemPrompt, [{ role: 'user', content: 'Generate detailed element suggestions for the coverage gaps.' }], collect, () => {});
+    }
+
+    const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]) as SuggestedElement[];
+    }
+    return [];
+  } catch {
+    return [];
   }
 }

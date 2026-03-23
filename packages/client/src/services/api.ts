@@ -307,6 +307,10 @@ export const compliancePipelineAPI = {
     api.post(`/projects/${projectId}/standards/${standardId}/refresh-stats`),
   approvePolicies: (projectId: string, standardId: string, approved: PolicyDraft[]) =>
     api.post(`/projects/${projectId}/standards/${standardId}/approve-policies`, { approved }),
+  suggestElements: (projectId: string, standardId: string) =>
+    api.get(`/projects/${projectId}/standards/${standardId}/suggest-elements`),
+  acceptSuggestedElement: (projectId: string, standardId: string, data: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/standards/${standardId}/accept-suggested-element`, data),
 };
 
 // Settings API

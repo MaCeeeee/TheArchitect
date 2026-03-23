@@ -14,7 +14,8 @@ export type InsightCategory =
   | 'maturity_gap'
   | 'mirofish_conflict'
   | 'cascade_risk'
-  | 'architecture_drift';
+  | 'architecture_drift'
+  | 'missing_compliance_element';
 
 export type RemediationActionType =
   | 'retire_element'

@@ -12,6 +12,7 @@ import ComplianceMatrix from './ComplianceMatrix';
 import AdvisorPanel from './AdvisorPanel';
 import { CompliancePipelineWizard } from './CompliancePipelineWizard';
 import { PolicyDraftReview } from '../governance/PolicyDraftReview';
+import { SuggestedElements } from './SuggestedElements';
 
 // ─── Types ───
 
@@ -21,7 +22,7 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline' | 'policies';
+type Tab = 'chat' | 'standards' | 'matrix' | 'advisor' | 'pipeline' | 'policies' | 'elements';
 
 // ─── Quick Actions ───
 
@@ -315,6 +316,7 @@ export default function AICopilot() {
           { id: 'matrix' as Tab, icon: Grid3X3, label: 'Matrix', badge: 0 },
           { id: 'pipeline' as Tab, icon: ShieldAlert, label: 'Pipeline', badge: 0 },
           { id: 'policies' as Tab, icon: FileText, label: 'Policies', badge: 0 },
+          { id: 'elements' as Tab, icon: Sparkles, label: 'Elements', badge: 0 },
         ]).map((tab) => (
           <button
             key={tab.id}
@@ -504,6 +506,8 @@ export default function AICopilot() {
       {activeTab === 'pipeline' && <CompliancePipelineWizard />}
 
       {activeTab === 'policies' && <PolicyDraftReview />}
+
+      {activeTab === 'elements' && <SuggestedElements />}
     </div>
   );
 }

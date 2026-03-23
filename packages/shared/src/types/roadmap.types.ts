@@ -57,6 +57,13 @@ export interface RoadmapWave {
   stakeholderNotes?: string;
   dependsOnWaves: number[];
   estimatedDurationMonths: number;
+  suggestedNewElements?: Array<{
+    name: string;
+    type: string;
+    layer: string;
+    description: string;
+    sectionNumber: string;
+  }>;
 }
 
 // ─── Summary ───

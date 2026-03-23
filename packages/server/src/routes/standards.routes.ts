@@ -14,7 +14,7 @@ import {
   bulkCreateMappings,
   deleteMapping,
 } from '../services/standards.service';
-import { generateMappingSuggestions, validateConfidence, generatePoliciesFromStandard } from '../services/ai.service';
+import { generateMappingSuggestions, validateConfidence, generatePoliciesFromStandard, suggestMissingElements } from '../services/ai.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { Policy } from '../models/Policy';
 import {
@@ -497,6 +497,73 @@ router.post(
         res.write(`data: ${JSON.stringify({ error: 'Stream failed' })}\n\n`);
         res.end();
       }
+    }
+  },
+);
+
+// ─── Suggest Missing Elements (REQ-CDTP-024) ───
+
+router.get(
+  '/:projectId/standards/:standardId/suggest-elements',
+  requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
+  async (req: Request, res: Response) => {
+    try {
+      const suggestions = await suggestMissingElements(pid(req), sid(req));
+      res.json(suggestions);
+    } catch (err) {
+      console.error('[Standards] Suggest elements error:', err);
+      res.status(500).json({ error: 'Failed to suggest elements' });
+    }
+  },
+);
+
+// ─── Accept Suggested Element (REQ-CDTP-026) ───
+
+router.post(
+  '/:projectId/standards/:standardId/accept-suggested-element',
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const { name, type, layer, description, sectionId, sectionNumber } = req.body;
+      if (!name || !type || !layer) {
+        return res.status(400).json({ error: 'name, type, and layer are required' });
+      }
+
+      const { runCypher: runNeo4j } = await import('../config/neo4j');
+      const crypto = await import('crypto');
+      const elementId = crypto.randomUUID();
+      const projectId = pid(req);
+
+      // Create element in Neo4j
+      await runNeo4j(
+        `CREATE (e:ArchitectureElement {
+          id: $id, projectId: $projectId, name: $name, type: $type,
+          layer: $layer, description: $description, status: 'planned',
+          riskLevel: 'medium', maturityLevel: 1,
+          createdAt: datetime(), updatedAt: datetime()
+        })`,
+        { id: elementId, projectId, name, type, layer, description: description || '' },
+      );
+
+      // Update the coverage gap mapping to reference the new element
+      if (sectionId) {
+        await StandardMapping.findOneAndUpdate(
+          { projectId, standardId: sid(req), sectionId, elementId: '__COVERAGE_GAP__' },
+          {
+            elementId,
+            elementName: name,
+            elementLayer: layer,
+            status: 'partial',
+            notes: `Created from suggested element`,
+            suggestedNewElement: undefined,
+          },
+        );
+      }
+
+      res.status(201).json({ elementId, name, type, layer });
+    } catch (err) {
+      console.error('[Standards] Accept suggested element error:', err);
+      res.status(500).json({ error: 'Failed to create element' });
     }
   },
 );
