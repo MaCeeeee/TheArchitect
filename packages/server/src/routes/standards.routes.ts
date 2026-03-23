@@ -14,7 +14,8 @@ import {
   bulkCreateMappings,
   deleteMapping,
 } from '../services/standards.service';
-import { generateMappingSuggestions } from '../services/ai.service';
+import { generateMappingSuggestions, validateConfidence } from '../services/ai.service';
+import { StandardMapping } from '../models/StandardMapping';
 import {
   getOrCreatePipelineState,
   refreshMappingStats,
@@ -349,14 +350,48 @@ router.post(
           // Save AI suggestions as mappings
           if (suggestions.length > 0) {
             const userId = getUserId(req);
-            const prepared = suggestions.map((s) => ({
-              ...s,
-              projectId: pid(req),
-              standardId: sid(req),
-              source: 'ai' as const,
-              createdBy: userId,
-            }));
-            await bulkCreateMappings(prepared);
+
+            // Separate non-gap suggestions from coverage gaps
+            const nonGapSuggestions = suggestions.filter((s: any) => s.coverageGap !== true);
+            // existing bulkCreateMappings processes only non-gap suggestions
+            if (nonGapSuggestions.length > 0) {
+              const prepared = nonGapSuggestions.map((s) => ({
+                ...s,
+                projectId: pid(req),
+                standardId: sid(req),
+                source: 'ai' as const,
+                createdBy: userId,
+              }));
+              await bulkCreateMappings(prepared);
+            }
+
+            // Coverage gap entries — inserted separately with suggestedNewElement
+            const coverageGaps = suggestions.filter((s: any) => s.coverageGap === true);
+            if (coverageGaps.length > 0) {
+              const gapMappings = coverageGaps.map((g: any) => ({
+                projectId: pid(req),
+                standardId: sid(req),
+                sectionId: g.sectionId,
+                sectionNumber: g.sectionNumber || '',
+                elementId: '__COVERAGE_GAP__',
+                elementName: 'Coverage Gap',
+                elementLayer: g.suggestedElementLayer || 'technology',
+                status: 'gap' as const,
+                notes: `AI identified coverage gap. Suggested element: ${g.suggestedElementName}`,
+                source: 'ai' as const,
+                confidence: validateConfidence(g, []),  // No element to compare for gaps
+                createdBy: getUserId(req),
+                suggestedNewElement: {
+                  name: g.suggestedElementName || 'Unknown',
+                  type: g.suggestedElementType || 'application_component',
+                  layer: g.suggestedElementLayer || 'application',
+                  description: g.description || '',
+                },
+              }));
+              // Use StandardMapping.insertMany directly since bulkCreateMappings
+              // type signature doesn't include suggestedNewElement yet
+              await StandardMapping.insertMany(gapMappings);
+            }
           }
           res.write(`data: ${JSON.stringify({ suggestions, done: true })}\n\n`);
           res.end();

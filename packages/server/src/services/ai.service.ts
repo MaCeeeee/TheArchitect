@@ -363,6 +363,29 @@ Analyze the architecture against this standard. Be helpful and actionable.`;
 
 // ─── AI Mapping Suggestions ───
 
+/**
+ * Validate and adjust AI confidence based on layer/type consistency.
+ * REQ-CDTP-005: post-validate AI confidence scores.
+ */
+export function validateConfidence(
+  suggestion: { confidence?: number; layer?: string; elementType?: string; elementId?: string },
+  elements: Array<{ id: string; layer?: string; type?: string }>
+): number {
+  let confidence = suggestion.confidence || 0.5;
+  if (suggestion.elementId && suggestion.elementId !== '__COVERAGE_GAP__') {
+    const element = elements.find((e) => e.id === suggestion.elementId);
+    if (element) {
+      if (suggestion.layer && element.layer !== suggestion.layer) {
+        confidence *= 0.7;
+      }
+      if (suggestion.elementType && element.type !== suggestion.elementType) {
+        confidence *= 0.8;
+      }
+    }
+  }
+  return Math.round(confidence * 100) / 100;
+}
+
 interface MappingSuggestion {
   sectionId: string;
   sectionNumber: string;
@@ -450,7 +473,19 @@ For each relevant section-element pair, determine the compliance status.
 Respond with ONLY a JSON array. No other text. Each entry:
 {"sectionId":"...","sectionNumber":"...","elementId":"...","elementName":"...","elementLayer":"...","status":"compliant|partial|gap","notes":"brief explanation","confidence":0.0-1.0}
 
-Only include meaningful mappings where the element is relevant to the section. Skip irrelevant pairs.`;
+Only include meaningful mappings where the element is relevant to the section. Skip irrelevant pairs.
+
+Additionally, for any standard section that has NO suitable matching architecture element,
+include an entry with:
+- sectionId: the section's UUID
+- sectionNumber: the section's number (e.g. "4.2.1")
+- elementId: "__COVERAGE_GAP__"
+- elementName: "Coverage Gap"
+- coverageGap: true
+- suggestedElementName: a descriptive name for the missing element
+- suggestedElementType: appropriate ArchiMate element type
+- suggestedElementLayer: "business", "application", or "technology"
+- confidence: your confidence that this section needs a new element (0.0-1.0)`;
 
   let fullResponse = '';
 
