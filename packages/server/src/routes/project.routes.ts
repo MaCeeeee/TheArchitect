@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { Project } from '../models/Project';
+import { CompliancePipelineState } from '../models/CompliancePipelineState';
+import { SimulationRun } from '../models/SimulationRun';
+import { runCypher } from '../config/neo4j';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
@@ -69,6 +72,68 @@ router.get(
     } catch (err) {
       console.error('Get project error:', err);
       res.status(500).json({ error: 'Failed to get project' });
+    }
+  }
+);
+
+// Get project stats for dashboard (element/connection counts + pipeline phase)
+router.get(
+  '/:id/stats',
+  requirePermission(PERMISSIONS.PROJECT_READ),
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = req.params.id;
+
+      // Count elements and connections from Neo4j
+      let elementCount = 0;
+      let connectionCount = 0;
+      try {
+        const elRecords = await runCypher(
+          'MATCH (n:Element {projectId: $projectId}) RETURN count(n) AS cnt',
+          { projectId }
+        );
+        elementCount = elRecords[0]?.get('cnt')?.toNumber?.() ?? 0;
+        const connRecords = await runCypher(
+          'MATCH (:Element {projectId: $projectId})-[r:CONNECTS_TO]->() RETURN count(r) AS cnt',
+          { projectId }
+        );
+        connectionCount = connRecords[0]?.get('cnt')?.toNumber?.() ?? 0;
+      } catch {
+        // Neo4j may not be available; return zeros
+      }
+
+      // Determine pipeline phase from CompliancePipelineState
+      const STAGE_ORDER: Record<string, number> = {
+        uploaded: 0, mapped: 1, policies_generated: 2, roadmap_ready: 3, tracking: 4,
+      };
+      const pipelineStates = await CompliancePipelineState.find({ projectId });
+      const maxStage = pipelineStates.reduce((max, ps) => {
+        const idx = STAGE_ORDER[ps.stage] ?? -1;
+        return idx > max ? idx : max;
+      }, -1);
+
+      const simRuns = await SimulationRun.countDocuments({ projectId });
+
+      // Calculate journey phase (same logic as client journeyStore)
+      const phase1Done = elementCount >= 5 && connectionCount >= 3;
+      const phase2Done = maxStage >= 1;
+      const phase3Done = maxStage >= 2;
+      const phase4Done = simRuns > 0 || maxStage >= 3;
+
+      let currentPhase = 5;
+      if (!phase1Done) currentPhase = 1;
+      else if (!phase2Done) currentPhase = 2;
+      else if (!phase3Done) currentPhase = 3;
+      else if (!phase4Done) currentPhase = 4;
+
+      const phasesDone = [phase1Done, phase2Done, phase3Done, phase4Done, false];
+      const healthScore = phasesDone.filter(Boolean).length * 20;
+
+      res.json({ elementCount, connectionCount, currentPhase, healthScore });
+    } catch (err) {
+      console.error('Get project stats error:', err);
+      res.status(500).json({ error: 'Failed to get stats' });
     }
   }
 );

@@ -131,6 +131,7 @@ export const projectAPI = {
   create: (data: { name: string; description?: string; tags?: string[] }) =>
     api.post('/projects', data),
   get: (id: string) => api.get(`/projects/${id}`),
+  getStats: (id: string) => api.get(`/projects/${id}/stats`),
   update: (id: string, data: Record<string, unknown>) =>
     api.put(`/projects/${id}`, data),
   delete: (id: string) => api.delete(`/projects/${id}`),

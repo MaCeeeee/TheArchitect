@@ -32,6 +32,9 @@ export default function DashboardPage() {
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Project stats for cards
+  const [projectStats, setProjectStats] = useState<Record<string, { elementCount: number; connectionCount: number; currentPhase: number; healthScore: number }>>({});
+
   useEffect(() => {
     // Clear stale project data when returning to dashboard
     useArchitectureStore.getState().clearProject();
@@ -44,7 +47,24 @@ export default function DashboardPage() {
     setError(null);
     try {
       const { data } = await projectAPI.list();
-      setProjects(Array.isArray(data) ? data : data.data || []);
+      const list: Project[] = Array.isArray(data) ? data : data.data || [];
+      setProjects(list);
+
+      // Load stats for each project in parallel (fire-and-forget, non-blocking)
+      const statsEntries = await Promise.allSettled(
+        list.map(async (p) => {
+          const res = await projectAPI.getStats(p._id);
+          return [p._id, res.data] as const;
+        })
+      );
+      const stats: Record<string, any> = {};
+      for (const result of statsEntries) {
+        if (result.status === 'fulfilled') {
+          const [id, data] = result.value;
+          stats[id] = data;
+        }
+      }
+      setProjectStats(stats);
     } catch (err) {
       console.error('Failed to load projects:', err);
       toast.error('Failed to load projects');
@@ -143,6 +163,7 @@ export default function DashboardPage() {
               <ProjectCard
                 key={project._id}
                 project={project}
+                stats={projectStats[project._id]}
                 onClick={() => navigate(`/project/${project._id}`)}
                 onDelete={() => setDeleteTarget(project)}
               />

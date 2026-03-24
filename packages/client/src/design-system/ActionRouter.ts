@@ -30,11 +30,17 @@ export function executeAction(
       useUIStore.getState().setSidebarPanel(target.panel);
       break;
 
-    case 'compliance':
-      if (projectId) {
+    case 'compliance': {
+      // If we're on the 3D project view, open overlay instead of navigating away
+      const currentPath = window.location.pathname;
+      const isOnProjectView = projectId && currentPath === `/project/${projectId}`;
+      if (isOnProjectView) {
+        useUIStore.getState().openComplianceOverlay(target.section);
+      } else if (projectId) {
         navigate(`/project/${projectId}/compliance/${target.section}`);
       }
       break;
+    }
 
     case 'settings':
       navigate(target.section ? `/settings/${target.section}` : '/settings');
