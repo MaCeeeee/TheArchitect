@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Upload, FileText, Trash2, ChevronDown, ChevronRight,
-  CheckSquare, Square, Loader2, AlertCircle, Search,
+  CheckSquare, Square, Loader2, AlertCircle, Search, AlertTriangle,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { standardsAPI } from '../../services/api';
 
 // ─── Types ───
@@ -110,7 +111,8 @@ export default function StandardsManager({
       formData.append('version', uploadVersion.trim());
       formData.append('type', uploadType);
 
-      await standardsAPI.upload(projectId, formData);
+      const res = await standardsAPI.upload(projectId, formData);
+      const uploaded = res.data;
 
       // Reset form
       setUploadName('');
@@ -120,6 +122,15 @@ export default function StandardsManager({
       setShowUpload(false);
 
       await loadStandards();
+
+      // Warn if PDF was poorly parsed
+      const sectionCount = uploaded?.sectionsCount ?? uploaded?.sections?.length ?? 0;
+      if (sectionCount < 5) {
+        toast(
+          `Only ${sectionCount} section${sectionCount !== 1 ? 's' : ''} detected. The PDF may not have been parsed correctly — consider re-uploading a cleaner version.`,
+          { icon: '⚠️', duration: 8000 },
+        );
+      }
     } catch {
       setError('Upload failed. Please try again.');
     } finally {
