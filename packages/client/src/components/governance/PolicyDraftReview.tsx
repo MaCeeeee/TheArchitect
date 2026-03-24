@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   FileCheck, Check, X, Edit3, Loader2, AlertCircle,
   AlertTriangle, Info, Sparkles, ChevronDown, ChevronUp,
@@ -25,6 +25,7 @@ export function PolicyDraftReview() {
   const token = useAuthStore((s) => s.token);
   const {
     selectedStandardId,
+    pipelineStates,
     policyDrafts,
     isGeneratingPolicies,
     policyGenerationProgress,
@@ -32,7 +33,23 @@ export function PolicyDraftReview() {
     setGeneratingPolicies,
     setPolicyGenerationProgress,
     approvePolicies,
+    selectStandard,
+    loadPipelineStatus,
   } = useComplianceStore();
+
+  // Auto-select first standard if none selected
+  useEffect(() => {
+    if (!selectedStandardId && pipelineStates.length > 0) {
+      selectStandard(pipelineStates[0].standardId);
+    }
+  }, [selectedStandardId, pipelineStates, selectStandard]);
+
+  // Ensure pipeline data is loaded
+  useEffect(() => {
+    if (projectId && pipelineStates.length === 0) {
+      loadPipelineStatus(projectId);
+    }
+  }, [projectId, pipelineStates.length, loadPipelineStatus]);
 
   const [draftStates, setDraftStates] = useState<DraftState[]>([]);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);

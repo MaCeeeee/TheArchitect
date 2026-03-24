@@ -162,6 +162,9 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   refreshStats: async (projectId, standardId) => {
     try {
       await compliancePipelineAPI.refreshStats(projectId, standardId);
+      // Reload pipeline status so PhaseBar updates (stage may advance)
+      const res = await compliancePipelineAPI.getPipelineStatus(projectId);
+      set({ pipelineStates: res.data });
     } catch (err: unknown) {
       console.error('[ComplianceStore] Failed to refresh stats:', err);
     }

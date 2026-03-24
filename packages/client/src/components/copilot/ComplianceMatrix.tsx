@@ -7,6 +7,7 @@ import {
 import { standardsAPI } from '../../services/api';
 import { architectureAPI } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 
 // ─── Types ───
 
@@ -106,6 +107,7 @@ function getLayerScore(cells: MatrixCell[], layer: string): number {
 export default function ComplianceMatrix({ standardId, sectionIds, onBack }: ComplianceMatrixProps) {
   const { projectId } = useParams();
   const token = useAuthStore((s) => s.token);
+  const refreshStats = useComplianceStore((s) => s.refreshStats);
   const [matrix, setMatrix] = useState<MatrixData | null>(null);
   const [mappings, setMappings] = useState<Mapping[]>([]);
   const [elements, setElements] = useState<ArchElement[]>([]);
@@ -193,8 +195,9 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
           try {
             const parsed = JSON.parse(line.slice(6));
             if (parsed.done) {
-              // Suggestions saved, reload matrix
+              // Suggestions saved, reload matrix + refresh pipeline stats
               await loadMatrix();
+              if (projectId) await refreshStats(projectId, standardId);
             }
           } catch {
             // Partial JSON, skip
@@ -230,8 +233,9 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       setAddStatus('gap');
       setAddNotes('');
       await loadMatrix();
+      if (projectId) await refreshStats(projectId, standardId);
     } catch {
-      setError('Mapping konnte nicht erstellt werden');
+      setError('Failed to create mapping');
     }
   };
 
@@ -252,8 +256,9 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       });
       setEditingId(null);
       await loadMatrix();
+      if (projectId) await refreshStats(projectId, standardId);
     } catch {
-      setError('Mapping konnte nicht aktualisiert werden');
+      setError('Failed to update mapping');
     }
   };
 
@@ -262,6 +267,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
     try {
       await standardsAPI.deleteMapping(projectId, standardId, mappingId);
       await loadMatrix();
+      if (projectId) await refreshStats(projectId, standardId);
     } catch {
       setError('Failed to delete mapping');
     }

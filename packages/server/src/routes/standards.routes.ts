@@ -645,6 +645,8 @@ router.post(
               await StandardMapping.insertMany(gapMappings);
             }
           }
+          // Refresh pipeline stats — may advance stage to 'mapped'
+          await refreshMappingStats(pid(req), sid(req));
           res.write(`data: ${JSON.stringify({ suggestions, done: true })}\n\n`);
           res.end();
         },
