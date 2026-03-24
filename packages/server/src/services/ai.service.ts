@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
+import { Policy } from '../models/Policy';
 import type { PolicyDraft } from '@thearchitect/shared';
 
 // ─── Provider Detection ───
@@ -680,7 +681,17 @@ export async function suggestMissingElements(
     elementId: '__COVERAGE_GAP__',
   });
 
-  if (gapMappings.length === 0) return [];
+  // Also get non-compliant mappings (gap status with real elements) + approved policies
+  const nonCompliantMappings = await StandardMapping.find({
+    projectId,
+    standardId,
+    status: 'gap',
+    elementId: { $ne: '__COVERAGE_GAP__' },
+  });
+
+  const policies = await Policy.find({ projectId, standardId, enabled: true });
+
+  if (gapMappings.length === 0 && nonCompliantMappings.length === 0 && policies.length === 0) return [];
 
   const standard = await Standard.findById(standardId);
   if (!standard) return [];
@@ -692,23 +703,41 @@ export async function suggestMissingElements(
     return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": suggested "${suggested?.name || 'Unknown'}" (${suggested?.type || 'unknown'}, ${suggested?.layer || 'unknown'})`;
   });
 
+  // Build non-compliant element context
+  const nonCompliantLines = nonCompliantMappings.map((m) => {
+    const section = standard.sections.find((s) => s.id === m.sectionId);
+    return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": element "${m.elementName}" (${m.elementLayer}) has GAP status — needs modification or replacement`;
+  });
+
+  // Build policy context
+  const policyLines = policies.map((p) => {
+    return `- Policy "${p.name}" (${p.severity}): ${p.description}${p.rules?.length ? ` | Rules: ${p.rules.map((r: any) => `${r.field} ${r.operator} ${JSON.stringify(r.value)}`).join(', ')}` : ''}`;
+  });
+
   const architectureContext = await buildProjectContext(projectId);
 
-  const systemPrompt = `You are an Enterprise Architecture expert. Given coverage gaps from a compliance standard mapping, generate detailed element suggestions.
+  const systemPrompt = `You are an Enterprise Architecture expert. Analyze compliance gaps, non-compliant elements, and active policies to suggest architecture changes needed for compliance.
 
---- ARCHITECTURE ---
+--- CURRENT ARCHITECTURE ---
 ${architectureContext}
 --- END ARCHITECTURE ---
 
 --- STANDARD: ${standard.name} ---
-${gapLines.join('\n')}
---- END GAPS ---
+${gapLines.length > 0 ? `COVERAGE GAPS (missing elements):\n${gapLines.join('\n')}` : ''}
+${nonCompliantLines.length > 0 ? `\nNON-COMPLIANT ELEMENTS (need changes):\n${nonCompliantLines.join('\n')}` : ''}
+${policyLines.length > 0 ? `\nACTIVE POLICIES (must be fulfilled):\n${policyLines.join('\n')}` : ''}
+--- END COMPLIANCE CONTEXT ---
 
-For each gap, elaborate the suggested element with:
-- A clear, descriptive name following ArchiMate conventions
+For each issue, suggest a concrete architecture change:
+- For coverage gaps: suggest a NEW element to add
+- For non-compliant elements: suggest MODIFICATIONS to existing elements (add properties, change status, add connections)
+- For policies: suggest elements or changes needed to satisfy each policy rule
+
+For each suggestion provide:
+- A clear name following ArchiMate conventions
 - The correct element type and layer
-- A description explaining its purpose
-- Priority: "high" if it's a SHALL/MUST requirement, "medium" for SHOULD, "low" for MAY
+- A description explaining what to do and WHY (referencing the policy/gap)
+- Priority: "high" for SHALL/MUST or Error-severity policies, "medium" for SHOULD/Warning, "low" for MAY/Info
 - Proposed connections to existing architecture elements (by name)
 
 Respond with ONLY a JSON array:

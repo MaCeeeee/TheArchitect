@@ -67,6 +67,21 @@ export function SuggestedElements() {
     }
   };
 
+  // Auto-select first standard if none selected
+  const { pipelineStates, selectStandard, loadPipelineStatus } = useComplianceStore();
+
+  useEffect(() => {
+    if (!selectedStandardId && pipelineStates.length > 0) {
+      selectStandard(pipelineStates[0].standardId);
+    }
+  }, [selectedStandardId, pipelineStates, selectStandard]);
+
+  useEffect(() => {
+    if (projectId && pipelineStates.length === 0) {
+      loadPipelineStatus(projectId);
+    }
+  }, [projectId, pipelineStates.length, loadPipelineStatus]);
+
   if (!selectedStandardId) {
     return (
       <div className="p-4 text-center text-gray-500 text-sm">

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   FileCheck, Check, X, Edit3, Loader2, AlertCircle,
-  AlertTriangle, Info, Sparkles, ChevronDown, ChevronUp,
+  AlertTriangle, Info, Sparkles, ChevronDown, ChevronUp, ArrowRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/authStore';
@@ -21,7 +22,9 @@ interface DraftState {
 }
 
 export function PolicyDraftReview() {
-  const projectId = useArchitectureStore((s) => s.projectId);
+  const navigate = useNavigate();
+  const { projectId: routeProjectId } = useParams<{ projectId: string }>();
+  const projectId = useArchitectureStore((s) => s.projectId) || routeProjectId;
   const token = useAuthStore((s) => s.token);
   const {
     selectedStandardId,
@@ -180,7 +183,7 @@ export function PolicyDraftReview() {
             <span className="text-sm font-semibold">{savedCount} Policies Saved</span>
           </div>
           <p className="text-xs text-[var(--text-secondary)]">
-            Policies are now active. Continue to Elements to see AI-suggested architecture additions, or generate more policies.
+            Policies are now active. See what architecture changes are needed to comply.
           </p>
           <div className="flex gap-2 justify-center">
             <button
@@ -188,6 +191,12 @@ export function PolicyDraftReview() {
               className="px-3 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--surface-overlay)] transition"
             >
               Generate More
+            </button>
+            <button
+              onClick={() => navigate(`/project/${projectId}/compliance/elements`)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
+            >
+              View Required Changes <ArrowRight size={12} />
             </button>
           </div>
         </div>
