@@ -182,8 +182,9 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     try {
       const res = await compliancePipelineAPI.approvePolicies(projectId, standardId, approved);
       const created = res.data.created as number;
-      // Clear drafts after approval and reload portfolio
+      // Clear drafts after approval, refresh pipeline stats (may advance to policies_generated)
       set({ policyDrafts: [] });
+      await get().refreshStats(projectId, standardId);
       await get().loadPortfolio(projectId);
       return created;
     } catch (err: unknown) {

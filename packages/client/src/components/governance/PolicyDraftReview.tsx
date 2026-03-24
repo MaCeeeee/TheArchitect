@@ -54,6 +54,7 @@ export function PolicyDraftReview() {
   const [draftStates, setDraftStates] = useState<DraftState[]>([]);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [isApproving, setIsApproving] = useState(false);
+  const [savedCount, setSavedCount] = useState(0);
 
   // Start policy generation via SSE
   const generatePolicies = useCallback(async () => {
@@ -148,6 +149,7 @@ export function PolicyDraftReview() {
       const created = await approvePolicies(projectId, selectedStandardId, approved);
       if (created > 0) {
         toast.success(`${created} policies created`);
+        setSavedCount(created);
         setDraftStates([]);
         setPolicyDrafts([]);
       }
@@ -170,8 +172,29 @@ export function PolicyDraftReview() {
 
   return (
     <div className="p-3 space-y-3">
+      {/* Success state after saving policies */}
+      {savedCount > 0 && draftStates.length === 0 && !isGeneratingPolicies && (
+        <div className="bg-[var(--accent-default)]/10 border border-[var(--accent-default)]/30 rounded-lg p-4 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-[var(--accent-default)]">
+            <Check size={18} />
+            <span className="text-sm font-semibold">{savedCount} Policies Saved</span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            Policies are now active. Continue to Elements to see AI-suggested architecture additions, or generate more policies.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => setSavedCount(0)}
+              className="px-3 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--surface-overlay)] transition"
+            >
+              Generate More
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Generate Button */}
-      {draftStates.length === 0 && !isGeneratingPolicies && (
+      {savedCount === 0 && draftStates.length === 0 && !isGeneratingPolicies && (
         <button
           onClick={generatePolicies}
           className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded text-sm font-medium transition-colors"
