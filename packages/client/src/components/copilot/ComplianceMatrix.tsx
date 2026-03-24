@@ -139,16 +139,18 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
       setMatrix(matrixRes.data);
       setMappings(mappingsRes.data);
 
-      // Extract elements from architecture data
-      const els = (elementsRes.data || []).map((e: Record<string, unknown>) => ({
+      // Extract elements from architecture data (handle both {data} and {data: {data}} formats)
+      const rawEls = elementsRes.data?.data || elementsRes.data || [];
+      const els = (Array.isArray(rawEls) ? rawEls : []).map((e: Record<string, unknown>) => ({
         id: String(e.id || e._id || ''),
         name: String(e.name || ''),
         layer: String(e.layer || ''),
         type: String(e.type || ''),
       }));
       setElements(els);
-    } catch {
-      setError('Matrix konnte nicht geladen werden');
+    } catch (err) {
+      console.error('[ComplianceMatrix] Load failed:', err);
+      setError('Failed to load matrix');
     } finally {
       setLoading(false);
     }
@@ -283,8 +285,17 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack }: Com
 
   if (!matrix) {
     return (
-      <div className="flex items-center justify-center h-full p-4">
-        <p className="text-xs text-[var(--text-tertiary)]">Matrix konnte nicht geladen werden.</p>
+      <div className="flex flex-col items-center justify-center h-full p-4 gap-3">
+        <AlertCircle size={20} className="text-red-400" />
+        <p className="text-xs text-[var(--text-tertiary)]">
+          {error || 'Failed to load matrix. The standard may not have parseable sections.'}
+        </p>
+        <button
+          onClick={loadMatrix}
+          className="text-[10px] px-3 py-1.5 rounded border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition"
+        >
+          Retry
+        </button>
       </div>
     );
   }
