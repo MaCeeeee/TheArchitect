@@ -91,6 +91,15 @@ export async function refreshPolicyStats(
 export async function getPipelineStatus(
   projectId: string
 ): Promise<ICompliancePipelineState[]> {
+  // Ensure every uploaded standard has a pipeline state (backfill for standards uploaded before this feature)
+  const standards = await Standard.find({ projectId }).select('_id');
+  const existing = await CompliancePipelineState.find({ projectId }).select('standardId');
+  const existingIds = new Set(existing.map((e) => String(e.standardId)));
+  for (const std of standards) {
+    if (!existingIds.has(String(std._id))) {
+      await getOrCreatePipelineState(projectId, String(std._id));
+    }
+  }
   return CompliancePipelineState.find({ projectId }).sort({ updatedAt: -1 });
 }
 

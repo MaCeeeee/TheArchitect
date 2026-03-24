@@ -93,9 +93,8 @@ export const useJourneyStore = create<JourneyState>((set) => ({
       }
     }
 
-    // Build context-aware next actions for each phase
-    const hasStandards = pipelineStates.length > 0 || maxStage >= 0;
-    const hasUploadedStandards = maxStage >= 0; // at least one at 'uploaded' stage
+    // Build context-aware next actions based on actual pipeline state
+    const hasUploadedStandards = pipelineStates.length > 0;
 
     const getNextAction = (phase: JourneyPhase): { label: string; route: string } => {
       switch (phase) {
@@ -106,15 +105,20 @@ export const useJourneyStore = create<JourneyState>((set) => ({
         }
         case 2: {
           if (!hasUploadedStandards) return { label: 'Upload Standard', route: `/project/${projectId}/compliance/standards` };
-          // Standards uploaded but not mapped → route to Matrix
-          return { label: 'Map to Matrix', route: `/project/${projectId}/compliance/matrix` };
+          if (maxStage < 1) return { label: 'Map to Matrix', route: `/project/${projectId}/compliance/matrix` };
+          return { label: 'Complete Mapping', route: `/project/${projectId}/compliance/matrix` };
         }
         case 3: {
           if (maxStage < 2) return { label: 'Generate Policies', route: `/project/${projectId}/compliance/policies` };
-          return { label: 'Approve Policies', route: `/project/${projectId}/compliance/policies` };
+          const allApproved = pipelineStates.every(ps => ps.policyStats.approved > 0);
+          if (!allApproved) return { label: 'Approve Policies', route: `/project/${projectId}/compliance/approvals` };
+          return { label: 'Review Policies', route: `/project/${projectId}/compliance/policies` };
         }
-        case 4:
+        case 4: {
+          if (roadmaps.length === 0 && maxStage < 3) return { label: 'Create Roadmap', route: `/project/${projectId}/compliance/roadmap` };
+          if (simRuns.length === 0) return { label: 'Run Simulation', route: `/project/${projectId}` };
           return { label: 'Run Simulation', route: `/project/${projectId}` };
+        }
         case 5: {
           if (snapshots.length === 0) return { label: 'Capture Snapshot', route: `/project/${projectId}/compliance/progress` };
           return { label: 'Create Checklist', route: `/project/${projectId}/compliance/audit` };

@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParseModule = require('pdf-parse');
+import { getOrCreatePipelineState } from './compliance-pipeline.service';
 
 /**
  * Wrapper that works with both pdf-parse v1 (function) and v2 (PDFParse class).
@@ -127,6 +128,9 @@ export async function parseAndStore(
     pageCount: pdf.numpages,
     uploadedBy: userId,
   });
+
+  // Create pipeline state so PhaseBar can track progress immediately
+  await getOrCreatePipelineState(projectId, String(standard._id));
 
   return standard;
 }

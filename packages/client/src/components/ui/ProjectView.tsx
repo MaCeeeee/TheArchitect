@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import Scene from '../3d/Scene';
 import PropertyPanel from './PropertyPanel';
@@ -7,11 +7,14 @@ import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { useJourneyStore } from '../../stores/journeyStore';
 import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
+import NextStepBanner from '../../design-system/patterns/NextStepBanner';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const setElements = useArchitectureStore((s) => s.setElements);
   const setConnections = useArchitectureStore((s) => s.setConnections);
   const setProjectId = useArchitectureStore((s) => s.setProjectId);
@@ -23,8 +26,11 @@ export default function ProjectView() {
   const showComplianceOverlay = useUIStore((s) => s.showComplianceOverlay);
   const complianceOverlaySection = useUIStore((s) => s.complianceOverlaySection);
   const closeComplianceOverlay = useUIStore((s) => s.closeComplianceOverlay);
+  const { phases, currentPhase } = useJourneyStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const currentPhaseInfo = phases.find((p) => p.phase === currentPhase);
 
   useEffect(() => {
     if (!projectId) return;
@@ -95,6 +101,17 @@ export default function ProjectView() {
     <div className="flex h-full">
       <div className="flex-1 relative">
         <Scene />
+        {/* Contextual next-step guidance floating above 3D scene */}
+        {currentPhaseInfo?.nextAction && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[420px] max-w-[90%]">
+            <NextStepBanner
+              message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
+              actionLabel={currentPhaseInfo.nextAction.label}
+              onAction={() => navigate(currentPhaseInfo.nextAction!.route)}
+              className="backdrop-blur-md bg-[var(--surface-base)]/80 shadow-lg"
+            />
+          </div>
+        )}
         <MissionControl isOpen={showMissionControl} onClose={toggleMissionControl} />
         <ComplianceOverlay
           isOpen={showComplianceOverlay}
