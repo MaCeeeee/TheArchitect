@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard,
-  Shield, CheckCircle, History,
+  Shield, CheckCircle, History, Map,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -19,6 +19,7 @@ const SECTIONS: Section[] = [
   { id: 'standards', label: 'Standards', icon: FileText, group: 'pipeline' },
   { id: 'matrix', label: 'Matrix', icon: Grid3X3, group: 'pipeline' },
   { id: 'policies', label: 'Policies', icon: FileCheck, group: 'pipeline' },
+  { id: 'roadmap', label: 'Roadmap', icon: Map, group: 'pipeline' },
   { id: 'elements', label: 'Elements', icon: Sparkles, group: 'pipeline' },
   { id: 'progress', label: 'Progress', icon: TrendingUp, group: 'pipeline' },
   { id: 'audit', label: 'Audit', icon: ClipboardCheck, group: 'pipeline' },

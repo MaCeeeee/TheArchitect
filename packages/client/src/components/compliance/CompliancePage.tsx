@@ -12,6 +12,7 @@ import { PolicyDraftReview } from '../governance/PolicyDraftReview';
 import { SuggestedElements } from '../copilot/SuggestedElements';
 import ComplianceProgressChart from '../copilot/ComplianceProgressChart';
 import AuditReadinessDashboard from '../copilot/AuditReadinessDashboard';
+import RoadmapPanel from '../analytics/RoadmapPanel';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -20,7 +21,7 @@ import AuditTrail from '../governance/AuditTrail';
 
 // Sections that belong to the compliance pipeline (show stepper)
 const PIPELINE_SECTIONS = new Set([
-  'pipeline', 'portfolio', 'standards', 'matrix', 'policies', 'elements', 'progress', 'audit',
+  'pipeline', 'portfolio', 'standards', 'matrix', 'policies', 'roadmap', 'elements', 'progress', 'audit',
 ]);
 
 export default function CompliancePage() {
@@ -103,6 +104,8 @@ export default function CompliancePage() {
           )}
 
           {activeSection === 'policies' && <PolicyDraftReview />}
+
+          {activeSection === 'roadmap' && <RoadmapPanel />}
 
           {activeSection === 'elements' && <SuggestedElements />}
 

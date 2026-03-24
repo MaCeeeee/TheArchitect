@@ -51,10 +51,8 @@ export async function refreshMappingStats(
   };
 
   state.mappingStats = stats;
-  // Advance to 'mapped' only when at least one non-gap mapping exists
-  if (stats.compliant + stats.partial > 0 && state.stage === 'uploaded') {
-    state.stage = 'mapped';
-  }
+  // Recompute stage based on actual data (not just sequential transitions)
+  recomputeStage(state);
   await state.save();
   return state;
 }
@@ -76,13 +74,55 @@ export async function refreshPolicyStats(
     rejected: 0,
   };
 
-  // Advance to policies_generated when policies exist and stage is 'mapped'
-  if (approvedCount > 0 && state.stage === 'mapped') {
-    state.stage = 'policies_generated';
+  // Also refresh mapping stats inline so stage can advance properly
+  const standard = await Standard.findById(standardId);
+  if (standard) {
+    const mappings = await StandardMapping.find({ projectId, standardId });
+    const mappedSectionIds = new Set(mappings.map((m) => m.sectionId));
+    state.mappingStats = {
+      total: standard.sections.length,
+      compliant: mappings.filter((m) => m.status === 'compliant').length,
+      partial: mappings.filter((m) => m.status === 'partial').length,
+      gap: mappings.filter((m) => m.status === 'gap').length,
+      unmapped: standard.sections.filter((s) => !mappedSectionIds.has(s.id)).length,
+    };
   }
 
+  recomputeStage(state);
   await state.save();
   return state;
+}
+
+/**
+ * Recompute pipeline stage based on actual data — not sequential.
+ * Always advances forward, never goes back.
+ */
+function recomputeStage(state: ICompliancePipelineState) {
+  const STAGE_RANK: Record<string, number> = {
+    uploaded: 0, mapped: 1, policies_generated: 2, roadmap_ready: 3, tracking: 4,
+  };
+  const currentRank = STAGE_RANK[state.stage] ?? 0;
+
+  let newStage = state.stage;
+
+  // Has non-gap mappings → at least 'mapped'
+  if ((state.mappingStats.compliant + state.mappingStats.partial) > 0) {
+    if (STAGE_RANK['mapped'] > (STAGE_RANK[newStage] ?? 0)) {
+      newStage = 'mapped';
+    }
+  }
+
+  // Has approved policies → at least 'policies_generated'
+  if (state.policyStats.approved > 0) {
+    if (STAGE_RANK['policies_generated'] > (STAGE_RANK[newStage] ?? 0)) {
+      newStage = 'policies_generated';
+    }
+  }
+
+  // Only advance, never go back
+  if ((STAGE_RANK[newStage] ?? 0) > currentRank) {
+    state.stage = newStage;
+  }
 }
 
 /**

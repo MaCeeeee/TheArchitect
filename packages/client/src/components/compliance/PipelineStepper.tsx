@@ -6,7 +6,7 @@ const PIPELINE_STAGES = [
   { id: 'uploaded', label: 'Upload', icon: Upload, section: 'standards' },
   { id: 'mapped', label: 'Map', icon: GitBranch, section: 'matrix' },
   { id: 'policies_generated', label: 'Policies', icon: FileCheck, section: 'policies' },
-  { id: 'roadmap_ready', label: 'Roadmap', icon: Map, section: 'elements' },
+  { id: 'roadmap_ready', label: 'Roadmap', icon: Map, section: 'roadmap' },
   { id: 'tracking', label: 'Track', icon: TrendingUp, section: 'progress' },
   { id: 'audit_ready', label: 'Audit', icon: ClipboardCheck, section: 'audit' },
 ] as const;
@@ -37,7 +37,7 @@ export default function PipelineStepper() {
     standards: 0, pipeline: 0,
     matrix: 1,
     policies: 2,
-    elements: 3,
+    roadmap: 3, elements: 3,
     progress: 4,
     audit: 5,
   };
