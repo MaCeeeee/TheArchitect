@@ -246,6 +246,7 @@ async function streamOpenAI(
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
+  maxTokens = 1500,
 ): Promise<void> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -259,7 +260,7 @@ async function streamOpenAI(
       ...messages,
     ],
     stream: true,
-    max_tokens: 1500,
+    max_tokens: maxTokens,
     temperature: 0.7,
   });
 
@@ -275,6 +276,7 @@ async function streamAnthropic(
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
+  maxTokens = 1500,
 ): Promise<void> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -284,7 +286,7 @@ async function streamAnthropic(
     model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
     system: systemPrompt,
     messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    max_tokens: 1500,
+    max_tokens: maxTokens,
   });
 
   for await (const event of stream) {
@@ -619,18 +621,30 @@ Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" 
     onChunk(text);
   };
 
+  const POLICY_MAX_TOKENS = 4096;
+
   const parseAndFinish = async () => {
+    if (!fullResponse.trim()) {
+      console.warn('[AI] Policy generation returned empty response');
+      onError(new Error('AI returned an empty response — please try again'));
+      return;
+    }
+
     try {
-      const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
+      // Try to extract JSON array — handle markdown code blocks too
+      const cleaned = fullResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const drafts: PolicyDraft[] = JSON.parse(jsonMatch[0]);
+        console.log(`[AI] Extracted ${drafts.length} policy drafts`);
         await onDone(drafts);
       } else {
-        await onDone([]);
+        console.warn(`[AI] No JSON array found in response (${fullResponse.length} chars)`);
+        onError(new Error('AI response did not contain valid policy rules — the standard may lack concrete requirements'));
       }
-    } catch {
-      console.warn('[AI] Failed to parse policy drafts, returning empty');
-      await onDone([]);
+    } catch (parseErr) {
+      console.warn(`[AI] Failed to parse policy drafts (${fullResponse.length} chars):`, (parseErr as Error).message);
+      onError(new Error('Failed to parse AI response — the output may have been truncated. Try again.'));
     }
   };
 
@@ -638,16 +652,16 @@ Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" 
 
   try {
     if (provider === 'openai') {
-      await streamOpenAI(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
+      await streamOpenAI(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {}, POLICY_MAX_TOKENS);
     } else {
-      await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
+      await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {}, POLICY_MAX_TOKENS);
     }
     await parseAndFinish();
   } catch (err) {
     if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
       try {
         fullResponse = '';
-        await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {});
+        await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collectChunk, () => {}, POLICY_MAX_TOKENS);
         await parseAndFinish();
         return;
       } catch (fallbackErr) {
