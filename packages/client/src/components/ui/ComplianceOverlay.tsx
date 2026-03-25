@@ -38,6 +38,7 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
   const [activeSection, setActiveSection] = useState(initialSection || 'pipeline');
   const [matrixStandardId, setMatrixStandardId] = useState<string | null>(null);
   const [matrixSectionIds, setMatrixSectionIds] = useState<string[]>([]);
+  const [matrixAutoSuggest, setMatrixAutoSuggest] = useState(false);
 
   if (!isOpen || !projectId) return null;
 
@@ -93,10 +94,16 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
 
           {activeSection === 'standards' && (
             <StandardsManager
-              onAnalyze={() => {}}
+              onAnalyze={(stdId, secIds) => {
+                setMatrixStandardId(stdId);
+                setMatrixSectionIds(secIds);
+                setMatrixAutoSuggest(true);
+                setActiveSection('matrix');
+              }}
               onMatrixView={(stdId, secIds) => {
                 setMatrixStandardId(stdId);
                 setMatrixSectionIds(secIds);
+                setMatrixAutoSuggest(false);
                 setActiveSection('matrix');
               }}
             />
@@ -107,6 +114,7 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
               standardId={matrixStandardId}
               sectionIds={matrixSectionIds.length > 0 ? matrixSectionIds : undefined}
               onBack={() => setActiveSection('standards')}
+              autoSuggest={matrixAutoSuggest}
             />
           )}
 

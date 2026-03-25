@@ -396,7 +396,7 @@ export default function StandardsManager({
                           className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 rounded bg-[#38bdf8]/10 border border-[#38bdf8]/30 text-[#38bdf8] hover:bg-[#38bdf8]/20 transition"
                         >
                           <Search size={10} />
-                          AI Abgleich
+                          AI Match
                         </button>
                       </div>
                     </div>

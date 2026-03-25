@@ -266,7 +266,7 @@ export default function AICopilot() {
     setChatSectionIds([]);
   };
 
-  // Standards → Chat: AI Abgleich
+  // Standards → Chat: AI Match
   if (!projectId) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-6">

@@ -32,6 +32,7 @@ export default function CompliancePage() {
   // State for standards → matrix navigation
   const [matrixStandardId, setMatrixStandardId] = useState<string | null>(null);
   const [matrixSectionIds, setMatrixSectionIds] = useState<string[]>([]);
+  const [matrixAutoSuggest, setMatrixAutoSuggest] = useState(false);
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
 
   // Auto-select first standard when navigating directly to matrix without prior selection
@@ -74,10 +75,16 @@ export default function CompliancePage() {
 
           {activeSection === 'standards' && (
             <StandardsManager
-              onAnalyze={() => {}}
+              onAnalyze={(stdId, secIds) => {
+                setMatrixStandardId(stdId);
+                setMatrixSectionIds(secIds);
+                setMatrixAutoSuggest(true);
+                navigate(`/project/${projectId}/compliance/matrix`);
+              }}
               onMatrixView={(stdId, secIds) => {
                 setMatrixStandardId(stdId);
                 setMatrixSectionIds(secIds);
+                setMatrixAutoSuggest(false);
                 navigate(`/project/${projectId}/compliance/matrix`);
               }}
             />
@@ -88,6 +95,7 @@ export default function CompliancePage() {
               standardId={matrixStandardId}
               sectionIds={matrixSectionIds.length > 0 ? matrixSectionIds : undefined}
               onBack={() => navigate(`/project/${projectId}/compliance/standards`)}
+              autoSuggest={matrixAutoSuggest}
             />
           )}
 
