@@ -35,7 +35,7 @@ export default function MainLayout() {
           onOpenWalkthrough={() => setShowWalkthrough(true)}
         />
         <BreadcrumbBar />
-        <main className="flex-1 relative">
+        <main className="flex-1 relative overflow-hidden">
           <Outlet />
           {/* Collaboration overlays */}
           <TeamChat isOpen={isChatOpen} onClose={toggleChat} />

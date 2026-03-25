@@ -43,12 +43,16 @@ export default function PipelineStepper() {
   };
   const activeStageIdx = section ? (sectionToStageIdx[section] ?? -1) : -1;
 
+  // The effective completed index is the max of pipeline data and the active section
+  // (if user is on Audit, all prior steps should show as completed)
+  const effectiveMaxIdx = Math.max(maxStageIdx, activeStageIdx > 0 ? activeStageIdx - 1 : -1);
+
   return (
     <div className="flex items-center gap-0 px-4 py-3 bg-[var(--surface-raised)]/50 border border-[var(--border-subtle)] rounded-lg mb-6">
       {PIPELINE_STAGES.map((stage, idx) => {
-        const isCompleted = idx <= maxStageIdx;
+        const isCompleted = idx <= effectiveMaxIdx;
         const isCurrent = idx === activeStageIdx;
-        const isClickable = idx <= maxStageIdx + 1; // can click completed + next
+        const isClickable = idx <= effectiveMaxIdx + 1; // can click completed + next
         const Icon = stage.icon;
 
         return (
@@ -81,7 +85,7 @@ export default function PipelineStepper() {
                 )}
               </div>
               <span
-                className={`text-[10px] font-medium whitespace-nowrap ${
+                className={`text-xs font-medium whitespace-nowrap ${
                   isCurrent
                     ? 'text-[#a78bfa]'
                     : isCompleted

@@ -184,6 +184,16 @@ router.post(
     try {
       const standardId = req.body.standardId || undefined;
       const snapshot = await captureComplianceSnapshot(pid(req), standardId);
+
+      // Advance pipeline states to 'tracking'
+      const { CompliancePipelineState } = await import('../models/CompliancePipelineState');
+      const filter: Record<string, unknown> = { projectId: pid(req) };
+      if (standardId) filter.standardId = standardId;
+      await CompliancePipelineState.updateMany(
+        { ...filter, stage: { $in: ['uploaded', 'mapped', 'policies_generated', 'roadmap_ready'] } },
+        { $set: { lastSnapshotAt: new Date(), stage: 'tracking' } },
+      );
+
       res.status(201).json(snapshot);
     } catch (err) {
       console.error('[Compliance] Capture snapshot error:', err);
@@ -245,6 +255,13 @@ router.post(
         items,
         overallReadiness: 0,
       });
+
+      // Advance pipeline state to 'audit_ready'
+      const { CompliancePipelineState } = await import('../models/CompliancePipelineState');
+      await CompliancePipelineState.updateMany(
+        { projectId: pid(req), standardId },
+        { $set: { stage: 'audit_ready' } },
+      );
 
       res.status(201).json(checklist);
     } catch (err) {

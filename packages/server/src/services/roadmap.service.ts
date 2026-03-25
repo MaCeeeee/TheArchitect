@@ -896,8 +896,8 @@ function generateWaveDescription(
     }
     for (const [cat, counts] of byCategory) {
       if (cat === 'Passiv') continue; // Skip sticky notes in description
-      if (counts.transform > 0) parts.push(`${counts.transform} ${cat}-Node${counts.transform > 1 ? 's' : ''} aktualisieren`);
-      if (counts.retire > 0) parts.push(`${counts.retire} ${cat}-Node${counts.retire > 1 ? 's' : ''} entfernen`);
+      if (counts.transform > 0) parts.push(`${counts.transform} ${cat} node${counts.transform > 1 ? 's' : ''} to update`);
+      if (counts.retire > 0) parts.push(`${counts.retire} ${cat} node${counts.retire > 1 ? 's' : ''} to retire`);
     }
   }
 
@@ -906,15 +906,15 @@ function generateWaveDescription(
     const retireCount = eaElements.filter((e) => e.targetStatus === 'retired').length;
     const migrateCount = eaElements.length - retireCount;
     const layers = [...new Set(eaElements.map((e) => e.layer))];
-    if (migrateCount > 0) parts.push(`${migrateCount} ${layers.join('/')}-Komponente${migrateCount > 1 ? 'n' : ''} transformieren`);
-    if (retireCount > 0) parts.push(`${retireCount} Komponente${retireCount > 1 ? 'n' : ''} ablösen`);
+    if (migrateCount > 0) parts.push(`${migrateCount} ${layers.join('/')} component${migrateCount > 1 ? 's' : ''} to transform`);
+    if (retireCount > 0) parts.push(`${retireCount} component${retireCount > 1 ? 's' : ''} to retire`);
   }
 
   // Add effort estimate
   const totalCost = elements.reduce((s, e) => s + e.estimatedCost, 0);
   if (totalHours > 0) {
-    const hoursStr = totalHours < 8 ? `~${Math.round(totalHours)}h` : `~${Math.round(totalHours / 8)} Tage`;
-    parts.push(`Aufwand: ${hoursStr}, ${formatCostShort(totalCost)}`);
+    const hoursStr = totalHours < 8 ? `~${Math.round(totalHours)}h` : `~${Math.round(totalHours / 8)} days`;
+    parts.push(`Effort: ${hoursStr}, ${formatCostShort(totalCost)}`);
   }
 
   return parts.join('. ') || `Wave transformation`;

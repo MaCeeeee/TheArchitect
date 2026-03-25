@@ -3,7 +3,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 export interface ICompliancePipelineState extends Document {
   projectId: Types.ObjectId;
   standardId: Types.ObjectId;
-  stage: 'uploaded' | 'mapped' | 'policies_generated' | 'roadmap_ready' | 'tracking';
+  stage: 'uploaded' | 'mapped' | 'policies_generated' | 'roadmap_ready' | 'tracking' | 'audit_ready';
   mappingStats: {
     total: number;
     compliant: number;
@@ -28,7 +28,7 @@ const CompliancePipelineStateSchema = new Schema<ICompliancePipelineState>(
     standardId: { type: Schema.Types.ObjectId, required: true, ref: 'Standard' },
     stage: {
       type: String,
-      enum: ['uploaded', 'mapped', 'policies_generated', 'roadmap_ready', 'tracking'],
+      enum: ['uploaded', 'mapped', 'policies_generated', 'roadmap_ready', 'tracking', 'audit_ready'],
       default: 'uploaded',
     },
     mappingStats: {

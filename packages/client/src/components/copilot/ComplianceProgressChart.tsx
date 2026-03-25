@@ -107,22 +107,22 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
         <>
           {/* Summary cards */}
           {latest && (
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-[var(--surface-overlay)] rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-[#7c3aed]">{latest.standardCoverageScore}%</div>
-                <div className="text-[10px] text-[var(--text-secondary)]">Coverage</div>
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-[var(--surface-overlay)] rounded-lg p-3 text-center">
+                <div className="text-sm font-bold text-[#7c3aed]">{latest.standardCoverageScore}%</div>
+                <div className="text-xs text-[var(--text-secondary)]">Coverage</div>
               </div>
-              <div className="bg-[var(--surface-overlay)] rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-[#22c55e]">{latest.policyComplianceScore}%</div>
-                <div className="text-[10px] text-[var(--text-secondary)]">Policy</div>
+              <div className="bg-[var(--surface-overlay)] rounded-lg p-3 text-center">
+                <div className="text-sm font-bold text-[#22c55e]">{latest.policyComplianceScore}%</div>
+                <div className="text-xs text-[var(--text-secondary)]">Policy</div>
               </div>
-              <div className="bg-[var(--surface-overlay)] rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-[#eab308]">L{latest.maturityLevel}</div>
-                <div className="text-[10px] text-[var(--text-secondary)]">Maturity</div>
+              <div className="bg-[var(--surface-overlay)] rounded-lg p-3 text-center">
+                <div className="text-sm font-bold text-[#eab308]">L{latest.maturityLevel}</div>
+                <div className="text-xs text-[var(--text-secondary)]">Maturity</div>
               </div>
-              <div className="bg-[var(--surface-overlay)] rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-[#ef4444]">{latest.totalViolations}</div>
-                <div className="text-[10px] text-[var(--text-secondary)]">Violations</div>
+              <div className="bg-[var(--surface-overlay)] rounded-lg p-3 text-center">
+                <div className="text-sm font-bold text-[#ef4444]">{latest.totalViolations}</div>
+                <div className="text-xs text-[var(--text-secondary)]">Violations</div>
               </div>
             </div>
           )}
@@ -204,16 +204,16 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
             <div className="flex items-center gap-4 mt-2 justify-center">
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-0.5 bg-[#7c3aed] rounded" />
-                <span className="text-[10px] text-[var(--text-secondary)]">Coverage</span>
+                <span className="text-xs text-[var(--text-secondary)]">Coverage</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-3 h-0.5 bg-[#22c55e] rounded" />
-                <span className="text-[10px] text-[var(--text-secondary)]">Policy</span>
+                <span className="text-xs text-[var(--text-secondary)]">Policy</span>
               </div>
               {projectedLine && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-0.5 bg-[#7c3aed]/50 rounded" style={{ borderTop: '1px dashed #7c3aed' }} />
-                  <span className="text-[10px] text-[var(--text-secondary)]">Projected</span>
+                  <span className="text-xs text-[var(--text-secondary)]">Projected</span>
                 </div>
               )}
             </div>

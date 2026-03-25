@@ -194,29 +194,29 @@ export function PolicyDraftReview() {
   }
 
   return (
-    <div className="p-3 space-y-3">
+    <div className="p-4 space-y-4">
       {/* Success state after saving policies */}
       {savedCount > 0 && draftStates.length === 0 && !isGeneratingPolicies && (
-        <div className="bg-[var(--accent-default)]/10 border border-[var(--accent-default)]/30 rounded-lg p-4 text-center space-y-3">
+        <div className="bg-[var(--accent-default)]/10 border border-[var(--accent-default)]/30 rounded-lg p-5 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-[var(--accent-default)]">
-            <Check size={18} />
-            <span className="text-sm font-semibold">{savedCount} Policies Saved</span>
+            <Check size={20} />
+            <span className="text-base font-semibold">{savedCount} Policies Saved</span>
           </div>
-          <p className="text-xs text-[var(--text-secondary)]">
+          <p className="text-sm text-[var(--text-secondary)]">
             Policies are now active. See what architecture changes are needed to comply.
           </p>
           <div className="flex gap-2 justify-center">
             <button
               onClick={() => setSavedCount(0)}
-              className="px-3 py-1.5 text-xs text-[var(--text-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--surface-overlay)] transition"
+              className="px-4 py-2 text-sm text-[var(--text-secondary)] border border-[var(--border-subtle)] rounded hover:bg-[var(--surface-overlay)] transition"
             >
               Generate More
             </button>
             <button
               onClick={() => navigate(`/project/${projectId}/compliance/elements`)}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
             >
-              View Required Changes <ArrowRight size={12} />
+              View Required Changes <ArrowRight size={14} />
             </button>
           </div>
         </div>
@@ -224,21 +224,21 @@ export function PolicyDraftReview() {
 
       {/* No Drafts Found */}
       {noDraftsFound && draftStates.length === 0 && !isGeneratingPolicies && (
-        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-center space-y-3">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-5 text-center space-y-3">
           <div className="flex items-center justify-center gap-2 text-yellow-400">
-            <AlertTriangle size={18} />
-            <span className="text-sm font-semibold">No Policy Requirements Found</span>
+            <AlertTriangle size={20} />
+            <span className="text-base font-semibold">No Policy Requirements Found</span>
           </div>
-          <p className="text-xs text-[var(--text-secondary)]">
+          <p className="text-sm text-[var(--text-secondary)]">
             The AI could not extract any evaluable requirements from this standard.
             This can happen if the PDF was not parsed correctly or has too few sections.
           </p>
           <div className="flex gap-2 justify-center">
             <button
               onClick={() => { setNoDraftsFound(false); generatePolicies(); }}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
             >
-              <Sparkles size={12} /> Try Again
+              <Sparkles size={14} /> Try Again
             </button>
           </div>
         </div>
@@ -248,22 +248,22 @@ export function PolicyDraftReview() {
       {savedCount === 0 && !noDraftsFound && draftStates.length === 0 && !isGeneratingPolicies && (
         <button
           onClick={generatePolicies}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded text-sm font-medium transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded text-sm font-medium transition-colors"
         >
-          <Sparkles size={14} />
+          <Sparkles size={16} />
           Generate Policy Drafts
         </button>
       )}
 
       {/* Generation Progress */}
       {isGeneratingPolicies && (
-        <div className="bg-[#111827] border border-[var(--border-subtle)] rounded p-3">
+        <div className="bg-[#111827] border border-[var(--border-subtle)] rounded p-4">
           <div className="flex items-center gap-2 text-sm text-[#38bdf8] mb-2">
-            <Loader2 size={14} className="animate-spin" />
+            <Loader2 size={16} className="animate-spin" />
             Analyzing standard sections...
           </div>
           {policyGenerationProgress && (
-            <div className="text-xs text-gray-500 max-h-20 overflow-y-auto font-mono">
+            <div className="text-xs text-gray-500 max-h-24 overflow-y-auto font-mono">
               {policyGenerationProgress.slice(-200)}
             </div>
           )}
@@ -275,21 +275,21 @@ export function PolicyDraftReview() {
         <>
           {/* Bulk Actions */}
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400">
+            <span className="text-sm text-gray-400">
               {draftStates.length} drafts — {approvedCount} approved, {rejectedCount} rejected, {pendingCount} pending
             </span>
-            <div className="flex gap-1">
-              <button onClick={approveAll} className="text-[10px] px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20">
+            <div className="flex gap-2">
+              <button onClick={approveAll} className="text-xs px-3 py-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20">
                 Approve All
               </button>
-              <button onClick={rejectAll} className="text-[10px] px-2 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20">
+              <button onClick={rejectAll} className="text-xs px-3 py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20">
                 Reject All
               </button>
             </div>
           </div>
 
           {/* Draft List */}
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {draftStates.map((ds, i) => {
               const sev = SEVERITY_CONFIG[ds.draft.severity];
               const SevIcon = sev.icon;
@@ -298,7 +298,7 @@ export function PolicyDraftReview() {
               return (
                 <div
                   key={i}
-                  className={`border rounded p-2.5 transition-colors ${
+                  className={`border rounded-lg p-3.5 transition-colors ${
                     ds.status === 'approved'
                       ? 'bg-green-500/5 border-green-500/30'
                       : ds.status === 'rejected'
@@ -307,17 +307,17 @@ export function PolicyDraftReview() {
                   }`}
                 >
                   {/* Header */}
-                  <div className="flex items-start gap-2">
-                    <SevIcon size={14} className={`${sev.color} mt-0.5 shrink-0`} />
+                  <div className="flex items-start gap-2.5">
+                    <SevIcon size={18} className={`${sev.color} mt-0.5 shrink-0`} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium text-white truncate">{ds.draft.name}</div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">
+                      <div className="text-sm font-medium text-white truncate">{ds.draft.name}</div>
+                      <div className="text-xs text-gray-500 mt-0.5">
                         §{ds.draft.sourceSection} {ds.draft.sourceSectionTitle}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       {/* Confidence badge */}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      <span className={`text-xs px-2 py-0.5 rounded ${
                         ds.draft.confidence >= 0.8 ? 'bg-green-500/10 text-green-400'
                         : ds.draft.confidence >= 0.5 ? 'bg-yellow-500/10 text-yellow-400'
                         : 'bg-red-500/10 text-red-400'
@@ -325,29 +325,29 @@ export function PolicyDraftReview() {
                         {Math.round(ds.draft.confidence * 100)}%
                       </span>
                       {/* Severity badge */}
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${sev.bg} ${sev.color}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded ${sev.bg} ${sev.color}`}>
                         {sev.label}
                       </span>
                     </div>
                   </div>
 
                   {/* Description */}
-                  <p className="text-[11px] text-gray-400 mt-1.5 line-clamp-2">{ds.draft.description}</p>
+                  <p className="text-sm text-gray-400 mt-2 line-clamp-2">{ds.draft.description}</p>
 
                   {/* Expandable Rules */}
                   <button
                     onClick={() => setExpandedIndex(isExpanded ? null : i)}
-                    className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-300 mt-1.5"
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 mt-2"
                   >
-                    {isExpanded ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     {ds.draft.rules.length} rule{ds.draft.rules.length !== 1 ? 's' : ''}
                     {ds.draft.scope.layers.length > 0 && ` · ${ds.draft.scope.layers.join(', ')}`}
                   </button>
 
                   {isExpanded && (
-                    <div className="mt-2 space-y-1">
+                    <div className="mt-2 space-y-1.5">
                       {ds.draft.rules.map((rule, ri) => (
-                        <div key={ri} className="text-[10px] bg-[var(--surface-raised)] rounded px-2 py-1.5 font-mono text-gray-300">
+                        <div key={ri} className="text-xs bg-[var(--surface-raised)] rounded px-3 py-2 font-mono text-gray-300">
                           <span className="text-[#38bdf8]">{rule.field}</span>
                           {' '}<span className="text-[#7c3aed]">{rule.operator}</span>
                           {' '}<span className="text-green-400">{JSON.stringify(rule.value)}</span>
@@ -355,7 +355,7 @@ export function PolicyDraftReview() {
                         </div>
                       ))}
                       {ds.draft.scope.elementTypes.length > 0 && (
-                        <div className="text-[10px] text-gray-500">
+                        <div className="text-xs text-gray-500">
                           Scope: {ds.draft.scope.elementTypes.join(', ')}
                         </div>
                       )}
@@ -364,25 +364,25 @@ export function PolicyDraftReview() {
 
                   {/* Action Buttons */}
                   {ds.status === 'pending' && (
-                    <div className="flex gap-1.5 mt-2">
+                    <div className="flex gap-2 mt-2.5">
                       <button
                         onClick={() => setDraftStatus(i, 'approved')}
-                        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20"
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20"
                       >
-                        <Check size={10} /> Approve
+                        <Check size={14} /> Approve
                       </button>
                       <button
                         onClick={() => setDraftStatus(i, 'rejected')}
-                        className="flex items-center gap-1 text-[10px] px-2 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20"
                       >
-                        <X size={10} /> Reject
+                        <X size={14} /> Reject
                       </button>
                     </div>
                   )}
                   {ds.status !== 'pending' && (
                     <button
                       onClick={() => setDraftStatus(i, 'pending')}
-                      className="text-[10px] text-gray-500 hover:text-gray-300 mt-2"
+                      className="text-xs text-gray-500 hover:text-gray-300 mt-2.5"
                     >
                       Undo
                     </button>
@@ -397,12 +397,12 @@ export function PolicyDraftReview() {
             <button
               onClick={submitApproved}
               disabled={isApproving}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded text-sm font-medium transition-colors"
             >
               {isApproving ? (
-                <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                <><Loader2 size={16} className="animate-spin" /> Saving...</>
               ) : (
-                <><FileCheck size={14} /> Save {approvedCount} Approved Policies</>
+                <><FileCheck size={16} /> Save {approvedCount} Approved Policies</>
               )}
             </button>
           )}

@@ -5,6 +5,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { generateRoadmap, previewCandidates } from '../services/roadmap.service';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
+import { CompliancePipelineState } from '../models/CompliancePipelineState';
 
 const router = Router();
 
@@ -36,6 +37,12 @@ router.post(
         includeAIRecommendations: parsed.includeAIRecommendations,
         customConstraints: parsed.customConstraints,
       });
+
+      // Advance pipeline states to 'roadmap_ready'
+      await CompliancePipelineState.updateMany(
+        { projectId, stage: { $in: ['uploaded', 'mapped', 'policies_generated'] } },
+        { $set: { roadmapId: roadmap.id, stage: 'roadmap_ready' } },
+      );
 
       res.status(201).json({ success: true, data: roadmap });
     } catch (err: any) {

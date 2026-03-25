@@ -99,7 +99,7 @@ export async function refreshPolicyStats(
  */
 function recomputeStage(state: ICompliancePipelineState) {
   const STAGE_RANK: Record<string, number> = {
-    uploaded: 0, mapped: 1, policies_generated: 2, roadmap_ready: 3, tracking: 4,
+    uploaded: 0, mapped: 1, policies_generated: 2, roadmap_ready: 3, tracking: 4, audit_ready: 5,
   };
   const currentRank = STAGE_RANK[state.stage] ?? 0;
 
@@ -116,6 +116,20 @@ function recomputeStage(state: ICompliancePipelineState) {
   if (state.policyStats.approved > 0) {
     if (STAGE_RANK['policies_generated'] > (STAGE_RANK[newStage] ?? 0)) {
       newStage = 'policies_generated';
+    }
+  }
+
+  // Has roadmap linked → at least 'roadmap_ready'
+  if (state.roadmapId) {
+    if (STAGE_RANK['roadmap_ready'] > (STAGE_RANK[newStage] ?? 0)) {
+      newStage = 'roadmap_ready';
+    }
+  }
+
+  // Has snapshot captured → at least 'tracking'
+  if (state.lastSnapshotAt) {
+    if (STAGE_RANK['tracking'] > (STAGE_RANK[newStage] ?? 0)) {
+      newStage = 'tracking';
     }
   }
 

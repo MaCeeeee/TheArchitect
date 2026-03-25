@@ -23,12 +23,12 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
 
   return (
     <div className="space-y-2">
-      <div className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider px-1">
+      <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider px-1">
         Timeline
       </div>
 
       {/* Horizontal scrollable timeline */}
-      <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
+      <div className="flex items-stretch gap-1.5 overflow-x-auto pb-1">
         {waves.map((wave, i) => {
           const isSelected = selectedWave === wave.waveNumber;
           const heightPct = Math.max(30, (wave.metrics.totalCost / maxCost) * 100);
@@ -37,16 +37,16 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
             <div key={wave.waveNumber} className="flex items-center shrink-0">
               <button
                 onClick={() => onSelectWave(wave.waveNumber)}
-                className={`flex flex-col items-center rounded-lg p-2 transition-all min-w-[80px] ${
+                className={`flex flex-col items-center rounded-lg p-2.5 transition-all min-w-[90px] ${
                   isSelected
                     ? 'bg-[#0a1a0a] border border-[#00ff41] shadow-[0_0_8px_rgba(0,255,65,0.15)]'
                     : `${RISK_BG(wave.metrics.riskDelta)} border border-[var(--border-subtle)] hover:border-[#2a3a2a]`
                 }`}
               >
                 {/* Cost bar */}
-                <div className="w-full h-12 flex items-end justify-center mb-1">
+                <div className="w-full h-14 flex items-end justify-center mb-1">
                   <div
-                    className="w-8 rounded-t transition-all"
+                    className="w-9 rounded-t transition-all"
                     style={{
                       height: `${heightPct}%`,
                       backgroundColor: isSelected ? '#00ff41' : '#1a3a1a',
@@ -55,19 +55,19 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
                 </div>
 
                 {/* Wave label */}
-                <span className={`text-[10px] font-bold ${isSelected ? 'text-[#00ff41]' : 'text-[var(--text-secondary)]'}`}>
+                <span className={`text-xs font-bold ${isSelected ? 'text-[#00ff41]' : 'text-[var(--text-secondary)]'}`}>
                   W{wave.waveNumber}
                 </span>
-                <span className="text-[9px] text-[var(--text-tertiary)] truncate max-w-[70px]">
+                <span className="text-xs text-[var(--text-tertiary)] truncate max-w-[80px]">
                   {wave.elements.length} items
                 </span>
-                <span className="text-[9px] text-[#f59e0b]">{formatCost(wave.metrics.totalCost)}</span>
-                <span className="text-[9px] text-[#3b82f6]">{wave.estimatedDurationMonths}mo</span>
+                <span className="text-xs text-[#f59e0b]">{formatCost(wave.metrics.totalCost)}</span>
+                <span className="text-xs text-[#3b82f6]">{wave.estimatedDurationMonths}mo</span>
               </button>
 
               {/* Arrow between waves */}
               {i < waves.length - 1 && (
-                <ArrowRight size={12} className="text-[#2a3a2a] mx-0.5 shrink-0" />
+                <ArrowRight size={14} className="text-[#2a3a2a] mx-1 shrink-0" />
               )}
             </div>
           );
@@ -76,7 +76,7 @@ export default function RoadmapTimeline({ waves, selectedWave, onSelectWave }: R
 
       {/* Cumulative progress bar */}
       <div className="px-1">
-        <div className="flex h-2 rounded-full overflow-hidden bg-[var(--surface-base)]">
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-[var(--surface-base)]">
           {waves.map((wave) => {
             const widthPct = (wave.metrics.totalCost / waves.reduce((s, w) => s + w.metrics.totalCost, 0)) * 100;
             return (

@@ -81,7 +81,7 @@ export default function MigrationCandidates() {
 
   if (isCandidatesLoading) {
     return (
-      <div className="text-[10px] text-[var(--text-tertiary)] py-2 text-center">
+      <div className="text-xs text-[var(--text-tertiary)] py-2 text-center">
         Loading candidates...
       </div>
     );
@@ -92,23 +92,23 @@ export default function MigrationCandidates() {
   const autoCount = candidates.filter((c) => c.autoSelected).length;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       {/* Collapsible Header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between text-left group"
       >
         <div className="flex items-center gap-1.5">
-          {expanded ? <ChevronDown size={10} className="text-[#00ff41]" /> : <ChevronRight size={10} className="text-[var(--text-tertiary)]" />}
-          <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Migration Scope</span>
+          {expanded ? <ChevronDown size={14} className="text-[#00ff41]" /> : <ChevronRight size={14} className="text-[var(--text-tertiary)]" />}
+          <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Migration Scope</span>
         </div>
-        <span className="text-[10px] font-mono" style={{ color: selectedCandidates.size > 0 ? '#00ff41' : '#4a5a4a' }}>
+        <span className="text-xs font-mono" style={{ color: selectedCandidates.size > 0 ? '#00ff41' : '#4a5a4a' }}>
           {selectedCandidates.size}/{candidates.length}
         </span>
       </button>
 
       {!expanded && (
-        <p className="text-[9px] text-[var(--text-tertiary)] pl-4">
+        <p className="text-xs text-[var(--text-tertiary)] pl-5">
           {autoCount} auto-detected — click to customize
         </p>
       )}
@@ -116,35 +116,35 @@ export default function MigrationCandidates() {
       {expanded && (
         <div className="border border-[var(--border-subtle)] rounded bg-[#0a0f0a]">
           {/* Quick Actions */}
-          <div className="flex items-center gap-1 p-1.5 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-1.5 p-2 border-b border-[var(--border-subtle)]">
             <button
               onClick={selectAllCandidates}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#00ff41] transition"
+              className="px-2 py-1 text-xs rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#00ff41] transition"
             >
               All
             </button>
             <button
               onClick={clearCandidates}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#ef4444] transition"
+              className="px-2 py-1 text-xs rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#ef4444] transition"
             >
               None
             </button>
             <button
               onClick={() => selectByRisk('high')}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#f97316] transition flex items-center gap-0.5"
+              className="px-2 py-1 text-xs rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#f97316] transition flex items-center gap-1"
             >
-              <Zap size={8} /> Risk
+              <Zap size={10} /> Risk
             </button>
             <button
               onClick={resetToAutoDetect}
-              className="px-1.5 py-0.5 text-[9px] rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#3b82f6] transition flex items-center gap-0.5"
+              className="px-2 py-1 text-xs rounded bg-[#1a2a1a] text-[var(--text-secondary)] hover:text-[#3b82f6] transition flex items-center gap-1"
             >
-              <RotateCcw size={8} /> Auto
+              <RotateCcw size={10} /> Auto
             </button>
           </div>
 
           {/* Candidate List */}
-          <div className="max-h-[280px] overflow-y-auto">
+          <div className="max-h-[320px] overflow-y-auto">
             {grouped.map(([domain, items]) => {
               const isCollapsed = collapsedDomains.has(domain);
               const selectedInDomain = items.filter((c) => selectedCandidates.has(c.elementId)).length;
@@ -153,16 +153,16 @@ export default function MigrationCandidates() {
                   {/* Domain Header */}
                   <button
                     onClick={() => toggleDomain(domain)}
-                    className="w-full flex items-center justify-between px-2 py-1 bg-[#111611] border-b border-[var(--border-subtle)] hover:bg-[#1a2a1a] transition"
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 bg-[#111611] border-b border-[var(--border-subtle)] hover:bg-[#1a2a1a] transition"
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       {isCollapsed
-                        ? <ChevronRight size={8} className="text-[var(--text-tertiary)]" />
-                        : <ChevronDown size={8} className="text-[#00ff41]" />
+                        ? <ChevronRight size={12} className="text-[var(--text-tertiary)]" />
+                        : <ChevronDown size={12} className="text-[#00ff41]" />
                       }
-                      <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase">{domain}</span>
+                      <span className="text-xs font-bold text-[var(--text-secondary)] uppercase">{domain}</span>
                     </div>
-                    <span className="text-[9px] text-[var(--text-tertiary)]">{selectedInDomain}/{items.length}</span>
+                    <span className="text-xs text-[var(--text-tertiary)]">{selectedInDomain}/{items.length}</span>
                   </button>
 
                   {/* Elements */}
@@ -174,18 +174,18 @@ export default function MigrationCandidates() {
                     return (
                       <div
                         key={c.elementId}
-                        className={`flex items-center gap-1 px-2 py-1 border-b border-[#0f170f] text-[10px] transition ${
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[#0f170f] text-xs transition ${
                           isSelected ? 'bg-[#0a1a0a]' : 'bg-transparent opacity-50'
                         } hover:bg-[#111a11]`}
                       >
                         {/* Checkbox */}
                         <button
                           onClick={() => toggleCandidate(c.elementId, c.suggestedTarget)}
-                          className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0 ${
+                          className={`w-4 h-4 rounded-sm border flex items-center justify-center flex-shrink-0 ${
                             isSelected ? 'border-[#00ff41] bg-[#00ff41]/20' : 'border-[#333] bg-transparent'
                           }`}
                         >
-                          {isSelected && <Check size={8} className="text-[#00ff41]" />}
+                          {isSelected && <Check size={10} className="text-[#00ff41]" />}
                         </button>
 
                         {/* Name (truncated) */}
@@ -194,7 +194,7 @@ export default function MigrationCandidates() {
                         </span>
 
                         {/* Status transition */}
-                        <span className="flex items-center gap-0.5 flex-shrink-0 text-[9px]">
+                        <span className="flex items-center gap-0.5 flex-shrink-0 text-xs">
                           <span style={{ color: STATUS_COLOR[c.currentStatus] }}>{c.currentStatus.slice(0, 4)}</span>
                           <span className="text-[#333]">→</span>
                           {isSelected ? (
@@ -202,7 +202,7 @@ export default function MigrationCandidates() {
                               value={targetStatus}
                               onChange={(e) => setCandidateTarget(c.elementId, e.target.value as ElementStatus)}
                               onClick={(e) => e.stopPropagation()}
-                              className="bg-[#0a0f0a] border border-[var(--border-subtle)] rounded text-[9px] px-0.5 py-0"
+                              className="bg-[#0a0f0a] border border-[var(--border-subtle)] rounded text-xs px-1 py-0"
                               style={{ color: STATUS_COLOR[targetStatus] }}
                             >
                               {TARGET_OPTIONS.map((opt) => (
@@ -216,7 +216,7 @@ export default function MigrationCandidates() {
 
                         {/* Confidence indicator */}
                         <span
-                          className="flex-shrink-0 text-[8px] font-mono"
+                          className="flex-shrink-0 text-xs font-mono"
                           style={{ color: CONFIDENCE_CONFIG[c.confidenceLevel]?.color || '#4a5a4a' }}
                           title={`${Math.round(c.confidenceScore * 100)}% confidence\n${(c.confidenceFactors || []).join(', ')}`}
                         >
@@ -231,7 +231,7 @@ export default function MigrationCandidates() {
           </div>
 
           {/* Summary Footer */}
-          <div className="px-2 py-1.5 border-t border-[var(--border-subtle)] text-[9px] text-[var(--text-secondary)] space-y-1.5">
+          <div className="px-2.5 py-2 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-2">
             <div>
               <span className="text-[#00ff41] font-mono">{summary.total}</span> selected
               {summary.upgrade > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.upgrade.color }}>{summary.upgrade}× Upgrade</span></span>}
@@ -243,14 +243,14 @@ export default function MigrationCandidates() {
             {dataConfidence && (
               <div>
                 <div className="flex items-center justify-between mb-0.5">
-                  <span className="text-[8px] uppercase tracking-wider">Data Confidence</span>
+                  <span className="text-xs uppercase tracking-wider">Data Confidence</span>
                   <span className="font-mono" style={{
                     color: dataConfidence.overall >= 0.6 ? '#22c55e' : dataConfidence.overall >= 0.3 ? '#f59e0b' : '#ef4444',
                   }}>
                     {Math.round(dataConfidence.overall * 100)}%
                   </span>
                 </div>
-                <div className="flex h-1.5 rounded-full overflow-hidden bg-[#1a1a1a]">
+                <div className="flex h-2 rounded-full overflow-hidden bg-[#1a1a1a]">
                   {dataConfidence.measuredCount > 0 && (
                     <div
                       className="h-full"
@@ -282,10 +282,10 @@ export default function MigrationCandidates() {
                     />
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[8px]">
-                  <span className="flex items-center gap-0.5"><span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#22c55e' }} />Real</span>
-                  <span className="flex items-center gap-0.5"><span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />Est.</span>
-                  <span className="flex items-center gap-0.5"><span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#ef4444' }} />Heur.</span>
+                <div className="flex items-center gap-2 mt-1 text-xs">
+                  <span className="flex items-center gap-0.5"><span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: '#22c55e' }} />Real</span>
+                  <span className="flex items-center gap-0.5"><span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: '#f59e0b' }} />Est.</span>
+                  <span className="flex items-center gap-0.5"><span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: '#ef4444' }} />Heur.</span>
                 </div>
               </div>
             )}
