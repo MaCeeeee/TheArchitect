@@ -58,16 +58,26 @@ export function PolicyDraftReview() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
+  const [noDraftsFound, setNoDraftsFound] = useState(false);
 
   // Start policy generation via SSE
   const generatePolicies = useCallback(async () => {
-    if (!projectId || !selectedStandardId || !token) return;
+    if (!projectId || !selectedStandardId) {
+      toast.error('No project or standard selected');
+      return;
+    }
+    if (!token) {
+      toast.error('Not authenticated — please reload the page');
+      return;
+    }
 
     setGeneratingPolicies(true);
     setPolicyGenerationProgress('');
     setPolicyDrafts([]);
     setDraftStates([]);
+    setNoDraftsFound(false);
     let progressAccum = '';
+    let receivedDrafts = false;
 
     try {
       const apiBase = import.meta.env.VITE_API_URL || '/api';
@@ -109,9 +119,13 @@ export function PolicyDraftReview() {
               setPolicyGenerationProgress(progressAccum);
             }
             if (parsed.done && parsed.drafts) {
+              receivedDrafts = true;
               const drafts: PolicyDraft[] = parsed.drafts;
               setPolicyDrafts(drafts);
               setDraftStates(drafts.map((d) => ({ draft: d, status: 'pending' })));
+              if (drafts.length === 0) {
+                setNoDraftsFound(true);
+              }
             }
           } catch (e) {
             if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
@@ -119,6 +133,12 @@ export function PolicyDraftReview() {
             }
           }
         }
+      }
+
+      // Stream ended without sending any drafts event
+      if (!receivedDrafts) {
+        setNoDraftsFound(true);
+        toast.error('AI returned no policy drafts — the standard may not contain extractable requirements');
       }
     } catch (err) {
       toast.error((err as Error).message || 'Policy generation failed');
@@ -202,8 +222,30 @@ export function PolicyDraftReview() {
         </div>
       )}
 
+      {/* No Drafts Found */}
+      {noDraftsFound && draftStates.length === 0 && !isGeneratingPolicies && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-yellow-400">
+            <AlertTriangle size={18} />
+            <span className="text-sm font-semibold">No Policy Requirements Found</span>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">
+            The AI could not extract any evaluable requirements from this standard.
+            This can happen if the PDF was not parsed correctly or has too few sections.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => { setNoDraftsFound(false); generatePolicies(); }}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded transition"
+            >
+              <Sparkles size={12} /> Try Again
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Generate Button */}
-      {savedCount === 0 && draftStates.length === 0 && !isGeneratingPolicies && (
+      {savedCount === 0 && !noDraftsFound && draftStates.length === 0 && !isGeneratingPolicies && (
         <button
           onClick={generatePolicies}
           className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded text-sm font-medium transition-colors"

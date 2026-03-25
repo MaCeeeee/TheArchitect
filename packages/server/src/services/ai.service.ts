@@ -559,6 +559,11 @@ export async function generatePoliciesFromStandard(
     return;
   }
 
+  if (!standard.sections || standard.sections.length === 0) {
+    onError(new Error('Standard has no parsed sections — the PDF may not have been processed correctly. Try re-uploading.'));
+    return;
+  }
+
   // Build section context with full content for policy extraction
   let charCount = 0;
   const maxChars = 12000;
