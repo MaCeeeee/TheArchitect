@@ -4,7 +4,8 @@ import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { Policy } from '../models/Policy';
-import type { PolicyDraft } from '@thearchitect/shared';
+import { runAdvisorScan } from './advisor.service';
+import type { PolicyDraft, AdvisorInsight } from '@thearchitect/shared';
 
 // ─── Provider Detection ───
 
@@ -139,9 +140,83 @@ export async function buildProjectContext(projectId: string): Promise<string> {
   return lines.join('\n');
 }
 
+// ─── Advisor Context Builder ───
+
+async function buildAdvisorContext(projectId: string): Promise<string> {
+  try {
+    const scan = await runAdvisorScan(projectId);
+    if (scan.insights.length === 0 && scan.totalElements === 0) return '';
+
+    const lines: string[] = [];
+    lines.push(`## Automated Architecture Analysis (${scan.totalElements} elements scanned)`);
+
+    // Health Score
+    const hs = scan.healthScore;
+    lines.push(`\n### Health Score: ${hs.total}/100 (trend: ${hs.trend})`);
+    for (const f of hs.factors) {
+      lines.push(`- ${f.factor} (${Math.round(f.weight * 100)}%): ${f.score}/100 — ${f.description}`);
+    }
+
+    // Insights grouped by severity
+    if (scan.insights.length > 0) {
+      lines.push(`\n### Detected Issues (${scan.insights.length} findings)`);
+
+      const bySeverity: Record<string, AdvisorInsight[]> = {};
+      for (const insight of scan.insights) {
+        if (!bySeverity[insight.severity]) bySeverity[insight.severity] = [];
+        bySeverity[insight.severity].push(insight);
+      }
+
+      for (const severity of ['critical', 'high', 'warning', 'info'] as const) {
+        const group = bySeverity[severity];
+        if (!group || group.length === 0) continue;
+        lines.push(`\n#### ${severity.toUpperCase()} (${group.length})`);
+        for (const insight of group) {
+          lines.push(`- **[${insight.category}] ${insight.title}**`);
+          lines.push(`  ${insight.description}`);
+          if (insight.affectedElements.length > 0) {
+            const names = insight.affectedElements.slice(0, 5).map((e) => `"${e.name}" (${e.type || e.layer})`).join(', ');
+            lines.push(`  Affected: ${names}`);
+          }
+          if (insight.effort || insight.impact) {
+            lines.push(`  Effort: ${insight.effort || '?'} | Impact: ${insight.impact || '?'}`);
+          }
+        }
+      }
+    }
+
+    return lines.join('\n');
+  } catch (err) {
+    console.warn('[AI] Advisor scan failed, continuing without insights:', (err as Error).message);
+    return '';
+  }
+}
+
 // ─── System Prompt ───
 
-function buildSystemPrompt(context: string): string {
+function buildSystemPrompt(context: string, advisorContext: string): string {
+  const advisorSection = advisorContext
+    ? `
+## Automated Analysis Results
+The following findings come from TheArchitect's graph-based analysis engine. These are computed facts, not guesses.
+Use them as primary evidence in your review. Reference specific findings, affected elements, and severity levels.
+
+${advisorContext}
+
+## How to Use These Findings
+- CRITICAL and HIGH severity issues should be your top recommendations
+- Single Points of Failure (SPOF): elements with many dependents and no redundancy — these are more impactful than orphaned elements
+- Circular Dependencies: tight coupling that makes changes risky — always mention if detected
+- Cascade Risk: Bayesian-computed probability of failure spreading through the dependency graph — the most sophisticated analysis available
+- Stale Transitions: elements stuck in "transitional" status >90 days — governance red flags
+- Architecture Drift: statistical tests showing the architecture is diverging from its baseline
+- Risk Concentration: layers where >60% of elements are high/critical risk
+- Cost Hotspots: elements with high optimization potential
+- Missing Compliance: standard sections with no mapped architecture elements
+- Always prioritize findings by severity (critical > high > warning > info) and impact
+`
+    : '';
+
   return `You are TheArchitect, an AI Architecture Copilot embedded in an Enterprise Architecture management tool.
 You help architects — including those completely new to TOGAF and EA — understand, build, and improve their architecture.
 
@@ -165,20 +240,25 @@ Element Types:
 - Technology: technology_component, infrastructure, platform_service
 
 Connection Types: depends_on, connects_to, belongs_to, implements, data_flow, triggers
-
+ArchiMate 3.2: composition, aggregation, assignment, realization, serving, access, influence, triggering, flow, specialization, association
+${advisorSection}
 ## Best Practices to Recommend
 - Every element should have a description
 - Business layer should map to application layer (implements relationships)
 - Data entities should connect to applications that use them (data_flow)
 - Avoid orphaned elements — everything should connect to something
+- Critical: identify Single Points of Failure (high inDegree) and recommend redundancy
+- Flag circular dependencies — they create tight coupling and cascade risk
 - Set risk levels and maturity levels for governance
 - Higher layers (business) should drive lower layers (technology)
+- Transitional elements should not stay in that status indefinitely
 
 --- CURRENT PROJECT ARCHITECTURE ---
 ${context}
 --- END ARCHITECTURE ---
 
-Answer questions about this specific architecture. Be helpful and actionable.`;
+Answer questions about this specific architecture. Be helpful and actionable.
+When analysis findings are available, lead with the most critical computed insights rather than repeating what the user can already see.`;
 }
 
 // ─── Streaming Chat ───
@@ -207,14 +287,17 @@ export async function streamChat(
     return;
   }
 
-  const context = await buildProjectContext(projectId);
+  const [context, advisorContext] = await Promise.all([
+    buildProjectContext(projectId),
+    buildAdvisorContext(projectId),
+  ]);
   let systemPrompt: string;
 
   if (standardId) {
     const standardContext = await buildStandardContext(standardId, sectionIds);
     systemPrompt = buildStandardAnalysisPrompt(context, standardContext);
   } else {
-    systemPrompt = buildSystemPrompt(context);
+    systemPrompt = buildSystemPrompt(context, advisorContext);
   }
 
   const recentMessages = messages.slice(-20);
@@ -246,7 +329,7 @@ async function streamOpenAI(
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
-  maxTokens = 1500,
+  maxTokens = 2500,
 ): Promise<void> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -276,7 +359,7 @@ async function streamAnthropic(
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
-  maxTokens = 1500,
+  maxTokens = 2500,
 ): Promise<void> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
