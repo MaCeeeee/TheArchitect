@@ -47,7 +47,10 @@ export default function LoginPage() {
   // Google Identity Services
   const googleLogin = useGoogleLogin({
     flow: 'auth-code',
+    ux_mode: 'popup',
     onSuccess: async (codeResponse) => {
+      console.log('[OAuth] Google onSuccess triggered, code received');
+
       try {
         setIsLoading(true);
         setError('');
@@ -74,6 +77,11 @@ export default function LoginPage() {
       const msg = 'Google login failed. This may be a configuration issue — please try email login.';
       setError(msg);
       toast.error(msg);
+    },
+    onNonOAuthError: (err) => {
+      console.error('[OAuth] Non-OAuth error (popup blocked?):', err);
+      setError('Google login popup was blocked or closed. Please allow popups for this site.');
+      toast.error('Google login popup was blocked or closed');
     },
   });
 
