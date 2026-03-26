@@ -444,7 +444,7 @@ export default function LoginPage() {
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => googleLogin()}
+                  onClick={() => { window.location.href = '/api/auth/oauth/google'; }}
                   className={btnOAuth}
                   title="Sign in with Google"
                 >
