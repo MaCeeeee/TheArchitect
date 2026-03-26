@@ -215,7 +215,7 @@ export default function AuditReadinessDashboard({ projectId }: AuditReadinessDas
                         {cl.items.filter((i) => i.status === 'verified').length}/{cl.items.length} verified
                       </span>
                       <span className={`text-xs flex items-center gap-1 ${urgent ? 'text-[#ef4444]' : 'text-[var(--text-tertiary)]'}`}>
-                        <Calendar size={12} />
+                        <Calendar size={14} />
                         {daysUntil > 0 ? `${daysUntil}d left` : 'Overdue'}
                       </span>
                     </div>
@@ -290,7 +290,7 @@ export default function AuditReadinessDashboard({ projectId }: AuditReadinessDas
                                   disabled={isSaving}
                                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded bg-[#7c3aed]/20 text-[#a78bfa] hover:bg-[#7c3aed]/30 disabled:opacity-50 transition-colors"
                                 >
-                                  {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                   Save Findings
                                 </button>
                               </div>

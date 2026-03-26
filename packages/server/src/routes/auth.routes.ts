@@ -558,9 +558,23 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
 
 // ── Google Identity Services (ID Token) ──────────────
 
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.warn('[OAuth] ⚠ GOOGLE_CLIENT_ID is not set — Google OAuth will fail for all users');
+}
+if (!process.env.GOOGLE_CLIENT_SECRET) {
+  console.warn('[OAuth] ⚠ GOOGLE_CLIENT_SECRET is not set — Google auth-code flow will fail');
+}
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 router.post('/oauth/google/token', authLimiter, async (req: Request, res: Response) => {
+  console.log('[OAuth] Google token request received', { flow: req.body?.flow, hasCredential: !!req.body?.credential, clientIdConfigured: !!process.env.GOOGLE_CLIENT_ID });
+
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error('[OAuth] Google OAuth not configured — missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
+    return res.status(503).json({ error: 'Google login is not configured on this server. Please contact the administrator.' });
+  }
+
   const { credential, flow } = req.body;
   if (!credential) {
     return res.status(400).json({ error: 'Missing credential' });
@@ -719,6 +733,45 @@ router.get('/oauth/microsoft/callback', async (req: Request, res: Response) => {
     console.error('[OAuth] Microsoft callback error:', err);
     return redirectWithError(res, 'Microsoft authentication failed');
   }
+});
+
+// ── OAuth Diagnostic (admin only) ────────────────────
+
+router.get('/oauth/status', authenticate, async (req: Request, res: Response) => {
+  const user = (req as unknown as { user: { role: string } }).user;
+  if (user.role !== 'chief_architect' && user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const redis = getRedis();
+  let redisOk = false;
+  try {
+    if (redis) {
+      await redis.ping();
+      redisOk = true;
+    }
+  } catch { /* redis down */ }
+
+  res.json({
+    providers: {
+      google: {
+        clientIdSet: !!process.env.GOOGLE_CLIENT_ID,
+        clientSecretSet: !!process.env.GOOGLE_CLIENT_SECRET,
+      },
+      github: {
+        clientIdSet: !!process.env.GITHUB_CLIENT_ID,
+        clientSecretSet: !!process.env.GITHUB_CLIENT_SECRET,
+        callbackUrlSet: !!process.env.GITHUB_CALLBACK_URL,
+      },
+      microsoft: {
+        clientIdSet: !!process.env.MICROSOFT_CLIENT_ID,
+        clientSecretSet: !!process.env.MICROSOFT_CLIENT_SECRET,
+        callbackUrlSet: !!process.env.MICROSOFT_CALLBACK_URL,
+      },
+    },
+    clientUrl: process.env.CLIENT_URL || '(not set)',
+    redisConnected: redisOk,
+  });
 });
 
 export default router;

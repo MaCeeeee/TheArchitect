@@ -4,7 +4,8 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { useAuthStore } from '../../stores/authStore';
 import { authAPI } from '../../services/api';
 import api from '../../services/api';
-import { Shield, Eye, EyeOff, Check, X, ArrowLeft, Mail } from 'lucide-react';
+import { Shield, Eye, EyeOff, Check, X, ArrowLeft, Mail, Sparkles } from 'lucide-react';
+import toast from 'react-hot-toast';
 import {
   PASSWORD_CHECKS,
   getPasswordScore,
@@ -56,13 +57,24 @@ export default function LoginPage() {
         });
         login(data.user, data.accessToken, data.refreshToken);
         navigate(redirectTo);
-      } catch {
-        setError('Google authentication failed');
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { data?: { error?: string }; status?: number } };
+        const serverMsg = axiosErr?.response?.data?.error;
+        const status = axiosErr?.response?.status;
+        const msg = serverMsg || 'Google authentication failed. Please try again or use email login.';
+        console.error('[OAuth] Google auth failed:', { status, serverMsg, err });
+        setError(msg);
+        toast.error(msg);
       } finally {
         setIsLoading(false);
       }
     },
-    onError: () => setError('Google login was cancelled'),
+    onError: (errorResponse) => {
+      console.error('[OAuth] Google login error:', errorResponse);
+      const msg = 'Google login failed. This may be a configuration issue — please try email login.';
+      setError(msg);
+      toast.error(msg);
+    },
   });
 
   // OAuth error from redirect
@@ -470,6 +482,23 @@ export default function LoginPage() {
               >
                 {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Sign in'}
               </button>
+
+              {/* Try Demo hint */}
+              <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+                <p className="text-xs text-[var(--text-tertiary)] text-center mb-2">Want to explore first?</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.setItem('thearchitect-auto-demo', '1');
+                    if (mode === 'login') switchMode('register');
+                    toast('Sign up to instantly get a pre-built demo project', { icon: '✨' });
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-md border border-[#7c3aed]/30 bg-[#7c3aed]/10 px-3 py-2 text-xs font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 transition"
+                >
+                  <Sparkles size={14} />
+                  Try Demo (Sign up first)
+                </button>
+              </div>
             </>
           )}
     </>

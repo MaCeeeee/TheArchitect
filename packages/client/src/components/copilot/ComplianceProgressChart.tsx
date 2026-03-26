@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react';
-import { Camera, TrendingUp, Loader2 } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Camera, TrendingUp, Loader2, ArrowRight,
+  Grid3X3, FileCheck, ClipboardCheck, AlertTriangle, Target, Zap,
+} from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 
 interface ComplianceProgressChartProps {
@@ -8,12 +12,20 @@ interface ComplianceProgressChartProps {
 }
 
 export default function ComplianceProgressChart({ projectId, standardId }: ComplianceProgressChartProps) {
-  const { snapshots, isLoadingSnapshots, loadSnapshots, captureSnapshot } = useComplianceStore();
+  const navigate = useNavigate();
+  const {
+    snapshots, isLoadingSnapshots, loadSnapshots, captureSnapshot,
+    portfolioOverview, pipelineStates, auditChecklists,
+    loadPortfolio, loadPipelineStatus, loadAuditChecklists,
+  } = useComplianceStore();
   const [capturing, setCapturing] = useState(false);
 
   useEffect(() => {
     loadSnapshots(projectId, standardId);
-  }, [projectId, standardId, loadSnapshots]);
+    loadPortfolio(projectId);
+    loadPipelineStatus(projectId);
+    loadAuditChecklists(projectId);
+  }, [projectId, standardId, loadSnapshots, loadPortfolio, loadPipelineStatus, loadAuditChecklists]);
 
   const handleCapture = async () => {
     setCapturing(true);
@@ -77,6 +89,110 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
 
   // Latest snapshot info
   const latest = actual[actual.length - 1];
+
+  // Compute next-step actions based on current data
+  const nextSteps = useMemo(() => {
+    if (!latest) return [];
+    const steps: Array<{
+      icon: typeof Grid3X3;
+      color: string;
+      title: string;
+      description: string;
+      link: string;
+      priority: 'high' | 'medium' | 'low';
+    }> = [];
+
+    // Aggregate unmapped/gap sections from portfolio
+    const portfolio = portfolioOverview?.portfolio ?? [];
+    const totalUnmapped = portfolio.reduce((sum, p) => sum + p.mappingStats.unmapped, 0);
+    const totalGap = portfolio.reduce((sum, p) => sum + p.mappingStats.gap, 0);
+
+    // Coverage low → map more sections
+    if (latest.standardCoverageScore < 80) {
+      const needed = totalUnmapped + totalGap;
+      steps.push({
+        icon: Grid3X3,
+        color: '#7c3aed',
+        title: `Coverage at ${latest.standardCoverageScore}%`,
+        description: needed > 0
+          ? `${needed} section${needed !== 1 ? 's' : ''} unmapped or gap — map them as compliant/partial to increase coverage`
+          : 'Review mappings and upgrade gap sections to partial or compliant',
+        link: `/project/${projectId}/compliance/matrix`,
+        priority: latest.standardCoverageScore < 50 ? 'high' : 'medium',
+      });
+    }
+
+    // High violations → fix policies
+    if (latest.totalViolations > 0) {
+      steps.push({
+        icon: AlertTriangle,
+        color: '#ef4444',
+        title: `${latest.totalViolations} violation${latest.totalViolations !== 1 ? 's' : ''} detected`,
+        description: 'Review and resolve policy violations to improve policy compliance score',
+        link: `/project/${projectId}/compliance/policy-mgr`,
+        priority: latest.totalViolations > 50 ? 'high' : 'medium',
+      });
+    }
+
+    // Maturity < L4 → show what's needed
+    if (latest.maturityLevel < 4) {
+      const nextLevel = latest.maturityLevel + 1;
+      const thresholds: Record<number, number> = { 2: 20, 3: 40, 4: 60, 5: 80 };
+      const neededCoverage = thresholds[nextLevel] ?? 80;
+      steps.push({
+        icon: Target,
+        color: '#eab308',
+        title: `Maturity L${latest.maturityLevel} → L${nextLevel}`,
+        description: `Reach ${neededCoverage}% coverage to advance maturity level`,
+        link: `/project/${projectId}/compliance/matrix`,
+        priority: 'medium',
+      });
+    }
+
+    // No policies yet → generate
+    if (latest.policyComplianceScore === 0 || (pipelineStates.length > 0 && pipelineStates.every(s => s.policyStats.approved === 0))) {
+      steps.push({
+        icon: FileCheck,
+        color: '#22c55e',
+        title: 'No approved policies',
+        description: 'Generate and approve policies to advance the pipeline',
+        link: `/project/${projectId}/compliance/policies`,
+        priority: 'high',
+      });
+    }
+
+    // No audit checklist → create one (if tracking stage reached)
+    const maxStage = pipelineStates.reduce((max, s) => {
+      const RANK: Record<string, number> = { uploaded: 0, mapped: 1, policies_generated: 2, roadmap_ready: 3, tracking: 4, audit_ready: 5 };
+      return Math.max(max, RANK[s.stage] ?? 0);
+    }, 0);
+    if (maxStage >= 4 && auditChecklists.length === 0) {
+      steps.push({
+        icon: ClipboardCheck,
+        color: '#3b82f6',
+        title: 'Ready for audit',
+        description: 'Create an audit checklist to advance to Audit Ready stage',
+        link: `/project/${projectId}/compliance/audit`,
+        priority: 'high',
+      });
+    }
+
+    // All good!
+    if (steps.length === 0 && latest.standardCoverageScore >= 80 && latest.totalViolations === 0) {
+      steps.push({
+        icon: Zap,
+        color: '#22c55e',
+        title: 'Excellent compliance posture',
+        description: 'Coverage is high and no violations detected. Keep capturing snapshots to track trends.',
+        link: '',
+        priority: 'low',
+      });
+    }
+
+    // Sort by priority
+    const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+    return steps.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+  }, [latest, portfolioOverview, pipelineStates, auditChecklists, projectId]);
 
   return (
     <div className="space-y-3">
@@ -218,6 +334,55 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
               )}
             </div>
           </div>
+
+          {/* Next Steps — Actionable CTAs */}
+          {nextSteps.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                Recommended Next Steps
+              </h4>
+              {nextSteps.map((step, i) => {
+                const Icon = step.icon;
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 bg-[var(--surface-overlay)] rounded-lg p-3 border border-[var(--border-subtle)] group hover:border-[color:var(--step-color)] transition-colors"
+                    style={{ '--step-color': step.color } as React.CSSProperties}
+                  >
+                    <div
+                      className="shrink-0 flex items-center justify-center w-8 h-8 rounded-lg"
+                      style={{ backgroundColor: `${step.color}20` }}
+                    >
+                      <Icon size={16} style={{ color: step.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-[#e2e8f0]">{step.title}</span>
+                        {step.priority === 'high' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">
+                            Priority
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{step.description}</p>
+                    </div>
+                    {step.link && (
+                      <button
+                        onClick={() => navigate(step.link)}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 text-xs rounded-md transition-colors"
+                        style={{ backgroundColor: `${step.color}15`, color: step.color }}
+                        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `${step.color}30`; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `${step.color}15`; }}
+                      >
+                        Go
+                        <ArrowRight size={12} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </div>

@@ -419,4 +419,8 @@ export const roadmapAPI = {
     api.get(`/projects/${projectId}/reports/roadmap`, { params: { roadmapId }, responseType: 'blob' }),
 };
 
+export const demoAPI = {
+  create: () => api.post('/demo/create'),
+};
+
 export default api;

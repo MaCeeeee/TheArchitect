@@ -1,26 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Plus, FolderOpen, Loader2, AlertCircle, X, Trash2 } from 'lucide-react';
+import { Plus, RefreshCw, AlertCircle, X, Loader2, Boxes, Sparkles } from 'lucide-react';
 import { SkeletonCard } from './Skeleton';
-import { projectAPI } from '../../services/api';
-import { useArchitectureStore } from '../../stores/architectureStore';
-import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { projectAPI, demoAPI } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
+import { usePortfolioData } from '../../hooks/usePortfolioData';
 import ProjectCard from './ProjectCard';
-
-interface Project {
-  _id: string;
-  name: string;
-  description?: string;
-  tags?: string[];
-  updatedAt?: string;
-}
+import PortfolioKPIStrip from '../dashboard/PortfolioKPIStrip';
+import RiskHeatmap from '../dashboard/RiskHeatmap';
+import ComplianceOverview from '../dashboard/ComplianceOverview';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const user = useAuthStore((s) => s.user);
+  const { projects, stats, health, risk, cost, compliance, loading, enriching, error, refresh } = usePortfolioData();
 
   // New project dialog
   const [showCreate, setShowCreate] = useState(false);
@@ -28,51 +22,12 @@ export default function DashboardPage() {
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Demo creation
+  const [creatingDemo, setCreatingDemo] = useState(false);
+
   // Delete confirmation
-  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ _id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  // Project stats for cards
-  const [projectStats, setProjectStats] = useState<Record<string, { elementCount: number; connectionCount: number; currentPhase: number; healthScore: number }>>({});
-
-  useEffect(() => {
-    // Clear stale project data when returning to dashboard
-    useArchitectureStore.getState().clearProject();
-    useWorkspaceStore.getState().setWorkspaces([]);
-    loadProjects();
-  }, []);
-
-  const loadProjects = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { data } = await projectAPI.list();
-      const list: Project[] = Array.isArray(data) ? data : data.data || [];
-      setProjects(list);
-
-      // Load stats for each project in parallel (fire-and-forget, non-blocking)
-      const statsEntries = await Promise.allSettled(
-        list.map(async (p) => {
-          const res = await projectAPI.getStats(p._id);
-          return [p._id, res.data] as const;
-        })
-      );
-      const stats: Record<string, any> = {};
-      for (const result of statsEntries) {
-        if (result.status === 'fulfilled') {
-          const [id, data] = result.value;
-          stats[id] = data;
-        }
-      }
-      setProjectStats(stats);
-    } catch (err) {
-      console.error('Failed to load projects:', err);
-      toast.error('Failed to load projects');
-      setError('Failed to load projects');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -81,15 +36,38 @@ export default function DashboardPage() {
       await projectAPI.delete(deleteTarget._id);
       toast.success('Project deleted');
       setDeleteTarget(null);
-      loadProjects();
-    } catch (err) {
-      console.error('Failed to delete project:', err);
+      refresh();
+    } catch {
       toast.error('Failed to delete project');
-      setError('Failed to delete project');
     } finally {
       setDeleting(false);
     }
   };
+
+  const handleTryDemo = async () => {
+    setCreatingDemo(true);
+    try {
+      const { data } = await demoAPI.create();
+      if (data.existing) {
+        toast.success('Opening existing demo project');
+      } else {
+        toast.success(`Demo created — ${data.elementsCreated} elements, ${data.connectionsCreated} connections`);
+      }
+      navigate(`/project/${data.projectId}`);
+    } catch {
+      toast.error('Failed to create demo project. Please try again.');
+    } finally {
+      setCreatingDemo(false);
+    }
+  };
+
+  // Auto-demo trigger from login page
+  useEffect(() => {
+    if (sessionStorage.getItem('thearchitect-auto-demo') && !loading && projects.length === 0) {
+      sessionStorage.removeItem('thearchitect-auto-demo');
+      handleTryDemo();
+    }
+  }, [loading, projects.length]);
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -99,10 +77,8 @@ export default function DashboardPage() {
       const project = data.data || data;
       toast.success('Project created');
       navigate(`/project/${project._id}`);
-    } catch (err) {
-      console.error('Failed to create project:', err);
+    } catch {
       toast.error('Failed to create project');
-      setError('Failed to create project');
     } finally {
       setCreating(false);
     }
@@ -110,28 +86,33 @@ export default function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto p-8">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="text-2xl font-bold text-white mb-1">Welcome to TheArchitect</h1>
-        <p className="text-sm text-[var(--text-secondary)] mb-8">
-          Enterprise Architecture Management Platform
-        </p>
+      <div className="mx-auto max-w-6xl">
 
-        {/* Quick actions */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <ActionCard
-            icon={<Plus size={24} />}
-            title="New Project"
-            description="Create a new architecture project"
-            onClick={() => setShowCreate(true)}
-            accent="#00ff41"
-          />
-          <ActionCard
-            icon={<FolderOpen size={24} />}
-            title="Open Project"
-            description="Select a project below"
-            onClick={() => {}}
-            accent="#3b82f6"
-          />
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Portfolio Overview</h1>
+            <p className="text-sm text-[var(--text-secondary)]">
+              {user?.name ? `Welcome back, ${user.name.split(' ')[0]}` : 'Enterprise Architecture Management'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refresh}
+              disabled={loading || enriching}
+              className="flex items-center gap-1.5 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-2 text-xs text-[var(--text-secondary)] hover:text-white hover:border-[var(--accent-default)] disabled:opacity-50 transition"
+            >
+              <RefreshCw size={14} className={enriching ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 rounded-md bg-[var(--accent-default)] px-3 py-2 text-xs font-medium text-black hover:bg-[var(--accent-hover)] transition"
+            >
+              <Plus size={14} />
+              New Project
+            </button>
+          </div>
         </div>
 
         {/* Error */}
@@ -140,6 +121,19 @@ export default function DashboardPage() {
             <AlertCircle size={16} className="text-red-400 shrink-0" />
             <span className="text-xs text-red-300">{error}</span>
           </div>
+        )}
+
+        {/* KPI Strip */}
+        {!loading && (
+          <PortfolioKPIStrip
+            projects={projects}
+            stats={stats}
+            health={health}
+            risk={risk}
+            cost={cost}
+            compliance={compliance}
+            enriching={enriching}
+          />
         )}
 
         {/* Projects list */}
@@ -154,8 +148,31 @@ export default function DashboardPage() {
             <SkeletonCard />
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-[var(--text-tertiary)]">No projects yet. Create your first project to get started.</p>
+          <div className="text-center py-16 px-4">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-[var(--accent-default)]/10 flex items-center justify-center mb-4">
+              <Boxes size={28} className="text-[var(--accent-default)]" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No Projects Yet</h3>
+            <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto mb-6">
+              Create your first enterprise architecture project or explore a pre-built demo with 16 elements across Business, Application, and Technology layers.
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setShowCreate(true)}
+                className="flex items-center gap-1.5 rounded-md bg-[var(--accent-default)] px-4 py-2.5 text-sm font-medium text-black hover:bg-[var(--accent-hover)] transition"
+              >
+                <Plus size={16} />
+                New Project
+              </button>
+              <button
+                onClick={handleTryDemo}
+                disabled={creatingDemo}
+                className="flex items-center gap-1.5 rounded-md border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-4 py-2.5 text-sm font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 disabled:opacity-50 transition"
+              >
+                {creatingDemo ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {creatingDemo ? 'Creating Demo...' : 'Try Demo'}
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
@@ -163,13 +180,44 @@ export default function DashboardPage() {
               <ProjectCard
                 key={project._id}
                 project={project}
-                stats={projectStats[project._id]}
+                stats={stats[project._id] ?? undefined}
+                healthData={health[project._id]}
+                riskData={risk[project._id]}
+                complianceData={compliance[project._id]}
+                costData={cost[project._id]}
                 onClick={() => navigate(`/project/${project._id}`)}
                 onDelete={() => setDeleteTarget(project)}
               />
             ))}
           </div>
         )}
+
+        {/* Risk Heatmap */}
+        {!loading && projects.length > 0 && (
+          <>
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 mt-8">
+              Risk Heatmap
+            </h2>
+            <RiskHeatmap
+              projects={projects}
+              risk={risk}
+              onProjectClick={(id) => navigate(`/project/${id}`)}
+            />
+          </>
+        )}
+
+        {/* Compliance Overview */}
+        {!loading && projects.length > 0 && (
+          <>
+            <h2 className="text-sm font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-3 mt-8">
+              Compliance Overview
+            </h2>
+            <ComplianceOverview compliance={compliance} />
+          </>
+        )}
+
+        {/* Bottom spacing */}
+        <div className="h-8" />
 
         {/* Delete confirmation dialog */}
         {deleteTarget && (
@@ -260,37 +308,5 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
-  );
-}
-
-function ActionCard({
-  icon,
-  title,
-  description,
-  onClick,
-  accent,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  onClick: () => void;
-  accent: string;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex flex-col items-center gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-6 text-center hover:border-[#00ff41] hover:shadow-[0_0_15px_rgba(0,255,65,0.15)] transition"
-    >
-      <div
-        className="flex h-12 w-12 items-center justify-center rounded-full"
-        style={{ backgroundColor: `${accent}20`, color: accent }}
-      >
-        {icon}
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <p className="text-xs text-[var(--text-secondary)] mt-1">{description}</p>
-      </div>
-    </button>
   );
 }

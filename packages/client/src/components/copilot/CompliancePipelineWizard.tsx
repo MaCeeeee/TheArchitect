@@ -54,7 +54,7 @@ export function CompliancePipelineWizard() {
     <div className="p-3 space-y-3">
       {/* Standard Selector */}
       <div>
-        <label className="text-[10px] uppercase text-gray-500 font-medium">Standard</label>
+        <label className="text-xs uppercase text-gray-500 font-medium">Standard</label>
         <select
           value={selectedStandardId ?? ''}
           onChange={(e) => selectStandard(e.target.value || null)}
@@ -104,15 +104,15 @@ export function CompliancePipelineWizard() {
                   <span className="text-gray-500 ml-2">{step.description}</span>
                 </div>
                 {isCurrent && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#38bdf8]/20 text-[#38bdf8]">
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-[#38bdf8]/20 text-[#38bdf8]">
                     Active
                   </span>
                 )}
                 {isCompleted && (
-                  <span className="text-[10px] text-green-500">Done</span>
+                  <span className="text-xs text-green-500">Done</span>
                 )}
                 {isNext && (
-                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--status-purple)]/20 text-[var(--status-purple)]">
+                  <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-[var(--status-purple)]/20 text-[var(--status-purple)]">
                     Next <ArrowRight size={10} />
                   </span>
                 )}

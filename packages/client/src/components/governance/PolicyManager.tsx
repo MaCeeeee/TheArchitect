@@ -118,9 +118,9 @@ export default function PolicyManager() {
   };
 
   const severityIcon = (s: string) => {
-    if (s === 'error') return <AlertCircle size={10} className="text-[#ef4444]" />;
-    if (s === 'warning') return <AlertTriangle size={10} className="text-[#eab308]" />;
-    return <Info size={10} className="text-[#3b82f6]" />;
+    if (s === 'error') return <AlertCircle size={16} className="text-[#ef4444]" />;
+    if (s === 'warning') return <AlertTriangle size={16} className="text-[#eab308]" />;
+    return <Info size={16} className="text-[#3b82f6]" />;
   };
 
   const categoryColors: Record<string, string> = {
@@ -132,39 +132,39 @@ export default function PolicyManager() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[var(--border-subtle)]">
-        <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <ScrollText size={14} className="text-[#06b6d4]" />
+      <div className="p-4 border-b border-[var(--border-subtle)]">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <ScrollText size={18} className="text-[#06b6d4]" />
           Policy Manager
         </h3>
-        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">{enabledCount}/{policies.length} policies active</p>
+        <p className="text-xs text-[var(--text-tertiary)] mt-1">{enabledCount}/{policies.length} policies active</p>
       </div>
 
-      <div className="p-3">
+      <div className="p-4">
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="w-full rounded-md bg-[#1a2a1a] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1"
+          className="w-full rounded-md bg-[#1a2a1a] px-4 py-2 text-xs font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1.5"
         >
-          <Plus size={10} />
+          <Plus size={14} />
           Create Policy
         </button>
       </div>
 
       {showCreate && (
-        <div className="px-3 pb-3">
-          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-2">
+        <div className="px-4 pb-4">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-4 space-y-3">
             <input
               autoFocus
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Policy name"
-              className="w-full bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41]"
+              className="w-full bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41]"
             />
-            <div className="flex gap-1">
-              <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+            <div className="flex gap-2">
+              <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+              <select value={newSeverity} onChange={(e) => setNewSeverity(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
                 {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
@@ -172,17 +172,17 @@ export default function PolicyManager() {
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41]"
+              className="w-full bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41]"
             />
 
             {/* Rule */}
-            <div className="border-t border-[var(--border-subtle)] pt-2">
-              <span className="text-[9px] text-[var(--text-tertiary)] font-semibold uppercase">Rule</span>
-              <div className="flex gap-1 mt-1">
-                <select value={ruleField} onChange={(e) => setRuleField(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded px-1 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+            <div className="border-t border-[var(--border-subtle)] pt-3">
+              <span className="text-xs text-[var(--text-tertiary)] font-semibold uppercase">Rule</span>
+              <div className="flex gap-2 mt-2">
+                <select value={ruleField} onChange={(e) => setRuleField(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
                   {FIELDS.map((f) => <option key={f} value={f}>{f}</option>)}
                 </select>
-                <select value={ruleOperator} onChange={(e) => setRuleOperator(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded px-1 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+                <select value={ruleOperator} onChange={(e) => setRuleOperator(e.target.value)} className="flex-1 bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
                   {OPERATORS.map((o) => <option key={o} value={o}>{o.replace(/_/g, ' ')}</option>)}
                 </select>
               </div>
@@ -190,13 +190,13 @@ export default function PolicyManager() {
                 value={ruleValue}
                 onChange={(e) => setRuleValue(e.target.value)}
                 placeholder="Expected value"
-                className="w-full bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41] mt-1"
+                className="w-full bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41] mt-2"
               />
               <input
                 value={ruleMessage}
                 onChange={(e) => setRuleMessage(e.target.value)}
                 placeholder="Violation message"
-                className="w-full bg-[var(--surface-raised)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41] mt-1"
+                className="w-full bg-[var(--surface-raised)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#00ff41] mt-2"
               />
             </div>
 
@@ -204,11 +204,11 @@ export default function PolicyManager() {
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim() || !ruleMessage.trim() || creating}
-                className="flex-1 rounded bg-[#00ff41] px-2 py-1 text-[10px] text-black hover:bg-[#00cc33] disabled:opacity-50"
+                className="flex-1 rounded-md bg-[#00ff41] px-3 py-2 text-sm text-black font-medium hover:bg-[#00cc33] disabled:opacity-50"
               >
                 {creating ? 'Saving...' : 'Save'}
               </button>
-              <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#1a2a1a] px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:bg-[#3a4a3a]">
+              <button onClick={() => setShowCreate(false)} className="flex-1 rounded-md bg-[#1a2a1a] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[#3a4a3a]">
                 Cancel
               </button>
             </div>
@@ -218,50 +218,50 @@ export default function PolicyManager() {
 
       {/* Error */}
       {error && (
-        <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20">
-          <span className="text-[10px] text-red-300">{error}</span>
+        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20">
+          <span className="text-xs text-red-300">{error}</span>
         </div>
       )}
 
       {/* Loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 size={16} className="animate-spin text-[#06b6d4]" />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={20} className="animate-spin text-[#06b6d4]" />
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
           {policies.map((p) => (
-            <div key={p._id} className="px-3 py-2 border-b border-[var(--border-subtle)]/30 hover:bg-[var(--surface-base)] transition group">
-              <div className="flex items-center gap-2">
+            <div key={p._id} className="px-4 py-3 border-b border-[var(--border-subtle)]/30 hover:bg-[var(--surface-base)] transition group">
+              <div className="flex items-center gap-2.5">
                 {severityIcon(p.severity)}
-                <span className="text-[10px] text-white font-medium flex-1 truncate">{p.name}</span>
+                <span className="text-sm text-white font-medium flex-1 truncate">{p.name}</span>
                 <button
                   onClick={() => handleDelete(p._id)}
-                  className="opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[#ef4444] transition p-0.5"
+                  className="opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[#ef4444] transition p-1"
                   title="Delete policy"
                 >
-                  <Trash2 size={10} />
+                  <Trash2 size={14} />
                 </button>
                 <button onClick={() => togglePolicy(p._id, !p.enabled)} className="text-[var(--text-secondary)]">
                   {p.enabled
-                    ? <ToggleRight size={16} className="text-[#22c55e]" />
-                    : <ToggleLeft size={16} className="text-[var(--text-disabled)]" />}
+                    ? <ToggleRight size={20} className="text-[#22c55e]" />
+                    : <ToggleLeft size={20} className="text-[var(--text-disabled)]" />}
                 </button>
               </div>
-              <div className="flex items-center gap-2 mt-1 ml-4">
+              <div className="flex items-center gap-2.5 mt-1.5 ml-6">
                 <span
-                  className="text-[8px] px-1 rounded capitalize"
+                  className="text-xs px-1.5 py-0.5 rounded capitalize"
                   style={{ color: categoryColors[p.category] || '#7a8a7a', backgroundColor: `${categoryColors[p.category] || '#7a8a7a'}20` }}
                 >
                   {p.category}
                 </span>
-                <span className="text-[8px] text-[var(--text-disabled)]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
+                <span className="text-xs text-[var(--text-disabled)]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
               </div>
-              {p.description && <p className="text-[9px] text-[var(--text-tertiary)] mt-1 ml-4">{p.description}</p>}
+              {p.description && <p className="text-xs text-[var(--text-tertiary)] mt-1 ml-6">{p.description}</p>}
             </div>
           ))}
           {policies.length === 0 && (
-            <p className="text-[10px] text-[var(--text-tertiary)] text-center py-6">No policies yet. Create one to start.</p>
+            <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No policies yet. Create one to start.</p>
           )}
         </div>
       )}

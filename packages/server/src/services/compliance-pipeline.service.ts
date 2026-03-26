@@ -165,8 +165,20 @@ export async function getPortfolioOverview(projectId: string) {
   const states = await getPipelineStatus(projectId);
   const standards = await Standard.find({ projectId }).select('name type version');
 
-  const portfolio = states.map((s) => {
-    const std = standards.find((st) => String(st._id) === String(s.standardId));
+  const standardIds = new Set(standards.map((st) => String(st._id)));
+
+  // Filter out orphaned pipeline states (standard was deleted but state remained)
+  const orphanedIds = states
+    .filter((s) => !standardIds.has(String(s.standardId)))
+    .map((s) => s._id);
+  if (orphanedIds.length > 0) {
+    CompliancePipelineState.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
+  }
+
+  const validStates = states.filter((s) => standardIds.has(String(s.standardId)));
+
+  const portfolio = validStates.map((s) => {
+    const std = standards.find((st) => String(st._id) === String(s.standardId))!;
     const coverage = s.mappingStats.total > 0
       ? Math.round(
           ((s.mappingStats.compliant + s.mappingStats.partial * 0.5) /
@@ -178,9 +190,9 @@ export async function getPortfolioOverview(projectId: string) {
 
     return {
       standardId: String(s.standardId),
-      standardName: std?.name ?? 'Unknown',
-      standardType: std?.type ?? 'custom',
-      standardVersion: std?.version ?? '',
+      standardName: std.name,
+      standardType: std.type,
+      standardVersion: std.version ?? '',
       stage: s.stage,
       mappingStats: s.mappingStats,
       policyStats: s.policyStats,
@@ -192,7 +204,7 @@ export async function getPortfolioOverview(projectId: string) {
 
   return {
     totalStandards: standards.length,
-    trackedStandards: states.length,
+    trackedStandards: validStates.length,
     portfolio,
   };
 }

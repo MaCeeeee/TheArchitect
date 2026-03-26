@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Upload, FileText, Trash2, ChevronDown, ChevronRight,
-  CheckSquare, Square, Loader2, AlertCircle, Search, AlertTriangle,
+  CheckSquare, Square, Loader2, AlertCircle, Search, Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { standardsAPI } from '../../services/api';
@@ -13,6 +13,7 @@ interface StandardSection {
   id: string;
   number: string;
   title: string;
+  content?: string;
   level: number;
 }
 
@@ -40,8 +41,8 @@ interface StandardsManagerProps {
 export default function StandardsManager({
   onAnalyze,
   onMatrixView,
-  selectedStandardId,
-  selectedSectionIds = [],
+  selectedStandardId: externalSelectedStd,
+  selectedSectionIds: externalSelectedSecs = [],
   onSelectionChange,
 }: StandardsManagerProps) {
   const { projectId } = useParams();
@@ -51,6 +52,24 @@ export default function StandardsManager({
   const [showUpload, setShowUpload] = useState(false);
   const [expandedStandard, setExpandedStandard] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  // Internal selection state (used when parent doesn't manage it)
+  const [internalSelectedStd, setInternalSelectedStd] = useState<string | undefined>();
+  const [internalSelectedSecs, setInternalSelectedSecs] = useState<string[]>([]);
+
+  const isControlled = !!onSelectionChange;
+  const selectedStandardId = isControlled ? externalSelectedStd : internalSelectedStd;
+  const selectedSectionIds = isControlled ? externalSelectedSecs : internalSelectedSecs;
+
+  const handleSelectionChange = (stdId: string | undefined, secIds: string[]) => {
+    if (isControlled) {
+      onSelectionChange!(stdId, secIds);
+    } else {
+      setInternalSelectedStd(stdId);
+      setInternalSelectedSecs(secIds);
+    }
+  };
 
   // Upload form state
   const [uploadName, setUploadName] = useState('');
@@ -82,6 +101,7 @@ export default function StandardsManager({
       return;
     }
     setExpandedStandard(standardId);
+    setExpandedSection(null);
 
     // Load sections if not already loaded
     const std = standards.find((s) => s._id === standardId);
@@ -144,7 +164,7 @@ export default function StandardsManager({
       await standardsAPI.delete(projectId, standardId);
       setStandards((prev) => prev.filter((s) => s._id !== standardId));
       if (selectedStandardId === standardId) {
-        onSelectionChange?.(undefined, []);
+        handleSelectionChange(undefined, []);
       }
     } catch {
       setError('Delete failed');
@@ -153,13 +173,13 @@ export default function StandardsManager({
 
   const toggleSection = (standardId: string, sectionId: string) => {
     if (selectedStandardId !== standardId) {
-      onSelectionChange?.(standardId, [sectionId]);
+      handleSelectionChange(standardId, [sectionId]);
       return;
     }
     const newIds = selectedSectionIds.includes(sectionId)
       ? selectedSectionIds.filter((id) => id !== sectionId)
       : [...selectedSectionIds, sectionId];
-    onSelectionChange?.(standardId, newIds);
+    handleSelectionChange(standardId, newIds);
   };
 
   const selectAllSections = (standardId: string) => {
@@ -167,13 +187,13 @@ export default function StandardsManager({
     if (!std?.sections) return;
     const allIds = std.sections.map((s) => s.id);
     const allSelected = selectedStandardId === standardId && selectedSectionIds.length === allIds.length;
-    onSelectionChange?.(standardId, allSelected ? [] : allIds);
+    handleSelectionChange(standardId, allSelected ? [] : allIds);
   };
 
   if (!projectId) {
     return (
       <div className="flex items-center justify-center h-full p-6">
-        <p className="text-xs text-[var(--text-tertiary)]">Open a project first.</p>
+        <p className="text-sm text-[var(--text-tertiary)]">Open a project first.</p>
       </div>
     );
   }
@@ -181,52 +201,52 @@ export default function StandardsManager({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <FileText size={14} className="text-[#38bdf8]" />
+      <div className="pb-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+          <FileText size={16} className="text-[#38bdf8]" />
           Standards
         </h3>
         <button
           onClick={() => setShowUpload(!showUpload)}
-          className="text-[10px] text-[#38bdf8] hover:text-white flex items-center gap-1 transition"
+          className="text-xs text-[#38bdf8] hover:text-white flex items-center gap-1.5 transition"
         >
-          <Upload size={10} />
+          <Upload size={14} />
           Upload
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto mt-4">
         {/* Upload Form */}
         {showUpload && (
-          <form onSubmit={handleUpload} className="p-3 border-b border-[var(--border-subtle)] bg-[var(--surface-base)] space-y-2">
+          <form onSubmit={handleUpload} className="p-4 border border-[var(--border-subtle)] rounded-lg bg-[var(--surface-base)] space-y-3 mb-4">
             <div>
-              <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Name *</label>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">Name *</label>
               <input
                 type="text"
                 value={uploadName}
                 onChange={(e) => setUploadName(e.target.value)}
-                placeholder="z.B. ISO 26262"
-                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
+                placeholder="e.g. ISO 26262"
+                className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-md px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Version</label>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">Version</label>
                 <input
                   type="text"
                   value={uploadVersion}
                   onChange={(e) => setUploadVersion(e.target.value)}
-                  placeholder="z.B. 2018"
-                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
+                  placeholder="e.g. 2018"
+                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-md px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#38bdf8]"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">Typ</label>
+                <label className="text-xs text-[var(--text-secondary)] block mb-1">Type</label>
                 <select
                   value={uploadType}
                   onChange={(e) => setUploadType(e.target.value)}
-                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[11px] text-white outline-none focus:border-[#38bdf8]"
+                  className="w-full bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-md px-3 py-2 text-sm text-white outline-none focus:border-[#38bdf8]"
                 >
                   <option value="iso">ISO</option>
                   <option value="aspice">ASPICE</option>
@@ -236,28 +256,28 @@ export default function StandardsManager({
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-[var(--text-tertiary)] block mb-0.5">PDF-Datei *</label>
+              <label className="text-xs text-[var(--text-secondary)] block mb-1">PDF File *</label>
               <input
                 type="file"
                 accept=".pdf"
                 onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                className="w-full text-[10px] text-[var(--text-secondary)] file:mr-2 file:py-0.5 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-[#1a2a1a] file:text-white hover:file:bg-[#3a4a3a]"
+                className="w-full text-xs text-[var(--text-secondary)] file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:bg-[var(--surface-raised)] file:text-white hover:file:bg-[var(--surface-overlay)]"
                 required
               />
             </div>
             <button
               type="submit"
               disabled={uploading || !uploadName.trim() || !uploadFile}
-              className="w-full flex items-center justify-center gap-1.5 bg-[#38bdf8] hover:bg-[#0ea5e9] text-white text-[11px] py-1.5 rounded disabled:opacity-50 transition"
+              className="w-full flex items-center justify-center gap-2 bg-[#38bdf8] hover:bg-[#0ea5e9] text-white text-sm py-2 rounded-md disabled:opacity-50 transition"
             >
               {uploading ? (
                 <>
-                  <Loader2 size={12} className="animate-spin" />
+                  <Loader2 size={14} className="animate-spin" />
                   Processing PDF...
                 </>
               ) : (
                 <>
-                  <Upload size={12} />
+                  <Upload size={14} />
                   Upload
                 </>
               )}
@@ -267,30 +287,30 @@ export default function StandardsManager({
 
         {/* Error */}
         {error && (
-          <div className="mx-3 mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded flex items-center gap-2">
-            <AlertCircle size={10} className="text-red-400 shrink-0" />
-            <span className="text-[10px] text-red-300 flex-1">{error}</span>
+          <div className="p-3 mb-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2">
+            <AlertCircle size={14} className="text-red-400 shrink-0" />
+            <span className="text-xs text-red-300 flex-1">{error}</span>
             <button onClick={() => setError(null)} className="text-red-300 hover:text-white">
-              <Trash2 size={10} />
+              <Trash2 size={12} />
             </button>
           </div>
         )}
 
         {/* Loading */}
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 size={16} className="animate-spin text-[#38bdf8]" />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={20} className="animate-spin text-[#38bdf8]" />
           </div>
         ) : standards.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <FileText size={24} className="text-[var(--text-disabled)] mx-auto mb-2" />
-            <p className="text-xs text-[var(--text-tertiary)]">Noch keine Standards hochgeladen.</p>
-            <p className="text-[10px] text-[var(--text-disabled)] mt-1">
-              Lade ISO-Standards oder ASPICE PAM als PDF hoch, um sie mit deiner Architektur abzugleichen.
+          <div className="text-center py-12 px-4">
+            <FileText size={32} className="text-[var(--text-disabled)] mx-auto mb-3" />
+            <p className="text-sm text-[var(--text-tertiary)]">No standards uploaded yet.</p>
+            <p className="text-xs text-[var(--text-disabled)] mt-1">
+              Upload ISO standards or ASPICE PAM as PDF to map them against your architecture.
             </p>
           </div>
         ) : (
-          <div className="p-2 space-y-1.5">
+          <div className="space-y-2">
             {standards.map((std) => {
               const isExpanded = expandedStandard === std._id;
               const isSelected = selectedStandardId === std._id;
@@ -306,26 +326,26 @@ export default function StandardsManager({
                 >
                   {/* Standard Header */}
                   <div
-                    className="flex items-center gap-2 p-2 cursor-pointer hover:bg-[var(--surface-raised)] rounded-t-lg transition"
+                    className="flex items-center gap-3 p-3 cursor-pointer hover:bg-[var(--surface-raised)] rounded-t-lg transition"
                     onClick={() => toggleExpand(std._id)}
                   >
                     {isExpanded ? (
-                      <ChevronDown size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                      <ChevronDown size={16} className="text-[var(--text-tertiary)] shrink-0" />
                     ) : (
-                      <ChevronRight size={12} className="text-[var(--text-tertiary)] shrink-0" />
+                      <ChevronRight size={16} className="text-[var(--text-tertiary)] shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-medium text-white truncate">{std.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white truncate">{std.name}</span>
                         {std.version && (
-                          <span className="text-[9px] text-[var(--text-tertiary)] bg-[var(--surface-raised)] px-1 rounded">v{std.version}</span>
+                          <span className="text-xs text-[var(--text-tertiary)] bg-[var(--surface-raised)] px-1.5 py-0.5 rounded">v{std.version}</span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[9px] text-[var(--text-disabled)]">{std.pageCount} S.</span>
-                        <span className="text-[9px] text-[var(--text-disabled)]">{std.type.toUpperCase()}</span>
+                      <div className="flex items-center gap-3 mt-0.5">
+                        <span className="text-xs text-[var(--text-disabled)]">{std.sectionsCount ?? sections.length} S.</span>
+                        <span className="text-xs text-[var(--text-disabled)]">{std.type.toUpperCase()}</span>
                         {selectedCount > 0 && (
-                          <span className="text-[9px] text-[#38bdf8]">{selectedCount} selected</span>
+                          <span className="text-xs text-[#38bdf8] font-medium">{selectedCount} selected</span>
                         )}
                       </div>
                     </div>
@@ -334,10 +354,10 @@ export default function StandardsManager({
                         e.stopPropagation();
                         handleDelete(std._id);
                       }}
-                      className="text-[var(--text-disabled)] hover:text-red-400 transition p-0.5"
+                      className="text-[var(--text-disabled)] hover:text-red-400 transition p-1"
                       title="Delete standard"
                     >
-                      <Trash2 size={10} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
 
@@ -346,10 +366,10 @@ export default function StandardsManager({
                     <div className="border-t border-[var(--border-subtle)]">
                       {/* Section Selection */}
                       {sections.length > 0 ? (
-                        <div className="p-2 space-y-0.5 max-h-[200px] overflow-y-auto">
+                        <div className="p-3 space-y-0.5 max-h-[400px] overflow-y-auto">
                           <button
                             onClick={() => selectAllSections(std._id)}
-                            className="text-[9px] text-[#38bdf8] hover:text-white mb-1 transition"
+                            className="text-xs text-[#38bdf8] hover:text-white mb-2 transition"
                           >
                             {isSelected && selectedSectionIds.length === sections.length
                               ? 'Deselect all'
@@ -357,45 +377,77 @@ export default function StandardsManager({
                           </button>
                           {sections.map((section) => {
                             const checked = isSelected && selectedSectionIds.includes(section.id);
+                            const isContentExpanded = expandedSection === section.id;
+                            const hasContent = section.content && section.content.trim().length > 0;
+                            const preview = section.content?.slice(0, 200) ?? '';
+
                             return (
-                              <button
-                                key={section.id}
-                                onClick={() => toggleSection(std._id, section.id)}
-                                className="flex items-center gap-1.5 w-full text-left py-0.5 hover:bg-[var(--surface-raised)] rounded px-1 transition"
-                                style={{ paddingLeft: `${4 + section.level * 8}px` }}
-                              >
-                                {checked ? (
-                                  <CheckSquare size={10} className="text-[#38bdf8] shrink-0" />
-                                ) : (
-                                  <Square size={10} className="text-[var(--text-disabled)] shrink-0" />
+                              <div key={section.id}>
+                                <div
+                                  className="flex items-center gap-2 w-full text-left py-1.5 hover:bg-[var(--surface-raised)] rounded px-2 transition"
+                                  style={{ paddingLeft: `${8 + section.level * 12}px` }}
+                                >
+                                  <button
+                                    onClick={() => toggleSection(std._id, section.id)}
+                                    className="shrink-0"
+                                  >
+                                    {checked ? (
+                                      <CheckSquare size={14} className="text-[#38bdf8]" />
+                                    ) : (
+                                      <Square size={14} className="text-[var(--text-tertiary)]" />
+                                    )}
+                                  </button>
+                                  <span
+                                    className={`text-xs flex-1 ${checked ? 'text-white font-medium' : 'text-[var(--text-secondary)]'}`}
+                                  >
+                                    §{section.number} {section.title}
+                                  </span>
+                                  {hasContent && (
+                                    <button
+                                      onClick={() => setExpandedSection(isContentExpanded ? null : section.id)}
+                                      className="shrink-0 text-[var(--text-tertiary)] hover:text-[#38bdf8] transition p-0.5"
+                                      title="Show section content"
+                                    >
+                                      <Info size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                                {/* Content Preview */}
+                                {isContentExpanded && hasContent && (
+                                  <div
+                                    className="mx-2 mb-1 p-2.5 rounded bg-[var(--surface-overlay)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] leading-relaxed max-h-[150px] overflow-y-auto"
+                                    style={{ marginLeft: `${16 + section.level * 12}px` }}
+                                  >
+                                    {preview}
+                                    {(section.content?.length ?? 0) > 200 && (
+                                      <span className="text-[var(--text-disabled)]">...</span>
+                                    )}
+                                  </div>
                                 )}
-                                <span className={`text-[10px] truncate ${checked ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
-                                  §{section.number} {section.title}
-                                </span>
-                              </button>
+                              </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <div className="p-2 flex items-center justify-center">
-                          <Loader2 size={12} className="animate-spin text-[#38bdf8]" />
+                        <div className="p-4 flex items-center justify-center">
+                          <Loader2 size={16} className="animate-spin text-[#38bdf8]" />
                         </div>
                       )}
 
                       {/* Actions */}
-                      <div className="p-2 border-t border-[var(--border-subtle)] flex gap-1.5">
+                      <div className="p-3 border-t border-[var(--border-subtle)] flex gap-2">
                         <button
                           onClick={() => onMatrixView(std._id, isSelected ? selectedSectionIds : [])}
-                          className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 rounded bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#38bdf8] hover:text-white transition"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-md bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[#38bdf8] hover:text-white transition"
                         >
-                          <Search size={10} />
+                          <Search size={14} />
                           Matrix
                         </button>
                         <button
                           onClick={() => onAnalyze(std._id, isSelected ? selectedSectionIds : [], std.name)}
-                          className="flex-1 flex items-center justify-center gap-1 text-[10px] py-1.5 rounded bg-[#38bdf8]/10 border border-[#38bdf8]/30 text-[#38bdf8] hover:bg-[#38bdf8]/20 transition"
+                          className="flex-1 flex items-center justify-center gap-1.5 text-xs py-2 rounded-md bg-[#38bdf8]/10 border border-[#38bdf8]/30 text-[#38bdf8] hover:bg-[#38bdf8]/20 transition"
                         >
-                          <Search size={10} />
+                          <Search size={14} />
                           AI Match
                         </button>
                       </div>

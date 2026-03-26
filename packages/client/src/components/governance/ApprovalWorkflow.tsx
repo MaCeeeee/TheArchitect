@@ -119,9 +119,9 @@ export default function ApprovalWorkflow() {
   };
 
   const statusIcon = (s: string) => {
-    if (s === 'approved') return <CheckCircle size={10} className="text-[#22c55e]" />;
-    if (s === 'rejected') return <XCircle size={10} className="text-[#ef4444]" />;
-    return <Clock size={10} className="text-[#eab308]" />;
+    if (s === 'approved') return <CheckCircle size={16} className="text-[#22c55e]" />;
+    if (s === 'rejected') return <XCircle size={16} className="text-[#ef4444]" />;
+    return <Clock size={16} className="text-[#eab308]" />;
   };
 
   const priorityColor: Record<string, string> = {
@@ -132,37 +132,37 @@ export default function ApprovalWorkflow() {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      <div className="p-3 border-b border-[var(--border-subtle)]">
+      <div className="p-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-            <ClipboardCheck size={14} className="text-[#3b82f6]" />
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+            <ClipboardCheck size={18} className="text-[#3b82f6]" />
             Approval Workflow
           </h3>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="rounded p-1 text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a] transition"
+            className="rounded p-1.5 text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a] transition"
             title="Create Approval"
           >
-            <Plus size={14} />
+            <Plus size={16} />
           </button>
         </div>
       </div>
 
       {/* Create Form */}
       {showCreate && (
-        <div className="p-3 border-b border-[var(--border-subtle)] space-y-2">
+        <div className="p-4 border-b border-[var(--border-subtle)] space-y-3">
           <input
             autoFocus
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Approval title"
-            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
+            className="w-full bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
           />
-          <div className="flex gap-1">
-            <select value={newType} onChange={(e) => setNewType(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+          <div className="flex gap-2">
+            <select value={newType} onChange={(e) => setNewType(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
               {TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
             </select>
-            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none">
+            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="flex-1 bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none">
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
@@ -170,24 +170,24 @@ export default function ApprovalWorkflow() {
             value={newApproverName}
             onChange={(e) => setNewApproverName(e.target.value)}
             placeholder="Approver name"
-            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
+            className="w-full bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6]"
           />
           <textarea
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
             placeholder="Description (optional)"
             rows={2}
-            className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
+            className="w-full bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
           />
-          <div className="flex gap-1">
+          <div className="flex gap-2">
             <button
               onClick={handleCreate}
               disabled={!newTitle.trim() || !newApproverName.trim() || creating}
-              className="flex-1 rounded bg-[#3b82f6] px-2 py-1 text-[10px] text-white hover:bg-[#2563eb] disabled:opacity-50"
+              className="flex-1 rounded-md bg-[#3b82f6] px-3 py-2 text-sm text-white font-medium hover:bg-[#2563eb] disabled:opacity-50"
             >
               {creating ? 'Creating...' : 'Create'}
             </button>
-            <button onClick={() => setShowCreate(false)} className="flex-1 rounded bg-[#1a2a1a] px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:bg-[#3a4a3a]">
+            <button onClick={() => setShowCreate(false)} className="flex-1 rounded-md bg-[#1a2a1a] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[#3a4a3a]">
               Cancel
             </button>
           </div>
@@ -200,7 +200,7 @@ export default function ApprovalWorkflow() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`flex-1 px-2 py-1.5 text-[10px] font-medium capitalize ${
+            className={`flex-1 px-3 py-2.5 text-xs font-medium capitalize ${
               filter === f ? 'text-white border-b-2 border-[#3b82f6]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
@@ -211,15 +211,15 @@ export default function ApprovalWorkflow() {
 
       {/* Error */}
       {error && (
-        <div className="px-3 py-2 bg-red-500/10 border-b border-red-500/20">
-          <span className="text-[10px] text-red-300">{error}</span>
+        <div className="px-4 py-3 bg-red-500/10 border-b border-red-500/20">
+          <span className="text-xs text-red-300">{error}</span>
         </div>
       )}
 
       {/* Loading */}
       {loading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 size={16} className="animate-spin text-[#3b82f6]" />
+        <div className="flex items-center justify-center py-12">
+          <Loader2 size={20} className="animate-spin text-[#3b82f6]" />
         </div>
       ) : !selectedApproval ? (
         /* List */
@@ -228,36 +228,36 @@ export default function ApprovalWorkflow() {
             <button
               key={a._id}
               onClick={() => setSelected(a._id)}
-              className="flex w-full items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]/50 hover:bg-[var(--surface-base)] transition text-left"
+              className="flex w-full items-center gap-2.5 px-4 py-3 border-b border-[var(--border-subtle)]/50 hover:bg-[var(--surface-base)] transition text-left"
             >
               {statusIcon(a.status)}
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-white truncate">{a.title}</div>
-                <div className="text-[9px] text-[var(--text-disabled)]">{a.requesterName} · {a.type.replace(/_/g, ' ')}</div>
+                <div className="text-sm text-white truncate">{a.title}</div>
+                <div className="text-xs text-[var(--text-disabled)]">{a.requesterName} · {a.type.replace(/_/g, ' ')}</div>
               </div>
-              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: priorityColor[a.priority] }} />
-              <ChevronRight size={12} className="text-[var(--text-disabled)]" />
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: priorityColor[a.priority] }} />
+              <ChevronRight size={14} className="text-[var(--text-disabled)]" />
             </button>
           ))}
           {filtered.length === 0 && (
-            <p className="text-[10px] text-[var(--text-tertiary)] text-center py-6">No approval requests</p>
+            <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No approval requests</p>
           )}
         </div>
       ) : (
         /* Detail View */
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-          <button onClick={() => setSelected(null)} className="text-[10px] text-[#3b82f6] hover:underline">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <button onClick={() => setSelected(null)} className="text-sm text-[#3b82f6] hover:underline">
             &larr; Back
           </button>
-          <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-4">
+            <div className="flex items-center gap-2.5 mb-3">
               {statusIcon(selectedApproval.status)}
-              <span className="text-xs text-white font-medium">{selectedApproval.title}</span>
+              <span className="text-sm text-white font-medium">{selectedApproval.title}</span>
             </div>
             {selectedApproval.description && (
-              <p className="text-[9px] text-[var(--text-secondary)] mb-2">{selectedApproval.description}</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-3">{selectedApproval.description}</p>
             )}
-            <div className="grid grid-cols-2 gap-2 text-[9px]">
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div><span className="text-[var(--text-tertiary)]">Type:</span> <span className="text-[var(--text-secondary)] capitalize">{selectedApproval.type.replace(/_/g, ' ')}</span></div>
               <div><span className="text-[var(--text-tertiary)]">Priority:</span> <span style={{ color: priorityColor[selectedApproval.priority] }} className="capitalize">{selectedApproval.priority}</span></div>
               <div><span className="text-[var(--text-tertiary)]">Requester:</span> <span className="text-[var(--text-secondary)]">{selectedApproval.requesterName}</span></div>
@@ -266,15 +266,15 @@ export default function ApprovalWorkflow() {
           </div>
 
           {/* Steps */}
-          <h4 className="text-[10px] font-semibold uppercase text-[var(--text-tertiary)]">Approval Steps</h4>
-          <div className="space-y-1">
+          <h4 className="text-xs font-semibold uppercase text-[var(--text-tertiary)]">Approval Steps</h4>
+          <div className="space-y-1.5">
             {selectedApproval.steps.map((step, i) => (
-              <div key={i} className="flex items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5">
+              <div key={i} className="flex items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2.5">
                 {statusIcon(step.status)}
-                <span className="text-[10px] text-white flex-1">{step.approverName}</span>
-                <span className="text-[9px] text-[var(--text-disabled)] capitalize">{step.status}</span>
+                <span className="text-sm text-white flex-1">{step.approverName}</span>
+                <span className="text-xs text-[var(--text-disabled)] capitalize">{step.status}</span>
                 {i === selectedApproval.currentStep && selectedApproval.status === 'pending' && (
-                  <span className="text-[8px] bg-[#eab308]/20 text-[#eab308] px-1 rounded">Current</span>
+                  <span className="text-xs bg-[#eab308]/20 text-[#eab308] px-1.5 py-0.5 rounded">Current</span>
                 )}
               </div>
             ))}
@@ -282,33 +282,33 @@ export default function ApprovalWorkflow() {
 
           {/* Actions */}
           {selectedApproval.status === 'pending' && (
-            <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
+            <div className="space-y-3 pt-3 border-t border-[var(--border-subtle)]">
               <textarea
                 value={decisionComment}
                 onChange={(e) => setDecisionComment(e.target.value)}
                 placeholder="Comment (optional)"
                 rows={2}
-                className="w-full bg-[var(--surface-base)] rounded px-2 py-1 text-[10px] text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
+                className="w-full bg-[var(--surface-base)] rounded-md px-3 py-2 text-sm text-white border border-[var(--border-subtle)] outline-none focus:border-[#3b82f6] resize-none"
               />
-              <div className="flex gap-1">
+              <div className="flex gap-2">
                 <button
                   onClick={() => handleDecision('approved')}
                   disabled={deciding}
-                  className="flex-1 rounded bg-[#22c55e] px-2 py-1.5 text-[10px] font-medium text-white hover:bg-[#16a34a] disabled:opacity-50"
+                  className="flex-1 rounded-md bg-[#22c55e] px-3 py-2 text-sm font-medium text-white hover:bg-[#16a34a] disabled:opacity-50"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => handleDecision('rejected')}
                   disabled={deciding}
-                  className="flex-1 rounded bg-[#ef4444] px-2 py-1.5 text-[10px] font-medium text-white hover:bg-[#dc2626] disabled:opacity-50"
+                  className="flex-1 rounded-md bg-[#ef4444] px-3 py-2 text-sm font-medium text-white hover:bg-[#dc2626] disabled:opacity-50"
                 >
                   Reject
                 </button>
               </div>
               <button
                 onClick={() => handleCancel(selectedApproval._id)}
-                className="w-full rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:text-white hover:border-[#3a4a3a] transition"
+                className="w-full rounded-md border border-[var(--border-subtle)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-white hover:border-[#3a4a3a] transition"
               >
                 Cancel Request
               </button>

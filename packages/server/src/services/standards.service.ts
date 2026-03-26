@@ -31,6 +31,7 @@ async function pdfParse(buffer: Buffer): Promise<{ text: string; numpages: numbe
 import { randomUUID } from 'crypto';
 import { Standard, IStandard, IStandardSection } from '../models/Standard';
 import { StandardMapping, IStandardMapping } from '../models/StandardMapping';
+import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 
 // ─── PDF Parsing ───
@@ -525,6 +526,7 @@ export async function getStandard(standardId: string) {
 
 export async function deleteStandard(standardId: string) {
   await StandardMapping.deleteMany({ standardId });
+  await CompliancePipelineState.deleteMany({ standardId });
   return Standard.findByIdAndDelete(standardId);
 }
 

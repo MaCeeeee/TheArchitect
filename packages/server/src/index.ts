@@ -25,6 +25,7 @@ import reportRoutes from './routes/report.routes';
 import invitationRoutes from './routes/invitation.routes';
 import advisorRoutes from './routes/advisor.routes';
 import roadmapRoutes from './routes/roadmap.routes';
+import demoRoutes from './routes/demo.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 
 dotenv.config();
@@ -68,6 +69,7 @@ async function main() {
   app.use('/api', invitationRoutes);
   app.use('/api/projects', advisorRoutes);
   app.use('/api/projects', roadmapRoutes);
+  app.use('/api/demo', demoRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

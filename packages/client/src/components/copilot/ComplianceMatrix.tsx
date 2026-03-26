@@ -398,7 +398,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoS
                     {getStatusIcon(mapping.status)}
                     <span className="text-sm text-white font-medium flex-1">{mapping.elementName}</span>
                     {mapping.source === 'ai' && (
-                      <span className="text-[11px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">AI</span>
+                      <span className="text-xs bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">AI</span>
                     )}
                   </div>
                   <p className="text-xs text-[var(--text-tertiary)] mt-1 capitalize">Status: {mapping.status}</p>
@@ -595,12 +595,12 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoS
                           >
                             {getCellIcon(cell)}
                             {cell.total > 0 && (
-                              <span className="text-[11px]">
+                              <span className="text-xs">
                                 {cell.compliant}/{cell.total}
                               </span>
                             )}
                             {(!cell || cell.total === 0) && (
-                              <span className="absolute inset-0 flex items-center justify-center text-[11px] text-red-400/60 font-mono">
+                              <span className="absolute inset-0 flex items-center justify-center text-xs text-red-400/60 font-mono">
                                 GAP
                               </span>
                             )}
@@ -641,19 +641,19 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoS
             <div className="flex items-center gap-4 mt-4 px-1">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 size={12} className="text-emerald-400" />
-                <span className="text-[11px] text-[var(--text-tertiary)]">Compliant</span>
+                <span className="text-xs text-[var(--text-tertiary)]">Compliant</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <AlertTriangle size={12} className="text-yellow-400" />
-                <span className="text-[11px] text-[var(--text-tertiary)]">Partial</span>
+                <span className="text-xs text-[var(--text-tertiary)]">Partial</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <XCircle size={12} className="text-red-400" />
-                <span className="text-[11px] text-[var(--text-tertiary)]">Gap</span>
+                <span className="text-xs text-[var(--text-tertiary)]">Gap</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Minus size={12} className="text-[var(--text-disabled)]" />
-                <span className="text-[11px] text-[var(--text-tertiary)]">Empty</span>
+                <span className="text-xs text-[var(--text-tertiary)]">Empty</span>
               </div>
             </div>
           </div>

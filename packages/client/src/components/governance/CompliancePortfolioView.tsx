@@ -49,7 +49,7 @@ function CoverageRing({ coverage }: { coverage: number }) {
           strokeLinecap="round"
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-white">
+      <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
         {coverage}%
       </span>
     </div>
@@ -138,17 +138,17 @@ export function CompliancePortfolioView() {
               </>
             )}
           </div>
-          <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>
-              <CheckCircle size={10} className="inline text-green-500 mr-0.5" />
+              <CheckCircle size={14} className="inline text-green-500 mr-0.5" />
               {item.mappingStats.compliant}
             </span>
             <span>
-              <AlertTriangle size={10} className="inline text-amber-500 mr-0.5" />
+              <AlertTriangle size={14} className="inline text-amber-500 mr-0.5" />
               {item.mappingStats.partial}
             </span>
             <span>
-              <XCircle size={10} className="inline text-red-500 mr-0.5" />
+              <XCircle size={14} className="inline text-red-500 mr-0.5" />
               {item.mappingStats.gap}
             </span>
             <span className="text-gray-600">{item.mappingStats.unmapped} unmapped</span>

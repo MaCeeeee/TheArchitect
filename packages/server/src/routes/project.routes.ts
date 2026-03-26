@@ -90,12 +90,12 @@ router.get(
       let connectionCount = 0;
       try {
         const elRecords = await runCypher(
-          'MATCH (n:Element {projectId: $projectId}) RETURN count(n) AS cnt',
+          'MATCH (n:ArchitectureElement {projectId: $projectId}) RETURN count(n) AS cnt',
           { projectId }
         );
         elementCount = elRecords[0]?.get('cnt')?.toNumber?.() ?? 0;
         const connRecords = await runCypher(
-          'MATCH (:Element {projectId: $projectId})-[r:CONNECTS_TO]->() RETURN count(r) AS cnt',
+          'MATCH (:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->() RETURN count(r) AS cnt',
           { projectId }
         );
         connectionCount = connRecords[0]?.get('cnt')?.toNumber?.() ?? 0;
