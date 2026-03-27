@@ -91,7 +91,7 @@ export async function buildProjectContext(projectId: string): Promise<string> {
   const lines: string[] = [];
   lines.push(`## Architecture Elements (${elements.length} total)`);
 
-  const layerOrder = ['strategy', 'business', 'information', 'application', 'technology'];
+  const layerOrder = ['motivation', 'strategy', 'business', 'information', 'application', 'technology', 'physical', 'implementation_migration'];
   for (const layer of layerOrder) {
     const layerEls = byLayer[layer];
     if (!layerEls || layerEls.length === 0) continue;

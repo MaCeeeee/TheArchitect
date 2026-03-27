@@ -57,6 +57,7 @@ for (const et of ELEMENT_TYPES) {
 }
 
 const DOMAIN_TO_LAYER: Record<string, ArchitectureLayer> = {
+  strategy: 'strategy',
   business: 'business',
   data: 'information',
   application: 'application',

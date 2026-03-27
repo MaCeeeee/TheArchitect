@@ -24,6 +24,7 @@ const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({ id: l.id, label: l.label, c
 
 // Map ElementType → default layer using ELEMENT_TYPES + ARCHITECTURE_LAYERS
 const DOMAIN_TO_LAYER: Record<string, string> = {
+  strategy: 'strategy',
   business: 'business',
   data: 'information',
   application: 'application',

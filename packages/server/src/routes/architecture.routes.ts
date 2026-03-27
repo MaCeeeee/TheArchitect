@@ -24,7 +24,7 @@ const LayerEnum = z.enum([
 ]);
 
 const TOGAFDomainEnum = z.enum([
-  'business', 'data', 'application', 'technology', 'motivation', 'implementation',
+  'business', 'data', 'application', 'technology', 'motivation', 'implementation', 'strategy',
 ]);
 
 const CreateElementSchema = z.object({

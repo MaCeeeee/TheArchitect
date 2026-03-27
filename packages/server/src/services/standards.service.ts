@@ -571,7 +571,7 @@ export async function getMappingMatrix(
     .map((r) => String(serializeNeo4jProperties(r.toObject()).layer || ''))
     .filter(Boolean);
 
-  const layerOrder = ['strategy', 'business', 'information', 'application', 'technology'];
+  const layerOrder = ['motivation', 'strategy', 'business', 'information', 'application', 'technology', 'physical', 'implementation_migration'];
   layers.sort((a, b) => {
     const ai = layerOrder.indexOf(a);
     const bi = layerOrder.indexOf(b);

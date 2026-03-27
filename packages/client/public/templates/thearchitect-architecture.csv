@@ -25,16 +25,16 @@ Audit Trail Requirement,requirement,motivation,motivation,"All changes must be l
 Import Interoperability,requirement,motivation,motivation,"Must import from BPMN 2.0, n8n workflows, CSV, and ArchiMate exchange",current,low,3
 Browser-Based Delivery,constraint,motivation,motivation,"Must run in modern browsers without desktop installation",current,low,4
 Self-Hosted Option,constraint,motivation,motivation,"Must support on-premise Docker deployment on customer infrastructure",current,low,4
-Enterprise Architecture Management,business_capability,strategy,business,"Core capability: manage enterprise architecture lifecycle across TOGAF domains",current,low,4
-3D Visualization & Navigation,business_capability,strategy,business,"Capability: immersive 3D architecture visualization with layer planes and fly-to navigation",current,low,4
-AI-Powered Analytics,business_capability,strategy,business,"Capability: AI-driven risk analysis, impact assessment, predictive analytics, and roadmap generation",current,medium,3
-Governance & Compliance,business_capability,strategy,business,"Capability: policy management, approval workflows, compliance dashboards, and audit trails",current,low,3
-Multi-Stakeholder Simulation,business_capability,strategy,business,"Capability: MiroFish multi-agent debate simulation with custom personas and scenario comparison",current,medium,3
-Template Marketplace,business_capability,strategy,business,"Capability: community-driven architecture template sharing and deployment",current,low,2
-Architecture Lifecycle Management,value_stream,strategy,business,"Value stream: from current-state capture through gap analysis to target-state realization",current,low,3
-Digital Transformation Planning,value_stream,strategy,business,"Value stream: strategic planning with Monte Carlo simulation and transformation roadmaps",current,low,3
-Architecture Team Resources,resource,strategy,business,"Skilled architects, AI compute budget, and cloud infrastructure resources",current,low,3
-Adopt AI-First Architecture,course_of_action,strategy,business,"Strategic decision to integrate AI across all EA analysis and recommendation workflows",current,medium,3
+Enterprise Architecture Management,business_capability,strategy,strategy,"Core capability: manage enterprise architecture lifecycle across TOGAF domains",current,low,4
+3D Visualization & Navigation,business_capability,strategy,strategy,"Capability: immersive 3D architecture visualization with layer planes and fly-to navigation",current,low,4
+AI-Powered Analytics,business_capability,strategy,strategy,"Capability: AI-driven risk analysis, impact assessment, predictive analytics, and roadmap generation",current,medium,3
+Governance & Compliance,business_capability,strategy,strategy,"Capability: policy management, approval workflows, compliance dashboards, and audit trails",current,low,3
+Multi-Stakeholder Simulation,business_capability,strategy,strategy,"Capability: MiroFish multi-agent debate simulation with custom personas and scenario comparison",current,medium,3
+Template Marketplace,business_capability,strategy,strategy,"Capability: community-driven architecture template sharing and deployment",current,low,2
+Architecture Lifecycle Management,value_stream,strategy,strategy,"Value stream: from current-state capture through gap analysis to target-state realization",current,low,3
+Digital Transformation Planning,value_stream,strategy,strategy,"Value stream: strategic planning with Monte Carlo simulation and transformation roadmaps",current,low,3
+Architecture Team Resources,resource,strategy,strategy,"Skilled architects, AI compute budget, and cloud infrastructure resources",current,low,3
+Adopt AI-First Architecture,course_of_action,strategy,strategy,"Strategic decision to integrate AI across all EA analysis and recommendation workflows",current,medium,3
 Enterprise Architect (Actor),business_actor,business,business,"Person who creates and manages architecture models in the platform",current,low,4
 Solution Architect (Actor),business_actor,business,business,"Person who designs application-level solutions within the architecture",current,low,3
 Project Owner (Role),business_role,business,business,"Role: full control over project elements, settings, and team membership",current,low,4

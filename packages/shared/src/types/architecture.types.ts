@@ -8,17 +8,18 @@ export type ArchitectureLayer =
   | 'physical'
   | 'implementation_migration';
 
-export type TOGAFDomain = 'business' | 'data' | 'application' | 'technology' | 'motivation' | 'implementation';
+// ✅ FIX: 'strategy' als eigenständige Domain hinzugefügt (ArchiMate 3.2 Strategy Layer)
+export type TOGAFDomain = 'business' | 'data' | 'application' | 'technology' | 'motivation' | 'implementation' | 'strategy';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ElementStatus = 'current' | 'target' | 'transitional' | 'retired';
 
 export type ElementType =
-  // Strategy
+  // Strategy (ArchiMate 3.2 Chapter 7)
   | 'business_capability'
   | 'value_stream'
   | 'resource'
   | 'course_of_action'
-  // Business
+  // Business (ArchiMate 3.2 Chapter 8)
   | 'process'
   | 'business_service'
   | 'business_actor'
@@ -32,11 +33,11 @@ export type ElementType =
   | 'contract'
   | 'representation'
   | 'product'
-  // Application
-  | 'application'
+  // Application (ArchiMate 3.2 Chapter 9)
+  | 'application'              // ⚠️ Non-standard (legacy) — use application_component
   | 'application_component'
   | 'application_service'
-  | 'service'
+  | 'service'                  // ⚠️ Non-standard (legacy) — use application_service
   | 'application_collaboration'
   | 'application_interface'
   | 'application_function'
@@ -44,13 +45,14 @@ export type ElementType =
   | 'application_process'
   | 'application_event'
   | 'data_object'
-  // Information / Data
-  | 'data_entity'
-  | 'data_model'
-  // Technology
-  | 'technology_component'
-  | 'infrastructure'
-  | 'platform_service'
+  // Information / Data (TOGAF extension — not in ArchiMate 3.2 core)
+  | 'data_entity'              // ⚠️ Non-standard — TOGAF Data Architecture extension
+  | 'data_model'               // ⚠️ Non-standard — TOGAF Data Architecture extension
+  // Technology (ArchiMate 3.2 Chapter 10)
+  | 'technology_component'     // ⚠️ Non-standard (legacy) — use node
+  | 'infrastructure'           // ⚠️ Non-standard (legacy) — use node/device
+  | 'platform_service'         // ⚠️ Non-standard (legacy) — use technology_service
+  | 'technology_service'       // ✅ NEU: ArchiMate 3.2 Standard — Technology Layer Service
   | 'node'
   | 'device'
   | 'system_software'
@@ -63,7 +65,7 @@ export type ElementType =
   | 'artifact'
   | 'communication_network'
   | 'path'
-  // Motivation
+  // Motivation (ArchiMate 3.2 Chapter 6)
   | 'stakeholder'
   | 'driver'
   | 'assessment'
@@ -74,18 +76,18 @@ export type ElementType =
   | 'constraint'
   | 'meaning'
   | 'am_value'
-  // Implementation & Migration
+  // Implementation & Migration (ArchiMate 3.2 Chapter 12)
   | 'work_package'
   | 'deliverable'
   | 'implementation_event'
   | 'plateau'
   | 'gap'
-  // Physical
+  // Physical (ArchiMate 3.2 Chapter 10.6)
   | 'equipment'
   | 'facility'
   | 'distribution_network'
   | 'material'
-  // Composite
+  // Composite (ArchiMate 3.2 Chapter 4)
   | 'grouping'
   | 'location';
 
@@ -148,7 +150,8 @@ export type ConnectionType =
   | 'triggers'
   | 'cross_architecture';
 
-export type WorkspaceSource = 'bpmn' | 'n8n' | 'manual' | 'archimate' | 'csv';
+// ✅ FIX: 'blueprint' als WorkspaceSource hinzugefügt
+export type WorkspaceSource = 'bpmn' | 'n8n' | 'manual' | 'archimate' | 'csv' | 'blueprint';
 
 export interface Workspace {
   id: string;
