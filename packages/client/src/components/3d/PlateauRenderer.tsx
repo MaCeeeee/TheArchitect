@@ -4,6 +4,7 @@ import LayerPlane from './LayerPlane';
 import PlateauElement from './PlateauElement';
 import PlateauConnectionLines from './PlateauConnectionLines';
 import { useRoadmapStore } from '../../stores/roadmapStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
 import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 
 // ─── Constants ───
@@ -23,6 +24,7 @@ export default function PlateauRenderer() {
   const plateauSnapshots = useRoadmapStore((s) => s.plateauSnapshots);
   const selectedPlateauIndex = useRoadmapStore((s) => s.selectedPlateauIndex);
   const plateauViewMode = useRoadmapStore((s) => s.plateauViewMode);
+  const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
 
   // LOD: full detail for selected ±1, simplified for rest
   const lodInfo = useMemo(() => {
@@ -44,15 +46,15 @@ export default function PlateauRenderer() {
         const isSelected = selectedPlateauIndex === i;
         const elements = Object.values(snapshot.elements);
 
-        // In 'changed-only' mode, filter to elements that appear in any wave
-        const visibleElements = plateauViewMode === 'changed-only'
-          ? elements.filter((el) => el.changeWaveNumber !== null)
-          : elements;
+        // Filter by view mode and layer visibility
+        const visibleElements = elements
+          .filter((el) => visibleLayers.has(el.layer))
+          .filter((el) => plateauViewMode !== 'changed-only' || el.changeWaveNumber !== null);
 
         return (
           <group key={`plateau-${i}`}>
-            {/* Layer planes */}
-            {LAYER_CONFIG.map((layer) => (
+            {/* Layer planes (respect visibility toggles) */}
+            {LAYER_CONFIG.filter((layer) => visibleLayers.has(layer.id)).map((layer) => (
               <LayerPlane
                 key={`p${i}-${layer.id}`}
                 layerId={layer.id}
