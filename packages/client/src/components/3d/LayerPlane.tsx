@@ -112,14 +112,14 @@ export default function LayerPlane({ layerId, label, yPosition, color, offsetX =
           center
           style={{
             color: planeColor,
-            fontSize: '14px',
-            fontWeight: 700,
+            fontSize: '10px',
+            fontWeight: 600,
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',
             userSelect: 'none',
             pointerEvents: 'none',
-            opacity: 0.9,
+            opacity: 0.5,
           }}
         >
           {workspaceName}
@@ -132,14 +132,14 @@ export default function LayerPlane({ layerId, label, yPosition, color, offsetX =
         center={false}
         style={{
           color: planeColor,
-          fontSize: isLayer ? '16px' : is2D ? '13px' : '12px',
-          fontWeight: isLayer ? 700 : 600,
-          letterSpacing: '0.05em',
+          fontSize: isLayer ? '14px' : is2D ? '11px' : '9px',
+          fontWeight: isLayer ? 700 : 500,
+          letterSpacing: '0.06em',
           textTransform: 'uppercase',
           whiteSpace: 'nowrap',
           userSelect: 'none',
           pointerEvents: 'none',
-          opacity: is2D ? 0.9 : 0.7,
+          opacity: is2D ? 0.7 : 0.45,
         }}
       >
         {label}

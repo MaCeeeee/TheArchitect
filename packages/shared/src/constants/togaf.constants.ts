@@ -16,7 +16,7 @@ export const ARCHITECTURE_LAYERS: { id: ArchitectureLayer; label: string; color:
   { id: 'motivation', label: 'Motivation', color: '#ec4899', yPosition: 16 },
   { id: 'strategy', label: 'Strategy', color: '#f59e0b', yPosition: 12 },
   { id: 'business', label: 'Business', color: '#22c55e', yPosition: 8 },
-  { id: 'information', label: 'Information Systems', color: '#3b82f6', yPosition: 4 },
+  { id: 'information', label: 'Data', color: '#3b82f6', yPosition: 4 },
   { id: 'application', label: 'Application', color: '#f97316', yPosition: 0 },
   { id: 'technology', label: 'Technology', color: '#a855f7', yPosition: -4 },
   { id: 'physical', label: 'Physical', color: '#14b8a6', yPosition: -8 },
