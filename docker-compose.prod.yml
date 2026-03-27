@@ -25,7 +25,7 @@ services:
 
   app:
     build:
-      context: /tmp/thearchitect-src
+      context: .
       dockerfile: Dockerfile
       args:
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -66,6 +66,9 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_CALLBACK_URL=https://thearchitect.site/api/auth/oauth/google/callback
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_CALLBACK_URL=https://thearchitect.site/api/auth/oauth/github/callback
     depends_on:
       - mongodb
       - neo4j

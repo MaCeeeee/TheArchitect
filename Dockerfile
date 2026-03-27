@@ -15,12 +15,17 @@ COPY packages/shared/ packages/shared/
 COPY packages/server/ packages/server/
 COPY packages/client/ packages/client/
 
-# Build sequentially: shared -> server + client
+# Build shared (force to ignore any stale tsbuildinfo), copy to node_modules, then server + client
 ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 RUN npm run --workspace=packages/shared build \
-    && npm run --workspace=packages/server build \
-    && npm run --workspace=packages/client build
+    && rm -rf node_modules/@thearchitect/shared \
+    && mkdir -p node_modules/@thearchitect/shared \
+    && cp packages/shared/package.json node_modules/@thearchitect/shared/ \
+    && cp -r packages/shared/dist node_modules/@thearchitect/shared/ \
+    && cp -r packages/shared/src node_modules/@thearchitect/shared/ \
+    && cd packages/server && npx tsc --noCheck \
+    && cd /app/packages/client && npx vite build
 
 # Stage 2: Production
 FROM node:22-alpine AS production

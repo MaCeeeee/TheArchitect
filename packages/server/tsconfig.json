@@ -7,11 +7,10 @@
     "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@thearchitect/shared": ["../shared/dist"],
+      "@thearchitect/shared/src/*": ["../shared/dist/*"]
     }
   },
-  "include": ["src/**/*"],
-  "references": [
-    { "path": "../shared" }
-  ]
+  "include": ["src/**/*"]
 }
