@@ -28,33 +28,39 @@ function formatCost(n: number) {
 }
 
 function PlateauViewToggle() {
+  const navigate = useNavigate();
   const viewMode = useUIStore((s) => s.viewMode);
+  const setViewMode = useUIStore((s) => s.setViewMode);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const activatePlateauView = useRoadmapStore((s) => s.activatePlateauView);
   const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
   const elements = useArchitectureStore((s) => s.elements);
+  const projectId = useArchitectureStore((s) => s.projectId);
   const is3D = viewMode === '3d';
 
   const handleToggle = () => {
     if (isPlateauActive) {
       deactivatePlateauView();
     } else {
+      // Ensure 3D mode is active
+      if (!is3D) setViewMode('3d');
       activatePlateauView(elements);
+      // Navigate to project architecture view so user sees the 3D plateau
+      if (projectId) {
+        navigate(`/project/${projectId}`);
+      }
     }
   };
 
   return (
     <button
       onClick={handleToggle}
-      disabled={!is3D}
       className={`w-full flex items-center justify-center gap-2 py-2.5 rounded text-sm font-bold transition ${
         isPlateauActive
           ? 'bg-[#00ff41] text-black hover:bg-[#00cc33]'
-          : is3D
-            ? 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[#00ff41]'
-            : 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-disabled)] cursor-not-allowed'
+          : 'bg-[var(--surface-raised)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-white hover:border-[#00ff41]'
       }`}
-      title={!is3D ? 'Switch to 3D view to use Plateau View' : isPlateauActive ? 'Exit Plateau View' : 'Compare architecture across transformation plateaus'}
+      title={isPlateauActive ? 'Exit Plateau View' : 'Compare architecture across transformation plateaus'}
     >
       <Layers size={16} />
       {isPlateauActive ? 'Exit Plateau View' : 'Plateau View'}

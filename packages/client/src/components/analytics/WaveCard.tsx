@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import {
   ChevronDown, ChevronRight, DollarSign, Clock, AlertTriangle,
-  Shield, Users, ArrowRight, Lightbulb,
+  Shield, Users, ArrowRight, Lightbulb, X, Cpu, GitBranch, TrendingUp,
 } from 'lucide-react';
-import type { RoadmapWave } from '@thearchitect/shared';
+import type { RoadmapWave, WaveElement } from '@thearchitect/shared';
 
 const STATUS_COLORS: Record<string, string> = {
   current: '#3b82f6',
@@ -21,6 +21,96 @@ function formatCost(n: number) {
   return `€${n}`;
 }
 
+function CostBreakdown({ el, onClose }: { el: WaveElement; onClose: () => void }) {
+  const isN8n = el.costModel === 'n8n';
+  const topo = el.topologyComplexity ?? 1.0;
+  const fatigue = el.stakeholderFatigue ?? 0;
+  const frictionMult = fatigue < 0.3 ? 1.0 : fatigue < 0.6 ? 1.0 + (fatigue - 0.3) / 0.3 * 0.5 : fatigue < 0.8 ? 1.5 + (fatigue - 0.6) / 0.2 * 1.0 : 2.5 + (fatigue - 0.8) / 0.2 * 1.5;
+  const baseCost = topo > 0 && frictionMult > 0 ? el.estimatedCost / (topo * frictionMult) : el.estimatedCost;
+
+  return (
+    <div className="mt-1 mb-2 mx-1 rounded-lg bg-[#0a0f0a] border border-[#1a2a1a] p-3 space-y-2.5 animate-in fade-in duration-200">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-white">{el.name} — Cost Breakdown</span>
+        <button onClick={onClose} className="text-[var(--text-tertiary)] hover:text-white transition"><X size={14} /></button>
+      </div>
+
+      {/* Model */}
+      <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
+        <Cpu size={12} />
+        <span>Model: <span className="text-[var(--text-secondary)]">{isN8n ? 'N8n (hours × €100/h)' : 'Enterprise (type-based)'}</span></span>
+      </div>
+
+      {/* Base cost */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded bg-[var(--surface-base)] p-2">
+          <div className="text-[10px] text-[var(--text-tertiary)] uppercase">Base Cost</div>
+          <div className="text-sm font-medium text-white">{formatCost(Math.round(baseCost))}</div>
+          {isN8n && el.estimatedHours && (
+            <div className="text-[10px] text-[var(--text-tertiary)]">{el.estimatedHours.toFixed(0)}h × €100</div>
+          )}
+        </div>
+        <div className="rounded bg-[var(--surface-base)] p-2">
+          <div className="text-[10px] text-[var(--text-tertiary)] uppercase">Final Cost</div>
+          <div className="text-sm font-bold text-[#f59e0b]">{formatCost(el.estimatedCost)}</div>
+        </div>
+      </div>
+
+      {/* Multipliers */}
+      <div className="space-y-1.5">
+        <div className="text-[10px] text-[var(--text-tertiary)] uppercase font-medium">Multipliers</div>
+
+        {/* Topology Complexity */}
+        <div className="flex items-center justify-between text-xs px-2 py-1.5 rounded bg-[var(--surface-base)]">
+          <div className="flex items-center gap-1.5">
+            <GitBranch size={12} className="text-[#a855f7]" />
+            <span className="text-[var(--text-secondary)]">Topology Complexity</span>
+          </div>
+          <span className={`font-medium ${topo > 2 ? 'text-[#f59e0b]' : 'text-[#22c55e]'}`}>×{topo.toFixed(2)}</span>
+        </div>
+
+        {/* Stakeholder Friction */}
+        <div className="flex items-center justify-between text-xs px-2 py-1.5 rounded bg-[var(--surface-base)]">
+          <div className="flex items-center gap-1.5">
+            <Users size={12} className="text-[#f97316]" />
+            <span className="text-[var(--text-secondary)]">Stakeholder Friction</span>
+          </div>
+          <span className={`font-medium ${frictionMult > 1.5 ? 'text-[#ef4444]' : frictionMult > 1 ? 'text-[#f59e0b]' : 'text-[#22c55e]'}`}>×{frictionMult.toFixed(2)}</span>
+        </div>
+
+        {/* Status Transition */}
+        <div className="flex items-center justify-between text-xs px-2 py-1.5 rounded bg-[var(--surface-base)]">
+          <div className="flex items-center gap-1.5">
+            <TrendingUp size={12} className="text-[#3b82f6]" />
+            <span className="text-[var(--text-secondary)]">Transition</span>
+          </div>
+          <span className="text-white">
+            <span style={{ color: STATUS_COLORS[el.currentStatus] }}>{el.currentStatus}</span>
+            {' → '}
+            <span style={{ color: STATUS_COLORS[el.targetStatus] }}>{el.targetStatus}</span>
+          </span>
+        </div>
+
+        {/* Risk */}
+        <div className="flex items-center justify-between text-xs px-2 py-1.5 rounded bg-[var(--surface-base)]">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle size={12} className="text-[#ef4444]" />
+            <span className="text-[var(--text-secondary)]">Risk Score</span>
+          </div>
+          <span style={{ color: RISK_COLOR(el.riskScore) }} className="font-medium">{el.riskScore.toFixed(0)}%</span>
+        </div>
+      </div>
+
+      {/* Dependencies */}
+      {el.dependsOnElementIds.length > 0 && (
+        <div className="text-xs text-[var(--text-tertiary)]">
+          <span className="font-medium">{el.dependsOnElementIds.length}</span> dependencies → higher topology cost
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface WaveCardProps {
   wave: RoadmapWave;
   isSelected: boolean;
@@ -30,6 +120,7 @@ interface WaveCardProps {
 
 export default function WaveCard({ wave, isSelected, onSelect, onElementClick }: WaveCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [selectedElement, setSelectedElement] = useState<string | null>(null);
 
   return (
     <div
@@ -116,27 +207,35 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
           <div className="space-y-1.5">
             <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Elements</div>
             {wave.elements.map((el) => (
-              <button
-                key={el.elementId}
-                onClick={() => onElementClick?.(el.elementId)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded bg-[var(--surface-base)] hover:bg-[#1a1a1a] transition text-left"
-              >
-                <div
-                  className="w-2 h-2 rounded-full shrink-0"
-                  style={{ backgroundColor: RISK_COLOR(el.riskScore) }}
-                />
-                <span className="text-sm text-white flex-1 truncate">{el.name}</span>
-                <div className="flex items-center gap-1.5 text-xs shrink-0">
-                  <span style={{ color: STATUS_COLORS[el.currentStatus] || '#7a8a7a' }}>
-                    {el.currentStatus}
-                  </span>
-                  <ArrowRight size={10} className="text-[var(--text-tertiary)]" />
-                  <span style={{ color: STATUS_COLORS[el.targetStatus] || '#7a8a7a' }}>
-                    {el.targetStatus}
-                  </span>
-                </div>
-                <span className="text-xs text-[var(--text-tertiary)]">{formatCost(el.estimatedCost)}</span>
-              </button>
+              <div key={el.elementId}>
+                <button
+                  onClick={() => setSelectedElement(selectedElement === el.elementId ? null : el.elementId)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded transition text-left ${
+                    selectedElement === el.elementId
+                      ? 'bg-[#1a2a1a] ring-1 ring-[#00ff41]/30'
+                      : 'bg-[var(--surface-base)] hover:bg-[#1a1a1a]'
+                  }`}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: RISK_COLOR(el.riskScore) }}
+                  />
+                  <span className="text-sm text-white flex-1 truncate">{el.name}</span>
+                  <div className="flex items-center gap-1.5 text-xs shrink-0">
+                    <span style={{ color: STATUS_COLORS[el.currentStatus] || '#7a8a7a' }}>
+                      {el.currentStatus}
+                    </span>
+                    <ArrowRight size={10} className="text-[var(--text-tertiary)]" />
+                    <span style={{ color: STATUS_COLORS[el.targetStatus] || '#7a8a7a' }}>
+                      {el.targetStatus}
+                    </span>
+                  </div>
+                  <span className="text-xs text-[var(--text-tertiary)]">{formatCost(el.estimatedCost)}</span>
+                </button>
+                {selectedElement === el.elementId && (
+                  <CostBreakdown el={el} onClose={() => setSelectedElement(null)} />
+                )}
+              </div>
             ))}
           </div>
 

@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
 
 function formatCurrency(n: number): string {
@@ -29,16 +32,39 @@ function MetricCard({ label, value, color }: { label: string; value: string; col
 }
 
 export default function PlateauHUD() {
+  const navigate = useNavigate();
+  const projectId = useArchitectureStore((s) => s.projectId);
   const plateauSnapshots = useRoadmapStore((s) => s.plateauSnapshots);
   const selectedPlateauIndex = useRoadmapStore((s) => s.selectedPlateauIndex);
+  const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
 
   if (selectedPlateauIndex === null || !plateauSnapshots[selectedPlateauIndex]) return null;
 
   const snapshot = plateauSnapshots[selectedPlateauIndex];
   const isAsIs = snapshot.waveNumber === null;
 
+  const handleBackToRoadmap = () => {
+    deactivatePlateauView();
+    if (projectId) {
+      navigate(`/project/${projectId}/compliance/roadmap`);
+    }
+  };
+
   return (
     <div className="absolute top-3 right-4 z-20">
+      {/* Back to Roadmap */}
+      <button
+        onClick={handleBackToRoadmap}
+        className="flex items-center gap-2 rounded-lg px-3 py-1.5 mb-2 w-full transition hover:bg-[#1a2a1a]"
+        style={{
+          background: 'rgba(10, 10, 10, 0.95)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <ArrowLeft size={14} className="text-[#00ff41]" />
+        <span className="text-[11px] font-semibold text-[var(--text-secondary)]">Back to Roadmap</span>
+      </button>
+
       {/* Mode indicator */}
       <div
         className="flex items-center gap-3 rounded-lg px-4 py-1.5 mb-2"
