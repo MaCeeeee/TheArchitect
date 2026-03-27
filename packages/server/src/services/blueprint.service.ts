@@ -6,7 +6,7 @@ import {
   LEGACY_TYPE_MAP,
   ARCHITECTURE_LAYERS,
   ELEMENT_TYPES,
-} from '@thearchitect/shared/src/constants/togaf.constants';
+} from '@thearchitect/shared';
 import type {
   BlueprintInput,
   BlueprintGeneratedElement,
