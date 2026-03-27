@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import {
   analyzeImpact,
@@ -16,6 +17,7 @@ router.use(authenticate);
 // Impact Analysis
 router.get(
   '/:projectId/analytics/impact/:elementId',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -35,6 +37,7 @@ router.get(
 // Risk Assessment
 router.get(
   '/:projectId/analytics/risk',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -51,6 +54,7 @@ router.get(
 // Cost Estimation
 router.get(
   '/:projectId/analytics/cost',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -67,6 +71,7 @@ router.get(
 // Monte Carlo Simulation
 router.post(
   '/:projectId/analytics/simulate',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
     try {

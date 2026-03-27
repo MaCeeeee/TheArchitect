@@ -2,13 +2,14 @@ import { Router, Request, Response } from 'express';
 import { User } from '../models/User';
 import { AuditLog } from '../models/AuditLog';
 import { authenticate } from '../middleware/auth.middleware';
-import { requireRole } from '../middleware/rbac.middleware';
+import { requirePermission } from '../middleware/rbac.middleware';
+import { PERMISSIONS } from '@thearchitect/shared';
 import { createAuditEntry } from '../middleware/audit.middleware';
 
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('chief_architect', 'enterprise_architect'));
+router.use(requirePermission(PERMISSIONS.ADMIN_MANAGE_USERS));
 
 // List users
 router.get('/users', async (_req: Request, res: Response) => {
@@ -25,12 +26,25 @@ router.get('/users', async (_req: Request, res: Response) => {
 });
 
 // Update user role
-router.put('/users/:uid/role', requireRole('chief_architect'), async (req: Request, res: Response) => {
+router.put('/users/:uid/role', requirePermission(PERMISSIONS.ADMIN_SYSTEM_CONFIG), async (req: Request, res: Response) => {
   try {
     const { role } = req.body;
     const validRoles = ['chief_architect', 'enterprise_architect', 'solution_architect', 'data_architect', 'business_architect', 'analyst', 'viewer'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    // Prevent removing the last chief_architect
+    if (role !== 'chief_architect') {
+      const target = await User.findById(req.params.uid).select('role').lean();
+      if (target?.role === 'chief_architect') {
+        const chiefCount = await User.countDocuments({ role: 'chief_architect' });
+        if (chiefCount <= 1) {
+          return res.status(400).json({
+            error: 'Cannot demote the last Chief Architect. Promote another user first.',
+          });
+        }
+      }
     }
 
     const user = await User.findByIdAndUpdate(req.params.uid, { role }, { new: true })

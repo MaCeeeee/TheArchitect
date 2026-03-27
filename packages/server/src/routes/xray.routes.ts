@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { getXRaySummary, generateXRayNarrativePrompt } from '../services/xray.service';
 
@@ -11,6 +12,7 @@ router.use(authenticate);
 // X-Ray Summary - aggregated metrics for the HUD
 router.get(
   '/:projectId/xray/summary',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -27,6 +29,7 @@ router.get(
 // X-Ray AI Narrative - generates the 3-sentence executive summary
 router.get(
   '/:projectId/xray/narrative',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {

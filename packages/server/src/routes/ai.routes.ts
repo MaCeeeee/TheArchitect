@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { streamChat } from '../services/ai.service';
 
@@ -11,6 +12,7 @@ router.use(authenticate);
 // POST /:projectId/ai/chat — Streaming AI chat
 router.post(
   '/:projectId/ai/chat',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     // Check if any AI provider is configured

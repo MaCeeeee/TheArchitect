@@ -9,7 +9,7 @@ const PROJECT_ROLE_HIERARCHY: Record<string, number> = {
 };
 
 // System roles that get implicit full access to all projects
-const SYSTEM_ADMIN_ROLES = ['chief_architect'];
+const SYSTEM_ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
 
 /**
  * Middleware that checks if the authenticated user has access to the project.

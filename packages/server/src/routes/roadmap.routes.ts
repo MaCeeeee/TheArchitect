@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { generateRoadmap, previewCandidates } from '../services/roadmap.service';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
@@ -23,6 +24,7 @@ const CreateRoadmapSchema = z.object({
 // Generate new roadmap
 router.post(
   '/:projectId/roadmaps',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
     try {
@@ -58,6 +60,7 @@ router.post(
 // List roadmaps for project
 router.get(
   '/:projectId/roadmaps',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -90,6 +93,7 @@ router.get(
 // Preview migration candidates (TOGAF Gap Analysis)
 router.get(
   '/:projectId/roadmaps/candidates',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -106,6 +110,7 @@ router.get(
 // Get single roadmap
 router.get(
   '/:projectId/roadmaps/:roadmapId',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -138,6 +143,7 @@ router.get(
 // Delete roadmap
 router.delete(
   '/:projectId/roadmaps/:roadmapId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
     try {
@@ -154,6 +160,7 @@ router.delete(
 // Regenerate roadmap with new config
 router.post(
   '/:projectId/roadmaps/:roadmapId/regenerate',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
     try {

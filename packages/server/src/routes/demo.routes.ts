@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
+import { requirePermission } from '../middleware/rbac.middleware';
+import { PERMISSIONS } from '@thearchitect/shared';
 import { Project } from '../models/Project';
 import { runCypher } from '../config/neo4j';
 import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo-architecture';
@@ -7,7 +9,7 @@ import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo
 const router = Router();
 
 // POST /api/demo/create — idempotent demo project creation
-router.post('/create', authenticate, async (req: Request, res: Response) => {
+router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREATE), async (req: Request, res: Response) => {
   try {
     const userId = (req as unknown as { user: { id: string } }).user.id;
 

@@ -8,11 +8,8 @@ const router = Router();
 
 router.use(authenticate);
 
-// All routes require project membership
-router.use('/:projectId', requireProjectAccess('viewer'));
-
 // GET /api/workspaces/:projectId — list workspaces for a project
-router.get('/:projectId', async (req: Request, res: Response) => {
+router.get('/:projectId', requireProjectAccess('viewer'), async (req: Request, res: Response) => {
   try {
     const workspaces = await Workspace.find({ projectId: req.params.projectId }).sort({ offsetX: 1 });
     res.json({ data: workspaces });
@@ -22,7 +19,7 @@ router.get('/:projectId', async (req: Request, res: Response) => {
 });
 
 // POST /api/workspaces/:projectId — create a workspace
-router.post('/:projectId', async (req: Request, res: Response) => {
+router.post('/:projectId', requireProjectAccess('editor'), async (req: Request, res: Response) => {
   try {
     const { name, source, color, offsetX } = req.body;
     const workspace = await Workspace.create({
@@ -40,7 +37,7 @@ router.post('/:projectId', async (req: Request, res: Response) => {
 });
 
 // PUT /api/workspaces/:projectId/:workspaceId — update a workspace
-router.put('/:projectId/:workspaceId', async (req: Request, res: Response) => {
+router.put('/:projectId/:workspaceId', requireProjectAccess('editor'), async (req: Request, res: Response) => {
   try {
     const { name, color, offsetX } = req.body;
     const workspace = await Workspace.findOneAndUpdate(
@@ -58,7 +55,7 @@ router.put('/:projectId/:workspaceId', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/workspaces/:projectId/:workspaceId — delete workspace + cascade Neo4j elements
-router.delete('/:projectId/:workspaceId', async (req: Request, res: Response) => {
+router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async (req: Request, res: Response) => {
   try {
     const { projectId, workspaceId } = req.params;
     const result = await Workspace.findOneAndDelete({

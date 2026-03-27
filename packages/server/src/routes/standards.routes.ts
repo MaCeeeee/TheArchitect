@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import {
   parseAndStore,
@@ -60,6 +61,7 @@ const upload = multer({
 // Upload + parse PDF
 router.post(
   '/:projectId/standards/upload',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   upload.single('standard'),
   async (req: Request, res: Response) => {
@@ -112,6 +114,7 @@ router.post(
 // List all standards for a project
 router.get(
   '/:projectId/standards',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -129,6 +132,7 @@ router.get(
 // GET pipeline status for all standards in project
 router.get(
   '/:projectId/standards/pipeline-status',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -145,6 +149,7 @@ router.get(
 // GET portfolio overview (aggregated)
 router.get(
   '/:projectId/standards/portfolio',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -163,6 +168,7 @@ router.get(
 // GET snapshot timeline for project
 router.get(
   '/:projectId/standards/compliance-snapshots',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -179,6 +185,7 @@ router.get(
 // POST capture a new snapshot
 router.post(
   '/:projectId/standards/compliance-snapshots/capture',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -207,6 +214,7 @@ router.post(
 // GET all audit checklists for project
 router.get(
   '/:projectId/standards/audit-checklists',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -224,6 +232,7 @@ router.get(
 // POST create audit checklist (auto-generates items from standard sections)
 router.post(
   '/:projectId/standards/audit-checklists',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -274,6 +283,7 @@ router.post(
 // GET single audit checklist
 router.get(
   '/:projectId/standards/audit-checklists/:id',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -293,6 +303,7 @@ router.get(
 // PATCH update a checklist item (status, evidence, notes)
 router.patch(
   '/:projectId/standards/audit-checklists/:id/items/:itemId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -337,6 +348,7 @@ router.patch(
 // Get single standard with sections
 router.get(
   '/:projectId/standards/:standardId',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -353,6 +365,7 @@ router.get(
 // Delete standard + all mappings
 router.delete(
   '/:projectId/standards/:standardId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -370,6 +383,7 @@ router.delete(
 // Get all mappings for a standard
 router.get(
   '/:projectId/standards/:standardId/mappings',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -385,6 +399,7 @@ router.get(
 // Get aggregated matrix (Sections × Layers)
 router.get(
   '/:projectId/standards/:standardId/matrix',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -403,6 +418,7 @@ router.get(
 // Create or update a mapping
 router.post(
   '/:projectId/standards/:standardId/mappings',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -436,6 +452,7 @@ router.post(
 // Bulk create mappings (for AI suggestions)
 router.post(
   '/:projectId/standards/:standardId/mappings/bulk',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -472,6 +489,7 @@ router.post(
 // Delete a mapping
 router.delete(
   '/:projectId/standards/:standardId/mappings/:mappingId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -487,6 +505,7 @@ router.delete(
 // POST refresh mapping stats for a standard
 router.post(
   '/:projectId/standards/:standardId/refresh-stats',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -505,6 +524,7 @@ router.post(
 
 router.post(
   '/:projectId/standards/:standardId/generate-policies',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
@@ -548,6 +568,7 @@ router.post(
 
 router.post(
   '/:projectId/standards/:standardId/approve-policies',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
@@ -592,6 +613,7 @@ router.post(
 
 router.post(
   '/:projectId/standards/:standardId/ai-suggest',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
@@ -687,6 +709,7 @@ router.post(
 
 router.get(
   '/:projectId/standards/:standardId/suggest-elements',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -703,6 +726,7 @@ router.get(
 
 router.post(
   '/:projectId/standards/:standardId/accept-suggested-element',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {

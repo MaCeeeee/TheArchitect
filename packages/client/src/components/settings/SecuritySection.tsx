@@ -96,7 +96,18 @@ export default function SecuritySection() {
 
           {mfaSetupOpen && (
             <div className="space-y-3 mt-4">
-              <p className="text-sm text-[var(--text-secondary)]">Scan this QR code with your authenticator app:</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Scan this QR code with any TOTP authenticator app:
+              </p>
+              <div className="rounded-md bg-[var(--surface-base)] border border-[var(--border-subtle)] px-3 py-2 text-xs text-[var(--text-tertiary)] space-y-1">
+                <p className="font-medium text-[var(--text-secondary)]">Recommended apps (all free):</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  <li><span className="text-white">Google Authenticator</span> — iOS / Android</li>
+                  <li><span className="text-white">Microsoft Authenticator</span> — iOS / Android</li>
+                  <li><span className="text-white">Authy</span> — iOS / Android / Desktop (with cloud backup)</li>
+                </ul>
+                <p className="mt-1">Password managers like 1Password, Bitwarden, or Apple Passwords also support TOTP codes.</p>
+              </div>
               {qrCode && <img src={qrCode} alt="QR Code" className="h-48 w-48 rounded bg-white p-2" />}
               <div className="flex gap-2 max-w-xs">
                 <input

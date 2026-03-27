@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { ApprovalRequest } from '../models/ApprovalRequest';
@@ -17,6 +18,7 @@ router.use(authenticate);
 // List approval requests for a project
 router.get(
   '/:projectId/approvals',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -39,6 +41,7 @@ router.get(
 // Create approval request
 router.post(
   '/:projectId/approvals',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   audit({ action: 'create_approval', entityType: 'approval' }),
   async (req: Request, res: Response) => {
@@ -82,6 +85,7 @@ router.post(
 // Approve or reject a step
 router.put(
   '/:projectId/approvals/:approvalId/decide',
+  requireProjectAccess('reviewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_APPROVE),
   audit({ action: 'decide_approval', entityType: 'approval' }),
   async (req: Request, res: Response) => {
@@ -128,6 +132,7 @@ router.put(
 // Cancel approval request (requester only)
 router.put(
   '/:projectId/approvals/:approvalId/cancel',
+  requireProjectAccess('viewer'),
   async (req: Request, res: Response) => {
     try {
       const approvalId = String(req.params.approvalId);
@@ -155,6 +160,7 @@ router.put(
 // List policies for a project
 router.get(
   '/:projectId/policies',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -171,6 +177,7 @@ router.get(
 // Create policy
 router.post(
   '/:projectId/policies',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   audit({ action: 'create_policy', entityType: 'policy' }),
   async (req: Request, res: Response) => {
@@ -205,6 +212,7 @@ router.post(
 // Update policy
 router.put(
   '/:projectId/policies/:policyId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   audit({ action: 'update_policy', entityType: 'policy' }),
   async (req: Request, res: Response) => {
@@ -223,6 +231,7 @@ router.put(
 // Delete policy
 router.delete(
   '/:projectId/policies/:policyId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   audit({ action: 'delete_policy', entityType: 'policy' }),
   async (req: Request, res: Response) => {
@@ -242,6 +251,7 @@ router.delete(
 // Run compliance check
 router.get(
   '/:projectId/compliance',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -260,6 +270,7 @@ router.get(
 // Get project audit log
 router.get(
   '/:projectId/audit-log',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {

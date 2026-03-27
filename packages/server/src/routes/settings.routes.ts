@@ -340,8 +340,10 @@ router.get('/billing', async (req: Request, res: Response) => {
   const planMap: Record<string, string> = {
     chief_architect: 'enterprise',
     enterprise_architect: 'professional',
+    solution_architect: 'professional',
     data_architect: 'professional',
     business_architect: 'professional',
+    analyst: 'free',
     viewer: 'free',
   };
 

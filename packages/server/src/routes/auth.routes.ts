@@ -47,7 +47,10 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ email, passwordHash, name, role: 'viewer' });
+    // First user on the platform becomes chief_architect automatically
+    const userCount = await User.countDocuments();
+    const role = userCount === 0 ? 'chief_architect' : 'viewer';
+    const user = await User.create({ email, passwordHash, name, role });
 
     const accessToken = generateAccessToken(user._id.toString(), user.role);
     const refreshToken = generateRefreshToken(user._id.toString(), user.role);
@@ -476,10 +479,13 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   }
 
   // 3) New user — create without password
+  // First user on the platform becomes chief_architect automatically
+  const userCount = await User.countDocuments();
+  const role = userCount === 0 ? 'chief_architect' : 'viewer';
   user = await User.create({
     email: profile.email.toLowerCase(),
     name: profile.name,
-    role: 'viewer',
+    role,
     oauthProviders: [
       {
         provider: profile.provider,

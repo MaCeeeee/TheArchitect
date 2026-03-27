@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Search, Shield, Loader2, AlertCircle } from 'lucide-react';
 import { adminAPI } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface UserEntry {
   _id: string;
@@ -34,11 +36,15 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function UsersSection() {
+  const navigate = useNavigate();
   const [users, setUsers] = useState<UserEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [changingRole, setChangingRole] = useState<string | null>(null);
+  const currentUser = useAuthStore((s) => s.user);
+  const currentUserRole = currentUser?.role;
+  const canChangeRoles = currentUserRole === 'chief_architect';
 
   useEffect(() => {
     loadUsers();
@@ -65,13 +71,18 @@ export default function UsersSection() {
         prev.map((u) => (u._id === uid ? { ...u, role: newRole } : u))
       );
       toast.success('User role updated');
-    } catch (err) {
-      setError('Failed to update role');
-      toast.error('Failed to update user role');
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || 'Failed to update user role';
+      toast.error(msg);
     } finally {
       setChangingRole(null);
     }
   };
+
+  // Check if a user is the last chief_architect (protect from demotion)
+  const isLastChief = (user: UserEntry) =>
+    user.role === 'chief_architect' &&
+    users.filter((u) => u.role === 'chief_architect').length <= 1;
 
   const filtered = users.filter(
     (u) =>
@@ -151,26 +162,49 @@ export default function UsersSection() {
                   <span className="text-sm text-[var(--text-secondary)] truncate">{user.email}</span>
 
                   {/* Role dropdown */}
-                  <select
-                    value={user.role}
-                    onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                    disabled={changingRole === user._id}
-                    className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5 text-xs text-white outline-none focus:border-[#00ff41] transition disabled:opacity-50"
-                  >
-                    {ROLES.map((r) => (
-                      <option key={r.value} value={r.value}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
+                  {canChangeRoles ? (
+                    <div className="flex items-center gap-1.5">
+                      <select
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                        disabled={changingRole === user._id || isLastChief(user)}
+                        title={isLastChief(user) ? 'Last Chief Architect — promote another user first' : undefined}
+                        className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5 text-xs text-white outline-none focus:border-[#00ff41] transition disabled:opacity-50"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                      {isLastChief(user) && (
+                        <span className="text-[10px] text-amber-400" title="Last Chief Architect">&#9888;</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span
+                      className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1.5 text-xs"
+                      style={{ color: ROLE_COLORS[user.role] || '#9ca3af' }}
+                    >
+                      {ROLES.find((r) => r.value === user.role)?.label || user.role}
+                    </span>
+                  )}
 
                   {/* MFA */}
-                  <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => {
+                      if (user.email === currentUser?.email) {
+                        navigate('/settings/security');
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 ${user.email === currentUser?.email ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+                    title={user.email === currentUser?.email ? 'Go to Security settings' : `MFA ${user.mfaEnabled ? 'enabled' : 'disabled'}`}
+                  >
                     <Shield size={12} className={user.mfaEnabled ? 'text-emerald-400' : 'text-[var(--text-disabled)]'} />
                     <span className={`text-xs ${user.mfaEnabled ? 'text-emerald-400' : 'text-[var(--text-disabled)]'}`}>
                       {user.mfaEnabled ? 'On' : 'Off'}
                     </span>
-                  </div>
+                  </button>
                 </div>
               ))
             )}

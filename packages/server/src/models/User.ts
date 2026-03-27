@@ -13,7 +13,7 @@ export interface IUser extends Document {
   name: string;
   bio: string;
   avatarUrl: string;
-  role: 'chief_architect' | 'enterprise_architect' | 'data_architect' | 'business_architect' | 'viewer';
+  role: 'chief_architect' | 'enterprise_architect' | 'solution_architect' | 'data_architect' | 'business_architect' | 'analyst' | 'viewer';
   permissions: string[];
   mfaEnabled: boolean;
   mfaSecret?: string;

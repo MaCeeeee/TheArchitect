@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { runAdvisorScan } from '../services/advisor.service';
 
@@ -11,6 +12,7 @@ router.use(authenticate);
 // Full advisor scan — returns health score + insights
 router.get(
   '/:projectId/advisor/scan',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
@@ -27,6 +29,7 @@ router.get(
 // Health score only (lightweight)
 router.get(
   '/:projectId/advisor/health',
+  requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
