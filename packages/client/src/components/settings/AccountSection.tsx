@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useAuthStore } from '../../stores/authStore';
 import { settingsAPI } from '../../services/api';
 import ConfirmationModal from './ConfirmationModal';
-import { ROLE_PERMISSIONS, PERMISSIONS } from '@thearchitect/shared';
 
 export default function AccountSection() {
   const { changePassword, loading } = useSettingsStore();
@@ -14,19 +13,6 @@ export default function AccountSection() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const userRole = useAuthStore((s) => s.user?.role) || 'viewer';
-
-  const permissionGroups = useMemo(() => {
-    const perms = ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS] || [];
-    const allPerms = Object.values(PERMISSIONS);
-    const groups: Record<string, { label: string; has: boolean }[]> = {};
-    for (const p of allPerms) {
-      const [domain, action] = p.split(':');
-      if (!groups[domain]) groups[domain] = [];
-      groups[domain].push({ label: action.replace(/_/g, ' '), has: perms.includes(p) });
-    }
-    return groups;
-  }, [userRole]);
 
   const handleChangePassword = async () => {
     if (newPassword !== confirmPassword) {
@@ -112,37 +98,6 @@ export default function AccountSection() {
             >
               Update Password
             </button>
-          </div>
-        </div>
-
-        {/* Role & Permissions */}
-        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-white">Role &amp; Permissions</h3>
-            <span className="rounded-full bg-[#7c3aed]/20 px-3 py-1 text-xs font-medium text-[#a78bfa] capitalize">
-              {userRole.replace(/_/g, ' ')}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {Object.entries(permissionGroups).map(([domain, perms]) => (
-              <div key={domain}>
-                <p className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider mb-2">{domain}</p>
-                <ul className="space-y-1">
-                  {perms.map((p) => (
-                    <li key={p.label} className="flex items-center gap-1.5 text-xs">
-                      {p.has ? (
-                        <span className="text-green-400">&#10003;</span>
-                      ) : (
-                        <span className="text-[var(--text-tertiary)]">&#10005;</span>
-                      )}
-                      <span className={p.has ? 'text-[var(--text-secondary)]' : 'text-[var(--text-tertiary)] line-through'}>
-                        {p.label}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
           </div>
         </div>
 

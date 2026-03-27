@@ -4,6 +4,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import SettingsSidebar from './SettingsSidebar';
 import ProfileSection from './ProfileSection';
 import AccountSection from './AccountSection';
+import RolesAccessSection from './RolesAccessSection';
 import AppearanceSection from './AppearanceSection';
 import NotificationsSection from './NotificationsSection';
 import SecuritySection from './SecuritySection';
@@ -16,6 +17,7 @@ import AuditLogsSection from './AuditLogsSection';
 const SECTION_MAP: Record<string, React.ComponentType> = {
   profile: ProfileSection,
   account: AccountSection,
+  'roles-access': RolesAccessSection,
   appearance: AppearanceSection,
   notifications: NotificationsSection,
   security: SecuritySection,

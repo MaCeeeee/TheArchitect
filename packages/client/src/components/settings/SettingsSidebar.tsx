@@ -1,12 +1,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText,
+  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield,
 } from 'lucide-react';
 
 const SECTIONS = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'account', label: 'Account', icon: Lock },
+  { id: 'roles-access', label: 'Roles & Access', icon: Shield },
   { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: ShieldCheck },

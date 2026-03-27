@@ -139,6 +139,8 @@ export const projectAPI = {
     api.post(`/projects/${id}/versions`, { label, snapshot }),
   getCollaborators: (id: string) =>
     api.get(`/projects/${id}/collaborators`),
+  searchUsers: (id: string, q: string) =>
+    api.get(`/projects/${id}/collaborators/search`, { params: { q } }),
   addCollaborator: (id: string, email: string, role: string) =>
     api.post(`/projects/${id}/collaborators`, { email, role }),
   updateCollaborator: (id: string, userId: string, role: string) =>

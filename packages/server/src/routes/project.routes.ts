@@ -210,6 +210,41 @@ router.post(
 
 // ── Collaborator Management ────────────────────────────
 
+// Search users for collaborator autocomplete
+router.get(
+  '/:id/collaborators/search',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    try {
+      const q = String(req.query.q || '').trim();
+      if (q.length < 2) return res.json([]);
+
+      const { User } = await import('../models/User');
+      const regex = new RegExp(q, 'i');
+      const users = await User.find({
+        $or: [{ name: regex }, { email: regex }],
+      })
+        .select('name email avatarUrl')
+        .limit(10)
+        .lean();
+
+      // Exclude owner and existing collaborators
+      const project = await Project.findById(req.params.id).lean();
+      if (!project) return res.json([]);
+
+      const excludeIds = new Set([
+        project.ownerId.toString(),
+        ...project.collaborators.map((c) => c.userId.toString()),
+      ]);
+
+      res.json(users.filter((u) => !excludeIds.has(u._id.toString())));
+    } catch (err) {
+      console.error('Search users error:', err);
+      res.status(500).json({ error: 'Failed to search users' });
+    }
+  }
+);
+
 // List collaborators
 router.get(
   '/:id/collaborators',
@@ -217,9 +252,11 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const project = await Project.findById(req.params.id)
-        .populate('collaborators.userId', 'name email role avatarUrl');
+        .populate('collaborators.userId', 'name email role avatarUrl')
+        .populate('ownerId', 'name email role avatarUrl');
       if (!project) return res.status(404).json({ error: 'Project not found' });
 
+      const owner = project.ownerId as unknown as { _id: string; name: string; email: string; role: string; avatarUrl: string };
       const collaborators = project.collaborators.map((c) => ({
         userId: c.userId,
         role: c.role,
@@ -228,7 +265,7 @@ router.get(
 
       res.json({
         data: collaborators,
-        ownerId: project.ownerId,
+        owner: { userId: owner._id, name: owner.name, email: owner.email, role: 'owner' },
       });
     } catch (err) {
       console.error('List collaborators error:', err);
@@ -237,7 +274,7 @@ router.get(
   }
 );
 
-// Add collaborator by email
+// Add collaborator by email — if user exists: direct add, otherwise: send invitation email
 router.post(
   '/:id/collaborators',
   requirePermission(PERMISSIONS.PROJECT_MANAGE_COLLABORATORS),
@@ -248,42 +285,123 @@ router.post(
       const { email, role = 'viewer' } = req.body;
       if (!email) return res.status(400).json({ error: 'Email is required' });
 
-      const validRoles = ['editor', 'reviewer', 'viewer'];
+      const validRoles = ['owner', 'editor', 'reviewer', 'viewer'];
       if (!validRoles.includes(role)) {
-        return res.status(400).json({ error: 'Invalid project role. Must be editor, reviewer, or viewer.' });
+        return res.status(400).json({ error: 'Invalid project role.' });
       }
 
+      // Only current owner or chief_architect/enterprise_architect can transfer ownership
+      const adminRoles = ['chief_architect', 'enterprise_architect'];
+      if (role === 'owner') {
+        const isOwner = req.user!._id.toString() === (await Project.findById(req.params.id))?.ownerId.toString();
+        if (!isOwner && !adminRoles.includes(req.user!.role)) {
+          return res.status(403).json({ error: 'Only the project owner or an admin can transfer ownership' });
+        }
+      }
+
+      const normalizedEmail = email.toLowerCase().trim();
       const { User } = await import('../models/User');
-      const targetUser = await User.findOne({ email: email.toLowerCase().trim() });
-      if (!targetUser) return res.status(404).json({ error: 'User not found' });
+      const targetUser = await User.findOne({ email: normalizedEmail });
 
       const project = await Project.findById(req.params.id);
       if (!project) return res.status(404).json({ error: 'Project not found' });
 
-      // Check if already a collaborator
-      const existing = project.collaborators.find(
-        (c) => c.userId.toString() === targetUser._id.toString()
-      );
-      if (existing) {
-        return res.status(409).json({ error: 'User is already a collaborator' });
+      // If user exists → add directly (or transfer ownership)
+      if (targetUser) {
+        if (role === 'owner') {
+          // Ownership transfer: new user becomes owner, old owner becomes editor
+          const previousOwnerId = project.ownerId;
+
+          // Remove new owner from collaborators if they were one
+          project.collaborators = project.collaborators.filter(
+            (c) => c.userId.toString() !== targetUser._id.toString()
+          ) as typeof project.collaborators;
+
+          // Add previous owner as editor
+          const alreadyCollab = project.collaborators.find(
+            (c) => c.userId.toString() === previousOwnerId.toString()
+          );
+          if (!alreadyCollab) {
+            project.collaborators.push({
+              userId: previousOwnerId,
+              role: 'editor',
+              joinedAt: new Date(),
+            });
+          }
+
+          project.ownerId = targetUser._id;
+          await project.save();
+
+          return res.status(201).json({
+            type: 'transferred',
+            userId: { _id: targetUser._id, name: targetUser.name, email: targetUser.email },
+            role: 'owner',
+          });
+        }
+
+        if (project.ownerId.toString() === targetUser._id.toString()) {
+          return res.status(409).json({ error: 'User is the project owner' });
+        }
+
+        const existing = project.collaborators.find(
+          (c) => c.userId.toString() === targetUser._id.toString()
+        );
+        if (existing) {
+          return res.status(409).json({ error: 'User is already a collaborator' });
+        }
+
+        project.collaborators.push({
+          userId: targetUser._id,
+          role,
+          joinedAt: new Date(),
+        });
+        await project.save();
+
+        return res.status(201).json({
+          type: 'added',
+          userId: { _id: targetUser._id, name: targetUser.name, email: targetUser.email },
+          role,
+          joinedAt: new Date(),
+        });
       }
 
-      // Can't add the owner as collaborator
-      if (project.ownerId.toString() === targetUser._id.toString()) {
-        return res.status(409).json({ error: 'User is the project owner' });
-      }
+      // User not found → create invitation and send email
+      const crypto = await import('crypto');
+      const { Invitation } = await import('../models/Invitation');
+      const { sendProjectInvitationEmail } = await import('../services/email.service');
 
-      project.collaborators.push({
-        userId: targetUser._id,
-        role,
-        joinedAt: new Date(),
+      const existingInvite = await Invitation.findOne({
+        projectId: req.params.id,
+        invitedEmail: normalizedEmail,
+        status: 'pending',
+        expiresAt: { $gt: new Date() },
       });
-      await project.save();
+      if (existingInvite) {
+        return res.status(409).json({ error: 'An invitation is already pending for this email' });
+      }
 
-      res.status(201).json({
-        userId: { _id: targetUser._id, name: targetUser.name, email: targetUser.email },
+      const rawToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      await Invitation.create({
+        projectId: req.params.id,
+        invitedEmail: normalizedEmail,
+        inviterUserId: req.user!._id,
         role,
-        joinedAt: new Date(),
+        token: hashedToken,
+        expiresAt,
+      });
+
+      const inviterName = req.user!.name || req.user!.email;
+      await sendProjectInvitationEmail(normalizedEmail, inviterName, project.name, role, rawToken, 7);
+
+      return res.status(201).json({
+        type: 'invited',
+        email: normalizedEmail,
+        role,
+        expiresInDays: 7,
       });
     } catch (err) {
       console.error('Add collaborator error:', err);
@@ -292,7 +410,7 @@ router.post(
   }
 );
 
-// Update collaborator role
+// Update collaborator role (including ownership transfer)
 router.put(
   '/:id/collaborators/:userId',
   requirePermission(PERMISSIONS.PROJECT_MANAGE_COLLABORATORS),
@@ -301,13 +419,45 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const { role } = req.body;
-      const validRoles = ['editor', 'reviewer', 'viewer'];
+      const validRoles = ['owner', 'editor', 'reviewer', 'viewer'];
       if (!validRoles.includes(role)) {
         return res.status(400).json({ error: 'Invalid project role' });
       }
 
       const project = await Project.findById(req.params.id);
       if (!project) return res.status(404).json({ error: 'Project not found' });
+
+      // Ownership transfer
+      if (role === 'owner') {
+        const adminRoles = ['chief_architect', 'enterprise_architect'];
+        const isOwner = req.user!._id.toString() === project.ownerId.toString();
+        if (!isOwner && !adminRoles.includes(req.user!.role)) {
+          return res.status(403).json({ error: 'Only the project owner or an admin can transfer ownership' });
+        }
+
+        const previousOwnerId = project.ownerId;
+
+        // Remove target from collaborators
+        project.collaborators = project.collaborators.filter(
+          (c) => c.userId.toString() !== req.params.userId
+        ) as typeof project.collaborators;
+
+        // Previous owner becomes editor
+        const alreadyCollab = project.collaborators.find(
+          (c) => c.userId.toString() === previousOwnerId.toString()
+        );
+        if (!alreadyCollab) {
+          project.collaborators.push({
+            userId: previousOwnerId,
+            role: 'editor',
+            joinedAt: new Date(),
+          });
+        }
+
+        project.ownerId = req.params.userId as any;
+        await project.save();
+        return res.json({ message: 'Ownership transferred', role: 'owner' });
+      }
 
       const collab = project.collaborators.find(
         (c) => c.userId.toString() === req.params.userId
