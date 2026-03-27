@@ -425,4 +425,21 @@ export const demoAPI = {
   create: () => api.post('/demo/create'),
 };
 
+export const blueprintAPI = {
+  generateStreamUrl: (projectId: string) =>
+    `${API_BASE}/projects/${projectId}/blueprint/generate`,
+  import: (projectId: string, data: { elements: unknown[]; connections: unknown[]; input: unknown; workspaceName?: string }) =>
+    api.post(`/projects/${projectId}/blueprint/import`, data),
+  autofill: (projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('document', file);
+    // Content-Type must be undefined to clear the default 'application/json' header —
+    // the browser will auto-set 'multipart/form-data; boundary=...' which multer requires
+    return api.post(`/projects/${projectId}/blueprint/autofill`, formData, {
+      headers: { 'Content-Type': undefined },
+      timeout: 120_000,
+    });
+  },
+};
+
 export default api;

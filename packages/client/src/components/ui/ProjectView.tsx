@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Wand2, Boxes, ArrowRight } from 'lucide-react';
 import Scene from '../3d/Scene';
 import PropertyPanel from './PropertyPanel';
 import { useUIStore } from '../../stores/uiStore';
@@ -29,7 +29,9 @@ export default function ProjectView() {
   const { phases, currentPhase } = useJourneyStore();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dismissedEmpty, setDismissedEmpty] = useState(false);
 
+  const elements = useArchitectureStore((s) => s.elements);
   const currentPhaseInfo = phases.find((p) => p.phase === currentPhase);
 
   useEffect(() => {
@@ -93,6 +95,61 @@ export default function ProjectView() {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="text-sm text-red-400">{error}</span>
+      </div>
+    );
+  }
+
+  // Empty project — show onboarding choices
+  if (!loading && elements.length === 0 && !dismissedEmpty) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center max-w-xl px-6">
+          <div className="mx-auto w-16 h-16 rounded-2xl bg-[#7c3aed]/10 flex items-center justify-center mb-6">
+            <Boxes size={32} className="text-[#a78bfa]" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Get Started</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-8">
+            Choose how you want to build your enterprise architecture.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md mx-auto">
+            {/* Blueprint Wizard — AI-generated */}
+            <button
+              onClick={() => navigate(`/project/${projectId}/blueprint`)}
+              className="flex flex-col items-center gap-3 rounded-xl border border-[#7c3aed]/30 bg-[#7c3aed]/5 hover:bg-[#7c3aed]/10 px-5 py-6 transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[#7c3aed]/20 flex items-center justify-center">
+                <Wand2 size={20} className="text-[#a78bfa]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white mb-1">Generate with AI</p>
+                <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
+                  Describe your business and let AI create a full architecture across all layers.
+                </p>
+              </div>
+              <span className="text-[10px] font-medium text-[#a78bfa] opacity-0 group-hover:opacity-100 transition">
+                Start Wizard →
+              </span>
+            </button>
+            {/* Empty canvas — manual */}
+            <button
+              onClick={() => setDismissedEmpty(true)}
+              className="flex flex-col items-center gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)]/50 hover:bg-[var(--surface-raised)] px-5 py-6 transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-[var(--surface-base)] flex items-center justify-center">
+                <Boxes size={20} className="text-[var(--text-secondary)]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white mb-1">Start from Scratch</p>
+                <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
+                  Open an empty canvas and build your architecture manually, element by element.
+                </p>
+              </div>
+              <span className="text-[10px] font-medium text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition">
+                Open Canvas →
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

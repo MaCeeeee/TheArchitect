@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Boxes, GitFork, FileText, Shield } from 'lucide-react';
+import { X, Boxes, GitFork, FileText, Shield, Wand2 } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
@@ -59,6 +59,26 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
             <Stat label="Standards" value={pipelineStates.length} />
             <Stat label="Risks" value={riskElements.length} highlight={riskElements.length > 0} />
           </div>
+        </div>
+
+        {/* Blueprint Generator */}
+        <div className="px-5 pb-3">
+          <button
+            onClick={() => {
+              navigate(`/project/${projectId}/blueprint`);
+              onClose();
+            }}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 bg-[#7c3aed]/10 border border-[#7c3aed]/20 hover:bg-[#7c3aed]/20 transition group"
+          >
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#7c3aed]/20 text-[#a78bfa]">
+              <Wand2 size={14} />
+            </div>
+            <div className="flex-1 text-left">
+              <span className="text-xs font-medium text-[#a78bfa]">Blueprint Generator</span>
+              <p className="text-[10px] text-[var(--text-tertiary)]">Generate architecture from description</p>
+            </div>
+            <span className="text-[10px] text-[#a78bfa] opacity-0 group-hover:opacity-100 transition">→</span>
+          </button>
         </div>
 
         {/* Phase Journey */}

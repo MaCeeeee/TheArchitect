@@ -13,6 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@thearchitect/shared": "*",
+    "adm-zip": "^0.5.16",
     "axios": "^1.13.6",
     "bcrypt": "^5.1.1",
     "bullmq": "^5.30.0",
@@ -39,10 +40,12 @@
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.0",
     "uuid": "^11.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@thearchitect/shared": "*",
+    "@types/adm-zip": "^0.5.8",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

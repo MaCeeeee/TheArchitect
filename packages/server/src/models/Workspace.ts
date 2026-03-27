@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IWorkspace extends Document {
   name: string;
   projectId: mongoose.Types.ObjectId;
-  source: 'bpmn' | 'n8n' | 'manual' | 'archimate';
+  source: 'bpmn' | 'n8n' | 'manual' | 'archimate' | 'csv' | 'blueprint';
   color: string;
   offsetX: number;
   createdBy: mongoose.Types.ObjectId;
@@ -17,7 +17,7 @@ const workspaceSchema = new Schema<IWorkspace>(
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
     source: {
       type: String,
-      enum: ['bpmn', 'n8n', 'manual', 'archimate'],
+      enum: ['bpmn', 'n8n', 'manual', 'archimate', 'csv', 'blueprint'],
       default: 'manual',
     },
     color: { type: String, default: '#3b82f6' },

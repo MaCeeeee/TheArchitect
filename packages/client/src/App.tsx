@@ -11,6 +11,7 @@ import DashboardPage from './components/ui/DashboardPage';
 import ProjectView from './components/ui/ProjectView';
 import SettingsPage from './components/settings/SettingsPage';
 import CompliancePage from './components/compliance/CompliancePage';
+import BlueprintWizard from './components/blueprint/BlueprintWizard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="project/:projectId" element={<ProjectView />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="settings/:section" element={<SettingsPage />} />
+        <Route path="project/:projectId/blueprint" element={<BlueprintWizard />} />
         <Route path="project/:projectId/compliance" element={<CompliancePage />} />
         <Route path="project/:projectId/compliance/:section" element={<CompliancePage />} />
       </Route>

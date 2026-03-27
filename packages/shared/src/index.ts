@@ -11,3 +11,4 @@ export * from './types/roadmap.types';
 export * from './types/stochastic.types';
 export * from './types/compliance.types';
 export * from './types/simulation.types';
+export * from './types/blueprint.types';
