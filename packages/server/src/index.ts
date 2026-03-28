@@ -27,6 +27,7 @@ import advisorRoutes from './routes/advisor.routes';
 import roadmapRoutes from './routes/roadmap.routes';
 import demoRoutes from './routes/demo.routes';
 import blueprintRoutes from './routes/blueprint.routes';
+import remediationRoutes from './routes/remediation.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 
 dotenv.config();
@@ -72,6 +73,7 @@ async function main() {
   app.use('/api/projects', roadmapRoutes);
   app.use('/api/demo', demoRoutes);
   app.use('/api/projects', blueprintRoutes);
+  app.use('/api/projects', remediationRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

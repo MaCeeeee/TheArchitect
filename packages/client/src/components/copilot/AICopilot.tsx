@@ -3,11 +3,13 @@ import { useParams } from 'react-router-dom';
 import {
   Sparkles, Send, ClipboardCheck, AlertTriangle, BookOpen, Lightbulb,
   Loader2, RotateCcw, Trash2, AlertCircle, MessageSquare,
-  ShieldAlert,
+  ShieldAlert, Wrench,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
+import { useRemediationStore } from '../../stores/remediationStore';
 import AdvisorPanel from './AdvisorPanel';
+import RemediationPanel from './RemediationPanel';
 
 // ─── Types ───
 
@@ -17,7 +19,7 @@ interface Message {
   content: string;
 }
 
-type Tab = 'chat' | 'advisor';
+type Tab = 'chat' | 'advisor' | 'remediation';
 
 // ─── Quick Actions ───
 
@@ -132,6 +134,16 @@ export default function AICopilot() {
   const [activeTab, setActiveTab] = useState<Tab>('advisor');
   const advisorInsights = useAdvisorStore((s) => s.insights);
   const advisorBadge = advisorInsights.filter((i) => i.severity === 'critical' || i.severity === 'high').length;
+
+  // Listen for tab switch events from other components (ComplianceMatrix, InsightCard)
+  useEffect(() => {
+    const handleSetTab = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.tab) setActiveTab(detail.tab as Tab);
+    };
+    window.addEventListener('copilot:setTab', handleSetTab);
+    return () => window.removeEventListener('copilot:setTab', handleSetTab);
+  }, []);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -282,6 +294,7 @@ export default function AICopilot() {
       <div className="flex border-b border-[var(--border-subtle)]">
         {([
           { id: 'advisor' as Tab, icon: ShieldAlert, label: 'Advisor', badge: advisorBadge },
+          { id: 'remediation' as Tab, icon: Wrench, label: 'Remediate', badge: useRemediationStore.getState().proposals.filter((p) => p.status === 'validated').length },
           { id: 'chat' as Tab, icon: MessageSquare, label: 'Chat', badge: 0 },
         ]).map((tab) => (
           <button
@@ -308,6 +321,12 @@ export default function AICopilot() {
       {activeTab === 'advisor' && (
         <div className="flex-1 min-h-0 overflow-hidden">
           <AdvisorPanel />
+        </div>
+      )}
+
+      {activeTab === 'remediation' && (
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <RemediationPanel />
         </div>
       )}
 

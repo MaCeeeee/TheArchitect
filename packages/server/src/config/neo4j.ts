@@ -33,6 +33,28 @@ export async function runCypher(query: string, params: Record<string, unknown> =
 }
 
 /**
+ * Execute multiple Cypher operations atomically in a single write transaction.
+ * If any operation fails, the entire batch is rolled back.
+ */
+export async function runCypherTransaction(
+  operations: Array<{ query: string; params: Record<string, unknown> }>,
+): Promise<void> {
+  const session = driver.session();
+  const txc = session.beginTransaction();
+  try {
+    for (const op of operations) {
+      await txc.run(op.query, op.params);
+    }
+    await txc.commit();
+  } catch (err) {
+    await txc.rollback();
+    throw err;
+  } finally {
+    await session.close();
+  }
+}
+
+/**
  * Convert Neo4j Integer/DateTime properties to plain JS values.
  * Neo4j returns integers as {low, high} objects and DateTimes as
  * complex objects — this normalizes them for JSON serialization.

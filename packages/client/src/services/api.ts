@@ -442,4 +442,21 @@ export const blueprintAPI = {
   },
 };
 
+export const remediationAPI = {
+  generateStreamUrl: (projectId: string) =>
+    `${API_BASE}/projects/${projectId}/remediation/generate`,
+  getProposals: (projectId: string) =>
+    api.get(`/projects/${projectId}/remediation/proposals`),
+  getProposal: (projectId: string, proposalId: string) =>
+    api.get(`/projects/${projectId}/remediation/proposals/${proposalId}`),
+  editProposal: (projectId: string, proposalId: string, data: Record<string, unknown>) =>
+    api.patch(`/projects/${projectId}/remediation/proposals/${proposalId}`, data),
+  applyProposal: (projectId: string, proposalId: string, data?: { selectedTempIds?: string[]; workspaceId?: string }) =>
+    api.post(`/projects/${projectId}/remediation/proposals/${proposalId}/apply`, data || {}),
+  applyBatch: (projectId: string, proposalIds: string[], workspaceId?: string) =>
+    api.post(`/projects/${projectId}/remediation/apply-batch`, { proposalIds, workspaceId }),
+  rollbackProposal: (projectId: string, proposalId: string) =>
+    api.post(`/projects/${projectId}/remediation/proposals/${proposalId}/rollback`),
+};
+
 export default api;

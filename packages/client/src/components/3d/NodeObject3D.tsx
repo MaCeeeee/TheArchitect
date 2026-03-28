@@ -278,8 +278,9 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       }
       if (element.status === 'retired') return 0.25;
     }
+    if (element.metadata?.isProposal) return 0.5;
     return element.status === 'retired' ? 0.4 : 1;
-  }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta]);
+  }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta, element.metadata]);
 
   return (
     <group position={finalPosition}>

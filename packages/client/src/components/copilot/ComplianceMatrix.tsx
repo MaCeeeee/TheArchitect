@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   ArrowLeft, Plus, Trash2, Loader2, AlertCircle, CheckCircle2,
-  AlertTriangle, XCircle, Minus, Sparkles, Check, X, Edit3,
+  AlertTriangle, XCircle, Minus, Sparkles, Check, X, Edit3, Wrench,
 } from 'lucide-react';
 import { standardsAPI } from '../../services/api';
 import { architectureAPI } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { useComplianceStore } from '../../stores/complianceStore';
+import { useRemediationStore } from '../../stores/remediationStore';
 
 // ─── Types ───
 
@@ -336,6 +337,28 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoS
           <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
             × {drilldown.layer.charAt(0).toUpperCase() + drilldown.layer.slice(1)} Layer
           </p>
+          {drillMappings.some((m) => m.status === 'gap') && (
+            <button
+              onClick={() => {
+                const gapSectionIds = drillMappings
+                  .filter((m) => m.status === 'gap')
+                  .map((m) => m.sectionId);
+                if (standardId && gapSectionIds.length > 0 && projectId) {
+                  useRemediationStore.getState().generate(projectId, {
+                    source: 'compliance',
+                    standardId,
+                    gapSectionIds: [...new Set(gapSectionIds)],
+                  });
+                  // Switch to Remediation tab
+                  window.dispatchEvent(new CustomEvent('copilot:setTab', { detail: { tab: 'remediation' } }));
+                }
+              }}
+              className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium bg-[#7c3aed]/10 text-[#7c3aed] border border-[#7c3aed]/20 hover:bg-[#7c3aed]/20 transition"
+            >
+              <Wrench size={12} />
+              Remediate Gaps with AI
+            </button>
+          )}
         </div>
 
         {/* Mappings List */}

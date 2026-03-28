@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Eye, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, Zap, Wrench } from 'lucide-react';
 import type { AdvisorInsight, InsightSeverity } from '@thearchitect/shared';
 import { executeAction } from '../../design-system/ActionRouter';
 import type { ActionTarget } from '../../design-system/ActionRouter';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useRemediationStore } from '../../stores/remediationStore';
 
 const SEVERITY_STYLES: Record<InsightSeverity, { dot: string; bg: string; border: string }> = {
   critical: { dot: 'bg-red-500', bg: 'bg-red-500/5', border: 'border-red-500/20' },
@@ -115,6 +116,23 @@ export default function InsightCard({ insight, onNavigate }: InsightCardProps) {
               </button>
             );
           })()}
+
+          {/* AI Remediation Button */}
+          {['missing_compliance_element', 'orphan_elements', 'missing_connection', 'maturity_gap', 'single_point_of_failure'].includes(insight.category) && projectId && (
+            <button
+              onClick={() => {
+                useRemediationStore.getState().generate(projectId!, {
+                  source: 'advisor',
+                  insightIds: [insight.id],
+                });
+                window.dispatchEvent(new CustomEvent('copilot:setTab', { detail: { tab: 'remediation' } }));
+              }}
+              className="flex items-center gap-1 text-[9px] text-[#7c3aed] hover:text-[#9061f9] transition mt-1"
+            >
+              <Wrench size={9} />
+              Fix with AI
+            </button>
+          )}
         </div>
       )}
     </div>
