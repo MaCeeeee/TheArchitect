@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { X, Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Layers, GitMerge, AlertTriangle } from 'lucide-react';
@@ -35,23 +35,39 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
   const getNextOffsetX = useWorkspaceStore((s) => s.getNextOffsetX);
   const getNextColor = useWorkspaceStore((s) => s.getNextColor);
 
+  // Reset all state when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setFileMode('combined');
+      setFile(null);
+      setConnectionsFile(null);
+      setPreview(null);
+      setError(null);
+      setImportMode('new_workspace');
+      setMergeTargetId('');
+      setWorkspaceName('');
+    }
+  }, [isOpen]);
+
   const parseFiles = useCallback(async (elemFile: File, connFile?: File) => {
     setError(null);
     setPreview(null);
     try {
       const elemText = await elemFile.text();
+      // Pass existing project elements so cross-workspace connections can resolve
+      const existing = elements.map((el) => ({ id: el.id, name: el.name }));
       let result: CSVParseResult;
       if (connFile) {
         const connText = await connFile.text();
-        result = parseCSVSeparate(elemText, connText);
+        result = parseCSVSeparate(elemText, connText, existing);
       } else {
-        result = parseCSV(elemText);
+        result = parseCSV(elemText, existing);
       }
       setPreview(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to parse CSV');
     }
-  }, []);
+  }, [elements]);
 
   const handleFileChange = useCallback(async (selectedFile: File) => {
     setFile(selectedFile);

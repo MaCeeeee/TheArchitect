@@ -113,7 +113,7 @@ export interface RoadmapListItem {
 }
 
 // ─── TOGAF Gap Analysis ───
-export type GapCategory = 'upgrade' | 'modernize' | 'retire' | 'retain';
+export type GapCategory = 'upgrade' | 'modernize' | 'retire' | 'retain' | 'new';
 
 export type ConfidenceLevel = 'measured' | 'estimated' | 'heuristic';
 

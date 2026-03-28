@@ -102,7 +102,7 @@ export interface CSVParseResult {
  * **Connections CSV header:**
  * `sourceName,targetName,type,label`
  */
-export function parseCSV(text: string): CSVParseResult {
+export function parseCSV(text: string, existingElements?: { id: string; name: string }[]): CSVParseResult {
   const warnings: string[] = [];
   const separatorIdx = text.indexOf('---CONNECTIONS---');
   const elementsText = separatorIdx >= 0 ? text.slice(0, separatorIdx) : text;
@@ -130,6 +130,13 @@ export function parseCSV(text: string): CSVParseResult {
   const elements: ArchitectureElement[] = [];
   const nameToId = new Map<string, string>();
   const layerCounts: Record<string, number> = {};
+
+  // Pre-populate with existing project elements so cross-workspace connections resolve
+  if (existingElements) {
+    for (const el of existingElements) {
+      nameToId.set(el.name.trim().toLowerCase(), el.id);
+    }
+  }
 
   for (let i = 1; i < elemRows.length; i++) {
     const row = elemRows[i];
@@ -220,7 +227,7 @@ export function parseCSV(text: string): CSVParseResult {
 /**
  * Parse two separate CSV strings: one for elements, one for connections.
  */
-export function parseCSVSeparate(elementsCSV: string, connectionsCSV: string): CSVParseResult {
+export function parseCSVSeparate(elementsCSV: string, connectionsCSV: string, existingElements?: { id: string; name: string }[]): CSVParseResult {
   const combined = elementsCSV.trim() + '\n---CONNECTIONS---\n' + connectionsCSV.trim();
-  return parseCSV(combined);
+  return parseCSV(combined, existingElements);
 }

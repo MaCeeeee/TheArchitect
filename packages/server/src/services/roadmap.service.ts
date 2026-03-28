@@ -317,6 +317,11 @@ function identifyCandidates(
 
     // Auto-detection when no explicit targets
     if (Object.keys(targetStates).length === 0) {
+      // Target-status elements represent planned/new architecture that needs implementation
+      if (node.status === 'target') {
+        candidates.push({ ...node, targetStatus: 'current' });
+        continue;
+      }
       // Transitional elements → should become target
       if (node.status === 'transitional') {
         candidates.push({ ...node, targetStatus: 'target' });
@@ -341,6 +346,9 @@ function identifyCandidates(
 // ─── TOGAF Gap Classification ───
 
 function classifyGap(node: GraphNode): { gapCategory: GapCategory; suggestedTarget: ElementStatus; autoSelected: boolean } {
+  if (node.status === 'target') {
+    return { gapCategory: 'new', suggestedTarget: 'current', autoSelected: true };
+  }
   if (node.status === 'transitional') {
     return { gapCategory: 'upgrade', suggestedTarget: 'target', autoSelected: true };
   }
@@ -429,7 +437,6 @@ export async function previewCandidates(projectId: string): Promise<CandidatesPr
   ]);
 
   const candidates: MigrationCandidate[] = graphNodes
-    .filter((node) => node.status !== 'target')
     .map((node) => {
       const { gapCategory, suggestedTarget, autoSelected } = classifyGap(node);
       const connCount = connectionCounts.get(node.id) || 0;
@@ -621,6 +628,12 @@ function sequenceWaves(
     sortByStrategy(layer, strategy);
   }
 
+  // Split oversized layers by architecture layer to improve distribution
+  // (elements with no dependency edges all land in one Kahn layer)
+  if (allLayers.length < maxWaves) {
+    allLayers = splitByArchitectureLayer(allLayers, maxWaves);
+  }
+
   // Fit to maxWaves
   allLayers = fitToWaveCount(allLayers, maxWaves);
 
@@ -715,6 +728,37 @@ function sortByStrategy(layer: Array<GraphNode & { targetStatus: string }>, stra
       layer.sort((a, b) => riskScore(b) - riskScore(a)); // highest ROI first
       break;
   }
+}
+
+/** Split oversized Kahn layers by architecture layer for better wave distribution */
+function splitByArchitectureLayer(
+  layers: Array<Array<GraphNode & { targetStatus: string }>>,
+  maxWaves: number,
+): Array<Array<GraphNode & { targetStatus: string }>> {
+  const LAYER_ORDER = ['motivation', 'strategy', 'business', 'information', 'application', 'technology', 'physical', 'implementation_migration'];
+  const result: Array<Array<GraphNode & { targetStatus: string }>> = [];
+
+  for (const layer of layers) {
+    if (layer.length <= 8 || result.length >= maxWaves) {
+      result.push(layer);
+      continue;
+    }
+    // Group elements by architecture layer
+    const byArch = new Map<string, Array<GraphNode & { targetStatus: string }>>();
+    for (const node of layer) {
+      const key = node.layer || 'application';
+      if (!byArch.has(key)) byArch.set(key, []);
+      byArch.get(key)!.push(node);
+    }
+    // Sort groups by TOGAF layer order (foundation layers first)
+    const sorted = [...byArch.entries()].sort(
+      (a, b) => LAYER_ORDER.indexOf(a[0]) - LAYER_ORDER.indexOf(b[0]),
+    );
+    for (const [, group] of sorted) {
+      result.push(group);
+    }
+  }
+  return result;
 }
 
 function fitToWaveCount<T>(layers: T[][], maxWaves: number): T[][] {

@@ -1,0 +1,152 @@
+name,type,layer,togafDomain,description,status,riskLevel,maturityLevel
+Enterprise Architecture Management,business_capability,strategy,strategy,"Core capability: 3D visualization platform for modeling enterprise architecture across TOGAF 10 domains",current,low,5
+TOGAF 10 Compliance Framework,business_capability,strategy,strategy,"Capability: architecture governance and standards compliance with ADM phase tracking",current,low,4
+Transformation Roadmapping,business_capability,strategy,strategy,"Capability: wave-based migration planning with plateau snapshots and cross-dependency computation",current,low,4
+AI-Powered Advisory,business_capability,strategy,strategy,"Capability: multi-detector pattern recognition (risk, gaps, cascade risk, drift) with LLM integration",current,medium,4
+Stochastic Risk Analysis,business_capability,strategy,strategy,"Capability: Kolmogorov-axiom-based probabilistic risk modeling with K-S drift detection",current,medium,4
+Multi-Agent Simulation,business_capability,strategy,strategy,"Capability: MiroFish swarm intelligence with 5 personas for stakeholder scenario analysis",current,medium,3
+Compliance Management,business_capability,strategy,strategy,"Capability: standards mapping (ISO, NIST) with 7-stage PDF parsing and AI-driven policy drafting",current,low,4
+Real-time Collaboration,business_capability,strategy,strategy,"Capability: team chat, user presence, and concurrent architecture editing via WebSocket",current,low,3
+Architecture Design to Execution,value_stream,strategy,strategy,"Value stream: from current-state capture through gap analysis and risk assessment to target-state realization",current,low,4
+Stakeholder Simulation to Recommendations,value_stream,strategy,strategy,"Value stream: stakeholder input through multi-agent simulation to emergence detection and executive recommendations",current,medium,3
+Enterprise Architect,business_actor,business,business,"Primary user: creates and manages architecture models across all TOGAF domains",current,low,5
+Solution Architect,business_actor,business,business,"Designs application-level solutions within the enterprise architecture",current,low,4
+CTO / CIO,business_actor,business,business,"Executive sponsor: strategic technology decisions and architecture governance",current,low,4
+Compliance Officer,business_actor,business,business,"Ensures regulatory and policy compliance across the architecture landscape",current,low,3
+Project Owner,business_role,business,business,"Role: full control over project elements, settings, team membership, and approvals",current,low,5
+Reviewer,business_role,business,business,"Role: read access plus analytics, simulations, and compliance review capabilities",current,low,4
+Viewer,business_role,business,business,"Role: read-only project access for stakeholder visibility",current,low,4
+Authentication & Authorization,process,business,business,"Process: user registration, login, OAuth (Google/GitHub/Microsoft), MFA setup, JWT token refresh, session management",current,low,5
+Project Lifecycle Management,process,business,business,"Process: project creation, collaboration, version control, element CRUD, dependency tracking",current,low,5
+Compliance Pipeline Workflow,process,business,business,"Process: standard upload, PDF parsing, requirement extraction, AI policy drafting, review, audit checklist creation",current,low,4
+Governance & Approval Workflow,process,business,business,"Process: approval requests, policy validation, compliance checks, audit logging with IP and user-agent",current,low,4
+Transformation Roadmap Generation,process,business,business,"Process: architecture snapshot capture, wave generation, element state transitions, plateau stability calculation",current,low,4
+Simulation & Analysis Workflow,process,business,business,"Process: Monte Carlo simulation (Beta-PERT), MiroFish multi-agent swarm, impact analysis, risk propagation",current,medium,4
+Architecture Modeling Service,business_service,business,business,"Service: 3D element placement, connection management, layer visualization, import/export workflows",current,low,5
+Risk Assessment Service,business_service,business,business,"Service: multi-detector risk analysis, cascade risk propagation, stochastic probability computation",current,medium,4
+Architecture Changed,business_event,business,business,"Event: triggered when architecture elements or connections are created, updated, or deleted",current,low,4
+Adopt AI-First Architecture,goal,strategy,strategy,"Strategic goal: position TheArchitect as the first EAM platform with autonomous AI agent integration",target,medium,2
+Auth API,application_component,application,application,"Express route module: JWT tokens, OAuth flows (Google/GitHub/Microsoft), MFA, session management",current,low,5
+Project API,application_component,application,application,"Express route module: project CRUD, collaborators, versions, statistics",current,low,5
+Architecture API,application_component,application,application,"Express route module: element/connection management, BPMN/n8n/CSV/ArchiMate imports, Neo4j graph operations",current,low,5
+Governance API,application_component,application,application,"Express route module: approval workflows, policy management, compliance checks, audit trail",current,low,4
+Compliance Pipeline API,application_component,application,application,"Express route module: standards upload, PDF parsing, requirement mapping, policy drafts, snapshots, checklists",current,low,4
+Analytics API,application_component,application,application,"Express route module: impact analysis, risk assessment, cost optimization, Monte Carlo simulation",current,low,4
+Simulation API,application_component,application,application,"Express route module: MiroFish engine orchestration, persona management, SSE streaming, run comparison",current,medium,3
+Roadmap API,application_component,application,application,"Express route module: transformation roadmap generation, plateau snapshots, wave management",current,low,4
+Standards API,application_component,application,application,"Express route module: PDF upload, requirement extraction, compliance matrix views",current,low,4
+Advisor API,application_component,application,application,"Express route module: 11+ pattern detectors (risk, gaps, cascade, drift), LLM-powered insights",current,medium,4
+Report API,application_component,application,application,"Express route module: PDF/PPTX generation for executive, simulation, and inventory reports",current,low,3
+Marketplace API,application_component,application,application,"Express route module: template search, deployment, ratings, community sharing",current,low,3
+AI Service,application_service,application,application,"Backend service: LLM integration (OpenAI + Anthropic) with fallback, prompt engineering, context building",current,medium,4
+Stochastic Service,application_service,application,application,"Backend service: Kolmogorov axioms, K-S test, Bayes cascade risk, Beta-PERT distribution (48/48 tests)",current,low,5
+MiroFish Engine,application_service,application,application,"Backend service: round orchestration, 5-persona LLM streaming, action validation, emergence tracking",current,medium,3
+Email Service,application_service,application,application,"Backend service: SMTP (Resend) notifications for password reset and project invitations",current,low,4
+OAuth Service,application_service,application,application,"Backend service: Google, GitHub, Microsoft OAuth provider handling with redirect flow",current,low,4
+3D Scene Renderer,application_component,application,application,"React Three Fiber component: 3D architecture visualization with layer planes, camera controls, plateau view",current,low,5
+Architecture Store,application_component,application,application,"Zustand store: elements, connections, layer visibility, selection state management",current,low,5
+Roadmap Store,application_component,application,application,"Zustand store: roadmap state, plateaus, snapshots, cross-dependencies, wave computation",current,low,4
+Simulation Store,application_component,application,application,"Zustand store: active simulation, personas, rounds, emergence tracking state",current,low,3
+Compliance Store,application_component,application,application,"Zustand store: standards, mappings, pipeline state, snapshots, audit checklists",current,low,4
+React SPA,application_component,application,application,"React 18 + TypeScript single-page application with 110+ components across 13 domain modules",current,low,5
+Express API Server,application_component,application,application,"Express.js + TypeScript backend with 18 route modules, Passport.js auth, Socket.IO realtime",current,low,5
+Project Data Model,data_object,application,data,"MongoDB schema: projects with name, description, ownerId, togafPhase, tags, collaborators",current,low,5
+User Data Model,data_object,application,data,"MongoDB schema: users with email, password (bcrypt), role, preferences, OAuth providers, MFA settings",current,low,5
+Architecture Element Graph,data_object,application,data,"Neo4j graph: ArchitectureElement nodes with type, layer, togafDomain, position3D, metadata, risk, maturity",current,low,5
+Connection Graph,data_object,application,data,"Neo4j graph: relationships (11 ArchiMate standard + 7 legacy types) between architecture elements",current,low,5
+Compliance Standard Data,data_object,application,data,"MongoDB schema: uploaded standards with parsed requirements, mappings to elements, policy drafts",current,low,4
+MongoDB Cluster,node,technology,technology,"Document database: projects, users, standards, policies, approvals, simulation runs, templates, audit logs",current,low,5
+Neo4j 5 Graph Database,node,technology,technology,"Graph database: architecture elements, dependencies, connections across layers with Cypher queries",current,low,5
+Redis Cache,node,technology,technology,"In-memory store: session management (session:{userId}:{sessionId}), Socket.IO pub/sub, rate limiting",current,low,5
+MinIO Object Storage,node,technology,technology,"S3-compatible file storage: PDF standards, imported files, report artifacts (bucket: thearchitect-files)",current,low,4
+Caddy Web Server,system_software,technology,technology,"Reverse proxy with automatic TLS certificate renewal, HTTP/2, serving thearchitect.site",current,low,5
+Docker Runtime,system_software,technology,technology,"Multi-stage Docker build with docker-compose orchestration for all services",current,low,5
+Hostinger KVM 2 VPS,device,technology,technology,"Ubuntu 24.04 VPS (76.13.150.49) hosting all Docker containers, 4 vCPU, 8GB RAM",current,low,4
+OpenAI / Anthropic LLM,technology_service,technology,technology,"External AI service: GPT-4o and Claude for policy drafting, advisory insights, MiroFish persona responses",current,medium,4
+Resend SMTP,technology_service,technology,technology,"Email delivery service: password reset and project invitation emails via smtp.resend.com",current,low,4
+Socket.IO WebSocket,communication_network,technology,technology,"Real-time bidirectional communication: team chat, user presence, cursor overlay, live updates",current,low,4
+TOGAF 10 Compliance Features,work_package,implementation_migration,implementation,"Completed: ADM phase navigator, architecture layer views, viewpoint selector, compliance dashboard",current,low,5
+OAuth & Demo Project,work_package,implementation_migration,implementation,"Completed: Google/GitHub OAuth redirect flow, one-click demo project with 16 elements and 22 connections",current,low,5
+ArchiMate 3.2 Compliance,work_package,implementation_migration,implementation,"Completed: technology_service type, strategy domain fix, standard whitelists, legacy type mapping",current,low,5
+Transformation Roadmap Generator,work_package,implementation_migration,implementation,"Completed: wave-based migration planning, 90/90 tests passing, deployed to production",current,low,4
+Blueprint Generator,work_package,implementation_migration,implementation,"Completed: AI-powered architecture generation from questionnaire with document auto-fill, deployed",current,low,4
+MiroFish Phase 2,work_package,implementation_migration,implementation,"Planned: recurrent simulations, feedback loops, enhanced emergence detection",target,medium,1
+Internationalization (i18n),work_package,implementation_migration,implementation,"Planned: multi-language UI support for enterprise customers",target,low,1
+Current Platform State,plateau,implementation_migration,implementation,"As-Is: 18 completed feature modules, 7 roles, 4 databases, production deployment on Hostinger VPS",current,low,5
+Target Platform State,plateau,implementation_migration,implementation,"Target: NemoClaw agents, MiroFish Phase 2, i18n, GitHub Actions CI/CD, advanced ML analytics",target,medium,1
+---CONNECTIONS---
+sourceName,targetName,type,label
+Enterprise Architecture Management,Architecture Design to Execution,realization,capability realizes value stream
+TOGAF 10 Compliance Framework,Governance & Approval Workflow,realization,capability realizes process
+Transformation Roadmapping,Transformation Roadmap Generation,realization,capability realizes process
+AI-Powered Advisory,Advisor API,realization,capability realizes component
+Stochastic Risk Analysis,Stochastic Service,realization,capability realizes service
+Multi-Agent Simulation,MiroFish Engine,realization,capability realizes service
+Compliance Management,Compliance Pipeline Workflow,realization,capability realizes process
+Real-time Collaboration,Socket.IO WebSocket,realization,capability realizes technology
+Architecture Design to Execution,Architecture Modeling Service,serving,value stream served by
+Stakeholder Simulation to Recommendations,Simulation & Analysis Workflow,serving,value stream served by
+Enterprise Architect,Project Owner,assignment,actor fulfills role
+Enterprise Architect,Architecture Modeling Service,serving,actor uses service
+Solution Architect,Architecture Modeling Service,serving,actor uses service
+CTO / CIO,Risk Assessment Service,serving,actor uses service
+Compliance Officer,Compliance Pipeline Workflow,assignment,actor performs process
+Project Owner,Project Lifecycle Management,assignment,role performs process
+Reviewer,Simulation & Analysis Workflow,assignment,role performs process
+Authentication & Authorization,Auth API,realization,process realized by
+Project Lifecycle Management,Project API,realization,process realized by
+Compliance Pipeline Workflow,Compliance Pipeline API,realization,process realized by
+Governance & Approval Workflow,Governance API,realization,process realized by
+Transformation Roadmap Generation,Roadmap API,realization,process realized by
+Simulation & Analysis Workflow,Simulation API,realization,process realized by
+Architecture Modeling Service,Architecture API,serving,service served by
+Risk Assessment Service,Analytics API,serving,service served by
+Auth API,Express API Server,composition,part of backend
+Project API,Express API Server,composition,part of backend
+Architecture API,Express API Server,composition,part of backend
+Governance API,Express API Server,composition,part of backend
+Compliance Pipeline API,Express API Server,composition,part of backend
+Analytics API,Express API Server,composition,part of backend
+Simulation API,Express API Server,composition,part of backend
+Roadmap API,Express API Server,composition,part of backend
+Standards API,Express API Server,composition,part of backend
+Advisor API,Express API Server,composition,part of backend
+Report API,Express API Server,composition,part of backend
+Marketplace API,Express API Server,composition,part of backend
+AI Service,OpenAI / Anthropic LLM,serving,uses external LLM
+Stochastic Service,Analytics API,serving,called via
+MiroFish Engine,Simulation API,serving,called via
+Email Service,Resend SMTP,serving,uses SMTP service
+OAuth Service,Auth API,serving,provides OAuth flows
+3D Scene Renderer,React SPA,composition,part of frontend
+Architecture Store,React SPA,composition,part of frontend
+Roadmap Store,React SPA,composition,part of frontend
+Simulation Store,React SPA,composition,part of frontend
+Compliance Store,React SPA,composition,part of frontend
+React SPA,Express API Server,serving,calls backend API
+Express API Server,MongoDB Cluster,serving,persists data
+Express API Server,Neo4j 5 Graph Database,serving,queries graph
+Express API Server,Redis Cache,serving,manages sessions
+Express API Server,MinIO Object Storage,serving,stores files
+Caddy Web Server,Express API Server,serving,reverse proxies to
+Caddy Web Server,React SPA,serving,serves static assets
+Docker Runtime,MongoDB Cluster,composition,hosts
+Docker Runtime,Neo4j 5 Graph Database,composition,hosts
+Docker Runtime,Redis Cache,composition,hosts
+Docker Runtime,MinIO Object Storage,composition,hosts
+Docker Runtime,Express API Server,composition,hosts
+Docker Runtime,Caddy Web Server,composition,hosts
+Hostinger KVM 2 VPS,Docker Runtime,composition,runs on
+Project Data Model,MongoDB Cluster,serving,stored in
+User Data Model,MongoDB Cluster,serving,stored in
+Compliance Standard Data,MongoDB Cluster,serving,stored in
+Architecture Element Graph,Neo4j 5 Graph Database,serving,stored in
+Connection Graph,Neo4j 5 Graph Database,serving,stored in
+TOGAF 10 Compliance Features,Current Platform State,association,delivered in
+OAuth & Demo Project,Current Platform State,association,delivered in
+ArchiMate 3.2 Compliance,Current Platform State,association,delivered in
+Transformation Roadmap Generator,Current Platform State,association,delivered in
+Blueprint Generator,Current Platform State,association,delivered in
+MiroFish Phase 2,Target Platform State,association,planned for
+Internationalization (i18n),Target Platform State,association,planned for
+Current Platform State,Target Platform State,triggering,transitions to

@@ -18,6 +18,7 @@ const RISK_COLOR: Record<string, string> = {
 };
 
 const GAP_LABELS: Record<GapCategory, { label: string; color: string }> = {
+  new: { label: 'New', color: '#3b82f6' },
   upgrade: { label: 'Upgrade', color: '#22c55e' },
   modernize: { label: 'Modernize', color: '#f59e0b' },
   retire: { label: 'Retire', color: '#ef4444' },
@@ -30,7 +31,7 @@ const CONFIDENCE_CONFIG: Record<ConfidenceLevel, { label: string; color: string;
   heuristic: { label: 'Heuristic', color: '#ef4444', icon: '○' },
 };
 
-const TARGET_OPTIONS: ElementStatus[] = ['target', 'transitional', 'retired'];
+const TARGET_OPTIONS: ElementStatus[] = ['current', 'target', 'transitional', 'retired'];
 
 export default function MigrationCandidates() {
   const {
@@ -60,14 +61,15 @@ export default function MigrationCandidates() {
 
   // Summary stats
   const summary = useMemo(() => {
-    let upgrade = 0, modernize = 0, retire = 0;
+    let newCount = 0, upgrade = 0, modernize = 0, retire = 0;
     for (const c of candidates) {
       if (!selectedCandidates.has(c.elementId)) continue;
-      if (c.gapCategory === 'upgrade') upgrade++;
+      if (c.gapCategory === 'new') newCount++;
+      else if (c.gapCategory === 'upgrade') upgrade++;
       else if (c.gapCategory === 'modernize') modernize++;
       else if (c.gapCategory === 'retire') retire++;
     }
-    return { total: selectedCandidates.size, upgrade, modernize, retire };
+    return { total: selectedCandidates.size, new: newCount, upgrade, modernize, retire };
   }, [candidates, selectedCandidates]);
 
   const toggleDomain = (domain: string) => {
@@ -234,6 +236,7 @@ export default function MigrationCandidates() {
           <div className="px-2.5 py-2 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-2">
             <div>
               <span className="text-[#00ff41] font-mono">{summary.total}</span> selected
+              {summary.new > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.new.color }}>{summary.new}× New</span></span>}
               {summary.upgrade > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.upgrade.color }}>{summary.upgrade}× Upgrade</span></span>}
               {summary.modernize > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.modernize.color }}>{summary.modernize}× Modernize</span></span>}
               {summary.retire > 0 && <span className="ml-1">· <span style={{ color: GAP_LABELS.retire.color }}>{summary.retire}× Retire</span></span>}

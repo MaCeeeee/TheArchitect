@@ -1,0 +1,244 @@
+name,type,layer,togafDomain,description,status,riskLevel,maturityLevel
+Enterprise Architect (Agent User),stakeholder,motivation,motivation,Primary user who reviews agent proposals and manages architecture truth,current,low,4
+CIO / CTO (Agent Sponsor),stakeholder,motivation,motivation,Executive sponsor who needs audit-proof provenance and governance over AI agents,current,low,3
+Security Officer (Agent Governance),stakeholder,motivation,motivation,Ensures agents operate within RBAC boundaries and no unauthorized graph writes occur,current,low,3
+Agent Developer,stakeholder,motivation,motivation,Developer who builds and configures MCP-compatible discovery agents for TheArchitect,target,medium,1
+CMDB Data Gap,driver,motivation,motivation,Enterprise architects spend 60-80% of time on manual data collection instead of analysis,current,high,4
+Manual Maintenance Cost,driver,motivation,motivation,Quarterly review cycles cause architecture models to be outdated within weeks of creation,current,high,4
+Agent Proliferation Risk,driver,motivation,motivation,Uncontrolled AI agents accessing enterprise systems create shadow-agent governance gaps,current,high,2
+Agentic AI Market Momentum,driver,motivation,motivation,OpenClaw and NemoClaw ecosystems growing rapidly - first-mover advantage window is 12-18 months,target,medium,2
+Current Manual Process,assessment,motivation,motivation,Existing data maintenance is interview-based and Excel-driven with quarterly update cycles,current,high,4
+Agent Security Landscape,assessment,motivation,motivation,OpenClaw agents are highly permissive by default - enterprise governance requires deny-by-default sandboxing,current,high,2
+No Competitor Offers Agent-EAM,assessment,motivation,motivation,"LeanIX, Ardoq, Mega HOPEX have no autonomous agent integration for architecture graph maintenance",current,low,3
+80% Maintenance Reduction,goal,motivation,motivation,Reduce manual architecture data collection effort by 80% through autonomous reader agents,target,medium,2
+Continuous Graph Freshness,goal,motivation,motivation,Architecture graph updated continuously instead of quarterly - single source of truth guaranteed,target,medium,2
+Full Provenance Tracking,goal,motivation,motivation,Every element traceable to its data source with confidence score and verification timestamp,target,low,2
+Agent Governance Compliance,goal,motivation,motivation,"All agent activities auditable, RBAC-enforced, and approvable through human-in-the-loop workflow",target,medium,2
+Real-time Architecture Truth,outcome,motivation,motivation,Architecture graph reflects actual IT landscape state within hours instead of months,target,medium,2
+Audit-ready Data Provenance,outcome,motivation,motivation,Regulators and auditors can verify source and confidence of every architecture element,target,low,2
+Proactive Agent Anomaly Detection,outcome,motivation,motivation,Advisor detects agent batch anomalies and scope violations before they corrupt the graph,target,medium,2
+Investor-demonstrable Auto-Discovery,outcome,motivation,motivation,60-second demo showing autonomous graph population for Pre-Seed pitch,target,low,1
+Architecture Wahrheit,value,motivation,motivation,The graph becomes the single source of truth because agents keep it perpetually current,target,low,2
+Governance ohne Overhead,value,motivation,motivation,Human-in-the-loop approval with auto-approve for high-confidence items - control without bottleneck,target,medium,2
+REQ-MCP-Compatibility,requirement,motivation,motivation,Agent connector must implement Model Context Protocol for OpenClaw/NemoClaw compatibility,target,medium,2
+REQ-RBAC-Agent-Tokens,requirement,motivation,motivation,"Agent authentication via JWT tokens with granular permissions: agent:read, agent:suggest, agent:write",target,medium,2
+REQ-Fuzzy-Match,requirement,motivation,motivation,Reconciliation must match elements by name similarity (Jaro-Winkler >= 0.85) plus type and layer,target,medium,2
+REQ-Schema-Validation,requirement,motivation,motivation,All agent-submitted data must pass Zod schema validation and injection-pattern detection,target,high,2
+REQ-Human-Approval,requirement,motivation,motivation,No agent-proposed change reaches the graph without human approval or auto-approve threshold >= 0.9,target,medium,2
+REQ-Provenance-Fields,requirement,motivation,motivation,"Every element must track lastUpdatedBy, lastUpdatedSource, confidenceScore, and lastVerifiedAt",target,low,2
+REQ-Audit-Trail,requirement,motivation,motivation,Every agent discovery call and approval action must be logged in the existing audit system,target,low,3
+REQ-Auto-Approve-No-Delete,requirement,motivation,motivation,Auto-approve must never be enabled for delete operations or status changes to retired,target,high,2
+CONS-No-Autonomous-Write,constraint,motivation,motivation,Phase 1 agents are strictly read-suggest - no direct graph writes without approval workflow,target,low,2
+CONS-Existing-Stack,constraint,motivation,motivation,"Implementation must use existing Neo4j, MongoDB, Express, React stack - no new infrastructure",target,low,4
+CONS-Solo-Developer,constraint,motivation,motivation,6-week implementation window with single developer - scope must be ruthlessly prioritized,target,medium,3
+Reader-Before-Actor,principle,motivation,motivation,Reader agents must build and validate the graph before any actor agent is allowed to execute changes,target,low,2
+Graph-as-Agent-Memory,principle,motivation,motivation,The Neo4j graph serves as the single contextual memory for all agents - no external knowledge bases,target,low,2
+Agent Discovery Capability,business_capability,strategy,business,Capability to receive and process architecture element proposals from external AI agents,target,medium,2
+Graph Reconciliation Capability,business_capability,strategy,business,Capability to diff agent proposals against existing graph and produce merge suggestions,target,medium,2
+Approval Governance Capability,business_capability,strategy,business,"Capability to review, approve, reject, or edit agent proposals before graph application",target,medium,2
+Agent Telemetry Capability,business_capability,strategy,business,"Capability to monitor agent activity, approval rates, confidence scores, and graph freshness",target,low,1
+Source Provenance Capability,business_capability,strategy,business,"Capability to track and display the origin, confidence, and verification state of every element",target,low,2
+Implement MCP Agent Connector,course_of_action,strategy,business,Build abstraction layer with MCP as first implementation for agent-to-graph communication,target,medium,2
+Build Reconciliation Engine,course_of_action,strategy,business,Develop fuzzy-match and schema-validation pipeline that produces reviewable proposals,target,medium,2
+Add Approval Workflow,course_of_action,strategy,business,Create UI panel and API for human review of agent proposals with batch operations,target,medium,2
+Extend Advisor with Agent Detectors,course_of_action,strategy,business,Add detectors #12 (stale elements) and #13 (agent anomalies) to existing advisor engine,target,low,2
+Build Demo Agent for Pitch,course_of_action,strategy,business,Create self-architecture discovery agent that demonstrates the full flow in 60 seconds,target,low,1
+Agent-to-Graph Value Stream,value_stream,strategy,business,End-to-end flow from agent discovery through reconciliation and approval to graph update,target,medium,2
+MCP SDK Resource,resource,strategy,business,@modelcontextprotocol/sdk npm package for MCP server implementation,target,low,2
+LLM API Budget (Agent),resource,strategy,business,Anthropic/OpenAI API budget for demo agent LLM calls and description enrichment,target,medium,2
+Agent Operator (Role),business_role,business,business,"Role: configures agent tokens, monitors agent dashboard, manages auto-approve thresholds",target,medium,2
+Proposal Reviewer (Role),business_role,business,business,Role: reviews and approves/rejects agent-submitted reconciliation proposals,target,low,2
+Submit Discovery Batch,process,business,business,"Process: agent authenticates via JWT, submits AgentDiscoveryBatch to agent API endpoint",target,medium,2
+Reconcile Against Graph,process,business,business,"Process: fuzzy-match elements against Neo4j, schema-validate, produce ReconciliationProposal",target,medium,2
+Review Agent Proposal,process,business,business,"Process: EA opens Approval Panel, reviews diff for each item, approves/rejects/edits",target,medium,2
+Auto-Approve High Confidence,process,business,business,Process: items with confidence >= threshold and allowed action types are auto-approved to graph,target,medium,2
+Apply Approved Changes,process,business,business,Process: approved items are written to Neo4j in a single transaction with provenance metadata,target,medium,2
+Generate Agent Token,process,business,business,Process: admin generates JWT with agent:read/suggest/write permissions scoped to project,target,low,2
+Monitor Agent Activity,process,business,business,"Process: review agent dashboard for approval rates, anomalies, and graph freshness metrics",target,low,1
+Agent Discovery Service (Business),business_service,business,business,Service: accepts agent discovery batches and orchestrates reconciliation pipeline,target,medium,2
+Approval Workflow Service (Business),business_service,business,business,Service: manages proposal lifecycle from pending through review to approved/rejected,target,medium,2
+Agent Telemetry Service (Business),business_service,business,business,Service: aggregates and presents agent activity metrics for governance reporting,target,low,1
+Discovery Batch Received,business_event,business,business,Event: triggered when an agent submits a new discovery batch via MCP or REST,target,low,2
+Proposal Ready for Review,business_event,business,business,Event: triggered when reconciliation produces a proposal with items requiring human review,target,low,2
+Graph Updated by Agent,business_event,business,business,Event: triggered when approved agent items are successfully written to Neo4j,target,low,2
+Agent Anomaly Detected,business_event,business,business,Event: triggered when Advisor detects batch-size anomaly or scope violation from an agent,target,medium,2
+Agent Discovery Report,business_object,business,business,"Object: summary of agent discovery activity including elements found, matched, and proposed",target,low,2
+AgentDiscoveryBatch,data_object,information,data,"Entity: container with agentId, timestamp, discovered elements array, discovered connections array, sourceSystem",target,medium,2
+DiscoveredElement,data_object,information,data,"Entity: agent-proposed element with name, type, layer, status, confidence (0-1), rawMetadata, evidence",target,medium,2
+DiscoveredConnection,data_object,information,data,"Entity: agent-proposed connection with sourceName, targetName, type, confidence, evidence text",target,low,2
+ReconciliationProposal,data_object,information,data,"Entity: MongoDB document with items array, status (pending/approved/rejected/partial), reviewedBy",target,medium,2
+ReconciliationItem,data_object,information,data,"Entity: single diff item with action (create/update/flag_conflict/flag_stale), proposed vs existing, autoApprovable flag",target,medium,2
+AgentToken,data_object,information,data,"Entity: JWT token document with agentId, projectId, permissions array, expiry, created metadata",target,medium,2
+ElementProvenance,data_object,information,data,"Entity: provenance extension on ArchitectureElement - lastUpdatedBy, lastUpdatedSource, confidenceScore, lastVerifiedAt",target,low,2
+AgentTelemetryRecord,data_object,information,data,"Entity: aggregated metrics per agent - proposals count, approval rate, avg confidence, last active",target,low,1
+Agent Reconciliation Data Model,data_object,information,data,Model: MongoDB schemas for ReconciliationProposal and AgentToken with TTL and compound indexes,target,medium,2
+MCP Connector,application_component,application,application,Component: MCP server implementation registering submit_discovery_batch and get_project_elements tools,target,medium,2
+Reconciliation Engine,application_component,application,application,Component: fuzzy-match algorithm (Jaro-Winkler) plus schema validator producing ReconciliationProposals,target,high,2
+Schema Validator,application_component,application,application,"Component: Zod-based validation with injection detection - blocks Cypher injection, HTML, overlength strings",target,high,2
+Auto-Approve Engine,application_component,application,application,Component: evaluates items against configurable threshold and action whitelist for automatic approval,target,medium,2
+Graph Update Service,application_component,application,application,Component: applies approved items to Neo4j in atomic transaction with provenance metadata and WebSocket emit,target,medium,2
+Agent Auth Middleware,application_component,application,application,Component: JWT verification for agent tokens with permission checking (agent:read/suggest/write),target,medium,2
+Demo Discovery Agent,application_component,application,application,Component: Node.js script acting as MCP client that discovers TheArchitect self-architecture,target,low,1
+GitHub Discovery Agent,application_component,application,application,Component: stretch-goal agent parsing package.json and service files to extract ArchiMate elements,target,low,1
+Advisor Detector Stale Elements,application_component,application,application,Component: Advisor detector #12 - flags elements with confidenceScore < 0.5 or lastVerified > 90 days,target,low,2
+Advisor Detector Agent Anomalies,application_component,application,application,Component: Advisor detector #13 - flags batch-size anomalies (>50 items) and scope violations,target,medium,2
+Approval Panel,application_component,application,application,"Component: React sidebar tab showing pending proposals with diff view, batch actions, and edit-and-approve",target,medium,2
+Provenance Badge,application_component,application,application,"Component: UI element in PropertyPanel showing source, confidence bar, and last-verified date",target,low,2
+Agent Dashboard,application_component,application,application,"Component: React dashboard tab showing per-agent metrics, approval rates, and graph freshness score",target,low,1
+Agent Token Manager,application_component,application,application,Component: UI in Project Settings for generating and revoking agent JWT tokens with permission selection,target,low,2
+Agent REST API,application_service,application,application,"Service: Express routes at /api/projects/:id/agent for discovery, proposals, approvals, and telemetry",target,medium,2
+Agent WebSocket Events,application_service,application,application,Service: Socket.IO events for real-time proposal notifications and graph-update broadcasts,target,low,2
+MCP Tool Interface,application_interface,application,application,"Interface: MCP tool definitions - submit_discovery_batch, get_project_elements, get_element_schema",target,medium,2
+Agent REST Interface,application_interface,application,application,"Interface: REST endpoints - POST /discovery, GET /proposals, POST /approve, GET /telemetry",target,low,2
+MCP SDK (@modelcontextprotocol/sdk),artifact,technology,technology,npm package providing MCP server and client protocol implementation,target,medium,2
+string-similarity (npm),artifact,technology,technology,npm package for Jaro-Winkler and Levenshtein string distance calculations in fuzzy matching,target,low,2
+Neo4j Provenance Extension,artifact,technology,technology,"Artifact: Cypher migration script adding lastUpdatedBy, lastUpdatedSource, confidenceScore, lastVerifiedAt to ArchitectureElement nodes",target,low,2
+MongoDB Agent Collections,artifact,technology,technology,Artifact: Mongoose schemas for ReconciliationProposal (TTL 30d) and AgentToken with compound indexes,target,low,2
+Agent Token JWT Secret,artifact,technology,technology,Artifact: separate JWT signing secret for agent tokens stored in .env (AGENT_JWT_SECRET),target,medium,2
+---CONNECTIONS---
+sourceName,targetName,type,label
+CMDB Data Gap,80% Maintenance Reduction,association,drives goal
+Manual Maintenance Cost,Continuous Graph Freshness,association,drives goal
+Agent Proliferation Risk,Agent Governance Compliance,association,drives goal
+Agentic AI Market Momentum,Investor-demonstrable Auto-Discovery,association,drives goal
+Current Manual Process,CMDB Data Gap,association,confirms driver
+Agent Security Landscape,Agent Proliferation Risk,association,confirms driver
+No Competitor Offers Agent-EAM,Agentic AI Market Momentum,association,confirms driver
+80% Maintenance Reduction,Real-time Architecture Truth,association,leads to
+Continuous Graph Freshness,Real-time Architecture Truth,association,leads to
+Full Provenance Tracking,Audit-ready Data Provenance,association,leads to
+Agent Governance Compliance,Proactive Agent Anomaly Detection,association,leads to
+Real-time Architecture Truth,Architecture Wahrheit,association,realizes value
+Audit-ready Data Provenance,Governance ohne Overhead,association,realizes value
+Enterprise Architect (Agent User),80% Maintenance Reduction,association,interested in
+CIO / CTO (Agent Sponsor),Agent Governance Compliance,association,interested in
+CIO / CTO (Agent Sponsor),Full Provenance Tracking,association,interested in
+Security Officer (Agent Governance),Agent Governance Compliance,association,interested in
+Agent Developer,REQ-MCP-Compatibility,association,concerned with
+REQ-Human-Approval,CONS-No-Autonomous-Write,association,constrained by
+REQ-Schema-Validation,REQ-Auto-Approve-No-Delete,association,reinforces
+80% Maintenance Reduction,REQ-Fuzzy-Match,realization,realized by
+Continuous Graph Freshness,REQ-Provenance-Fields,realization,realized by
+Agent Governance Compliance,REQ-RBAC-Agent-Tokens,realization,realized by
+Agent Governance Compliance,REQ-Human-Approval,realization,realized by
+Agent Governance Compliance,REQ-Audit-Trail,realization,realized by
+Full Provenance Tracking,REQ-Provenance-Fields,realization,realized by
+Reader-Before-Actor,CONS-No-Autonomous-Write,association,reinforces
+Graph-as-Agent-Memory,Continuous Graph Freshness,association,supports
+80% Maintenance Reduction,Agent Discovery Capability,realization,realized by
+Continuous Graph Freshness,Graph Reconciliation Capability,realization,realized by
+Agent Governance Compliance,Approval Governance Capability,realization,realized by
+Full Provenance Tracking,Source Provenance Capability,realization,realized by
+Investor-demonstrable Auto-Discovery,Build Demo Agent for Pitch,realization,realized by
+REQ-MCP-Compatibility,Implement MCP Agent Connector,realization,realized by
+REQ-Fuzzy-Match,Build Reconciliation Engine,realization,realized by
+REQ-Human-Approval,Add Approval Workflow,realization,realized by
+Agent Discovery Capability,Implement MCP Agent Connector,association,addressed by
+Graph Reconciliation Capability,Build Reconciliation Engine,association,addressed by
+Approval Governance Capability,Add Approval Workflow,association,addressed by
+Agent Telemetry Capability,Extend Advisor with Agent Detectors,association,addressed by
+Implement MCP Agent Connector,Agent-to-Graph Value Stream,association,contributes to
+Build Reconciliation Engine,Agent-to-Graph Value Stream,association,contributes to
+Add Approval Workflow,Agent-to-Graph Value Stream,association,contributes to
+MCP SDK Resource,Implement MCP Agent Connector,association,required for
+LLM API Budget (Agent),Build Demo Agent for Pitch,association,required for
+Agent Discovery Capability,Agent Discovery Service (Business),realization,realized by
+Agent Discovery Capability,Submit Discovery Batch,realization,realized by
+Graph Reconciliation Capability,Reconcile Against Graph,realization,realized by
+Approval Governance Capability,Approval Workflow Service (Business),realization,realized by
+Approval Governance Capability,Review Agent Proposal,realization,realized by
+Approval Governance Capability,Auto-Approve High Confidence,realization,realized by
+Agent Telemetry Capability,Agent Telemetry Service (Business),realization,realized by
+Agent Telemetry Capability,Monitor Agent Activity,realization,realized by
+Source Provenance Capability,Apply Approved Changes,realization,realized by
+Submit Discovery Batch,Reconcile Against Graph,triggering,triggers
+Reconcile Against Graph,Review Agent Proposal,triggering,triggers
+Reconcile Against Graph,Auto-Approve High Confidence,triggering,triggers
+Review Agent Proposal,Apply Approved Changes,triggering,triggers
+Auto-Approve High Confidence,Apply Approved Changes,triggering,triggers
+Agent Operator (Role),Generate Agent Token,association,performs
+Agent Operator (Role),Monitor Agent Activity,association,performs
+Proposal Reviewer (Role),Review Agent Proposal,association,performs
+Enterprise Architect (Agent User),Proposal Reviewer (Role),association,fulfills role
+Enterprise Architect (Agent User),Agent Operator (Role),association,fulfills role
+Discovery Batch Received,Submit Discovery Batch,association,starts process
+Proposal Ready for Review,Review Agent Proposal,association,starts process
+Graph Updated by Agent,Agent Discovery Report,association,produces
+Agent Anomaly Detected,Monitor Agent Activity,association,escalates to
+Agent Discovery Service (Business),Submit Discovery Batch,serving,orchestrates
+Agent Discovery Service (Business),Reconcile Against Graph,serving,orchestrates
+Approval Workflow Service (Business),Review Agent Proposal,serving,orchestrates
+Approval Workflow Service (Business),Auto-Approve High Confidence,serving,orchestrates
+Approval Workflow Service (Business),Apply Approved Changes,serving,orchestrates
+Agent Telemetry Service (Business),Monitor Agent Activity,serving,orchestrates
+Submit Discovery Batch,AgentDiscoveryBatch,access,creates
+Submit Discovery Batch,AgentToken,access,validates
+Reconcile Against Graph,DiscoveredElement,access,reads
+Reconcile Against Graph,DiscoveredConnection,access,reads
+Reconcile Against Graph,ReconciliationProposal,access,creates
+Reconcile Against Graph,ReconciliationItem,access,creates
+Review Agent Proposal,ReconciliationProposal,access,updates status
+Review Agent Proposal,ReconciliationItem,access,approves/rejects
+Auto-Approve High Confidence,ReconciliationItem,access,auto-approves
+Apply Approved Changes,ElementProvenance,access,writes
+Generate Agent Token,AgentToken,access,creates
+Monitor Agent Activity,AgentTelemetryRecord,access,reads
+AgentDiscoveryBatch,DiscoveredElement,composition,contains
+AgentDiscoveryBatch,DiscoveredConnection,composition,contains
+ReconciliationProposal,ReconciliationItem,composition,contains
+ReconciliationItem,DiscoveredElement,association,references proposed
+Agent Reconciliation Data Model,ReconciliationProposal,association,defines schema
+Agent Reconciliation Data Model,AgentToken,association,defines schema
+Agent Discovery Service (Business),MCP Connector,realization,realized by
+Agent Discovery Service (Business),Agent REST API,realization,realized by
+Agent Discovery Service (Business),Reconciliation Engine,realization,realized by
+Approval Workflow Service (Business),Approval Panel,realization,realized by
+Approval Workflow Service (Business),Auto-Approve Engine,realization,realized by
+Approval Workflow Service (Business),Graph Update Service,realization,realized by
+Agent Telemetry Service (Business),Agent Dashboard,realization,realized by
+MCP Connector,Agent Auth Middleware,serving,authenticates via
+MCP Connector,Reconciliation Engine,flow,forwards batch to
+MCP Connector,MCP Tool Interface,composition,exposes
+Reconciliation Engine,Schema Validator,serving,validates with
+Reconciliation Engine,Agent REST API,serving,called via
+Auto-Approve Engine,Graph Update Service,flow,triggers write
+Approval Panel,Agent REST API,serving,calls
+Approval Panel,Agent WebSocket Events,serving,receives notifications
+Agent Dashboard,Agent REST API,serving,fetches metrics from
+Agent Token Manager,Agent REST API,serving,manages tokens via
+Graph Update Service,Agent WebSocket Events,flow,emits update events
+Agent REST API,Agent REST Interface,composition,exposes
+Agent Auth Middleware,Agent REST API,serving,protects
+Advisor Detector Stale Elements,Provenance Badge,association,findings shown in
+Advisor Detector Agent Anomalies,Agent Dashboard,association,findings shown in
+Demo Discovery Agent,MCP Tool Interface,serving,connects via
+GitHub Discovery Agent,MCP Tool Interface,serving,connects via
+MCP Connector,MCP SDK (@modelcontextprotocol/sdk),serving,uses
+Reconciliation Engine,string-similarity (npm),serving,uses
+Graph Update Service,Neo4j Provenance Extension,serving,writes to
+Reconciliation Engine,MongoDB Agent Collections,serving,persists proposals
+Agent Auth Middleware,Agent Token JWT Secret,serving,verifies with
+Auto-Approve Engine,MongoDB Agent Collections,serving,reads/updates proposals
+Agent Dashboard,MongoDB Agent Collections,serving,queries metrics
+Agent REST API,Express API Server,composition,part of backend
+MCP Connector,Express API Server,composition,part of backend
+Reconciliation Engine,Express API Server,composition,part of backend
+Auto-Approve Engine,Express API Server,composition,part of backend
+Graph Update Service,Express API Server,composition,part of backend
+Agent Auth Middleware,Auth API,serving,extends
+Schema Validator,Architecture API,serving,reuses Zod schemas from
+Graph Update Service,Architecture API,serving,reuses Cypher patterns from
+Advisor Detector Stale Elements,Advisor API,composition,extends
+Advisor Detector Agent Anomalies,Advisor API,composition,extends
+Approval Panel,React SPA,composition,part of frontend
+Provenance Badge,React SPA,composition,part of frontend
+Agent Dashboard,React SPA,composition,part of frontend
+Agent Token Manager,React SPA,composition,part of frontend
+Agent WebSocket Events,Socket.IO WebSocket,serving,extends
+Agent REST API,Express API Server,serving,registered in
+ReconciliationProposal,MongoDB Cluster,association,follows pattern of
+ElementProvenance,Architecture Element Graph,composition,extends
+AgentToken,User Data Model,association,created by
+Graph Updated by Agent,Architecture Changed,specialization,specializes
+Extend Advisor with Agent Detectors,Adopt AI-First Architecture,association,continues strategy
+Agent-to-Graph Value Stream,Architecture Design to Execution,flow,feeds into
