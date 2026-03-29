@@ -428,15 +428,15 @@ describe('2. Route Guard Integration Tests', () => {
     });
   });
 
-  describe('2.4 Registration defaults to viewer role', () => {
-    test('newly registered user gets viewer role', async () => {
+  describe('2.4 Registration defaults to enterprise_architect role', () => {
+    test('newly registered user gets enterprise_architect role (self-service)', async () => {
       const email = `rbac-newuser-${TEST_ID}@thearchitect-test.local`;
       const { data } = await http.post('/auth/register', {
         email,
         password: VALID_PASSWORD,
         name: 'New User',
       });
-      expect(data.user.role).toBe('viewer');
+      expect(data.user.role).toBe('enterprise_architect');
     });
   });
 

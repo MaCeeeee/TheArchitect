@@ -49,7 +49,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     const passwordHash = await bcrypt.hash(password, 12);
     // First user on the platform becomes chief_architect automatically
     const userCount = await User.countDocuments();
-    const role = userCount === 0 ? 'chief_architect' : 'viewer';
+    const role = userCount === 0 ? 'chief_architect' : 'enterprise_architect';
     const user = await User.create({ email, passwordHash, name, role });
 
     const accessToken = generateAccessToken(user._id.toString(), user.role);
@@ -479,9 +479,11 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   }
 
   // 3) New user — create without password
-  // First user on the platform becomes chief_architect automatically
+  // First user on the platform becomes chief_architect automatically;
+  // all subsequent self-registrations get enterprise_architect (full permissions minus ADMIN_SYSTEM_CONFIG).
+  // Invited collaborators receive their role via the invitation/project-collaborator flow.
   const userCount = await User.countDocuments();
-  const role = userCount === 0 ? 'chief_architect' : 'viewer';
+  const role = userCount === 0 ? 'chief_architect' : 'enterprise_architect';
   user = await User.create({
     email: profile.email.toLowerCase(),
     name: profile.name,

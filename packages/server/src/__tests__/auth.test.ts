@@ -104,7 +104,7 @@ describe('2. Register with valid password', () => {
     });
     expect(data.user).toBeDefined();
     expect(data.user.email).toBe(TEST_EMAIL);
-    expect(data.user.role).toBe('viewer');
+    expect(data.user.role).toBe('enterprise_architect');
     expect(data.accessToken).toBeDefined();
     expect(data.refreshToken).toBeDefined();
     accessToken = data.accessToken;
@@ -183,7 +183,7 @@ describe('4. Authenticated access', () => {
     });
     expect(data.email).toBe(TEST_EMAIL);
     expect(data.name).toBe('Auth Test User');
-    expect(data.role).toBe('viewer');
+    expect(data.role).toBe('enterprise_architect');
   });
 
   test('4.2 Reject request without token', async () => {
