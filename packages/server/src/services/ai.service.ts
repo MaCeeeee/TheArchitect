@@ -651,7 +651,7 @@ export async function generatePoliciesFromStandard(
 
   // Build section context with full content for policy extraction
   let charCount = 0;
-  const maxChars = 12000;
+  const maxChars = 80000;
   const sectionLines: string[] = [];
   for (const section of standard.sections) {
     if (charCount >= maxChars) break;

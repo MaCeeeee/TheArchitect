@@ -13,6 +13,7 @@ import { SuggestedElements } from '../copilot/SuggestedElements';
 import ComplianceProgressChart from '../copilot/ComplianceProgressChart';
 import AuditReadinessDashboard from '../copilot/AuditReadinessDashboard';
 import RoadmapPanel from '../analytics/RoadmapPanel';
+import RemediateGateway from './RemediateGateway';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -21,7 +22,7 @@ import AuditTrail from '../governance/AuditTrail';
 
 // Sections that belong to the compliance pipeline (show stepper)
 const PIPELINE_SECTIONS = new Set([
-  'pipeline', 'portfolio', 'standards', 'matrix', 'policies', 'roadmap', 'elements', 'progress', 'audit',
+  'pipeline', 'portfolio', 'standards', 'matrix', 'remediate', 'policies', 'roadmap', 'elements', 'progress', 'audit',
 ]);
 
 export default function CompliancePage() {
@@ -95,6 +96,7 @@ export default function CompliancePage() {
               standardId={matrixStandardId}
               sectionIds={matrixSectionIds.length > 0 ? matrixSectionIds : undefined}
               onBack={() => navigate(`/project/${projectId}/compliance/standards`)}
+              onNext={() => navigate(`/project/${projectId}/compliance/remediate`)}
               autoSuggest={matrixAutoSuggest}
             />
           )}
@@ -110,6 +112,8 @@ export default function CompliancePage() {
               </button>
             </div>
           )}
+
+          {activeSection === 'remediate' && <RemediateGateway />}
 
           {activeSection === 'policies' && <PolicyDraftReview />}
 

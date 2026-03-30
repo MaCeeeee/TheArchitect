@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  ArrowLeft, Plus, Trash2, Loader2, AlertCircle, CheckCircle2,
-  AlertTriangle, XCircle, Minus, Sparkles, Check, X, Edit3, Wrench,
+  ArrowLeft, ArrowRight, Plus, Trash2, Loader2, AlertCircle, CheckCircle2,
+  AlertTriangle, XCircle, Minus, Sparkles, Check, X, Edit3, Wrench, FileCheck,
 } from 'lucide-react';
 import { standardsAPI } from '../../services/api';
 import { architectureAPI } from '../../services/api';
@@ -67,6 +67,7 @@ interface ComplianceMatrixProps {
   standardId: string;
   sectionIds?: string[];
   onBack: () => void;
+  onNext?: () => void;
   autoSuggest?: boolean;
 }
 
@@ -106,7 +107,7 @@ function getLayerScore(cells: MatrixCell[], layer: string): number {
 
 // ─── Component ───
 
-export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoSuggest }: ComplianceMatrixProps) {
+export default function ComplianceMatrix({ standardId, sectionIds, onBack, onNext, autoSuggest }: ComplianceMatrixProps) {
   const { projectId } = useParams();
   const token = useAuthStore((s) => s.token);
   const refreshStats = useComplianceStore((s) => s.refreshStats);
@@ -679,6 +680,20 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, autoS
                 <span className="text-xs text-[var(--text-tertiary)]">Empty</span>
               </div>
             </div>
+
+            {/* Next Step CTA */}
+            {onNext && (
+              <button
+                onClick={onNext}
+                className="flex items-center justify-between w-full mt-6 px-4 py-3 rounded-lg bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
+              >
+                <span className="flex items-center gap-2 text-sm font-medium">
+                  <FileCheck size={16} />
+                  Next: Generate Policies
+                </span>
+                <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            )}
           </div>
         )}
       </div>

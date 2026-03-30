@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { X, ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard } from 'lucide-react';
+import { X, ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import StandardsManager from '../copilot/StandardsManager';
 import ComplianceMatrix from '../copilot/ComplianceMatrix';
+import RemediateGateway from '../compliance/RemediateGateway';
 import { PolicyDraftReview } from '../governance/PolicyDraftReview';
 import { SuggestedElements } from '../copilot/SuggestedElements';
 import ComplianceProgressChart from '../copilot/ComplianceProgressChart';
@@ -20,6 +21,7 @@ const SECTIONS: OverlaySection[] = [
   { id: 'pipeline', label: 'Pipeline', icon: ShieldAlert },
   { id: 'standards', label: 'Standards', icon: FileText },
   { id: 'matrix', label: 'Matrix', icon: Grid3X3 },
+  { id: 'remediate', label: 'Remediate', icon: Wrench },
   { id: 'policies', label: 'Policies', icon: FileCheck },
   { id: 'elements', label: 'Elements', icon: Sparkles },
   { id: 'progress', label: 'Progress', icon: TrendingUp },
@@ -114,6 +116,7 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
               standardId={matrixStandardId}
               sectionIds={matrixSectionIds.length > 0 ? matrixSectionIds : undefined}
               onBack={() => setActiveSection('standards')}
+              onNext={() => setActiveSection('remediate')}
               autoSuggest={matrixAutoSuggest}
             />
           )}
@@ -129,6 +132,8 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
               </button>
             </div>
           )}
+
+          {activeSection === 'remediate' && <RemediateGateway />}
 
           {activeSection === 'policies' && <PolicyDraftReview />}
           {activeSection === 'elements' && <SuggestedElements />}

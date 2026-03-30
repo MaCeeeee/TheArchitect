@@ -1,10 +1,11 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, Upload, GitBranch, FileCheck, Map, TrendingUp, ClipboardCheck } from 'lucide-react';
+import { Check, Upload, GitBranch, FileCheck, Map, TrendingUp, ClipboardCheck, Wrench } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 
 const PIPELINE_STAGES = [
   { id: 'uploaded', label: 'Upload', icon: Upload, section: 'standards' },
   { id: 'mapped', label: 'Map', icon: GitBranch, section: 'matrix' },
+  { id: 'remediate', label: 'Remediate', icon: Wrench, section: 'remediate' },
   { id: 'policies_generated', label: 'Policies', icon: FileCheck, section: 'policies' },
   { id: 'roadmap_ready', label: 'Roadmap', icon: Map, section: 'roadmap' },
   { id: 'tracking', label: 'Track', icon: TrendingUp, section: 'progress' },
@@ -14,10 +15,11 @@ const PIPELINE_STAGES = [
 const STAGE_ORDER: Record<string, number> = {
   uploaded: 0,
   mapped: 1,
-  policies_generated: 2,
-  roadmap_ready: 3,
-  tracking: 4,
-  audit_ready: 5,
+  remediate: 1, // shares 'mapped' backend stage — UI-only gateway
+  policies_generated: 3,
+  roadmap_ready: 4,
+  tracking: 5,
+  audit_ready: 6,
 };
 
 export default function PipelineStepper() {
@@ -36,10 +38,11 @@ export default function PipelineStepper() {
   const sectionToStageIdx: Record<string, number> = {
     standards: 0, pipeline: 0,
     matrix: 1,
-    policies: 2,
-    roadmap: 3, elements: 3,
-    progress: 4,
-    audit: 5,
+    remediate: 2,
+    policies: 3,
+    roadmap: 4, elements: 4,
+    progress: 5,
+    audit: 6,
   };
   const activeStageIdx = section ? (sectionToStageIdx[section] ?? -1) : -1;
 

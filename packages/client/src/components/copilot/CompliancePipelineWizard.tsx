@@ -1,13 +1,14 @@
 // packages/client/src/components/copilot/CompliancePipelineWizard.tsx
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Upload, Map, FileCheck, Route, Activity, ChevronRight, ArrowRight } from 'lucide-react';
+import { Upload, Map, FileCheck, Route, Activity, ChevronRight, ArrowRight, Wrench } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
 const PIPELINE_STEPS = [
   { key: 'uploaded', icon: Upload, label: 'Upload', description: 'Standard uploaded', section: 'standards' },
   { key: 'mapped', icon: Map, label: 'Mapping', description: 'AI auto-mapping', section: 'matrix' },
+  { key: 'mapped', icon: Wrench, label: 'Remediate', description: 'Fix detected gaps', section: 'remediate' },
   { key: 'policies_generated', icon: FileCheck, label: 'Policies', description: 'Policy generation', section: 'policies' },
   { key: 'roadmap_ready', icon: Route, label: 'Roadmap', description: 'Compliance roadmap', section: 'elements' },
   { key: 'tracking', icon: Activity, label: 'Tracking', description: 'Progress tracking', section: 'progress' },
@@ -16,9 +17,10 @@ const PIPELINE_STEPS = [
 const STAGE_INDEX: Record<string, number> = {
   uploaded: 0,
   mapped: 1,
-  policies_generated: 2,
-  roadmap_ready: 3,
-  tracking: 4,
+  // 'remediate' shares the 'mapped' backend stage (index 1) — it's a UI-only gateway
+  policies_generated: 3,
+  roadmap_ready: 4,
+  tracking: 5,
 };
 
 export function CompliancePipelineWizard() {
@@ -134,14 +136,14 @@ export function CompliancePipelineWizard() {
       )}
       {selectedItem && currentStageIndex === 1 && (
         <button
-          onClick={() => navigate(`/project/${projectId}/compliance/policies`)}
+          onClick={() => navigate(`/project/${projectId}/compliance/remediate`)}
           className="flex items-center justify-between w-full text-xs bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 rounded px-3 py-2.5 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
         >
-          <span>Next: <strong>Generate Policies</strong> from mapped standard</span>
+          <span>Next: <strong>Remediate Gaps</strong> detected in mapping</span>
           <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
         </button>
       )}
-      {selectedItem && currentStageIndex === 2 && (
+      {selectedItem && currentStageIndex === 3 && (
         <button
           onClick={() => navigate(`/project/${projectId}/compliance/elements`)}
           className="flex items-center justify-between w-full text-xs bg-[var(--status-purple)]/10 border border-[var(--status-purple)]/30 rounded px-3 py-2.5 text-[var(--status-purple)] hover:bg-[var(--status-purple)]/20 transition group"
