@@ -48,7 +48,7 @@ export default function CompliancePage() {
   }
 
   if (!projectId) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   const showStepper = PIPELINE_SECTIONS.has(activeSection);

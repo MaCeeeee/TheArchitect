@@ -22,6 +22,15 @@ export interface ArchitectureElement {
   position3D: Position3D;
   metadata: Record<string, unknown>;
   workspaceId?: string;
+  // AI Agent fields (populated when type === 'ai_agent')
+  agentProvider?: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
+  agentModel?: string;
+  agentPurpose?: string;
+  autonomyLevel?: 'copilot' | 'semi_autonomous' | 'autonomous';
+  costPerMonth?: number;
+  lastActiveDate?: string;
+  dataSources?: string[];
+  outputTargets?: string[];
 }
 
 export interface Connection {

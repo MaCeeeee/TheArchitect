@@ -171,6 +171,11 @@ export const ELEMENT_TYPES: { type: ElementType; label: string; domain: TOGAFDom
   // ──────────────────────────────────────────────────────
   { type: 'grouping', label: 'Grouping', domain: 'business', geometry: 'box' },
   { type: 'location', label: 'Location', domain: 'technology', geometry: 'box' },
+
+  // ──────────────────────────────────────────────────────
+  // AI Extension (TheArchitect — AI Agent Discovery)
+  // ──────────────────────────────────────────────────────
+  { type: 'ai_agent', label: 'AI Agent', domain: 'application', geometry: 'diamond' },
 ];
 
 // ──────────────────────────────────────────────────────────

@@ -24,6 +24,9 @@ import {
 } from '../services/oauth.service';
 import { isPasswordValid } from '@thearchitect/shared';
 import { sendPasswordResetEmail } from '../services/email.service';
+import { migrateTemporaryGraph } from '../services/upload.service';
+import { HealthReport } from '../models/HealthReport';
+import { Project } from '../models/Project';
 
 const router = Router();
 
@@ -72,6 +75,65 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// ─── POST /api/auth/adopt-healthcheck — Convert temp graph to permanent project ───
+
+router.post('/adopt-healthcheck', authenticate, async (req: Request, res: Response) => {
+  try {
+    const { uploadToken } = req.body;
+    if (!uploadToken || typeof uploadToken !== 'string') {
+      return res.status(400).json({ error: 'uploadToken is required' });
+    }
+
+    // Find the report by uploadToken
+    const report = await HealthReport.findOne({ uploadToken });
+    if (!report || !report.tempProjectId) {
+      return res.status(404).json({ error: 'No health check found for this token' });
+    }
+
+    if (report.permanentProjectId) {
+      return res.status(409).json({ error: 'This health check has already been adopted' });
+    }
+
+    // Create a permanent project
+    const userId = (req as any).user?.id || (req as any).user?._id;
+    const project = await Project.create({
+      name: `Imported Architecture (Health Check)`,
+      description: `Architecture imported from health check on ${new Date(report.createdAt).toLocaleDateString()}. Health Score: ${report.healthScore.total}/100.`,
+      owner: userId,
+      collaborators: [{ user: userId, role: 'owner' }],
+    });
+
+    // Migrate graph elements from temp to permanent
+    const migrated = await migrateTemporaryGraph(report.tempProjectId, project._id.toString());
+
+    // Link report to permanent project
+    report.permanentProjectId = project._id.toString();
+    await report.save();
+
+    await createAuditEntry({
+      userId: userId.toString(),
+      action: 'healthcheck_adopt',
+      entityType: 'project',
+      entityId: project._id.toString(),
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        projectId: project._id,
+        projectName: project.name,
+        migratedElements: migrated,
+        healthScore: report.healthScore.total,
+      },
+    });
+  } catch (err) {
+    console.error('[Auth] Adopt healthcheck error:', err);
+    return res.status(500).json({ error: 'Failed to adopt health check' });
   }
 });
 

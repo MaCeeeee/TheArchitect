@@ -459,4 +459,19 @@ export const remediationAPI = {
     api.post(`/projects/${projectId}/remediation/proposals/${proposalId}/rollback`),
 };
 
+export const portfolioAPI = {
+  getInventory: (projectId: string, params?: Record<string, string>) =>
+    api.get(`/projects/${projectId}/portfolio/inventory`, { params }),
+  getSummary: (projectId: string) =>
+    api.get(`/projects/${projectId}/portfolio/summary`),
+  getTimeline: (projectId: string) =>
+    api.get(`/projects/${projectId}/portfolio/timeline`),
+  updateLifecycle: (projectId: string, elementId: string, data: Record<string, unknown>) =>
+    api.patch(`/projects/${projectId}/portfolio/elements/${elementId}/lifecycle`, data),
+  bulkUpdateLifecycle: (projectId: string, updates: Array<{ elementId: string; lifecyclePhase: string }>) =>
+    api.post(`/projects/${projectId}/portfolio/bulk-lifecycle`, { updates }),
+  classifyTIME: (projectId: string) =>
+    api.post(`/projects/${projectId}/portfolio/classify-time`),
+};
+
 export default api;

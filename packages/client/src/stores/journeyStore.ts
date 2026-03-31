@@ -100,7 +100,7 @@ export const useJourneyStore = create<JourneyState>((set) => ({
       switch (phase) {
         case 1: {
           if (elements.length === 0) return { label: 'Add First Element', route: `/project/${projectId}` };
-          if (connections.length < 3) return { label: 'Add Connections', route: `/project/${projectId}` };
+          if (connections.length < 3) return { label: 'Add Connections', route: `__connection_mode__` };
           return { label: 'Add Elements', route: `/project/${projectId}` };
         }
         case 2: {

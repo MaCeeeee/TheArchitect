@@ -121,7 +121,7 @@ export default function InvitationPage() {
             <h2 className="text-lg font-semibold text-white mb-2">Invitation Error</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">{errorMsg}</p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="rounded-md bg-[#1a2a1a] px-6 py-2.5 text-sm text-white hover:bg-[#2a3a2a] transition"
             >
               Go to Dashboard
@@ -245,7 +245,7 @@ export default function InvitationPage() {
               You've declined the invitation to {invitation?.projectName}.
             </p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/dashboard')}
               className="rounded-md bg-[#1a2a1a] px-6 py-2.5 text-sm text-white hover:bg-[#2a3a2a] transition"
             >
               Go to Dashboard

@@ -78,6 +78,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     cascadeInsights,
     driftInsights,
     missingComplianceInsights,
+    timeInsights,
   ] = await Promise.all([
     detectSPOF(elements),
     detectOrphans(elements),
@@ -91,6 +92,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     detectCascadeRisks(projectId, elements),
     detectArchitectureDrift(projectId, elements),
     detectMissingComplianceElements(projectId),
+    detectTIMEClassificationIssues(elements),
   ]);
 
   const allInsights = [
@@ -106,6 +108,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     ...cascadeInsights,
     ...driftInsights,
     ...missingComplianceInsights,
+    ...timeInsights,
   ];
 
   // Sort by severity priority, then by affected elements count
@@ -675,6 +678,59 @@ async function detectMissingComplianceElements(projectId: string): Promise<Advis
   } catch {
     return [];
   }
+}
+
+// ─── Detector #13: TIME Classification Issues ───
+
+function detectTIMEClassificationIssues(elements: GraphElement[]): AdvisorInsight[] {
+  const insights: AdvisorInsight[] = [];
+
+  // Find elements that should be classified but aren't
+  const appAndTechTypes = new Set([
+    'application', 'application_component', 'application_service', 'service',
+    'node', 'device', 'system_software', 'technology_service', 'platform_service',
+    'technology_component', 'infrastructure',
+  ]);
+
+  const classifiable = elements.filter(e => appAndTechTypes.has(e.type));
+  // We don't have timeClassification in GraphElement — detect elements that
+  // are high-risk + low-maturity (candidates for "eliminate" or "migrate")
+  const eliminateCandidates = classifiable.filter(
+    e => (e.riskLevel === 'critical' || e.riskLevel === 'high') && e.maturity <= 2
+  );
+
+  if (eliminateCandidates.length > 0) {
+    insights.push({
+      id: `time-eliminate-${Date.now()}`,
+      title: 'High-risk, low-maturity components detected',
+      description: `${eliminateCandidates.length} application/technology element(s) combine high risk with low maturity — consider marking for elimination or migration in the TIME classification.`,
+      severity: 'warning' as InsightSeverity,
+      category: 'portfolio',
+      recommendation: 'Open Portfolio → TIME Grid to review and classify these elements.',
+      affectedElements: eliminateCandidates.slice(0, 5).map(toAffected),
+      effort: 'medium',
+    });
+  }
+
+  // Detect stale "operate" elements with high risk
+  const staleOperators = classifiable.filter(
+    e => e.status === 'current' && e.riskLevel === 'high' && e.maturity >= 3
+  );
+
+  if (staleOperators.length >= 3) {
+    insights.push({
+      id: `time-migrate-${Date.now()}`,
+      title: 'Stable but risky components — migration candidates',
+      description: `${staleOperators.length} components are mature (3+) but carry high risk — migration to modern alternatives may reduce risk.`,
+      severity: 'info' as InsightSeverity,
+      category: 'portfolio',
+      recommendation: 'Consider TIME classification "Migrate" for these elements.',
+      affectedElements: staleOperators.slice(0, 5).map(toAffected),
+      effort: 'medium',
+    });
+  }
+
+  return insights;
 }
 
 // ─── Helpers ───

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<model xmlns="http://www.opengroup.org/xsd/archimate/3.0/"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.opengroup.org/xsd/archimate/3.0/ http://www.opengroup.org/xsd/archimate/3.1/archimate3_Diagram.xsd"
+       identifier="id-demo-model">
+  <name>Demo Enterprise Architecture</name>
+
+  <elements>
+    <!-- Strategy Layer -->
+    <element identifier="id-s1" xsi:type="CourseOfAction">
+      <name>Digital Transformation Strategy</name>
+      <documentation>Enterprise-wide digital transformation initiative</documentation>
+    </element>
+    <element identifier="id-s2" xsi:type="Goal">
+      <name>Customer Experience Vision</name>
+      <documentation>Improve NPS by 30% through digital channels</documentation>
+    </element>
+    <element identifier="id-s3" xsi:type="Capability">
+      <name>Cloud-First Capability</name>
+      <documentation>Migrate 80% of workloads to cloud by 2027</documentation>
+    </element>
+
+    <!-- Business Layer -->
+    <element identifier="id-b1" xsi:type="BusinessProcess">
+      <name>Order Management</name>
+      <documentation>End-to-end order lifecycle from placement to fulfillment</documentation>
+    </element>
+    <element identifier="id-b2" xsi:type="BusinessService">
+      <name>Customer Onboarding</name>
+      <documentation>Digital self-service customer registration and KYC</documentation>
+    </element>
+    <element identifier="id-b3" xsi:type="BusinessFunction">
+      <name>Supply Chain Planning</name>
+      <documentation>Demand forecasting and inventory optimization</documentation>
+    </element>
+    <element identifier="id-b4" xsi:type="BusinessProcess">
+      <name>Invoice Processing</name>
+      <documentation>Automated invoice matching and payment processing</documentation>
+    </element>
+    <element identifier="id-b5" xsi:type="BusinessCollaboration">
+      <name>Partner Integration Hub</name>
+      <documentation>B2B partner data exchange and API marketplace</documentation>
+    </element>
+
+    <!-- Application Layer -->
+    <element identifier="id-a1" xsi:type="ApplicationComponent">
+      <name>CRM Platform</name>
+      <documentation>Salesforce-based customer relationship management</documentation>
+    </element>
+    <element identifier="id-a2" xsi:type="ApplicationComponent">
+      <name>ERP System</name>
+      <documentation>SAP S/4HANA enterprise resource planning</documentation>
+    </element>
+    <element identifier="id-a3" xsi:type="ApplicationComponent">
+      <name>API Gateway</name>
+      <documentation>Kong-based API management and rate limiting</documentation>
+    </element>
+    <element identifier="id-a4" xsi:type="ApplicationComponent">
+      <name>Data Analytics Platform</name>
+      <documentation>Snowflake data warehouse with dbt transformations</documentation>
+    </element>
+    <element identifier="id-a5" xsi:type="ApplicationComponent">
+      <name>Mobile App</name>
+      <documentation>React Native customer-facing mobile application</documentation>
+    </element>
+    <element identifier="id-a6" xsi:type="ApplicationService">
+      <name>Identity Provider</name>
+      <documentation>Okta SSO and MFA for all enterprise applications</documentation>
+    </element>
+    <element identifier="id-a7" xsi:type="ApplicationComponent">
+      <name>Event Bus</name>
+      <documentation>Apache Kafka event streaming platform</documentation>
+    </element>
+    <element identifier="id-a8" xsi:type="ApplicationComponent">
+      <name>Legacy Billing System</name>
+      <documentation>COBOL mainframe billing — scheduled for retirement</documentation>
+    </element>
+
+    <!-- Technology Layer -->
+    <element identifier="id-t1" xsi:type="Node">
+      <name>AWS Cloud Platform</name>
+      <documentation>Primary cloud infrastructure (eu-central-1)</documentation>
+    </element>
+    <element identifier="id-t2" xsi:type="SystemSoftware">
+      <name>Kubernetes Cluster</name>
+      <documentation>EKS-managed container orchestration</documentation>
+    </element>
+    <element identifier="id-t3" xsi:type="SystemSoftware">
+      <name>PostgreSQL Cluster</name>
+      <documentation>RDS Aurora PostgreSQL with read replicas</documentation>
+    </element>
+    <element identifier="id-t4" xsi:type="SystemSoftware">
+      <name>Redis Cache</name>
+      <documentation>ElastiCache Redis for session and API caching</documentation>
+    </element>
+    <element identifier="id-t5" xsi:type="Facility">
+      <name>On-Premise Data Center</name>
+      <documentation>Legacy Frankfurt DC — decommission planned 2027</documentation>
+    </element>
+    <element identifier="id-t6" xsi:type="Artifact">
+      <name>CI/CD Pipeline</name>
+      <documentation>GitHub Actions + ArgoCD GitOps deployment</documentation>
+    </element>
+  </elements>
+
+  <relationships>
+    <!-- Strategy → Business -->
+    <relationship identifier="id-r1" xsi:type="Triggering" source="id-s1" target="id-b1">
+      <name>Strategy drives process modernization</name>
+    </relationship>
+    <relationship identifier="id-r2" xsi:type="Triggering" source="id-s1" target="id-b5">
+      <name>Strategy enables partner ecosystem</name>
+    </relationship>
+    <relationship identifier="id-r3" xsi:type="Realization" source="id-s2" target="id-b2">
+      <name>Vision realized through digital onboarding</name>
+    </relationship>
+    <relationship identifier="id-r4" xsi:type="Realization" source="id-s3" target="id-t1">
+      <name>Cloud-first realized on AWS</name>
+    </relationship>
+
+    <!-- Business → Application -->
+    <relationship identifier="id-r5" xsi:type="Serving" source="id-b1" target="id-a2">
+      <name>ERP serves order management</name>
+    </relationship>
+    <relationship identifier="id-r6" xsi:type="Serving" source="id-b2" target="id-a1">
+      <name>CRM supports customer onboarding</name>
+    </relationship>
+    <relationship identifier="id-r7" xsi:type="Serving" source="id-b2" target="id-a6">
+      <name>IdP provides authentication</name>
+    </relationship>
+    <relationship identifier="id-r8" xsi:type="Serving" source="id-b3" target="id-a4">
+      <name>Analytics supports demand forecasting</name>
+    </relationship>
+    <relationship identifier="id-r9" xsi:type="Serving" source="id-b4" target="id-a8">
+      <name>Legacy billing handles invoicing</name>
+    </relationship>
+    <relationship identifier="id-r10" xsi:type="Serving" source="id-b4" target="id-a2">
+      <name>ERP provides invoice data</name>
+    </relationship>
+    <relationship identifier="id-r11" xsi:type="Serving" source="id-b5" target="id-a3">
+      <name>API Gateway enables partner integration</name>
+    </relationship>
+
+    <!-- Application ↔ Application -->
+    <relationship identifier="id-r12" xsi:type="Flow" source="id-a1" target="id-a3">
+      <name>CRM data flows through API Gateway</name>
+    </relationship>
+    <relationship identifier="id-r13" xsi:type="Flow" source="id-a2" target="id-a7">
+      <name>ERP events published to Kafka</name>
+    </relationship>
+    <relationship identifier="id-r14" xsi:type="Flow" source="id-a3" target="id-a7">
+      <name>API events streamed to Kafka</name>
+    </relationship>
+    <relationship identifier="id-r15" xsi:type="Serving" source="id-a5" target="id-a3">
+      <name>Mobile app consumes APIs</name>
+    </relationship>
+    <relationship identifier="id-r16" xsi:type="Serving" source="id-a5" target="id-a6">
+      <name>Mobile app authenticates via IdP</name>
+    </relationship>
+    <relationship identifier="id-r17" xsi:type="Flow" source="id-a7" target="id-a4">
+      <name>Events flow to analytics platform</name>
+    </relationship>
+
+    <!-- Application → Technology -->
+    <relationship identifier="id-r18" xsi:type="Assignment" source="id-a1" target="id-t2">
+      <name>CRM runs on Kubernetes</name>
+    </relationship>
+    <relationship identifier="id-r19" xsi:type="Assignment" source="id-a2" target="id-t1">
+      <name>ERP hosted on AWS</name>
+    </relationship>
+    <relationship identifier="id-r20" xsi:type="Assignment" source="id-a3" target="id-t2">
+      <name>API Gateway runs on Kubernetes</name>
+    </relationship>
+    <relationship identifier="id-r21" xsi:type="Assignment" source="id-a4" target="id-t3">
+      <name>Analytics uses PostgreSQL</name>
+    </relationship>
+    <relationship identifier="id-r22" xsi:type="Assignment" source="id-a6" target="id-t1">
+      <name>IdP hosted on AWS</name>
+    </relationship>
+    <relationship identifier="id-r23" xsi:type="Assignment" source="id-a7" target="id-t2">
+      <name>Kafka runs on Kubernetes</name>
+    </relationship>
+    <relationship identifier="id-r24" xsi:type="Assignment" source="id-a8" target="id-t5">
+      <name>Legacy billing on-premise</name>
+    </relationship>
+
+    <!-- Technology → Technology -->
+    <relationship identifier="id-r25" xsi:type="Composition" source="id-t2" target="id-t1">
+      <name>Kubernetes runs on AWS</name>
+    </relationship>
+    <relationship identifier="id-r26" xsi:type="Composition" source="id-t3" target="id-t1">
+      <name>PostgreSQL runs on AWS</name>
+    </relationship>
+    <relationship identifier="id-r27" xsi:type="Composition" source="id-t4" target="id-t1">
+      <name>Redis runs on AWS</name>
+    </relationship>
+  </relationships>
+</model>

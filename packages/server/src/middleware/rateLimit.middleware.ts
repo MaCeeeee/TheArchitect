@@ -6,6 +6,7 @@ interface RateLimitStore {
 }
 
 const stores = new Map<string, Map<string, RateLimitStore>>();
+const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
 export function rateLimit(options: { windowMs?: number; max?: number; name?: string } = {}) {
   const { windowMs = 60_000, max = 100, name = 'default' } = options;
@@ -15,15 +16,20 @@ export function rateLimit(options: { windowMs?: number; max?: number; name?: str
   }
   const store = stores.get(name)!;
 
-  // Cleanup expired entries periodically
-  setInterval(() => {
-    const now = Date.now();
-    for (const [key, entry] of store) {
-      if (now > entry.resetTime) {
-        store.delete(key);
+  // One cleanup interval per named store (not per middleware call)
+  if (!intervals.has(name)) {
+    const handle = setInterval(() => {
+      const now = Date.now();
+      for (const [key, entry] of store) {
+        if (now > entry.resetTime) {
+          store.delete(key);
+        }
       }
-    }
-  }, windowMs);
+    }, windowMs);
+    // Allow process to exit cleanly without waiting for this interval
+    if (handle.unref) handle.unref();
+    intervals.set(name, handle);
+  }
 
   return (req: Request, res: Response, next: NextFunction) => {
     const key = req.ip || req.socket.remoteAddress || 'unknown';

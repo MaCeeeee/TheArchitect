@@ -15,7 +15,8 @@ export type InsightCategory =
   | 'mirofish_conflict'
   | 'cascade_risk'
   | 'architecture_drift'
-  | 'missing_compliance_element';
+  | 'missing_compliance_element'
+  | 'portfolio';
 
 export type RemediationActionType =
   | 'retire_element'

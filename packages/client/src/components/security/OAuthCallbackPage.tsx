@@ -24,7 +24,7 @@ export default function OAuthCallbackPage() {
       .me()
       .then(({ data }) => {
         login(data, accessToken, refreshToken);
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       })
       .catch(() => {
         useAuthStore.getState().logout();

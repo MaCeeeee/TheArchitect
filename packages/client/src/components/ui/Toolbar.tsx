@@ -43,10 +43,11 @@ interface ToolbarProps {
   onOpenBPMNImport: () => void;
   onOpenN8nImport: () => void;
   onOpenCSVImport: () => void;
+  onOpenImportMapping?: () => void;
   onOpenWalkthrough: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenWalkthrough }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -183,7 +184,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
 
         <div className="mx-2 h-5 w-px bg-[#1a2a1a]" />
 
-        <button onClick={() => navigate('/')} className="flex items-center gap-1.5 hover:opacity-80 transition" title="Back to Dashboard">
+        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-1.5 hover:opacity-80 transition" title="Back to Dashboard">
           <span className="text-sm font-semibold text-[#00ff41]" style={{ textShadow: '0 0 10px rgba(0,255,65,0.5)' }}>TheArchitect</span>
           {!isProjectView && <span className="text-xs text-[var(--text-secondary)]">Enterprise Architecture</span>}
         </button>
@@ -261,6 +262,9 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         <ToolbarButton icon={<Upload size={16} />} title="Import BPMN" onClick={onOpenBPMNImport} />
         <ToolbarButton icon={<Workflow size={16} />} title="Import n8n" onClick={onOpenN8nImport} />
         <ToolbarButton icon={<FileSpreadsheet size={16} />} title="Import CSV" onClick={onOpenCSVImport} />
+        {onOpenImportMapping && (
+          <ToolbarButton icon={<Upload size={16} />} title="Import Data (Mapping)" onClick={onOpenImportMapping} />
+        )}
         <div className="mx-1 h-5 w-px bg-[#1a2a1a]" />
         <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
         <ToolbarButton

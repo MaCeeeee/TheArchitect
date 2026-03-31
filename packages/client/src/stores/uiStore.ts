@@ -16,6 +16,9 @@ interface UIState {
   showMissionControl: boolean;
   showComplianceOverlay: boolean;
   complianceOverlaySection: string;
+  // Connection drawing mode
+  isConnectionMode: boolean;
+  connectionSourceId: string | null;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -28,6 +31,9 @@ interface UIState {
   toggleMissionControl: () => void;
   openComplianceOverlay: (section?: string) => void;
   closeComplianceOverlay: () => void;
+  enterConnectionMode: () => void;
+  exitConnectionMode: () => void;
+  setConnectionSource: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -54,4 +60,10 @@ export const useUIStore = create<UIState>((set) => ({
   toggleMissionControl: () => set((s) => ({ showMissionControl: !s.showMissionControl })),
   openComplianceOverlay: (section) => set({ showComplianceOverlay: true, complianceOverlaySection: section || 'pipeline' }),
   closeComplianceOverlay: () => set({ showComplianceOverlay: false }),
+  // Connection mode
+  isConnectionMode: false,
+  connectionSourceId: null,
+  enterConnectionMode: () => set({ isConnectionMode: true, connectionSourceId: null }),
+  exitConnectionMode: () => set({ isConnectionMode: false, connectionSourceId: null }),
+  setConnectionSource: (id) => set({ connectionSourceId: id }),
 }));

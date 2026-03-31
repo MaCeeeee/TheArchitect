@@ -31,7 +31,7 @@ export default function LoginPage() {
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
   const emailRef = useRef<HTMLInputElement>(null);
   const mfaRef = useRef<HTMLInputElement>(null);
 

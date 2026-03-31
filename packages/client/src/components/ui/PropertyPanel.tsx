@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { X, Link, TrendingUp, Trash2 } from 'lucide-react';
+import { X, Link, TrendingUp, Trash2, Bot } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -13,6 +13,14 @@ const RISK_COLORS: Record<string, string> = {
 
 const STATUS_OPTIONS = ['current', 'target', 'transitional', 'retired'] as const;
 const RISK_OPTIONS = ['low', 'medium', 'high', 'critical'] as const;
+const PROVIDER_OPTIONS = ['openai', 'anthropic', 'google', 'azure', 'custom'] as const;
+const AUTONOMY_OPTIONS = ['copilot', 'semi_autonomous', 'autonomous'] as const;
+
+const AUTONOMY_COLORS: Record<string, string> = {
+  copilot: '#22c55e',
+  semi_autonomous: '#f59e0b',
+  autonomous: '#ef4444',
+};
 
 export default function PropertyPanel() {
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
@@ -88,6 +96,45 @@ export default function PropertyPanel() {
             <span className="text-white text-[10px] ml-1">{element.maturityLevel}/5</span>
           </div>
         </Section>
+
+        {/* AI Agent fields — only for ai_agent type */}
+        {element.type === 'ai_agent' && (
+          <Section title="AI Agent">
+            <SelectField
+              label="Provider"
+              value={element.agentProvider || 'custom'}
+              options={PROVIDER_OPTIONS}
+              onChange={(v) => handleFieldChange('agentProvider', v)}
+            />
+            <EditableField
+              label="Model"
+              value={element.agentModel || ''}
+              onChange={(v) => handleFieldChange('agentModel', v)}
+            />
+            <SelectField
+              label="Autonomy"
+              value={element.autonomyLevel || 'copilot'}
+              options={AUTONOMY_OPTIONS}
+              onChange={(v) => handleFieldChange('autonomyLevel', v)}
+              colorMap={AUTONOMY_COLORS}
+            />
+            <EditableField
+              label="Purpose"
+              value={element.agentPurpose || ''}
+              onChange={(v) => handleFieldChange('agentPurpose', v)}
+            />
+            <div className="flex items-center justify-between text-xs py-0.5">
+              <span className="text-[var(--text-secondary)]">Cost/mo</span>
+              <input
+                type="number"
+                value={element.costPerMonth ?? 0}
+                onChange={(e) => handleFieldChange('costPerMonth', parseFloat(e.target.value) || 0)}
+                className="w-20 rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-1.5 py-0.5 text-xs text-white outline-none focus:border-[#00ff41] text-right"
+                placeholder="$0"
+              />
+            </div>
+          </Section>
+        )}
 
         {/* Description */}
         <Section title="Description">

@@ -13,6 +13,20 @@ export type TOGAFDomain = 'business' | 'data' | 'application' | 'technology' | '
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type ElementStatus = 'current' | 'target' | 'transitional' | 'retired';
 
+// Lifecycle phases for Application Portfolio Management
+export type LifecyclePhase =
+  | 'plan'
+  | 'design'
+  | 'build'
+  | 'test'
+  | 'deploy'
+  | 'operate'
+  | 'phase_out'
+  | 'retire';
+
+// TIME classification for Technology Risk Radar
+export type TIMEClassification = 'tolerate' | 'invest' | 'migrate' | 'eliminate';
+
 export type ElementType =
   // Strategy (ArchiMate 3.2 Chapter 7)
   | 'business_capability'
@@ -89,7 +103,9 @@ export type ElementType =
   | 'material'
   // Composite (ArchiMate 3.2 Chapter 4)
   | 'grouping'
-  | 'location';
+  | 'location'
+  // AI Extension (TheArchitect — AI Agent Discovery)
+  | 'ai_agent';
 
 export interface Position3D {
   x: number;
@@ -111,6 +127,26 @@ export interface ArchitectureElement {
   metadata: Record<string, unknown>;
   projectId: string;
   workspaceId: string;
+  // Lifecycle & Portfolio fields (optional — populated for APM use cases)
+  lifecyclePhase?: LifecyclePhase;
+  goLiveDate?: string;
+  endOfLifeDate?: string;
+  replacedBy?: string;          // element ID of successor
+  timeClassification?: TIMEClassification;
+  businessOwner?: string;
+  technicalOwner?: string;
+  businessCriticality?: 'low' | 'medium' | 'high' | 'mission_critical';
+  annualCost?: number;
+  userCount?: number;
+  // AI Agent fields (populated when type === 'ai_agent')
+  agentProvider?: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
+  agentModel?: string;
+  agentPurpose?: string;
+  autonomyLevel?: 'copilot' | 'semi_autonomous' | 'autonomous';
+  costPerMonth?: number;
+  lastActiveDate?: string;
+  dataSources?: string[];       // element IDs this agent reads from
+  outputTargets?: string[];     // element IDs this agent writes to
   createdAt: string;
   updatedAt: string;
 }

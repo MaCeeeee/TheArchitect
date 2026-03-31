@@ -28,7 +28,13 @@ import roadmapRoutes from './routes/roadmap.routes';
 import demoRoutes from './routes/demo.routes';
 import blueprintRoutes from './routes/blueprint.routes';
 import remediationRoutes from './routes/remediation.routes';
+import portfolioRoutes from './routes/portfolio.routes';
+import importRoutes from './routes/import.routes';
+import connectorRoutes from './routes/connector.routes';
+import snapshotRoutes from './routes/snapshot.routes';
+import healthcheckRoutes from './routes/healthcheck.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
+import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 
 dotenv.config();
 
@@ -37,6 +43,9 @@ const PORT = process.env.PORT || 4000;
 async function main() {
   const app = express();
   const server = http.createServer(app);
+
+  // Trust proxy for correct IP detection (rate limiting, logging) behind Caddy/nginx
+  app.set('trust proxy', 1);
 
   // Middleware
   app.use(helmet({ contentSecurityPolicy: false }));
@@ -49,8 +58,11 @@ async function main() {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '0.1.0' });
   });
 
-  // Global rate limit
-  app.use(rateLimit({ windowMs: 60_000, max: 200, name: 'global' }));
+  // Global rate limit — disabled in dev to avoid 429s during rapid testing
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev) {
+    app.use(rateLimit({ windowMs: 60_000, max: 200, name: 'global' }));
+  }
 
   // Routes
   app.use('/api/auth', authRoutes);
@@ -72,8 +84,14 @@ async function main() {
   app.use('/api/projects', advisorRoutes);
   app.use('/api/projects', roadmapRoutes);
   app.use('/api/demo', demoRoutes);
+  app.use('/api', snapshotRoutes);        // Public: /api/snapshots/:token
+  app.use('/api/projects', snapshotRoutes); // Protected: /api/projects/:projectId/snapshots
+  app.use('/api/healthcheck', healthcheckRoutes);
   app.use('/api/projects', blueprintRoutes);
   app.use('/api/projects', remediationRoutes);
+  app.use('/api/projects', portfolioRoutes);
+  app.use('/api/projects', importRoutes);
+  app.use('/api/projects', connectorRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {
@@ -97,6 +115,9 @@ async function main() {
 
   // Initialize WebSocket
   initSocketServer(server);
+
+  // Start temp graph cleanup cron
+  startTempGraphCleanup();
 
   server.listen(PORT, () => {
     console.log(`[TheArchitect] Server running on http://localhost:${PORT}`);

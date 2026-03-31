@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FolderTree, Search, Plus, ChevronRight, ChevronDown, Eye, EyeOff,
-  Settings, BookOpen, BarChart3, Sparkles, X, ShieldCheck,
+  Settings, BookOpen, BarChart3, Sparkles, X, ShieldCheck, Briefcase, Users, Bot,
 } from 'lucide-react';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -16,6 +16,7 @@ import CapacityPlanning from '../simulation/CapacityPlanning';
 import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
 import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
+import ConnectorPanel from '../import/ConnectorPanel';
 import PhaseBar from './PhaseBar';
 import { ARCHITECTURE_LAYERS, ELEMENT_TYPES, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
@@ -235,6 +236,14 @@ export default function Sidebar() {
 
 const ANALYTICS_GROUPS = [
   {
+    key: 'manage',
+    label: 'Manage',
+    items: [
+      { id: 'portfolio', label: 'Portfolio' },
+      { id: 'connectors', label: 'Integrations' },
+    ],
+  },
+  {
     key: 'assess',
     label: 'Assess',
     items: [
@@ -261,9 +270,11 @@ const ANALYTICS_GROUPS = [
   },
 ] as const;
 
-type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'roadmap';
+type AnalyticsTab = 'portfolio' | 'connectors' | 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'roadmap';
 
 function AnalyticsPanel() {
+  const navigate = useNavigate();
+  const projectId = useArchitectureStore((s) => s.projectId);
   const [tab, setTab] = useState<AnalyticsTab>('risk');
 
   return (
@@ -293,6 +304,38 @@ function AnalyticsPanel() {
         ))}
       </div>
       <div className="flex-1 overflow-hidden">
+        {tab === 'portfolio' && projectId && (
+          <div className="p-3 space-y-3">
+            <p className="text-xs text-[var(--text-secondary)]">Application Portfolio Management</p>
+            <button
+              onClick={() => navigate(`/project/${projectId}/portfolio`)}
+              className="flex w-full items-center gap-2 rounded-md bg-[#00ff41] px-3 py-2 text-xs font-medium text-black hover:bg-[#00cc33] transition"
+            >
+              <Briefcase size={14} />
+              Open Portfolio View
+            </button>
+            <button
+              onClick={() => navigate(`/project/${projectId}/stakeholder`)}
+              className="flex w-full items-center gap-2 rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 px-3 py-2 text-xs font-medium text-[#00ff41] hover:bg-[#00ff41]/20 transition"
+            >
+              <Users size={14} />
+              Stakeholder Dashboard
+            </button>
+            <button
+              onClick={() => navigate(`/project/${projectId}/ai-agents`)}
+              className="flex w-full items-center gap-2 rounded-md border border-[#a855f7]/30 bg-[#a855f7]/10 px-3 py-2 text-xs font-medium text-[#a855f7] hover:bg-[#a855f7]/20 transition"
+            >
+              <Bot size={14} />
+              AI Agent Inventory
+            </button>
+            <p className="text-[10px] text-[var(--text-tertiary)]">View application inventory, lifecycle status, risk levels, and ownership across your architecture.</p>
+          </div>
+        )}
+        {tab === 'connectors' && projectId && (
+          <div className="p-3 overflow-y-auto flex-1">
+            <ConnectorPanel projectId={projectId} />
+          </div>
+        )}
         {tab === 'risk' && <RiskDashboard />}
         {tab === 'impact' && <ImpactAnalysis />}
         {tab === 'cost' && <CostOptimization />}

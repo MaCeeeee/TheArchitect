@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
+import { useUIStore } from '../../stores/uiStore';
 import type { JourneyPhase } from '../../stores/journeyStore';
 
 export default function PhaseBar() {
@@ -61,7 +62,13 @@ export default function PhaseBar() {
       {/* Next action */}
       {current?.nextAction && (
         <button
-          onClick={() => navigate(current.nextAction!.route)}
+          onClick={() => {
+            if (current.nextAction!.route === '__connection_mode__') {
+              useUIStore.getState().enterConnectionMode();
+            } else {
+              navigate(current.nextAction!.route);
+            }
+          }}
           className="ml-auto text-[10px] font-medium text-[var(--status-purple)] hover:text-[#c4b5fd] transition animate-[pulseGlow_2s_ease-in-out_infinite]"
         >
           {current.nextAction.label} →

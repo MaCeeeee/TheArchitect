@@ -27,6 +27,9 @@ const TOGAFDomainEnum = z.enum([
   'business', 'data', 'application', 'technology', 'motivation', 'implementation', 'strategy',
 ]);
 
+const ProviderEnum = z.enum(['openai', 'anthropic', 'google', 'azure', 'custom']);
+const AutonomyEnum = z.enum(['copilot', 'semi_autonomous', 'autonomous']);
+
 const CreateElementSchema = z.object({
   id: z.string().optional(),
   type: z.string().min(1),
@@ -39,6 +42,15 @@ const CreateElementSchema = z.object({
   status: z.enum(['current', 'target', 'transitional', 'retired']).default('current'),
   position3D: Position3DSchema.default({ x: 0, y: 0, z: 0 }),
   metadata: z.record(z.unknown()).default({}),
+  // AI Agent fields
+  agentProvider: ProviderEnum.optional(),
+  agentModel: z.string().max(100).optional(),
+  agentPurpose: z.string().max(500).optional(),
+  autonomyLevel: AutonomyEnum.optional(),
+  costPerMonth: z.number().min(0).optional(),
+  lastActiveDate: z.string().optional(),
+  dataSources: z.array(z.string()).optional(),
+  outputTargets: z.array(z.string()).optional(),
 });
 
 const UpdateElementSchema = z.object({
@@ -50,6 +62,15 @@ const UpdateElementSchema = z.object({
   riskLevel: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['current', 'target', 'transitional', 'retired']).optional(),
   position3D: Position3DSchema.optional(),
+  // AI Agent fields
+  agentProvider: ProviderEnum.optional(),
+  agentModel: z.string().max(100).optional(),
+  agentPurpose: z.string().max(500).optional(),
+  autonomyLevel: AutonomyEnum.optional(),
+  costPerMonth: z.number().min(0).optional(),
+  lastActiveDate: z.string().optional(),
+  dataSources: z.array(z.string()).optional(),
+  outputTargets: z.array(z.string()).optional(),
 });
 
 const CreateConnectionSchema = z.object({
@@ -107,16 +128,19 @@ router.post(
       const parsed = CreateElementSchema.parse(req.body);
       const element = { id: parsed.id || uuid(), projectId, ...parsed };
 
-      await runCypher(
-        `CREATE (e:ArchitectureElement {
+      const cypher = `CREATE (e:ArchitectureElement {
           id: $id, projectId: $projectId, type: $type, name: $name,
           description: $description, layer: $layer, togafDomain: $togafDomain,
           maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
           posX: $posX, posY: $posY, posZ: $posZ,
           metadataJson: $metadataJson,
+          agentProvider: $agentProvider, agentModel: $agentModel,
+          agentPurpose: $agentPurpose, autonomyLevel: $autonomyLevel,
+          costPerMonth: $costPerMonth,
           createdAt: datetime(), updatedAt: datetime()
-        }) RETURN e`,
-        {
+        }) RETURN e`;
+
+      await runCypher(cypher, {
           id: element.id,
           projectId,
           type: element.type,
@@ -131,6 +155,11 @@ router.post(
           posY: element.position3D.y,
           posZ: element.position3D.z,
           metadataJson: JSON.stringify(element.metadata || {}),
+          agentProvider: element.agentProvider || null,
+          agentModel: element.agentModel || null,
+          agentPurpose: element.agentPurpose || null,
+          autonomyLevel: element.autonomyLevel || null,
+          costPerMonth: element.costPerMonth ?? null,
         }
       );
 
@@ -172,6 +201,15 @@ router.put(
         params.posY = parsed.position3D.y;
         params.posZ = parsed.position3D.z;
       }
+      // AI Agent fields
+      if (parsed.agentProvider !== undefined) { setFields.push('e.agentProvider = $agentProvider'); params.agentProvider = parsed.agentProvider; }
+      if (parsed.agentModel !== undefined) { setFields.push('e.agentModel = $agentModel'); params.agentModel = parsed.agentModel; }
+      if (parsed.agentPurpose !== undefined) { setFields.push('e.agentPurpose = $agentPurpose'); params.agentPurpose = parsed.agentPurpose; }
+      if (parsed.autonomyLevel !== undefined) { setFields.push('e.autonomyLevel = $autonomyLevel'); params.autonomyLevel = parsed.autonomyLevel; }
+      if (parsed.costPerMonth !== undefined) { setFields.push('e.costPerMonth = $costPerMonth'); params.costPerMonth = parsed.costPerMonth; }
+      if (parsed.lastActiveDate !== undefined) { setFields.push('e.lastActiveDate = $lastActiveDate'); params.lastActiveDate = parsed.lastActiveDate; }
+      if (parsed.dataSources !== undefined) { setFields.push('e.dataSources = $dataSources'); params.dataSources = parsed.dataSources; }
+      if (parsed.outputTargets !== undefined) { setFields.push('e.outputTargets = $outputTargets'); params.outputTargets = parsed.outputTargets; }
 
       if (setFields.length === 0) {
         res.status(400).json({ success: false, error: 'No valid fields to update' });

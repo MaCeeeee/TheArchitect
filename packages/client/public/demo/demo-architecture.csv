@@ -1,0 +1,51 @@
+id,name,type,layer,description,status,risk_level,maturity_level
+s1,Digital Transformation Strategy,course_of_action,strategy,Enterprise-wide digital transformation initiative,current,low,4
+s2,Customer Experience Vision,goal,strategy,Improve NPS by 30% through digital channels,current,medium,3
+s3,Cloud-First Capability,business_capability,strategy,Migrate 80% of workloads to cloud by 2027,current,low,4
+b1,Order Management,process,business,End-to-end order lifecycle from placement to fulfillment,current,medium,3
+b2,Customer Onboarding,business_service,business,Digital self-service customer registration and KYC,current,high,2
+b3,Supply Chain Planning,business_function,business,Demand forecasting and inventory optimization,current,medium,3
+b4,Invoice Processing,process,business,Automated invoice matching and payment processing,current,low,4
+b5,Partner Integration Hub,business_collaboration,business,B2B partner data exchange and API marketplace,target,high,2
+a1,CRM Platform,application_component,application,Salesforce-based customer relationship management,current,low,4
+a2,ERP System,application_component,application,SAP S/4HANA enterprise resource planning,current,medium,3
+a3,API Gateway,application_component,application,Kong-based API management and rate limiting,current,low,5
+a4,Data Analytics Platform,application_component,application,Snowflake data warehouse with dbt transformations,current,low,4
+a5,Mobile App,application_component,application,React Native customer-facing mobile application,current,medium,3
+a6,Identity Provider,application_service,application,Okta SSO and MFA for all enterprise applications,current,low,5
+a7,Event Bus,application_component,application,Apache Kafka event streaming platform,current,low,4
+a8,Legacy Billing System,application_component,application,COBOL mainframe billing — scheduled for retirement,phase_out,critical,1
+t1,AWS Cloud Platform,node,technology,Primary cloud infrastructure (eu-central-1),current,low,5
+t2,Kubernetes Cluster,system_software,technology,EKS-managed container orchestration,current,low,4
+t3,PostgreSQL Cluster,system_software,technology,RDS Aurora PostgreSQL with read replicas,current,low,4
+t4,Redis Cache,system_software,technology,ElastiCache Redis for session and API caching,current,low,4
+t5,On-Premise Data Center,facility,technology,Legacy Frankfurt DC — decommission planned 2027,phase_out,high,2
+t6,CI/CD Pipeline,artifact,technology,GitHub Actions + ArgoCD GitOps deployment,current,low,4
+source,target,connection_type,label
+s1,b1,triggering,Strategy drives process modernization
+s1,b5,triggering,Strategy enables partner ecosystem
+s2,b2,realization,Vision realized through digital onboarding
+s3,t1,realization,Cloud-first realized on AWS
+b1,a2,serving,ERP serves order management
+b2,a1,serving,CRM supports customer onboarding
+b2,a6,serving,IdP provides authentication
+b3,a4,serving,Analytics supports demand forecasting
+b4,a8,serving,Legacy billing handles invoicing
+b4,a2,serving,ERP provides invoice data
+b5,a3,serving,API Gateway enables partner integration
+a1,a3,flow,CRM data flows through API Gateway
+a2,a7,flow,ERP events published to Kafka
+a3,a7,flow,API events streamed to Kafka
+a5,a3,serving,Mobile app consumes APIs
+a5,a6,serving,Mobile app authenticates via IdP
+a7,a4,flow,Events flow to analytics platform
+a1,t2,assignment,CRM runs on Kubernetes
+a2,t1,assignment,ERP hosted on AWS
+a3,t2,assignment,API Gateway runs on Kubernetes
+a4,t3,assignment,Analytics uses PostgreSQL
+a6,t1,assignment,IdP hosted on AWS
+a7,t2,assignment,Kafka runs on Kubernetes
+a8,t5,assignment,Legacy billing on-premise
+t2,t1,composition,Kubernetes runs on AWS
+t3,t1,composition,PostgreSQL runs on AWS
+t4,t1,composition,Redis runs on AWS

@@ -12,6 +12,12 @@ import ProjectView from './components/ui/ProjectView';
 import SettingsPage from './components/settings/SettingsPage';
 import CompliancePage from './components/compliance/CompliancePage';
 import BlueprintWizard from './components/blueprint/BlueprintWizard';
+import PortfolioPage from './components/portfolio/PortfolioPage';
+import StakeholderDashboard from './components/portfolio/StakeholderDashboard';
+import AIAgentInventory from './components/portfolio/AIAgentInventory';
+import SharedSnapshotView from './components/portfolio/SharedSnapshotView';
+import LandingPage from './components/landing/LandingPage';
+import HealthReport from './components/healthcheck/HealthReport';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -23,27 +29,37 @@ export default function App() {
   return (
     <ErrorBoundary>
     <Routes>
+      {/* Public routes — no auth required */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/report/:reportId" element={<HealthReport />} />
+      <Route path="/shared/:token" element={<SharedSnapshotView />} />
+
+      {/* Auth routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
       <Route path="/auth/callback" element={<OAuthCallbackPage />} />
       <Route path="/invitations/:token" element={<InvitationPage />} />
+
+      {/* Protected app routes */}
       <Route
-        path="/"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<DashboardPage />} />
-        <Route path="project/:projectId" element={<ProjectView />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="settings/:section" element={<SettingsPage />} />
-        <Route path="project/:projectId/blueprint" element={<BlueprintWizard />} />
-        <Route path="project/:projectId/compliance" element={<CompliancePage />} />
-        <Route path="project/:projectId/compliance/:section" element={<CompliancePage />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/project/:projectId" element={<ProjectView />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/:section" element={<SettingsPage />} />
+        <Route path="/project/:projectId/blueprint" element={<BlueprintWizard />} />
+        <Route path="/project/:projectId/portfolio" element={<PortfolioPage />} />
+        <Route path="/project/:projectId/stakeholder" element={<StakeholderDashboard />} />
+        <Route path="/project/:projectId/ai-agents" element={<AIAgentInventory />} />
+        <Route path="/project/:projectId/compliance" element={<CompliancePage />} />
+        <Route path="/project/:projectId/compliance/:section" element={<CompliancePage />} />
       </Route>
     </Routes>
     </ErrorBoundary>

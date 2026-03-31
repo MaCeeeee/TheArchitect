@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Wand2, Boxes, ArrowRight } from 'lucide-react';
 import Scene from '../3d/Scene';
@@ -27,12 +27,24 @@ export default function ProjectView() {
   const complianceOverlaySection = useUIStore((s) => s.complianceOverlaySection);
   const closeComplianceOverlay = useUIStore((s) => s.closeComplianceOverlay);
   const { phases, currentPhase } = useJourneyStore();
+  const isConnectionMode = useUIStore((s) => s.isConnectionMode);
+  const connectionSourceId = useUIStore((s) => s.connectionSourceId);
+  const exitConnectionMode = useUIStore((s) => s.exitConnectionMode);
+  const elements = useArchitectureStore((s) => s.elements);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dismissedEmpty, setDismissedEmpty] = useState(false);
 
-  const elements = useArchitectureStore((s) => s.elements);
   const currentPhaseInfo = phases.find((p) => p.phase === currentPhase);
+
+  // Escape key exits connection mode
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isConnectionMode) exitConnectionMode();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isConnectionMode, exitConnectionMode]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -158,13 +170,41 @@ export default function ProjectView() {
     <div className="flex h-full">
       <div className="flex-1 relative">
         <Scene />
+
+        {/* Connection mode banner */}
+        {isConnectionMode && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+            <div className="flex items-center gap-3 rounded-lg border border-[#00ff41]/30 bg-[#0a0a0a]/90 backdrop-blur-md px-5 py-3 shadow-lg">
+              <div className="h-2 w-2 rounded-full bg-[#00ff41] animate-pulse" />
+              <span className="text-sm font-medium text-[#00ff41]">
+                {connectionSourceId
+                  ? `Source: ${elements.find(e => e.id === connectionSourceId)?.name || '...'} — click target element`
+                  : 'Click source element to start connection'
+                }
+              </span>
+              <button
+                onClick={exitConnectionMode}
+                className="ml-2 rounded px-2 py-0.5 text-xs text-[var(--text-tertiary)] border border-[var(--border-subtle)] hover:text-white hover:border-white/30 transition"
+              >
+                Cancel (Esc)
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Contextual next-step guidance floating above 3D scene */}
-        {currentPhaseInfo?.nextAction && (
+        {currentPhaseInfo?.nextAction && !isConnectionMode && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[420px] max-w-[90%]">
             <NextStepBanner
               message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
               actionLabel={currentPhaseInfo.nextAction.label}
-              onAction={() => navigate(currentPhaseInfo.nextAction!.route)}
+              onAction={() => {
+                if (currentPhaseInfo.nextAction!.route === '__connection_mode__') {
+                  useUIStore.getState().enterConnectionMode();
+                } else {
+                  navigate(currentPhaseInfo.nextAction!.route);
+                }
+              }}
               className="backdrop-blur-md bg-[var(--surface-base)]/80 shadow-lg"
             />
           </div>
