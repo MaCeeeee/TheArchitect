@@ -26,6 +26,9 @@ import {
   ListTree,
   Loader2,
   FileSpreadsheet,
+  Link2,
+  Eye,
+  ChevronDown,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -38,6 +41,7 @@ import { useAdvisorStore } from '../../stores/advisorStore';
 import ProjectCollaborators from './ProjectCollaborators';
 import HealthScoreRing from '../copilot/HealthScoreRing';
 import { Crosshair } from 'lucide-react';
+import { ARCHIMATE_VIEWPOINTS, VIEWPOINT_CATEGORIES } from '@thearchitect/shared/src/constants/archimate-viewpoints';
 
 interface ToolbarProps {
   onOpenBPMNImport: () => void;
@@ -70,8 +74,15 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   const setScenarioMode = useArchitectureStore((s) => s.setScenarioMode);
 
   const projectId = useArchitectureStore((s) => s.projectId);
+  const isConnectionMode = useUIStore((s) => s.isConnectionMode);
+  const enterConnectionMode = useUIStore((s) => s.enterConnectionMode);
+  const exitConnectionMode = useUIStore((s) => s.exitConnectionMode);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const toggleXRay = useXRayStore((s) => s.toggleXRay);
+  const activeViewpoint = useUIStore((s) => s.activeViewpoint);
+  const setActiveViewpoint = useUIStore((s) => s.setActiveViewpoint);
+  const [showViewpointMenu, setShowViewpointMenu] = useState(false);
+  const viewpointRef = useRef<HTMLDivElement>(null);
 
   // X-Ray guard: auto-switch to 3D when activating X-Ray
   const handleXRayToggle = () => {
@@ -108,6 +119,17 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
     if (showExportMenu) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showExportMenu]);
+
+  // Close viewpoint menu on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (viewpointRef.current && !viewpointRef.current.contains(e.target as Node)) {
+        setShowViewpointMenu(false);
+      }
+    };
+    if (showViewpointMenu) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showViewpointMenu]);
 
   const handleExport = async (type: 'executive' | 'inventory') => {
     if (!projectId) return;
@@ -159,6 +181,19 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         handleSetViewMode('layer');
       }
 
+      // C = toggle connection mode
+      if (e.key === 'c' && !e.ctrlKey && !e.metaKey && isProjectView) {
+        e.preventDefault();
+        const ui = useUIStore.getState();
+        ui.isConnectionMode ? ui.exitConnectionMode() : ui.enterConnectionMode();
+      }
+
+      // V = toggle viewpoint menu
+      if (e.key === 'v' && !e.ctrlKey && !e.metaKey && isProjectView) {
+        e.preventDefault();
+        setShowViewpointMenu(prev => !prev);
+      }
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
         const selectedId = useArchitectureStore.getState().selectedElementId;
         if (selectedId) {
@@ -168,7 +203,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
+  }, [undo, redo, isProjectView]);
 
   return (
     <header className="flex h-12 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4">
@@ -231,26 +266,85 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         )}
       </div>
 
-      {/* Center section - View modes */}
-      <div className="flex items-center gap-1 rounded-lg bg-[var(--surface-base)] p-0.5">
-        <ViewModeButton
-          icon={<Box size={16} />}
-          label="3D"
-          active={viewMode === '3d'}
-          onClick={() => handleSetViewMode('3d')}
-        />
-        <ViewModeButton
-          icon={<Grid3x3 size={16} />}
-          label="2D"
-          active={viewMode === '2d-topdown'}
-          onClick={() => handleSetViewMode('2d-topdown')}
-        />
-        <ViewModeButton
-          icon={<Layers size={16} />}
-          label="Layers"
-          active={viewMode === 'layer'}
-          onClick={() => handleSetViewMode('layer')}
-        />
+      {/* Center section - View modes + Viewpoint */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 rounded-lg bg-[var(--surface-base)] p-0.5">
+          <ViewModeButton
+            icon={<Box size={16} />}
+            label="3D"
+            active={viewMode === '3d'}
+            onClick={() => handleSetViewMode('3d')}
+          />
+          <ViewModeButton
+            icon={<Grid3x3 size={16} />}
+            label="2D"
+            active={viewMode === '2d-topdown'}
+            onClick={() => handleSetViewMode('2d-topdown')}
+          />
+          <ViewModeButton
+            icon={<Layers size={16} />}
+            label="Layers"
+            active={viewMode === 'layer'}
+            onClick={() => handleSetViewMode('layer')}
+          />
+        </div>
+
+        {/* Viewpoint selector */}
+        {isProjectView && (
+          <div className="relative" ref={viewpointRef}>
+            <button
+              onClick={() => setShowViewpointMenu(!showViewpointMenu)}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                activeViewpoint
+                  ? 'bg-[#00ff41]/10 text-[#33ff66] border border-[#00ff41]/30'
+                  : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--surface-base)] border border-transparent'
+              }`}
+              title={activeViewpoint ? `Viewpoint: ${ARCHIMATE_VIEWPOINTS.find(v => v.id === activeViewpoint)?.name}` : 'Select Viewpoint (V)'}
+            >
+              <Eye size={14} />
+              <span className="max-w-[100px] truncate">
+                {activeViewpoint
+                  ? ARCHIMATE_VIEWPOINTS.find(v => v.id === activeViewpoint)?.name || 'Viewpoint'
+                  : 'Viewpoint'}
+              </span>
+              <ChevronDown size={12} className={`transition ${showViewpointMenu ? 'rotate-180' : ''}`} />
+            </button>
+            {showViewpointMenu && (
+              <div className="absolute left-0 top-full mt-1 w-64 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] py-1 shadow-xl z-50 max-h-80 overflow-y-auto">
+                {/* Clear viewpoint */}
+                <button
+                  onClick={() => { setActiveViewpoint(null); setShowViewpointMenu(false); }}
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-xs transition ${
+                    !activeViewpoint ? 'text-[#00ff41] bg-[#00ff41]/5' : 'text-[var(--text-secondary)] hover:bg-[#1a2a1a]'
+                  }`}
+                >
+                  <Eye size={12} />
+                  All Elements (No Filter)
+                </button>
+                <div className="mx-2 my-1 h-px bg-[#1a2a1a]" />
+                {VIEWPOINT_CATEGORIES.map(cat => (
+                  <div key={cat.id}>
+                    <div className="px-3 py-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-disabled)]">
+                      {cat.label}
+                    </div>
+                    {ARCHIMATE_VIEWPOINTS.filter(v => v.category === cat.id).map(vp => (
+                      <button
+                        key={vp.id}
+                        onClick={() => { setActiveViewpoint(vp.id); setShowViewpointMenu(false); toast.success(`Viewpoint: ${vp.name}`); }}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-xs transition ${
+                          activeViewpoint === vp.id ? 'text-[#00ff41] bg-[#00ff41]/5' : 'text-[#d0d0d0] hover:bg-[#1a2a1a]'
+                        }`}
+                      >
+                        <span className="flex-1 text-left">{vp.name}</span>
+                        <span className="text-[10px] text-[var(--text-disabled)]">{vp.allowedElementTypes.length} types</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Right section */}
@@ -258,6 +352,14 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         <ToolbarButton icon={<Undo2 size={16} />} title="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
         <ToolbarButton icon={<Redo2 size={16} />} title="Redo (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} />
         <div className="mx-1 h-5 w-px bg-[#1a2a1a]" />
+        {isProjectView && (
+          <ToolbarButton
+            icon={<Link2 size={16} />}
+            title={isConnectionMode ? 'Exit Connection Mode (Esc)' : 'Connect Elements (C)'}
+            onClick={() => isConnectionMode ? exitConnectionMode() : enterConnectionMode()}
+            active={isConnectionMode}
+          />
+        )}
         <ToolbarButton icon={<Maximize size={16} />} title="Fit to Screen (F)" onClick={() => fitToScreen(elements)} />
         <ToolbarButton icon={<Upload size={16} />} title="Import BPMN" onClick={onOpenBPMNImport} />
         <ToolbarButton icon={<Workflow size={16} />} title="Import n8n" onClick={onOpenN8nImport} />

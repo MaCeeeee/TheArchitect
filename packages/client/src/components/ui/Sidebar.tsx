@@ -8,6 +8,7 @@ import { useArchitectureStore, ArchitectureElement } from '../../stores/architec
 import { useUIStore } from '../../stores/uiStore';
 import { flyToElement } from '../3d/CameraControls';
 import ArchitectPanel from './ArchitectPanel';
+import ElementPalette from './ElementPalette';
 import ImpactAnalysis from '../analytics/ImpactAnalysis';
 import RiskDashboard from '../analytics/RiskDashboard';
 import CostOptimization from '../analytics/CostOptimization';
@@ -18,34 +19,10 @@ import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import ConnectorPanel from '../import/ConnectorPanel';
 import PhaseBar from './PhaseBar';
-import { ARCHITECTURE_LAYERS, ELEMENT_TYPES, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
-import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
+import { ARCHITECTURE_LAYERS, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
+import type { ArchitectureLayer, ElementType, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
 
 const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({ id: l.id, label: l.label, color: l.color }));
-
-// Map ElementType → default layer using ELEMENT_TYPES + ARCHITECTURE_LAYERS
-const DOMAIN_TO_LAYER: Record<string, string> = {
-  strategy: 'strategy',
-  business: 'business',
-  data: 'information',
-  application: 'application',
-  technology: 'technology',
-  motivation: 'motivation',
-  implementation: 'implementation_migration',
-};
-
-// Strategy-layer types (capabilities, value streams, resources, courses of action)
-const STRATEGY_TYPES = new Set(['business_capability', 'value_stream', 'resource', 'course_of_action']);
-// Physical-layer types
-const PHYSICAL_TYPES = new Set(['equipment', 'facility', 'distribution_network', 'material']);
-
-const ELEMENT_PALETTE = ELEMENT_TYPES.map(et => {
-  let layer: ArchitectureLayer;
-  if (STRATEGY_TYPES.has(et.type)) layer = 'strategy';
-  else if (PHYSICAL_TYPES.has(et.type)) layer = 'physical';
-  else layer = (DOMAIN_TO_LAYER[et.domain] || 'application') as ArchitectureLayer;
-  return { type: et.type, label: et.label, layer, togafDomain: et.domain as TOGAFDomain };
-});
 
 const NAV_ITEMS = [
   { id: 'explorer', icon: FolderTree, label: 'Explorer' },
@@ -58,7 +35,6 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPalette, setShowPalette] = useState(false);
   const projectId = useArchitectureStore((s) => s.projectId);
   const elements = useArchitectureStore((s) => s.elements);
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
@@ -66,7 +42,7 @@ export default function Sidebar() {
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const addElement = useArchitectureStore((s) => s.addElement);
-  const { sidebarPanel, setSidebarPanel } = useUIStore();
+  const { sidebarPanel, setSidebarPanel, isPaletteOpen, togglePalette } = useUIStore();
 
   const filteredElements = elements.filter((el) =>
     el.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -77,27 +53,29 @@ export default function Sidebar() {
     elements: filteredElements.filter((el) => el.layer === layer.id),
   }));
 
-  const handleAddElement = (palette: typeof ELEMENT_PALETTE[0]) => {
-    const layerElements = elements.filter((el) => el.layer === palette.layer);
+  const handleAddElement = (type: ElementType, layer: ArchitectureLayer, domain: TOGAFDomain) => {
+    const layerElements = elements.filter((el) => el.layer === layer);
     const xOffset = (layerElements.length % 5) * 3 - 6;
     const zOffset = Math.floor(layerElements.length / 5) * 3;
+    // Find label from ELEMENT_CATEGORIES or fallback
+    const label = type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
     const newElement: ArchitectureElement = {
       id: `el-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      type: palette.type,
-      name: `New ${palette.label}`,
+      type,
+      name: `New ${label}`,
       description: '',
-      layer: palette.layer,
-      togafDomain: palette.togafDomain,
+      layer,
+      togafDomain: domain,
       maturityLevel: 3,
       riskLevel: 'low',
       status: 'current',
-      position3D: { x: xOffset, y: LAYER_Y[palette.layer], z: zOffset },
+      position3D: { x: xOffset, y: LAYER_Y[layer], z: zOffset },
       metadata: {},
     };
     addElement(newElement);
     selectElement(newElement.id);
-    setShowPalette(false);
+    flyToElement(newElement.position3D, newElement.id);
   };
 
   const handleElementClick = (id: string) => {
@@ -175,37 +153,27 @@ export default function Sidebar() {
             </>
           )}
 
-          {/* Add element button + palette */}
-          {projectId && <div className="border-t border-[var(--border-subtle)] p-3 relative">
-            {showPalette && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 mx-3 max-h-64 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] shadow-xl">
-                <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)]">
-                  <span className="text-xs font-medium text-white">Add Element</span>
-                  <button onClick={() => setShowPalette(false)} className="text-[var(--text-secondary)] hover:text-white">
-                    <X size={14} />
-                  </button>
-                </div>
-                {ELEMENT_PALETTE.map((item) => (
-                  <button
-                    key={item.type}
-                    onClick={() => handleAddElement(item)}
-                    className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-raised)] hover:text-white transition"
-                  >
-                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: LAYER_CONFIG.find((l) => l.id === item.layer)?.color }} />
-                    {item.label}
-                    <span className="ml-auto text-[10px] text-[var(--text-disabled)]">{item.layer}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => setShowPalette(!showPalette)}
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-[#00ff41] px-3 py-2 text-xs font-medium text-black hover:bg-[#00cc33] transition"
-            >
-              <Plus size={14} />
-              Add Element
-            </button>
-          </div>}
+          {/* Smart Element Palette (collapsible) */}
+          {projectId && isPaletteOpen && (
+            <ElementPalette onAddElement={handleAddElement} />
+          )}
+
+          {/* Add element toggle button */}
+          {projectId && (
+            <div className="border-t border-[var(--border-subtle)] p-3">
+              <button
+                onClick={togglePalette}
+                className={`flex w-full items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition ${
+                  isPaletteOpen
+                    ? 'bg-[var(--surface-base)] text-[#00ff41] border border-[#00ff41]/30'
+                    : 'bg-[#00ff41] text-black hover:bg-[#00cc33]'
+                }`}
+              >
+                <Plus size={14} className={isPaletteOpen ? 'rotate-45 transition-transform' : 'transition-transform'} />
+                {isPaletteOpen ? 'Close Palette' : 'Add Element'}
+              </button>
+            </div>
+          )}
         </>
       )}
 

@@ -168,23 +168,16 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   const handleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
 
-    // Connection mode: first click = source, second click = create connection
+    // Connection mode: first click = source, second click = open type picker
     const ui = useUIStore.getState();
     if (ui.isConnectionMode) {
       if (!ui.connectionSourceId) {
         ui.setConnectionSource(element.id);
         selectElement(element.id);
       } else if (ui.connectionSourceId !== element.id) {
-        const connId = `conn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-        useArchitectureStore.getState().addConnection({
-          id: connId,
-          sourceId: ui.connectionSourceId,
-          targetId: element.id,
-          type: 'depends_on',
-        });
-        // Reset for next connection (stay in connection mode)
-        ui.setConnectionSource(null);
-        selectElement(element.id);
+        // Open the Connection Type Picker instead of hardcoding depends_on
+        const screenPos = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
+        ui.openConnectionPicker(element.id, screenPos);
       }
       return;
     }

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2, Wand2, Boxes, ArrowRight } from 'lucide-react';
 import Scene from '../3d/Scene';
 import PropertyPanel from './PropertyPanel';
+import ConnectionTypePicker from './ConnectionTypePicker';
+import SelectionActionBar from './SelectionActionBar';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
@@ -176,21 +178,33 @@ export default function ProjectView() {
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
             <div className="flex items-center gap-3 rounded-lg border border-[#00ff41]/30 bg-[#0a0a0a]/90 backdrop-blur-md px-5 py-3 shadow-lg">
               <div className="h-2 w-2 rounded-full bg-[#00ff41] animate-pulse" />
-              <span className="text-sm font-medium text-[#00ff41]">
-                {connectionSourceId
-                  ? `Source: ${elements.find(e => e.id === connectionSourceId)?.name || '...'} — click target element`
-                  : 'Click source element to start connection'
-                }
-              </span>
+              {connectionSourceId ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-[#00ff41]">
+                    {elements.find(e => e.id === connectionSourceId)?.name || 'Source'}
+                  </span>
+                  <span className="text-xs text-[var(--text-disabled)]">
+                    ({elements.find(e => e.id === connectionSourceId)?.type.replace(/_/g, ' ')})
+                  </span>
+                  <span className="text-xs text-[var(--text-tertiary)]">&rarr; click target</span>
+                </div>
+              ) : (
+                <span className="text-sm font-medium text-[#00ff41]">
+                  Click source element to start connection
+                </span>
+              )}
               <button
                 onClick={exitConnectionMode}
                 className="ml-2 rounded px-2 py-0.5 text-xs text-[var(--text-tertiary)] border border-[var(--border-subtle)] hover:text-white hover:border-white/30 transition"
               >
-                Cancel (Esc)
+                Esc
               </button>
             </div>
           </div>
         )}
+
+        {/* Selection action bar (Save as Pattern) */}
+        <SelectionActionBar />
 
         {/* Contextual next-step guidance floating above 3D scene */}
         {currentPhaseInfo?.nextAction && !isConnectionMode && (
@@ -217,6 +231,7 @@ export default function ProjectView() {
         />
       </div>
       {isPropertyPanelOpen && <PropertyPanel />}
+      <ConnectionTypePicker />
     </div>
   );
 }

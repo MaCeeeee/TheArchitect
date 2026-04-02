@@ -9,6 +9,7 @@ import ContextMenu3D from './ContextMenu3D';
 import TransformationXRay from './TransformationXRay';
 import PlateauRenderer from './PlateauRenderer';
 import AgentAvatars3D from './AgentAvatars3D';
+import ConnectionPreview from './ConnectionPreview';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
 import WorkspaceBar from '../ui/WorkspaceBar';
@@ -98,6 +99,7 @@ export default function Scene() {
 
               <ArchitectureElements />
               <ConnectionLines />
+              <ConnectionPreview />
               {!isXRayActive && <CursorOverlay />}
 
               {/* TransformationXRay renders its own lights, sub-views, and HUD */}

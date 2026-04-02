@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import TOGAF10Framework from '../togaf/TOGAF10Framework';
 import TemplateMarketplace from '../marketplace/TemplateMarketplace';
+import PatternCatalog from './PatternCatalog';
 
 const TABS = [
   { id: 'framework', label: 'Framework' },
+  { id: 'patterns', label: 'Insights' },
   { id: 'templates', label: 'Templates' },
 ] as const;
 
 export default function ArchitectPanel() {
-  const [tab, setTab] = useState<'framework' | 'templates'>('framework');
+  const [tab, setTab] = useState<'framework' | 'patterns' | 'templates'>('framework');
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -29,6 +31,7 @@ export default function ArchitectPanel() {
       </div>
       <div className="flex-1 overflow-hidden">
         {tab === 'framework' && <TOGAF10Framework />}
+        {tab === 'patterns' && <PatternCatalog />}
         {tab === 'templates' && <TemplateMarketplace />}
       </div>
     </div>

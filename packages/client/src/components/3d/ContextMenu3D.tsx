@@ -1,6 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { Trash2, Copy, Link, Eye, Edit3, GitBranch } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Trash2, Copy, Link, Eye, Edit3, GitBranch, Boxes } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useUIStore } from '../../stores/uiStore';
+import SavePatternDialog from '../ui/SavePatternDialog';
+import { extractPattern, saveCustomPattern } from '../../utils/patternUtils';
+import toast from 'react-hot-toast';
 
 export default function ContextMenu3D() {
   const contextMenu = useArchitectureStore((s) => s.contextMenu);
@@ -8,8 +12,11 @@ export default function ContextMenu3D() {
   const removeElement = useArchitectureStore((s) => s.removeElement);
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const elements = useArchitectureStore((s) => s.elements);
+  const connections = useArchitectureStore((s) => s.connections);
+  const selectedElementIds = useArchitectureStore((s) => s.selectedElementIds);
   const addElement = useArchitectureStore((s) => s.addElement);
   const ref = useRef<HTMLDivElement>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -54,12 +61,40 @@ export default function ContextMenu3D() {
     closeContextMenu();
   };
 
+  const hasMultiSelect = selectedElementIds.size >= 2;
+
+  const handleSavePattern = (name: string, description: string) => {
+    try {
+      const pattern = extractPattern(selectedElementIds, elements, connections, name, description);
+      saveCustomPattern(pattern);
+      setShowSaveDialog(false);
+      closeContextMenu();
+      toast.success(`Pattern "${name}" saved`);
+    } catch {
+      toast.error('Failed to save pattern');
+    }
+  };
+
+  // Count connections within selection for the dialog
+  const selectionConnectionCount = hasMultiSelect
+    ? connections.filter(c => selectedElementIds.has(c.sourceId) && selectedElementIds.has(c.targetId)).length
+    : 0;
+
   const items = [
     { icon: Eye, label: 'Focus', onClick: handleSelect },
     { icon: Edit3, label: 'Edit Properties', onClick: handleSelect },
     { icon: Copy, label: 'Duplicate', onClick: handleDuplicate },
-    { icon: Link, label: 'Add Connection', onClick: () => closeContextMenu() },
+    { icon: Link, label: 'Connect from here', onClick: () => {
+      const ui = useUIStore.getState();
+      ui.enterConnectionMode();
+      ui.setConnectionSource(contextMenu.elementId);
+      selectElement(contextMenu.elementId);
+      closeContextMenu();
+    }},
     { icon: GitBranch, label: 'Show Dependencies', onClick: () => closeContextMenu() },
+    ...(hasMultiSelect ? [
+      { icon: Boxes, label: `Save Selection as Pattern (${selectedElementIds.size})`, onClick: () => setShowSaveDialog(true) },
+    ] : []),
     { divider: true as const },
     { icon: Trash2, label: 'Delete', onClick: handleDelete, danger: true },
   ];
@@ -94,6 +129,14 @@ export default function ContextMenu3D() {
           </button>
         );
       })}
+
+      <SavePatternDialog
+        isOpen={showSaveDialog}
+        onClose={() => { setShowSaveDialog(false); closeContextMenu(); }}
+        onSave={handleSavePattern}
+        elementCount={selectedElementIds.size}
+        connectionCount={selectionConnectionCount}
+      />
     </div>
   );
 }
