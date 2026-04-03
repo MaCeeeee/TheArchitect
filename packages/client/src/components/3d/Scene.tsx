@@ -9,6 +9,7 @@ import ContextMenu3D from './ContextMenu3D';
 import TransformationXRay from './TransformationXRay';
 import PlateauRenderer from './PlateauRenderer';
 import AgentAvatars3D from './AgentAvatars3D';
+import DiscussionBubbles3D from './DiscussionBubbles3D';
 import ConnectionPreview from './ConnectionPreview';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
@@ -71,7 +72,11 @@ export default function Scene() {
 
           {/* Plateau View: replaces normal architecture rendering */}
           {isPlateauActive && is3D ? (
-            <PlateauRenderer />
+            <>
+              <PlateauRenderer />
+              <AgentAvatars3D />
+              <DiscussionBubbles3D plateauMode />
+            </>
           ) : (
             <>
               {/* Render layer planes per workspace (or once if no workspaces) */}
@@ -105,8 +110,9 @@ export default function Scene() {
               {/* TransformationXRay renders its own lights, sub-views, and HUD */}
               {is3D && <TransformationXRay />}
 
-              {/* MiroFish Agent Avatars (visible during/after simulation) */}
+              {/* MiroFish Agent Avatars + Discussion Bubbles (visible during/after simulation) */}
               {is3D && <AgentAvatars3D />}
+              {is3D && <DiscussionBubbles3D />}
             </>
           )}
 

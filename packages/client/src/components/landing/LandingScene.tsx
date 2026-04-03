@@ -16,11 +16,12 @@ interface Props {
   setDragOver: (v: boolean) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDemoClick?: () => void;
   error: string | null;
 }
 
 export default function LandingScene({
-  initialPerfLevel, phase, dragOver, setDragOver, onDrop, onFileSelect, error,
+  initialPerfLevel, phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error,
 }: Props) {
   const [perfLevel, setPerfLevel] = useState<PerfLevel>(initialPerfLevel);
   const scrollRef = useRef(0); // 0–1 normalized scroll progress
@@ -75,6 +76,7 @@ export default function LandingScene({
           setDragOver={setDragOver}
           onDrop={onDrop}
           onFileSelect={onFileSelect}
+          onDemoClick={onDemoClick}
           error={error}
         />
       </div>

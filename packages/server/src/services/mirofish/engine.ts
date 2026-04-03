@@ -84,6 +84,7 @@ export class MiroFishEngine {
           persona,
           provider,
           previousRoundSummary,
+          roundNum,
           onEvent,
         );
 
@@ -233,6 +234,7 @@ export class MiroFishEngine {
     persona: AgentPersona,
     provider: Provider,
     previousRoundSummary: string | undefined,
+    roundNum: number,
     onEvent: (event: SimulationStreamEvent) => void,
   ): Promise<AgentTurn> {
     const turnStart = Date.now();
@@ -283,6 +285,17 @@ export class MiroFishEngine {
       type: 'actions',
       validated: validatedActions,
       rejected: rejectedActions,
+    });
+
+    onEvent({
+      type: 'agent_turn_complete',
+      agentId: persona.id,
+      agentName: persona.name,
+      round: roundNum,
+      reasoning: parsed.reasoning,
+      position: parsed.position,
+      validatedActions,
+      rejectedCount: rejectedActions.length,
     });
 
     return {

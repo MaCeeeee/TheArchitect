@@ -8,10 +8,11 @@ interface FallbackProps {
   setDragOver: (v: boolean) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDemoClick?: () => void;
   error: string | null;
 }
 
-export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, onFileSelect, error }: FallbackProps) {
+export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error }: FallbackProps) {
   return (
     <div className="fixed inset-0 overflow-y-auto z-50">
       <ATCShader />
@@ -35,7 +36,7 @@ export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, 
               health assessment in 60 seconds. No account required.
             </p>
 
-            <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} />
+            <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} onDemoClick={onDemoClick} />
 
             {error && (
               <div className="max-w-lg mx-auto mt-4 flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
@@ -57,12 +58,23 @@ export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, 
 
           <TrustBar />
 
-          <div className="text-center pb-12 border-t border-[#334155] pt-8">
+          <div className="text-center pb-8 border-t border-[#334155] pt-8">
             <p className="text-slate-500 text-sm">
               Already have an account?{' '}
               <Link to="/login" className="text-[#00ff41] hover:text-[#00ff41]/80">Sign in</Link>
             </p>
           </div>
+
+          <footer className="border-t border-white/5 py-8">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+              <span>&copy; {new Date().getFullYear()} TheArchitect</span>
+              <div className="flex items-center gap-6">
+                <Link to="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
+                <Link to="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
+                <Link to="/imprint" className="hover:text-slate-300 transition-colors">Imprint</Link>
+              </div>
+            </div>
+          </footer>
         </main>
       </div>
     </div>
@@ -83,7 +95,7 @@ export function Header() {
         </Link>
         <Link
           to="/login"
-          className="px-4 py-2 text-sm text-slate-300 border border-white/10 rounded-lg hover:border-[#00ff41]/30 hover:text-[#00ff41] transition-colors"
+          className="px-4 py-2 text-sm font-medium text-slate-200 bg-white/5 border border-white/20 rounded-lg hover:border-[#00ff41]/40 hover:text-[#00ff41] hover:bg-[#00ff41]/5 transition-colors"
         >
           Sign In
         </Link>
@@ -92,14 +104,15 @@ export function Header() {
   );
 }
 
-export function UploadZone({ phase, dragOver, setDragOver, onDrop, onFileSelect }: {
+export function UploadZone({ phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick }: {
   phase: string; dragOver: boolean; setDragOver: (v: boolean) => void;
   onDrop: (e: React.DragEvent) => void; onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDemoClick?: () => void;
 }) {
   return (
-    <>
+    <div className="w-full flex flex-col items-center">
       <div
-        className={`max-w-lg w-full mx-auto border-2 border-dashed rounded-xl p-10 transition-all cursor-pointer text-center ${
+        className={`max-w-lg w-full border-2 border-dashed rounded-xl p-10 transition-all cursor-pointer text-center ${
           dragOver ? 'border-[#00ff41] bg-[#00ff41]/10' : 'border-white/10 hover:border-[#00ff41]/40'
         } ${phase !== 'landing' ? 'pointer-events-none opacity-60' : ''} backdrop-blur-sm bg-[#0a0a0a]/30`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -111,7 +124,10 @@ export function UploadZone({ phase, dragOver, setDragOver, onDrop, onFileSelect 
           <>
             <Upload className="w-10 h-10 text-[#00ff41]/50 mx-auto mb-3" />
             <p className="text-white font-medium mb-1">Drop your architecture file here</p>
-            <p className="text-sm text-slate-500">CSV, Excel, ArchiMate XML, or JSON &middot; Max 10MB</p>
+            <p className="text-sm text-slate-500 mb-3">CSV, Excel, ArchiMate XML, or JSON &middot; Max 10MB</p>
+            <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#00ff41] border border-[#00ff41]/30 rounded-lg hover:bg-[#00ff41]/10 transition-colors">
+              Browse files
+            </span>
           </>
         )}
         {phase === 'uploading' && (
@@ -133,7 +149,15 @@ export function UploadZone({ phase, dragOver, setDragOver, onDrop, onFileSelect 
         accept=".csv,.xlsx,.xls,.xml,.archimate,.json"
         onChange={onFileSelect}
       />
-    </>
+      {phase === 'landing' && onDemoClick && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDemoClick(); }}
+          className="mt-4 text-sm text-slate-400 hover:text-[#00ff41] transition-colors"
+        >
+          or try with sample data
+        </button>
+      )}
+    </div>
   );
 }
 

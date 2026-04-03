@@ -22,15 +22,96 @@ import {
   GitCompareArrows,
   X,
   Plus,
+  MessageCircle,
+  FileDown,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 import { reportAPI } from '../../services/api';
 import EmergenceDashboard from './EmergenceDashboard';
 import RunComparison from './RunComparison';
 import PersonaEditor from './PersonaEditor';
 import type { AgentPersona, ScenarioType, FatigueRating, CustomPersona } from '@thearchitect/shared/src/types/simulation.types';
+import type { TransformationRoadmap } from '@thearchitect/shared/src/types/roadmap.types';
+
+// ─── Roadmap → Scenario Builder ───
+
+function buildRoadmapScenario(roadmap: TransformationRoadmap): string {
+  const lines: string[] = [];
+  lines.push(`Evaluate this Transformation Roadmap: "${roadmap.name}" (v${roadmap.version})`);
+  lines.push(`Total: €${(roadmap.summary.totalCost / 1000).toFixed(0)}K | ${roadmap.summary.totalDurationMonths} months | ${roadmap.summary.totalElements} elements | Risk reduction: ${roadmap.summary.riskReduction}%`);
+  lines.push('');
+
+  for (const wave of roadmap.waves) {
+    lines.push(`Wave ${wave.waveNumber}: ${wave.name} (${wave.estimatedDurationMonths}mo, €${(wave.metrics.totalCost / 1000).toFixed(0)}K, risk delta: ${wave.metrics.riskDelta >= 0 ? '+' : ''}${wave.metrics.riskDelta.toFixed(1)})`);
+    if (wave.dependsOnWaves.length > 0) {
+      lines.push(`  Depends on: Wave ${wave.dependsOnWaves.join(', ')}`);
+    }
+    for (const el of wave.elements.slice(0, 8)) {
+      const cost = el.estimatedCost > 0 ? ` €${(el.estimatedCost / 1000).toFixed(0)}K` : '';
+      const risk = el.riskScore > 0 ? ` risk:${el.riskScore}` : '';
+      lines.push(`  - ${el.name} [${el.layer}] ${el.currentStatus}→${el.targetStatus}${cost}${risk}`);
+    }
+    if (wave.elements.length > 8) {
+      lines.push(`  ... +${wave.elements.length - 8} more elements`);
+    }
+    lines.push('');
+  }
+
+  lines.push('Assess feasibility, risks, dependencies, and stakeholder impact of this roadmap.');
+  lines.push('Identify bottlenecks, missing prerequisites, and suggest optimizations.');
+
+  return lines.join('\n');
+}
+
+function getTargetElementIds(roadmap: TransformationRoadmap): string[] {
+  const ids = new Set<string>();
+  for (const wave of roadmap.waves) {
+    for (const el of wave.elements) {
+      ids.add(el.elementId);
+    }
+  }
+  return Array.from(ids);
+}
+
+// ─── Roadmap Import Button ───
+
+function RoadmapImportButton({ onImport }: { onImport: (description: string, targetIds: string[]) => void }) {
+  const activeRoadmap = useRoadmapStore((s) => s.activeRoadmap);
+
+  if (!activeRoadmap || activeRoadmap.status !== 'completed') return null;
+
+  const waveCount = activeRoadmap.waves.length;
+  const totalCost = (activeRoadmap.summary.totalCost / 1000).toFixed(0);
+  const duration = activeRoadmap.summary.totalDurationMonths;
+  const elementCount = activeRoadmap.summary.totalElements;
+
+  const handleImport = () => {
+    const description = buildRoadmapScenario(activeRoadmap);
+    const targetIds = getTargetElementIds(activeRoadmap);
+    onImport(description, targetIds);
+    toast.success(`Roadmap imported: ${waveCount} waves, ${elementCount} elements`);
+  };
+
+  return (
+    <button
+      onClick={handleImport}
+      className="w-full flex items-center gap-2 px-3 py-2 rounded border border-[#6366f1]/40 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 transition-colors text-left"
+    >
+      <FileDown size={14} className="text-[#6366f1] flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="text-xs font-medium text-[#a5b4fc] truncate">
+          Import from Roadmap
+        </div>
+        <div className="text-[10px] text-gray-400 truncate">
+          {activeRoadmap.name} — {waveCount} waves, €{totalCost}K, {duration}mo
+        </div>
+      </div>
+    </button>
+  );
+}
 
 const SCENARIO_TYPES: { value: ScenarioType; label: string; icon: typeof Brain }[] = [
   { value: 'cloud_migration', label: 'Cloud Migration', icon: Zap },
@@ -64,7 +145,8 @@ export default function SimulationPanel() {
     fatigueReport, fatigueTimeline, emergenceEvents, emergenceMetrics,
     liveFeed, runs, riskOverlay, costOverlay, showOverlay, activeRunId, activeRun,
     presetPersonas, customPersonas, comparisonData,
-    startSimulation, cancelSimulation, loadRuns, selectRun, toggleOverlay, clearSimulation,
+    showBubbles, discussionBubbles,
+    startSimulation, cancelSimulation, loadRuns, selectRun, toggleOverlay, toggleBubbles, clearSimulation,
     loadPersonas, createCustomPersona, updateCustomPersona, deleteCustomPersona,
     selectForComparison, computeComparison, clearComparison,
   } = useSimulationStore();
@@ -76,6 +158,7 @@ export default function SimulationPanel() {
   const [agents, setAgents] = useState<AgentPersona[]>([]);
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [personasLoaded, setPersonasLoaded] = useState(false);
+  const [targetElementIds, setTargetElementIds] = useState<string[]>([]);
 
   // Load personas on mount — set default agents from presets
   useEffect(() => {
@@ -98,7 +181,7 @@ export default function SimulationPanel() {
       scenarioType,
       scenarioDescription,
       maxRounds,
-      targetElementIds: [],
+      targetElementIds,
       agents,
     });
     setViewMode('results');
@@ -178,6 +261,11 @@ export default function SimulationPanel() {
             onCreatePersona={createCustomPersona}
             onUpdatePersona={updateCustomPersona}
             onDeletePersona={deleteCustomPersona}
+            onImportRoadmap={(desc, ids) => {
+              setScenarioDescription(desc);
+              setTargetElementIds(ids);
+              setScenarioType('custom');
+            }}
           />
         )}
 
@@ -202,6 +290,9 @@ export default function SimulationPanel() {
             costOverlay={costOverlay}
             showOverlay={showOverlay}
             onToggleOverlay={toggleOverlay}
+            showBubbles={showBubbles}
+            onToggleBubbles={toggleBubbles}
+            bubbleCount={discussionBubbles.length}
             onNewRun={() => setViewMode('config')}
             projectId={projectId}
             runId={activeRunId}
@@ -239,6 +330,7 @@ function ConfigView({
   scenarioType, setScenarioType, scenarioDescription, setScenarioDescription,
   maxRounds, setMaxRounds, agents, setAgents, expandedAgent, setExpandedAgent, onStart,
   presetPersonas, customPersonas, projectId, onCreatePersona, onUpdatePersona, onDeletePersona,
+  onImportRoadmap,
 }: {
   scenarioType: ScenarioType;
   setScenarioType: (v: ScenarioType) => void;
@@ -257,6 +349,7 @@ function ConfigView({
   onCreatePersona: (projectId: string, input: Record<string, unknown>) => Promise<void>;
   onUpdatePersona: (projectId: string, personaId: string, input: Record<string, unknown>) => Promise<void>;
   onDeletePersona: (projectId: string, personaId: string) => Promise<void>;
+  onImportRoadmap: (description: string, targetIds: string[]) => void;
 }) {
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -295,6 +388,9 @@ function ConfigView({
         <Brain size={16} />
         <span className="font-semibold">MiroFish Simulation</span>
       </div>
+
+      {/* Import from Roadmap */}
+      <RoadmapImportButton onImport={onImportRoadmap} />
 
       {/* Scenario Type */}
       <div>
@@ -580,8 +676,9 @@ function RunningView({
 
 function ResultsView({
   fatigueReport, emergenceMetrics, emergenceEvents,
-  riskOverlay, costOverlay, showOverlay, onToggleOverlay, onNewRun,
-  projectId, runId,
+  riskOverlay, costOverlay, showOverlay, onToggleOverlay,
+  showBubbles, onToggleBubbles, bubbleCount,
+  onNewRun, projectId, runId,
 }: {
   fatigueReport: any;
   emergenceMetrics: any;
@@ -590,6 +687,9 @@ function ResultsView({
   costOverlay: Map<string, number>;
   showOverlay: boolean;
   onToggleOverlay: () => void;
+  showBubbles: boolean;
+  onToggleBubbles: () => void;
+  bubbleCount: number;
   onNewRun: () => void;
   projectId: string | null;
   runId: string | null;
@@ -730,7 +830,7 @@ function ResultsView({
         </div>
       )}
 
-      {/* Overlay Toggle + New Run */}
+      {/* Overlay Toggle + Bubbles Toggle + New Run */}
       <div className="flex gap-2">
         <button
           onClick={onToggleOverlay}
@@ -743,6 +843,20 @@ function ResultsView({
           <BarChart3 size={12} className="inline mr-1" />
           {showOverlay ? 'Hide' : 'Show'} Overlay
         </button>
+        {bubbleCount > 0 && (
+          <button
+            onClick={onToggleBubbles}
+            title={`${showBubbles ? 'Hide' : 'Show'} discussion bubbles in 3D (${bubbleCount})`}
+            className={`text-xs px-2 py-1.5 rounded border transition-colors ${
+              showBubbles
+                ? 'bg-[#06b6d4]/20 border-[#06b6d4] text-[#06b6d4]'
+                : 'bg-[var(--surface-raised)] border-[var(--border-subtle)] text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <MessageCircle size={12} className="inline mr-1" />
+            {bubbleCount}
+          </button>
+        )}
         <button
           onClick={handleExportPDF}
           disabled={exportLoading || !projectId || !runId}

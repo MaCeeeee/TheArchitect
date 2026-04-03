@@ -11,11 +11,27 @@ import type {
   FatigueReport,
   FatigueRating,
   AgentPersona,
+  AgentPosition,
   CustomPersona,
   ProposedAction,
   ValidationResult,
 } from '@thearchitect/shared/src/types/simulation.types';
 import { computeRunComparison, type RunComparisonData } from '../components/simulation/comparisonUtils';
+
+export interface DiscussionBubble {
+  id: string;                    // `${agentId}_r${round}_${elementId}`
+  agentId: string;
+  agentName: string;
+  agentColorIndex: number;       // Index into AGENT_COLORS
+  round: number;
+  reasoning: string;             // Agent's overall reasoning
+  position: AgentPosition;       // approve | reject | modify | abstain
+  targetElementId: string;
+  targetElementName: string;
+  actionType: string;            // modify_status, block_change, etc.
+  actionReasoning: string;       // Action-specific reasoning
+  timestamp: number;
+}
 
 interface SimulationState {
   // Active run
@@ -45,6 +61,10 @@ interface SimulationState {
   // Live feed
   liveFeed: LiveFeedEntry[];
 
+  // Discussion Bubbles (3D speech overlays)
+  discussionBubbles: DiscussionBubble[];
+  showBubbles: boolean;
+
   // Personas (Phase 3)
   presetPersonas: AgentPersona[];
   customPersonas: CustomPersona[];
@@ -60,6 +80,7 @@ interface SimulationState {
   loadRuns: (projectId: string) => Promise<void>;
   selectRun: (projectId: string, runId: string) => Promise<void>;
   toggleOverlay: () => void;
+  toggleBubbles: () => void;
   clearSimulation: () => void;
 
   // Persona actions (Phase 3)
@@ -99,6 +120,8 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   fatigueReport: null,
   fatigueTimeline: [],
   liveFeed: [],
+  discussionBubbles: [],
+  showBubbles: true,
   presetPersonas: [],
   customPersonas: [],
   comparisonRunA: null,
@@ -121,6 +144,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         fatigueReport: null,
         fatigueTimeline: [],
         liveFeed: [],
+        discussionBubbles: [],
         riskOverlay: new Map(),
         costOverlay: new Map(),
       });
@@ -217,12 +241,40 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         }
       }
 
+      // Reconstruct discussion bubbles from stored rounds
+      const bubbles: DiscussionBubble[] = [];
+      const agentIds = run.config?.agents?.map((a: any) => a.id) || [];
+      if (run.rounds) {
+        for (const round of run.rounds as any[]) {
+          for (const turn of round.agentTurns || []) {
+            const colorIndex = agentIds.indexOf(turn.agentPersonaId);
+            for (const action of turn.validatedActions || []) {
+              bubbles.push({
+                id: `${turn.agentPersonaId}_r${round.roundNumber}_${action.targetElementId}`,
+                agentId: turn.agentPersonaId,
+                agentName: turn.agentName,
+                agentColorIndex: colorIndex >= 0 ? colorIndex : 0,
+                round: round.roundNumber,
+                reasoning: turn.reasoning,
+                position: turn.position,
+                targetElementId: action.targetElementId,
+                targetElementName: action.targetElementName,
+                actionType: action.type,
+                actionReasoning: action.reasoning,
+                timestamp: Date.now(),
+              });
+            }
+          }
+        }
+      }
+
       set({
         activeRunId: runId,
         activeRun: run,
         riskOverlay,
         costOverlay,
         showOverlay: true,
+        discussionBubbles: bubbles,
         fatigueReport: run.result?.fatigue || null,
         emergenceMetrics: run.result?.emergenceMetrics || null,
         emergenceEvents: run.rounds?.flatMap((r: any) => r.emergenceEvents || []) || [],
@@ -238,6 +290,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   },
 
   toggleOverlay: () => set((s) => ({ showOverlay: !s.showOverlay })),
+  toggleBubbles: () => set((s) => ({ showBubbles: !s.showBubbles })),
 
   clearSimulation: () =>
     set({
@@ -256,6 +309,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       fatigueReport: null,
       fatigueTimeline: [],
       liveFeed: [],
+      discussionBubbles: [],
     }),
 
   // ─── Persona Actions (Phase 3) ───
@@ -379,6 +433,32 @@ function processEvent(
         }],
       }));
       break;
+
+    case 'agent_turn_complete': {
+      // Build discussion bubbles from validated actions
+      const state = get();
+      const agentIds = state.activeRun?.config?.agents?.map((a) => a.id) || [];
+      const colorIndex = agentIds.indexOf(event.agentId);
+      const newBubbles: DiscussionBubble[] = event.validatedActions.map((action: ProposedAction) => ({
+        id: `${event.agentId}_r${event.round}_${action.targetElementId}`,
+        agentId: event.agentId,
+        agentName: event.agentName,
+        agentColorIndex: colorIndex >= 0 ? colorIndex : 0,
+        round: event.round,
+        reasoning: event.reasoning,
+        position: event.position,
+        targetElementId: action.targetElementId,
+        targetElementName: action.targetElementName,
+        actionType: action.type,
+        actionReasoning: action.reasoning,
+        timestamp: now,
+      }));
+
+      set((s) => ({
+        discussionBubbles: [...s.discussionBubbles, ...newBubbles],
+      }));
+      break;
+    }
 
     case 'fatigue_update':
       set((s) => ({

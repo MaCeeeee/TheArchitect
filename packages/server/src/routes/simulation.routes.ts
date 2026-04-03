@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Router, Request, Response } from 'express';
+import { EventEmitter } from 'events';
 import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
@@ -15,6 +16,9 @@ const router = Router();
 
 // Running engines (for cancellation)
 const activeEngines = new Map<string, MiroFishEngine>();
+
+// Real-time event streams (for SSE piping)
+const activeEventStreams = new Map<string, EventEmitter>();
 
 // ─── Validation ───
 
@@ -80,13 +84,22 @@ router.post(
 
       // Start simulation in background
       const engine = new MiroFishEngine();
-      activeEngines.set(run._id.toString(), engine);
+      const runId = run._id.toString();
+      activeEngines.set(runId, engine);
+
+      // Create EventEmitter for real-time SSE piping
+      const emitter = new EventEmitter();
+      emitter.setMaxListeners(20);
+      activeEventStreams.set(runId, emitter);
 
       const startTime = Date.now();
 
       engine
         .runSimulation(projectId, config, async (event) => {
-          // Persist rounds incrementally
+          // Pipe ALL events to connected SSE clients in real-time
+          emitter.emit('event', event);
+
+          // Persist rounds incrementally to MongoDB
           if (event.type === 'round_end') {
             await SimulationRun.findByIdAndUpdate(run._id, {
               $set: {
@@ -104,16 +117,19 @@ router.post(
             totalTokensUsed: engine.getTotalTokensUsed(),
             totalDurationMs: Date.now() - startTime,
           });
-          activeEngines.delete(run._id.toString());
+          activeEngines.delete(runId);
+          activeEventStreams.delete(runId);
         })
         .catch(async (err) => {
           console.error('[MiroFish] Simulation failed:', err.message);
+          emitter.emit('event', { type: 'error', message: err.message });
           await SimulationRun.findByIdAndUpdate(run._id, {
             status: 'failed',
             result: { error: err.message },
             totalDurationMs: Date.now() - startTime,
           });
-          activeEngines.delete(run._id.toString());
+          activeEngines.delete(runId);
+          activeEventStreams.delete(runId);
         });
 
       res.status(201).json({
@@ -420,44 +436,59 @@ router.get(
         return;
       }
 
-      // For running simulations, poll for updates
+      // For running simulations, subscribe to real-time EventEmitter
       const runId = run._id.toString();
-      let lastRoundCount = 0;
+      const emitter = activeEventStreams.get(runId);
 
-      const interval = setInterval(async () => {
+      if (!emitter) {
+        // Emitter gone — simulation may have completed between checks
+        const current = await SimulationRun.findById(runId).lean() as any;
+        if (current?.result) {
+          res.write(`data: ${JSON.stringify({ type: 'complete', result: current.result })}\n\n`);
+        }
+        res.write('data: [DONE]\n\n');
+        res.end();
+        return;
+      }
+
+      // Catch-up: send already-completed rounds from MongoDB
+      if (run.rounds && run.rounds.length > 0) {
+        for (const round of run.rounds) {
+          // Reconstruct agent_turn_complete events from stored rounds
+          for (const turn of (round as any).agentTurns || []) {
+            res.write(`data: ${JSON.stringify({
+              type: 'agent_turn_complete',
+              agentId: turn.agentPersonaId,
+              agentName: turn.agentName,
+              round: (round as any).roundNumber,
+              reasoning: turn.reasoning,
+              position: turn.position,
+              validatedActions: turn.validatedActions,
+              rejectedCount: turn.rejectedActions?.length || 0,
+            })}\n\n`);
+          }
+        }
+      }
+
+      // Subscribe to live events
+      const handler = (event: SimulationStreamEvent) => {
         try {
-          const current = await SimulationRun.findById(runId).lean() as any;
-          if (!current) {
-            clearInterval(interval);
+          res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+          if (event.type === 'complete' || event.type === 'error') {
             res.write('data: [DONE]\n\n');
             res.end();
-            return;
-          }
-
-          // Send new rounds
-          if (current.rounds && current.rounds.length > lastRoundCount) {
-            for (let i = lastRoundCount; i < current.rounds.length; i++) {
-              res.write(`data: ${JSON.stringify({ type: 'round_data', round: current.rounds[i] })}\n\n`);
-            }
-            lastRoundCount = current.rounds.length;
-          }
-
-          // Check if done
-          if (current.status === 'completed' || current.status === 'failed' || current.status === 'cancelled') {
-            clearInterval(interval);
-            if (current.result) {
-              res.write(`data: ${JSON.stringify({ type: 'complete', result: current.result })}\n\n`);
-            }
-            res.write('data: [DONE]\n\n');
-            res.end();
+            emitter.off('event', handler);
           }
         } catch {
-          // Silently continue polling
+          emitter.off('event', handler);
         }
-      }, 1000);
+      };
+
+      emitter.on('event', handler);
 
       req.on('close', () => {
-        clearInterval(interval);
+        emitter.off('event', handler);
       });
     } catch (err: any) {
       console.error('[MiroFish] Stream error:', err.message);
@@ -480,6 +511,11 @@ router.post(
       if (engine) {
         engine.cancel();
         activeEngines.delete(runId);
+      }
+      const emitter = activeEventStreams.get(runId);
+      if (emitter) {
+        emitter.emit('event', { type: 'error', message: 'Simulation cancelled' });
+        activeEventStreams.delete(runId);
       }
 
       await SimulationRun.findByIdAndUpdate(runId, { status: 'cancelled' });

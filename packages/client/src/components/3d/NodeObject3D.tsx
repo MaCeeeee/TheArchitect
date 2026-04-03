@@ -6,6 +6,7 @@ import { useArchitectureStore, ArchitectureElement } from '../../stores/architec
 import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
+import ArchiMateIconSprite from './ArchiMateIconSprite';
 
 const LAYER_COLORS: Record<string, string> = {
   strategy: '#ef4444',
@@ -337,6 +338,14 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
           <meshBasicMaterial color={statusColor} />
         </mesh>
       )}
+
+      {/* ArchiMate notation icon */}
+      <ArchiMateIconSprite
+        elementType={element.type}
+        layerColor={baseColor}
+        is2DMode={is2DMode}
+        opacity={materialOpacity}
+      />
 
       {/* Risk glow for high/critical (3D only) */}
       {!is2DMode && (element.riskLevel === 'high' || element.riskLevel === 'critical') && (

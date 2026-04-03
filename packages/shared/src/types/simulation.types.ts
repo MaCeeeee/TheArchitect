@@ -242,6 +242,7 @@ export type SimulationStreamEvent =
   | { type: 'agent_start'; agentId: string; agentName: string }
   | { type: 'reasoning_chunk'; text: string }
   | { type: 'actions'; validated: ProposedAction[]; rejected: ValidationResult[] }
+  | { type: 'agent_turn_complete'; agentId: string; agentName: string; round: number; reasoning: string; position: AgentPosition; validatedActions: ProposedAction[]; rejectedCount: number }
   | { type: 'fatigue_update'; globalIndex: number; rating: FatigueRating; perAgent: Array<{ agentId: string; fatigueIndex: number; concurrencyLoad: number; negotiationDrag: number; constraintPressure: number }> }
   | { type: 'emergence'; events: EmergenceEvent[] }
   | { type: 'round_end'; round: number; globalFatigue: number; fatigueRating: FatigueRating }

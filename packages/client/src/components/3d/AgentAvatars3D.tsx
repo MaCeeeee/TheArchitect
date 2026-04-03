@@ -6,7 +6,7 @@ import { useSimulationStore } from '../../stores/simulationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 
-const AGENT_COLORS = ['#06b6d4', '#a855f7', '#f43f5e', '#eab308', '#22d3ee', '#f97316'];
+export const AGENT_COLORS = ['#06b6d4', '#a855f7', '#f43f5e', '#eab308', '#22d3ee', '#f97316'];
 
 /**
  * AgentAvatars3D renders translucent spheres above architecture layers

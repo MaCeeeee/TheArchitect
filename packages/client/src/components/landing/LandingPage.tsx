@@ -95,6 +95,17 @@ export default function LandingPage() {
     if (file) handleFile(file);
   }, [handleFile]);
 
+  const onDemoClick = useCallback(async () => {
+    try {
+      const res = await fetch('/demo-architecture.csv');
+      const blob = await res.blob();
+      const file = new File([blob], 'demo-architecture.csv', { type: 'text/csv' });
+      handleFile(file);
+    } catch {
+      setError('Failed to load demo data.');
+    }
+  }, [handleFile]);
+
   // ─── Results View ───
   if (phase === 'results' && result) {
     const criticalCount = result.insights.filter((i) => i.severity === 'critical' || i.severity === 'high').length;
@@ -181,6 +192,7 @@ export default function LandingPage() {
     setDragOver,
     onDrop,
     onFileSelect,
+    onDemoClick,
     error,
   };
 

@@ -1,0 +1,31 @@
+name,type,layer,status,description
+Customer Portal,application_component,application,current,Main customer-facing web application
+Order Service,application_component,application,current,Handles order processing and management
+Payment Gateway,application_component,application,current,Processes payments and billing
+Identity Provider,application_component,application,target,Centralized authentication service
+Legacy CRM,application_component,application,retired,Old customer relationship management system
+API Gateway,application_service,application,current,Central API routing and rate limiting
+Notification Service,application_service,application,transitional,Email and push notification delivery
+Order Processing,process,business,current,End-to-end order fulfillment workflow
+Customer Onboarding,process,business,current,New customer registration and setup
+Invoice Management,business_function,business,current,Generate and track invoices
+Account Manager,business_role,business,current,Manages key customer accounts
+Sales Team,business_collaboration,business,current,Cross-functional sales unit
+Customer Contract,contract,business,current,Standard service level agreement
+Product Catalog,business_service,business,current,Product and pricing information service
+Production Server,node,technology,current,Main application hosting cluster
+Database Cluster,node,technology,current,Primary PostgreSQL HA cluster
+Redis Cache,system_software,technology,current,In-memory caching layer
+Message Queue,system_software,technology,target,Async event processing backbone
+CDN,communication_network,technology,current,Content delivery network
+Monitoring Stack,device,technology,current,Grafana and Prometheus observability
+Customer Data,data_object,application,current,Core customer profile and preferences
+Order Records,data_object,application,current,Historical and active order data
+Reduce Churn,goal,motivation,current,Decrease customer churn rate by 15%
+Improve Uptime,goal,motivation,target,Achieve 99.95% service availability
+Data Privacy,requirement,motivation,current,GDPR and data protection compliance
+Cloud Migration,work_package,implementation_migration,transitional,Migrate on-prem workloads to cloud
+Platform Modernization,plateau,implementation_migration,target,Target state after modernization
+Cost Optimization,course_of_action,strategy,current,Reduce infrastructure spend by 20%
+Digital Channel,business_capability,strategy,current,Self-service digital customer engagement
+Warehouse,facility,physical,current,Main distribution center

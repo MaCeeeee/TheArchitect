@@ -8,10 +8,11 @@ interface OverlayProps {
   setDragOver: (v: boolean) => void;
   onDrop: (e: React.DragEvent) => void;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDemoClick?: () => void;
   error: string | null;
 }
 
-export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, onFileSelect, error }: OverlayProps) {
+export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error }: OverlayProps) {
   return (
     <div className="w-full">
       <Header />
@@ -33,7 +34,7 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
             health assessment in 60 seconds. No account required.
           </p>
 
-          <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} />
+          <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} onDemoClick={onDemoClick} />
 
           {error && (
             <div className="max-w-lg mx-auto mt-4 flex items-center gap-2 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm backdrop-blur-sm">
@@ -43,9 +44,9 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
           )}
         </div>
 
-        <div className="absolute bottom-8 flex flex-col items-center gap-1 text-[#00ff41]/40 animate-bounce">
-          <span className="text-[10px] uppercase tracking-[0.2em]">Scroll to explore</span>
-          <ChevronDown className="w-5 h-5" />
+        <div className="absolute bottom-8 flex flex-col items-center gap-1 text-[#00ff41]/60 animate-bounce">
+          <span className="text-xs uppercase tracking-[0.2em]">Scroll to explore</span>
+          <ChevronDown className="w-6 h-6" />
         </div>
       </section>
 
@@ -96,7 +97,7 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
             No sign-up needed. Upload, analyze, transform.
           </p>
 
-          <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} />
+          <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} onDemoClick={onDemoClick} />
 
           <div className="mt-12">
             <TrustBar />
@@ -110,6 +111,18 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
           </div>
         </div>
       </section>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-white/5 py-8 px-6">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <span>&copy; {new Date().getFullYear()} TheArchitect</span>
+          <div className="flex items-center gap-6">
+            <Link to="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
+            <Link to="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
+            <Link to="/imprint" className="hover:text-slate-300 transition-colors">Imprint</Link>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

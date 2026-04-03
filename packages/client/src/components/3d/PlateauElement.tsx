@@ -4,6 +4,7 @@ import { useFrame, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { PlateauElementState } from '@thearchitect/shared';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import ArchiMateIconSprite from './ArchiMateIconSprite';
 
 // ─── Constants ───
 
@@ -147,6 +148,16 @@ export default function PlateauElement({
             side={THREE.DoubleSide}
           />
         </mesh>
+      )}
+
+      {/* ArchiMate notation icon */}
+      {!isLOD && (
+        <ArchiMateIconSprite
+          elementType={elementState.type}
+          layerColor={layerColor}
+          is2DMode={false}
+          opacity={opacity}
+        />
       )}
 
       {/* Label (only for non-LOD, visible in selected plateau ±1) */}
