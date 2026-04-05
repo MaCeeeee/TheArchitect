@@ -233,6 +233,16 @@ export const analyticsAPI = {
     api.get(`/projects/${projectId}/analytics/cost`),
   simulate: (projectId: string, params: { baselineCost: number; riskFactors: unknown[]; iterations?: number }) =>
     api.post(`/projects/${projectId}/analytics/simulate`, params),
+  getGraphCost: (projectId: string) =>
+    api.get(`/projects/${projectId}/analytics/cost/graph`),
+  getRankings: (projectId: string) =>
+    api.get(`/projects/${projectId}/analytics/cost/rankings`),
+  runProbabilistic: (projectId: string, params: { elements: unknown[]; iterations?: number }) =>
+    api.post(`/projects/${projectId}/analytics/cost/probabilistic`, params),
+  getWSJF: (projectId: string) =>
+    api.get(`/projects/${projectId}/analytics/cost/wsjf`),
+  computeEVM: (projectId: string, params: { budgetAtCompletion: number; plannedPercent: number; earnedPercent: number; actualCost: number }) =>
+    api.post(`/projects/${projectId}/analytics/cost/evm`, params),
 };
 
 // Governance API
@@ -472,6 +482,33 @@ export const portfolioAPI = {
     api.post(`/projects/${projectId}/portfolio/bulk-lifecycle`, { updates }),
   classifyTIME: (projectId: string) =>
     api.post(`/projects/${projectId}/portfolio/classify-time`),
+};
+
+export const scenarioAPI = {
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/scenarios`),
+  get: (projectId: string, scenarioId: string) =>
+    api.get(`/projects/${projectId}/scenarios/${scenarioId}`),
+  create: (projectId: string, data: { name: string; description?: string; deltas?: unknown[] }) =>
+    api.post(`/projects/${projectId}/scenarios`, data),
+  delete: (projectId: string, scenarioId: string) =>
+    api.delete(`/projects/${projectId}/scenarios/${scenarioId}`),
+  updateDeltas: (projectId: string, scenarioId: string, deltas: unknown[]) =>
+    api.put(`/projects/${projectId}/scenarios/${scenarioId}/deltas`, { deltas }),
+  compare: (projectId: string, scenarioAId: string, scenarioBId: string) =>
+    api.post(`/projects/${projectId}/scenarios/compare`, { scenarioAId, scenarioBId }),
+  rank: (projectId: string, scenarioIds: string[], weights?: Record<string, number>) =>
+    api.post(`/projects/${projectId}/scenarios/rank`, { scenarioIds, weights }),
+  rankTopsis: (projectId: string, scenarioIds: string[], weights?: Record<string, number>) =>
+    api.post(`/projects/${projectId}/scenarios/rank-topsis`, { scenarioIds, weights }),
+  getCompliance: (projectId: string, scenarioId: string, framework: string) =>
+    api.get(`/projects/${projectId}/scenarios/${scenarioId}/compliance/${framework}`),
+  generateAIVariants: (projectId: string, scenarioId: string, count?: number) =>
+    api.post(`/projects/${projectId}/scenarios/${scenarioId}/ai-variants`, { count }),
+  realOptions: (projectId: string, scenarioId: string, params?: Record<string, number>) =>
+    api.post(`/projects/${projectId}/scenarios/${scenarioId}/real-options`, params || {}),
+  changeSaturation: (projectId: string, data: { baseCost: number; concurrent: number; threshold?: number; k?: number }) =>
+    api.post(`/projects/${projectId}/scenarios/change-saturation`, data),
 };
 
 export default api;

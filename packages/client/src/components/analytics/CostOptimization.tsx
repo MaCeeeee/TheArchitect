@@ -1,42 +1,63 @@
 import { useMemo } from 'react';
-import { DollarSign, TrendingDown, PieChart, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingDown, PieChart, BarChart3, Layers } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useXRayStore } from '../../stores/xrayStore';
+import { BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
+import type { CostTier } from '@thearchitect/shared';
 
-const BASE_COSTS: Record<string, number> = {
-  application: 50000,
-  application_component: 20000,
-  application_service: 15000,
-  service: 15000,
-  technology_component: 30000,
-  infrastructure: 80000,
-  platform_service: 40000,
-  data_entity: 10000,
-  data_model: 8000,
-  business_capability: 5000,
-  process: 12000,
-  value_stream: 8000,
+const TIER_COLORS: Record<CostTier, string> = {
+  0: '#6b7280', // gray
+  1: '#f59e0b', // amber
+  2: '#3b82f6', // blue
+  3: '#22c55e', // green
+};
+
+const TIER_LABELS: Record<CostTier, string> = {
+  0: 'Relative',
+  1: '±30-50%',
+  2: '±15-30%',
+  3: 'P10/P50/P90',
 };
 
 export default function CostOptimization() {
   const elements = useArchitectureStore((s) => s.elements);
+  const graphCostProfiles = useXRayStore((s) => s.graphCostProfiles);
+
+  // Determine dominant tier
+  const dominantTier = useMemo((): CostTier => {
+    if (graphCostProfiles.length === 0) return 0;
+    const tierCounts = [0, 0, 0, 0];
+    for (const p of graphCostProfiles) tierCounts[p.tier]++;
+    // Return the highest tier that has at least one element
+    for (let t = 3; t >= 0; t--) {
+      if (tierCounts[t] > 0) return t as CostTier;
+    }
+    return 0;
+  }, [graphCostProfiles]);
 
   const costData = useMemo(() => {
-    const items = elements.map((el) => {
-      const baseCost = BASE_COSTS[el.type] || 15000;
-      const statusMultiplier = el.status === 'retired' ? 0.2
-        : el.status === 'transitional' ? 1.5
-        : el.status === 'target' ? 1.8 : 1.0;
-      const estimated = Math.round(baseCost * statusMultiplier);
+    // Build a lookup from graph cost profiles for relativeImportance
+    const profileMap = new Map(graphCostProfiles.map((p) => [p.elementId, p]));
 
+    const items = elements.filter((el) => el && el.id).map((el) => {
+      const profile = profileMap.get(el.id);
+      // Use annualCost when available, otherwise fall back to BASE_COSTS_BY_TYPE
+      const baseCost = (el.annualCost && el.annualCost > 0) ? el.annualCost : (BASE_COSTS_BY_TYPE?.[el.type] ?? 10000);
+      const statusMultiplier = STATUS_COST_MULTIPLIERS?.[el.status || 'current'] ?? 1.0;
+      const estimated = profile?.totalEstimated || Math.round(baseCost * statusMultiplier);
+
+      const maturity = el.maturityLevel ?? 3;
       const optimization = el.status === 'retired' ? estimated * 0.9
-        : el.maturityLevel <= 2 ? estimated * 0.3
+        : maturity <= 2 ? estimated * 0.3
         : el.status === 'transitional' ? estimated * 0.4 : 0;
 
       return {
         ...el,
         estimatedCost: estimated,
         optimizationPotential: Math.round(optimization),
-        costCategory: el.togafDomain,
+        costCategory: el.togafDomain || 'technology',
+        relativeImportance: profile?.relativeImportance || 0,
+        costTier: profile?.tier as CostTier | undefined,
       };
     });
 
@@ -46,12 +67,14 @@ export default function CostOptimization() {
     const byDomain: Record<string, number> = {};
     const byStatus: Record<string, number> = {};
     for (const item of items) {
-      byDomain[item.togafDomain] = (byDomain[item.togafDomain] || 0) + item.estimatedCost;
-      byStatus[item.status] = (byStatus[item.status] || 0) + item.estimatedCost;
+      const domain = item.togafDomain || 'technology';
+      const status = item.status || 'current';
+      byDomain[domain] = (byDomain[domain] || 0) + item.estimatedCost;
+      byStatus[status] = (byStatus[status] || 0) + item.estimatedCost;
     }
 
     return { items, totalCost, totalOptimization, byDomain, byStatus };
-  }, [elements]);
+  }, [elements, graphCostProfiles]);
 
   const formatCost = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -76,11 +99,23 @@ export default function CostOptimization() {
   return (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-3 border-b border-[var(--border-subtle)]">
-        <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
-          <DollarSign size={14} className="text-[#22c55e]" />
-          Cost Optimization
-        </h3>
-        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">TCO estimation and optimization opportunities</p>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+            <DollarSign size={14} className="text-[#22c55e]" />
+            Cost Optimization
+          </h3>
+          <span
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-mono font-medium"
+            style={{ backgroundColor: `${TIER_COLORS[dominantTier]}20`, color: TIER_COLORS[dominantTier], border: `1px solid ${TIER_COLORS[dominantTier]}40` }}
+            title={`Data Tier ${dominantTier}: ${TIER_LABELS[dominantTier]}`}
+          >
+            <Layers size={9} />
+            T{dominantTier}
+          </span>
+        </div>
+        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">
+          TCO estimation {dominantTier === 0 ? '(relative ranking)' : `(${TIER_LABELS[dominantTier]})`}
+        </p>
       </div>
 
       {/* Summary */}

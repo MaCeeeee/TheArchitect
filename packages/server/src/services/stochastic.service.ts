@@ -418,3 +418,225 @@ export function calculatePlateauStability(
 export function getThresholds(strategy: RoadmapStrategy): StochasticThresholds {
   return THRESHOLDS[strategy];
 }
+
+// ─── 6. PERT Monte Carlo for Cost Profiles ───
+
+export interface PertMCInput {
+  elementId: string;
+  elementName: string;
+  optimistic: number;
+  mostLikely: number;
+  pessimistic: number;
+  successProbability?: number;
+}
+
+export interface PertMCResult {
+  pertMean: number;
+  pertStdDev: number;
+  p10: number;
+  p50: number;
+  p90: number;
+  var95: number;
+  histogram: { bucket: number; count: number }[];
+  elementContributions: { elementId: string; name: string; varianceContribution: number }[];
+}
+
+/**
+ * Runs PERT-based Monte Carlo simulation across multiple elements.
+ * Each element has O/M/P estimates. Returns portfolio-level P10/P50/P90.
+ */
+export function runPERTMonteCarlo(
+  elements: PertMCInput[],
+  iterations: number = 10000,
+): PertMCResult {
+  if (elements.length === 0) {
+    return { pertMean: 0, pertStdDev: 0, p10: 0, p50: 0, p90: 0, var95: 0, histogram: [], elementContributions: [] };
+  }
+
+  // Build samplers per element
+  const samplers = elements.map((el) => {
+    const sampler = betaPertDistribution(el.optimistic, el.mostLikely, el.pessimistic);
+    return { ...el, sampler };
+  });
+
+  const totals: number[] = [];
+  const elementSums: number[][] = elements.map(() => []);
+
+  for (let i = 0; i < iterations; i++) {
+    let total = 0;
+    for (let j = 0; j < samplers.length; j++) {
+      const s = samplers[j];
+      let cost = s.sampler();
+      // Apply success probability: if project phase fails, cost may double
+      if (s.successProbability != null && s.successProbability < 1) {
+        if (Math.random() > s.successProbability) {
+          cost *= 1.5; // Failure: 50% cost overrun
+        }
+      }
+      elementSums[j].push(cost);
+      total += cost;
+    }
+    totals.push(total);
+  }
+
+  totals.sort((a, b) => a - b);
+
+  const mean = totals.reduce((s, v) => s + v, 0) / totals.length;
+  const variance = totals.reduce((s, v) => s + (v - mean) ** 2, 0) / totals.length;
+  const stdDev = Math.sqrt(variance);
+
+  const p10 = totals[Math.floor(iterations * 0.10)];
+  const p50 = totals[Math.floor(iterations * 0.50)];
+  const p90 = totals[Math.floor(iterations * 0.90)];
+  const var95 = totals[Math.floor(iterations * 0.95)];
+
+  // Histogram (20 buckets)
+  const bucketCount = 20;
+  const minVal = totals[0];
+  const maxVal = totals[totals.length - 1];
+  const bucketSize = (maxVal - minVal) / bucketCount || 1;
+  const histogram: { bucket: number; count: number }[] = [];
+  for (let b = 0; b < bucketCount; b++) {
+    histogram.push({ bucket: Math.round(minVal + b * bucketSize), count: 0 });
+  }
+  for (const v of totals) {
+    const idx = Math.min(Math.floor((v - minVal) / bucketSize), bucketCount - 1);
+    histogram[idx].count++;
+  }
+
+  // Variance contribution per element (tornado data)
+  const elementContributions = elements.map((el, j) => {
+    const elMean = elementSums[j].reduce((s, v) => s + v, 0) / elementSums[j].length;
+    const elVar = elementSums[j].reduce((s, v) => s + (v - elMean) ** 2, 0) / elementSums[j].length;
+    return {
+      elementId: el.elementId,
+      name: el.elementName,
+      varianceContribution: variance > 0 ? elVar / variance : 0,
+    };
+  });
+  elementContributions.sort((a, b) => b.varianceContribution - a.varianceContribution);
+
+  return { pertMean: Math.round(mean), pertStdDev: Math.round(stdDev), p10: Math.round(p10), p50: Math.round(p50), p90: Math.round(p90), var95: Math.round(var95), histogram, elementContributions };
+}
+
+// ─── 7. Risk-adjusted NPV (rNPV) ───
+
+/**
+ * Computes risk-adjusted Net Present Value.
+ * cashflows[i] = net cash flow in year i (negative = cost, positive = benefit)
+ * successProbabilities[i] = P(reaching year i)
+ * discountRate = WACC (e.g. 0.08 for 8%)
+ */
+export function computeRNPV(
+  cashflows: number[],
+  successProbabilities: number[],
+  discountRate: number = 0.08,
+): number {
+  let rNPV = 0;
+  let cumulativeProb = 1.0;
+
+  for (let t = 0; t < cashflows.length; t++) {
+    cumulativeProb *= (successProbabilities[t] ?? 1.0);
+    const discountFactor = 1 / Math.pow(1 + discountRate, t);
+    rNPV += cashflows[t] * cumulativeProb * discountFactor;
+  }
+
+  return Math.round(rNPV);
+}
+
+// ─── 8. WSJF (Weighted Shortest Job First) ───
+
+export interface WSJFInput {
+  elementId: string;
+  elementName: string;
+  costOfDelay: number;     // EUR/week (business value + time criticality + risk reduction)
+  jobSize: number;          // effort estimate (e.g. total cost or person-months)
+}
+
+export interface WSJFOutput {
+  elementId: string;
+  elementName: string;
+  costOfDelay: number;
+  jobSize: number;
+  wsjfScore: number;
+  cd3Score: number;
+  rank: number;
+}
+
+/**
+ * Computes WSJF scores and ranks elements by priority.
+ * WSJF = Cost of Delay / Job Size
+ * CD3 = Cost of Delay / Duration (using sqrt(jobSize) as duration proxy)
+ */
+export function computeWSJF(elements: WSJFInput[]): WSJFOutput[] {
+  const results = elements.map((el) => {
+    const wsjf = el.jobSize > 0 ? el.costOfDelay / el.jobSize : 0;
+    const duration = Math.sqrt(el.jobSize) || 1;
+    const cd3 = el.costOfDelay / duration;
+
+    return {
+      elementId: el.elementId,
+      elementName: el.elementName,
+      costOfDelay: el.costOfDelay,
+      jobSize: el.jobSize,
+      wsjfScore: Math.round(wsjf * 100) / 100,
+      cd3Score: Math.round(cd3 * 100) / 100,
+      rank: 0,
+    };
+  });
+
+  results.sort((a, b) => b.wsjfScore - a.wsjfScore);
+  results.forEach((r, i) => { r.rank = i + 1; });
+
+  return results;
+}
+
+// ─── 9. Earned Value Management (EVM) ───
+
+export interface EVMInput {
+  budgetAtCompletion: number;  // BAC: total planned budget
+  plannedPercent: number;       // % of work scheduled by now (0-1)
+  earnedPercent: number;        // % of work actually completed (0-1)
+  actualCost: number;           // actual spend so far
+}
+
+export interface EVMOutput {
+  plannedValue: number;    // PV = BAC * planned%
+  earnedValue: number;     // EV = BAC * earned%
+  actualCost: number;      // AC
+  cpi: number;             // Cost Performance Index = EV/AC
+  spi: number;             // Schedule Performance Index = EV/PV
+  eac: number;             // Estimate at Completion = BAC/CPI
+  etc: number;             // Estimate to Complete = EAC - AC
+  vac: number;             // Variance at Completion = BAC - EAC
+  cv: number;              // Cost Variance = EV - AC
+  sv: number;              // Schedule Variance = EV - PV
+}
+
+/**
+ * Computes Earned Value Management metrics.
+ */
+export function computeEVM(input: EVMInput): EVMOutput {
+  const pv = input.budgetAtCompletion * input.plannedPercent;
+  const ev = input.budgetAtCompletion * input.earnedPercent;
+  const ac = input.actualCost;
+
+  const cpi = ac > 0 ? ev / ac : 1;
+  const spi = pv > 0 ? ev / pv : 1;
+  const eac = cpi > 0 ? input.budgetAtCompletion / cpi : input.budgetAtCompletion;
+  const etc = eac - ac;
+  const vac = input.budgetAtCompletion - eac;
+
+  return {
+    plannedValue: Math.round(pv),
+    earnedValue: Math.round(ev),
+    actualCost: Math.round(ac),
+    cpi: Math.round(cpi * 100) / 100,
+    spi: Math.round(spi * 100) / 100,
+    eac: Math.round(eac),
+    etc: Math.round(etc),
+    vac: Math.round(vac),
+    cv: Math.round(ev - ac),
+    sv: Math.round(ev - pv),
+  };
+}

@@ -3,7 +3,7 @@ import type { ArchitectureLayer } from '@thearchitect/shared';
 import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
-type SidebarPanel = 'explorer' | 'architect' | 'analyze' | 'copilot' | 'none';
+type SidebarPanel = 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
 
 interface UIState {
   viewMode: ViewMode;

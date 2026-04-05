@@ -80,11 +80,12 @@ function MonteCarlPlanes({ totalCost }: { totalCost: number }) {
   const p10Ref = useRef<THREE.Mesh>(null);
   const p50Ref = useRef<THREE.Mesh>(null);
   const p90Ref = useRef<THREE.Mesh>(null);
+  const xrayMetrics = useXRayStore((s) => s.metrics);
 
-  // Simulate P10/P50/P90 relative to total cost
-  const p10 = totalCost * 0.7;
-  const p50 = totalCost * 1.0;
-  const p90 = totalCost * 1.45;
+  // Use real P10/P50/P90 from XRay metrics when available, else estimate
+  const p10 = xrayMetrics.costP10 > 0 ? xrayMetrics.costP10 : Math.round(totalCost * 0.7);
+  const p50 = xrayMetrics.costP50 > 0 ? xrayMetrics.costP50 : totalCost;
+  const p90 = xrayMetrics.costP90 > 0 ? xrayMetrics.costP90 : Math.round(totalCost * 1.45);
 
   // Map costs to Y positions (P10 lowest, P90 highest)
   const baseY = 15;
@@ -225,7 +226,7 @@ export default function CostGravity() {
 
     let max = 0;
     let total = 0;
-    const items: { id: string; position: THREE.Vector3; cost: number; optimization: number; isRetired: boolean }[] = [];
+    const items: { id: string; position: THREE.Vector3; cost: number; optimization: number; isRetired: boolean; relativeImportance: number }[] = [];
 
     for (const el of elements) {
       const data = elementData.get(el.id);
@@ -240,6 +241,7 @@ export default function CostGravity() {
         cost: data.estimatedCost,
         optimization: data.optimizationPotential,
         isRetired: el.status === 'retired',
+        relativeImportance: data.relativeImportance || 0,
       });
     }
 

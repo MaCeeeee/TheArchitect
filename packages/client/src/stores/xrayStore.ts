@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 import { useArchitectureStore, ArchitectureElement, Connection } from './architectureStore';
+import type { ElementCostProfile, GraphCentralityMetrics, CostTier } from '@thearchitect/shared';
+import { BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
+import { analyticsAPI } from '../services/api';
 
 export type XRaySubView = 'risk' | 'cost' | 'timeline' | 'simulation';
 
@@ -23,71 +26,12 @@ export interface XRayElementData {
   optimizationPotential: number;
   dependencyDepth: number;
   isCriticalPath: boolean;
+  // Graph centrality (populated from cost engine API)
+  graphMetrics?: GraphCentralityMetrics;
+  relativeImportance?: number;
+  relativeCostRisk?: number;
+  costTier?: CostTier;
 }
-
-const BASE_COSTS: Record<string, number> = {
-  application: 50000,
-  application_component: 20000,
-  application_service: 15000,
-  service: 15000,
-  application_collaboration: 15000,
-  application_interface: 12000,
-  application_function: 18000,
-  application_interaction: 10000,
-  application_process: 15000,
-  application_event: 5000,
-  data_object: 8000,
-  technology_component: 30000,
-  infrastructure: 80000,
-  platform_service: 40000,
-  node: 60000,
-  device: 50000,
-  system_software: 25000,
-  artifact: 5000,
-  communication_network: 45000,
-  path: 10000,
-  data_entity: 10000,
-  data_model: 8000,
-  business_capability: 5000,
-  process: 12000,
-  business_service: 10000,
-  business_actor: 0,
-  business_role: 0,
-  business_function: 12000,
-  business_event: 2000,
-  business_object: 3000,
-  business_collaboration: 8000,
-  business_interaction: 5000,
-  business_interface: 5000,
-  contract: 3000,
-  representation: 2000,
-  product: 15000,
-  value_stream: 8000,
-  resource: 20000,
-  course_of_action: 5000,
-  // Motivation (no direct cost)
-  stakeholder: 0,
-  driver: 0,
-  assessment: 0,
-  goal: 0,
-  outcome: 0,
-  principle: 0,
-  requirement: 0,
-  constraint: 0,
-  meaning: 0,
-  am_value: 0,
-  // Implementation & Migration
-  work_package: 50000,
-  deliverable: 20000,
-  implementation_event: 5000,
-  plateau: 0,
-  gap: 10000,
-  // Physical
-  equipment: 60000,
-  facility: 200000,
-  distribution_network: 80000,
-  material: 15000,
-};
 
 export interface XRayPosition {
   x: number;
@@ -104,10 +48,12 @@ interface XRayState {
   criticalPath: string[];
   aiNarrative: string;
   isLoadingNarrative: boolean;
+  graphCostProfiles: ElementCostProfile[];
 
   toggleXRay: () => void;
   setSubView: (view: XRaySubView) => void;
   recompute: () => void;
+  fetchGraphCost: (projectId: string) => Promise<void>;
   computePositions: (view: XRaySubView) => void;
   setAINarrative: (text: string) => void;
   setLoadingNarrative: (loading: boolean) => void;
@@ -132,10 +78,9 @@ function computeRiskScore(
 }
 
 function computeCost(el: ArchitectureElement): { estimated: number; optimization: number } {
-  const baseCost = BASE_COSTS[el.type] || 15000;
-  const statusMultiplier = el.status === 'retired' ? 0.2
-    : el.status === 'transitional' ? 1.5
-    : el.status === 'target' ? 1.8 : 1.0;
+  // Use annualCost when provided by user (Tier 1+), otherwise fall back to BASE_COSTS_BY_TYPE
+  const baseCost = (el.annualCost && el.annualCost > 0) ? el.annualCost : (BASE_COSTS_BY_TYPE?.[el.type] ?? 10000);
+  const statusMultiplier = STATUS_COST_MULTIPLIERS?.[el.status] ?? 1.0;
   const estimated = Math.round(baseCost * statusMultiplier);
   const optimization = el.status === 'retired' ? estimated * 0.9
     : el.maturityLevel <= 2 ? estimated * 0.3
@@ -210,6 +155,30 @@ export const useXRayStore = create<XRayState>((set, get) => ({
   criticalPath: [],
   aiNarrative: '',
   isLoadingNarrative: false,
+  graphCostProfiles: [],
+
+  fetchGraphCost: async (projectId: string) => {
+    try {
+      const res = await analyticsAPI.getGraphCost(projectId);
+      const profiles: ElementCostProfile[] = res.data?.data || [];
+      set({ graphCostProfiles: profiles });
+
+      // Merge graph metrics into existing elementData
+      const elementData = new Map(get().elementData);
+      for (const profile of profiles) {
+        const existing = elementData.get(profile.elementId);
+        if (existing) {
+          existing.graphMetrics = profile.graphMetrics;
+          existing.relativeImportance = profile.relativeImportance;
+          existing.relativeCostRisk = profile.relativeCostRisk;
+          existing.costTier = profile.tier;
+        }
+      }
+      set({ elementData });
+    } catch (err) {
+      console.warn('[XRay] Graph cost fetch failed:', err);
+    }
+  },
 
   toggleXRay: () => {
     const wasActive = get().isActive;
@@ -302,12 +271,22 @@ export const useXRayStore = create<XRayState>((set, get) => ({
     const variance = allData.reduce((s, d) => s + Math.pow(d.riskScore - avgRisk, 2), 0) / (allData.length || 1);
     const decisionConfidence = Math.max(10, Math.min(95, Math.round(100 - variance * 8)));
 
-    // Cost metrics
+    // Cost metrics — use real Monte Carlo P10/P50/P90 from graph cost profiles when available
     const totalCost = allData.reduce((sum, d) => sum + d.estimatedCost, 0);
     const optimizationTotal = allData.reduce((sum, d) => sum + d.optimizationPotential, 0);
-    const costP10 = Math.round(totalCost * 0.7);
-    const costP50 = totalCost;
-    const costP90 = Math.round(totalCost * 1.45);
+    const profiles = get().graphCostProfiles;
+    let costP10: number, costP50: number, costP90: number;
+    if (profiles.length > 0) {
+      // Aggregate real confidence bands from server-side cost engine
+      costP10 = Math.round(profiles.reduce((s, p) => s + (p.confidenceLow ?? (p.totalEstimated ?? 0) * 0.7), 0));
+      costP50 = Math.round(profiles.reduce((s, p) => s + (p.totalEstimated ?? 0), 0));
+      costP90 = Math.round(profiles.reduce((s, p) => s + (p.confidenceHigh ?? (p.totalEstimated ?? 0) * 1.45), 0));
+    } else {
+      // Fallback: heuristic multipliers until graph cost data is fetched
+      costP10 = Math.round(totalCost * 0.7);
+      costP50 = totalCost;
+      costP90 = Math.round(totalCost * 1.45);
+    }
 
     set({
       elementData: elementDataMap,

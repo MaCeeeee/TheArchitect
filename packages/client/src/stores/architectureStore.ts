@@ -22,6 +22,25 @@ export interface ArchitectureElement {
   position3D: Position3D;
   metadata: Record<string, unknown>;
   workspaceId?: string;
+  // Cost fields (Tier 1)
+  annualCost?: number;
+  userCount?: number;
+  recordCount?: number;
+  transformationStrategy?: 'retain' | 'retire' | 'rehost' | 'relocate' | 'replatform' | 'repurchase' | 'refactor';
+  // Cost fields (Tier 2)
+  ksloc?: number;
+  technicalFitness?: number;
+  functionalFitness?: number;
+  errorRatePercent?: number;
+  hourlyRate?: number;
+  monthlyInfraCost?: number;
+  technicalDebtRatio?: number;
+  // Cost fields (Tier 3)
+  costEstimateOptimistic?: number;
+  costEstimateMostLikely?: number;
+  costEstimatePessimistic?: number;
+  successProbability?: number;
+  costOfDelayPerWeek?: number;
   // AI Agent fields (populated when type === 'ai_agent')
   agentProvider?: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
   agentModel?: string;

@@ -8,6 +8,7 @@ import { ARCHITECTURE_LAYERS } from '@thearchitect/shared';
 import RiskTopology from './RiskTopology';
 import CostGravity from './CostGravity';
 import SimulationTopology from './SimulationTopology';
+import ScenarioLayers from './ScenarioLayers';
 
 /**
  * TransformationXRay is the main orchestrator for X-Ray mode.
@@ -64,6 +65,9 @@ export default function TransformationXRay() {
       {subView === 'risk' && <RiskTopology />}
       {subView === 'cost' && <CostGravity />}
       {subView === 'simulation' && <SimulationTopology />}
+
+      {/* Scenario comparison layers — visible in all sub-views when comparison active */}
+      <ScenarioLayers />
     </group>
   );
 }

@@ -31,6 +31,7 @@ import remediationRoutes from './routes/remediation.routes';
 import portfolioRoutes from './routes/portfolio.routes';
 import importRoutes from './routes/import.routes';
 import connectorRoutes from './routes/connector.routes';
+import scenarioRoutes from './routes/scenario.routes';
 import snapshotRoutes from './routes/snapshot.routes';
 import healthcheckRoutes from './routes/healthcheck.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
@@ -92,6 +93,7 @@ async function main() {
   app.use('/api/projects', portfolioRoutes);
   app.use('/api/projects', importRoutes);
   app.use('/api/projects', connectorRoutes);
+  app.use('/api/projects', scenarioRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

@@ -14,3 +14,6 @@ export * from './types/compliance.types';
 export * from './types/simulation.types';
 export * from './types/blueprint.types';
 export * from './types/remediation.types';
+export * from './types/cost.types';
+export * from './constants/cost-defaults.constants';
+export * from './types/scenario.types';

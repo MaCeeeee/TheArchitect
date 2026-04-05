@@ -30,6 +30,8 @@ const TOGAFDomainEnum = z.enum([
 const ProviderEnum = z.enum(['openai', 'anthropic', 'google', 'azure', 'custom']);
 const AutonomyEnum = z.enum(['copilot', 'semi_autonomous', 'autonomous']);
 
+const SevenRsEnum = z.enum(['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor']);
+
 const CreateElementSchema = z.object({
   id: z.string().optional(),
   type: z.string().min(1),
@@ -42,6 +44,25 @@ const CreateElementSchema = z.object({
   status: z.enum(['current', 'target', 'transitional', 'retired']).default('current'),
   position3D: Position3DSchema.default({ x: 0, y: 0, z: 0 }),
   metadata: z.record(z.unknown()).default({}),
+  // Cost fields (Tier 1)
+  annualCost: z.number().min(0).optional(),
+  userCount: z.number().int().min(0).optional(),
+  recordCount: z.number().int().min(0).optional(),
+  transformationStrategy: SevenRsEnum.optional(),
+  // Cost fields (Tier 2)
+  ksloc: z.number().min(0).optional(),
+  technicalFitness: z.number().min(1).max(5).optional(),
+  functionalFitness: z.number().min(1).max(5).optional(),
+  errorRatePercent: z.number().min(0).max(100).optional(),
+  hourlyRate: z.number().min(0).optional(),
+  monthlyInfraCost: z.number().min(0).optional(),
+  technicalDebtRatio: z.number().min(0).max(1).optional(),
+  // Cost fields (Tier 3)
+  costEstimateOptimistic: z.number().min(0).optional(),
+  costEstimateMostLikely: z.number().min(0).optional(),
+  costEstimatePessimistic: z.number().min(0).optional(),
+  successProbability: z.number().min(0).max(1).optional(),
+  costOfDelayPerWeek: z.number().min(0).optional(),
   // AI Agent fields
   agentProvider: ProviderEnum.optional(),
   agentModel: z.string().max(100).optional(),
@@ -62,6 +83,25 @@ const UpdateElementSchema = z.object({
   riskLevel: z.enum(['low', 'medium', 'high', 'critical']).optional(),
   status: z.enum(['current', 'target', 'transitional', 'retired']).optional(),
   position3D: Position3DSchema.optional(),
+  // Cost fields (Tier 1)
+  annualCost: z.number().min(0).optional(),
+  userCount: z.number().int().min(0).optional(),
+  recordCount: z.number().int().min(0).optional(),
+  transformationStrategy: SevenRsEnum.optional(),
+  // Cost fields (Tier 2)
+  ksloc: z.number().min(0).optional(),
+  technicalFitness: z.number().min(1).max(5).optional(),
+  functionalFitness: z.number().min(1).max(5).optional(),
+  errorRatePercent: z.number().min(0).max(100).optional(),
+  hourlyRate: z.number().min(0).optional(),
+  monthlyInfraCost: z.number().min(0).optional(),
+  technicalDebtRatio: z.number().min(0).max(1).optional(),
+  // Cost fields (Tier 3)
+  costEstimateOptimistic: z.number().min(0).optional(),
+  costEstimateMostLikely: z.number().min(0).optional(),
+  costEstimatePessimistic: z.number().min(0).optional(),
+  successProbability: z.number().min(0).max(1).optional(),
+  costOfDelayPerWeek: z.number().min(0).optional(),
   // AI Agent fields
   agentProvider: ProviderEnum.optional(),
   agentModel: z.string().max(100).optional(),
@@ -134,6 +174,17 @@ router.post(
           maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
           posX: $posX, posY: $posY, posZ: $posZ,
           metadataJson: $metadataJson,
+          annualCost: $annualCost, userCount: $userCount,
+          recordCount: $recordCount, transformationStrategy: $transformationStrategy,
+          ksloc: $ksloc, technicalFitness: $technicalFitness,
+          functionalFitness: $functionalFitness, errorRatePercent: $errorRatePercent,
+          hourlyRate: $hourlyRate, monthlyInfraCost: $monthlyInfraCost,
+          technicalDebtRatio: $technicalDebtRatio,
+          costEstimateOptimistic: $costEstimateOptimistic,
+          costEstimateMostLikely: $costEstimateMostLikely,
+          costEstimatePessimistic: $costEstimatePessimistic,
+          successProbability: $successProbability,
+          costOfDelayPerWeek: $costOfDelayPerWeek,
           agentProvider: $agentProvider, agentModel: $agentModel,
           agentPurpose: $agentPurpose, autonomyLevel: $autonomyLevel,
           costPerMonth: $costPerMonth,
@@ -155,6 +206,22 @@ router.post(
           posY: element.position3D.y,
           posZ: element.position3D.z,
           metadataJson: JSON.stringify(element.metadata || {}),
+          annualCost: element.annualCost ?? null,
+          userCount: element.userCount ?? null,
+          recordCount: element.recordCount ?? null,
+          transformationStrategy: element.transformationStrategy || null,
+          ksloc: element.ksloc ?? null,
+          technicalFitness: element.technicalFitness ?? null,
+          functionalFitness: element.functionalFitness ?? null,
+          errorRatePercent: element.errorRatePercent ?? null,
+          hourlyRate: element.hourlyRate ?? null,
+          monthlyInfraCost: element.monthlyInfraCost ?? null,
+          technicalDebtRatio: element.technicalDebtRatio ?? null,
+          costEstimateOptimistic: element.costEstimateOptimistic ?? null,
+          costEstimateMostLikely: element.costEstimateMostLikely ?? null,
+          costEstimatePessimistic: element.costEstimatePessimistic ?? null,
+          successProbability: element.successProbability ?? null,
+          costOfDelayPerWeek: element.costOfDelayPerWeek ?? null,
           agentProvider: element.agentProvider || null,
           agentModel: element.agentModel || null,
           agentPurpose: element.agentPurpose || null,
@@ -201,6 +268,25 @@ router.put(
         params.posY = parsed.position3D.y;
         params.posZ = parsed.position3D.z;
       }
+      // Cost fields (Tier 1)
+      if (parsed.annualCost !== undefined) { setFields.push('e.annualCost = $annualCost'); params.annualCost = parsed.annualCost; }
+      if (parsed.userCount !== undefined) { setFields.push('e.userCount = $userCount'); params.userCount = parsed.userCount; }
+      if (parsed.recordCount !== undefined) { setFields.push('e.recordCount = $recordCount'); params.recordCount = parsed.recordCount; }
+      if (parsed.transformationStrategy !== undefined) { setFields.push('e.transformationStrategy = $transformationStrategy'); params.transformationStrategy = parsed.transformationStrategy; }
+      // Cost fields (Tier 2)
+      if (parsed.ksloc !== undefined) { setFields.push('e.ksloc = $ksloc'); params.ksloc = parsed.ksloc; }
+      if (parsed.technicalFitness !== undefined) { setFields.push('e.technicalFitness = $technicalFitness'); params.technicalFitness = parsed.technicalFitness; }
+      if (parsed.functionalFitness !== undefined) { setFields.push('e.functionalFitness = $functionalFitness'); params.functionalFitness = parsed.functionalFitness; }
+      if (parsed.errorRatePercent !== undefined) { setFields.push('e.errorRatePercent = $errorRatePercent'); params.errorRatePercent = parsed.errorRatePercent; }
+      if (parsed.hourlyRate !== undefined) { setFields.push('e.hourlyRate = $hourlyRate'); params.hourlyRate = parsed.hourlyRate; }
+      if (parsed.monthlyInfraCost !== undefined) { setFields.push('e.monthlyInfraCost = $monthlyInfraCost'); params.monthlyInfraCost = parsed.monthlyInfraCost; }
+      if (parsed.technicalDebtRatio !== undefined) { setFields.push('e.technicalDebtRatio = $technicalDebtRatio'); params.technicalDebtRatio = parsed.technicalDebtRatio; }
+      // Cost fields (Tier 3)
+      if (parsed.costEstimateOptimistic !== undefined) { setFields.push('e.costEstimateOptimistic = $costEstimateOptimistic'); params.costEstimateOptimistic = parsed.costEstimateOptimistic; }
+      if (parsed.costEstimateMostLikely !== undefined) { setFields.push('e.costEstimateMostLikely = $costEstimateMostLikely'); params.costEstimateMostLikely = parsed.costEstimateMostLikely; }
+      if (parsed.costEstimatePessimistic !== undefined) { setFields.push('e.costEstimatePessimistic = $costEstimatePessimistic'); params.costEstimatePessimistic = parsed.costEstimatePessimistic; }
+      if (parsed.successProbability !== undefined) { setFields.push('e.successProbability = $successProbability'); params.successProbability = parsed.successProbability; }
+      if (parsed.costOfDelayPerWeek !== undefined) { setFields.push('e.costOfDelayPerWeek = $costOfDelayPerWeek'); params.costOfDelayPerWeek = parsed.costOfDelayPerWeek; }
       // AI Agent fields
       if (parsed.agentProvider !== undefined) { setFields.push('e.agentProvider = $agentProvider'); params.agentProvider = parsed.agentProvider; }
       if (parsed.agentModel !== undefined) { setFields.push('e.agentModel = $agentModel'); params.agentModel = parsed.agentModel; }

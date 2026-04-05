@@ -1,5 +1,6 @@
 import { runCypher } from '../config/neo4j';
 import { betaPertDistribution } from './stochastic.service';
+import { BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
 
 export interface ImpactResult {
   elementId: string;
@@ -171,6 +172,7 @@ export async function estimateCosts(projectId: string): Promise<{
      RETURN e.id as id, e.name as name, e.type as type, e.status as status,
             e.togafDomain as domain, e.maturityLevel as maturity, e.riskLevel as riskLevel,
             e.metadataJson as metadataJson, e.sourceImport as sourceImport,
+            e.annualCost as annualCost,
             count(DISTINCT other) as connectionCount`,
     { projectId }
   );
@@ -181,6 +183,12 @@ export async function estimateCosts(projectId: string): Promise<{
     const domain = r.get('domain') || 'technology';
     const maturity = r.get('maturity')?.toNumber?.() || 3;
     const connectionCount = r.get('connectionCount')?.toNumber?.() || 0;
+    const annualCostRaw = r.get('annualCost');
+    const annualCost = annualCostRaw != null
+      ? (typeof annualCostRaw === 'object' && 'low' in annualCostRaw
+        ? (annualCostRaw as { low: number }).low
+        : Number(annualCostRaw))
+      : null;
 
     // Parse metadata for source detection
     let metadata: Record<string, unknown> = {};
@@ -191,7 +199,10 @@ export async function estimateCosts(projectId: string): Promise<{
     const source = (metadata.source as string) || r.get('sourceImport') || '';
 
     let estimatedCost: number;
-    if (source === 'n8n' && metadata.n8nType) {
+    if (annualCost && annualCost > 0) {
+      // Tier 1+: use real annualCost with status multiplier
+      estimatedCost = Math.round(annualCost * (STATUS_COST_MULTIPLIERS[status] || 1.0));
+    } else if (source === 'n8n' && metadata.n8nType) {
       const n8n = estimateN8nCost(
         metadata.n8nType as string, connectionCount, r.get('riskLevel') || 'low', status,
       );

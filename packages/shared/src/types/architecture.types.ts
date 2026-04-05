@@ -138,6 +138,22 @@ export interface ArchitectureElement {
   businessCriticality?: 'low' | 'medium' | 'high' | 'mission_critical';
   annualCost?: number;
   userCount?: number;
+  recordCount?: number;
+  transformationStrategy?: import('./cost.types').SevenRsStrategy;
+  // Tier 2 cost fields
+  ksloc?: number;                  // Thousands of source lines of code
+  technicalFitness?: number;       // 1-5 scale (TIME matrix)
+  functionalFitness?: number;      // 1-5 scale (TIME matrix)
+  errorRatePercent?: number;       // Defect rate 0-100
+  hourlyRate?: number;             // Override DACH default (85 EUR)
+  monthlyInfraCost?: number;       // Infrastructure cost per month
+  technicalDebtRatio?: number;     // SQALE TDR 0-1 (e.g. 0.15 = 15%)
+  // Tier 3 probabilistic fields
+  costEstimateOptimistic?: number;   // O (best case EUR)
+  costEstimateMostLikely?: number;   // M (most likely EUR)
+  costEstimatePessimistic?: number;  // P (worst case EUR)
+  successProbability?: number;       // P(success) 0-1
+  costOfDelayPerWeek?: number;       // EUR/week if delayed
   // AI Agent fields (populated when type === 'ai_agent')
   agentProvider?: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
   agentModel?: string;

@@ -11,6 +11,7 @@ import DashboardPage from './components/ui/DashboardPage';
 import ProjectView from './components/ui/ProjectView';
 import SettingsPage from './components/settings/SettingsPage';
 import CompliancePage from './components/compliance/CompliancePage';
+import AnalyzePage from './components/analyze/AnalyzePage';
 import BlueprintWizard from './components/blueprint/BlueprintWizard';
 import PortfolioPage from './components/portfolio/PortfolioPage';
 import StakeholderDashboard from './components/portfolio/StakeholderDashboard';
@@ -60,6 +61,8 @@ export default function App() {
         <Route path="/project/:projectId/ai-agents" element={<AIAgentInventory />} />
         <Route path="/project/:projectId/compliance" element={<CompliancePage />} />
         <Route path="/project/:projectId/compliance/:section" element={<CompliancePage />} />
+        <Route path="/project/:projectId/analyze" element={<AnalyzePage />} />
+        <Route path="/project/:projectId/analyze/:section" element={<AnalyzePage />} />
       </Route>
     </Routes>
     </ErrorBoundary>
