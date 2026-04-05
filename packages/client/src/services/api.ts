@@ -540,6 +540,28 @@ export const integrationAPI = {
     api.post(`/projects/${projectId}/integrations/${integrationId}/sync`),
   test: (projectId: string, integrationId: string) =>
     api.post(`/projects/${projectId}/integrations/${integrationId}/test`),
+  syncLogs: (projectId: string, limit = 50, offset = 0) =>
+    api.get(`/projects/${projectId}/sync-logs?limit=${limit}&offset=${offset}`),
+};
+
+export const enrichmentAPI = {
+  csvPreview: (projectId: string, rows: Array<{ matchColumn: string; fields: Record<string, unknown> }>) =>
+    api.post(`/projects/${projectId}/enrichment/csv-preview`, { rows }),
+  connectorPreview: (projectId: string, connectionId: string, filters?: Record<string, string>) =>
+    api.post(`/projects/${projectId}/enrichment/connector-preview`, { connectionId, filters }),
+  discover: (projectId: string, connectionId: string) =>
+    api.post(`/projects/${projectId}/enrichment/discover`, { connectionId }),
+  apply: (projectId: string, matches: Array<{ elementId: string; fields: Record<string, unknown>; conflictStrategy: string }>) =>
+    api.post(`/projects/${projectId}/enrichment/apply`, { matches }),
+  connectorTypes: (projectId: string) =>
+    api.get(`/projects/${projectId}/enrichment/connector-types`),
+};
+
+export const oracleAPI = {
+  assess: (projectId: string, proposal: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/oracle/assess`, proposal),
+  history: (projectId: string) =>
+    api.get(`/projects/${projectId}/oracle/history`),
 };
 
 export default api;

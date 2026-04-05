@@ -29,6 +29,7 @@ import {
   COCOMO_SCHEDULE_SE_BASE,
   COCOMO_SCHEDULE_SE_FACTOR,
 } from '@thearchitect/shared';
+import { estimateSmartCost } from './smart-cost.service';
 
 // ─── Internal Types ───
 
@@ -36,7 +37,9 @@ interface AdjacencyNode {
   id: string;
   name: string;
   type: string;
+  layer?: string;
   status: string;
+  riskLevel?: string;
   // Tier 1
   annualCost?: number;
   userCount?: number;
@@ -547,7 +550,10 @@ export function computeTier1Cost(
   node: AdjacencyNode,
   defaults: IndustryDefaults = INDUSTRY_DEFAULTS,
 ): Tier1CostResult {
-  const annualCost = node.annualCost || BASE_COSTS_BY_TYPE[node.type] || 10000;
+  const smartCost = node.annualCost
+    ? { annualCost: node.annualCost, confidence: 'benchmark' as const }
+    : estimateSmartCost(node.name || '', node.type, node.layer || 'application');
+  const annualCost = smartCost.annualCost || 0;
   const strategy: SevenRsStrategy = node.transformationStrategy || 'retain';
   const userCount = node.userCount || 0;
   const recordCount = node.recordCount || 0;
@@ -640,7 +646,10 @@ export function computeTier2Cost(
   graphMetrics: GraphCentralityMetrics | undefined,
   defaults: IndustryDefaults = INDUSTRY_DEFAULTS,
 ): Tier2CostResult {
-  const annualCost = node.annualCost || BASE_COSTS_BY_TYPE[node.type] || 10000;
+  const smartCost2 = node.annualCost
+    ? { annualCost: node.annualCost, confidence: 'benchmark' as const }
+    : estimateSmartCost(node.name || '', node.type, node.layer || 'application');
+  const annualCost = smartCost2.annualCost || 0;
   const strategy: SevenRsStrategy = node.transformationStrategy || 'retain';
   const userCount = node.userCount || 0;
   const recordCount = node.recordCount || 0;
@@ -900,8 +909,12 @@ export async function computeRelativeRankings(
  * Get a Tier 0 cost estimate for a single element using BASE_COSTS fallback.
  * Used by other services (analytics, xray) when no user cost data exists.
  */
-export function getTier0CostEstimate(type: string, status: string): number {
-  const baseCost = BASE_COSTS_BY_TYPE[type] || 10000;
+export function getTier0CostEstimate(type: string, status: string, name?: string): number {
+  if (name) {
+    const smart = estimateSmartCost(name, type, '');
+    return Math.round(smart.annualCost * (STATUS_COST_MULTIPLIERS[status] || 1.0));
+  }
+  const baseCost = BASE_COSTS_BY_TYPE[type] || 0;
   const statusMult = STATUS_COST_MULTIPLIERS[status] || 1.0;
   return Math.round(baseCost * statusMult);
 }

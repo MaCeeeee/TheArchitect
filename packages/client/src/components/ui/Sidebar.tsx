@@ -476,7 +476,7 @@ function AnalyticsPanel() {
             >
               <Cable size={16} className="text-[#a78bfa] shrink-0" />
               <div>
-                <p className="text-xs font-semibold text-[var(--text-primary)]">Connector Manager</p>
+                <p className="text-xs font-semibold text-[var(--text-primary)]">Integrations</p>
                 <p className="text-[10px] text-[var(--text-tertiary)]">Import & sync external tools</p>
               </div>
             </button>

@@ -1,11 +1,15 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
-import { getAllConnectorTypes, getConnector } from '../services/connectors';
+import { getAllConnectorTypes, getConnector, getEnrichmentConnector, getAllEnrichmentConnectorTypes } from '../services/connectors';
 import { createTemporaryGraph, migrateTemporaryGraph } from '../services/upload.service';
 import type { ConnectorConfig, ConnectorType, AuthMethod } from '../services/connectors';
 import { Connection, decryptCredentials } from '../models/Connection';
 import { Project } from '../models/Project';
+import { SyncLog } from '../services/sync-scheduler.service';
+import { matchEnrichments } from '../services/enrichment-matcher.service';
+import { runCypher } from '../config/neo4j';
+import type { CostFields, ConflictStrategy, CostEnrichmentResult } from '@thearchitect/shared';
 
 const router = Router();
 
@@ -382,6 +386,289 @@ router.post(
   },
 );
 
+// ─── Cost Enrichment Endpoints ───
+
+// GET enrichment connector types
+router.get(
+  '/:projectId/enrichment/connector-types',
+  requireProjectAccess('viewer'),
+  async (_req: Request, res: Response) => {
+    res.json({ success: true, data: getAllEnrichmentConnectorTypes() });
+  },
+);
+
+// POST CSV enrichment preview — match CSV rows to elements via AI
+router.post(
+  '/:projectId/enrichment/csv-preview',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const { rows } = req.body as {
+        rows: Array<{ matchColumn: string; fields: Partial<CostFields> }>;
+      };
+
+      if (!rows || !Array.isArray(rows) || rows.length === 0) {
+        return res.status(400).json({ success: false, error: 'rows array is required' });
+      }
+
+      // Convert CSV rows to CostEnrichmentResult format for matching
+      const enrichments: CostEnrichmentResult[] = rows.map((row, i) => ({
+        sourceKey: row.matchColumn || `row-${i}`,
+        sourceName: row.matchColumn || `Row ${i + 1}`,
+        fields: row.fields,
+        confidence: 1.0,
+        metadata: { source: 'csv' },
+      }));
+
+      const preview = await matchEnrichments(projectId, enrichments, 'csv');
+      res.json({ success: true, data: preview });
+    } catch (err: any) {
+      console.error('[Enrichment] CSV preview error:', err);
+      res.status(500).json({ success: false, error: err.message || 'Preview failed' });
+    }
+  },
+);
+
+// POST connector enrichment preview — fetch from connector + match
+router.post(
+  '/:projectId/enrichment/connector-preview',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const { connectionId, filters } = req.body;
+
+      if (!connectionId) {
+        return res.status(400).json({ success: false, error: 'connectionId is required' });
+      }
+
+      const conn = await Connection.findOne({ _id: connectionId, userId: req.user!._id });
+      if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+      const enrichConnector = getEnrichmentConnector(conn.type as ConnectorType);
+      if (!enrichConnector) {
+        return res.status(400).json({ success: false, error: `No enrichment connector for type: ${conn.type}` });
+      }
+
+      const config: ConnectorConfig = {
+        type: conn.type as ConnectorType,
+        name: conn.name,
+        baseUrl: conn.baseUrl,
+        authMethod: conn.authMethod as AuthMethod,
+        credentials: decryptCredentials(conn.credentials),
+        projectId,
+        mappingRules: [],
+        syncIntervalMinutes: 0,
+        filters: filters || {},
+        enabled: true,
+      };
+
+      const { enrichments, warnings } = await enrichConnector.fetchCostData(config);
+      const preview = await matchEnrichments(projectId, enrichments, conn.type);
+
+      res.json({ success: true, data: { ...preview, warnings } });
+    } catch (err: any) {
+      console.error('[Enrichment] Connector preview error:', err);
+      res.status(500).json({ success: false, error: err.message || 'Preview failed' });
+    }
+  },
+);
+
+// POST connector discover sources (list projects in external tool)
+router.post(
+  '/:projectId/enrichment/discover',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    try {
+      const { connectionId } = req.body;
+      if (!connectionId) {
+        return res.status(400).json({ success: false, error: 'connectionId is required' });
+      }
+
+      const conn = await Connection.findOne({ _id: connectionId, userId: req.user!._id });
+      if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+      const enrichConnector = getEnrichmentConnector(conn.type as ConnectorType);
+      if (!enrichConnector) {
+        return res.status(400).json({ success: false, error: `No enrichment connector for type: ${conn.type}` });
+      }
+
+      const config: ConnectorConfig = {
+        type: conn.type as ConnectorType,
+        name: conn.name,
+        baseUrl: conn.baseUrl,
+        authMethod: conn.authMethod as AuthMethod,
+        credentials: decryptCredentials(conn.credentials),
+        projectId: '',
+        mappingRules: [],
+        syncIntervalMinutes: 0,
+        filters: {},
+        enabled: true,
+      };
+
+      const sources = await enrichConnector.discoverSources(config);
+      res.json({ success: true, data: sources });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || 'Discovery failed' });
+    }
+  },
+);
+
+// POST apply enrichment — update elements with cost data
+router.post(
+  '/:projectId/enrichment/apply',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const { matches } = req.body as {
+        matches: Array<{
+          elementId: string;
+          fields: Partial<CostFields>;
+          conflictStrategy: ConflictStrategy;
+        }>;
+      };
+
+      if (!matches || !Array.isArray(matches) || matches.length === 0) {
+        return res.status(400).json({ success: false, error: 'matches array is required' });
+      }
+
+      const VALID_FIELDS = new Set([
+        'annualCost', 'transformationStrategy', 'userCount', 'recordCount',
+        'ksloc', 'technicalFitness', 'functionalFitness', 'errorRatePercent',
+        'hourlyRate', 'monthlyInfraCost', 'technicalDebtRatio',
+        'costEstimateOptimistic', 'costEstimateMostLikely', 'costEstimatePessimistic',
+        'successProbability', 'costOfDelayPerWeek',
+      ]);
+
+      let updated = 0;
+      let skipped = 0;
+      const errors: string[] = [];
+
+      for (const match of matches) {
+        try {
+          // Filter to valid cost fields only
+          const safeFields: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(match.fields)) {
+            if (VALID_FIELDS.has(key) && value !== null && value !== undefined && String(value) !== '') {
+              safeFields[key] = value;
+            }
+          }
+
+          if (Object.keys(safeFields).length === 0) {
+            skipped++;
+            continue;
+          }
+
+          if (match.conflictStrategy === 'skip') {
+            // Only set fields that are currently null/undefined on the element
+            const existing = await runCypher(
+              `MATCH (e:ArchitectureElement {id: $id, projectId: $projectId})
+               RETURN e`,
+              { id: match.elementId, projectId },
+            );
+
+            if (existing.length === 0) {
+              errors.push(`Element ${match.elementId} not found`);
+              continue;
+            }
+
+            const props = serializeNeo4jProps(existing[0].get('e').properties);
+            const fieldsToSet: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(safeFields)) {
+              if (props[key] === null || props[key] === undefined) {
+                fieldsToSet[key] = value;
+              }
+            }
+
+            if (Object.keys(fieldsToSet).length === 0) {
+              skipped++;
+              continue;
+            }
+
+            await setCostFields(match.elementId, projectId, fieldsToSet);
+            updated++;
+          } else if (match.conflictStrategy === 'higher_wins') {
+            // For numeric fields, keep whichever value is higher
+            const existing = await runCypher(
+              `MATCH (e:ArchitectureElement {id: $id, projectId: $projectId})
+               RETURN e`,
+              { id: match.elementId, projectId },
+            );
+
+            if (existing.length === 0) {
+              errors.push(`Element ${match.elementId} not found`);
+              continue;
+            }
+
+            const props = serializeNeo4jProps(existing[0].get('e').properties);
+            const fieldsToSet: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(safeFields)) {
+              const cur = props[key];
+              if (cur === null || cur === undefined || typeof value !== 'number' || typeof cur !== 'number') {
+                fieldsToSet[key] = value;
+              } else if (value > cur) {
+                fieldsToSet[key] = value;
+              }
+            }
+
+            if (Object.keys(fieldsToSet).length === 0) {
+              skipped++;
+              continue;
+            }
+
+            await setCostFields(match.elementId, projectId, fieldsToSet);
+            updated++;
+          } else {
+            // Default: overwrite
+            await setCostFields(match.elementId, projectId, safeFields);
+            updated++;
+          }
+        } catch (err: any) {
+          errors.push(`${match.elementId}: ${err.message}`);
+        }
+      }
+
+      res.json({ success: true, data: { updated, skipped, errors } });
+    } catch (err: any) {
+      console.error('[Enrichment] Apply error:', err);
+      res.status(500).json({ success: false, error: err.message || 'Apply failed' });
+    }
+  },
+);
+
+async function setCostFields(elementId: string, projectId: string, fields: Record<string, unknown>): Promise<void> {
+  const setParts: string[] = [];
+  const params: Record<string, unknown> = { id: elementId, projectId };
+
+  for (const [key, value] of Object.entries(fields)) {
+    const paramKey = `f_${key}`;
+    setParts.push(`e.${key} = $${paramKey}`);
+    params[paramKey] = value;
+  }
+
+  setParts.push('e.updatedAt = datetime()');
+
+  await runCypher(
+    `MATCH (e:ArchitectureElement {id: $id, projectId: $projectId})
+     SET ${setParts.join(', ')}`,
+    params,
+  );
+}
+
+function serializeNeo4jProps(props: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (value && typeof value === 'object' && 'low' in value && 'high' in value) {
+      result[key] = (value as { low: number }).low;
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // Sanitize: strip credentials from response
 function sanitize(config: ConnectorConfig) {
   return {
@@ -397,5 +684,33 @@ function sanitize(config: ConnectorConfig) {
     projectId: config.projectId,
   };
 }
+
+// ─── Sync History ───
+
+// GET sync logs for a project
+router.get(
+  '/:projectId/sync-logs',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const limit = Math.min(parseInt(req.query.limit as string || '50', 10), 200);
+    const offset = parseInt(req.query.offset as string || '0', 10);
+
+    const [logs, total] = await Promise.all([
+      SyncLog.find({ projectId })
+        .sort({ syncedAt: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean(),
+      SyncLog.countDocuments({ projectId }),
+    ]);
+
+    res.json({
+      success: true,
+      data: logs,
+      pagination: { total, limit, offset },
+    });
+  },
+);
 
 export default router;

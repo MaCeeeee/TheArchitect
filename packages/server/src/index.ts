@@ -32,10 +32,12 @@ import portfolioRoutes from './routes/portfolio.routes';
 import importRoutes from './routes/import.routes';
 import connectorRoutes from './routes/connector.routes';
 import scenarioRoutes from './routes/scenario.routes';
+import oracleRoutes from './routes/oracle.routes';
 import snapshotRoutes from './routes/snapshot.routes';
 import healthcheckRoutes from './routes/healthcheck.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
+import { startSyncScheduler } from './services/sync-scheduler.service';
 
 dotenv.config();
 
@@ -94,6 +96,7 @@ async function main() {
   app.use('/api/projects', importRoutes);
   app.use('/api/projects', connectorRoutes);
   app.use('/api/projects', scenarioRoutes);
+  app.use('/api/projects', oracleRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {
@@ -120,6 +123,9 @@ async function main() {
 
   // Start temp graph cleanup cron
   startTempGraphCleanup();
+
+  // Start integration sync scheduler
+  startSyncScheduler();
 
   server.listen(PORT, () => {
     console.log(`[TheArchitect] Server running on http://localhost:${PORT}`);

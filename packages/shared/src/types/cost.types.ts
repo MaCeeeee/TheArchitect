@@ -2,6 +2,9 @@
 // Implements 40+ mathematical models across 7 cost dimensions
 // with a tiered progressive disclosure system (Tier 0-3)
 
+// ─── Smart Cost Confidence ───
+export type CostConfidence = 'benchmark' | 'ai' | 'type_default' | 'zero';
+
 // ─── Cost Tier System ───
 export type CostTier = 0 | 1 | 2 | 3;
 
@@ -61,6 +64,11 @@ export interface ElementCostProfile {
   totalEstimated?: number;
   confidenceLow?: number;             // P10 or lower bound
   confidenceHigh?: number;            // P90 or upper bound
+
+  // Smart cost estimation metadata
+  costConfidence?: CostConfidence;
+  costSource?: string;                // e.g. "AWS RDS PostgreSQL Pricing 2025"
+  matchedBenchmark?: string;          // e.g. "postgresql"
 }
 
 // ─── 7 R's Transformation Strategy ───

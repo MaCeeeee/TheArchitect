@@ -25,7 +25,7 @@ const connectionSchema = new Schema<IConnection>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     name: { type: String, required: true, trim: true },
-    type: { type: String, required: true, enum: ['jira', 'github', 'gitlab', 'confluence', 'servicenow', 'azure_devops'] },
+    type: { type: String, required: true, enum: ['jira', 'github', 'gitlab', 'confluence', 'servicenow', 'azure_devops', 'sonarqube', 'leanix', 'sap', 'n8n', 'salesforce', 'citrix', 'sparx_ea', 'abacus', 'standards_db'] },
     baseUrl: { type: String, required: true },
     authMethod: { type: String, required: true, enum: ['api_key', 'oauth2', 'personal_token', 'basic'] },
     credentials: { type: String, default: '' },

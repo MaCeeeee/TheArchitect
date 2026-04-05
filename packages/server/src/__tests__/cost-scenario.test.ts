@@ -42,7 +42,7 @@ describe('1. Shared Cost Constants', () => {
   });
 
   test('1.2 All 7 R strategies have multipliers', () => {
-    const strategies = ['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor'];
+    const strategies = ['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor'] as const;
     for (const s of strategies) {
       expect(SEVEN_RS_MULTIPLIERS[s]).toBeDefined();
       expect(SEVEN_RS_MULTIPLIERS[s]).toBeGreaterThanOrEqual(0);
@@ -57,7 +57,7 @@ describe('1. Shared Cost Constants', () => {
   });
 
   test('1.4 Training days per strategy defined for all 7 R', () => {
-    const strategies = ['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor'];
+    const strategies = ['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor'] as const;
     for (const s of strategies) {
       expect(TRAINING_DAYS_PER_STRATEGY[s]).toBeDefined();
       expect(TRAINING_DAYS_PER_STRATEGY[s]).toBeGreaterThanOrEqual(0);

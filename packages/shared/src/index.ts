@@ -17,3 +17,6 @@ export * from './types/remediation.types';
 export * from './types/cost.types';
 export * from './constants/cost-defaults.constants';
 export * from './types/scenario.types';
+export * from './types/enrichment.types';
+export * from './constants/technology-benchmarks.constants';
+export * from './types/oracle.types';

@@ -66,7 +66,7 @@ export const BASE_COSTS_BY_TYPE: Record<string, number> = {
   application_interaction: 10000,
   application_process: 12000,
   application_event: 5000,
-  data_object: 10000,
+  data_object: 0,
   // Technology Layer
   technology_component: 30000,
   infrastructure: 80000,
@@ -94,43 +94,43 @@ export const BASE_COSTS_BY_TYPE: Record<string, number> = {
   business_function: 15000,
   business_interaction: 10000,
   business_event: 5000,
-  business_object: 8000,
-  contract: 5000,
-  representation: 3000,
+  business_object: 0,
+  contract: 0,
+  representation: 0,
   product: 20000,
   // Strategy Layer
   business_capability: 30000,
   value_stream: 25000,
   resource: 15000,
   course_of_action: 10000,
-  // Information Layer
-  data_entity: 10000,
-  data_model: 8000,
-  // Motivation Layer
-  stakeholder: 5000,
-  driver: 3000,
-  assessment: 5000,
-  goal: 5000,
-  outcome: 5000,
-  principle: 3000,
-  requirement: 5000,
-  constraint: 3000,
-  meaning: 2000,
-  am_value: 2000,
+  // Information Layer (structural — no direct operational cost)
+  data_entity: 0,
+  data_model: 0,
+  // Motivation Layer (structural — no direct operational cost)
+  stakeholder: 0,
+  driver: 0,
+  assessment: 0,
+  goal: 0,
+  outcome: 0,
+  principle: 0,
+  requirement: 0,
+  constraint: 0,
+  meaning: 0,
+  am_value: 0,
   // Implementation & Migration
   work_package: 20000,
   deliverable: 10000,
   implementation_event: 5000,
   plateau: 15000,
-  gap: 8000,
+  gap: 0,
   // Physical
   equipment: 25000,
   facility: 50000,
   distribution_network: 30000,
   material: 10000,
-  // Composite
-  grouping: 5000,
-  location: 10000,
+  // Composite (structural)
+  grouping: 0,
+  location: 0,
   // AI Extension
   ai_agent: 12000,
 };

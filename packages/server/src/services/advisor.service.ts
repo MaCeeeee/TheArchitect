@@ -3,6 +3,7 @@ import { assessRisk, estimateCosts } from './analytics.service';
 import { checkCompliance } from './compliance.service';
 import { propagateCascadeRisk, kolmogorovSmirnovTest, getThresholds } from './stochastic.service';
 import { SimulationRun } from '../models/SimulationRun';
+import { OracleAssessment } from '../models/OracleAssessment';
 import { ArchitectureSnapshot } from '../models/ArchitectureSnapshot';
 import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
@@ -79,6 +80,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     driftInsights,
     missingComplianceInsights,
     timeInsights,
+    oracleInsights,
   ] = await Promise.all([
     detectSPOF(elements),
     detectOrphans(elements),
@@ -93,6 +95,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     detectArchitectureDrift(projectId, elements),
     detectMissingComplianceElements(projectId),
     detectTIMEClassificationIssues(elements),
+    detectOracleWarnings(projectId),
   ]);
 
   const allInsights = [
@@ -109,6 +112,7 @@ export async function runAdvisorScan(projectId: string): Promise<AdvisorScanResu
     ...driftInsights,
     ...missingComplianceInsights,
     ...timeInsights,
+    ...oracleInsights,
   ];
 
   // Sort by severity priority, then by affected elements count
@@ -742,4 +746,68 @@ function toAffected(el: GraphElement): AffectedElement {
     type: el.type,
     layer: el.layer,
   };
+}
+
+// ─── Oracle Warning Detector ───
+
+async function detectOracleWarnings(projectId: string): Promise<AdvisorInsight[]> {
+  const insights: AdvisorInsight[] = [];
+
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const recentAssessments = await OracleAssessment.find({
+      projectId,
+      createdAt: { $gte: sevenDaysAgo },
+    })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    if (recentAssessments.length === 0) return insights;
+
+    // Check for high-risk individual assessments
+    for (const assessment of recentAssessments) {
+      const verdict = assessment.verdict as Record<string, unknown>;
+      const proposal = assessment.proposal as Record<string, unknown>;
+      const score = typeof verdict.acceptanceRiskScore === 'number' ? verdict.acceptanceRiskScore : 0;
+
+      if (score > 70) {
+        insights.push({
+          id: `oracle-high-risk-${String(assessment._id)}`,
+          title: `High acceptance risk: "${String(proposal.title || 'Untitled')}"`,
+          description: `Oracle assessment scored ${score}/100 acceptance risk (${String(verdict.riskLevel || 'high')}). This proposal is likely to face significant stakeholder resistance.`,
+          severity: 'high' as InsightSeverity,
+          category: 'oracle_warning',
+          recommendation: 'Review mitigation suggestions from the Oracle assessment before proceeding.',
+          affectedElements: [],
+          effort: 'medium',
+        });
+      }
+    }
+
+    // Check for pattern of contested/rejected assessments
+    const contestedCount = recentAssessments.filter((a) => {
+      const verdict = a.verdict as Record<string, unknown>;
+      const pos = String(verdict.overallPosition || '');
+      return pos === 'contested' || pos === 'likely_rejected';
+    }).length;
+
+    if (contestedCount >= 3) {
+      insights.push({
+        id: `oracle-pattern-${Date.now()}`,
+        title: 'Repeated contested proposals detected',
+        description: `${contestedCount} of the last ${recentAssessments.length} Oracle assessments were contested or likely rejected in the past 7 days. This may indicate systemic misalignment between proposed changes and stakeholder expectations.`,
+        severity: 'warning' as InsightSeverity,
+        category: 'oracle_warning',
+        recommendation: 'Consider holding a stakeholder alignment workshop before proposing further changes.',
+        affectedElements: [],
+        effort: 'high',
+      });
+    }
+  } catch (err) {
+    console.error('[Advisor] Oracle warning detection failed:', err);
+  }
+
+  return insights;
 }

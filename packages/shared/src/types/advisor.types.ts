@@ -16,7 +16,8 @@ export type InsightCategory =
   | 'cascade_risk'
   | 'architecture_drift'
   | 'missing_compliance_element'
-  | 'portfolio';
+  | 'portfolio'
+  | 'oracle_warning';
 
 export type RemediationActionType =
   | 'retire_element'

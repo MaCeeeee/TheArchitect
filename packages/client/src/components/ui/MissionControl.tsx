@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Boxes, GitFork, FileText, Shield, Wand2 } from 'lucide-react';
+import { X, Boxes, GitFork, FileText, Shield, Wand2, Cable } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
@@ -78,6 +78,26 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
               <p className="text-[10px] text-[var(--text-tertiary)]">Generate architecture from description</p>
             </div>
             <span className="text-[10px] text-[#a78bfa] opacity-0 group-hover:opacity-100 transition">→</span>
+          </button>
+        </div>
+
+        {/* Integrations Shortcut */}
+        <div className="px-5 pb-3">
+          <button
+            onClick={() => {
+              navigate(`/project/${projectId}/analyze/integrations`);
+              onClose();
+            }}
+            className="w-full flex items-center gap-3 rounded-lg px-3 py-2.5 bg-[#00ff41]/5 border border-[#00ff41]/20 hover:bg-[#00ff41]/10 transition group"
+          >
+            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#00ff41]/20 text-[#00ff41]">
+              <Cable size={14} />
+            </div>
+            <div className="flex-1 text-left">
+              <span className="text-xs font-medium text-[#00ff41]">Integrations</span>
+              <p className="text-[10px] text-[var(--text-tertiary)]">Connect & sync external tools</p>
+            </div>
+            <span className="text-[10px] text-[#00ff41] opacity-0 group-hover:opacity-100 transition">→</span>
           </button>
         </div>
 

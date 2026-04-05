@@ -44,7 +44,7 @@ export default function BreadcrumbBar() {
   const path = location.pathname;
 
   // Dashboard is always root
-  crumbs.push({ label: 'Dashboard', to: '/' });
+  crumbs.push({ label: 'Dashboard', to: '/dashboard' });
 
   if (path.startsWith('/project/') && projectId) {
     crumbs.push({ label: projectName || 'Project', to: `/project/${projectId}` });

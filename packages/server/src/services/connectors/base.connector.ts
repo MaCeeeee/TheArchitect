@@ -9,10 +9,11 @@
  */
 
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import type { CostEnrichmentResult } from '@thearchitect/shared';
 
 // ─── Connector Types ───
 
-export type ConnectorType = 'jira' | 'github' | 'gitlab' | 'confluence' | 'servicenow' | 'azure_devops';
+export type ConnectorType = 'jira' | 'github' | 'gitlab' | 'confluence' | 'servicenow' | 'azure_devops' | 'sonarqube' | 'leanix' | 'sap' | 'n8n' | 'salesforce' | 'citrix' | 'sparx_ea' | 'abacus' | 'standards_db';
 export type AuthMethod = 'api_key' | 'oauth2' | 'personal_token' | 'basic';
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error';
 
@@ -84,10 +85,73 @@ export function getConnector(type: ConnectorType): IConnector | undefined {
   return registry.get(type);
 }
 
-export function getAllConnectorTypes(): Array<{ type: ConnectorType; displayName: string; authMethods: AuthMethod[] }> {
-  return Array.from(registry.values()).map(c => ({
+export function getAllConnectorTypes(): Array<{ type: ConnectorType; displayName: string; authMethods: AuthMethod[]; canEnrich: boolean }> {
+  const allTypes = new Set<ConnectorType>();
+  const result: Array<{ type: ConnectorType; displayName: string; authMethods: AuthMethod[]; canEnrich: boolean }> = [];
+
+  for (const c of registry.values()) {
+    allTypes.add(c.type);
+    result.push({
+      type: c.type,
+      displayName: c.displayName,
+      authMethods: c.supportedAuthMethods,
+      canEnrich: enrichmentRegistry.has(c.type),
+    });
+  }
+
+  // Add enrichment-only connectors not in creation registry
+  for (const c of enrichmentRegistry.values()) {
+    if (!allTypes.has(c.type)) {
+      result.push({
+        type: c.type,
+        displayName: c.displayName,
+        authMethods: c.supportedAuthMethods,
+        canEnrich: true,
+      });
+    }
+  }
+
+  return result;
+}
+
+// ─── Cost Enrichment Connector Interface ───
+
+export interface ICostEnrichmentConnector {
+  readonly type: ConnectorType;
+  readonly displayName: string;
+  readonly supportedAuthMethods: AuthMethod[];
+  /** Which cost fields this connector can provide */
+  readonly enrichableFields: string[];
+
+  /** Validate credentials and connection */
+  testConnection(config: ConnectorConfig): Promise<{ success: boolean; message: string }>;
+
+  /** Fetch cost data from external system */
+  fetchCostData(config: ConnectorConfig): Promise<{
+    enrichments: CostEnrichmentResult[];
+    warnings: string[];
+  }>;
+
+  /** Discover available projects/resources for selection UI */
+  discoverSources(config: ConnectorConfig): Promise<Array<{ key: string; name: string; type?: string }>>;
+}
+
+// ─── Enrichment Registry ───
+
+const enrichmentRegistry = new Map<ConnectorType, ICostEnrichmentConnector>();
+
+export function registerEnrichmentConnector(connector: ICostEnrichmentConnector): void {
+  enrichmentRegistry.set(connector.type, connector);
+}
+
+export function getEnrichmentConnector(type: ConnectorType): ICostEnrichmentConnector | undefined {
+  return enrichmentRegistry.get(type);
+}
+
+export function getAllEnrichmentConnectorTypes(): Array<{ type: ConnectorType; displayName: string; enrichableFields: string[] }> {
+  return Array.from(enrichmentRegistry.values()).map(c => ({
     type: c.type,
     displayName: c.displayName,
-    authMethods: c.supportedAuthMethods,
+    enrichableFields: c.enrichableFields,
   }));
 }

@@ -12,6 +12,7 @@ import ScenarioDashboard from '../analytics/ScenarioDashboard';
 import CapacityPlanning from '../simulation/CapacityPlanning';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import ConnectorPanel from '../import/ConnectorPanel';
+import OraclePanel from '../oracle/OraclePanel';
 
 export default function AnalyzePage() {
   const { projectId, section } = useParams<{ projectId: string; section?: string }>();
@@ -54,6 +55,8 @@ export default function AnalyzePage() {
           {activeSection === 'scenarios' && <ScenarioDashboard />}
 
           {activeSection === 'capacity' && <CapacityPlanning />}
+
+          {activeSection === 'oracle' && <OraclePanel />}
 
           {activeSection === 'roadmap' && <RoadmapPanel />}
 

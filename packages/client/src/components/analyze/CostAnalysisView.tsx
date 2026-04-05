@@ -1,14 +1,16 @@
 import { useMemo, useState, useCallback, useEffect, useRef, Fragment } from 'react';
 import {
   DollarSign, TrendingDown, PieChart, BarChart3, Layers, ChevronDown, ChevronRight,
-  ArrowUpDown, Save, Info,
+  ArrowUpDown, Save, Info, FileSpreadsheet,
 } from 'lucide-react';
+import CostEnrichmentDialog from './CostEnrichmentDialog';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import {
   BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS,
+  TECHNOLOGY_BENCHMARKS, ZERO_COST_ELEMENT_TYPES, ZERO_COST_NAME_PATTERN,
 } from '@thearchitect/shared';
-import type { CostTier, SevenRsStrategy } from '@thearchitect/shared';
+import type { CostTier, CostConfidence, SevenRsStrategy } from '@thearchitect/shared';
 import CostBreakdown from '../analytics/CostBreakdown';
 import ProbabilisticCost from '../analytics/ProbabilisticCost';
 
@@ -16,6 +18,26 @@ import ProbabilisticCost from '../analytics/ProbabilisticCost';
 
 const TIER_COLORS: Record<CostTier, string> = { 0: '#6b7280', 1: '#f59e0b', 2: '#3b82f6', 3: '#22c55e' };
 const TIER_LABELS: Record<CostTier, string> = { 0: 'Relative', 1: '±30-50%', 2: '±15-30%', 3: 'P10/P50/P90' };
+
+const CONFIDENCE_STYLES: Record<CostConfidence, { color: string; label: string }> = {
+  benchmark: { color: '#22c55e', label: 'Benchmark' },
+  ai: { color: '#f59e0b', label: 'AI' },
+  type_default: { color: '#6b7280', label: 'Default' },
+  zero: { color: '#334155', label: '—' },
+};
+
+/** Client-side smart cost: zero-check + benchmark match (mirrors server logic) */
+function clientSmartCost(name: string, type: string): { cost: number; confidence: CostConfidence; source: string; benchmark?: string } {
+  if (ZERO_COST_ELEMENT_TYPES?.has(type)) return { cost: 0, confidence: 'zero', source: `Structural: ${type}` };
+  const n = name.trim();
+  if (ZERO_COST_NAME_PATTERN?.test(n)) return { cost: 0, confidence: 'zero', source: 'Non-operational' };
+  const target = n.toLowerCase();
+  for (const bm of (TECHNOLOGY_BENCHMARKS || [])) {
+    if (bm.keywords.test(target)) return { cost: bm.annualCostRange.mid, confidence: 'benchmark', source: bm.source, benchmark: bm.id };
+  }
+  const fallback = BASE_COSTS_BY_TYPE?.[type] ?? 0;
+  return { cost: fallback, confidence: fallback > 0 ? 'type_default' : 'zero', source: fallback > 0 ? `Type: ${type}` : 'No cost data' };
+}
 
 const STRATEGY_OPTIONS: SevenRsStrategy[] = [
   'retain', 'retire', 'rehost', 'replatform', 'refactor', 'repurchase', 'relocate',
@@ -111,6 +133,7 @@ export default function CostAnalysisView() {
   const [sortAsc, setSortAsc] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [editStates, setEditStates] = useState<Map<string, RowEditState>>(new Map());
+  const [showEnrichDialog, setShowEnrichDialog] = useState(false);
 
   // ─── Fetch graph cost data on mount ───
   useEffect(() => {
@@ -137,9 +160,30 @@ export default function CostAnalysisView() {
   const rows = useMemo(() => {
     return elements.filter((el) => el && el.id).map((el) => {
       const profile = profileMap.get(el.id);
-      const baseCost = (el.annualCost && el.annualCost > 0) ? el.annualCost : (BASE_COSTS_BY_TYPE?.[el.type] ?? 10_000);
       const statusMul = STATUS_COST_MULTIPLIERS?.[el.status || 'current'] ?? 1.0;
-      const estimated = profile?.totalEstimated || Math.round(baseCost * statusMul);
+
+      let estimated: number;
+      let costConfidence: CostConfidence;
+      let costSource = '';
+      let matchedBenchmark: string | undefined;
+
+      if (el.annualCost && el.annualCost > 0) {
+        estimated = Math.round(el.annualCost * statusMul);
+        costConfidence = 'benchmark';
+        costSource = 'User-provided';
+      } else if (profile?.totalEstimated != null && profile.costConfidence) {
+        estimated = profile.totalEstimated;
+        costConfidence = profile.costConfidence;
+        costSource = profile.costSource || '';
+        matchedBenchmark = profile.matchedBenchmark;
+      } else {
+        const smart = clientSmartCost(el.name || '', el.type);
+        estimated = Math.round(smart.cost * statusMul);
+        costConfidence = smart.confidence;
+        costSource = smart.source;
+        matchedBenchmark = smart.benchmark;
+      }
+
       const maturity = el.maturityLevel ?? 3;
       const optimization = el.status === 'retired' ? estimated * 0.9
         : maturity <= 2 ? estimated * 0.3
@@ -151,6 +195,9 @@ export default function CostAnalysisView() {
         optimization: Math.round(optimization),
         tier,
         domain: el.togafDomain || 'technology',
+        costConfidence,
+        costSource,
+        matchedBenchmark,
       };
     });
   }, [elements, graphCostProfiles, profileMap]);
@@ -393,6 +440,19 @@ export default function CostAnalysisView() {
 
   return (
     <div className="space-y-6">
+      {/* ─── Enrich Button ─── */}
+      <div className="flex items-center justify-between">
+        <div />
+        <button
+          onClick={() => setShowEnrichDialog(true)}
+          className="flex items-center gap-1.5 rounded-md bg-[#7c3aed] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#6d28d9] transition"
+        >
+          <FileSpreadsheet size={13} /> Enrich Cost Data
+        </button>
+      </div>
+
+      <CostEnrichmentDialog isOpen={showEnrichDialog} onClose={() => setShowEnrichDialog(false)} />
+
       {/* ─── Summary Row ─── */}
       <div className="grid grid-cols-4 gap-4">
         <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4">
@@ -429,9 +489,11 @@ export default function CostAnalysisView() {
             <span className="text-[10px] text-[var(--text-tertiary)]">Avg. per Element</span>
           </div>
           <div className="text-2xl font-bold text-white">
-            ${rows.length > 0 ? formatCost(Math.round(totalCost / rows.length)) : '0'}
+            ${(() => { const costed = rows.filter(r => r.estimated > 0); return costed.length > 0 ? formatCost(Math.round(totalCost / costed.length)) : '0'; })()}
           </div>
-          <div className="text-[10px] text-[var(--text-tertiary)] mt-0.5">estimated annual</div>
+          <div className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+            {rows.filter(r => r.estimated > 0).length} costed / {rows.filter(r => r.estimated === 0).length} zero-cost
+          </div>
         </div>
       </div>
 
@@ -531,7 +593,18 @@ export default function CostAnalysisView() {
                           {row.transformationStrategy || '–'}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-right font-mono text-white">${formatCost(row.estimated)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">
+                        <span className="text-white">${formatCost(row.estimated)}</span>
+                        {row.costConfidence && row.costConfidence !== 'type_default' && (
+                          <span
+                            className="ml-1.5 inline-flex px-1 py-0.5 rounded text-[8px] font-medium"
+                            style={{ backgroundColor: `${CONFIDENCE_STYLES[row.costConfidence].color}15`, color: CONFIDENCE_STYLES[row.costConfidence].color }}
+                            title={row.costSource || ''}
+                          >
+                            {CONFIDENCE_STYLES[row.costConfidence].label}
+                          </span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5 text-right font-mono">
                         {row.optimization > 0
                           ? <span className="text-[#22c55e]">-${formatCost(row.optimization)}</span>

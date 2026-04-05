@@ -57,6 +57,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
           return res.status(401).json({ error: 'User not found' });
         }
         req.user = user;
+        (req as any).authMethod = 'jwt';
         next();
       })
       .catch(() => {
@@ -94,6 +95,8 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
 
       // Set request context (compatible with JWT flow)
       req.user = user;
+      (req as any).authMethod = 'api_key';
+      (req as any).apiKeyPrefix = keyHash.slice(0, 8);
       req.jwtPayload = {
         userId: user._id.toString(),
         role: user.role,

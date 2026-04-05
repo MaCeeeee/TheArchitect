@@ -1,6 +1,7 @@
 import { runCypher } from '../config/neo4j';
 import { betaPertDistribution } from './stochastic.service';
 import { BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
+import { estimateSmartCost, applyStatusMultiplier } from './smart-cost.service';
 
 export interface ImpactResult {
   elementId: string;
@@ -31,6 +32,9 @@ export interface CostEstimate {
   estimatedCost: number;
   costCategory: string;
   optimizationPotential: number;
+  costConfidence?: import('@thearchitect/shared').CostConfidence;
+  costSource?: string;
+  matchedBenchmark?: string;
 }
 
 // Impact Analysis - cascading effects when an element changes/fails
@@ -199,16 +203,31 @@ export async function estimateCosts(projectId: string): Promise<{
     const source = (metadata.source as string) || r.get('sourceImport') || '';
 
     let estimatedCost: number;
+    let costConfidence: import('@thearchitect/shared').CostConfidence = 'type_default';
+    let costSource = '';
+    let matchedBenchmark: string | undefined;
+
     if (annualCost && annualCost > 0) {
       // Tier 1+: use real annualCost with status multiplier
       estimatedCost = Math.round(annualCost * (STATUS_COST_MULTIPLIERS[status] || 1.0));
-    } else if (source === 'n8n' && metadata.n8nType) {
-      const n8n = estimateN8nCost(
-        metadata.n8nType as string, connectionCount, r.get('riskLevel') || 'low', status,
-      );
-      estimatedCost = n8n.cost;
+      costConfidence = 'benchmark';
+      costSource = 'User-provided annual cost';
     } else {
-      estimatedCost = estimateEnterpriseCost(type, domain, status, maturity, connectionCount);
+      // Smart cost estimation: zero → benchmark → type_default
+      const smart = estimateSmartCost(
+        r.get('name') || '', type, domain, metadata,
+      );
+      estimatedCost = applyStatusMultiplier(smart.annualCost, status);
+      costConfidence = smart.confidence;
+      costSource = smart.source;
+      matchedBenchmark = smart.matchedBenchmark;
+
+      // Apply maturity/dependency adjustments for non-zero costs
+      if (estimatedCost > 0) {
+        const maturityMult = maturity >= 4 ? 0.8 : maturity <= 2 ? 1.2 : 1.0;
+        const depPremium = 1 + connectionCount * 0.05;
+        estimatedCost = Math.round(estimatedCost * maturityMult * depPremium);
+      }
     }
 
     const optimizationPotential = status === 'retired' ? estimatedCost * 0.9
@@ -224,6 +243,9 @@ export async function estimateCosts(projectId: string): Promise<{
       estimatedCost,
       costCategory: domain,
       optimizationPotential: Math.round(optimizationPotential),
+      costConfidence,
+      costSource,
+      matchedBenchmark,
     };
   });
 

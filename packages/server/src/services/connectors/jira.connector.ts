@@ -13,8 +13,9 @@
  */
 
 import { v4 as uuid } from 'uuid';
-import type { IConnector, ConnectorConfig, AuthMethod, ConnectorType } from './base.connector';
+import type { IConnector, ICostEnrichmentConnector, ConnectorConfig, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import type { CostEnrichmentResult } from '@thearchitect/shared';
 
 const JIRA_TYPE_MAP: Record<string, string> = {
   'epic': 'work_package',
@@ -71,10 +72,13 @@ const JIRA_PRIORITY_MAP: Record<string, string> = {
   'trivial': 'low',
 };
 
-export class JiraConnector implements IConnector {
+export class JiraConnector implements IConnector, ICostEnrichmentConnector {
   readonly type: ConnectorType = 'jira';
   readonly displayName = 'Jira';
   readonly supportedAuthMethods: AuthMethod[] = ['api_key', 'personal_token', 'basic', 'oauth2'];
+  readonly enrichableFields = [
+    'userCount', 'technicalFitness', 'transformationStrategy',
+  ];
 
   async testConnection(config: ConnectorConfig): Promise<{ success: boolean; message: string }> {
     try {
@@ -222,6 +226,102 @@ export class JiraConnector implements IConnector {
     }
   }
 
+  // ─── ICostEnrichmentConnector Methods ───
+
+  async fetchCostData(config: ConnectorConfig): Promise<{
+    enrichments: CostEnrichmentResult[];
+    warnings: string[];
+  }> {
+    const enrichments: CostEnrichmentResult[] = [];
+    const warnings: string[] = [];
+
+    // Fetch epics with aggregated data (story points, subtask counts, etc.)
+    const jql = config.filters.jql || 'issuetype = Epic ORDER BY created DESC';
+    const maxResults = parseInt(config.filters.maxResults || '100', 10);
+
+    try {
+      const searchUrl = `/rest/api/3/search?jql=${encodeURIComponent(jql)}&maxResults=${maxResults}&fields=summary,issuetype,status,priority,assignee,components,fixVersions,aggregateprogress,progress,subtasks,watches,votes`;
+      const response = await this.jiraFetch(config, searchUrl);
+
+      if (!response.ok) {
+        warnings.push(`Jira search failed: HTTP ${response.status}`);
+        return { enrichments, warnings };
+      }
+
+      const data = await response.json() as Record<string, any>;
+      const issues = data.issues || [];
+
+      for (const issue of issues) {
+        const fields = issue.fields || {};
+        const name = fields.summary || '';
+        if (!name) continue;
+
+        const costFields: Record<string, unknown> = {};
+
+        // userCount: watchers + assignee as proxy for team size
+        const watchCount = fields.watches?.watchCount || 0;
+        const subtaskCount = (fields.subtasks || []).length;
+        if (watchCount > 0) costFields.userCount = watchCount;
+
+        // technicalFitness: derive from bug density in subtasks
+        // High bug count relative to total → lower fitness
+        if (subtaskCount > 0) {
+          const bugCount = (fields.subtasks || []).filter((st: any) =>
+            (st.fields?.issuetype?.name || '').toLowerCase() === 'bug'
+          ).length;
+          const bugRatio = bugCount / subtaskCount;
+          // bugRatio 0 → fitness 5, bugRatio >= 0.5 → fitness 1
+          const fitness = Math.max(1, Math.min(5, Math.round(5 - bugRatio * 8)));
+          costFields.technicalFitness = fitness;
+        }
+
+        // transformationStrategy from status
+        const statusName = (fields.status?.name || '').toLowerCase();
+        if (statusName === 'done' || statusName === 'closed' || statusName === 'resolved') {
+          costFields.transformationStrategy = 'retain';
+        } else if (statusName === 'in progress' || statusName === 'in review') {
+          costFields.transformationStrategy = 'replatform';
+        } else if (statusName === 'to do' || statusName === 'open') {
+          costFields.transformationStrategy = 'refactor';
+        }
+
+        if (Object.keys(costFields).length > 0) {
+          enrichments.push({
+            sourceKey: issue.key,
+            sourceName: `[${issue.key}] ${name}`,
+            fields: costFields as any,
+            confidence: 0.65,
+            metadata: {
+              jiraKey: issue.key,
+              jiraType: fields.issuetype?.name || '',
+              jiraStatus: fields.status?.name || '',
+              subtaskCount,
+            },
+          });
+        }
+      }
+    } catch (err: any) {
+      warnings.push(`Jira enrichment failed: ${err.message}`);
+    }
+
+    return { enrichments, warnings };
+  }
+
+  async discoverSources(config: ConnectorConfig): Promise<Array<{ key: string; name: string; type?: string }>> {
+    try {
+      const response = await this.jiraFetch(config, '/rest/api/3/search?jql=issuetype%20%3D%20Epic%20ORDER%20BY%20created%20DESC&maxResults=200&fields=summary,issuetype');
+      if (!response.ok) return [];
+      const data = await response.json() as Record<string, any>;
+      return (data.issues || []).map((issue: any) => ({
+        key: issue.key,
+        name: `[${issue.key}] ${issue.fields?.summary || ''}`,
+        type: issue.fields?.issuetype?.name,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
   // ─── Helpers ───
 
   private async jiraFetch(config: ConnectorConfig, path: string): Promise<Response> {
@@ -289,3 +389,6 @@ export class JiraConnector implements IConnector {
     }
   }
 }
+
+/** @internal Exported for testing only */
+export const __testExports = { JIRA_TYPE_MAP, JIRA_LINK_MAP };
