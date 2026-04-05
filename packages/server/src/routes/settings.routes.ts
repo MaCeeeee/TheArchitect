@@ -5,6 +5,10 @@ import { authenticate } from '../middleware/auth.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
+import { Connection, encryptCredentials, decryptCredentials } from '../models/Connection';
+import { Project } from '../models/Project';
+import { getAllConnectorTypes, getConnector } from '../services/connectors';
+import type { ConnectorConfig, ConnectorType, AuthMethod } from '../services/connectors/base.connector';
 import { getRedis } from '../config/redis';
 
 const router = Router();
@@ -377,6 +381,276 @@ router.get('/billing', async (req: Request, res: Response) => {
     role,
     features: featureMap[plan] || featureMap.free,
   });
+});
+
+// ─── Connector Types (non-project-scoped) ───
+
+router.get('/connector-types', async (_req: Request, res: Response) => {
+  res.json({ success: true, data: getAllConnectorTypes() });
+});
+
+// ─── Connections (user-global credential vault) ───
+
+router.get('/connections', async (req: Request, res: Response) => {
+  const conns = await Connection.find({ userId: req.user!._id }).sort({ createdAt: -1 });
+  res.json({
+    success: true,
+    data: conns.map((c) => ({
+      id: c._id,
+      name: c.name,
+      type: c.type,
+      baseUrl: c.baseUrl,
+      authMethod: c.authMethod,
+      hasCredentials: !!c.credentials,
+      lastTestedAt: c.lastTestedAt,
+      lastTestResult: c.lastTestResult,
+      createdAt: c.createdAt,
+    })),
+  });
+});
+
+router.post('/connections', async (req: Request, res: Response) => {
+  try {
+    const { name, type, baseUrl, authMethod, credentials } = req.body;
+    if (!name || !type || !baseUrl) {
+      return res.status(400).json({ success: false, error: 'name, type, and baseUrl are required' });
+    }
+
+    const encrypted = credentials ? encryptCredentials(credentials) : '';
+    const conn = await Connection.create({
+      userId: req.user!._id,
+      name, type, baseUrl,
+      authMethod: authMethod || 'personal_token',
+      credentials: encrypted,
+    });
+
+    await createAuditEntry({
+      userId: String(req.user!._id),
+      action: 'settings.connection.create',
+      entityType: 'connection',
+      entityId: String(conn._id),
+      after: { name, type, baseUrl },
+      ip: (typeof req.ip === 'string' ? req.ip : '') || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    res.status(201).json({
+      success: true,
+      data: { id: conn._id, name: conn.name, type: conn.type, baseUrl: conn.baseUrl, authMethod: conn.authMethod, hasCredentials: !!encrypted, createdAt: conn.createdAt },
+    });
+  } catch (err: any) {
+    if (err.code === 11000) {
+      return res.status(409).json({ success: false, error: 'A connection with this name already exists' });
+    }
+    res.status(500).json({ success: false, error: err.message || 'Failed to create connection' });
+  }
+});
+
+router.put('/connections/:connectionId', async (req: Request, res: Response) => {
+  const conn = await Connection.findOne({ _id: req.params.connectionId, userId: req.user!._id });
+  if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+  const { name, baseUrl, authMethod, credentials } = req.body;
+  if (name !== undefined) conn.name = name;
+  if (baseUrl !== undefined) conn.baseUrl = baseUrl;
+  if (authMethod !== undefined) conn.authMethod = authMethod;
+  if (credentials) conn.credentials = encryptCredentials(credentials);
+
+  await conn.save();
+  res.json({
+    success: true,
+    data: { id: conn._id, name: conn.name, type: conn.type, baseUrl: conn.baseUrl, authMethod: conn.authMethod, hasCredentials: !!conn.credentials, createdAt: conn.createdAt },
+  });
+});
+
+router.delete('/connections/:connectionId', async (req: Request, res: Response) => {
+  const conn = await Connection.findOne({ _id: req.params.connectionId, userId: req.user!._id });
+  if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+  // Check if any project references this connection
+  const usedBy = await Project.find({ 'integrations.connectionId': conn._id }).select('name');
+  if (usedBy.length > 0) {
+    return res.status(409).json({
+      success: false,
+      error: `Connection is used by: ${usedBy.map(p => p.name).join(', ')}. Remove integrations first.`,
+    });
+  }
+
+  await Connection.findByIdAndDelete(conn._id);
+
+  await createAuditEntry({
+    userId: String(req.user!._id),
+    action: 'settings.connection.delete',
+    entityType: 'connection',
+    entityId: String(conn._id),
+    ip: (typeof req.ip === 'string' ? req.ip : '') || '',
+    userAgent: req.get('user-agent') || '',
+  });
+
+  res.json({ success: true });
+});
+
+router.post('/connections/:connectionId/test', async (req: Request, res: Response) => {
+  const conn = await Connection.findOne({ _id: req.params.connectionId, userId: req.user!._id });
+  if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+  const connector = getConnector(conn.type as ConnectorType);
+  if (!connector) return res.status(400).json({ success: false, error: 'Unknown connector type' });
+
+  const config: ConnectorConfig = {
+    type: conn.type as ConnectorType,
+    name: conn.name,
+    baseUrl: conn.baseUrl,
+    authMethod: conn.authMethod as AuthMethod,
+    credentials: decryptCredentials(conn.credentials),
+    projectId: '',
+    mappingRules: [],
+    syncIntervalMinutes: 0,
+    filters: {},
+    enabled: true,
+  };
+
+  const result = await connector.testConnection(config);
+
+  conn.lastTestedAt = new Date();
+  conn.lastTestResult = result;
+  await conn.save();
+
+  res.json({ success: true, data: result });
+});
+
+// ─── Connection Discovery (auto-fetch orgs, repos, projects) ───
+
+router.get('/connections/:connectionId/orgs', async (req: Request, res: Response) => {
+  const conn = await Connection.findOne({ _id: req.params.connectionId, userId: req.user!._id });
+  if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+  const creds = decryptCredentials(conn.credentials);
+  const token = creds.token || creds.accessToken || '';
+  let baseUrl = conn.baseUrl || '';
+
+  try {
+    if (conn.type === 'github') {
+      // Normalize github.com → api.github.com
+      if (/github\.com/i.test(baseUrl)) baseUrl = 'https://api.github.com';
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      // Fetch user info + orgs in parallel
+      const [userRes, orgsRes] = await Promise.all([
+        fetch(`${baseUrl}/user`, { headers }),
+        fetch(`${baseUrl}/user/orgs?per_page=100`, { headers }),
+      ]);
+
+      const orgs: Array<{ login: string; type: string }> = [];
+      if (userRes.ok) {
+        const user = await userRes.json() as Record<string, any>;
+        orgs.push({ login: user.login, type: 'user' });
+      }
+      if (orgsRes.ok) {
+        const orgList = await orgsRes.json() as Array<Record<string, any>>;
+        for (const o of orgList) orgs.push({ login: o.login, type: 'organization' });
+      }
+
+      return res.json({ success: true, data: orgs });
+    }
+
+    if (conn.type === 'gitlab') {
+      if (!/api\/v4/i.test(baseUrl)) baseUrl = baseUrl.replace(/\/+$/, '');
+      const headers: Record<string, string> = { 'PRIVATE-TOKEN': token, Accept: 'application/json' };
+      const resp = await fetch(`${baseUrl}/api/v4/groups?per_page=100&min_access_level=10`, { headers });
+      if (!resp.ok) return res.json({ success: true, data: [] });
+      const groups = await resp.json() as Array<Record<string, any>>;
+      return res.json({ success: true, data: groups.map((g) => ({ login: g.full_path, type: 'group', id: g.id })) });
+    }
+
+    if (conn.type === 'jira') {
+      const email = creds.email || '';
+      const auth = Buffer.from(`${email}:${token}`).toString('base64');
+      const resp = await fetch(`${baseUrl.replace(/\/+$/, '')}/rest/api/3/project/search?maxResults=100`, {
+        headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+      });
+      if (!resp.ok) return res.json({ success: true, data: [] });
+      const body = await resp.json() as Record<string, any>;
+      const projects = (body.values || []).map((p: any) => ({ login: p.key, type: 'project', name: p.name }));
+      return res.json({ success: true, data: projects });
+    }
+
+    res.json({ success: true, data: [] });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to fetch organizations' });
+  }
+});
+
+router.get('/connections/:connectionId/repos', async (req: Request, res: Response) => {
+  const conn = await Connection.findOne({ _id: req.params.connectionId, userId: req.user!._id });
+  if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
+
+  const creds = decryptCredentials(conn.credentials);
+  const token = creds.token || creds.accessToken || '';
+  const org = String(req.query.org || '');
+  const orgType = String(req.query.type || 'user');
+  let baseUrl = conn.baseUrl || '';
+
+  try {
+    if (conn.type === 'github') {
+      if (/github\.com/i.test(baseUrl)) baseUrl = 'https://api.github.com';
+      const headers: Record<string, string> = {
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const path = orgType === 'organization'
+        ? `/orgs/${org}/repos?per_page=100&type=all`
+        : `/users/${org}/repos?per_page=100&sort=updated`;
+      const resp = await fetch(`${baseUrl}${path}`, { headers });
+      if (!resp.ok) return res.json({ success: true, data: [] });
+      const repos = await resp.json() as Array<Record<string, any>>;
+      return res.json({
+        success: true,
+        data: repos.map((r) => ({
+          name: r.name,
+          fullName: r.full_name,
+          description: r.description || '',
+          language: r.language || '',
+          private: r.private,
+          archived: r.archived,
+          updatedAt: r.pushed_at,
+        })),
+      });
+    }
+
+    if (conn.type === 'gitlab') {
+      if (!/api\/v4/i.test(baseUrl)) baseUrl = baseUrl.replace(/\/+$/, '');
+      const headers: Record<string, string> = { 'PRIVATE-TOKEN': token, Accept: 'application/json' };
+      const path = org
+        ? `/api/v4/groups/${encodeURIComponent(org)}/projects?per_page=100&include_subgroups=true`
+        : `/api/v4/projects?membership=true&per_page=100`;
+      const resp = await fetch(`${baseUrl}${path}`, { headers });
+      if (!resp.ok) return res.json({ success: true, data: [] });
+      const repos = await resp.json() as Array<Record<string, any>>;
+      return res.json({
+        success: true,
+        data: repos.map((r) => ({
+          name: r.name,
+          fullName: r.path_with_namespace,
+          description: r.description || '',
+          language: '',
+          private: r.visibility === 'private',
+          archived: r.archived,
+          updatedAt: r.last_activity_at,
+        })),
+      });
+    }
+
+    res.json({ success: true, data: [] });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to fetch repos' });
+  }
 });
 
 export default router;

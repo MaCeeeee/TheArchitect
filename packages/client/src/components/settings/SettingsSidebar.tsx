@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield,
+  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield, Plug,
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -12,6 +12,7 @@ const SECTIONS = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: ShieldCheck },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'connections', label: 'Connections', icon: Plug },
   { id: 'accessibility', label: 'Accessibility', icon: Accessibility },
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'users', label: 'Users', icon: Users },

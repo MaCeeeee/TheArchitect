@@ -364,6 +364,22 @@ export const settingsAPI = {
   revokeApiKey: (keyId: string) =>
     api.delete(`/settings/api-keys/${keyId}`),
   getBilling: () => api.get('/settings/billing'),
+  // Connections (user-global credential vault)
+  getConnectorTypes: () => api.get('/settings/connector-types'),
+  getConnections: () => api.get('/settings/connections'),
+  createConnection: (data: { name: string; type: string; baseUrl: string; authMethod: string; credentials: Record<string, string> }) =>
+    api.post('/settings/connections', data),
+  updateConnection: (id: string, data: Record<string, unknown>) =>
+    api.put(`/settings/connections/${id}`, data),
+  deleteConnection: (id: string) =>
+    api.delete(`/settings/connections/${id}`),
+  testConnection: (id: string) =>
+    api.post(`/settings/connections/${id}/test`),
+  // Discovery
+  getConnectionOrgs: (id: string) =>
+    api.get(`/settings/connections/${id}/orgs`),
+  getConnectionRepos: (id: string, org: string, type: string) =>
+    api.get(`/settings/connections/${id}/repos`, { params: { org, type } }),
 };
 
 // Admin API
@@ -509,6 +525,21 @@ export const scenarioAPI = {
     api.post(`/projects/${projectId}/scenarios/${scenarioId}/real-options`, params || {}),
   changeSaturation: (projectId: string, data: { baseCost: number; concurrent: number; threshold?: number; k?: number }) =>
     api.post(`/projects/${projectId}/scenarios/change-saturation`, data),
+};
+
+export const integrationAPI = {
+  listConnections: (projectId: string) =>
+    api.get(`/projects/${projectId}/integrations/connections`),
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/integrations`),
+  create: (projectId: string, data: { connectionId: string; filters?: Record<string, string>; mappingRules?: Array<{ sourceType: string; targetType: string }>; syncIntervalMinutes?: number }) =>
+    api.post(`/projects/${projectId}/integrations`, data),
+  remove: (projectId: string, integrationId: string) =>
+    api.delete(`/projects/${projectId}/integrations/${integrationId}`),
+  sync: (projectId: string, integrationId: string) =>
+    api.post(`/projects/${projectId}/integrations/${integrationId}/sync`),
+  test: (projectId: string, integrationId: string) =>
+    api.post(`/projects/${projectId}/integrations/${integrationId}/test`),
 };
 
 export default api;

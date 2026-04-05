@@ -1,35 +1,36 @@
 import { useState, useEffect } from 'react';
 import {
   Plus, Plug, RefreshCw, Trash2, CheckCircle, XCircle, Loader2,
-  ChevronDown, ExternalLink, AlertTriangle,
+  ExternalLink, AlertTriangle, Settings,
 } from 'lucide-react';
-import api from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { integrationAPI, settingsAPI } from '../../services/api';
 
-interface ConnectorType {
+interface ConnectionRef {
+  id: string;
+  name: string;
   type: string;
-  displayName: string;
-  authMethods: string[];
+  baseUrl: string;
 }
 
-interface ConnectorConfig {
-  type: string;
-  name: string;
+interface Integration {
+  id: string;
+  connectionId: string;
+  connectionName: string;
+  connectionType: string;
   baseUrl: string;
-  authMethod: string;
-  hasCredentials: boolean;
+  filters: Record<string, string>;
   mappingRules: Array<{ sourceType: string; targetType: string }>;
   syncIntervalMinutes: number;
-  filters: Record<string, string>;
   enabled: boolean;
-}
-
-interface SyncResult {
-  status: string;
-  elementsCreated: number;
-  connectionsCreated: number;
-  warnings: string[];
-  durationMs: number;
-  syncedAt: string;
+  lastSync?: {
+    status: string;
+    syncedAt: string;
+    elementsCreated: number;
+    connectionsCreated: number;
+    durationMs: number;
+    warnings: string[];
+  };
 }
 
 interface Props {
@@ -37,64 +38,61 @@ interface Props {
 }
 
 export default function ConnectorPanel({ projectId }: Props) {
-  const [types, setTypes] = useState<ConnectorType[]>([]);
-  const [connectors, setConnectors] = useState<ConnectorConfig[]>([]);
+  const navigate = useNavigate();
+  const [connections, setConnections] = useState<ConnectionRef[]>([]);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null);
-  const [lastSync, setLastSync] = useState<Record<string, SyncResult>>({});
   const [testing, setTesting] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { success: boolean; message: string }>>({});
 
-  useEffect(() => {
-    loadTypes();
-    loadConnectors();
-  }, [projectId]);
+  useEffect(() => { load(); }, [projectId]);
 
-  const loadTypes = async () => {
+  const load = async () => {
     try {
-      const { data } = await api.get(`/projects/${projectId}/connectors/types`);
-      setTypes(data.data);
+      const [connRes, integRes] = await Promise.all([
+        integrationAPI.listConnections(projectId),
+        integrationAPI.list(projectId),
+      ]);
+      setConnections(connRes.data.data);
+      setIntegrations(integRes.data.data);
     } catch {}
   };
 
-  const loadConnectors = async () => {
+  const handleTest = async (integrationId: string) => {
+    setTesting(integrationId);
     try {
-      const { data } = await api.get(`/projects/${projectId}/connectors`);
-      setConnectors(data.data);
-    } catch {}
-  };
-
-  const handleTest = async (name: string) => {
-    setTesting(name);
-    try {
-      const { data } = await api.post(`/projects/${projectId}/connectors/${encodeURIComponent(name)}/test`);
-      setTestResults(prev => ({ ...prev, [name]: data.data }));
+      const { data } = await integrationAPI.test(projectId, integrationId);
+      setTestResults((prev) => ({ ...prev, [integrationId]: data.data }));
     } catch (err: any) {
-      setTestResults(prev => ({ ...prev, [name]: { success: false, message: err.response?.data?.error || 'Test failed' } }));
-    } finally {
-      setTesting(null);
+      setTestResults((prev) => ({ ...prev, [integrationId]: { success: false, message: err.response?.data?.error || 'Test failed' } }));
     }
+    setTesting(null);
   };
 
-  const handleSync = async (name: string) => {
-    setSyncing(name);
+  const handleSync = async (integrationId: string) => {
+    setSyncing(integrationId);
     try {
-      const { data } = await api.post(`/projects/${projectId}/connectors/${encodeURIComponent(name)}/sync`);
-      setLastSync(prev => ({ ...prev, [name]: data.data }));
+      const { data } = await integrationAPI.sync(projectId, integrationId);
+      setIntegrations((prev) =>
+        prev.map((i) => (i.id === integrationId ? { ...i, lastSync: data.data } : i)),
+      );
     } catch (err: any) {
-      setLastSync(prev => ({
-        ...prev,
-        [name]: { status: 'error', elementsCreated: 0, connectionsCreated: 0, warnings: [err.response?.data?.error || 'Sync failed'], durationMs: 0, syncedAt: new Date().toISOString() },
-      }));
-    } finally {
-      setSyncing(null);
+      setIntegrations((prev) =>
+        prev.map((i) =>
+          i.id === integrationId
+            ? { ...i, lastSync: { status: 'error', syncedAt: new Date().toISOString(), elementsCreated: 0, connectionsCreated: 0, durationMs: 0, warnings: [err.response?.data?.error || 'Sync failed'] } }
+            : i,
+        ),
+      );
     }
+    setSyncing(null);
   };
 
-  const handleDelete = async (name: string) => {
+  const handleDelete = async (integrationId: string) => {
     try {
-      await api.delete(`/projects/${projectId}/connectors/${encodeURIComponent(name)}`);
-      setConnectors(prev => prev.filter(c => c.name !== name));
+      await integrationAPI.remove(projectId, integrationId);
+      setIntegrations((prev) => prev.filter((i) => i.id !== integrationId));
     } catch {}
   };
 
@@ -105,52 +103,69 @@ export default function ConnectorPanel({ projectId }: Props) {
           <Plug size={16} className="text-[#00ff41]" />
           <h3 className="text-sm font-semibold text-white">Integrations</h3>
         </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="flex items-center gap-1 rounded-md bg-[#00ff41] px-2.5 py-1 text-[10px] font-medium text-black hover:bg-[#00cc33] transition"
-        >
-          <Plus size={12} /> Add Connector
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => navigate('/settings/connections')}
+            className="flex items-center gap-1 rounded-md px-2.5 py-1 text-[10px] text-[var(--text-tertiary)] hover:text-white transition"
+          >
+            <Settings size={12} /> Manage Connections
+          </button>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="flex items-center gap-1 rounded-md bg-[#00ff41] px-2.5 py-1 text-[10px] font-medium text-black hover:bg-[#00cc33] transition"
+          >
+            <Plus size={12} /> Add Integration
+          </button>
+        </div>
       </div>
 
-      {/* Add connector form */}
-      {showAdd && <AddConnectorForm projectId={projectId} types={types} onCreated={() => { setShowAdd(false); loadConnectors(); }} />}
+      {showAdd && (
+        <AddIntegrationForm
+          projectId={projectId}
+          connections={connections}
+          onCreated={() => { setShowAdd(false); load(); }}
+          onManageConnections={() => navigate('/settings/connections')}
+        />
+      )}
 
-      {/* Connector list */}
-      {connectors.length === 0 && !showAdd && (
+      {integrations.length === 0 && !showAdd && (
         <div className="rounded-lg border border-[var(--border-subtle)] p-6 text-center">
           <Plug size={24} className="mx-auto text-[#1a2a1a] mb-2" />
-          <p className="text-xs text-[var(--text-tertiary)]">No connectors configured</p>
-          <p className="text-[10px] text-[var(--text-disabled)] mt-1">Connect Jira, GitHub, or GitLab to sync architecture data</p>
+          <p className="text-xs text-[var(--text-tertiary)]">No integrations configured</p>
+          <p className="text-[10px] text-[var(--text-disabled)] mt-1">
+            {connections.length > 0
+              ? 'Link a connection to sync external data into this project.'
+              : 'First add a connection in Settings > Connections, then link it here.'}
+          </p>
         </div>
       )}
 
-      {connectors.map((conn) => {
-        const sync = lastSync[conn.name];
-        const test = testResults[conn.name];
-        const isSyncing = syncing === conn.name;
-        const isTesting = testing === conn.name;
+      {integrations.map((integ) => {
+        const sync = integ.lastSync;
+        const test = testResults[integ.id];
+        const isSyncing = syncing === integ.id;
+        const isTesting = testing === integ.id;
 
         return (
-          <div key={conn.name} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 space-y-3">
+          <div key={integ.id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ConnectorIcon type={conn.type} />
+                <ConnectorIcon type={integ.connectionType} />
                 <div>
-                  <p className="text-sm font-medium text-white">{conn.name}</p>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">{conn.baseUrl} — {conn.type}</p>
+                  <p className="text-sm font-medium text-white">{integ.connectionName}</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">{integ.baseUrl} &middot; {integ.connectionType}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => handleTest(conn.name)}
+                  onClick={() => handleTest(integ.id)}
                   disabled={isTesting}
                   className="rounded px-2 py-1 text-[10px] text-[var(--text-secondary)] hover:bg-[var(--surface-base)] transition"
                 >
                   {isTesting ? <Loader2 size={12} className="animate-spin" /> : 'Test'}
                 </button>
                 <button
-                  onClick={() => handleSync(conn.name)}
+                  onClick={() => handleSync(integ.id)}
                   disabled={isSyncing}
                   className="flex items-center gap-1 rounded px-2 py-1 text-[10px] text-[#00ff41] hover:bg-[#00ff41]/10 transition"
                 >
@@ -158,7 +173,7 @@ export default function ConnectorPanel({ projectId }: Props) {
                   Sync
                 </button>
                 <button
-                  onClick={() => handleDelete(conn.name)}
+                  onClick={() => handleDelete(integ.id)}
                   className="rounded px-1.5 py-1 text-[var(--text-disabled)] hover:text-red-400 transition"
                 >
                   <Trash2 size={12} />
@@ -166,7 +181,6 @@ export default function ConnectorPanel({ projectId }: Props) {
               </div>
             </div>
 
-            {/* Test result */}
             {test && (
               <div className={`flex items-center gap-2 text-[10px] ${test.success ? 'text-green-400' : 'text-red-400'}`}>
                 {test.success ? <CheckCircle size={12} /> : <XCircle size={12} />}
@@ -174,24 +188,22 @@ export default function ConnectorPanel({ projectId }: Props) {
               </div>
             )}
 
-            {/* Sync result */}
             {sync && (
               <div className={`rounded-md p-2 text-[10px] ${sync.status === 'success' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
                 {sync.status === 'success'
                   ? `Synced ${sync.elementsCreated} elements, ${sync.connectionsCreated} connections in ${sync.durationMs}ms`
-                  : `Sync failed: ${sync.warnings?.[0] || 'Unknown error'}`}
-                {sync.warnings.length > 1 && (
+                  : `Error: ${sync.warnings?.[0] || 'Sync failed'}`}
+                {(sync.warnings?.length || 0) > 1 && (
                   <span className="ml-2 text-amber-400">(+{sync.warnings.length - 1} warnings)</span>
                 )}
               </div>
             )}
 
-            {/* Filters */}
-            {Object.keys(conn.filters).length > 0 && (
+            {Object.keys(integ.filters).length > 0 && (
               <div className="flex flex-wrap gap-1">
-                {Object.entries(conn.filters).map(([k, v]) => (
+                {Object.entries(integ.filters).map(([k, v]) => (
                   <span key={k} className="rounded-full bg-[var(--surface-base)] px-2 py-0.5 text-[9px] text-[var(--text-tertiary)]">
-                    {k}: {v.length > 30 ? v.slice(0, 30) + '...' : v}
+                    {k}: {String(v).length > 30 ? String(v).slice(0, 30) + '...' : v}
                   </span>
                 ))}
               </div>
@@ -203,104 +215,270 @@ export default function ConnectorPanel({ projectId }: Props) {
   );
 }
 
-// ─── Add Connector Form ───
+// ─── Add Integration Form ───
 
-function AddConnectorForm({ projectId, types, onCreated }: { projectId: string; types: ConnectorType[]; onCreated: () => void }) {
-  const [type, setType] = useState(types[0]?.type || 'jira');
-  const [name, setName] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
-  const [authMethod, setAuthMethod] = useState('api_key');
-  const [credentials, setCredentials] = useState<Record<string, string>>({});
+interface OrgEntry { login: string; type: string; id?: number; name?: string }
+interface RepoEntry { name: string; fullName: string; description: string; language: string; private: boolean; archived: boolean; updatedAt: string }
+
+function AddIntegrationForm({
+  projectId,
+  connections,
+  onCreated,
+  onManageConnections,
+}: {
+  projectId: string;
+  connections: ConnectionRef[];
+  onCreated: () => void;
+  onManageConnections: () => void;
+}) {
+  const [connectionId, setConnectionId] = useState(connections[0]?.id || '');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const selectedType = types.find(t => t.type === type);
+  // Auto-fetch state
+  const [orgs, setOrgs] = useState<OrgEntry[]>([]);
+  const [repos, setRepos] = useState<RepoEntry[]>([]);
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
+  const [loadingOrgs, setLoadingOrgs] = useState(false);
+  const [loadingRepos, setLoadingRepos] = useState(false);
+  const [selectedOrg, setSelectedOrg] = useState<OrgEntry | null>(null);
+
+  const selectedConn = connections.find((c) => c.id === connectionId);
+  const connType = selectedConn?.type || '';
+
+  // Fetch orgs/projects when connection changes
+  useEffect(() => {
+    if (!connectionId || connType === '') return;
+    setOrgs([]);
+    setRepos([]);
+    setSelectedOrg(null);
+    setSelectedRepos(new Set());
+    if (connType === 'github' || connType === 'gitlab' || connType === 'jira') {
+      fetchOrgs(connectionId);
+    }
+  }, [connectionId, connType]);
+
+  // Fetch repos when org changes
+  useEffect(() => {
+    if (!selectedOrg || !connectionId) return;
+    setRepos([]);
+    setSelectedRepos(new Set());
+    if (connType === 'github' || connType === 'gitlab') {
+      fetchRepos(connectionId, selectedOrg.login, selectedOrg.type);
+    }
+  }, [selectedOrg, connectionId, connType]);
+
+  const fetchOrgs = async (connId: string) => {
+    setLoadingOrgs(true);
+    try {
+      const { data } = await settingsAPI.getConnectionOrgs(connId);
+      setOrgs(data.data);
+      if (data.data.length > 0) {
+        setSelectedOrg(data.data[0]);
+        // Auto-set filter
+        const first = data.data[0];
+        if (connType === 'github') setFilters((f) => ({ ...f, org: first.login }));
+        else if (connType === 'gitlab') setFilters((f) => ({ ...f, groupId: first.login }));
+        else if (connType === 'jira') setFilters((f) => ({ ...f, jql: `project = ${first.login} ORDER BY created DESC` }));
+      }
+    } catch {}
+    setLoadingOrgs(false);
+  };
+
+  const fetchRepos = async (connId: string, org: string, orgType: string) => {
+    setLoadingRepos(true);
+    try {
+      const { data } = await settingsAPI.getConnectionRepos(connId, org, orgType);
+      setRepos(data.data);
+    } catch {}
+    setLoadingRepos(false);
+  };
+
+  const handleOrgChange = (login: string) => {
+    const org = orgs.find((o) => o.login === login);
+    if (!org) return;
+    setSelectedOrg(org);
+    if (connType === 'github') setFilters((f) => ({ ...f, org: org.login }));
+    else if (connType === 'gitlab') setFilters((f) => ({ ...f, groupId: org.login }));
+    else if (connType === 'jira') setFilters((f) => ({ ...f, jql: `project = ${org.login} ORDER BY created DESC` }));
+  };
+
+  const toggleRepo = (fullName: string) => {
+    setSelectedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(fullName)) next.delete(fullName);
+      else next.add(fullName);
+      // Update filters
+      setFilters((f) => ({ ...f, repos: Array.from(next).join(', ') }));
+      return next;
+    });
+  };
+
+  const selectAllRepos = () => {
+    const all = new Set(repos.filter((r) => !r.archived).map((r) => r.fullName));
+    setSelectedRepos(all);
+    setFilters((f) => ({ ...f, repos: Array.from(all).join(', ') }));
+  };
+
+  const deselectAllRepos = () => {
+    setSelectedRepos(new Set());
+    setFilters((f) => { const next = { ...f }; delete next.repos; return next; });
+  };
+
+  if (connections.length === 0) {
+    return (
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-center">
+        <AlertTriangle size={20} className="mx-auto text-amber-400 mb-2" />
+        <p className="text-xs text-[var(--text-secondary)]">No connections available</p>
+        <p className="text-[10px] text-[var(--text-tertiary)] mt-1 mb-3">
+          Add a connection in Settings first, then link it to this project.
+        </p>
+        <button
+          onClick={onManageConnections}
+          className="flex items-center gap-1 mx-auto rounded-md bg-[#00ff41] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#00cc33] transition"
+        >
+          <ExternalLink size={12} /> Go to Settings
+        </button>
+      </div>
+    );
+  }
 
   const handleSave = async () => {
-    if (!name || !baseUrl) { setError('Name and URL are required'); return; }
+    if (!connectionId) { setError('Select a connection'); return; }
     setSaving(true);
     setError('');
     try {
-      await api.post(`/projects/${projectId}/connectors`, {
-        type, name, baseUrl, authMethod, credentials, filters,
-        mappingRules: [], syncIntervalMinutes: 0,
-      });
+      await integrationAPI.create(projectId, { connectionId, filters });
       onCreated();
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create connector');
-    } finally {
-      setSaving(false);
+      setError(err.response?.data?.error || 'Failed to add integration');
     }
+    setSaving(false);
   };
 
   return (
     <div className="rounded-lg border border-[#00ff41]/20 bg-[#00ff41]/5 p-4 space-y-3">
-      <p className="text-xs font-medium text-white">New Connector</p>
-
+      <p className="text-xs font-medium text-white">Add Integration</p>
       {error && <p className="text-[10px] text-red-400">{error}</p>}
 
-      <div className="grid grid-cols-2 gap-3">
-        <label className="space-y-1">
-          <span className="text-[10px] text-[var(--text-tertiary)]">Type</span>
-          <select value={type} onChange={e => setType(e.target.value)}
-            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none">
-            {types.map(t => <option key={t.type} value={t.type}>{t.displayName}</option>)}
+      <div className="space-y-3">
+        {/* Connection picker */}
+        <label className="space-y-1 block">
+          <span className="text-[10px] text-[var(--text-tertiary)]">Connection</span>
+          <select
+            value={connectionId}
+            onChange={(e) => setConnectionId(e.target.value)}
+            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none"
+          >
+            {connections.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.type})</option>
+            ))}
           </select>
         </label>
-        <label className="space-y-1">
-          <span className="text-[10px] text-[var(--text-tertiary)]">Name</span>
-          <input value={name} onChange={e => setName(e.target.value)} placeholder="My Jira"
-            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none placeholder:text-[var(--text-disabled)]" />
-        </label>
-        <label className="space-y-1 col-span-2">
-          <span className="text-[10px] text-[var(--text-tertiary)]">Base URL</span>
-          <input value={baseUrl} onChange={e => setBaseUrl(e.target.value)}
-            placeholder={type === 'jira' ? 'https://yourorg.atlassian.net' : type === 'github' ? 'https://api.github.com' : 'https://gitlab.com'}
-            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none placeholder:text-[var(--text-disabled)]" />
-        </label>
-        <label className="space-y-1">
-          <span className="text-[10px] text-[var(--text-tertiary)]">Auth Method</span>
-          <select value={authMethod} onChange={e => setAuthMethod(e.target.value)}
-            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none">
-            {(selectedType?.authMethods || ['api_key']).map(m => <option key={m} value={m}>{m.replace('_', ' ')}</option>)}
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-[10px] text-[var(--text-tertiary)]">Token / API Key</span>
-          <input type="password" value={credentials.token || ''} onChange={e => setCredentials({ ...credentials, token: e.target.value })}
-            className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none" />
-        </label>
-        {type === 'jira' && (
-          <label className="space-y-1 col-span-2">
-            <span className="text-[10px] text-[var(--text-tertiary)]">Email (Jira Cloud)</span>
-            <input value={credentials.email || ''} onChange={e => setCredentials({ ...credentials, email: e.target.value })}
-              placeholder="user@company.com"
-              className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none placeholder:text-[var(--text-disabled)]" />
+
+        {/* Organization / Project picker (auto-fetched) */}
+        {(connType === 'github' || connType === 'gitlab' || connType === 'jira') && (
+          <label className="space-y-1 block">
+            <span className="text-[10px] text-[var(--text-tertiary)]">
+              {connType === 'jira' ? 'Project' : connType === 'gitlab' ? 'Group' : 'Organization / User'}
+              {loadingOrgs && <Loader2 size={10} className="inline ml-1 animate-spin" />}
+            </span>
+            {orgs.length > 0 ? (
+              <select
+                value={selectedOrg?.login || ''}
+                onChange={(e) => handleOrgChange(e.target.value)}
+                className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none"
+              >
+                {orgs.map((o) => (
+                  <option key={o.login} value={o.login}>
+                    {o.name ? `${o.name} (${o.login})` : o.login}
+                    {o.type === 'user' ? ' (personal)' : ''}
+                  </option>
+                ))}
+              </select>
+            ) : !loadingOrgs ? (
+              <p className="text-[10px] text-[var(--text-disabled)] px-1">No organizations found. Check credentials.</p>
+            ) : null}
           </label>
         )}
-        {type === 'jira' && (
-          <label className="space-y-1 col-span-2">
-            <span className="text-[10px] text-[var(--text-tertiary)]">JQL Filter</span>
-            <input value={filters.jql || ''} onChange={e => setFilters({ ...filters, jql: e.target.value })}
-              placeholder="project = MYPROJ AND type = Epic ORDER BY created DESC"
-              className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none placeholder:text-[var(--text-disabled)]" />
+
+        {/* Jira: auto-generated JQL with option to customize */}
+        {connType === 'jira' && selectedOrg && (
+          <label className="space-y-1 block">
+            <span className="text-[10px] text-[var(--text-tertiary)]">JQL Filter (auto-generated, editable)</span>
+            <input
+              value={filters.jql || ''}
+              onChange={(e) => setFilters({ ...filters, jql: e.target.value })}
+              className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none"
+            />
           </label>
         )}
-        {(type === 'github' || type === 'gitlab') && (
-          <label className="space-y-1 col-span-2">
-            <span className="text-[10px] text-[var(--text-tertiary)]">Organization / Group</span>
-            <input value={filters.org || filters.groupId || ''} onChange={e => setFilters({ ...filters, [type === 'gitlab' ? 'groupId' : 'org']: e.target.value })}
-              placeholder={type === 'github' ? 'my-org' : 'group-id'}
-              className="w-full rounded bg-[var(--surface-base)] border border-[var(--border-subtle)] px-2 py-1.5 text-xs text-white outline-none placeholder:text-[var(--text-disabled)]" />
-          </label>
+
+        {/* Repo multi-select (auto-fetched) */}
+        {(connType === 'github' || connType === 'gitlab') && selectedOrg && (
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-[var(--text-tertiary)]">
+                Repositories
+                {loadingRepos && <Loader2 size={10} className="inline ml-1 animate-spin" />}
+                {!loadingRepos && repos.length > 0 && (
+                  <span className="text-[var(--text-disabled)] ml-1">
+                    ({selectedRepos.size}/{repos.filter((r) => !r.archived).length} selected)
+                  </span>
+                )}
+              </span>
+              {repos.length > 0 && (
+                <div className="flex gap-2">
+                  <button onClick={selectAllRepos} className="text-[9px] text-[#00ff41] hover:underline">All</button>
+                  <button onClick={deselectAllRepos} className="text-[9px] text-[var(--text-disabled)] hover:underline">None</button>
+                </div>
+              )}
+            </div>
+            {repos.length > 0 ? (
+              <div className="max-h-40 overflow-y-auto rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] divide-y divide-[var(--border-subtle)]">
+                {repos.filter((r) => !r.archived).map((repo) => (
+                  <label
+                    key={repo.fullName}
+                    className={`flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-[var(--surface-overlay)] transition ${
+                      selectedRepos.has(repo.fullName) ? 'bg-[#00ff41]/5' : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRepos.has(repo.fullName)}
+                      onChange={() => toggleRepo(repo.fullName)}
+                      className="rounded accent-[#00ff41]"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] text-white truncate">{repo.name}</p>
+                      {repo.description && (
+                        <p className="text-[9px] text-[var(--text-disabled)] truncate">{repo.description}</p>
+                      )}
+                    </div>
+                    {repo.language && (
+                      <span className="text-[9px] text-[var(--text-disabled)] shrink-0">{repo.language}</span>
+                    )}
+                    {repo.private && (
+                      <span className="text-[8px] bg-amber-500/20 text-amber-400 px-1 rounded shrink-0">private</span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            ) : !loadingRepos ? (
+              <p className="text-[10px] text-[var(--text-disabled)] px-1">No repositories found.</p>
+            ) : null}
+          </div>
         )}
       </div>
 
       <div className="flex justify-end gap-2 pt-1">
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-1 rounded-md bg-[#00ff41] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#00cc33] transition disabled:opacity-50">
-          {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Create
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-1 rounded-md bg-[#00ff41] px-3 py-1.5 text-xs font-medium text-black hover:bg-[#00cc33] transition disabled:opacity-50"
+        >
+          {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Add
         </button>
       </div>
     </div>
@@ -310,8 +488,10 @@ function AddConnectorForm({ projectId, types, onCreated }: { projectId: string; 
 function ConnectorIcon({ type }: { type: string }) {
   const colors: Record<string, string> = { jira: '#0052CC', github: '#ffffff', gitlab: '#FC6D26' };
   return (
-    <div className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
-      style={{ backgroundColor: `${colors[type] || '#6b7280'}20`, color: colors[type] || '#6b7280' }}>
+    <div
+      className="h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-bold"
+      style={{ backgroundColor: `${colors[type] || '#6b7280'}20`, color: colors[type] || '#6b7280' }}
+    >
       {type[0]?.toUpperCase()}
     </div>
   );

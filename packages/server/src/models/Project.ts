@@ -22,6 +22,22 @@ export interface IProject extends Document {
     createdBy: mongoose.Types.ObjectId;
   }>;
   tags: string[];
+  integrations: Array<{
+    _id?: mongoose.Types.ObjectId;
+    connectionId: mongoose.Types.ObjectId;
+    filters: Record<string, string>;
+    mappingRules: Array<{ sourceType: string; targetType: string }>;
+    syncIntervalMinutes: number;
+    enabled: boolean;
+    lastSync?: {
+      status: string;
+      syncedAt: Date;
+      elementsCreated: number;
+      connectionsCreated: number;
+      durationMs: number;
+      warnings: string[];
+    };
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -53,6 +69,21 @@ const projectSchema = new Schema<IProject>(
       },
     ],
     tags: [{ type: String }],
+    integrations: [{
+      connectionId: { type: Schema.Types.ObjectId, ref: 'Connection', required: true },
+      filters: { type: Schema.Types.Mixed, default: {} },
+      mappingRules: [{ sourceType: String, targetType: String }],
+      syncIntervalMinutes: { type: Number, default: 0 },
+      enabled: { type: Boolean, default: true },
+      lastSync: {
+        status: String,
+        syncedAt: Date,
+        elementsCreated: Number,
+        connectionsCreated: Number,
+        durationMs: Number,
+        warnings: [String],
+      },
+    }],
   },
   { timestamps: true }
 );

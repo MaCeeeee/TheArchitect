@@ -63,8 +63,16 @@ export class GitHubConnector implements IConnector {
     const connections: ParsedConnection[] = [];
     const warnings: string[] = [];
 
-    const orgOrUser = config.filters.org || config.filters.user || '';
-    const repoFilter = config.filters.repos || '';  // comma-separated repo names
+    // Auto-extract org/user and repo from baseUrl like github.com/MaCeeeee/TheArchitect
+    let orgOrUser = config.filters.org || config.filters.user || '';
+    let repoFilter = config.filters.repos || '';  // comma-separated repo names
+    if (!orgOrUser) {
+      const match = config.baseUrl?.match(/github\.com\/([^/]+)(?:\/([^/]+))?/i);
+      if (match) {
+        orgOrUser = match[1];
+        if (match[2] && !repoFilter) repoFilter = `${match[1]}/${match[2]}`;
+      }
+    }
     const includeArchived = config.filters.includeArchived === 'true';
 
     let repos: any[] = [];
@@ -188,7 +196,11 @@ export class GitHubConnector implements IConnector {
   // ─── Helpers ───
 
   private async apiFetch(config: ConnectorConfig, path: string): Promise<Response> {
-    const baseUrl = config.baseUrl || 'https://api.github.com';
+    let baseUrl = config.baseUrl || 'https://api.github.com';
+    // Normalize: github.com → api.github.com, strip repo paths
+    if (/^https?:\/\/(www\.)?github\.com/i.test(baseUrl)) {
+      baseUrl = 'https://api.github.com';
+    }
     const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
     const headers: Record<string, string> = {
       'Accept': 'application/vnd.github+json',

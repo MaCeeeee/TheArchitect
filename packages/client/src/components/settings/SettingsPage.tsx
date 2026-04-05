@@ -9,6 +9,7 @@ import AppearanceSection from './AppearanceSection';
 import NotificationsSection from './NotificationsSection';
 import SecuritySection from './SecuritySection';
 import ApiKeysSection from './ApiKeysSection';
+import ConnectionsSettings from './ConnectionsSettings';
 import AccessibilitySection from './AccessibilitySection';
 import BillingSection from './BillingSection';
 import UsersSection from './UsersSection';
@@ -22,6 +23,7 @@ const SECTION_MAP: Record<string, React.ComponentType> = {
   notifications: NotificationsSection,
   security: SecuritySection,
   'api-keys': ApiKeysSection,
+  connections: ConnectionsSettings,
   accessibility: AccessibilitySection,
   billing: BillingSection,
   users: UsersSection,
@@ -44,7 +46,7 @@ export default function SettingsPage() {
     <div className="flex h-full bg-[var(--surface-base)]">
       <SettingsSidebar />
       <div className="flex-1 overflow-y-auto">
-        <div className={`${activeSection === 'audit-logs' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto px-8 py-6`}>
+        <div className={`${activeSection === 'audit-logs' || activeSection === 'connections' ? 'max-w-4xl' : 'max-w-3xl'} mx-auto px-8 py-6`}>
           <button
             onClick={() => navigate(projectId ? `/project/${projectId}` : '/')}
             className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition mb-6"
