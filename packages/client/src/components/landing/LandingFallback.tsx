@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Upload, Box, Shield, BarChart3, Sparkles, Loader2, Cpu, AlertCircle, ChevronDown } from 'lucide-react';
-import ATCShader from '../ui/atc-shader';
+import { Upload, Box, Shield, BarChart3, Sparkles, Loader2, Cpu, AlertCircle, CheckCircle2, Eye, Brain, Route, Zap } from 'lucide-react';
+import MatrixRain from './MatrixRain';
+import TheArchitectLogo from './TheArchitectLogo';
 
 interface FallbackProps {
   phase: 'landing' | 'uploading' | 'scanning';
@@ -14,26 +15,26 @@ interface FallbackProps {
 
 export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error }: FallbackProps) {
   return (
-    <div className="fixed inset-0 overflow-y-auto z-50">
-      <ATCShader />
-
+    <div className="fixed inset-0 overflow-y-auto z-50 bg-[#0a0a0a]">
+      <MatrixRain opacity={0.04} speed={0.6} density={0.96} />
       <div className="relative z-10">
         <Header />
 
         <main className="max-w-5xl mx-auto px-6">
-          <section className="text-center pt-16 pb-12">
+          <section aria-label="Hero" id="main-content" className="text-center pt-16 pb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#00ff41]/10 border border-[#00ff41]/20 rounded-full text-sm text-[#00ff41] mb-6">
               <Sparkles className="w-4 h-4" /> AI-Powered Architecture Intelligence
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-4">
-              Transform your architecture<br />
+              See your architecture<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00ff41] to-[#06b6d4]">
-                from chaos to clarity
+                like never before
               </span>
             </h1>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10">
-              From startup to enterprise — upload your architecture artifacts and get an AI-powered
-              health assessment in 60 seconds. No account required.
+              AI-native architecture analysis with 3D visualization,
+              multi-agent simulation, and Monte Carlo roadmaps.
+              Built by an Enterprise Architect — for Enterprise Architects.
             </p>
 
             <UploadZone phase={phase} dragOver={dragOver} setDragOver={setDragOver} onDrop={onDrop} onFileSelect={onFileSelect} onDemoClick={onDemoClick} />
@@ -46,19 +47,21 @@ export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, 
             )}
           </section>
 
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-6 pb-10">
+          <section aria-label="Features" className="grid grid-cols-1 sm:grid-cols-3 gap-6 pb-10">
             {FEATURES.map(({ icon: Icon, title, desc, color }) => (
-              <div key={title} className="bg-[#0a0a0a]/60 backdrop-blur-md border border-[#00ff41]/10 rounded-xl p-6">
+              <div key={title} className="bg-[#111]/60 border border-white/5 rounded-xl p-6">
                 <Icon className="w-8 h-8 mb-3" style={{ color }} />
-                <h3 className="text-white font-semibold mb-2">{title}</h3>
+                <h2 className="text-white font-semibold mb-2">{title}</h2>
                 <p className="text-sm text-slate-400">{desc}</p>
               </div>
             ))}
           </section>
 
+          <StatsBar />
+          <DifferentiationGrid />
           <TrustBar />
 
-          <div className="text-center pb-8 border-t border-[#334155] pt-8">
+          <div className="text-center pb-8 border-t border-white/5 pt-8">
             <p className="text-slate-500 text-sm">
               Already have an account?{' '}
               <Link to="/login" className="text-[#00ff41] hover:text-[#00ff41]/80">Sign in</Link>
@@ -66,13 +69,13 @@ export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, 
           </div>
 
           <footer className="border-t border-white/5 py-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-              <span>&copy; {new Date().getFullYear()} TheArchitect</span>
+            <div className="flex flex-col items-center gap-4 text-xs text-slate-500 text-center">
               <div className="flex items-center gap-6">
                 <Link to="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
                 <Link to="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
                 <Link to="/imprint" className="hover:text-slate-300 transition-colors">Imprint</Link>
               </div>
+              <span>&copy; {new Date().getFullYear()} TheArchitect</span>
             </div>
           </footer>
         </main>
@@ -86,11 +89,12 @@ export default function LandingFallback({ phase, dragOver, setDragOver, onDrop, 
 export function Header() {
   return (
     <header className="border-b border-white/5 bg-[#0a0a0a]/60 backdrop-blur-md sticky top-0 z-30">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-[#00ff41] focus:text-black focus:rounded-lg focus:text-sm focus:font-medium">
+        Skip to content
+      </a>
       <div className="w-full px-8 py-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00ff41] to-[#06b6d4] flex items-center justify-center">
-            <span className="text-[#0a0a0a] font-bold text-sm">A</span>
-          </div>
+          <TheArchitectLogo size={32} />
           <span className="text-white font-semibold">TheArchitect</span>
         </Link>
         <Link
@@ -144,6 +148,7 @@ export function UploadZone({ phase, dragOver, setDragOver, onDrop, onFileSelect,
           </div>
         )}
       </div>
+      <label htmlFor="file-input" className="sr-only">Upload architecture file</label>
       <input
         id="file-input" type="file" className="hidden"
         accept=".csv,.xlsx,.xls,.xml,.archimate,.json"
@@ -172,6 +177,73 @@ export function TrustBar() {
         <span>LeanIX & Jira Import</span>
         <span className="w-1 h-1 rounded-full bg-slate-600 hidden sm:block" />
         <span>Stakeholder Sharing</span>
+      </div>
+    </section>
+  );
+}
+
+export function StatsBar() {
+  const STATS = [
+    { value: '14', label: 'AI Detectors' },
+    { value: '80+', label: 'ArchiMate Types' },
+    { value: '3D', label: 'Visualization' },
+    { value: 'TOGAF 10', label: 'Compliant' },
+  ];
+
+  return (
+    <section aria-label="Key statistics" className="border-t border-b border-white/5 py-10 px-6 my-8">
+      <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+        {STATS.map(({ value, label }) => (
+          <div key={label}>
+            <div className="text-2xl md:text-3xl font-bold text-[#00ff41]">{value}</div>
+            <div className="text-xs text-slate-500 mt-1">{label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function DifferentiationGrid() {
+  const DIFFS = [
+    {
+      label: 'AI-native — not retrofitted',
+      detail: '14 AI detectors, multi-agent simulation, and stochastic analysis are the core, not plugins.',
+    },
+    {
+      label: '3D visualization — not 2D box diagrams',
+      detail: 'React Three Fiber with layer planes, fly-to navigation, and WebGPU rendering.',
+    },
+    {
+      label: 'Multi-agent simulation — not static analysis',
+      detail: 'MiroFish simulates stakeholder behavior with fatigue index, emergence tracking, and anti-hallucination layer.',
+    },
+    {
+      label: 'Product-led: try before you buy',
+      detail: 'Free AI health check — no sales call, no enterprise contract, no setup wizard.',
+    },
+  ];
+
+  return (
+    <section aria-label="Differentiation" className="py-16 px-6">
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-4">
+          Why not LeanIX, Ardoq, or Bizzdesign?
+        </h2>
+        <p className="text-slate-500 text-center max-w-xl mx-auto mb-10">
+          No incumbent has AI-native architecture. Not yet.
+        </p>
+        <div className="space-y-4">
+          {DIFFS.map(({ label, detail }) => (
+            <div key={label} className="flex gap-4 rounded-lg border border-white/5 bg-[#111]/60 p-5 hover:border-[#00ff41]/20 transition">
+              <CheckCircle2 className="w-5 h-5 text-[#00ff41] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-white font-medium">{label}</p>
+                <p className="text-sm text-slate-500 mt-1">{detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

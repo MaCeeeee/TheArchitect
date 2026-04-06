@@ -2,62 +2,11 @@ import { useRef, useMemo, MutableRefObject } from 'react';
 import { Float, Line } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-
-// ─── Colors ───
-const LAYER_COLORS: Record<string, string> = {
-  strategy: '#ef4444',
-  business: '#22c55e',
-  application: '#f97316',
-  technology: '#00ff41',
-};
-
-const CONNECTION_COLORS: Record<string, string> = {
-  triggers: '#eab308',
-  depends_on: '#ef4444',
-  uses: '#00ff41',
-  data_flow: '#06b6d4',
-  runs_on: '#00ff41',
-  integrates: '#f59e0b',
-};
-
-// ─── Demo nodes ───
-interface DemoNode {
-  id: string;
-  layer: string;
-  geometry: 'box' | 'sphere' | 'cylinder' | 'cone';
-  pos: [number, number, number];
-  chaosPos: [number, number, number];
-}
-
-const NODES: DemoNode[] = [
-  // Strategy (red)
-  { id: 's1', layer: 'strategy',    geometry: 'box',      pos: [-2, 6, 0],    chaosPos: [6, 9, -5] },
-  { id: 's2', layer: 'strategy',    geometry: 'box',      pos: [2, 6, -1],    chaosPos: [-7, 4, 6] },
-  // Business (green)
-  { id: 'b1', layer: 'business',    geometry: 'cylinder', pos: [-3, 3, 1.5],  chaosPos: [5, -2, -6] },
-  { id: 'b2', layer: 'business',    geometry: 'sphere',   pos: [0, 3, 2.5],   chaosPos: [-4, 8, 3] },
-  { id: 'b3', layer: 'business',    geometry: 'cylinder', pos: [3, 3, -1],    chaosPos: [2, -5, 7] },
-  // Application (orange)
-  { id: 'a1', layer: 'application', geometry: 'sphere',   pos: [-4, 0, 0],    chaosPos: [7, 3, 2] },
-  { id: 'a2', layer: 'application', geometry: 'box',      pos: [0, 0, 1.5],   chaosPos: [-6, -3, -4] },
-  { id: 'a3', layer: 'application', geometry: 'cone',     pos: [4, 0, -1],    chaosPos: [3, 7, -7] },
-  // Technology (matrix green)
-  { id: 't1', layer: 'technology',  geometry: 'box',      pos: [-2.5, -3, 1], chaosPos: [-2, -7, 5] },
-  { id: 't2', layer: 'technology',  geometry: 'cylinder', pos: [1.5, -3, -1], chaosPos: [6, -6, -3] },
-  { id: 't3', layer: 'technology',  geometry: 'sphere',   pos: [4, -3, 1.5],  chaosPos: [-7, -2, -6] },
-];
-
-const CONNECTIONS = [
-  { from: 's1', to: 'b1', type: 'triggers' },
-  { from: 's2', to: 'b2', type: 'depends_on' },
-  { from: 'b1', to: 'a2', type: 'uses' },
-  { from: 'b2', to: 'a1', type: 'data_flow' },
-  { from: 'b3', to: 'a3', type: 'uses' },
-  { from: 'a1', to: 't1', type: 'runs_on' },
-  { from: 'a2', to: 't2', type: 'data_flow' },
-  { from: 'a3', to: 't3', type: 'runs_on' },
-  { from: 'a2', to: 'a1', type: 'integrates' },
-];
+import {
+  SCROLL_ZONES, LAYER_COLORS, CONNECTION_COLORS,
+  NODES, CONNECTIONS, getLayerEmphasis,
+  type DemoNode,
+} from './landing.constants';
 
 // ─── Geometry ───
 function NodeGeometry({ type }: { type: string }) {
@@ -70,20 +19,33 @@ function NodeGeometry({ type }: { type: string }) {
 }
 
 // ─── Flow particle ───
-function FlowParticle({ curve, color, speed, offset }: {
+function FlowParticle({ curve, color, speed, offset, scrollRef }: {
   curve: THREE.QuadraticBezierCurve3; color: string; speed: number; offset: number;
+  scrollRef: MutableRefObject<number>;
 }) {
   const ref = useRef<THREE.Mesh>(null);
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+
   useFrame((state) => {
-    if (!ref.current) return;
+    if (!ref.current || !matRef.current) return;
     const t = (state.clock.elapsedTime * speed + offset) % 1;
     const point = curve.getPoint(t);
     ref.current.position.copy(point);
+
+    // Slow down in upload zone
+    const s = scrollRef.current;
+    const uploadStart = SCROLL_ZONES.UPLOAD[0];
+    if (s > uploadStart) {
+      matRef.current.opacity = 0.4;
+    } else {
+      matRef.current.opacity = 0.95;
+    }
   });
+
   return (
     <mesh ref={ref}>
       <sphereGeometry args={[0.08, 8, 8]} />
-      <meshBasicMaterial color={color} transparent opacity={0.95} />
+      <meshBasicMaterial ref={matRef} color={color} transparent opacity={0.95} />
     </mesh>
   );
 }
@@ -127,11 +89,11 @@ export default function DemoArchitecture({ perfLevel, scrollRef }: Props) {
       const start = new THREE.Vector3(...from.pos);
       const end = new THREE.Vector3(...to.pos);
       const mid = start.clone().lerp(end, 0.5);
-      mid.y += 1.8;
+      mid.y += 2.5; // Taller arc for bigger Y spread
       return { ...c, curve: new THREE.QuadraticBezierCurve3(start, mid, end), color: CONNECTION_COLORS[c.type] || '#6b7280' };
     }), [nodeMap]);
 
-  // Scroll-driven animations
+  // Scroll-driven layer isolation animation
   useFrame(() => {
     const s = scrollRef.current;
 
@@ -140,59 +102,18 @@ export default function DemoArchitecture({ perfLevel, scrollRef }: Props) {
       const mat = matRefs.current.get(node.id);
       if (!mesh || !mat) return;
 
+      const { scale, opacity, emissive } = getLayerEmphasis(node.layer, s);
       const layerColor = new THREE.Color(LAYER_COLORS[node.layer]);
-      const chaosColor = new THREE.Color('#ef4444');
 
-      if (s >= 0.2 && s <= 0.5) {
-        const sectionT = (s - 0.2) / 0.3;
-        if (sectionT < 0.4) {
-          const t = sectionT / 0.4;
-          mesh.position.set(
-            node.pos[0] + (node.chaosPos[0] - node.pos[0]) * t,
-            node.pos[1] + (node.chaosPos[1] - node.pos[1]) * t,
-            node.pos[2] + (node.chaosPos[2] - node.pos[2]) * t,
-          );
-          mat.color.copy(layerColor).lerp(chaosColor, t);
-          mat.emissive.copy(layerColor).lerp(chaosColor, t);
-          mat.emissiveIntensity = 0.4 + t * 0.6;
-        } else {
-          const t = (sectionT - 0.4) / 0.6;
-          mesh.position.set(
-            node.chaosPos[0] + (node.pos[0] - node.chaosPos[0]) * t,
-            node.chaosPos[1] + (node.pos[1] - node.chaosPos[1]) * t,
-            node.chaosPos[2] + (node.pos[2] - node.chaosPos[2]) * t,
-          );
-          mat.color.copy(chaosColor).lerp(layerColor, t);
-          mat.emissive.copy(chaosColor).lerp(layerColor, t);
-          mat.emissiveIntensity = 1.0 - t * 0.6;
-        }
-      } else {
-        mesh.position.set(...node.pos);
-        mat.color.set(LAYER_COLORS[node.layer]);
-        mat.emissive.set(LAYER_COLORS[node.layer]);
-        mat.emissiveIntensity = 0.4;
-      }
+      // Smooth transitions via lerp
+      mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.08);
+      mat.opacity += (opacity - mat.opacity) * 0.08;
+      mat.emissiveIntensity += (emissive - mat.emissiveIntensity) * 0.08;
+      mat.color.lerp(layerColor, 0.08);
+      mat.emissive.lerp(layerColor, 0.08);
 
-      // Section 3: Feature highlights
-      if (s >= 0.5 && s <= 0.75) {
-        const ft = (s - 0.5) / 0.25;
-        const highlightMap: Record<number, string[]> = {
-          0: ['a1', 'a2', 'a3'],
-          1: ['s1', 's2'],
-          2: ['b2'],
-        };
-        const third = Math.min(Math.floor(ft * 3), 2);
-        const ids = highlightMap[third] || [];
-        if (ids.includes(node.id)) {
-          const pulse = 1.15 + Math.sin(ft * Math.PI * 6) * 0.1;
-          mesh.scale.setScalar(pulse);
-          mat.emissiveIntensity = 1.0;
-        } else {
-          mesh.scale.setScalar(1);
-        }
-      } else if (s < 0.2 || s > 0.5) {
-        mesh.scale.setScalar(1);
-      }
+      // Keep node at its base position
+      mesh.position.set(...node.pos);
     });
   });
 
@@ -241,9 +162,9 @@ export default function DemoArchitecture({ perfLevel, scrollRef }: Props) {
         return (
           <group key={i}>
             <Line points={points} color={c.color} lineWidth={2} transparent opacity={0.35} />
-            <FlowParticle curve={c.curve} color={c.color} speed={0.25} offset={0} />
+            <FlowParticle curve={c.curve} color={c.color} speed={0.25} offset={0} scrollRef={scrollRef} />
             {perfLevel === 'high' && (
-              <FlowParticle curve={c.curve} color={c.color} speed={0.25} offset={0.5} />
+              <FlowParticle curve={c.curve} color={c.color} speed={0.25} offset={0.5} scrollRef={scrollRef} />
             )}
           </group>
         );
@@ -251,3 +172,5 @@ export default function DemoArchitecture({ perfLevel, scrollRef }: Props) {
     </group>
   );
 }
+
+export { NODES, LAYER_COLORS } from './landing.constants';

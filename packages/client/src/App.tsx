@@ -18,6 +18,7 @@ import StakeholderDashboard from './components/portfolio/StakeholderDashboard';
 import AIAgentInventory from './components/portfolio/AIAgentInventory';
 import SharedSnapshotView from './components/portfolio/SharedSnapshotView';
 import LandingPage from './components/landing/LandingPage';
+import LegalPage from './components/landing/LegalPage';
 import HealthReport from './components/healthcheck/HealthReport';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,9 @@ export default function App() {
     <Routes>
       {/* Public routes — no auth required */}
       <Route path="/" element={<LandingPage />} />
+      <Route path="/privacy" element={<LegalPage />} />
+      <Route path="/terms" element={<LegalPage />} />
+      <Route path="/imprint" element={<LegalPage />} />
       <Route path="/report/:reportId" element={<HealthReport />} />
       <Route path="/shared/:token" element={<SharedSnapshotView />} />
 

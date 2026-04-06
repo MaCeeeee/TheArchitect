@@ -1,17 +1,10 @@
 import { useRef, MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { CAMERA_KEYFRAMES, easeInOutCubic, findCameraKeyframes, SCROLL_ZONES } from './landing.constants';
 
-const KEYFRAMES = [
-  { pos: [0, 5, 18],    lookAt: [0, 1, 0] },   // Section 1: Hero — front view
-  { pos: [6, 7, 12],    lookAt: [0, 1, 0] },   // Section 2: Problem/Solution — closer, angled
-  { pos: [-8, 4, 14],   lookAt: [0, 1, 0] },   // Section 3: Features — orbit left
-  { pos: [0, 10, 22],   lookAt: [0, 0, 0] },   // Section 4: CTA — dramatic pullback
-] as const;
-
-function easeInOutCubic(t: number): number {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
+// Re-export for consumers
+export { SCROLL_ZONES };
 
 interface Props {
   scrollRef: MutableRefObject<number>;
@@ -23,14 +16,7 @@ export default function ScrollCamera({ scrollRef }: Props) {
   const lookTarget = useRef(new THREE.Vector3());
 
   useFrame(() => {
-    const offset = scrollRef.current; // 0–1
-    const segments = KEYFRAMES.length - 1;
-    const raw = offset * segments;
-    const i = Math.min(Math.floor(raw), segments - 1);
-    const t = easeInOutCubic(Math.min(raw - i, 1));
-
-    const from = KEYFRAMES[i];
-    const to = KEYFRAMES[i + 1];
+    const { from, to, t } = findCameraKeyframes(scrollRef.current);
 
     posTarget.current.set(
       from.pos[0] + (to.pos[0] - from.pos[0]) * t,

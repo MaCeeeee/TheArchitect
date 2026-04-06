@@ -49,6 +49,12 @@ jobs:
           REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
           MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
           MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GITHUB_CLIENT_ID: ${{ secrets.GH_OAUTH_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.GH_OAUTH_CLIENT_SECRET }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           COMPOSE_CONTENT=$(cat <<'COMPOSE_EOF'
           networks:
@@ -90,6 +96,14 @@ jobs:
                 - MINIO_ACCESS_KEY=PLACEHOLDER_MINIO_AK
                 - MINIO_SECRET_KEY=PLACEHOLDER_MINIO_SK
                 - MINIO_BUCKET=thearchitect-files
+                - GOOGLE_CLIENT_ID=PLACEHOLDER_GOOGLE_ID
+                - GOOGLE_CLIENT_SECRET=PLACEHOLDER_GOOGLE_SECRET
+                - GOOGLE_CALLBACK_URL=https://thearchitect.site/api/auth/oauth/google/callback
+                - GITHUB_CLIENT_ID=PLACEHOLDER_GITHUB_ID
+                - GITHUB_CLIENT_SECRET=PLACEHOLDER_GITHUB_SECRET
+                - GITHUB_CALLBACK_URL=https://thearchitect.site/api/auth/oauth/github/callback
+                - OPENAI_API_KEY=PLACEHOLDER_OPENAI
+                - ANTHROPIC_API_KEY=PLACEHOLDER_ANTHROPIC
               labels:
                 - traefik.enable=true
                 - "traefik.http.routers.thearchitect.rule=Host(`thearchitect.site`) || Host(`www.thearchitect.site`)"
@@ -164,6 +178,12 @@ jobs:
           COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_REDIS/$REDIS_PASSWORD}"
           COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_MINIO_AK/$MINIO_ACCESS_KEY}"
           COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_MINIO_SK/$MINIO_SECRET_KEY}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_GOOGLE_ID/$GOOGLE_CLIENT_ID}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_GOOGLE_SECRET/$GOOGLE_CLIENT_SECRET}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_GITHUB_ID/$GITHUB_CLIENT_ID}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_GITHUB_SECRET/$GITHUB_CLIENT_SECRET}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_OPENAI/$OPENAI_API_KEY}"
+          COMPOSE_CONTENT="${COMPOSE_CONTENT//PLACEHOLDER_ANTHROPIC/$ANTHROPIC_API_KEY}"
 
           # Deploy via Hostinger API
           PAYLOAD=$(jq -n --arg name "thearchitect" --arg content "$COMPOSE_CONTENT" \

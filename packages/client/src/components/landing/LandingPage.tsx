@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import HealthScoreRing from '../healthcheck/HealthScoreRing';
 import LandingFallback from './LandingFallback';
+import TheArchitectLogo from './TheArchitectLogo';
 
 const LandingScene = lazy(() => import('./LandingScene'));
 
@@ -115,9 +116,7 @@ export default function LandingPage() {
         <header className="border-b border-white/5 bg-[#0a0a0a]/80 backdrop-blur-md sticky top-0 z-10">
           <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00ff41] to-[#06b6d4] flex items-center justify-center">
-                <span className="text-[#0a0a0a] font-bold text-sm">A</span>
-              </div>
+              <TheArchitectLogo size={32} />
               <span className="text-white font-semibold">TheArchitect</span>
             </Link>
           </div>
