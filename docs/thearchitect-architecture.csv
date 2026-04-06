@@ -1,0 +1,116 @@
+name,type,layer,description,status,risk_level,maturity,annual_cost,users,business_owner,technical_owner
+MongoDB Atlas,technology_service,technology,Primary document database — users/projects/simulations/audit/compliance/assessments,current,low,4,72000,1,Platform Team,DevOps
+Neo4j Graph Database,technology_service,technology,Graph database for architecture elements and dependency relationships. Cypher queries for traversal/impact/cascade analysis,current,medium,4,86400,1,Platform Team,DevOps
+Redis Cache,technology_service,technology,In-memory store for session management (JWT refresh tokens) and real-time pub/sub (Socket.IO adapter),current,low,4,28800,1,Platform Team,DevOps
+MinIO Object Storage,technology_service,technology,S3-compatible file storage for document uploads/templates/report exports,current,low,3,12000,1,Platform Team,DevOps
+Hostinger KVM VPS,node,technology,Ubuntu 24.04 production server (76.13.150.49) — Docker host for all services,current,medium,3,3600,1,Platform Team,DevOps
+Docker Engine,system_software,technology,Container runtime — multi-stage builds for shared/server/client packages,current,low,4,0,1,Platform Team,DevOps
+Caddy Reverse Proxy,system_software,technology,TLS termination and reverse proxy — routes traffic to Express API and serves static client,current,low,4,0,1,Platform Team,DevOps
+Node.js v22 Runtime,system_software,technology,Server-side JavaScript runtime for Express.js backend,current,low,5,0,1,Platform Team,DevOps
+Express.js API Server,application_component,application,Monolith REST API — 25+ route modules (auth/projects/architecture/analytics/governance/simulation/oracle). Helmet/CORS/Morgan middleware,current,low,4,185000,50,Product,Backend Team
+React SPA Client,application_component,application,Single-page application — React 18 + TypeScript + Vite. 3D visualization (Three.js/R3F) and Tailwind CSS dark theme,current,low,4,165000,50,Product,Frontend Team
+Socket.IO WebSocket Server,application_component,application,Real-time bidirectional communication — SSE streaming for MiroFish simulation rounds and live collaboration events,current,low,3,25000,50,Product,Backend Team
+Passport.js Auth Module,application_component,application,Authentication middleware — JWT access/refresh tokens + MFA (TOTP) + OAuth2 (Google/GitHub/Microsoft). Session management via Redis,current,low,4,45000,50,Product,Security Team
+MiroFish Simulation Engine,application_component,application,Multi-agent swarm intelligence for architecture scenario simulation. 5 preset personas (CTO/BU Lead/IT Ops/Data Architect/CISO). Sequential rounds with emergence tracking,current,medium,3,95000,10,Product,AI Team
+Oracle Acceptance Risk Service,application_component,application,Lightweight 1-round stakeholder acceptance risk assessment. Parallel LLM calls to 5 personas with weighted scoring (c_level 30%/BU 25%/IT Ops 20%/Data 15%/External 10%),current,medium,2,35000,10,Product,AI Team
+AI Copilot Service,application_component,application,Natural language architecture assistant — OpenAI/Anthropic integration with provider fallback. Context-aware responses using architecture graph data,current,medium,3,68000,10,Product,AI Team
+Cost Engine Service,application_component,application,4-tier cost estimation (Tier 0 relative/Tier 1 benchmark/Tier 2 parametric COCOMO+Black-Scholes/Tier 3 Monte Carlo PERT). Technology benchmark matching,current,low,4,55000,20,Product,Analytics Team
+Stochastic Engine Service,application_component,application,Kolmogorov probability validation + Beta-PERT distributions + K-S test for architecture drift + cascade risk propagation (BFS with Bayesian dampening),current,low,3,40000,10,Product,Analytics Team
+Advisor Service,application_component,application,AI architecture advisor — 14 parallel detectors (SPOF/orphans/cycles/compliance/cost/maturity/MiroFish conflicts/cascade/drift/oracle warnings). Health score (5-factor model),current,low,4,60000,20,Product,Analytics Team
+Compliance Pipeline Service,application_component,application,7-stage compliance pipeline — parser/classifier/matcher/scorer/reporter. TOGAF/DORA/NIS2/KRITIS framework support,current,low,3,50000,10,Product,Governance Team
+Blueprint Generator Service,application_component,application,End-to-end architecture blueprint generation — document parsing + AI generation + Neo4j import. Auto-fills from uploaded documents,current,low,3,35000,10,Product,AI Team
+Remediation Engine Service,application_component,application,Gap remediation — identify/validate/apply workflow with Seven-Rs strategy recommendations. 41 validator rules,current,low,3,40000,10,Product,Governance Team
+Connector Framework,application_component,application,Hybrid connector architecture — 10 enterprise integrations (SAP/ServiceNow/LeanIX/Salesforce/n8n/Jira/Citrix/Abacus). Type mappings + sync scheduler,current,medium,2,75000,5,Product,Integration Team
+Scenario Comparison Engine,application_component,application,MCDA-based scenario comparison — cost profiles/compliance scoring/weighted criteria. Side-by-side delta analysis,current,low,3,30000,10,Product,Analytics Team
+Transformation Roadmap Module,application_component,application,Roadmap generator with plateau navigation + wave distribution + CSV cross-workspace import. Target element inclusion,current,low,4,45000,20,Product,Frontend Team
+Template Marketplace,application_component,application,CRUD template store with rating system and 1-click deploy. Architecture pattern library,current,low,3,20000,20,Product,Frontend Team
+3D Architecture Visualization,application_component,application,Three.js/React Three Fiber — layer planes + node objects + connection lines + risk topology + cost gravity + simulation topology + discussion bubbles,current,low,4,120000,50,Product,Frontend Team
+ArchiMate 3.2 Modeling Engine,application_component,application,Smart palette + quick linker + viewpoint filters + custom patterns. Full ArchiMate element/relationship type support,current,low,4,80000,30,Product,Frontend Team
+RBAC Authorization System,application_component,application,Role-based access control — 6 roles (super_admin to viewer) with granular permissions hierarchy. Project-scoped access,current,low,4,30000,50,Product,Security Team
+Audit Logging System,application_component,application,Security audit trail — all sensitive actions logged with IP/user-agent/timestamp. MongoDB-backed with retention policies,current,low,4,15000,50,Product,Security Team
+User & Auth Data,data_object,information,User profiles + credentials + preferences + API keys (SHA-256 hashed with ta_ prefix). OAuth provider links,current,low,4,,,Platform Team,Backend Team
+Architecture Graph Data,data_object,information,Architecture elements (nodes) and relationships (edges) stored in Neo4j. BDAT layers + TOGAF domains + ArchiMate types,current,low,4,,,Platform Team,Backend Team
+Project & Workspace Data,data_object,information,Projects + workspaces + collaborators + versions + snapshots. MongoDB document model,current,low,4,,,Platform Team,Backend Team
+Simulation Run Data,data_object,information,MiroFish simulation configs + rounds + agent turns + emergence events + fatigue snapshots + results,current,low,3,,,Platform Team,AI Team
+Oracle Assessment Data,data_object,information,Oracle proposals + verdicts + agent verdicts + resistance factors + mitigation suggestions. History with 20-entry cap per query,current,low,2,,,Platform Team,AI Team
+Compliance Snapshot Data,data_object,information,Compliance pipeline states + snapshots + standard mappings + requirement scores,current,low,3,,,Platform Team,Governance Team
+OpenAI API,technology_service,technology,External LLM provider — gpt-4o-mini for MiroFish/Oracle/Copilot. Streaming support with token accounting,current,medium,4,24000,1,Product,AI Team
+Anthropic API,technology_service,technology,External LLM provider (fallback) — claude-haiku-4-5 for MiroFish/Oracle/Copilot. Automatic failover from OpenAI,current,medium,4,12000,1,Product,AI Team
+Turbo Monorepo Build System,technology_service,technology,Turborepo — parallel builds with dependency ordering (shared -> server/client). Build caching,current,low,4,0,5,Platform Team,DevOps
+GitHub Repository,technology_service,technology,Source code repository — MaCeeeee/TheArchitect. CI/CD workflow defined but blocked (account flagged),current,low,4,0,5,Platform Team,DevOps
+Vite Build Tool,technology_service,technology,Frontend build tooling — TypeScript compilation + HMR dev server + production bundle (2.2MB gzipped),current,low,5,0,5,Platform Team,Frontend Team
+Architecture Modeling,business_process,business,Core business capability — create/edit/visualize enterprise architecture models in ArchiMate 3.2 notation with 3D spatial layouts,current,low,4,,,Product,
+Portfolio Management,business_process,business,Application portfolio lifecycle management — TIME classification + risk/cost/maturity dashboards + stakeholder mapping,current,low,4,,,Product,
+Governance & Compliance,business_process,business,Architecture governance workflows — compliance pipeline + policy enforcement + audit checklists + standard mappings,current,low,3,,,Product,
+Risk & Impact Analysis,business_process,business,Architecture risk assessment — cascade propagation + SPOF detection + blast radius calculation + architecture drift detection,current,low,4,,,Product,
+Cost Analysis & Optimization,business_process,business,Total cost of ownership analysis — 4-tier estimation + scenario comparison + MCDA + budget tracking,current,low,4,,,Product,
+Transformation Planning,business_process,business,Roadmap generation + plateau navigation + gap remediation + Seven-Rs migration strategy + wave distribution,current,low,4,,,Product,
+Simulation & Forecasting,business_process,business,Multi-agent stakeholder simulation (MiroFish) + Oracle acceptance risk + Monte Carlo + capacity planning + what-if scenarios,current,low,3,,,Product,
+TOGAF 10 Framework Alignment,business_object,strategy,Strategic alignment to TOGAF 10 ADM phases — Architecture Vision through Change Management. Compliance scoring per phase,current,low,4,,,Product,
+Enterprise Architecture as a Service,business_object,strategy,Platform vision — democratize EA through self-service architecture modeling with AI assistance and automated governance,current,low,3,,,Product,
+---CONNECTIONS---
+source,target,connection_type,label
+Express.js API Server,MongoDB Atlas,serving,Document CRUD
+Express.js API Server,Neo4j Graph Database,serving,Graph queries (Cypher)
+Express.js API Server,Redis Cache,serving,Session store + pub/sub
+Express.js API Server,MinIO Object Storage,serving,File upload/download
+React SPA Client,Express.js API Server,serving,REST API calls
+Socket.IO WebSocket Server,Express.js API Server,composition,Embedded in HTTP server
+Socket.IO WebSocket Server,Redis Cache,serving,Pub/Sub adapter
+Passport.js Auth Module,Express.js API Server,composition,Auth middleware
+Passport.js Auth Module,Redis Cache,serving,Session validation
+Passport.js Auth Module,User & Auth Data,access,Read/write credentials
+MiroFish Simulation Engine,Express.js API Server,composition,Simulation routes
+MiroFish Simulation Engine,Neo4j Graph Database,access,Agent context filter
+MiroFish Simulation Engine,OpenAI API,serving,LLM calls (primary)
+MiroFish Simulation Engine,Anthropic API,serving,LLM calls (fallback)
+MiroFish Simulation Engine,Simulation Run Data,access,Persist rounds/results
+Oracle Acceptance Risk Service,Express.js API Server,composition,Oracle routes
+Oracle Acceptance Risk Service,Neo4j Graph Database,access,Agent context filter
+Oracle Acceptance Risk Service,OpenAI API,serving,Parallel persona calls
+Oracle Acceptance Risk Service,Anthropic API,serving,Provider fallback
+Oracle Acceptance Risk Service,Oracle Assessment Data,access,Persist assessments
+AI Copilot Service,Express.js API Server,composition,AI routes
+AI Copilot Service,OpenAI API,serving,Chat completion
+AI Copilot Service,Anthropic API,serving,Fallback provider
+Cost Engine Service,Express.js API Server,composition,Analytics routes
+Cost Engine Service,Neo4j Graph Database,access,Element cost data
+Stochastic Engine Service,Neo4j Graph Database,access,Cascade propagation
+Advisor Service,Express.js API Server,composition,Advisor routes
+Advisor Service,Neo4j Graph Database,access,Element analysis
+Advisor Service,MongoDB Atlas,access,Simulation/Oracle data
+Compliance Pipeline Service,Express.js API Server,composition,Compliance routes
+Compliance Pipeline Service,MongoDB Atlas,access,Standards/mappings
+Blueprint Generator Service,Express.js API Server,composition,Blueprint routes
+Blueprint Generator Service,Neo4j Graph Database,access,Import elements
+Remediation Engine Service,Express.js API Server,composition,Remediation routes
+Remediation Engine Service,Neo4j Graph Database,access,Element updates
+Connector Framework,Express.js API Server,composition,Connector routes
+Scenario Comparison Engine,Express.js API Server,composition,Scenario routes
+Scenario Comparison Engine,Neo4j Graph Database,access,Element snapshots
+Transformation Roadmap Module,Express.js API Server,composition,Roadmap routes
+Template Marketplace,Express.js API Server,composition,Marketplace routes
+3D Architecture Visualization,React SPA Client,composition,Three.js scene
+ArchiMate 3.2 Modeling Engine,React SPA Client,composition,Modeling UI
+RBAC Authorization System,Express.js API Server,composition,RBAC middleware
+Audit Logging System,Express.js API Server,composition,Audit middleware
+Audit Logging System,MongoDB Atlas,access,Write audit logs
+Architecture Graph Data,Neo4j Graph Database,access,Stored as nodes/edges
+Project & Workspace Data,MongoDB Atlas,access,Document storage
+Compliance Snapshot Data,MongoDB Atlas,access,Document storage
+Docker Engine,Hostinger KVM VPS,composition,Container runtime
+Caddy Reverse Proxy,Docker Engine,composition,Runs in Docker
+Express.js API Server,Docker Engine,composition,Runs in Docker
+Turbo Monorepo Build System,GitHub Repository,serving,Build pipeline
+Vite Build Tool,React SPA Client,serving,Frontend bundling
+Architecture Modeling,3D Architecture Visualization,realization,Visual modeling
+Architecture Modeling,ArchiMate 3.2 Modeling Engine,realization,ArchiMate notation
+Portfolio Management,Advisor Service,realization,Health scoring
+Governance & Compliance,Compliance Pipeline Service,realization,Pipeline execution
+Risk & Impact Analysis,Stochastic Engine Service,realization,Cascade/drift analysis
+Cost Analysis & Optimization,Cost Engine Service,realization,TCO calculation
+Transformation Planning,Transformation Roadmap Module,realization,Roadmap generation
+Simulation & Forecasting,MiroFish Simulation Engine,realization,Multi-agent simulation
+Simulation & Forecasting,Oracle Acceptance Risk Service,realization,Acceptance risk scoring
+TOGAF 10 Framework Alignment,Governance & Compliance,association,Framework compliance
+Enterprise Architecture as a Service,Architecture Modeling,association,Core capability
