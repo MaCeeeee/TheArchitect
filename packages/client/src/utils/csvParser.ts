@@ -104,9 +104,22 @@ export interface CSVParseResult {
  */
 export function parseCSV(text: string, existingElements?: { id: string; name: string }[]): CSVParseResult {
   const warnings: string[] = [];
-  const separatorIdx = text.indexOf('---CONNECTIONS---');
+
+  // Support both ---CONNECTIONS--- separator and mid-file header switch (source,target,...)
+  let separatorIdx = text.indexOf('---CONNECTIONS---');
+  let separatorLen = '---CONNECTIONS---'.length;
+
+  if (separatorIdx < 0) {
+    // Detect mid-file connection header: a line starting with "source,target"
+    const match = text.match(/\n(source\s*,\s*target\s*,\s*connection_type)/i);
+    if (match && match.index != null) {
+      separatorIdx = match.index;
+      separatorLen = 0; // keep the header line in connectionsText
+    }
+  }
+
   const elementsText = separatorIdx >= 0 ? text.slice(0, separatorIdx) : text;
-  const connectionsText = separatorIdx >= 0 ? text.slice(separatorIdx + '---CONNECTIONS---'.length) : '';
+  const connectionsText = separatorIdx >= 0 ? text.slice(separatorIdx + separatorLen) : '';
 
   // ── Parse elements ──
   const elemRows = parseCSVRows(elementsText);
@@ -129,6 +142,8 @@ export function parseCSV(text: string, existingElements?: { id: string; name: st
 
   const elements: ArchitectureElement[] = [];
   const nameToId = new Map<string, string>();
+  const csvIdToGenId = new Map<string, string>(); // map CSV id column → generated id
+  const idIdx = header.indexOf('id');
   const layerCounts: Record<string, number> = {};
 
   // Pre-populate with existing project elements so cross-workspace connections resolve
@@ -156,6 +171,10 @@ export function parseCSV(text: string, existingElements?: { id: string; name: st
 
     const id = generateId();
     nameToId.set(name.trim().toLowerCase(), id);
+    // Also map CSV id column (e.g. "s1", "a1") so connections can reference by id or name
+    if (idIdx >= 0 && row[idIdx]) {
+      csvIdToGenId.set(row[idIdx].trim().toLowerCase(), id);
+    }
 
     layerCounts[layer] = layerCounts[layer] || 0;
     const col = layerCounts[layer]++;
@@ -187,7 +206,7 @@ export function parseCSV(text: string, existingElements?: { id: string; name: st
       const cHeader = connRows[0].map((h) => h.toLowerCase().replace(/\s+/g, ''));
       const srcIdx = cHeader.findIndex((h) => h === 'sourcename' || h === 'source');
       const tgtIdx = cHeader.findIndex((h) => h === 'targetname' || h === 'target');
-      const cTypeIdx = cHeader.indexOf('type');
+      const cTypeIdx = cHeader.findIndex((h) => h === 'type' || h === 'connection_type' || h === 'connectiontype');
       const cLabelIdx = cHeader.indexOf('label');
 
       if (srcIdx < 0 || tgtIdx < 0) {
@@ -202,8 +221,8 @@ export function parseCSV(text: string, existingElements?: { id: string; name: st
             continue;
           }
 
-          const sourceId = nameToId.get(srcName);
-          const targetId = nameToId.get(tgtName);
+          const sourceId = nameToId.get(srcName) || csvIdToGenId.get(srcName);
+          const targetId = nameToId.get(tgtName) || csvIdToGenId.get(tgtName);
           if (!sourceId || !targetId) {
             warnings.push(`Connection row ${i + 1}: "${row[srcIdx]}" → "${row[tgtIdx]}" — element not found, skipped`);
             continue;

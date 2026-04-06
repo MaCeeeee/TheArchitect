@@ -160,17 +160,24 @@ export function parseCSV(text: string): ParseResult {
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
   if (lines.length < 2) return { elements: [], connections: [], warnings: ['CSV file has no data rows'], format: 'csv' };
 
-  const headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase().replace(/[\s-]+/g, '_'));
+  let headers = parseCSVLine(lines[0]).map((h) => h.toLowerCase().replace(/[\s-]+/g, '_'));
   const elements: ParsedElement[] = [];
   const connections: ParsedConnection[] = [];
   const warnings: string[] = [];
 
-  // Detect if it's a connections section
+  // Detect if it's a connections-only CSV
   const isConnectionCSV = headers.includes('source') && headers.includes('target');
 
   for (let i = 1; i < lines.length; i++) {
     const fields = parseCSVLine(lines[i]);
     if (fields.every((f) => !f)) continue;
+
+    // Detect mid-file header switch (e.g. "source,target,connection_type,label")
+    const normalized = fields.map((f) => f.toLowerCase().replace(/[\s-]+/g, '_'));
+    if (normalized.includes('source') && normalized.includes('target') && normalized.includes('connection_type')) {
+      headers = normalized;
+      continue;
+    }
 
     const row: Record<string, string> = {};
     headers.forEach((h, idx) => { row[h] = fields[idx] || ''; });

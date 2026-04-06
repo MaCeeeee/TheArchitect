@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Sparkles, AlertCircle, ChevronDown, CheckCircle2,
-  Shield, Brain, Route, Eye, BarChart3, Zap, Box,
+  Shield, Brain, Route, Eye, BarChart3, Zap, Box, Loader2, Mail,
 } from 'lucide-react';
 import { Header, UploadZone, TrustBar, StatsBar, DifferentiationGrid } from './LandingFallback';
+import api from '../../services/api';
 
 interface OverlayProps {
   phase: 'landing' | 'uploading' | 'scanning';
@@ -151,7 +153,10 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
       {/* ── Section 6: Differentiation ── */}
       <DifferentiationGrid />
 
-      {/* ── Section 7: Footer ── */}
+      {/* ── Section 7: Waitlist ── */}
+      <WaitlistSection />
+
+      {/* ── Section 8: Footer ── */}
       <footer className="border-t border-white/5 py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col items-center gap-4 text-xs text-slate-500 text-center">
           <div className="flex items-center gap-6">
@@ -163,5 +168,111 @@ export default function LandingOverlay({ phase, dragOver, setDragOver, onDrop, o
         </div>
       </footer>
     </div>
+  );
+}
+
+// ─── Waitlist Section ───
+
+function WaitlistSection() {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [company, setCompany] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setStatus('loading');
+    try {
+      const { data } = await api.post('/waitlist', {
+        email,
+        name: name || undefined,
+        company: company || undefined,
+        referrer: document.referrer || undefined,
+      });
+      setStatus('success');
+      setMessage(data.message || 'Welcome to the waitlist!');
+    } catch (err: any) {
+      setStatus('error');
+      setMessage(err.response?.data?.error || 'Something went wrong. Please try again.');
+    }
+  };
+
+  return (
+    <section aria-label="Join the Waitlist" className="min-h-[60vh] flex items-center justify-center px-6 py-20">
+      <div className="text-center max-w-lg w-full">
+        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#00ff41]">
+          Early Access
+        </span>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mt-3 mb-3 leading-tight">
+          Get on the waitlist
+        </h2>
+        <p className="text-slate-400 mb-8">
+          Be among the first to experience AI-native Enterprise Architecture.
+          We'll notify you when your spot is ready.
+        </p>
+
+        {status === 'success' ? (
+          <div className="flex items-center justify-center gap-3 px-6 py-4 bg-[#00ff41]/10 border border-[#00ff41]/20 rounded-xl">
+            <CheckCircle2 className="w-5 h-5 text-[#00ff41] shrink-0" />
+            <span className="text-[#00ff41]">{message}</span>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:border-[#00ff41]/50 transition text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name (optional)"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:border-[#00ff41]/50 transition text-sm"
+              />
+              <input
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Company (optional)"
+                className="flex-1 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-slate-500 outline-none focus:border-[#00ff41]/50 transition text-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={status === 'loading' || !email}
+              className="w-full py-3 rounded-xl bg-[#00ff41] text-black font-semibold text-sm hover:bg-[#00cc33] disabled:opacity-50 transition flex items-center justify-center gap-2"
+            >
+              {status === 'loading' ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Joining...</>
+              ) : (
+                'Join the Waitlist'
+              )}
+            </button>
+            {status === 'error' && (
+              <p className="text-red-400 text-xs flex items-center justify-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {message}
+              </p>
+            )}
+            <p className="text-[10px] text-slate-600 mt-2">
+              By joining, you agree to our{' '}
+              <Link to="/privacy" className="text-slate-400 hover:text-white transition">Privacy Policy</Link>.
+              No spam, ever.
+            </p>
+          </form>
+        )}
+      </div>
+    </section>
   );
 }

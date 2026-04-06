@@ -73,6 +73,10 @@ services:
       - ENTRA_CLIENT_SECRET=${ENTRA_CLIENT_SECRET:-}
       - ENTRA_TENANT_ID=${ENTRA_TENANT_ID:-common}
       - ENTRA_CALLBACK_URL=https://thearchitect.site/api/auth/oauth/microsoft/callback
+      - CREDENTIAL_ENCRYPTION_KEY=${CREDENTIAL_ENCRYPTION_KEY:-}
+      - NOCODB_URL=${NOCODB_URL:-}
+      - NOCODB_API_TOKEN=${NOCODB_API_TOKEN:-}
+      - NOCODB_TABLE_ID=${NOCODB_TABLE_ID:-}
     depends_on:
       - mongodb
       - neo4j

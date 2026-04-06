@@ -35,6 +35,7 @@ import scenarioRoutes from './routes/scenario.routes';
 import oracleRoutes from './routes/oracle.routes';
 import snapshotRoutes from './routes/snapshot.routes';
 import healthcheckRoutes from './routes/healthcheck.routes';
+import waitlistRoutes from './routes/waitlist.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 import { startSyncScheduler } from './services/sync-scheduler.service';
@@ -97,6 +98,7 @@ async function main() {
   app.use('/api/projects', connectorRoutes);
   app.use('/api/projects', scenarioRoutes);
   app.use('/api/projects', oracleRoutes);
+  app.use('/api/waitlist', waitlistRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

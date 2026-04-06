@@ -1,0 +1,91 @@
+id,name,type,layer,description,status,risk_level,maturity_level
+s1,Digital Health Strategy 2027,goal,strategy,Digitalisierung aller klinischen Prozesse und regulatorischer Compliance bis 2027,current,low,4
+s2,Cloud-First Principle,principle,strategy,Alle neuen Workloads bevorzugt in der Cloud betreiben,current,low,3
+s3,Zero Trust Security,principle,strategy,Kein implizites Vertrauen - jeder Zugriff wird verifiziert,current,low,2
+s4,MDR Compliance,requirement,strategy,EU Medical Device Regulation 2017/745 - verpflichtende Konformitaet,current,high,3
+b1,Medizinprodukt-Entwicklung,process,business,End-to-End Entwicklungsprozess fuer Medizinprodukte inkl. Design Controls,current,medium,3
+b2,Qualitaetsmanagement,process,business,ISO 13485 QMS - CAPA Nonconformance Audits und Document Control,current,low,4
+b3,Klinische Studien,process,business,Planung Durchfuehrung und Auswertung klinischer Studien nach ISO 14155,current,medium,3
+b4,Regulatory Affairs,process,business,Zulassungsmanagement CE-Kennzeichnung FDA 510k und MDR-Konformitaet,current,high,3
+b5,Supply Chain Management,process,business,Beschaffung Lagerhaltung und Distribution medizinischer Komponenten,current,medium,2
+b6,Customer Service,process,business,Technischer Support Reklamationen und Field Safety Corrective Actions,current,low,3
+b7,Vertrieb DACH,function,business,Vertriebsorganisation fuer Deutschland Oesterreich und Schweiz,current,low,4
+b8,Finanz- und Controlling,process,business,Buchhaltung Kostenrechnung Budgetplanung und Reporting,current,low,4
+a1,SAP ECC 6.0,application_component,application,On-Premise ERP-System - Kern fuer FI CO MM PP und SD Module,current,high,2
+a2,SAP S/4HANA (geplant),application_component,application,Cloud-ERP als Nachfolger von SAP ECC 6.0 - Migration geplant Q3 2027,target,low,1
+a3,Windchill PLM,application_component,application,PTC Windchill fuer Product Lifecycle Management und Design History Files,current,medium,3
+a4,MasterControl QMS,application_component,application,Cloud-basiertes Quality Management System fuer ISO 13485 Compliance,current,low,4
+a5,Medidata Rave,application_component,application,Clinical Trial Management und Electronic Data Capture (EDC),current,low,4
+a6,Salesforce Health Cloud,application_component,application,CRM fuer Kundenmanagement Opportunities und Service Cases,current,low,4
+a7,Legacy Document Server,application_component,application,Eigenentwicklung PHP/MySQL - technische Dokumentation und SOPs seit 2009,current,critical,1
+a8,SharePoint On-Premise 2016,application_component,application,Intranet und Collaboration - End of Support Oktober 2026,phase_out,high,1
+a9,Veeva Vault,application_component,application,Regulatory Information Management und eCTD-Submissions,current,low,4
+a10,Tableau Server,application_component,application,Business Intelligence und Reporting fuer Management und Audits,current,medium,3
+a11,Jenkins CI/CD,application_component,application,Build-Server fuer Firmware und Software Deployments,current,medium,2
+a12,Jira Software,application_component,application,Projektmanagement und Issue Tracking fuer R&D und IT,current,low,4
+a13,Confluence,application_component,application,Wissensdatenbank und interne Dokumentation,current,low,3
+a14,Custom IoT Platform,application_component,application,Eigenentwicklung Node.js - Telemetrie von vernetzten Medizingeraeten,current,high,2
+a15,SAP Business Warehouse,application_component,application,Data Warehouse fuer Finanz- und Vertriebsreporting,current,high,2
+a16,Microsoft 365,application_component,application,E-Mail Teams und Office Suite - Tenant seit 2022,current,low,4
+a17,LIMS (Labor),application_component,application,Laboratory Information Management System fuer R&D und QC,current,medium,3
+t1,On-Premise Rechenzentrum,node,technology,Eigenes RZ in Stuttgart - 4 Racks Dell PowerEdge und NetApp Storage,current,high,2
+t2,AWS Account (Produktion),node,technology,AWS eu-central-1 - EKS RDS S3 fuer Cloud-Workloads,current,low,4
+t3,Azure AD / Entra ID,technology_service,technology,Identity Provider fuer SSO und Conditional Access,current,low,4
+t4,Fortinet Firewall Cluster,node,technology,FortiGate 600E HA-Cluster - Perimetersicherheit und VPN,current,medium,3
+t5,VMware vSphere 7,technology_service,technology,Virtualisierungsplattform fuer On-Premise Workloads - Broadcom Lizenzaenderung,current,high,2
+t6,NetApp ONTAP Storage,node,technology,SAN/NAS Storage fuer VMs Backups und Archivierung,current,medium,3
+t7,Veeam Backup,technology_service,technology,Backup und Disaster Recovery fuer On-Premise und teilweise Cloud,current,low,3
+t8,Cisco Catalyst Netzwerk,node,technology,Campus-LAN und WLAN - Switches und Access Points,current,low,3
+t9,AWS IoT Core,technology_service,technology,MQTT Broker und Device Management fuer vernetzte Medizingeraete,current,low,4
+t10,PostgreSQL RDS,technology_service,technology,Managed PostgreSQL auf AWS fuer Cloud-native Applikationen,current,low,5
+t11,MongoDB Atlas,technology_service,technology,Document Store fuer IoT-Telemetriedaten und Event Logs,current,low,4
+t12,Legacy Oracle DB 12c,technology_service,technology,On-Premise Oracle Datenbank fuer SAP ECC und BW - Extended Support,current,high,2
+
+source,target,connection_type,label
+s1,b1,triggering,Strategie treibt Prozessdigitalisierung
+s1,b3,triggering,Strategie fordert digitale Studien
+s2,t2,realization,Cloud-First wird durch AWS umgesetzt
+s3,t3,realization,Zero Trust durch Azure AD Conditional Access
+s4,b4,triggering,MDR erfordert Regulatory Affairs Prozess
+b1,a3,serving,PLM unterstuetzt Produktentwicklung
+b2,a4,serving,QMS bildet Qualitaetsprozesse ab
+b3,a5,serving,Medidata fuer klinische Studien
+b4,a9,serving,Veeva fuer regulatorische Submissions
+b5,a1,serving,ERP steuert Supply Chain
+b6,a6,serving,Salesforce fuer Service Cases
+b7,a6,serving,CRM fuer Vertrieb
+b8,a1,serving,ERP fuer Finanzen und Controlling
+b8,a15,serving,BW fuer Finanzreporting
+a1,t1,assignment,SAP ECC laeuft On-Premise
+a1,t12,access,SAP nutzt Oracle Datenbank
+a2,t2,assignment,S4HANA geplant auf AWS
+a3,t1,assignment,Windchill On-Premise
+a3,t5,assignment,Windchill auf VMware
+a4,t2,assignment,MasterControl SaaS via AWS
+a5,t2,assignment,Medidata SaaS
+a6,t2,assignment,Salesforce Cloud
+a7,t1,assignment,Legacy DocServer On-Premise
+a7,t5,assignment,DocServer auf VMware
+a8,t1,assignment,SharePoint On-Premise
+a8,t5,assignment,SharePoint auf VMware
+a10,t1,assignment,Tableau On-Premise
+a11,t1,assignment,Jenkins On-Premise
+a14,t2,assignment,IoT Platform auf AWS EKS
+a14,t9,serving,IoT Core fuer Device Management
+a14,t11,access,IoT Platform nutzt MongoDB Atlas
+a15,t1,assignment,SAP BW On-Premise
+a15,t12,access,BW nutzt Oracle DB
+a16,t3,serving,M365 authentifiziert ueber Azure AD
+t1,t4,serving,Firewall schuetzt Rechenzentrum
+t1,t5,composition,VMware virtualisiert RZ-Hardware
+t1,t6,composition,NetApp Storage im RZ
+t1,t8,serving,Netzwerk verbindet RZ
+t2,t10,composition,RDS laeuft auf AWS
+t2,t11,composition,MongoDB Atlas auf AWS
+a1,a15,flow,ECC liefert Daten an BW
+a1,a10,flow,SAP-Daten in Tableau Reports
+a7,a4,flow,Dokumente aus Legacy in QMS migriert
+a12,a11,triggering,Jira triggert Jenkins Builds
+a14,a10,flow,IoT-Daten in Tableau Dashboards
+a3,a7,flow,PLM referenziert Legacy-Dokumente
+a6,a1,flow,Salesforce-Orders an SAP
