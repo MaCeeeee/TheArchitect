@@ -5,6 +5,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { assessAcceptanceRisk } from '../services/oracle.service';
+import { generateAlternatives } from '../services/scenario-generator.service';
 import { OracleAssessment } from '../models/OracleAssessment';
 import { Project } from '../models/Project';
 import { generateReport } from '../services/report.service';
@@ -128,6 +129,7 @@ router.get(
           id: a._id,
           proposal: a.proposal,
           verdict: a.verdict,
+          generatedAlternatives: a.generatedAlternatives || null,
           userId: a.userId,
           createdAt: a.createdAt,
         })),
@@ -296,6 +298,74 @@ router.get(
     } catch (err: any) {
       console.error('[Oracle] JSON report error:', err);
       res.status(500).json({ success: false, error: err.message || 'JSON export failed' });
+    }
+  },
+);
+
+// ─── POST /:projectId/oracle/:assessmentId/generate-alternatives ───
+
+const GeneratorOptionsSchema = z.object({
+  maxAlternatives: z.number().min(1).max(5).optional(),
+  focusStakeholders: z.array(z.string()).optional(),
+  preserveChangeType: z.boolean().optional(),
+  autoAssess: z.boolean().optional(),
+}).optional();
+
+router.post(
+  '/:projectId/oracle/:assessmentId/generate-alternatives',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const assessmentId = String(req.params.assessmentId);
+
+      const assessment = await OracleAssessment.findOne({ _id: assessmentId, projectId }).lean();
+      if (!assessment) {
+        return res.status(404).json({ success: false, error: 'Assessment not found' });
+      }
+
+      const options = GeneratorOptionsSchema.parse(req.body) || {};
+
+      const result = await generateAlternatives(
+        projectId,
+        {
+          _id: String(assessment._id),
+          proposal: assessment.proposal as any,
+          verdict: assessment.verdict as any,
+        },
+        options,
+      );
+
+      // Persist generated alternatives on the assessment
+      await OracleAssessment.updateOne(
+        { _id: assessmentId },
+        { $set: { generatedAlternatives: result.alternatives } },
+      );
+
+      res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
+        });
+        return;
+      }
+
+      if (err instanceof Error && err.message === 'NO_AI_KEY') {
+        res.status(503).json({
+          success: false,
+          error: 'No AI API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.',
+        });
+        return;
+      }
+
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('[Oracle] Generate alternatives error:', errMsg, err);
+      res.status(500).json({ success: false, error: `Generation failed: ${errMsg}` });
     }
   },
 );

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Eye, Send, ChevronDown, ChevronRight, AlertTriangle, CheckCircle,
   XCircle, MinusCircle, Clock, History, Shield, Users, Zap,
-  FileText, Download, Database,
+  FileText, Download, Database, Sparkles, ArrowRight, TrendingDown,
+  Minus, Plus, ArrowDownRight,
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import api, { oracleAPI } from '../../services/api';
@@ -13,6 +14,10 @@ import type {
   ResistanceFactor,
   OracleChangeType,
 } from '@thearchitect/shared/src/types/oracle.types';
+import type {
+  GeneratedAlternative,
+  GeneratorResult,
+} from '@thearchitect/shared/src/types/scenario-generator.types';
 
 // ─── Constants ───
 
@@ -59,8 +64,9 @@ function scoreColor(score: number): string {
 
 interface HistoryEntry {
   id: string;
-  proposal: { title: string; changeType: string; description: string };
+  proposal: { title: string; changeType: string; description: string; affectedElementIds?: string[]; estimatedCost?: number; estimatedDuration?: number };
   verdict: OracleVerdict;
+  generatedAlternatives?: GeneratedAlternative[] | null;
   createdAt: string;
 }
 
@@ -167,6 +173,47 @@ export default function OraclePanel() {
   useEffect(() => {
     if (tab === 'history') loadHistory();
   }, [tab, loadHistory]);
+
+  // Pre-fill assess form from a generated alternative
+  const prefillFromAlternative = useCallback((alt: GeneratedAlternative, originalElementIds?: string[]) => {
+    const diff = alt.requirementDiff;
+    setTitle(alt.name);
+    setDescription(`${alt.strategy}\n\n${alt.rationale}`);
+    setChangeType(diff.changeTypeDelta.alternative as OracleChangeType);
+    setEstimatedCost(alt.adjustedCost > 0 ? String(alt.adjustedCost) : '');
+    setEstimatedDuration(alt.adjustedDuration > 0 ? String(alt.adjustedDuration) : '');
+
+    // Start with ALL original elements, then remove only those explicitly
+    // marked as "removed" or "phased" in scope changes.
+    // Elements not mentioned by the LLM are implicitly retained.
+    const nameToId = new Map(elements.map((el) => [el.name.toLowerCase(), el.id]));
+    const idToName = new Map(elements.map((el) => [el.id, el.name.toLowerCase()]));
+
+    // Collect names/IDs to exclude (removed/phased)
+    const excludedIds = new Set<string>();
+    // Collect names/IDs to add (new elements not in original)
+    const addedIds: string[] = [];
+
+    for (const sc of diff.scopeChanges) {
+      const name = (sc.elementName || '').toLowerCase();
+      const storeId = name ? nameToId.get(name) : undefined;
+      if ((sc.type === 'removed' || sc.type === 'phased') && storeId) {
+        excludedIds.add(storeId);
+      } else if (sc.type === 'added' && storeId) {
+        addedIds.push(storeId);
+      }
+    }
+
+    // Original minus excluded, plus any newly added
+    const base = originalElementIds || [];
+    const result = [...base.filter((id) => !excludedIds.has(id)), ...addedIds];
+    setSelectedElements([...new Set(result)]);
+
+    setVerdict(null);
+    setLastAssessmentId(null);
+    setError('');
+    setTab('assess');
+  }, [elements]);
 
   return (
     <div className="h-full flex flex-col bg-[#0f172a] text-white">
@@ -338,12 +385,21 @@ export default function OraclePanel() {
                 {lastAssessmentId && projectId && (
                   <ReportExportBar projectId={projectId} assessmentId={lastAssessmentId} />
                 )}
+                {lastAssessmentId && projectId && (
+                  <AlternativesSection
+                    projectId={projectId}
+                    assessmentId={lastAssessmentId}
+                    originalScore={verdict.acceptanceRiskScore}
+                    overallPosition={verdict.overallPosition}
+                    onReAssess={prefillFromAlternative}
+                  />
+                )}
               </>
             )}
           </>
         ) : (
           /* History Tab */
-          <HistoryTab history={history} loading={historyLoading} projectId={projectId} />
+          <HistoryTab history={history} loading={historyLoading} projectId={projectId} onReAssess={prefillFromAlternative} />
         )}
       </div>
     </div>
@@ -537,7 +593,7 @@ function ResistanceCard({ factor }: { factor: ResistanceFactor }) {
 
 // ─── History Tab ───
 
-function HistoryTab({ history, loading, projectId }: { history: HistoryEntry[]; loading: boolean; projectId?: string }) {
+function HistoryTab({ history, loading, projectId, onReAssess }: { history: HistoryEntry[]; loading: boolean; projectId?: string; onReAssess?: (alt: GeneratedAlternative, originalElementIds?: string[]) => void }) {
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
 
@@ -622,6 +678,19 @@ function HistoryTab({ history, loading, projectId }: { history: HistoryEntry[]; 
 
                 {/* Export buttons */}
                 {projectId && <ReportExportBar projectId={projectId} assessmentId={entry.id} />}
+
+                {/* AI Scenario Generator */}
+                {projectId && (
+                  <AlternativesSection
+                    projectId={projectId}
+                    assessmentId={entry.id}
+                    originalScore={entry.verdict.acceptanceRiskScore}
+                    overallPosition={entry.verdict.overallPosition}
+                    savedAlternatives={entry.generatedAlternatives}
+                    originalElementIds={entry.proposal.affectedElementIds}
+                    onReAssess={onReAssess}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -719,6 +788,285 @@ function ReportExportBar({ projectId, assessmentId, compact }: { projectId: stri
         <Database className="w-3.5 h-3.5" />
         JSON (Database)
       </button>
+    </div>
+  );
+}
+
+// ─── Alternatives Section (AI Scenario Generator) ───
+
+const SCOPE_ICONS: Record<string, typeof Minus> = {
+  removed: XCircle,
+  phased: Clock,
+  retained: CheckCircle,
+  modified: AlertTriangle,
+  added: Plus,
+};
+
+const SCOPE_COLORS: Record<string, string> = {
+  removed: 'text-red-400',
+  phased: 'text-yellow-400',
+  retained: 'text-emerald-400',
+  modified: 'text-blue-400',
+  added: 'text-purple-400',
+};
+
+function AlternativesSection({
+  projectId,
+  assessmentId,
+  originalScore,
+  overallPosition,
+  savedAlternatives,
+  originalElementIds,
+  onReAssess,
+}: {
+  projectId: string;
+  assessmentId: string;
+  originalScore: number;
+  overallPosition: string;
+  savedAlternatives?: GeneratedAlternative[] | null;
+  originalElementIds?: string[];
+  onReAssess?: (alt: GeneratedAlternative, originalElementIds?: string[]) => void;
+}) {
+  const [alternatives, setAlternatives] = useState<GeneratedAlternative[]>(savedAlternatives || []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [autoAssess, setAutoAssess] = useState(false);
+  const [expandedAlt, setExpandedAlt] = useState<Set<number>>(new Set());
+  const [generated, setGenerated] = useState(!!(savedAlternatives && savedAlternatives.length > 0));
+
+  const generate = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await oracleAPI.generateAlternatives(projectId, assessmentId, {
+        maxAlternatives: 3,
+        autoAssess,
+      });
+      const result = res.data.data as GeneratorResult;
+      setAlternatives(result.alternatives);
+      setGenerated(true);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to generate alternatives');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleExpand = (idx: number) => {
+    setExpandedAlt((prev) => {
+      const next = new Set(prev);
+      next.has(idx) ? next.delete(idx) : next.add(idx);
+      return next;
+    });
+  };
+
+  const ctaLabel = overallPosition === 'likely_accepted'
+    ? 'Optimize Further'
+    : 'Generate Alternatives';
+
+  const ctaDescription = overallPosition === 'likely_accepted'
+    ? 'Generate alternative proposals that reduce cost or shorten timeline.'
+    : 'Generate alternative proposals that address stakeholder resistance.';
+
+  return (
+    <div className="mt-6 pt-5 border-t border-[#334155]">
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles className="w-4 h-4 text-purple-400" />
+        <h3 className="text-sm font-semibold text-white">AI Scenario Generator</h3>
+      </div>
+
+      {!generated ? (
+        <div className="bg-[#1e293b] border border-[#334155] rounded-lg p-4">
+          <p className="text-xs text-slate-400 mb-3">{ctaDescription}</p>
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={autoAssess}
+                onChange={(e) => setAutoAssess(e.target.checked)}
+                className="rounded border-slate-600 bg-[#0f172a] text-purple-500 focus:ring-purple-500"
+              />
+              Auto-assess alternatives
+            </label>
+
+            <button
+              onClick={generate}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-300 hover:bg-purple-500/30 transition disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <div className="w-3.5 h-3.5 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  {ctaLabel}
+                </>
+              )}
+            </button>
+          </div>
+
+          {error && (
+            <p className="mt-2 text-xs text-red-400">{error}</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {alternatives.map((alt, idx) => {
+            const isExpanded = expandedAlt.has(idx);
+            const diff = alt.requirementDiff;
+            const hasOracleScore = !!alt.oracleAssessment;
+            const scoreDelta = hasOracleScore ? alt.oracleAssessment!.deltaFromOriginal : 0;
+
+            return (
+              <div key={idx} className="bg-[#1e293b] border border-[#334155] rounded-lg overflow-hidden">
+                {/* Header */}
+                <div
+                  className="flex items-center justify-between p-3 cursor-pointer hover:bg-[#334155]/30 transition"
+                  onClick={() => toggleExpand(idx)}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded">
+                      S{idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{alt.name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{alt.strategy}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Cost & Duration */}
+                    <div className="text-right">
+                      <p className="text-xs text-white">
+                        ${(alt.adjustedCost / 1000).toFixed(0)}K
+                        <span className={`ml-1 text-[10px] ${diff.costDelta.delta < 0 ? 'text-emerald-400' : diff.costDelta.delta > 0 ? 'text-red-400' : 'text-slate-500'}`}>
+                          {diff.costDelta.deltaPercent > 0 ? '+' : ''}{diff.costDelta.deltaPercent}%
+                        </span>
+                      </p>
+                      <p className="text-[10px] text-slate-500">{alt.adjustedDuration} months</p>
+                    </div>
+
+                    {/* Oracle Score (if auto-assessed) */}
+                    {hasOracleScore && (
+                      <div className="text-center px-2 py-1 rounded bg-[#0f172a]">
+                        <p className="text-sm font-bold" style={{ color: scoreColor(alt.oracleAssessment!.acceptanceRiskScore) }}>
+                          {alt.oracleAssessment!.acceptanceRiskScore}
+                        </p>
+                        <p className={`text-[9px] font-medium ${scoreDelta > 0 ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {scoreDelta > 0 ? `↓${scoreDelta}` : scoreDelta < 0 ? `↑${Math.abs(scoreDelta)}` : '—'}
+                        </p>
+                      </div>
+                    )}
+
+                    {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+                  </div>
+                </div>
+
+                {/* Expanded Requirement Diff */}
+                {isExpanded && (
+                  <div className="px-3 pb-3 border-t border-[#334155]/50">
+                    {/* Deltas bar */}
+                    <div className="flex gap-4 mt-3 mb-3 text-[11px]">
+                      <span className="text-slate-500">
+                        Scope: {diff.scopeChanges.filter((s) => s.type !== 'retained').length} changes
+                      </span>
+                      <span className={diff.costDelta.delta < 0 ? 'text-emerald-400' : diff.costDelta.delta > 0 ? 'text-red-400' : 'text-slate-500'}>
+                        Cost: ${diff.costDelta.original.toLocaleString()} → ${diff.costDelta.alternative.toLocaleString()} ({diff.costDelta.deltaPercent > 0 ? '+' : ''}{diff.costDelta.deltaPercent}%)
+                      </span>
+                      <span className={diff.durationDelta.delta < 0 ? 'text-emerald-400' : diff.durationDelta.delta > 0 ? 'text-red-400' : 'text-slate-500'}>
+                        Duration: {diff.durationDelta.original} → {diff.durationDelta.alternative} mo
+                      </span>
+                      {diff.changeTypeDelta.changed && (
+                        <span className="text-purple-400">
+                          Type: {diff.changeTypeDelta.original} → {diff.changeTypeDelta.alternative}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Scope Changes */}
+                    {diff.scopeChanges.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Scope Changes</p>
+                        <div className="space-y-0.5">
+                          {diff.scopeChanges.map((sc, si) => {
+                            const Icon = SCOPE_ICONS[sc.type] || Minus;
+                            return (
+                              <div key={si} className="flex items-center gap-2 text-[11px]">
+                                <Icon className={`w-3 h-3 ${SCOPE_COLORS[sc.type] || 'text-slate-500'}`} />
+                                <span className={SCOPE_COLORS[sc.type] || 'text-slate-400'}>
+                                  {sc.elementName || sc.description}
+                                </span>
+                                <span className="text-slate-600">— {sc.reason}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Addressed Blockers */}
+                    {diff.addressedBlockers.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Addressed Blockers</p>
+                        {diff.addressedBlockers.map((b, bi) => (
+                          <div key={bi} className="flex items-center gap-2 text-[11px] text-slate-400">
+                            <ArrowDownRight className="w-3 h-3 text-emerald-400" />
+                            <span className="text-white">{b.stakeholder}</span>
+                            <span className="text-slate-600">({b.originalPosition}, score {b.originalScore})</span>
+                            <span className="text-slate-500">— {b.resistanceFactor}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Trade-offs */}
+                    {diff.tradeOffs.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Trade-offs</p>
+                        {diff.tradeOffs.map((t, ti) => (
+                          <div key={ti} className="flex items-center gap-2 text-[11px] text-yellow-400/80">
+                            <AlertTriangle className="w-3 h-3 shrink-0" />
+                            {t}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Rationale */}
+                    <p className="text-[11px] text-slate-400 italic mt-2">{alt.rationale}</p>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-3">
+                      {onReAssess && (
+                        <button
+                          onClick={() => onReAssess(alt, originalElementIds)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded bg-purple-500/10 border border-purple-500/20 text-purple-300 hover:bg-purple-500/20 transition"
+                          title="Pre-fill Oracle Assess form with this alternative"
+                        >
+                          <Zap className="w-3 h-3" />
+                          Re-assess in Oracle
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Generate Again */}
+          <button
+            onClick={() => { setGenerated(false); setAlternatives([]); }}
+            className="text-[11px] text-slate-500 hover:text-slate-300 transition"
+          >
+            Generate new alternatives
+          </button>
+        </div>
+      )}
     </div>
   );
 }

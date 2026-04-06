@@ -562,6 +562,8 @@ export const oracleAPI = {
     api.post(`/projects/${projectId}/oracle/assess`, proposal),
   history: (projectId: string) =>
     api.get(`/projects/${projectId}/oracle/history`),
+  generateAlternatives: (projectId: string, assessmentId: string, options?: Record<string, unknown>) =>
+    api.post(`/projects/${projectId}/oracle/${assessmentId}/generate-alternatives`, options || {}),
 };
 
 export default api;

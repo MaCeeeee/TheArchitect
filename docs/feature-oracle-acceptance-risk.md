@@ -1,7 +1,7 @@
 # Feature: Oracle — Acceptance Risk Assessment
 
 > **Modul:** Oracle  
-> **Version:** 2.0  
+> **Version:** 3.0  
 > **Dokumentenklassifikation:** KSU C3 — VERTRAULICH | BSI-Schutzbedarf: hoch  
 > **Compliance:** EU AI Act 2024/1689, EU Data Act 2023/2854
 
@@ -20,6 +20,7 @@ Oracle liefert innerhalb von 5-10 Sekunden ein quantifiziertes Ergebnis (Score 0
 | Tool | Zweck | Aufwand | Wann verwenden |
 |---|---|---|---|
 | **Oracle** | Akzeptanzrisiko-Schnellcheck | ~5 LLM-Calls, 5-10s | Vor dem Pitch, Go/No-Go-Entscheidung |
+| **Scenario Generator** | KI-generierte alternative Proposals | ~1 LLM-Call + opt. Re-Assess | Nach Oracle „contested" oder „rejected" |
 | **MiroFish** | Stakeholder-Verhandlungssimulation | ~25-50+ LLM-Calls, Minuten | Nach Oracle „contested", tiefe Analyse |
 
 ---
@@ -332,12 +333,96 @@ KSU: C3 — VERTRAULICH | BSI-Schutzbedarf: hoch | Nur für internen Gebrauch
 
 ---
 
-## 8. API-Referenz
+## 8. AI Scenario Generator
+
+### 8.1 Was macht der Scenario Generator?
+
+Der AI Scenario Generator nimmt ein **contested oder rejected** Oracle-Verdict und generiert automatisch 3 alternative Architektur-Vorschläge, die gezielt die stärksten Stakeholder-Widerstände adressieren. Jede Alternative ist ein vollständiger Proposal mit angepasstem Scope, Kosten, Dauer und einem transparenten Anforderungs-Diff.
+
+**Der Generator ist immer verfügbar** — bei akzeptierten Verdicts optimiert er weiter (Kosten/Dauer reduzieren), bei contested/rejected strukturiert er fundamental um.
+
+### 8.2 Workflow
+
+```
+Oracle Verdict → Alternativen generieren → Alternativen prüfen → Re-Assess in Oracle → Vergleich in Scenario Engine
+```
+
+1. **Generieren:** „Generate Alternatives" bei jedem Assessment klicken (History oder Assess-Tab)
+2. **Prüfen:** Jede Alternative zeigt Scope-Änderungen, Kosten-/Dauer-Deltas, adressierte Blocker und Trade-offs
+3. **Re-Assess:** „Re-assess in Oracle" füllt das Assess-Formular mit den Daten der Alternative vor — prüfen und absenden
+4. **Persistenz:** Generierte Alternativen werden am Assessment gespeichert und sind beim nächsten Besuch sichtbar
+
+### 8.3 Inhalt jeder Alternative
+
+| Feld | Beschreibung |
+|---|---|
+| **Name** | Beschreibender Titel (max. 60 Zeichen) |
+| **Strategie** | 1-2 Sätze Zusammenfassung |
+| **Change Type** | Darf vom Original abweichen, wenn strategisch begründet |
+| **Angepasste Kosten** | Revidierte Kostenschätzung |
+| **Angepasste Dauer** | Revidierte Timeline (Monate) |
+| **Scope Changes** | Pro-Element-Aufschlüsselung: retained, modified, removed, phased, added |
+| **Adressierte Blocker** | Welche Stakeholder/Widerstandsfaktoren entschärft werden |
+| **Trade-offs** | Was verloren geht oder abgeschwächt wird |
+| **Rationale** | Warum diese Alternative besser für die blockierenden Stakeholder ist |
+
+### 8.4 Anforderungs-Diff (Requirement Diff)
+
+Jede Alternative enthält ein transparentes `requirementDiff`, das dokumentiert was sich geändert hat:
+
+- **Scope Changes:** Welche Elemente entfernt/verschoben/beibehalten/geändert/hinzugefügt werden, mit Begründung
+- **Kosten-Delta:** Original vs. Alternative mit Prozent-Änderung
+- **Dauer-Delta:** Original vs. Alternative Timeline mit Prozent-Änderung
+- **Change Type Delta:** Ob der Change Type geändert wurde
+- **Adressierte Blocker:** Welche Stakeholder-Blocker direkt adressiert werden
+- **Trade-offs:** Explizite Liste was geopfert wird
+
+### 8.5 Re-Assess-Flow
+
+Klick auf „Re-assess in Oracle" bei einer Alternative:
+1. Wechselt zum Assess-Tab
+2. Füllt vor: Title, Description, Change Type, Kosten, Dauer
+3. Setzt Affected Elements: Alle Original-Elemente **minus** explizit als removed/phased markierte
+4. User prüft/passt an und klickt „Consult Oracle" für ein neues Verdict
+
+### 8.6 Optionen
+
+| Option | Typ | Default | Beschreibung |
+|---|---|---|---|
+| `maxAlternatives` | number | 3 | Anzahl Alternativen (1-5) |
+| `focusStakeholders` | string[] | — | Nur bestimmte Blocker-Personas adressieren |
+| `preserveChangeType` | boolean | false | Alternativen müssen gleichen Change Type beibehalten |
+| `autoAssess` | boolean | false | Jede Alternative automatisch durch Oracle re-assessen (~20 LLM-Calls) |
+
+### 8.7 API-Endpunkt
+
+```
+POST /api/projects/:projectId/oracle/:assessmentId/generate-alternatives
+```
+
+**Auth:** JWT/API-Key + `ANALYTICS_SIMULATE`
+
+**Request Body (optional):**
+```json
+{
+  "maxAlternatives": 3,
+  "focusStakeholders": ["IT Operations Manager"],
+  "preserveChangeType": false,
+  "autoAssess": false
+}
+```
+
+**Geschätzte Kosten:** ~$0.01-0.05 pro Generierung (1 LLM-Call). Mit `autoAssess: true`: ~$0.10-0.50 (zusätzliche Oracle-Assessments pro Alternative).
+
+---
+
+## 9. API-Referenz
 
 | Methode | Endpunkt | Auth | Beschreibung |
 |---|---|---|---|
 | `POST` | `/api/projects/:projectId/oracle/assess` | JWT/API-Key + `ANALYTICS_SIMULATE` | Neues Assessment durchführen |
 | `GET` | `/api/projects/:projectId/oracle/history` | JWT/API-Key + `ANALYTICS_SIMULATE` | Assessment-Historie abrufen |
+| `POST` | `/api/projects/:projectId/oracle/:assessmentId/generate-alternatives` | JWT/API-Key + `ANALYTICS_SIMULATE` | Alternative Proposals generieren |
 | `GET` | `/api/projects/:projectId/oracle/:assessmentId/report/pdf` | JWT/API-Key | PDF-Report herunterladen |
 | `GET` | `/api/projects/:projectId/oracle/:assessmentId/report/json` | JWT/API-Key | JSON-Export herunterladen |
 
@@ -353,7 +438,7 @@ KSU: C3 — VERTRAULICH | BSI-Schutzbedarf: hoch | Nur für internen Gebrauch
 
 ---
 
-## 9. Checkliste: Vor dem ersten Oracle-Assessment
+## 10. Checkliste: Vor dem ersten Oracle-Assessment
 
 - [ ] **LLM-API-Key** in `.env` gesetzt (`OPENAI_API_KEY` oder `ANTHROPIC_API_KEY`)
 - [ ] **Projekt existiert** mit mindestens einem Architektur-Element in Neo4j

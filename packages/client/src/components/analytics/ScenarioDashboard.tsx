@@ -180,9 +180,12 @@ export default function ScenarioDashboard() {
                   const isExpanded = expandedScenario === id;
                   return (
                     <div key={id} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] overflow-hidden">
-                      <button
+                      <div
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setExpandedScenario(isExpanded ? null : id)}
-                        className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-[var(--surface-raised)] transition"
+                        onKeyDown={(e) => e.key === 'Enter' && setExpandedScenario(isExpanded ? null : id)}
+                        className="w-full flex items-center gap-2 px-2.5 py-2 hover:bg-[var(--surface-raised)] transition cursor-pointer"
                       >
                         {isExpanded ? <ChevronDown size={10} className="text-[var(--text-disabled)]" /> :
                           <ChevronRight size={10} className="text-[var(--text-disabled)]" />}
@@ -209,7 +212,7 @@ export default function ScenarioDashboard() {
                         >
                           <Trash2 size={10} />
                         </button>
-                      </button>
+                      </div>
 
                       {isExpanded && (
                         <div className="px-2.5 pb-2.5 space-y-2 border-t border-[var(--border-subtle)]">

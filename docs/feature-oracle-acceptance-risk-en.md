@@ -1,7 +1,7 @@
 # Feature: Oracle — Acceptance Risk Assessment
 
 > **Module:** Oracle  
-> **Version:** 2.0  
+> **Version:** 3.0  
 > **Document Classification:** KSU C3 — CONFIDENTIAL | BSI Protection Level: high  
 > **Compliance:** EU AI Act 2024/1689, EU Data Act 2023/2854
 
@@ -20,6 +20,7 @@ Oracle delivers a quantified result (score 0-100) within 5-10 seconds, complete 
 | Tool | Purpose | Cost | When to Use |
 |---|---|---|---|
 | **Oracle** | Quick acceptance risk check | ~5 LLM calls, 5-10s | Before pitching, go/no-go decisions |
+| **Scenario Generator** | AI-generated alternative proposals | ~1 LLM call + optional re-assess | After Oracle returns "contested" or "rejected" |
 | **MiroFish** | Stakeholder negotiation simulation | ~25-50+ LLM calls, minutes | After Oracle returns "contested", deep analysis |
 
 ---
@@ -332,12 +333,96 @@ KSU: C3 — CONFIDENTIAL | BSI Protection Level: high | Internal use only
 
 ---
 
-## 8. API Reference
+## 8. AI Scenario Generator
+
+### 8.1 What It Does
+
+The AI Scenario Generator takes a **contested or rejected** Oracle verdict and automatically generates 3 alternative architecture proposals that address the strongest stakeholder resistance. Each alternative is a complete proposal with adjusted scope, cost, duration, and a transparent requirement diff documenting what changed vs. the original.
+
+**The generator is always available** — for accepted verdicts it optimizes further (reduce cost/duration), for contested/rejected it restructures to overcome blockers.
+
+### 8.2 Workflow
+
+```
+Oracle Verdict → Generate Alternatives → Review Alternatives → Re-assess in Oracle → Compare in Scenario Engine
+```
+
+1. **Generate:** Click "Generate Alternatives" on any assessment (History or Assess tab)
+2. **Review:** Each alternative shows scope changes, cost/duration deltas, addressed blockers, and trade-offs
+3. **Re-assess:** Click "Re-assess in Oracle" to pre-fill the Assess form with the alternative's data — review and submit
+4. **Persist:** Generated alternatives are saved on the assessment and visible on next visit
+
+### 8.3 What Each Alternative Contains
+
+| Field | Description |
+|---|---|
+| **Name** | Descriptive title (max 60 chars) |
+| **Strategy** | 1-2 sentence summary |
+| **Change Type** | May differ from original if strategically justified |
+| **Adjusted Cost** | Revised cost estimate |
+| **Adjusted Duration** | Revised timeline (months) |
+| **Scope Changes** | Per-element breakdown: retained, modified, removed, phased, added |
+| **Addressed Blockers** | Which stakeholders/resistance factors are mitigated |
+| **Trade-offs** | What is lost or weakened |
+| **Rationale** | Why this alternative is better for the blocking stakeholders |
+
+### 8.4 Requirement Diff
+
+Every alternative includes a transparent `requirementDiff` documenting exactly what changed:
+
+- **Scope Changes:** Which elements are removed/phased/retained/modified/added, with reasons
+- **Cost Delta:** Original vs. alternative cost with percentage change
+- **Duration Delta:** Original vs. alternative timeline with percentage change
+- **Change Type Delta:** Whether the change type was altered
+- **Addressed Blockers:** Which stakeholder blockers are directly addressed
+- **Trade-offs:** Explicit list of what is sacrificed
+
+### 8.5 Re-Assess Flow
+
+Clicking "Re-assess in Oracle" on an alternative:
+1. Switches to the Assess tab
+2. Pre-fills: Title, Description, Change Type, Cost, Duration
+3. Sets Affected Elements: All original elements **minus** those explicitly removed/phased in the scope changes
+4. User reviews/adjusts and clicks "Consult Oracle" for a fresh verdict
+
+### 8.6 Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `maxAlternatives` | number | 3 | Number of alternatives to generate (1-5) |
+| `focusStakeholders` | string[] | — | Only address specific blocker personas |
+| `preserveChangeType` | boolean | false | Force alternatives to keep the same change type |
+| `autoAssess` | boolean | false | Automatically re-assess each alternative through Oracle (~20 LLM calls) |
+
+### 8.7 API Endpoint
+
+```
+POST /api/projects/:projectId/oracle/:assessmentId/generate-alternatives
+```
+
+**Auth:** JWT/API-Key + `ANALYTICS_SIMULATE`
+
+**Request Body (optional):**
+```json
+{
+  "maxAlternatives": 3,
+  "focusStakeholders": ["IT Operations Manager"],
+  "preserveChangeType": false,
+  "autoAssess": false
+}
+```
+
+**Estimated Cost:** ~$0.01-0.05 per generation (1 LLM call). With `autoAssess: true`: ~$0.10-0.50 (additional Oracle assessments per alternative).
+
+---
+
+## 9. API Reference
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/projects/:projectId/oracle/assess` | JWT/API-Key + `ANALYTICS_SIMULATE` | Run new assessment |
 | `GET` | `/api/projects/:projectId/oracle/history` | JWT/API-Key + `ANALYTICS_SIMULATE` | Fetch assessment history |
+| `POST` | `/api/projects/:projectId/oracle/:assessmentId/generate-alternatives` | JWT/API-Key + `ANALYTICS_SIMULATE` | Generate alternative proposals |
 | `GET` | `/api/projects/:projectId/oracle/:assessmentId/report/pdf` | JWT/API-Key | Download PDF report |
 | `GET` | `/api/projects/:projectId/oracle/:assessmentId/report/json` | JWT/API-Key | Download JSON export |
 
@@ -353,7 +438,7 @@ KSU: C3 — CONFIDENTIAL | BSI Protection Level: high | Internal use only
 
 ---
 
-## 9. Checklist: Before Your First Oracle Assessment
+## 10. Checklist: Before Your First Oracle Assessment
 
 - [ ] **LLM API key** set in `.env` (`OPENAI_API_KEY` or `ANTHROPIC_API_KEY`)
 - [ ] **Project exists** with at least one architecture element in Neo4j

@@ -32,7 +32,7 @@ interface AgentAssessmentResult extends AgentVerdict {
 
 // ─── Affected Element Details ───
 
-interface AffectedElementDetail {
+export interface AffectedElementDetail {
   id: string;
   name: string;
   type: string;
@@ -50,7 +50,7 @@ interface AffectedElementDetail {
   dependentCount: number;
 }
 
-async function fetchAffectedElementDetails(
+export async function fetchAffectedElementDetails(
   projectId: string,
   elementIds: string[],
 ): Promise<AffectedElementDetail[]> {
@@ -148,9 +148,9 @@ function formatAffectedElements(details: AffectedElementDetail[]): string {
 
 // ─── Provider Detection (mirrors engine.ts) ───
 
-type Provider = 'openai' | 'anthropic' | 'none';
+export type Provider = 'openai' | 'anthropic' | 'none';
 
-function detectProvider(): Provider {
+export function detectProvider(): Provider {
   if (process.env.OPENAI_API_KEY) return 'openai';
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   return 'none';
@@ -671,7 +671,7 @@ Match your position to your score: approve if >= 60, modify if 35-59, reject if 
 
 // ─── LLM Calls (Non-Streaming for Speed) ───
 
-async function callOpenAISync(systemPrompt: string): Promise<string> {
+export async function callOpenAISync(systemPrompt: string, userMessage?: string, maxTokens?: number): Promise<string> {
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
     baseURL: process.env.OPENAI_BASE_URL || undefined,
@@ -681,16 +681,16 @@ async function callOpenAISync(systemPrompt: string): Promise<string> {
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: 'Evaluate this architecture proposal and provide your structured assessment.' },
+      { role: 'user', content: userMessage || 'Evaluate this architecture proposal and provide your structured assessment.' },
     ],
-    max_tokens: 800,
+    max_tokens: maxTokens || 800,
     temperature: 0.7,
   });
 
   return response.choices[0]?.message?.content || '';
 }
 
-async function callAnthropicSync(systemPrompt: string): Promise<string> {
+export async function callAnthropicSync(systemPrompt: string, userMessage?: string, maxTokens?: number): Promise<string> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
@@ -699,9 +699,9 @@ async function callAnthropicSync(systemPrompt: string): Promise<string> {
     model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
     system: systemPrompt,
     messages: [
-      { role: 'user', content: 'Evaluate this architecture proposal and provide your structured assessment.' },
+      { role: 'user', content: userMessage || 'Evaluate this architecture proposal and provide your structured assessment.' },
     ],
-    max_tokens: 800,
+    max_tokens: maxTokens || 800,
   });
 
   const block = response.content[0];

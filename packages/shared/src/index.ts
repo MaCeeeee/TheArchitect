@@ -20,3 +20,4 @@ export * from './types/scenario.types';
 export * from './types/enrichment.types';
 export * from './constants/technology-benchmarks.constants';
 export * from './types/oracle.types';
+export * from './types/scenario-generator.types';
