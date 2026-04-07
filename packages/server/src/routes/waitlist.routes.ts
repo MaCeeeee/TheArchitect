@@ -24,9 +24,9 @@ router.post('/', async (req: Request, res: Response) => {
       `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records?where=(email,eq,${encodeURIComponent(email)})`,
       { headers: { 'xc-token': NOCODB_TOKEN } },
     );
-    const existing = await checkRes.json();
+    const existing = (await checkRes.json()) as { list?: unknown[] };
 
-    if (existing.list?.length > 0) {
+    if (existing.list?.length && existing.list.length > 0) {
       return res.json({ success: true, message: 'You are already on the waitlist!' });
     }
 

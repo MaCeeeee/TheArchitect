@@ -1,3 +1,32 @@
+// ─── Policy Status & Source ───
+
+export type PolicyStatus = 'active' | 'draft' | 'deprecated' | 'archived';
+export type PolicySource = 'custom' | 'dora' | 'nis2' | 'togaf' | 'archimate' | 'iso27001';
+
+// ─── Policy Violation ───
+
+export type PolicyViolationStatus = 'open' | 'resolved' | 'suppressed';
+
+export interface PolicyViolationDTO {
+  _id: string;
+  projectId: string;
+  policyId: string;
+  policyName?: string;
+  elementId: string;
+  elementName?: string;
+  violationType: 'violation' | 'partial';
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  field: string;
+  currentValue: unknown;
+  expectedValue: unknown;
+  status: PolicyViolationStatus;
+  detectedAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  details: string;
+}
+
 // ─── Policy Draft (AI-generated, before human approval) ───
 
 export interface PolicyDraftRule {

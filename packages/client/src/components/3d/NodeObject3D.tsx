@@ -6,9 +6,11 @@ import { useArchitectureStore, ArchitectureElement } from '../../stores/architec
 import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
 
 const LAYER_COLORS: Record<string, string> = {
+  motivation: '#ec4899',
   strategy: '#ef4444',
   business: '#22c55e',
   information: '#3b82f6',
@@ -59,6 +61,10 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   const baseColor = LAYER_COLORS[element.layer] || '#4a5a4a';
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
 
+  // Policy violation data
+  const violationCount = useComplianceStore((s) => s.violationsByElement.get(element.id) ?? 0);
+  const isPolicyNode = !!(element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata?.isPolicyNode;
+
   // X-Ray mode state
   const isXRayActive = useXRayStore((s) => s.isActive);
   const xraySubView = useXRayStore((s) => s.subView);
@@ -77,6 +83,10 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
 
   // In X-Ray mode: color based on sub-view
   const color = useMemo(() => {
+    // Policy nodes: green (compliant) or red (violations)
+    if (isPolicyNode) {
+      return violationCount > 0 ? '#ef4444' : '#22c55e';
+    }
     if (!isXRayActive || !xrayData) return baseColor;
     if (xraySubView === 'risk') {
       const score = xrayData.riskScore;
@@ -108,7 +118,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       return '#4a5a4a';
     }
     return baseColor;
-  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta, element.status]);
+  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta, element.status, isPolicyNode, violationCount]);
 
   // X-Ray scale positioning: use precomputed positions when active
   const xrayPosition = useMemo(() => {
@@ -134,6 +144,15 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
+
+    // Policy tile animation: emissive glow breathes, tile stays flat
+    if (isPolicyNode) {
+      if (violationCount > 0) {
+        const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+        mat.emissiveIntensity = 0.5 + Math.sin(state.clock.elapsedTime * 2) * 0.3;
+      }
+      return;
+    }
 
     if (isXRayActive && xrayData) {
       // X-Ray mode animations
@@ -243,6 +262,10 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   }, [dragging, setDraggingStore]);
 
   const renderGeometry = () => {
+    // Policy tiles: flat engraved cards on the motivation layer
+    if (isPolicyNode) {
+      return <boxGeometry args={[2.5, 0.08, 1.4]} />;
+    }
     if (is2DMode) {
       // Flat card geometry for 2D/Layer views
       const w = isLayerMode ? 3 : 2;
@@ -268,6 +291,9 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
 
   // Compute emissive intensity based on mode
   const emissiveIntensity = useMemo(() => {
+    if (isPolicyNode) {
+      return violationCount > 0 ? 0.8 : 0.35;
+    }
     if (isXRayActive && xrayData) {
       if (xrayData.isCriticalPath) return 0.8;
       if (xraySubView === 'risk') return 0.2 + (xrayData.riskScore / 10) * 0.5;
@@ -279,7 +305,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       return 0.3;
     }
     return dragging ? 0.8 : hovered ? 0.4 : isSelected ? 0.6 : 0.1;
-  }, [isXRayActive, xrayData, xraySubView, dragging, hovered, isSelected]);
+  }, [isXRayActive, xrayData, xraySubView, dragging, hovered, isSelected, isPolicyNode, violationCount]);
 
   const materialOpacity = useMemo(() => {
     if (isXRayActive && xrayData) {
@@ -339,6 +365,14 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
         </mesh>
       )}
 
+      {/* Violation indicator dot on regular elements */}
+      {violationCount > 0 && !isPolicyNode && (
+        <mesh position={[-0.6, 0.6, 0.6]}>
+          <sphereGeometry args={[0.12, 16, 16]} />
+          <meshBasicMaterial color="#ef4444" />
+        </mesh>
+      )}
+
       {/* ArchiMate notation icon */}
       <ArchiMateIconSprite
         elementType={element.type}
@@ -357,12 +391,12 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       )}
 
       {/* Label - always visible in 2D/Layer modes and for notable elements in X-Ray mode */}
-      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData && (
+      {(is2DMode || hovered || isSelected || isPolicyNode || (isXRayActive && xrayData && (
         (xraySubView === 'risk' && xrayData.riskScore >= 7) ||
         (xraySubView === 'cost' && (xrayData.estimatedCost >= 40000 || xrayData.optimizationPotential > 0))
       ))) && (
         <Html
-          position={is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
+          position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center
           style={{
             background: is2DMode ? 'transparent' : 'rgba(15, 23, 42, 0.9)',
@@ -377,10 +411,19 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
             textShadow: is2DMode ? '0 0 4px rgba(0,0,0,0.9)' : 'none',
           }}
         >
-          <div style={{ maxWidth: isLayerMode ? '120px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ maxWidth: isPolicyNode ? '150px' : isLayerMode ? '120px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {element.name}
           </div>
-          {isXRayActive && xrayData && xraySubView === 'risk' ? (
+          {isPolicyNode ? (
+            <div style={{ fontSize: '9px', marginTop: '2px', color: violationCount > 0 ? '#ef4444' : '#22c55e' }}>
+              {(() => {
+                const meta = (element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata;
+                const source = (meta?.source as string || '').toUpperCase();
+                return source ? `${source} · ` : '';
+              })()}
+              {violationCount > 0 ? `${violationCount} violation${violationCount > 1 ? 's' : ''}` : '✓ compliant'}
+            </div>
+          ) : isXRayActive && xrayData && xraySubView === 'risk' ? (
             <div style={{ fontSize: '9px', marginTop: '2px', display: 'flex', gap: 8 }}>
               <span style={{ color }}>Risk: {xrayData.riskScore}</span>
               {xrayData.isCriticalPath && (

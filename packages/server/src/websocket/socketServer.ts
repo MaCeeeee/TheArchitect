@@ -20,6 +20,13 @@ interface ConnectedUser {
 
 const connectedUsers = new Map<string, ConnectedUser>();
 
+let ioInstance: Server | null = null;
+
+export function getIO(): Server {
+  if (!ioInstance) throw new Error('Socket.IO not initialized — call initSocketServer() first');
+  return ioInstance;
+}
+
 export function initSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -203,6 +210,7 @@ export function initSocketServer(httpServer: HttpServer) {
     });
   });
 
+  ioInstance = io;
   console.log('[WebSocket] Server initialized');
   return io;
 }

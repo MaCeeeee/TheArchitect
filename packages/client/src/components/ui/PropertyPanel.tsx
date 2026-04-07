@@ -1,9 +1,12 @@
-import { useState, useRef, useCallback, useMemo } from 'react';
-import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap } from 'lucide-react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
+import { governanceAPI } from '../../services/api';
+import type { PolicyViolationDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
 import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, type StandardConnectionType } from '@thearchitect/shared/src/constants/archimate-rules';
@@ -41,6 +44,8 @@ export default function PropertyPanel() {
   const element = elements.find((el) => el.id === selectedElementId);
   // Must call hooks unconditionally (before any early return)
   const health = useElementHealth(selectedElementId ?? null);
+  const violationsByElement = useComplianceStore((s) => s.violationsByElement);
+  const violations = useComplianceStore((s) => s.violations);
 
   if (!element) {
     return (
@@ -65,6 +70,24 @@ export default function PropertyPanel() {
     updateElement(element.id, { [field]: value });
   };
 
+  const elementMeta = (element as typeof element & { metadata?: Record<string, unknown> }).metadata;
+  const isPolicyNode = !!(elementMeta?.isPolicyNode);
+  const elementViolationCount = violationsByElement.get(element.id) ?? 0;
+  const elementViolations = violations.filter((v) => v.elementId === element.id);
+
+  // Policy node: show specialized view
+  if (isPolicyNode) {
+    return (
+      <PolicyPropertyView
+        element={element}
+        metadata={elementMeta!}
+        violations={violations.filter((v) => v.policyId === (elementMeta?.policyId as string))}
+        onClose={togglePropertyPanel}
+        onSelectElement={selectElement}
+      />
+    );
+  }
+
   return (
     <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full">
       {/* Header */}
@@ -79,6 +102,38 @@ export default function PropertyPanel() {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Policy Violations Section — between Health and General */}
+        {elementViolationCount > 0 && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-2.5 space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Shield size={11} className="text-red-400" />
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-red-400">
+                Policy Violations ({elementViolationCount})
+              </span>
+            </div>
+            {elementViolations.map((v, i) => (
+              <button
+                key={i}
+                onClick={() => {
+                  // Navigate to the policy node
+                  const policyNodeId = `policy-${v.policyId}`;
+                  const policyEl = elements.find((el) => el.id === policyNodeId);
+                  if (policyEl) selectElement(policyEl.id);
+                }}
+                className="flex items-start gap-1.5 text-[10px] w-full text-left hover:bg-white/5 rounded px-1 py-0.5 transition"
+              >
+                <span className="mt-0.5 shrink-0 text-red-400">
+                  {v.severity === 'error' ? '!' : v.severity === 'warning' ? '\u25CB' : 'i'}
+                </span>
+                <div>
+                  <span className="text-[var(--text-secondary)]">{v.policyName || 'Policy'}</span>
+                  <p className="text-[var(--text-disabled)] mt-0.5">{v.message}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Health Section — only show if issues exist */}
         {health && health.issues.length > 0 && (
           <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 space-y-1.5">
@@ -846,6 +901,153 @@ function CostInputSection({ element, onChange }: {
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Policy Property View ───
+
+const SEVERITY_COLORS: Record<string, string> = {
+  error: '#ef4444',
+  warning: '#eab308',
+  info: '#3b82f6',
+};
+
+interface PolicyPropertyViewProps {
+  element: { id: string; name: string };
+  metadata: Record<string, unknown>;
+  violations: PolicyViolationDTO[];
+  onClose: () => void;
+  onSelectElement: (id: string) => void;
+}
+
+function PolicyPropertyView({ element, metadata, violations, onClose, onSelectElement }: PolicyPropertyViewProps) {
+  const [policyDetails, setPolicyDetails] = useState<Record<string, unknown> | null>(null);
+  const projectId = useArchitectureStore((s) => s.projectId);
+
+  useEffect(() => {
+    const policyId = metadata.policyId as string;
+    if (!projectId || !policyId) return;
+    governanceAPI.getPolicies(projectId).then(({ data }) => {
+      const policies = data.data || [];
+      const match = policies.find((p: { _id: string }) => p._id === policyId);
+      if (match) setPolicyDetails(match);
+    }).catch(() => {});
+  }, [projectId, metadata.policyId]);
+
+  const violationCount = violations.length;
+  const hasViolations = violationCount > 0;
+  const severity = (metadata.severity as string) || 'warning';
+  const source = ((metadata.source as string) || 'custom').toUpperCase();
+  const category = (metadata.category as string) || 'compliance';
+  const version = (metadata.version as number) || 1;
+
+  return (
+    <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: hasViolations ? '#ef4444' : '#22c55e' }} />
+          <h3 className="text-sm font-semibold text-white truncate">{element.name}</h3>
+        </div>
+        <button onClick={onClose} className="text-[var(--text-secondary)] hover:text-white shrink-0">
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="p-4 space-y-4">
+        <Section title="Policy Details">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--text-secondary)]">Source</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-[#1a2a1a] text-[#00ff41]">{source}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--text-secondary)]">Category</span>
+            <span className="text-white">{category}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--text-secondary)]">Severity</span>
+            <span className="flex items-center gap-1">
+              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: SEVERITY_COLORS[severity] || '#eab308' }} />
+              <span className="text-white">{severity}</span>
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[var(--text-secondary)]">Version</span>
+            <span className="text-white">{version}</span>
+          </div>
+          {policyDetails && (
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[var(--text-secondary)]">Status</span>
+              <span className="text-white">{(policyDetails.status as string) || 'active'}</span>
+            </div>
+          )}
+        </Section>
+
+        {/* Scope */}
+        {!!policyDetails?.scope && (
+          <Section title="Scope">
+            {(() => {
+              const scope = policyDetails.scope as { layers?: string[]; elementTypes?: string[]; domains?: string[] };
+              return (
+                <div className="space-y-1.5">
+                  {scope.layers && scope.layers.length > 0 && (
+                    <div className="text-xs">
+                      <span className="text-[var(--text-secondary)]">Layers: </span>
+                      <span className="text-white">{scope.layers.join(', ')}</span>
+                    </div>
+                  )}
+                  {scope.elementTypes && scope.elementTypes.length > 0 && (
+                    <div className="text-xs">
+                      <span className="text-[var(--text-secondary)]">Types: </span>
+                      <span className="text-white">{scope.elementTypes.join(', ')}</span>
+                    </div>
+                  )}
+                  {(!scope.layers?.length && !scope.elementTypes?.length && !scope.domains?.length) && (
+                    <div className="text-xs text-[var(--text-tertiary)]">All elements</div>
+                  )}
+                </div>
+              );
+            })()}
+          </Section>
+        )}
+
+        {/* Rules */}
+        {!!policyDetails?.rules && (
+          <Section title={`Rules (${(policyDetails.rules as unknown[]).length})`}>
+            {(policyDetails.rules as Array<{ field: string; operator: string; value: unknown; message: string }>).map((rule, i) => (
+              <div key={i} className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-[10px] space-y-0.5">
+                <div className="text-white font-mono">{rule.field} {rule.operator} {JSON.stringify(rule.value)}</div>
+                <div className="text-[var(--text-tertiary)]">{rule.message}</div>
+              </div>
+            ))}
+          </Section>
+        )}
+
+        {/* Violations */}
+        <Section title={`Violations (${violationCount} open)`}>
+          {violationCount === 0 ? (
+            <div className="flex items-center gap-1.5 text-[10px] text-green-400">
+              <CheckCircle2 size={11} /> All elements compliant
+            </div>
+          ) : (
+            violations.map((v, i) => (
+              <button
+                key={i}
+                onClick={() => onSelectElement(v.elementId)}
+                className="flex items-start gap-1.5 text-[10px] w-full text-left hover:bg-white/5 rounded px-1 py-0.5 transition"
+              >
+                <span className="mt-0.5 shrink-0" style={{ color: SEVERITY_COLORS[v.severity] || '#eab308' }}>
+                  {v.severity === 'error' ? '!' : '\u25CB'}
+                </span>
+                <div>
+                  <span className="text-[var(--text-secondary)]">{v.elementName || v.elementId}</span>
+                  <p className="text-[var(--text-disabled)] mt-0.5">{v.message}</p>
+                </div>
+              </button>
+            ))
+          )}
+        </Section>
+      </div>
+    </aside>
   );
 }
 

@@ -10,6 +10,8 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
+import { useComplianceStore } from '../../stores/complianceStore';
+import { connectSocket, joinProject, getSocket } from '../../services/socket';
 import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
 import NextStepBanner from '../../design-system/patterns/NextStepBanner';
@@ -79,6 +81,18 @@ export default function ProjectView() {
             createdAt: ws.createdAt,
           })));
         }
+
+        // Load policy violations for real-time compliance visualization
+        useComplianceStore.getState().loadViolations(projectId);
+
+        // Connect WebSocket and listen for violation updates
+        const sock = connectSocket();
+        joinProject(projectId);
+        sock.on('violation:update', (data: { projectId: string }) => {
+          if (data.projectId === projectId) {
+            useComplianceStore.getState().loadViolations(projectId);
+          }
+        });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -93,6 +107,8 @@ export default function ProjectView() {
 
     return () => {
       cancelled = true;
+      const sock = getSocket();
+      if (sock) sock.off('violation:update');
     };
   }, [projectId, setElements, setConnections, setProjectId, setProjectName, setWorkspaces]);
 

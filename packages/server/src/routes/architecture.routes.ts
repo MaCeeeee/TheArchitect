@@ -8,6 +8,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
+import { evaluateElementPolicies } from '../services/policy-evaluation.service';
 
 const router = Router();
 
@@ -231,6 +232,11 @@ router.post(
       );
 
       res.status(201).json({ success: true, data: element });
+
+      // Fire-and-forget: evaluate policies against new element
+      evaluateElementPolicies(String(projectId), element.id, 'create').catch((e) =>
+        console.error('[PolicyEval] create hook error:', e),
+      );
     } catch (err) {
       if (err instanceof z.ZodError) {
         res.status(400).json({ success: false, error: 'Validation failed', details: err.errors });
@@ -312,6 +318,11 @@ router.put(
       );
 
       res.json({ success: true, data: { id: elementId, ...parsed } });
+
+      // Fire-and-forget: re-evaluate policies after element update
+      evaluateElementPolicies(String(req.params.projectId), String(elementId), 'update').catch((e) =>
+        console.error('[PolicyEval] update hook error:', e),
+      );
     } catch (err) {
       if (err instanceof z.ZodError) {
         res.status(400).json({ success: false, error: 'Validation failed', details: err.errors });
@@ -331,6 +342,11 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const { elementId } = req.params;
+      // Fire-and-forget: resolve violations before deleting the element
+      evaluateElementPolicies(String(req.params.projectId), String(elementId), 'delete').catch((e) =>
+        console.error('[PolicyEval] delete hook error:', e),
+      );
+
       await runCypher(
         'MATCH (e:ArchitectureElement {id: $elementId}) DETACH DELETE e',
         { elementId }

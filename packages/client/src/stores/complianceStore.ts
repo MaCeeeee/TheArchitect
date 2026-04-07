@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { compliancePipelineAPI } from '../services/api';
-import type { PolicyDraft } from '@thearchitect/shared';
+import { compliancePipelineAPI, governanceAPI } from '../services/api';
+import type { PolicyDraft, PolicyViolationDTO } from '@thearchitect/shared';
 
 interface PipelineState {
   standardId: string;
@@ -102,6 +102,12 @@ interface ComplianceStore {
   selectedChecklist: AuditChecklist | null;
   isLoadingChecklists: boolean;
 
+  // Policy Violations state
+  violations: PolicyViolationDTO[];
+  violationsByElement: Map<string, number>;
+  violationsByPolicy: Map<string, number>;
+  isLoadingViolations: boolean;
+
   // Actions
   loadPipelineStatus: (projectId: string) => Promise<void>;
   loadPortfolio: (projectId: string) => Promise<void>;
@@ -119,6 +125,9 @@ interface ComplianceStore {
   loadAuditChecklist: (projectId: string, id: string) => Promise<void>;
   createAuditChecklist: (projectId: string, data: { standardId: string; name: string; targetDate: string }) => Promise<string | null>;
   updateChecklistItem: (projectId: string, checklistId: string, itemId: string, data: Record<string, unknown>) => Promise<void>;
+  // Violation actions
+  loadViolations: (projectId: string) => Promise<void>;
+  loadViolationsByElement: (projectId: string, elementId: string) => Promise<PolicyViolationDTO[]>;
   clear: () => void;
 }
 
@@ -136,6 +145,10 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   auditChecklists: [],
   selectedChecklist: null,
   isLoadingChecklists: false,
+  violations: [],
+  violationsByElement: new Map(),
+  violationsByPolicy: new Map(),
+  isLoadingViolations: false,
 
   loadPipelineStatus: async (projectId) => {
     set({ isLoading: true, error: null });
@@ -258,6 +271,40 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     }
   },
 
+  loadViolations: async (projectId) => {
+    set({ isLoadingViolations: true });
+    try {
+      const res = await governanceAPI.getViolations(projectId, { status: 'open', limit: 500 });
+      const violations: PolicyViolationDTO[] = res.data.data || [];
+
+      // Build lookup maps
+      const byElement = new Map<string, number>();
+      const byPolicy = new Map<string, number>();
+      for (const v of violations) {
+        byElement.set(v.elementId, (byElement.get(v.elementId) || 0) + 1);
+        byPolicy.set(v.policyId, (byPolicy.get(v.policyId) || 0) + 1);
+      }
+
+      set({
+        violations,
+        violationsByElement: byElement,
+        violationsByPolicy: byPolicy,
+        isLoadingViolations: false,
+      });
+    } catch {
+      set({ isLoadingViolations: false });
+    }
+  },
+
+  loadViolationsByElement: async (projectId, elementId) => {
+    try {
+      const res = await governanceAPI.getViolationsByElement(projectId, elementId);
+      return (res.data.data || []) as PolicyViolationDTO[];
+    } catch {
+      return [];
+    }
+  },
+
   clear: () => set({
     pipelineStates: [],
     portfolioOverview: null,
@@ -271,5 +318,9 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     auditChecklists: [],
     selectedChecklist: null,
     isLoadingChecklists: false,
+    violations: [],
+    violationsByElement: new Map(),
+    violationsByPolicy: new Map(),
+    isLoadingViolations: false,
   }),
 }));

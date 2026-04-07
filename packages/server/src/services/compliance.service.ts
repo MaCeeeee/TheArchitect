@@ -146,7 +146,7 @@ export function getBuiltInChecks(elements: { name: string; description: string; 
   return violations;
 }
 
-function elementMatchesScope(el: { type: string; domain: string; layer: string }, policy: IPolicy): boolean {
+export function elementMatchesScope(el: { type: string; domain: string; layer: string }, policy: IPolicy): boolean {
   const scope = policy.scope;
   if (scope.domains.length > 0 && !scope.domains.includes(el.domain)) return false;
   if (scope.elementTypes.length > 0 && !scope.elementTypes.includes(el.type)) return false;
@@ -154,11 +154,11 @@ function elementMatchesScope(el: { type: string; domain: string; layer: string }
   return true;
 }
 
-function getFieldValue(el: Record<string, unknown>, field: string): unknown {
+export function getFieldValue(el: Record<string, unknown>, field: string): unknown {
   return field.split('.').reduce((obj, key) => (obj && typeof obj === 'object' ? (obj as Record<string, unknown>)[key] : undefined), el as unknown);
 }
 
-function evaluateRule(value: unknown, operator: string, expected: unknown): boolean {
+export function evaluateRule(value: unknown, operator: string, expected: unknown): boolean {
   switch (operator) {
     case 'equals': return value === expected;
     case 'not_equals': return value !== expected;
@@ -167,7 +167,7 @@ function evaluateRule(value: unknown, operator: string, expected: unknown): bool
     case 'lt': return typeof value === 'number' && typeof expected === 'number' && value < expected;
     case 'gte': return typeof value === 'number' && typeof expected === 'number' && value >= expected;
     case 'lte': return typeof value === 'number' && typeof expected === 'number' && value <= expected;
-    case 'exists': return expected ? value != null : value == null;
+    case 'exists': return expected ? (value != null && value !== '') : (value == null || value === '');
     case 'regex': return typeof value === 'string' && typeof expected === 'string' && new RegExp(expected).test(value);
     default: return true;
   }

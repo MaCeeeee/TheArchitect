@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2 } from 'lucide-react';
+import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { governanceAPI } from '../../services/api';
 
@@ -34,6 +34,9 @@ export default function PolicyManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set(['dora', 'nis2']));
+  const [seeding, setSeeding] = useState(false);
 
   // Create form
   const [newName, setNewName] = useState('');
@@ -117,6 +120,29 @@ export default function PolicyManager() {
     }
   };
 
+  const handleSeed = async () => {
+    if (!projectId || selectedTemplates.size === 0) return;
+    setSeeding(true);
+    try {
+      const { data } = await governanceAPI.seedPolicies(projectId, Array.from(selectedTemplates));
+      toast.success(`${data.data.created} template policies created as draft`);
+      setShowTemplates(false);
+      loadPolicies();
+    } catch {
+      toast.error('Failed to apply templates');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const toggleTemplate = (t: string) => {
+    setSelectedTemplates((prev) => {
+      const next = new Set(prev);
+      if (next.has(t)) next.delete(t); else next.add(t);
+      return next;
+    });
+  };
+
   const severityIcon = (s: string) => {
     if (s === 'error') return <AlertCircle size={16} className="text-[#ef4444]" />;
     if (s === 'warning') return <AlertTriangle size={16} className="text-[#eab308]" />;
@@ -140,15 +166,57 @@ export default function PolicyManager() {
         <p className="text-xs text-[var(--text-tertiary)] mt-1">{enabledCount}/{policies.length} policies active</p>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 flex gap-2">
         <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="w-full rounded-md bg-[#1a2a1a] px-4 py-2 text-xs font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1.5"
+          onClick={() => { setShowCreate(!showCreate); setShowTemplates(false); }}
+          className="flex-1 rounded-md bg-[#1a2a1a] px-4 py-2 text-xs font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1.5"
         >
           <Plus size={14} />
-          Create Policy
+          Create
+        </button>
+        <button
+          onClick={() => { setShowTemplates(!showTemplates); setShowCreate(false); }}
+          className="flex-1 rounded-md bg-[#1a2a1a] px-4 py-2 text-xs font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1.5"
+        >
+          <FileStack size={14} />
+          Templates
         </button>
       </div>
+
+      {showTemplates && (
+        <div className="px-4 pb-4">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-4 space-y-3">
+            <p className="text-xs text-[var(--text-secondary)]">Apply policy templates from regulatory frameworks. Imported as draft — review before activating.</p>
+            {[
+              { id: 'dora', label: 'DORA', desc: '5 policies (ICT Risk, Incidents, Resilience, Third-Party, Intelligence)', severity: 'critical/high' },
+              { id: 'nis2', label: 'NIS2', desc: '4 policies (Risk, Incidents, Continuity, Supply Chain)', severity: 'high/medium' },
+              { id: 'togaf', label: 'TOGAF Baseline', desc: '3 policies (Description, Naming, Layer Integrity)', severity: 'medium' },
+            ].map(({ id, label, desc, severity }) => (
+              <label key={id} className="flex items-start gap-2 cursor-pointer hover:bg-white/5 rounded p-1.5 -m-1.5 transition">
+                <input
+                  type="checkbox"
+                  checked={selectedTemplates.has(id)}
+                  onChange={() => toggleTemplate(id)}
+                  className="mt-0.5 accent-[#00ff41]"
+                />
+                <div>
+                  <div className="text-xs text-white font-medium">{label}</div>
+                  <div className="text-[10px] text-[var(--text-tertiary)]">{desc}</div>
+                  <div className="text-[10px] text-[var(--text-disabled)]">Severity: {severity}</div>
+                </div>
+              </label>
+            ))}
+            <button
+              onClick={handleSeed}
+              disabled={seeding || selectedTemplates.size === 0}
+              className="w-full rounded-md bg-[#00ff41] px-4 py-2 text-xs font-semibold text-black hover:bg-[#00cc33] disabled:opacity-50 transition flex items-center justify-center gap-1.5"
+            >
+              {seeding ? <Loader2 size={14} className="animate-spin" /> : <FileStack size={14} />}
+              Apply {selectedTemplates.size} Template{selectedTemplates.size !== 1 ? 's' : ''}
+            </button>
+          </div>
+        </div>
+      )}
 
       {showCreate && (
         <div className="px-4 pb-4">
@@ -255,6 +323,12 @@ export default function PolicyManager() {
                 >
                   {p.category}
                 </span>
+                {(p as PolicyItem & { status?: string }).status === 'draft' && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#6b7280]/20 text-[#9ca3af]">draft</span>
+                )}
+                {(p as PolicyItem & { status?: string }).status === 'archived' && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ef4444]/10 text-[#ef4444]/60">archived</span>
+                )}
                 <span className="text-xs text-[var(--text-disabled)]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
               </div>
               {p.description && <p className="text-xs text-[var(--text-tertiary)] mt-1 ml-6">{p.description}</p>}

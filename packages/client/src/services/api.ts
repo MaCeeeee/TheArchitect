@@ -267,6 +267,14 @@ export const governanceAPI = {
     api.get(`/projects/${projectId}/compliance`),
   getAuditLog: (projectId: string, params?: { action?: string; limit?: number; offset?: number }) =>
     api.get(`/projects/${projectId}/audit-log`, { params }),
+  // Policy Violations
+  getViolations: (projectId: string, params?: { status?: string; severity?: string; limit?: number; offset?: number }) =>
+    api.get(`/projects/${projectId}/violations`, { params }),
+  getViolationsByElement: (projectId: string, elementId: string) =>
+    api.get(`/projects/${projectId}/violations/by-element/${elementId}`),
+  // Seed Policy Templates
+  seedPolicies: (projectId: string, templates: string[]) =>
+    api.post(`/projects/${projectId}/policies/seed`, { templates }),
 };
 
 // Marketplace API
