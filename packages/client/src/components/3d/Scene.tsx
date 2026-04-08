@@ -133,7 +133,7 @@ export default function Scene() {
           )}
 
           <ViewModeCamera />
-          {is3D && <Environment preset="night" />}
+          {is3D && <Environment files="/hdri/dikhololo_night_1k.hdr" />}
         </Suspense>
       </Canvas>
 

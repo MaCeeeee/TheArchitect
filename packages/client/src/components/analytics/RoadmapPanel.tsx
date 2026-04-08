@@ -154,7 +154,7 @@ export default function RoadmapPanel() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-4 space-y-4">
         {/* Error */}
         {error && (
