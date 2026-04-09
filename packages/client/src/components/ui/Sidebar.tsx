@@ -7,6 +7,7 @@ import {
   FileText, Grid3X3, Wrench, FileCheck, TrendingUp, ClipboardCheck, ShieldAlert,
   Briefcase, Users, Bot, Cable,
   AlertCircle, AlertTriangle, Info, CheckCircle2, Loader2, ArrowRight,
+  Shield, History,
 } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
@@ -264,13 +265,51 @@ const COMPLIANCE_SECTIONS = [
   { id: 'elements', label: 'Elements', icon: Sparkles, group: 'govern' },
   { id: 'progress', label: 'Progress', icon: TrendingUp, group: 'track' },
   { id: 'audit', label: 'Audit', icon: ClipboardCheck, group: 'track' },
+  { id: 'compliance-dashboard', label: 'Dashboard', icon: Shield, group: 'governance' },
+  { id: 'approvals', label: 'Approvals', icon: CheckCircle2, group: 'governance' },
+  { id: 'policy-mgr', label: 'Policy Mgr', icon: FileText, group: 'governance' },
+  { id: 'audit-trail', label: 'Audit Trail', icon: History, group: 'governance' },
 ] as const;
 
 const COMPLIANCE_GROUPS = [
   { key: 'workflow', label: 'Workflow' },
   { key: 'govern', label: 'Govern' },
   { key: 'track', label: 'Track' },
+  { key: 'governance', label: 'Governance' },
 ] as const;
+
+function ComplianceSectionButton({ section, isActive, onActivate, projectId, isGovernance }: {
+  section: typeof COMPLIANCE_SECTIONS[number];
+  isActive: boolean;
+  onActivate: (id: string) => void;
+  projectId: string | null;
+  isGovernance: boolean;
+}) {
+  const navigate = useNavigate();
+  const handleClick = useDoubleClick(
+    useCallback(() => onActivate(section.id), [section.id, onActivate]),
+    useCallback(() => {
+      if (projectId) navigate(`/project/${projectId}/compliance/${section.id}`);
+    }, [projectId, section.id, navigate]),
+  );
+
+  return (
+    <button
+      onClick={handleClick}
+      title={`${section.label} (double-click for full view)`}
+      className={`flex items-center justify-center gap-1 px-1.5 py-1.5 rounded text-[10px] font-medium transition ${
+        isGovernance ? 'basis-[calc(50%-1px)]' : 'flex-1'
+      } ${
+        isActive
+          ? 'bg-[var(--accent-default)]/15 text-[var(--accent-text)]'
+          : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-base)] hover:text-[var(--text-secondary)]'
+      }`}
+    >
+      <section.icon size={11} />
+      {section.label}
+    </button>
+  );
+}
 
 function CompliancePanel() {
   const navigate = useNavigate();
@@ -348,20 +387,16 @@ function CompliancePanel() {
             <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] px-1 mb-1">
               {group.label}
             </p>
-            <div className="flex gap-0.5">
+            <div className="flex flex-wrap gap-0.5">
               {COMPLIANCE_SECTIONS.filter((s) => s.group === group.key).map((section) => (
-                <button
+                <ComplianceSectionButton
                   key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={`flex-1 flex items-center justify-center gap-1 px-1.5 py-1.5 rounded text-[10px] font-medium transition ${
-                    activeSection === section.id
-                      ? 'bg-[var(--accent-default)]/15 text-[var(--accent-text)]'
-                      : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-base)] hover:text-[var(--text-secondary)]'
-                  }`}
-                >
-                  <section.icon size={11} />
-                  {section.label}
-                </button>
+                  section={section}
+                  isActive={activeSection === section.id}
+                  onActivate={setActiveSection}
+                  projectId={projectId}
+                  isGovernance={group.key === 'governance'}
+                />
               ))}
             </div>
           </div>
@@ -736,7 +771,59 @@ function CompliancePanel() {
             )}
           </div>
         )}
+
+        {/* ── Governance sections — navigate to full view ── */}
+        {(['compliance-dashboard', 'approvals', 'policy-mgr', 'audit-trail'] as const).includes(activeSection as 'compliance-dashboard') && (
+          <GovernanceInlineContent section={activeSection} projectId={projectId} navigate={navigate} />
+        )}
       </div>
+    </div>
+  );
+}
+
+function GovernanceInlineContent({ section, projectId, navigate }: {
+  section: string;
+  projectId: string | null;
+  navigate: ReturnType<typeof useNavigate>;
+}) {
+  const showPolicyBoard = useUIStore((s) => s.showPolicyBoard);
+  const togglePolicyBoard = useUIStore((s) => s.togglePolicyBoard);
+
+  const labels: Record<string, { title: string; desc: string }> = {
+    'compliance-dashboard': { title: 'Compliance Dashboard', desc: 'Overview of compliance status across all standards and policies.' },
+    'approvals': { title: 'Approvals', desc: 'Review and approve pending governance actions and policy changes.' },
+    'policy-mgr': { title: 'Policy Manager', desc: 'Create, edit, and manage governance policies. Seed templates from DORA, NIS2, TOGAF.' },
+    'audit-trail': { title: 'Audit Trail', desc: 'Chronological log of all governance actions and policy evaluations.' },
+  };
+  const info = labels[section] || { title: section, desc: '' };
+
+  return (
+    <div className="p-3 space-y-3">
+      <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3">
+        <p className="text-xs font-semibold text-[var(--text-primary)] mb-1">{info.title}</p>
+        <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">{info.desc}</p>
+      </div>
+      {section === 'policy-mgr' && (
+        <button
+          onClick={togglePolicyBoard}
+          className={`flex w-full items-center gap-2 rounded-md border px-3 py-2 text-[10px] font-medium transition ${
+            showPolicyBoard
+              ? 'border-[#7c3aed]/30 bg-[#7c3aed]/10 text-[#a78bfa]'
+              : 'border-[var(--border-subtle)] bg-[var(--surface-base)] text-[var(--text-tertiary)]'
+          }`}
+        >
+          {showPolicyBoard ? <Eye size={12} /> : <EyeOff size={12} />}
+          3D Policy Board {showPolicyBoard ? 'visible' : 'hidden'}
+        </button>
+      )}
+      {projectId && (
+        <button
+          onClick={() => navigate(`/project/${projectId}/compliance/${section}`)}
+          className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+        >
+          <ArrowRight size={12} /> Open {info.title}
+        </button>
+      )}
     </div>
   );
 }
@@ -788,6 +875,36 @@ const ANALYTICS_ROUTE_MAP: Record<string, string> = {
   integrations: 'integrations',
 };
 
+function AnalyticsSectionButton({ item, isActive, onActivate, projectId }: {
+  item: { id: string; label: string };
+  isActive: boolean;
+  onActivate: (id: string) => void;
+  projectId: string | null;
+}) {
+  const navigate = useNavigate();
+  const routeId = ANALYTICS_ROUTE_MAP[item.id] || item.id;
+  const handleClick = useDoubleClick(
+    useCallback(() => onActivate(item.id), [item.id, onActivate]),
+    useCallback(() => {
+      if (projectId) navigate(`/project/${projectId}/analyze/${routeId}`);
+    }, [projectId, routeId, navigate]),
+  );
+
+  return (
+    <button
+      onClick={handleClick}
+      title={`${item.label} (double-click for full view)`}
+      className={`flex-1 px-1.5 py-1.5 rounded text-[10px] font-medium transition ${
+        isActive
+          ? 'bg-[var(--accent-default)]/15 text-[var(--accent-text)]'
+          : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-base)] hover:text-[var(--text-secondary)]'
+      }`}
+    >
+      {item.label}
+    </button>
+  );
+}
+
 function AnalyticsPanel() {
   const navigate = useNavigate();
   const projectId = useArchitectureStore((s) => s.projectId);
@@ -815,17 +932,13 @@ function AnalyticsPanel() {
             </p>
             <div className="flex gap-0.5">
               {group.items.map((item) => (
-                <button
+                <AnalyticsSectionButton
                   key={item.id}
-                  onClick={() => setTab(item.id as AnalyticsTab)}
-                  className={`flex-1 px-1.5 py-1.5 rounded text-[10px] font-medium transition ${
-                    tab === item.id
-                      ? 'bg-[var(--accent-default)]/15 text-[var(--accent-text)]'
-                      : 'text-[var(--text-tertiary)] hover:bg-[var(--surface-base)] hover:text-[var(--text-secondary)]'
-                  }`}
-                >
-                  {item.label}
-                </button>
+                  item={item}
+                  isActive={tab === item.id}
+                  onActivate={(id) => setTab(id as AnalyticsTab)}
+                  projectId={projectId}
+                />
               ))}
             </div>
           </div>

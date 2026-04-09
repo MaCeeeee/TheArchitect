@@ -104,11 +104,22 @@ export default function ConnectionLines() {
     return map;
   }, [elements]);
 
+  // Build set of policy node IDs to filter their connections
+  const policyNodeIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const el of elements) {
+      if (el.metadata?.isPolicyNode) ids.add(el.id);
+    }
+    return ids;
+  }, [elements]);
+
   const visibleConnections = useMemo(() => {
     return connections.filter((conn) => {
       const source = elementMap.get(conn.sourceId);
       const target = elementMap.get(conn.targetId);
       if (!source || !target) return false;
+      // Filter out connections to/from policy nodes (INFLUENCES are internal plumbing)
+      if (policyNodeIds.has(conn.sourceId) || policyNodeIds.has(conn.targetId)) return false;
       if (!visibleLayers.has(source.layer) || !visibleLayers.has(target.layer)) return false;
       // In layer mode, only show intra-layer connections
       if (isLayerMode) {
@@ -120,7 +131,7 @@ export default function ConnectionLines() {
       }
       return true;
     });
-  }, [connections, elementMap, visibleLayers, isLayerMode, is2DMode, focusedLayer, visibleElementIds]);
+  }, [connections, elementMap, visibleLayers, isLayerMode, is2DMode, focusedLayer, visibleElementIds, policyNodeIds]);
 
   return (
     <group>

@@ -17,6 +17,7 @@ interface UIState {
   showMissionControl: boolean;
   showComplianceOverlay: boolean;
   complianceOverlaySection: string;
+  showPolicyBoard: boolean;
   // Connection drawing mode
   isConnectionMode: boolean;
   connectionSourceId: string | null;
@@ -41,6 +42,7 @@ interface UIState {
   toggleChat: () => void;
   toggleMinimap: () => void;
   toggleMissionControl: () => void;
+  togglePolicyBoard: () => void;
   openComplianceOverlay: (section?: string) => void;
   closeComplianceOverlay: () => void;
   enterConnectionMode: () => void;
@@ -78,6 +80,7 @@ export const useUIStore = create<UIState>((set) => ({
   showMissionControl: false,
   showComplianceOverlay: false,
   complianceOverlaySection: 'pipeline',
+  showPolicyBoard: true,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setFocusedLayer: (layer) => set({ focusedLayer: layer }),
@@ -88,6 +91,7 @@ export const useUIStore = create<UIState>((set) => ({
   toggleChat: () => set((s) => ({ showChat: !s.showChat })),
   toggleMinimap: () => set((s) => ({ showMinimap: !s.showMinimap })),
   toggleMissionControl: () => set((s) => ({ showMissionControl: !s.showMissionControl })),
+  togglePolicyBoard: () => set((s) => ({ showPolicyBoard: !s.showPolicyBoard })),
   openComplianceOverlay: (section) => set({ showComplianceOverlay: true, complianceOverlaySection: section || 'pipeline' }),
   closeComplianceOverlay: () => set({ showComplianceOverlay: false }),
   // Connection mode

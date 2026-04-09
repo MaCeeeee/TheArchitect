@@ -55,6 +55,7 @@ export default function ProjectView() {
     setProjectId(projectId);
 
     let cancelled = false;
+    let violationDebounce: ReturnType<typeof setTimeout> | null = null;
     setLoading(true);
     setError(null);
 
@@ -85,12 +86,15 @@ export default function ProjectView() {
         // Load policy violations for real-time compliance visualization
         useComplianceStore.getState().loadViolations(projectId);
 
-        // Connect WebSocket and listen for violation updates
+        // Connect WebSocket and listen for violation updates (debounced to prevent request storms)
         const sock = connectSocket();
         joinProject(projectId);
         sock.on('violation:update', (data: { projectId: string }) => {
           if (data.projectId === projectId) {
-            useComplianceStore.getState().loadViolations(projectId);
+            if (violationDebounce) clearTimeout(violationDebounce);
+            violationDebounce = setTimeout(() => {
+              useComplianceStore.getState().loadViolations(projectId);
+            }, 1000);
           }
         });
       })
@@ -107,6 +111,7 @@ export default function ProjectView() {
 
     return () => {
       cancelled = true;
+      if (violationDebounce) clearTimeout(violationDebounce);
       const sock = getSocket();
       if (sock) sock.off('violation:update');
     };

@@ -11,7 +11,7 @@ export async function syncPolicyToNeo4j(policy: IPolicy, projectId: string): Pro
   // Count existing policy nodes to auto-position new ones side by side
   const countResult = await runCypher(
     `MATCH (p:ArchitectureElement {projectId: $projectId})
-     WHERE p.metadata CONTAINS '"isPolicyNode":true'
+     WHERE p.metadataJson CONTAINS '"isPolicyNode":true'
      RETURN count(p) AS cnt`,
     { projectId },
   );

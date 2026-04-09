@@ -10,6 +10,7 @@ import TransformationXRay from './TransformationXRay';
 import PlateauRenderer from './PlateauRenderer';
 import AgentAvatars3D from './AgentAvatars3D';
 import DiscussionBubbles3D from './DiscussionBubbles3D';
+import PolicyBoard from './PolicyBoard';
 import ConnectionPreview from './ConnectionPreview';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
@@ -113,6 +114,7 @@ export default function Scene() {
               {/* MiroFish Agent Avatars + Discussion Bubbles (visible during/after simulation) */}
               {is3D && <AgentAvatars3D />}
               {is3D && <DiscussionBubbles3D />}
+              {is3D && <PolicyBoard />}
             </>
           )}
 
