@@ -140,6 +140,31 @@ router.get(
   },
 );
 
+// Rename roadmap
+router.patch(
+  '/:projectId/roadmaps/:roadmapId',
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const { name } = req.body as { name?: string };
+      if (!name || typeof name !== 'string' || name.trim().length === 0) {
+        return res.status(400).json({ success: false, error: 'Name is required' });
+      }
+      const doc = await TransformationRoadmap.findByIdAndUpdate(
+        req.params.roadmapId,
+        { name: name.trim().slice(0, 200) },
+        { new: true },
+      );
+      if (!doc) return res.status(404).json({ success: false, error: 'Roadmap not found' });
+      res.json({ success: true, data: { id: doc._id.toString(), name: doc.name } });
+    } catch (err) {
+      console.error('[Roadmap] Rename error:', err);
+      res.status(500).json({ success: false, error: 'Failed to rename roadmap' });
+    }
+  },
+);
+
 // Delete roadmap
 router.delete(
   '/:projectId/roadmaps/:roadmapId',

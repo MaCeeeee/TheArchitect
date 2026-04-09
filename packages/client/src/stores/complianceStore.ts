@@ -274,8 +274,22 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   loadViolations: async (projectId) => {
     set({ isLoadingViolations: true });
     try {
-      const res = await governanceAPI.getViolations(projectId, { status: 'open', limit: 500 });
-      const violations: PolicyViolationDTO[] = res.data.data || [];
+      let res = await governanceAPI.getViolations(projectId, { status: 'open', limit: 500 });
+      let violations: PolicyViolationDTO[] = res.data.data || [];
+
+      // If no violations found, re-evaluate all active policies (catches stale state
+      // from before bug fixes where evaluation silently failed)
+      if (violations.length === 0) {
+        try {
+          const evalRes = await governanceAPI.reEvaluateViolations(projectId);
+          if (evalRes.data?.data?.policiesEvaluated > 0) {
+            res = await governanceAPI.getViolations(projectId, { status: 'open', limit: 500 });
+            violations = res.data.data || [];
+          }
+        } catch {
+          // re-evaluation is best-effort — may fail if user lacks editor permissions
+        }
+      }
 
       // Build lookup maps
       const byElement = new Map<string, number>();

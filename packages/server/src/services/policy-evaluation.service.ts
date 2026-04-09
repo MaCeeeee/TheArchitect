@@ -27,7 +27,7 @@ async function loadElement(elementId: string): Promise<Neo4jElement | null> {
      RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
             e.togafDomain as domain, e.maturityLevel as maturity,
             e.riskLevel as riskLevel, e.status as status,
-            e.description as description, e.metadata as metadata`,
+            e.description as description, e.metadataJson as metadataJson`,
     { elementId },
   );
 
@@ -45,7 +45,7 @@ async function loadElement(elementId: string): Promise<Neo4jElement | null> {
     status: r.get('status') || 'current',
     description: r.get('description') || '',
     metadata: (() => {
-      const raw = r.get('metadata');
+      const raw = r.get('metadataJson') || r.get('metadata');
       if (!raw) return {};
       if (typeof raw === 'string') try { return JSON.parse(raw); } catch { return {}; }
       return raw;
@@ -59,11 +59,11 @@ async function loadElement(elementId: string): Promise<Neo4jElement | null> {
 async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
   const records = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
-     WHERE NOT (e.metadata CONTAINS '"isPolicyNode":true' OR e.metadata CONTAINS '"isPolicyNode": true')
+     WHERE NOT (e.metadataJson CONTAINS '"isPolicyNode":true' OR e.metadataJson CONTAINS '"isPolicyNode": true')
      RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
             e.togafDomain as domain, e.maturityLevel as maturity,
             e.riskLevel as riskLevel, e.status as status,
-            e.description as description, e.metadata as metadata`,
+            e.description as description, e.metadataJson as metadataJson`,
     { projectId },
   );
 
@@ -78,7 +78,7 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
     status: r.get('status') || 'current',
     description: r.get('description') || '',
     metadata: (() => {
-      const raw = r.get('metadata');
+      const raw = r.get('metadataJson');
       if (!raw) return {};
       if (typeof raw === 'string') try { return JSON.parse(raw); } catch { return {}; }
       return raw;

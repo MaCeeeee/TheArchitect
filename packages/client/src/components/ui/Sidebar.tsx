@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDoubleClick } from '../../hooks/useDoubleClick';
 import {
@@ -6,7 +6,9 @@ import {
   Settings, BookOpen, BarChart3, Sparkles, X, ShieldCheck,
   FileText, Grid3X3, Wrench, FileCheck, TrendingUp, ClipboardCheck, ShieldAlert,
   Briefcase, Users, Bot, Cable,
+  AlertCircle, AlertTriangle, Info, CheckCircle2, Loader2, ArrowRight,
 } from 'lucide-react';
+import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { flyToElement } from '../3d/CameraControls';
@@ -258,7 +260,7 @@ const COMPLIANCE_SECTIONS = [
   { id: 'standards', label: 'Standards', icon: FileText, group: 'workflow' },
   { id: 'matrix', label: 'Matrix', icon: Grid3X3, group: 'workflow' },
   { id: 'remediate', label: 'Remediate', icon: Wrench, group: 'workflow' },
-  { id: 'policies', label: 'Policies', icon: FileCheck, group: 'govern' },
+  { id: 'policies', label: 'Gen. Policies', icon: FileCheck, group: 'govern' },
   { id: 'elements', label: 'Elements', icon: Sparkles, group: 'govern' },
   { id: 'progress', label: 'Progress', icon: TrendingUp, group: 'track' },
   { id: 'audit', label: 'Audit', icon: ClipboardCheck, group: 'track' },
@@ -274,6 +276,55 @@ function CompliancePanel() {
   const navigate = useNavigate();
   const projectId = useArchitectureStore((s) => s.projectId);
   const [activeSection, setActiveSection] = useState('pipeline');
+
+  const {
+    pipelineStates, portfolioOverview, violations, auditChecklists, snapshots,
+    isLoading, isLoadingViolations, isLoadingChecklists,
+    loadPortfolio, loadPipelineStatus, loadViolations, loadAuditChecklists, loadSnapshots,
+  } = useComplianceStore();
+
+  useEffect(() => {
+    if (!projectId) return;
+    loadPortfolio(projectId);
+    loadPipelineStatus(projectId);
+    loadViolations(projectId);
+    loadAuditChecklists(projectId);
+    loadSnapshots(projectId);
+  }, [projectId, loadPortfolio, loadPipelineStatus, loadViolations, loadAuditChecklists, loadSnapshots]);
+
+  // Aggregate mapping stats across all standards
+  const totalMapping = pipelineStates.reduce(
+    (acc, ps) => ({
+      total: acc.total + ps.mappingStats.total,
+      compliant: acc.compliant + ps.mappingStats.compliant,
+      partial: acc.partial + ps.mappingStats.partial,
+      gap: acc.gap + ps.mappingStats.gap,
+      unmapped: acc.unmapped + ps.mappingStats.unmapped,
+    }),
+    { total: 0, compliant: 0, partial: 0, gap: 0, unmapped: 0 },
+  );
+
+  // Latest snapshot for summary
+  const latestSnapshot = snapshots
+    .filter((s) => s.type === 'actual')
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+  // Violation severity counts
+  const violationSeverity = violations.reduce(
+    (acc, v) => {
+      if (v.severity === 'error') acc.errors++;
+      else if (v.severity === 'warning') acc.warnings++;
+      else acc.infos++;
+      return acc;
+    },
+    { errors: 0, warnings: 0, infos: 0 },
+  );
+
+  // Stage labels for pipeline
+  const STAGE_LABELS: Record<string, string> = {
+    uploaded: 'Uploaded', mapped: 'Mapped', policies_generated: 'Policies',
+    roadmap_ready: 'Roadmap', tracking: 'Tracking', audit_ready: 'Audit Ready',
+  };
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
@@ -317,26 +368,373 @@ function CompliancePanel() {
         ))}
       </div>
 
-      {/* Section content — open overlay with the selected section */}
-      <div className="flex-1 overflow-y-auto p-3">
-        <p className="text-xs text-[var(--text-secondary)] mb-3">
-          {activeSection === 'pipeline' && 'Compliance pipeline overview — upload standards, map controls, generate policies.'}
-          {activeSection === 'standards' && 'Manage regulatory standards and frameworks (ISO 27001, GDPR, SOC 2, etc.).'}
-          {activeSection === 'matrix' && 'Compliance matrix — map architecture elements to standard requirements.'}
-          {activeSection === 'remediate' && 'Review and fix compliance gaps with AI-suggested remediation actions.'}
-          {activeSection === 'policies' && 'Auto-generated policies from compliance analysis. Review and approve.'}
-          {activeSection === 'elements' && 'AI-suggested architecture elements to improve compliance coverage.'}
-          {activeSection === 'progress' && 'Track compliance progress across all mapped standards.'}
-          {activeSection === 'audit' && 'Audit readiness dashboard — evidence collection and gap analysis.'}
-        </p>
-        {projectId && (
-          <button
-            onClick={() => navigate(`/project/${projectId}/compliance/${activeSection}`)}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed] px-3 py-2 text-xs font-medium text-white hover:bg-[#6d28d9] transition"
-          >
-            <ShieldCheck size={14} />
-            Open {COMPLIANCE_SECTIONS.find((s) => s.id === activeSection)?.label || 'Section'}
-          </button>
+      {/* Inline content per tab */}
+      <div className="flex-1 overflow-y-auto">
+        {/* ── Pipeline Overview ── */}
+        {activeSection === 'pipeline' && (
+          <div className="p-3 space-y-3">
+            {latestSnapshot ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#7c3aed]">{latestSnapshot.standardCoverageScore}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Coverage</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#22c55e]">{latestSnapshot.policyComplianceScore}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Policy Score</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#eab308]">L{latestSnapshot.maturityLevel}</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Maturity</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#ef4444]">{latestSnapshot.totalViolations}</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Violations</div>
+                  </div>
+                </div>
+                {/* Section breakdown */}
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
+                  <div className="text-[10px] text-[var(--text-tertiary)] mb-1.5">Sections</div>
+                  <div className="flex gap-1.5">
+                    {[
+                      { label: 'Compliant', count: latestSnapshot.compliantSections, color: '#22c55e' },
+                      { label: 'Partial', count: latestSnapshot.partialSections, color: '#eab308' },
+                      { label: 'Gap', count: latestSnapshot.gapSections, color: '#ef4444' },
+                    ].map((s) => (
+                      <div key={s.label} className="flex-1 text-center">
+                        <div className="text-sm font-semibold" style={{ color: s.color }}>{s.count}</div>
+                        <div className="text-[9px] text-[var(--text-tertiary)]">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <ShieldCheck size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">No compliance data yet. Upload a standard to begin.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/pipeline`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Open Pipeline
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Standards / Portfolio ── */}
+        {activeSection === 'standards' && (
+          <div className="p-3 space-y-2">
+            {isLoading ? (
+              <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin text-[var(--text-tertiary)]" /></div>
+            ) : portfolioOverview && portfolioOverview.portfolio.length > 0 ? (
+              <>
+                <div className="text-[10px] text-[var(--text-tertiary)] mb-1">
+                  {portfolioOverview.trackedStandards}/{portfolioOverview.totalStandards} standards tracked
+                </div>
+                {portfolioOverview.portfolio.map((item) => (
+                  <button
+                    key={item.standardId}
+                    onClick={() => navigate(`/project/${projectId}/compliance/standards`)}
+                    className="flex items-center gap-2.5 w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-left transition hover:border-[#7c3aed]/50"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">{item.standardName}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#7c3aed]/15 text-[#a78bfa]">
+                          {STAGE_LABELS[item.stage] || item.stage}
+                        </span>
+                        <span className="text-[9px] text-[var(--text-tertiary)]">
+                          {item.coverage}% coverage
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs font-semibold" style={{
+                        color: item.coverage >= 80 ? '#22c55e' : item.coverage >= 40 ? '#eab308' : '#ef4444',
+                      }}>{item.coverage}%</div>
+                    </div>
+                  </button>
+                ))}
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <FileText size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">No standards uploaded yet.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/standards`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Manage Standards
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Matrix / Mapping Stats ── */}
+        {activeSection === 'matrix' && (
+          <div className="p-3 space-y-3">
+            {totalMapping.total > 0 ? (
+              <>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Compliant', count: totalMapping.compliant, color: '#22c55e' },
+                    { label: 'Partial', count: totalMapping.partial, color: '#eab308' },
+                    { label: 'Gap', count: totalMapping.gap, color: '#ef4444' },
+                    { label: 'Unmapped', count: totalMapping.unmapped, color: '#64748b' },
+                  ].map((row) => {
+                    const pct = totalMapping.total > 0 ? (row.count / totalMapping.total) * 100 : 0;
+                    return (
+                      <div key={row.label}>
+                        <div className="flex justify-between text-[10px] mb-0.5">
+                          <span className="text-[var(--text-secondary)]">{row.label}</span>
+                          <span style={{ color: row.color }}>{row.count} ({Math.round(pct)}%)</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[var(--surface-overlay)]">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: row.color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="text-center text-[10px] text-[var(--text-tertiary)]">
+                  {totalMapping.total} total sections across {pipelineStates.length} standard{pipelineStates.length !== 1 ? 's' : ''}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <Grid3X3 size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">No mappings yet. Map standards to architecture elements.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/matrix`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Open Matrix
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Remediate ── */}
+        {activeSection === 'remediate' && (
+          <div className="p-3 space-y-3">
+            {totalMapping.gap + totalMapping.partial > 0 ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#ef4444]">{totalMapping.gap}</div>
+                    <div className="text-[10px] text-[#ef4444]/70">Gaps</div>
+                  </div>
+                  <div className="rounded-lg border border-[#eab308]/30 bg-[#eab308]/10 p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#eab308]">{totalMapping.partial}</div>
+                    <div className="text-[10px] text-[#eab308]/70">Partial</div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[var(--text-tertiary)]">
+                  {totalMapping.gap + totalMapping.partial} section{totalMapping.gap + totalMapping.partial !== 1 ? 's' : ''} need remediation across {pipelineStates.length} standard{pipelineStates.length !== 1 ? 's' : ''}.
+                </p>
+              </>
+            ) : totalMapping.total > 0 ? (
+              <div className="text-center py-6">
+                <CheckCircle2 size={20} className="text-[#22c55e] mx-auto mb-2" />
+                <p className="text-xs text-[#22c55e]">No gaps found — all sections compliant or partially covered.</p>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <Wrench size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">Map standards first to identify gaps.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/remediate`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Open Remediation
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Generated Policies / Violations ── */}
+        {activeSection === 'policies' && (
+          <div className="p-3 space-y-3">
+            {isLoadingViolations ? (
+              <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin text-[var(--text-tertiary)]" /></div>
+            ) : violations.length > 0 ? (
+              <>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
+                    <div className="text-sm font-bold text-[#ef4444]">{violationSeverity.errors}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Errors</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
+                    <div className="text-sm font-bold text-[#eab308]">{violationSeverity.warnings}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Warnings</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
+                    <div className="text-sm font-bold text-[#3b82f6]">{violationSeverity.infos}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Info</div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {violations.slice(0, 8).map((v) => (
+                    <div key={v._id} className="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-[var(--surface-overlay)]">
+                      {v.severity === 'error'
+                        ? <AlertCircle size={12} className="text-[#ef4444] shrink-0 mt-0.5" />
+                        : v.severity === 'warning'
+                        ? <AlertTriangle size={12} className="text-[#eab308] shrink-0 mt-0.5" />
+                        : <Info size={12} className="text-[#3b82f6] shrink-0 mt-0.5" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-[var(--text-primary)] truncate">{v.message || v.field}</p>
+                        <p className="text-[9px] text-[var(--text-tertiary)] truncate">{v.details}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {violations.length > 8 && (
+                    <p className="text-[9px] text-[var(--text-disabled)] text-center">+{violations.length - 8} more</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <ShieldCheck size={20} className="text-[#22c55e] mx-auto mb-2" />
+                <p className="text-xs text-[#22c55e]">No policy violations detected.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/policies`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Generated Policies
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Elements ── */}
+        {activeSection === 'elements' && (
+          <div className="p-3 space-y-2">
+            <button
+              onClick={() => projectId && navigate(`/project/${projectId}/compliance/elements`)}
+              className="flex items-center gap-3 w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-left transition hover:border-[#7c3aed]/50 hover:bg-[var(--surface-overlay)]"
+            >
+              <Sparkles size={16} className="text-[#a78bfa] shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-[var(--text-primary)]">AI Elements</p>
+                <p className="text-[10px] text-[var(--text-tertiary)]">AI-suggested architecture elements to improve compliance</p>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* ── Progress ── */}
+        {activeSection === 'progress' && (
+          <div className="p-3 space-y-3">
+            {latestSnapshot ? (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#7c3aed]">{latestSnapshot.standardCoverageScore}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Coverage</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
+                    <div className="text-lg font-bold text-[#22c55e]">{latestSnapshot.policyComplianceScore}%</div>
+                    <div className="text-[10px] text-[var(--text-tertiary)]">Policy</div>
+                  </div>
+                </div>
+                {/* Trend indicator — show number of snapshots */}
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">Snapshots</span>
+                    <span className="text-xs font-medium text-[var(--text-primary)]">
+                      {snapshots.filter((s) => s.type === 'actual').length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">Maturity</span>
+                    <span className="text-xs font-medium text-[#eab308]">Level {latestSnapshot.maturityLevel}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">Violations</span>
+                    <span className="text-xs font-medium" style={{
+                      color: latestSnapshot.totalViolations > 0 ? '#ef4444' : '#22c55e',
+                    }}>{latestSnapshot.totalViolations}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6">
+                <TrendingUp size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">Capture a snapshot to track compliance progress.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/progress`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Full Progress View
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── Audit Readiness ── */}
+        {activeSection === 'audit' && (
+          <div className="p-3 space-y-3">
+            {isLoadingChecklists ? (
+              <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin text-[var(--text-tertiary)]" /></div>
+            ) : auditChecklists.length > 0 ? (
+              <div className="space-y-2">
+                {auditChecklists.map((cl) => (
+                  <div key={cl._id} className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">{cl.name}</p>
+                      <span className="text-xs font-bold" style={{
+                        color: cl.overallReadiness >= 80 ? '#22c55e' : cl.overallReadiness >= 40 ? '#eab308' : '#ef4444',
+                      }}>{cl.overallReadiness}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[var(--surface-overlay)]">
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${cl.overallReadiness}%`,
+                        backgroundColor: cl.overallReadiness >= 80 ? '#22c55e' : cl.overallReadiness >= 40 ? '#eab308' : '#ef4444',
+                      }} />
+                    </div>
+                    <div className="flex justify-between mt-1.5 text-[9px] text-[var(--text-tertiary)]">
+                      <span>{cl.items.length} items</span>
+                      <span>{cl.items.filter((i) => i.status === 'verified').length} verified</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <ClipboardCheck size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
+                <p className="text-xs text-[var(--text-tertiary)]">No audit checklists yet.</p>
+              </div>
+            )}
+            {projectId && (
+              <button
+                onClick={() => navigate(`/project/${projectId}/compliance/audit`)}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
+              >
+                <ArrowRight size={12} /> Audit Dashboard
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

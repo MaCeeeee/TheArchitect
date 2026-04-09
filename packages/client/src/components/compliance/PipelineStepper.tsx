@@ -6,7 +6,7 @@ const PIPELINE_STAGES = [
   { id: 'uploaded', label: 'Upload', icon: Upload, section: 'standards' },
   { id: 'mapped', label: 'Map', icon: GitBranch, section: 'matrix' },
   { id: 'remediate', label: 'Remediate', icon: Wrench, section: 'remediate' },
-  { id: 'policies_generated', label: 'Policies', icon: FileCheck, section: 'policies' },
+  { id: 'policies_generated', label: 'Gen. Policies', icon: FileCheck, section: 'policies' },
   { id: 'roadmap_ready', label: 'Roadmap', icon: Map, section: 'roadmap' },
   { id: 'tracking', label: 'Track', icon: TrendingUp, section: 'progress' },
   { id: 'audit_ready', label: 'Audit', icon: ClipboardCheck, section: 'audit' },

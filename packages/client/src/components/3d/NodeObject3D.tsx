@@ -62,8 +62,15 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
 
   // Policy violation data
-  const violationCount = useComplianceStore((s) => s.violationsByElement.get(element.id) ?? 0);
-  const isPolicyNode = !!(element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata?.isPolicyNode;
+  const elementMeta = (element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata;
+  const isPolicyNode = !!elementMeta?.isPolicyNode;
+  const policyId = elementMeta?.policyId as string | undefined;
+  // For policy tiles: count violations this policy PRODUCED; for regular elements: count violations ON this element
+  const violationCount = useComplianceStore((s) =>
+    isPolicyNode && policyId
+      ? (s.violationsByPolicy.get(policyId) ?? 0)
+      : (s.violationsByElement.get(element.id) ?? 0)
+  );
 
   // X-Ray mode state
   const isXRayActive = useXRayStore((s) => s.isActive);
@@ -391,7 +398,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       )}
 
       {/* Label - always visible in 2D/Layer modes and for notable elements in X-Ray mode */}
-      {(is2DMode || hovered || isSelected || isPolicyNode || (isXRayActive && xrayData && (
+      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData && (
         (xraySubView === 'risk' && xrayData.riskScore >= 7) ||
         (xraySubView === 'cost' && (xrayData.estimatedCost >= 40000 || xrayData.optimizationPotential > 0))
       ))) && (

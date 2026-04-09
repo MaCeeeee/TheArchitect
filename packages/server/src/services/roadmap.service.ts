@@ -66,6 +66,51 @@ const WAVE_NAMES: Record<number, string> = {
   8: 'Validation & Handover',
 };
 
+// ─── Smart Name Generation ───
+
+function generateSmartName(waves: RoadmapWave[], strategy: string): string {
+  const allElements = waves.flatMap((w) => w.elements);
+  if (allElements.length === 0) return `${strategy.charAt(0).toUpperCase() + strategy.slice(1)} Roadmap (empty)`;
+
+  // Count element types and transitions
+  const typeCounts = new Map<string, number>();
+  const transitionVerbs = new Map<string, number>();
+  const layers = new Set<string>();
+
+  for (const el of allElements) {
+    typeCounts.set(el.type, (typeCounts.get(el.type) || 0) + 1);
+    layers.add(el.layer);
+
+    // Derive action from status transition
+    if (el.targetStatus === 'retired') transitionVerbs.set('Retire', (transitionVerbs.get('Retire') || 0) + 1);
+    else if (el.targetStatus === 'target' && el.currentStatus === 'current') transitionVerbs.set('Modernize', (transitionVerbs.get('Modernize') || 0) + 1);
+    else if (el.targetStatus === 'target') transitionVerbs.set('Deploy', (transitionVerbs.get('Deploy') || 0) + 1);
+    else if (el.targetStatus === 'transitional') transitionVerbs.set('Migrate', (transitionVerbs.get('Migrate') || 0) + 1);
+  }
+
+  // Pick dominant action verb
+  const dominantVerb = [...transitionVerbs.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || 'Transform';
+
+  // Pick top 2 element types by count
+  const topTypes = [...typeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([t, c]) => `${c} ${t}${c > 1 ? 's' : ''}`);
+
+  // Layer summary
+  const LAYER_SHORT: Record<string, string> = {
+    business: 'Business', application: 'Application', data: 'Data',
+    technology: 'Technology', infrastructure: 'Infra', motivation: 'Motivation',
+    strategy: 'Strategy', implementation: 'Impl.',
+  };
+  const layerNames = [...layers].map((l) => LAYER_SHORT[l] || l).slice(0, 2);
+
+  // Build name: "Modernize 5 Applications, 3 Services — Business+Application (3 Waves)"
+  const typePart = topTypes.join(', ');
+  const layerPart = layerNames.join('+');
+  return `${dominantVerb} ${typePart} — ${layerPart} (${waves.length} Wave${waves.length !== 1 ? 's' : ''})`;
+}
+
 // ─── Main Entry Point ───
 
 export async function generateRoadmap(
@@ -197,10 +242,12 @@ export async function generateRoadmap(
       // Non-critical, don't block roadmap generation
     }
 
-    // 8. Persist
+    // 8. Persist — generate smart name from actual wave content
     const insightIds = enrichment.advisorInsightIds;
+    const smartName = generateSmartName(waves, config.strategy);
     await TransformationRoadmap.findByIdAndUpdate(doc._id, {
       status: 'completed',
+      name: smartName,
       waves,
       summary,
       advisorInsightsAddressed: insightIds,
@@ -210,7 +257,7 @@ export async function generateRoadmap(
       id: doc._id.toString(),
       projectId,
       createdBy: userId,
-      name: doc.name,
+      name: smartName,
       config,
       waves,
       summary,

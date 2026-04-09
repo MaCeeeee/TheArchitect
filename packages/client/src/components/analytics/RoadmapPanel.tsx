@@ -73,7 +73,7 @@ export default function RoadmapPanel() {
   const projectId = useArchitectureStore((s) => s.projectId);
   const {
     roadmaps, activeRoadmap, isGenerating, isLoading, error,
-    selectedWave, generate, loadList, loadRoadmap, deleteRoadmap, selectWave,
+    selectedWave, generate, loadList, loadRoadmap, deleteRoadmap, renameRoadmap, selectWave,
     loadCandidates, selectedCandidates, candidatesLoaded,
   } = useRoadmapStore();
 
@@ -87,6 +87,8 @@ export default function RoadmapPanel() {
   const [showHistory, setShowHistory] = useState(false);
   const [includeComplianceCandidates, setIncludeComplianceCandidates] = useState(false);
   const [complianceStandardId, setComplianceStandardId] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState('');
 
   // Load list + candidates on mount
   useEffect(() => {
@@ -291,8 +293,34 @@ export default function RoadmapPanel() {
           <>
             {/* Header + Actions */}
             <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-medium text-white">{activeRoadmap.name}</div>
+              <div className="flex-1 min-w-0 mr-2">
+                {isEditingName ? (
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onBlur={() => {
+                      const trimmed = editName.trim();
+                      if (trimmed && trimmed !== activeRoadmap.name && projectId) {
+                        renameRoadmap(projectId, activeRoadmap.id, trimmed);
+                      }
+                      setIsEditingName(false);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                      if (e.key === 'Escape') { setIsEditingName(false); }
+                    }}
+                    className="text-sm font-medium text-white bg-[var(--surface-overlay)] border border-[#7c3aed] rounded px-1.5 py-0.5 w-full outline-none"
+                  />
+                ) : (
+                  <div
+                    className="text-sm font-medium text-white truncate cursor-pointer hover:text-[#a78bfa] transition"
+                    title="Click to rename"
+                    onClick={() => { setEditName(activeRoadmap.name); setIsEditingName(true); }}
+                  >
+                    {activeRoadmap.name}
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-0.5">
                   <span
                     className="text-xs px-2 py-0.5 rounded font-medium"

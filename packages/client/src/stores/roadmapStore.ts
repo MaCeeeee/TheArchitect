@@ -33,6 +33,7 @@ interface RoadmapState {
   loadList: (projectId: string) => Promise<void>;
   loadRoadmap: (projectId: string, roadmapId: string) => Promise<void>;
   deleteRoadmap: (projectId: string, roadmapId: string) => Promise<void>;
+  renameRoadmap: (projectId: string, roadmapId: string, name: string) => Promise<void>;
   selectWave: (waveNumber: number | null) => void;
   clear: () => void;
 
@@ -120,6 +121,20 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
       }));
     } catch (err: any) {
       set({ error: err?.response?.data?.error || 'Failed to delete roadmap' });
+    }
+  },
+
+  renameRoadmap: async (projectId, roadmapId, name) => {
+    try {
+      await roadmapAPI.rename(projectId, roadmapId, name);
+      set((s) => ({
+        roadmaps: s.roadmaps.map((r) => r.id === roadmapId ? { ...r, name } : r),
+        activeRoadmap: s.activeRoadmap?.id === roadmapId
+          ? { ...s.activeRoadmap, name }
+          : s.activeRoadmap,
+      }));
+    } catch (err: any) {
+      set({ error: err?.response?.data?.error || 'Failed to rename roadmap' });
     }
   },
 

@@ -19,7 +19,7 @@ const SECTIONS: Section[] = [
   { id: 'standards', label: 'Standards', icon: FileText, group: 'pipeline' },
   { id: 'matrix', label: 'Matrix', icon: Grid3X3, group: 'pipeline' },
   { id: 'remediate', label: 'Remediate', icon: Wrench, group: 'pipeline' },
-  { id: 'policies', label: 'Policies', icon: FileCheck, group: 'pipeline' },
+  { id: 'policies', label: 'Generated Policies', icon: FileCheck, group: 'pipeline' },
   { id: 'roadmap', label: 'Roadmap', icon: Map, group: 'pipeline' },
   { id: 'elements', label: 'Elements', icon: Sparkles, group: 'pipeline' },
   { id: 'progress', label: 'Progress', icon: TrendingUp, group: 'pipeline' },

@@ -272,6 +272,8 @@ export const governanceAPI = {
     api.get(`/projects/${projectId}/violations`, { params }),
   getViolationsByElement: (projectId: string, elementId: string) =>
     api.get(`/projects/${projectId}/violations/by-element/${elementId}`),
+  reEvaluateViolations: (projectId: string) =>
+    api.post(`/projects/${projectId}/violations/re-evaluate`),
   // Seed Policy Templates
   seedPolicies: (projectId: string, templates: string[]) =>
     api.post(`/projects/${projectId}/policies/seed`, { templates }),
@@ -447,6 +449,8 @@ export const roadmapAPI = {
     api.get(`/projects/${projectId}/roadmaps`),
   get: (projectId: string, roadmapId: string) =>
     api.get(`/projects/${projectId}/roadmaps/${roadmapId}`),
+  rename: (projectId: string, roadmapId: string, name: string) =>
+    api.patch(`/projects/${projectId}/roadmaps/${roadmapId}`, { name }),
   delete: (projectId: string, roadmapId: string) =>
     api.delete(`/projects/${projectId}/roadmaps/${roadmapId}`),
   regenerate: (projectId: string, roadmapId: string, config: Record<string, unknown>) =>

@@ -429,6 +429,34 @@ router.get(
   }
 );
 
+// Re-evaluate all active policies against current elements
+router.post(
+  '/:projectId/violations/re-evaluate',
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const policies = await Policy.find({
+        projectId,
+        enabled: true,
+        status: { $in: ['active', undefined, null] },
+      });
+
+      let evaluated = 0;
+      for (const policy of policies) {
+        await evaluateAllForPolicy(projectId, policy._id.toString());
+        evaluated++;
+      }
+
+      res.json({ success: true, data: { policiesEvaluated: evaluated } });
+    } catch (err) {
+      console.error('Re-evaluate violations error:', err);
+      res.status(500).json({ success: false, error: 'Failed to re-evaluate policies' });
+    }
+  }
+);
+
 // ─── Seed Policy Templates ───
 
 // Apply seed policy templates
