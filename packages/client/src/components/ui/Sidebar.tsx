@@ -567,7 +567,7 @@ function CompliancePanel() {
           </div>
         )}
 
-        {/* ── Generated Policies / Violations ── */}
+        {/* ── Gen. Policies / Violations ── */}
         {activeSection === 'policies' && (
           <div className="p-3 space-y-3">
             {isLoadingViolations ? (
@@ -618,7 +618,7 @@ function CompliancePanel() {
                 onClick={() => navigate(`/project/${projectId}/compliance/policies`)}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-[#7c3aed]/15 px-3 py-2 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/25 transition"
               >
-                <ArrowRight size={12} /> Generated Policies
+                <ArrowRight size={12} /> Gen. Policies
               </button>
             )}
           </div>
