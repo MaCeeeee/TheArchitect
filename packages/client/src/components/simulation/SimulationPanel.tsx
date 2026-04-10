@@ -79,37 +79,104 @@ function getTargetElementIds(roadmap: TransformationRoadmap): string[] {
 // ─── Roadmap Import Button ───
 
 function RoadmapImportButton({ onImport }: { onImport: (description: string, targetIds: string[]) => void }) {
-  const activeRoadmap = useRoadmapStore((s) => s.activeRoadmap);
+  const projectId = useArchitectureStore((s) => s.projectId);
+  const { activeRoadmap, roadmaps, loadList, loadRoadmap } = useRoadmapStore();
+  const [showPicker, setShowPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  if (!activeRoadmap || activeRoadmap.status !== 'completed') return null;
+  // Load roadmap list when picker opens
+  useEffect(() => {
+    if (showPicker && projectId && roadmaps.length === 0) {
+      loadList(projectId);
+    }
+  }, [showPicker, projectId, roadmaps.length, loadList]);
 
-  const waveCount = activeRoadmap.waves.length;
-  const totalCost = (activeRoadmap.summary.totalCost / 1000).toFixed(0);
-  const duration = activeRoadmap.summary.totalDurationMonths;
-  const elementCount = activeRoadmap.summary.totalElements;
-
-  const handleImport = () => {
+  const handleImportActive = () => {
+    if (!activeRoadmap || activeRoadmap.status !== 'completed') return;
     const description = buildRoadmapScenario(activeRoadmap);
     const targetIds = getTargetElementIds(activeRoadmap);
     onImport(description, targetIds);
-    toast.success(`Roadmap imported: ${waveCount} waves, ${elementCount} elements`);
+    setShowPicker(false);
+    toast.success(`Roadmap imported: ${activeRoadmap.waves.length} waves, ${activeRoadmap.summary.totalElements} elements`);
   };
 
+  const handleImportFromHistory = async (roadmapId: string) => {
+    if (!projectId) return;
+    setLoading(true);
+    try {
+      await loadRoadmap(projectId, roadmapId);
+      // After loading, the activeRoadmap is set — use it
+      const rm = useRoadmapStore.getState().activeRoadmap;
+      if (!rm || rm.status !== 'completed') {
+        toast.error('Roadmap not completed or could not be loaded');
+        setLoading(false);
+        return;
+      }
+      const description = buildRoadmapScenario(rm);
+      const targetIds = getTargetElementIds(rm);
+      onImport(description, targetIds);
+      setShowPicker(false);
+      toast.success(`Roadmap imported: ${rm.waves.length} waves, ${rm.summary.totalElements} elements`);
+    } catch {
+      toast.error('Failed to load roadmap');
+    }
+    setLoading(false);
+  };
+
+  // If there's an active completed roadmap, show quick-import button
+  const hasActive = activeRoadmap && activeRoadmap.status === 'completed';
+
   return (
-    <button
-      onClick={handleImport}
-      className="w-full flex items-center gap-2 px-3 py-2 rounded border border-[#6366f1]/40 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 transition-colors text-left"
-    >
-      <FileDown size={14} className="text-[#6366f1] flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-medium text-[#a5b4fc] truncate">
-          Import from Roadmap
+    <div className="space-y-1">
+      {/* Quick import for active roadmap */}
+      {hasActive && (
+        <button
+          onClick={handleImportActive}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded border border-[#6366f1]/40 bg-[#6366f1]/10 hover:bg-[#6366f1]/20 transition-colors text-left"
+        >
+          <FileDown size={14} className="text-[#6366f1] flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-xs font-medium text-[#a5b4fc] truncate">Import from Roadmap</div>
+            <div className="text-[10px] text-gray-400 truncate">
+              {activeRoadmap.name} — {activeRoadmap.waves.length} waves, €{(activeRoadmap.summary.totalCost / 1000).toFixed(0)}K, {activeRoadmap.summary.totalDurationMonths}mo
+            </div>
+          </div>
+        </button>
+      )}
+
+      {/* Browse all roadmaps */}
+      <button
+        onClick={() => setShowPicker(!showPicker)}
+        className="w-full flex items-center gap-2 px-3 py-1.5 rounded border border-dashed border-[var(--border-subtle)] hover:border-[#6366f1]/40 text-xs text-gray-400 hover:text-[#a5b4fc] transition"
+      >
+        <History size={12} /> {showPicker ? 'Hide' : 'Browse'} Roadmap History
+      </button>
+
+      {/* Roadmap picker */}
+      {showPicker && (
+        <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] overflow-hidden max-h-48 overflow-y-auto">
+          {roadmaps.length === 0 && (
+            <div className="px-3 py-2 text-[10px] text-gray-500">No roadmaps generated yet. Generate one under Plan &gt; Roadmap.</div>
+          )}
+          {roadmaps.map((rm) => (
+            <button
+              key={rm.id}
+              onClick={() => handleImportFromHistory(rm.id)}
+              disabled={loading}
+              className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-[var(--surface-raised)] transition border-b border-[var(--border-subtle)] last:border-b-0 disabled:opacity-50"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] font-medium text-[var(--text-primary)] truncate">{rm.name}</div>
+                <div className="text-[9px] text-gray-500">
+                  v{rm.version} · {rm.waveCount} waves · €{(rm.totalCost / 1000).toFixed(0)}K · {rm.strategy}
+                </div>
+              </div>
+              <FileDown size={12} className="text-[#6366f1] shrink-0 ml-2" />
+            </button>
+          ))}
         </div>
-        <div className="text-[10px] text-gray-400 truncate">
-          {activeRoadmap.name} — {waveCount} waves, €{totalCost}K, {duration}mo
-        </div>
-      </div>
-    </button>
+      )}
+    </div>
   );
 }
 

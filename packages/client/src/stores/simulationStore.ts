@@ -86,6 +86,10 @@ interface SimulationState {
   // Persona actions (Phase 3)
   loadPersonas: (projectId: string) => Promise<void>;
   createCustomPersona: (projectId: string, input: Record<string, unknown>) => Promise<void>;
+  createPersonaFromStakeholder: (projectId: string, stakeholder: {
+    name: string; role: string; stakeholderType: string;
+    interests: string[]; influence: string; attitude: string;
+  }) => Promise<void>;
   updateCustomPersona: (projectId: string, personaId: string, input: Record<string, unknown>) => Promise<void>;
   deleteCustomPersona: (projectId: string, personaId: string) => Promise<void>;
 
@@ -332,6 +336,71 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await get().loadPersonas(projectId);
     } catch (err) {
       console.error('[SimulationStore] Create persona error:', err);
+      throw err;
+    }
+  },
+
+  createPersonaFromStakeholder: async (projectId, stakeholder) => {
+    // Map stakeholder type → visible layers/domains
+    const LAYER_MAP: Record<string, string[]> = {
+      c_level: ['strategy', 'business', 'information', 'application', 'technology'],
+      business_unit: ['strategy', 'business'],
+      it_ops: ['application', 'technology'],
+      data_team: ['information', 'application'],
+      external: ['business'],
+    };
+    const DOMAIN_MAP: Record<string, string[]> = {
+      c_level: ['business', 'data', 'application', 'technology'],
+      business_unit: ['business'],
+      it_ops: ['application', 'technology'],
+      data_team: ['data', 'application'],
+      external: ['business'],
+    };
+    const DEPTH_MAP: Record<string, number> = { high: 5, medium: 3, low: 1 };
+    const CAPACITY_MAP: Record<string, number> = { high: 8, medium: 5, low: 3 };
+    const ATTITUDE_PROMPT: Record<string, string> = {
+      champion: 'You are an enthusiastic supporter of architecture changes. You focus on benefits and opportunities.',
+      supporter: 'You are generally supportive but want to see clear justification for changes.',
+      neutral: 'You evaluate changes objectively, weighing benefits against risks equally.',
+      critic: 'You are skeptical of changes. You focus on risks, costs, and potential negative impacts.',
+    };
+    // Find closest preset — use name/role keywords for smarter matching
+    function detectPreset(name: string, role: string, type: string): string {
+      const text = `${name} ${role}`.toLowerCase();
+      if (text.includes('ciso') || text.includes('security')) return 'security_officer';
+      if (text.includes('data') || text.includes('analytics')) return 'data_architect';
+      if (text.includes('ops') || text.includes('infrastructure') || text.includes('devops')) return 'it_operations_manager';
+      if (text.includes('business') || text.includes('product') || text.includes('sales') || text.includes('customer')) return 'business_unit_lead';
+      const TYPE_MAP: Record<string, string> = {
+        c_level: 'cto',
+        business_unit: 'business_unit_lead',
+        it_ops: 'it_operations_manager',
+        data_team: 'data_architect',
+        external: 'business_unit_lead',
+      };
+      return TYPE_MAP[type] || 'cto';
+    }
+
+    const input = {
+      scope: 'project',
+      basedOnPresetId: detectPreset(stakeholder.name, stakeholder.role, stakeholder.stakeholderType),
+      name: `${stakeholder.name} (${stakeholder.role})`,
+      stakeholderType: stakeholder.stakeholderType,
+      visibleLayers: LAYER_MAP[stakeholder.stakeholderType] || ['business'],
+      visibleDomains: DOMAIN_MAP[stakeholder.stakeholderType] || ['business'],
+      maxGraphDepth: DEPTH_MAP[stakeholder.influence] || 3,
+      expectedCapacity: CAPACITY_MAP[stakeholder.influence] || 5,
+      riskThreshold: stakeholder.attitude === 'critic' ? 'low' : stakeholder.attitude === 'champion' ? 'high' : 'medium',
+      priorities: stakeholder.interests.length > 0 ? stakeholder.interests : ['General architecture oversight'],
+      systemPromptSuffix: `${ATTITUDE_PROMPT[stakeholder.attitude] || ''} Your key interests are: ${stakeholder.interests.join(', ')}.`,
+      description: `Imported from project stakeholder: ${stakeholder.name}, ${stakeholder.role}`,
+    };
+
+    try {
+      await simulationAPI.createCustomPersona(projectId, input);
+      await get().loadPersonas(projectId);
+    } catch (err) {
+      console.error('[SimulationStore] Create persona from stakeholder error:', err);
       throw err;
     }
   },

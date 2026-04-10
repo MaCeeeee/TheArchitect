@@ -1,5 +1,23 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IStakeholder {
+  id: string;
+  name: string;
+  role: string;
+  stakeholderType: 'c_level' | 'business_unit' | 'it_ops' | 'data_team' | 'external';
+  interests: string[];
+  influence: 'high' | 'medium' | 'low';
+  attitude: 'champion' | 'supporter' | 'neutral' | 'critic';
+}
+
+export interface IVision {
+  scope: string;
+  visionStatement: string;
+  principles: string[];
+  drivers: string[];
+  goals: string[];
+}
+
 export interface IProject extends Document {
   name: string;
   description: string;
@@ -10,6 +28,8 @@ export interface IProject extends Document {
     joinedAt: Date;
   }>;
   togafPhase: string;
+  vision?: IVision;
+  stakeholders: IStakeholder[];
   settings: {
     defaultLayer: string;
     gridSize: number;
@@ -55,6 +75,22 @@ const projectSchema = new Schema<IProject>(
       },
     ],
     togafPhase: { type: String, default: 'preliminary' },
+    vision: {
+      scope: { type: String, default: '' },
+      visionStatement: { type: String, default: '' },
+      principles: [{ type: String }],
+      drivers: [{ type: String }],
+      goals: [{ type: String }],
+    },
+    stakeholders: [{
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      role: { type: String, default: '' },
+      stakeholderType: { type: String, enum: ['c_level', 'business_unit', 'it_ops', 'data_team', 'external'], default: 'business_unit' },
+      interests: [{ type: String }],
+      influence: { type: String, enum: ['high', 'medium', 'low'], default: 'medium' },
+      attitude: { type: String, enum: ['champion', 'supporter', 'neutral', 'critic'], default: 'neutral' },
+    }],
     settings: {
       defaultLayer: { type: String, default: 'business' },
       gridSize: { type: Number, default: 1 },

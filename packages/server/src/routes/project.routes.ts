@@ -115,20 +115,29 @@ router.get(
 
       const simRuns = await SimulationRun.countDocuments({ projectId });
 
-      // Calculate journey phase (same logic as client journeyStore)
-      const phase1Done = elementCount >= 5 && connectionCount >= 3;
-      const phase2Done = maxStage >= 1;
-      const phase3Done = maxStage >= 2;
-      const phase4Done = simRuns > 0 || maxStage >= 3;
+      // Fetch project for vision/stakeholder data
+      const project = await Project.findById(projectId).lean();
 
-      let currentPhase = 5;
+      // Calculate journey phase (6 TOGAF-aligned phases: A, B-D, E, F, G, H)
+      const vision = project?.vision;
+      const stakeholders = project?.stakeholders || [];
+      const phase1Done = !!vision?.scope && !!vision?.visionStatement
+        && stakeholders.length >= 3 && (vision?.principles?.length || 0) >= 2;
+      const phase2Done = elementCount >= 5 && connectionCount >= 3;
+      const phase3Done = maxStage >= 1;
+      const phase4Done = simRuns > 0 || maxStage >= 3;
+      const phase5Done = maxStage >= 2;
+      // Phase 6 (Change Management) not computed server-side (requires snapshots/checklists)
+
+      let currentPhase = 6;
       if (!phase1Done) currentPhase = 1;
       else if (!phase2Done) currentPhase = 2;
       else if (!phase3Done) currentPhase = 3;
       else if (!phase4Done) currentPhase = 4;
+      else if (!phase5Done) currentPhase = 5;
 
-      const phasesDone = [phase1Done, phase2Done, phase3Done, phase4Done, false];
-      const healthScore = phasesDone.filter(Boolean).length * 20;
+      const phasesDone = [phase1Done, phase2Done, phase3Done, phase4Done, phase5Done, false];
+      const healthScore = Math.round(phasesDone.filter(Boolean).length * (100 / 6));
 
       res.json({ elementCount, connectionCount, currentPhase, healthScore });
     } catch (err) {
@@ -146,10 +155,18 @@ router.put(
   audit({ action: 'update_project', entityType: 'project' }),
   async (req: Request, res: Response) => {
     try {
-      const { name, description, tags, settings, togafPhase } = req.body;
+      const { name, description, tags, settings, togafPhase, vision, stakeholders } = req.body;
+      const update: Record<string, unknown> = {};
+      if (name !== undefined) update.name = name;
+      if (description !== undefined) update.description = description;
+      if (tags !== undefined) update.tags = tags;
+      if (settings !== undefined) update.settings = settings;
+      if (togafPhase !== undefined) update.togafPhase = togafPhase;
+      if (vision !== undefined) update.vision = vision;
+      if (stakeholders !== undefined) update.stakeholders = stakeholders;
       const project = await Project.findByIdAndUpdate(
         req.params.id,
-        { name, description, tags, settings, togafPhase },
+        update,
         { new: true }
       );
       if (!project) return res.status(404).json({ error: 'Project not found' });

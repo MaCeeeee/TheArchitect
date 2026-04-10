@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack } from 'lucide-react';
+import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { governanceAPI } from '../../services/api';
 
@@ -35,6 +35,7 @@ export default function PolicyManager() {
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set(['dora', 'nis2']));
   const [seeding, setSeeding] = useState(false);
 
@@ -299,43 +300,111 @@ export default function PolicyManager() {
       ) : (
         <div className="flex-1 overflow-y-auto">
           {policies.map((p) => (
-            <div key={p._id} className="px-4 py-3 border-b border-[var(--border-subtle)]/30 hover:bg-[var(--surface-base)] transition group">
-              <div className="flex items-center gap-2.5">
-                {severityIcon(p.severity)}
-                <span className="text-sm text-white font-medium flex-1 truncate">{p.name}</span>
-                <button
-                  onClick={() => handleDelete(p._id)}
-                  className="opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[#ef4444] transition p-1"
-                  title="Delete policy"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <button onClick={() => togglePolicy(p._id, !p.enabled)} className="text-[var(--text-secondary)]">
-                  {p.enabled
-                    ? <ToggleRight size={20} className="text-[#22c55e]" />
-                    : <ToggleLeft size={20} className="text-[var(--text-disabled)]" />}
-                </button>
-              </div>
-              <div className="flex items-center gap-2.5 mt-1.5 ml-6">
-                <span
-                  className="text-xs px-1.5 py-0.5 rounded capitalize"
-                  style={{ color: categoryColors[p.category] || '#7a8a7a', backgroundColor: `${categoryColors[p.category] || '#7a8a7a'}20` }}
-                >
-                  {p.category}
-                </span>
-                {(p as PolicyItem & { status?: string }).status === 'draft' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#6b7280]/20 text-[#9ca3af]">draft</span>
-                )}
-                {(p as PolicyItem & { status?: string }).status === 'archived' && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ef4444]/10 text-[#ef4444]/60">archived</span>
-                )}
-                <span className="text-xs text-[var(--text-disabled)]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
-              </div>
-              {p.description && <p className="text-xs text-[var(--text-tertiary)] mt-1 ml-6">{p.description}</p>}
-            </div>
+            <PolicyCard
+              key={p._id}
+              policy={p}
+              expandedId={expandedId}
+              onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+              onDelete={handleDelete}
+              onToggle={togglePolicy}
+              severityIcon={severityIcon}
+            />
           ))}
           {policies.length === 0 && (
             <p className="text-sm text-[var(--text-tertiary)] text-center py-8">No policies yet. Create one to start.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Expandable Policy Card ─────────────────────────────
+function PolicyCard({ policy: p, expandedId, onToggleExpand, onDelete, onToggle, severityIcon }: {
+  policy: PolicyItem;
+  expandedId: string | null;
+  onToggleExpand: (id: string) => void;
+  onDelete: (id: string) => void;
+  onToggle: (id: string, enabled: boolean) => void;
+  severityIcon: (s: string) => React.ReactNode;
+}) {
+  const isExpanded = expandedId === p._id;
+  const categoryColors: Record<string, string> = {
+    compliance: '#22c55e', security: '#ef4444', architecture: '#f59e0b',
+    naming: '#06b6d4', data: '#3b82f6', custom: '#a855f7',
+  };
+
+  return (
+    <div className="border-b border-[var(--border-subtle)]/30 hover:bg-[var(--surface-base)] transition group">
+      {/* Header — clickable to expand */}
+      <div
+        className="px-4 py-3 cursor-pointer"
+        onClick={() => onToggleExpand(p._id)}
+      >
+        <div className="flex items-center gap-2.5">
+          {severityIcon(p.severity)}
+          <span className="text-sm text-white font-medium flex-1 truncate">{p.name}</span>
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(p._id); }}
+            className="opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[#ef4444] transition p-1"
+            title="Delete policy"
+          >
+            <Trash2 size={14} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onToggle(p._id, !p.enabled); }} className="text-[var(--text-secondary)]">
+            {p.enabled
+              ? <ToggleRight size={20} className="text-[#22c55e]" />
+              : <ToggleLeft size={20} className="text-[var(--text-disabled)]" />}
+          </button>
+          {isExpanded ? <ChevronUp size={14} className="text-[var(--text-tertiary)]" /> : <ChevronDown size={14} className="text-[var(--text-tertiary)]" />}
+        </div>
+        <div className="flex items-center gap-2.5 mt-1.5 ml-6">
+          <span
+            className="text-xs px-1.5 py-0.5 rounded capitalize"
+            style={{ color: categoryColors[p.category] || '#7a8a7a', backgroundColor: `${categoryColors[p.category] || '#7a8a7a'}20` }}
+          >
+            {p.category}
+          </span>
+          {(p as PolicyItem & { status?: string }).status === 'draft' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#6b7280]/20 text-[#9ca3af]">draft</span>
+          )}
+          {(p as PolicyItem & { status?: string }).status === 'archived' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#ef4444]/10 text-[#ef4444]/60">archived</span>
+          )}
+          <span className="text-xs text-[var(--text-disabled)]">{p.rules.length} rule{p.rules.length !== 1 ? 's' : ''}</span>
+        </div>
+        {p.description && <p className="text-xs text-[var(--text-tertiary)] mt-1 ml-6 line-clamp-1">{p.description}</p>}
+      </div>
+
+      {/* Expanded details */}
+      {isExpanded && (
+        <div className="px-4 pb-3 ml-6 space-y-2 border-t border-[var(--border-subtle)]/20 pt-2">
+          {p.description && (
+            <div>
+              <span className="text-[10px] uppercase text-[var(--text-disabled)] tracking-wider">Description</span>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">{p.description}</p>
+            </div>
+          )}
+          <div>
+            <span className="text-[10px] uppercase text-[var(--text-disabled)] tracking-wider">Rules ({p.rules.length})</span>
+            <div className="mt-1 space-y-1.5">
+              {p.rules.map((r, i) => (
+                <div key={i} className="rounded bg-[var(--surface-raised)] px-2.5 py-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <code className="text-cyan-300">{r.field}</code>
+                    <span className="text-[var(--text-disabled)]">{r.operator}</span>
+                    <code className="text-amber-300">{String(r.value)}</code>
+                  </div>
+                  {r.message && <p className="text-[var(--text-tertiary)] mt-0.5 text-[11px]">{r.message}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+          {p.framework && (
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase text-[var(--text-disabled)] tracking-wider">Framework</span>
+              <span className="text-xs text-[var(--text-secondary)]">{p.framework}</span>
+            </div>
           )}
         </div>
       )}

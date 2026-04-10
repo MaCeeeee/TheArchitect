@@ -7,14 +7,17 @@ import {
   FileText, Grid3X3, Wrench, FileCheck, TrendingUp, ClipboardCheck, ShieldAlert,
   Briefcase, Users, Bot, Cable,
   AlertCircle, AlertTriangle, Info, CheckCircle2, Loader2, ArrowRight,
-  Shield, History,
+  Shield, History, Target, Lock, Unlock,
 } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useJourneyStore } from '../../stores/journeyStore';
 import { flyToElement } from '../3d/CameraControls';
 import ArchitectPanel from './ArchitectPanel';
+import EnvisionPanel from '../envision/EnvisionPanel';
 import ElementPalette from './ElementPalette';
+import type { StarterTemplate } from './ElementPalette';
 import ImpactAnalysis from '../analytics/ImpactAnalysis';
 import RiskDashboard from '../analytics/RiskDashboard';
 import CostOptimization from '../analytics/CostOptimization';
@@ -23,15 +26,19 @@ import ProbabilisticCost from '../analytics/ProbabilisticCost';
 import ScenarioDashboard from '../analytics/ScenarioDashboard';
 import CapacityPlanning from '../simulation/CapacityPlanning';
 import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
+import SimulationPanel from '../simulation/SimulationPanel';
 import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import PhaseBar from './PhaseBar';
+import PhaseTransition from './PhaseTransition';
+import { getVisibleTabs } from '../../utils/phaseVisibility';
 import { ARCHITECTURE_LAYERS, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 import type { ArchitectureLayer, ElementType, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
 
 const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({ id: l.id, label: l.label, color: l.color }));
 
 const NAV_ITEMS = [
+  { id: 'envision', icon: Target, label: 'Vision' },
   { id: 'explorer', icon: FolderTree, label: 'Explorer' },
   { id: 'architect', icon: BookOpen, label: 'Architect' },
   { id: 'comply', icon: ShieldCheck, label: 'Comply' },
@@ -49,7 +56,10 @@ export default function Sidebar() {
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const addElement = useArchitectureStore((s) => s.addElement);
-  const { sidebarPanel, setSidebarPanel, isPaletteOpen, togglePalette } = useUIStore();
+  const addConnection = useArchitectureStore((s) => s.addConnection);
+  const { sidebarPanel, setSidebarPanel, isPaletteOpen, togglePalette, showAllSections, toggleShowAll } = useUIStore();
+  const currentPhase = useJourneyStore((s) => s.currentPhase);
+  const visibleTabs = getVisibleTabs(currentPhase, showAllSections);
 
   const filteredElements = elements.filter((el) =>
     el.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -85,6 +95,43 @@ export default function Sidebar() {
     flyToElement(newElement.position3D, newElement.id);
   };
 
+  const handleAddTemplate = (template: StarterTemplate) => {
+    const ids: string[] = [];
+    template.elements.forEach((elDef, idx) => {
+      const id = `el-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`;
+      ids.push(id);
+      const layerElements = elements.filter((el) => el.layer === elDef.layer);
+      const col = (layerElements.length + idx) % 5;
+      const row = Math.floor((layerElements.length + idx) / 5);
+      const newElement: ArchitectureElement = {
+        id,
+        type: elDef.type,
+        name: elDef.name,
+        description: '',
+        layer: elDef.layer,
+        togafDomain: elDef.domain,
+        maturityLevel: 3,
+        riskLevel: 'low',
+        status: 'current',
+        position3D: { x: col * 3 - 6, y: LAYER_Y[elDef.layer], z: row * 3 },
+        metadata: {},
+      };
+      addElement(newElement);
+    });
+    // Create connections between template elements
+    template.connections.forEach(([fromIdx, toIdx, relType]) => {
+      if (ids[fromIdx] && ids[toIdx]) {
+        addConnection({
+          id: `conn-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          sourceId: ids[fromIdx],
+          targetId: ids[toIdx],
+          type: relType,
+        });
+      }
+    });
+    if (ids[0]) selectElement(ids[0]);
+  };
+
   const handleElementClick = (id: string) => {
     selectElement(id);
     const el = elements.find((e) => e.id === id);
@@ -92,10 +139,11 @@ export default function Sidebar() {
   };
 
   return (
+    <>
     <aside className="flex h-full w-64 flex-col border-r border-[var(--border-subtle)] bg-[var(--surface-raised)]">
-      {/* Navigation tabs */}
+      {/* Navigation tabs — filtered by current TOGAF phase */}
       <div className="flex border-b border-[var(--border-subtle)]">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => visibleTabs.includes(item.id)).map((item) => (
           <NavButton
             key={item.id}
             item={item}
@@ -150,7 +198,7 @@ export default function Sidebar() {
 
           {/* Smart Element Palette (collapsible) */}
           {projectId && isPaletteOpen && (
-            <ElementPalette onAddElement={handleAddElement} />
+            <ElementPalette onAddElement={handleAddElement} onAddTemplate={handleAddTemplate} />
           )}
 
           {/* Add element toggle button */}
@@ -172,6 +220,8 @@ export default function Sidebar() {
         </>
       )}
 
+      {sidebarPanel === 'envision' && <EnvisionPanel />}
+
       {sidebarPanel === 'architect' && <ArchitectPanel />}
 
       {sidebarPanel === 'comply' && <CompliancePanel />}
@@ -184,8 +234,16 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Settings footer icon */}
-      <div className="border-t border-[var(--border-subtle)] p-2">
+      {/* Footer: Show All toggle + Settings */}
+      <div className="border-t border-[var(--border-subtle)] p-2 space-y-1">
+        <button
+          onClick={toggleShowAll}
+          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-[var(--text-tertiary)] hover:bg-[var(--surface-base)] hover:text-[var(--text-secondary)] transition"
+          title={showAllSections ? 'Showing all features (click to follow guided workflow)' : 'Following guided workflow (click to show all features)'}
+        >
+          {showAllSections ? <Unlock size={14} /> : <Lock size={14} />}
+          {showAllSections ? 'All Features' : 'Guided Mode'}
+        </button>
         <button
           onClick={() => navigate('/settings')}
           className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-base)] hover:text-white transition"
@@ -196,6 +254,8 @@ export default function Sidebar() {
         </button>
       </div>
     </aside>
+    <PhaseTransition />
+    </>
   );
 }
 
@@ -208,7 +268,7 @@ function NavButton({
 }: {
   item: (typeof NAV_ITEMS)[number];
   isActive: boolean;
-  setSidebarPanel: (panel: 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none') => void;
+  setSidebarPanel: (panel: 'envision' | 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none') => void;
 }) {
   const navigate = useNavigate();
   const projectId = useArchitectureStore((s) => s.projectId);
@@ -847,6 +907,7 @@ const ANALYTICS_GROUPS = [
       { id: 'monte', label: 'Monte Carlo' },
       { id: 'scenario', label: 'Scenarios' },
       { id: 'capacity', label: 'Capacity' },
+      { id: 'mirofish', label: 'MiroFish' },
     ],
   },
   {
@@ -866,7 +927,7 @@ const ANALYTICS_GROUPS = [
   },
 ] as const;
 
-type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'roadmap' | 'portfolio' | 'integrations';
+type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'mirofish' | 'roadmap' | 'portfolio' | 'integrations';
 
 const ANALYTICS_ROUTE_MAP: Record<string, string> = {
   monte: 'monte-carlo',
@@ -957,6 +1018,7 @@ function AnalyticsPanel() {
         {tab === 'monte' && <MonteCarloSimulation />}
         {tab === 'scenario' && <ScenarioDashboard />}
         {tab === 'capacity' && <CapacityPlanning />}
+        {tab === 'mirofish' && <SimulationPanel />}
         {tab === 'roadmap' && <RoadmapPanel />}
         {tab === 'portfolio' && (
           <div className="p-3 space-y-2">
