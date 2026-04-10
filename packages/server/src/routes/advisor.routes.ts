@@ -9,11 +9,13 @@ import { runAdvisorScan } from '../services/advisor.service';
 const router = Router();
 
 router.use(authenticate);
-router.use(rateLimit({ name: 'ai-advisor', windowMs: 24 * 60 * 60 * 1000, max: 10 }));
+
+const aiRateLimit = rateLimit({ name: 'ai-advisor', windowMs: 24 * 60 * 60 * 1000, max: 10 });
 
 // Full advisor scan — returns health score + insights
 router.get(
   '/:projectId/advisor/scan',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {

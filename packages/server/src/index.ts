@@ -66,7 +66,7 @@ async function main() {
   // Global rate limit — disabled in dev to avoid 429s during rapid testing
   const isDev = process.env.NODE_ENV !== 'production';
   if (!isDev) {
-    app.use(rateLimit({ windowMs: 60_000, max: 200, name: 'global' }));
+    app.use(rateLimit({ windowMs: 60_000, max: 600, name: 'global' }));
   }
 
   // Routes
