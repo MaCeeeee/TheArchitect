@@ -1,18 +1,20 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Boxes, GitFork, FileText, Shield, Wand2, Cable } from 'lucide-react';
+import { X, Boxes, GitFork, FileText, Shield, Wand2, Cable, Target, History } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
+import { useUIStore } from '../../stores/uiStore';
 import { ProgressRing } from '../../design-system';
 import type { JourneyPhase } from '../../stores/journeyStore';
 
 const PHASE_ICONS: Record<JourneyPhase, typeof Boxes> = {
-  1: Boxes,
-  2: FileText,
-  3: Shield,
+  1: Target,
+  2: Boxes,
+  3: FileText,
   4: GitFork,
   5: Shield,
+  6: History,
 };
 
 interface MissionControlProps {
@@ -148,7 +150,13 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
                   {p.nextAction && isCurrent && (
                     <button
                       onClick={() => {
-                        navigate(p.nextAction!.route);
+                        if (p.nextAction!.route === '__connection_mode__') {
+                          useUIStore.getState().enterConnectionMode();
+                        } else if (p.nextAction!.route.startsWith('__envision')) {
+                          useUIStore.getState().setSidebarPanel('envision');
+                        } else {
+                          navigate(p.nextAction!.route);
+                        }
                         onClose();
                       }}
                       className="shrink-0 text-[10px] font-medium px-2.5 py-1 rounded-md bg-[var(--status-purple)] text-white hover:bg-[#8b5cf6] transition"

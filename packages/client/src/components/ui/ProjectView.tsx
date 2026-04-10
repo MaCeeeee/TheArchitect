@@ -11,6 +11,7 @@ import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useComplianceStore } from '../../stores/complianceStore';
+import { useEnvisionStore } from '../../stores/envisionStore';
 import { connectSocket, joinProject, getSocket } from '../../services/socket';
 import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
@@ -82,6 +83,9 @@ export default function ProjectView() {
             createdAt: ws.createdAt,
           })));
         }
+
+        // Load envision data (vision + stakeholders) for Phase A
+        useEnvisionStore.getState().load(projectId);
 
         // Load policy violations for real-time compliance visualization
         useComplianceStore.getState().loadViolations(projectId);
@@ -236,6 +240,8 @@ export default function ProjectView() {
               onAction={() => {
                 if (currentPhaseInfo.nextAction!.route === '__connection_mode__') {
                   useUIStore.getState().enterConnectionMode();
+                } else if (currentPhaseInfo.nextAction!.route.startsWith('__envision')) {
+                  useUIStore.getState().setSidebarPanel('envision');
                 } else {
                   navigate(currentPhaseInfo.nextAction!.route);
                 }

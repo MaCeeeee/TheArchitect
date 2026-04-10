@@ -1,7 +1,11 @@
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../stores/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_WS_URL || 'http://localhost:4000';
+const SOCKET_URL = import.meta.env.VITE_WS_URL || (
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+    ? `${window.location.protocol}//${window.location.host}`
+    : 'http://localhost:4000'
+);
 
 let socket: Socket | null = null;
 
