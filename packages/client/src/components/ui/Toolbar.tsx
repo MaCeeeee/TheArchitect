@@ -33,6 +33,8 @@ import {
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
+import { useJourneyStore } from '../../stores/journeyStore';
+import { isToolbarActionVisible } from '../../utils/phaseVisibility';
 import { reportAPI } from '../../services/api';
 import { fitToScreen } from '../3d/ViewModeCamera';
 import UserPresence from '../collaboration/UserPresence';
@@ -81,7 +83,11 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   const toggleXRay = useXRayStore((s) => s.toggleXRay);
   const activeViewpoint = useUIStore((s) => s.activeViewpoint);
   const setActiveViewpoint = useUIStore((s) => s.setActiveViewpoint);
+  const showAllSections = useUIStore((s) => s.showAllSections);
+  const currentPhase = useJourneyStore((s) => s.currentPhase);
   const [showViewpointMenu, setShowViewpointMenu] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
   const viewpointRef = useRef<HTMLDivElement>(null);
 
   // X-Ray guard: auto-switch to 3D when activating X-Ray
@@ -130,6 +136,17 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
     if (showViewpointMenu) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showViewpointMenu]);
+
+  // Close more menu on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setShowMoreMenu(false);
+      }
+    };
+    if (showMoreMenu) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMoreMenu]);
 
   const handleExport = async (type: 'executive' | 'inventory') => {
     if (!projectId) return;
@@ -361,23 +378,59 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
           />
         )}
         <ToolbarButton icon={<Maximize size={16} />} title="Fit to Screen (F)" onClick={() => fitToScreen(elements)} />
-        <ToolbarButton icon={<Upload size={16} />} title="Import BPMN" onClick={onOpenBPMNImport} />
-        <ToolbarButton icon={<Workflow size={16} />} title="Import n8n" onClick={onOpenN8nImport} />
-        <ToolbarButton icon={<FileSpreadsheet size={16} />} title="Import CSV" onClick={onOpenCSVImport} />
-        {onOpenImportMapping && (
-          <ToolbarButton icon={<Upload size={16} />} title="Import Data (Mapping)" onClick={onOpenImportMapping} />
+        {/* Phase-gated: X-Ray and Scenario visible from Phase 4+ */}
+        {isToolbarActionVisible('xray', currentPhase, showAllSections) && (
+          <>
+            <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
+            <ToolbarButton
+              icon={<Play size={16} />}
+              title={isScenarioMode ? 'Exit Scenario Mode' : 'Enter Scenario Mode'}
+              onClick={() => setScenarioMode(!isScenarioMode)}
+              active={isScenarioMode}
+            />
+          </>
         )}
-        <div className="mx-1 h-5 w-px bg-[#1a2a1a]" />
-        <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
-        <ToolbarButton
-          icon={<Play size={16} />}
-          title={isScenarioMode ? 'Exit Scenario Mode' : 'Enter Scenario Mode'}
-          onClick={() => setScenarioMode(!isScenarioMode)}
-          active={isScenarioMode}
-        />
         <ChatButton onClick={toggleChat} />
         <ToolbarButton icon={<Map size={16} />} title="Minimap" onClick={toggleMinimap} />
         <ToolbarButton icon={<Lightbulb size={16} />} title="Tour" onClick={onOpenWalkthrough} />
+        {/* More dropdown — imports + phase-hidden actions */}
+        <div className="relative" ref={moreRef}>
+          <ToolbarButton
+            icon={<ChevronDown size={16} />}
+            title="More actions"
+            onClick={() => setShowMoreMenu(!showMoreMenu)}
+          />
+          {showMoreMenu && (
+            <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] py-1 shadow-xl z-50">
+              <div className="px-3 py-1 text-[9px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Import</div>
+              <button onClick={() => { onOpenBPMNImport(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                <Upload size={14} /> BPMN
+              </button>
+              <button onClick={() => { onOpenN8nImport(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                <Workflow size={14} /> n8n Workflow
+              </button>
+              <button onClick={() => { onOpenCSVImport(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                <FileSpreadsheet size={14} /> CSV
+              </button>
+              {onOpenImportMapping && (
+                <button onClick={() => { onOpenImportMapping(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                  <Upload size={14} /> Data Mapping
+                </button>
+              )}
+              {!isToolbarActionVisible('xray', currentPhase, showAllSections) && (
+                <>
+                  <div className="mx-2 my-1 h-px bg-[#1a2a1a]" />
+                  <button onClick={() => { handleXRayToggle(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                    <ScanEye size={14} /> X-Ray Mode
+                  </button>
+                  <button onClick={() => { setScenarioMode(!isScenarioMode); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                    <Play size={14} /> Scenario Mode
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
         <div className="relative" ref={exportRef}>
           <ToolbarButton
             icon={exportLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}

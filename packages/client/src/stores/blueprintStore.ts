@@ -51,6 +51,7 @@ interface BlueprintState {
   updateQuestionnaire: (updates: Partial<BlueprintQuestionnaire>) => void;
   setComplexityHint: (hint: 'minimal' | 'standard' | 'comprehensive') => void;
   setIndustryHint: (hint: string) => void;
+  prefillFromVision: (vision: { scope: string; visionStatement: string; principles: string[]; drivers: string[]; goals: string[] }) => void;
   generate: (projectId: string) => Promise<void>;
   removeElement: (elementId: string) => void;
   updateElement: (elementId: string, updates: Partial<BlueprintGeneratedElement>) => void;
@@ -135,6 +136,21 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
 
   setComplexityHint: (hint) => set({ complexityHint: hint }),
   setIndustryHint: (hint) => set({ industryHint: hint }),
+
+  prefillFromVision: (vision: { scope: string; visionStatement: string; principles: string[]; drivers: string[]; goals: string[] }) => {
+    set((s) => {
+      const q = { ...s.questionnaire };
+      if (vision.scope && !q.businessDescription) q.businessDescription = vision.scope;
+      if (vision.visionStatement && !q.successVision) q.successVision = vision.visionStatement;
+      if (vision.principles.length > 0 && !q.principles) q.principles = vision.principles.join(', ');
+      if (vision.goals.length > 0) {
+        const goals = [...q.goals] as [string, string, string];
+        vision.goals.slice(0, 3).forEach((g, i) => { if (!goals[i]) goals[i] = g; });
+        q.goals = goals;
+      }
+      return { questionnaire: q };
+    });
+  },
 
   generate: async (projectId: string) => {
     const { questionnaire, complexityHint, industryHint } = get();

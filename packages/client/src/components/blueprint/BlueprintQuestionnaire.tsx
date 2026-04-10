@@ -5,6 +5,7 @@ import {
   ChevronDown, ChevronRight, Plus, X, Upload, FileText, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { useBlueprintStore } from '../../stores/blueprintStore';
+import { useEnvisionStore } from '../../stores/envisionStore';
 import type { BlueprintQuestionnaire as QuestionnaireType } from '@thearchitect/shared';
 
 // ─── Card Wrapper ───
@@ -297,6 +298,16 @@ export default function BlueprintQuestionnaire({ onGenerate }: BlueprintQuestion
   const isAutofilling = useBlueprintStore((s) => s.isAutofilling);
   const autofillDocumentName = useBlueprintStore((s) => s.autofillDocumentName);
   const error = useBlueprintStore((s) => s.error);
+
+  const vision = useEnvisionStore((s) => s.vision);
+  const prefillFromVision = useBlueprintStore((s) => s.prefillFromVision);
+
+  // Pre-fill from vision data if available (only once on mount)
+  const prefilled = useRef(false);
+  if (!prefilled.current && vision.scope) {
+    prefilled.current = true;
+    prefillFromVision(vision);
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);

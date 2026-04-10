@@ -168,10 +168,13 @@ export default function ScenarioDashboard() {
             {scenarios.length === 0 ? (
               <div className="text-center py-6">
                 <GitCompare size={20} className="mx-auto text-[var(--text-disabled)] mb-2" />
-                <p className="text-[10px] text-[var(--text-tertiary)]">No scenarios yet</p>
-                <p className="text-[9px] text-[var(--text-disabled)]">
-                  Create a scenario to start comparing transformation options
+                <p className="text-[10px] font-medium text-[var(--text-tertiary)]">No scenarios yet</p>
+                <p className="text-[9px] text-[var(--text-disabled)] mt-0.5 max-w-[200px] mx-auto">
+                  Create "what-if" scenarios to compare alternative architecture decisions side by side.
                 </p>
+                <span className="inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[8px] font-medium text-[var(--status-purple)]">
+                  Phase F: Migration Planning
+                </span>
               </div>
             ) : (
               <div className="space-y-1.5">

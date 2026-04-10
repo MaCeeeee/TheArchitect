@@ -17,6 +17,8 @@ export { default as EmptyState } from './patterns/EmptyState';
 export { default as Stepper } from './patterns/Stepper';
 export { default as ProgressRing } from './patterns/ProgressRing';
 export { default as NextStepBanner } from './patterns/NextStepBanner';
+export { default as SectionHeader } from './patterns/SectionHeader';
+export { default as PhaseEmptyState } from './patterns/PhaseEmptyState';
 
 // Layout
 export { default as PageShell } from './layout/PageShell';

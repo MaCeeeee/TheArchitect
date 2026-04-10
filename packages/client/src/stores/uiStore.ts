@@ -3,7 +3,7 @@ import type { ArchitectureLayer } from '@thearchitect/shared';
 import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
-type SidebarPanel = 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
+type SidebarPanel = 'envision' | 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
 
 interface UIState {
   viewMode: ViewMode;
@@ -32,6 +32,8 @@ interface UIState {
   favoriteTypes: ElementType[];
   // Viewpoint filtering
   activeViewpoint: string | null;
+  // Progressive disclosure
+  showAllSections: boolean;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -58,6 +60,8 @@ interface UIState {
   toggleFavoriteType: (type: ElementType) => void;
   // Viewpoint filtering
   setActiveViewpoint: (id: string | null) => void;
+  // Progressive disclosure
+  toggleShowAll: () => void;
 }
 
 // Load favorites from localStorage
@@ -68,10 +72,16 @@ function loadFavorites(): ElementType[] {
   } catch { return []; }
 }
 
+function loadShowAll(): boolean {
+  try {
+    return localStorage.getItem('ta_show_all_sections') === 'true';
+  } catch { return false; }
+}
+
 export const useUIStore = create<UIState>((set) => ({
   viewMode: '3d',
   focusedLayer: 'business',
-  sidebarPanel: 'explorer',
+  sidebarPanel: 'envision',
   isSidebarOpen: true,
   isPropertyPanelOpen: true,
   showWalkthrough: false,
@@ -127,4 +137,11 @@ export const useUIStore = create<UIState>((set) => ({
   // Viewpoint filtering
   activeViewpoint: null,
   setActiveViewpoint: (id) => set({ activeViewpoint: id }),
+  // Progressive disclosure
+  showAllSections: loadShowAll(),
+  toggleShowAll: () => set((s) => {
+    const next = !s.showAllSections;
+    localStorage.setItem('ta_show_all_sections', String(next));
+    return { showAllSections: next };
+  }),
 }));

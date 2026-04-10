@@ -432,10 +432,15 @@ export default function RoadmapPanel() {
 
             {/* Empty waves */}
             {activeRoadmap.waves && activeRoadmap.waves.length === 0 && (
-              <div className="flex flex-col items-center py-6 text-[var(--text-tertiary)] text-sm">
-                <Map size={24} className="mb-2" />
-                <p>No migration candidates found.</p>
-                <p className="text-xs mt-1">Add elements with transitional or retired status to generate waves.</p>
+              <div className="flex flex-col items-center py-6 text-center">
+                <Map size={24} className="text-[var(--border-strong)] mb-2" />
+                <p className="text-sm font-medium text-[var(--text-secondary)]">No migration candidates found</p>
+                <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
+                  Set elements to "transitional" or "retired" status to generate migration waves.
+                </p>
+                <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+                  Phase F: Migration Planning
+                </span>
               </div>
             )}
 

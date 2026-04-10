@@ -161,8 +161,15 @@ export default function RiskDashboard() {
       </div>
 
       {elements.length === 0 && (
-        <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-xs text-[var(--text-tertiary)] text-center">No elements to assess</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <Shield size={24} className="text-[var(--border-strong)] mb-2" />
+          <p className="text-xs font-medium text-[var(--text-secondary)]">No elements to assess</p>
+          <p className="text-[10px] text-[var(--text-tertiary)] mt-1 max-w-xs">
+            Model your architecture first — risk scores are calculated from element maturity, dependencies, and lifecycle status.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+            Phases B-D: Architecture Definition
+          </span>
         </div>
       )}
     </div>

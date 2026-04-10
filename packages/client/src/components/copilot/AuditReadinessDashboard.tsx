@@ -187,8 +187,14 @@ export default function AuditReadinessDashboard({ projectId }: AuditReadinessDas
           <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
         </div>
       ) : auditChecklists.length === 0 ? (
-        <div className="text-center py-8 text-[var(--text-tertiary)] text-sm">
-          No audit checklists yet. Create one to start tracking readiness.
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">No audit checklists yet</p>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
+            Create a checklist to prepare evidence for compliance reviews and track audit readiness.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+            Phase H: Change Management
+          </span>
         </div>
       ) : (
         <div className="space-y-3">

@@ -216,8 +216,14 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
           <Loader2 size={20} className="animate-spin text-[var(--text-tertiary)]" />
         </div>
       ) : actual.length === 0 ? (
-        <div className="text-center py-8 text-[var(--text-tertiary)] text-xs">
-          No snapshots yet. Capture your first snapshot to start tracking progress.
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <p className="text-xs font-medium text-[var(--text-secondary)]">No snapshots yet</p>
+          <p className="text-[10px] text-[var(--text-tertiary)] mt-1 max-w-xs">
+            Capture your first compliance snapshot to start tracking how your coverage improves over time.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+            Phase H: Change Management
+          </span>
         </div>
       ) : (
         <>

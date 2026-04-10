@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Search, Star, Clock, ChevronRight, ChevronDown, X, AlertTriangle,
-  Box, Circle, Cylinder, Diamond, Triangle, Octagon, Plus,
+  Box, Circle, Cylinder, Diamond, Triangle, Octagon, Plus, Zap, Layers,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -88,14 +88,83 @@ const GEOMETRY_BY_TYPE: Record<string, string> = Object.fromEntries(
   ELEMENT_TYPES.map(et => [et.type, et.geometry])
 );
 
-// ─────────────────���────────────────────────────────────────
-// Main Component
-// ──────────────────────────────���───────────────────────────
-interface ElementPaletteProps {
-  onAddElement: (type: ElementType, layer: ArchitectureLayer, domain: TOGAFDomain) => void;
+// ──────────────────────────────────────────────────────────
+// Quick Start — common types for beginners
+// ──────────────────────────────────────────────────────────
+const QUICK_START_TYPES: ElementType[] = [
+  'application',
+  'application_service',
+  'process',
+  'business_actor',
+  'data_object',
+  'node',
+  'application_component',
+  'business_service',
+  'system_software',
+  'device',
+  'business_capability',
+  'artifact',
+];
+
+// ──────────────────────────────────────────────────────────
+// Starter Templates — create multiple elements + connections
+// ──────────────────────────────────────────────────────────
+export interface StarterTemplate {
+  id: string;
+  name: string;
+  description: string;
+  elements: { type: ElementType; layer: ArchitectureLayer; domain: TOGAFDomain; name: string }[];
+  connections: [number, number, string][]; // [fromIdx, toIdx, relationshipType]
 }
 
-export default function ElementPalette({ onAddElement }: ElementPaletteProps) {
+export const STARTER_TEMPLATES: StarterTemplate[] = [
+  {
+    id: 'web-app-stack',
+    name: 'Web Application Stack',
+    description: 'Frontend + Backend API + Database + Server',
+    elements: [
+      { type: 'application', layer: 'application', domain: 'application', name: 'Frontend App' },
+      { type: 'application_service', layer: 'application', domain: 'application', name: 'Backend API' },
+      { type: 'data_object', layer: 'application', domain: 'data', name: 'Database' },
+      { type: 'node', layer: 'technology', domain: 'technology', name: 'Server' },
+    ],
+    connections: [[0, 1, 'serving'], [1, 2, 'access'], [1, 3, 'serving']],
+  },
+  {
+    id: 'business-process',
+    name: 'Business Process',
+    description: 'Process + Actor + Service + Business Object',
+    elements: [
+      { type: 'process', layer: 'business', domain: 'business', name: 'Core Process' },
+      { type: 'business_actor', layer: 'business', domain: 'business', name: 'Process Owner' },
+      { type: 'business_service', layer: 'business', domain: 'business', name: 'Business Service' },
+      { type: 'business_object', layer: 'business', domain: 'business', name: 'Business Object' },
+    ],
+    connections: [[1, 0, 'assignment'], [0, 2, 'realization'], [0, 3, 'access']],
+  },
+  {
+    id: 'api-microservice',
+    name: 'API Microservice',
+    description: 'API + Service + Database + Container',
+    elements: [
+      { type: 'application_interface', layer: 'application', domain: 'application', name: 'API Endpoint' },
+      { type: 'application_component', layer: 'application', domain: 'application', name: 'Microservice' },
+      { type: 'data_object', layer: 'application', domain: 'data', name: 'Data Store' },
+      { type: 'system_software', layer: 'technology', domain: 'technology', name: 'Container' },
+    ],
+    connections: [[0, 1, 'serving'], [1, 2, 'access'], [1, 3, 'serving']],
+  },
+];
+
+// ──────────────────────────────────────────────────────────
+// Main Component
+// ──────────────────────────────────────────────────────────
+interface ElementPaletteProps {
+  onAddElement: (type: ElementType, layer: ArchitectureLayer, domain: TOGAFDomain) => void;
+  onAddTemplate?: (template: StarterTemplate) => void;
+}
+
+export default function ElementPalette({ onAddElement, onAddTemplate }: ElementPaletteProps) {
   const searchRef = useRef<HTMLInputElement>(null);
   const paletteSearch = useUIStore(s => s.paletteSearch);
   const setPaletteSearch = useUIStore(s => s.setPaletteSearch);
@@ -105,6 +174,7 @@ export default function ElementPalette({ onAddElement }: ElementPaletteProps) {
   const addRecentType = useUIStore(s => s.addRecentType);
   const focusedLayer = useUIStore(s => s.focusedLayer);
   const activeViewpoint = useUIStore(s => s.activeViewpoint);
+  const elements = useArchitectureStore(s => s.elements);
 
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([focusedLayer]));
 
@@ -177,6 +247,12 @@ export default function ElementPalette({ onAddElement }: ElementPaletteProps) {
     .filter(Boolean) as ElementCategoryInfo[];
   const showRecent = recentItems.length > 0 && !isSearching;
 
+  // Quick Start — shown when few elements and no favorites (beginner mode)
+  const showQuickStart = elements.length < 5 && favItems.length === 0 && !isSearching;
+  const quickStartItems = QUICK_START_TYPES
+    .map(t => CATEGORY_BY_TYPE.get(t))
+    .filter(Boolean) as ElementCategoryInfo[];
+
   return (
     <div className="flex flex-col border-t border-[var(--border-subtle)] bg-[var(--surface-base)] max-h-[50vh]">
       {/* Search Bar */}
@@ -200,6 +276,46 @@ export default function ElementPalette({ onAddElement }: ElementPaletteProps) {
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
+        {/* Quick Start — shown for beginners */}
+        {showQuickStart && (
+          <>
+            {/* Starter Templates */}
+            {onAddTemplate && (
+              <div className="border-b border-[var(--border-subtle)]">
+                <div className="flex items-center gap-1.5 px-3 py-1.5">
+                  <Layers size={11} className="text-[var(--status-purple)]" />
+                  <span className="text-[9px] font-medium uppercase tracking-wider text-[var(--text-disabled)]">Starter Templates</span>
+                </div>
+                {STARTER_TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.id}
+                    onClick={() => onAddTemplate(tpl)}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--surface-raised)] transition text-left group"
+                  >
+                    <div className="flex items-center justify-center w-5 h-5 rounded bg-[var(--status-purple)]/15 text-[var(--status-purple)] shrink-0">
+                      <Zap size={10} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[11px] text-[var(--text-secondary)] group-hover:text-white block truncate">{tpl.name}</span>
+                      <span className="text-[9px] text-[var(--text-disabled)] block truncate">{tpl.description}</span>
+                    </div>
+                    <Plus size={10} className="text-[var(--text-disabled)] group-hover:text-[var(--accent-default)] shrink-0" />
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Common Types */}
+            <QuickSection
+              icon={<Zap size={11} className="text-[#00ff41]" />}
+              label="Quick Start"
+              items={quickStartItems}
+              favoriteTypes={favoriteTypes}
+              onAdd={handleAdd}
+              onToggleFav={toggleFavoriteType}
+            />
+          </>
+        )}
+
         {/* Favorites */}
         {showFavorites && (
           <QuickSection

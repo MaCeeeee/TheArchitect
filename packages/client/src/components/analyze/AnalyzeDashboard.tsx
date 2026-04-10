@@ -1,8 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  DollarSign, Shield, TrendingDown, GitCompare, Activity, Map,
+  DollarSign, Shield, TrendingDown, GitCompare, Activity, Map, Boxes,
 } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useScenarioStore } from '../../stores/scenarioStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
@@ -106,9 +107,21 @@ export default function AnalyzeDashboard() {
       </p>
 
       {elements.length === 0 ? (
-        <div className="text-center py-16 text-[var(--text-tertiary)]">
-          <p className="text-sm">No architecture elements found.</p>
-          <p className="text-xs mt-1">Add elements in the Architecture view to see analytics.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <Boxes size={32} className="text-[var(--border-strong)] mb-3" />
+          <p className="text-sm font-medium text-[var(--text-secondary)]">No architecture elements yet</p>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
+            Start by modeling your architecture — add elements and connections in the 3D canvas.
+          </p>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+            Phases B-D: Architecture Definition
+          </span>
+          <button
+            onClick={() => useUIStore.getState().setSidebarPanel('explorer')}
+            className="mt-3 text-xs font-medium text-[var(--accent-default)] hover:text-[var(--accent-hover)] transition"
+          >
+            Open Explorer →
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-4">

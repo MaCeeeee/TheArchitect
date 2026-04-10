@@ -302,12 +302,15 @@ export default function StandardsManager({
             <Loader2 size={20} className="animate-spin text-[#38bdf8]" />
           </div>
         ) : standards.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <FileText size={32} className="text-[var(--text-disabled)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--text-tertiary)]">No standards uploaded yet.</p>
-            <p className="text-xs text-[var(--text-disabled)] mt-1">
-              Upload ISO standards or ASPICE PAM as PDF to map them against your architecture.
+          <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+            <FileText size={32} className="text-[var(--border-strong)] mb-3" />
+            <p className="text-sm font-medium text-[var(--text-secondary)]">No standards uploaded yet</p>
+            <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
+              Upload industry standards (ISO 27001, SOC 2, DORA, ASPICE) as PDF to check your architecture against them.
             </p>
+            <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+              Phase E: Opportunities &amp; Solutions
+            </span>
           </div>
         ) : (
           <div className="space-y-2">

@@ -73,12 +73,15 @@ export function CompliancePortfolioView() {
   if (!portfolioOverview || portfolioOverview.portfolio.length === 0) {
     return (
       <div className="p-4">
-        <div className="text-center text-gray-500 py-8">
-          <Shield size={32} className="mx-auto mb-2 text-gray-600" />
-          <p className="text-sm">No standards uploaded yet.</p>
-          <p className="text-xs text-gray-600 mt-1">
-            Upload a compliance standard in the AI Copilot → Standards tab.
+        <div className="flex flex-col items-center justify-center text-center py-8">
+          <Shield size={32} className="text-[var(--border-strong)] mb-3" />
+          <p className="text-sm font-medium text-[var(--text-secondary)]">No standards uploaded yet</p>
+          <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
+            Upload compliance standards first, then map them to your architecture to see the portfolio overview.
           </p>
+          <span className="inline-flex items-center gap-1.5 mt-2 px-2 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[9px] font-medium text-[var(--status-purple)]">
+            Phase E: Opportunities &amp; Solutions
+          </span>
         </div>
       </div>
     );

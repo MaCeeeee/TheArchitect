@@ -4,56 +4,55 @@ import { X, ChevronRight, ChevronLeft, Lightbulb } from 'lucide-react';
 interface Step {
   title: string;
   description: string;
-  phase: number; // 0 = general, 1-5 = phase-specific
+  admLabel?: string;
 }
 
 const STEPS: Step[] = [
-  // General intro
   {
     title: 'Welcome to TheArchitect',
-    description: 'TheArchitect guides you through 5 phases: Build → Map → Govern → Simulate → Audit. Each phase unlocks the next. The Phase Bar in the sidebar shows your current progress.',
-    phase: 0,
-  },
-  // Phase 1: Build
-  {
-    title: 'Phase 1: Build Your Architecture',
-    description: 'Start by adding elements to your 3D canvas. Use the Explorer sidebar to browse layers, or click "Add Element" at the bottom. Import from CSV or BPMN to jumpstart. Aim for 5+ elements and 3+ connections.',
-    phase: 1,
+    description:
+      'TheArchitect guides you through the TOGAF ADM lifecycle — from Architecture Vision to Change Management. Each phase unlocks the next. The Phase Bar at the top tracks your progress.',
   },
   {
-    title: 'Navigate in 3D',
-    description: 'Click to select, Shift+Click for multi-select, drag to move. Right-click for context menu. Use F to fit the view, Ctrl+Z to undo. Switch between 3D, Top-Down, and Layer views in the toolbar.',
-    phase: 1,
+    admLabel: 'Phase A',
+    title: 'Architecture Vision',
+    description:
+      'Define your project — scope, vision, and who\'s involved. Identify stakeholders and set architecture principles. This is the foundation everything else builds on.',
   },
-  // Phase 2: Map
   {
-    title: 'Phase 2: Map Standards',
-    description: 'Open the Comply panel to upload compliance standards (ISO 27001, SOC 2, etc.). The AI will analyze sections and map them to your architecture elements in the Compliance Matrix.',
-    phase: 2,
+    admLabel: 'Phases B-D',
+    title: 'Architecture Definition',
+    description:
+      'Build your architecture — add elements and draw connections across business, data, application, and technology layers. Use the 3D canvas to model your current and target state.',
   },
-  // Phase 3: Govern
   {
-    title: 'Phase 3: Govern with Policies',
-    description: 'Generate policy drafts from your mapped standards. Review, edit, and approve policies. The AI suggests compliance elements to close gaps in your architecture.',
-    phase: 3,
+    admLabel: 'Phase E',
+    title: 'Opportunities & Solutions',
+    description:
+      'Upload compliance standards (ISO 27001, SOC 2, DORA) and map them to your architecture. The AI identifies gaps and suggests elements to close them.',
   },
-  // Phase 4: Simulate
   {
-    title: 'Phase 4: Simulate & Validate',
-    description: 'Use the Analyze panel to run Monte Carlo simulations, scenario comparisons, and capacity planning. Generate a roadmap to track transformation milestones.',
-    phase: 4,
+    admLabel: 'Phase F',
+    title: 'Migration Planning',
+    description:
+      'Run Monte Carlo simulations, compare "what-if" scenarios, and create transformation roadmaps. Your stakeholders become simulation agents to test decisions.',
   },
-  // Phase 5: Audit
   {
-    title: 'Phase 5: Audit Readiness',
-    description: 'Capture compliance snapshots, create audit checklists, and track progress over time. When all checks are green, your architecture is audit-ready.',
-    phase: 5,
+    admLabel: 'Phase G',
+    title: 'Implementation Governance',
+    description:
+      'Generate and approve governance policies. The system monitors your architecture for violations in real-time and tracks compliance scores.',
   },
-  // Wrap-up
   {
-    title: 'Mission Control',
-    description: 'Click the "Mission" button in the toolbar anytime to see your overall health score, current phase, and next recommended action. The AI Copilot in the sidebar is always ready to help.',
-    phase: 0,
+    admLabel: 'Phase H',
+    title: 'Change Management',
+    description:
+      'Capture compliance snapshots, create audit checklists, and track how your architecture evolves over time. When all checks are green, you\'re audit-ready.',
+  },
+  {
+    title: 'Mission Control & AI Copilot',
+    description:
+      'Click "Mission" in the toolbar to see your health score, current phase, and next action. The AI Copilot in the sidebar is always ready to answer questions and automate tasks.',
   },
 ];
 
@@ -88,9 +87,9 @@ export default function Walkthrough({ isOpen, onClose }: Props) {
 
         {/* Content */}
         <div className="p-6">
-          {currentStep.phase > 0 && (
+          {currentStep.admLabel && (
             <span className="inline-block text-[9px] font-medium px-2 py-0.5 rounded-full bg-[var(--status-purple)]/15 text-[var(--status-purple)] mb-2">
-              Phase {currentStep.phase}
+              {currentStep.admLabel}
             </span>
           )}
           <h3 className="text-lg font-semibold text-white mb-3">{currentStep.title}</h3>
