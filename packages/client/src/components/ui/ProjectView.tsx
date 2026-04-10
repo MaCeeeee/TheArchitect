@@ -233,7 +233,7 @@ export default function ProjectView() {
 
         {/* Contextual next-step guidance floating above 3D scene */}
         {currentPhaseInfo?.nextAction && !isConnectionMode && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-[420px] max-w-[90%]">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[420px] max-w-[90%] pointer-events-auto">
             <NextStepBanner
               message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
               actionLabel={currentPhaseInfo.nextAction.label}
