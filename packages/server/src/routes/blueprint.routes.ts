@@ -5,6 +5,7 @@ import multer from 'multer';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { Workspace } from '../models/Workspace';
@@ -51,8 +52,11 @@ const BlueprintInputSchema = z.object({
 
 // ─── POST /:projectId/blueprint/generate — SSE streaming ───
 
+const aiRateLimit = rateLimit({ name: 'ai-blueprint', windowMs: 24 * 60 * 60 * 1000, max: 10 });
+
 router.post(
   '/:projectId/blueprint/generate',
+  aiRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   async (req: Request, res: Response) => {
@@ -112,6 +116,7 @@ function handleUpload(req: Request, res: Response): Promise<void> {
 
 router.post(
   '/:projectId/blueprint/autofill',
+  aiRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   async (req: Request, res: Response) => {

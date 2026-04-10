@@ -2,12 +2,14 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { runAdvisorScan } from '../services/advisor.service';
 
 const router = Router();
 
 router.use(authenticate);
+router.use(rateLimit({ name: 'ai-advisor', windowMs: 24 * 60 * 60 * 1000, max: 10 }));
 
 // Full advisor scan — returns health score + insights
 router.get(

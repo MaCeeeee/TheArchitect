@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { assessAcceptanceRisk } from '../services/oracle.service';
 import { generateAlternatives } from '../services/scenario-generator.service';
@@ -46,9 +47,12 @@ const OracleProposalSchema = z.object({
 
 // ─── POST /:projectId/oracle/assess ───
 
+const aiRateLimit = rateLimit({ name: 'ai-oracle', windowMs: 24 * 60 * 60 * 1000, max: 10 });
+
 router.post(
   '/:projectId/oracle/assess',
   authenticate,
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
@@ -314,6 +318,7 @@ const GeneratorOptionsSchema = z.object({
 router.post(
   '/:projectId/oracle/:assessmentId/generate-alternatives',
   authenticate,
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
