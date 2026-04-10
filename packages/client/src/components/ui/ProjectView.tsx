@@ -242,6 +242,7 @@ export default function ProjectView() {
                   useUIStore.getState().enterConnectionMode();
                 } else if (currentPhaseInfo.nextAction!.route.startsWith('__envision')) {
                   useUIStore.getState().setSidebarPanel('envision');
+                  useUIStore.setState({ isSidebarOpen: true });
                 } else {
                   navigate(currentPhaseInfo.nextAction!.route);
                 }

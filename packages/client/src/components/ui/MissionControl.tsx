@@ -154,6 +154,7 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
                           useUIStore.getState().enterConnectionMode();
                         } else if (p.nextAction!.route.startsWith('__envision')) {
                           useUIStore.getState().setSidebarPanel('envision');
+                          useUIStore.setState({ isSidebarOpen: true });
                         } else {
                           navigate(p.nextAction!.route);
                         }
