@@ -17,6 +17,7 @@ import type {
 import toast from 'react-hot-toast';
 import { buildStakeholderElement, isDuplicate, getAutoConnectionTargets, buildConnection } from '../../utils/envisionSync';
 import { architectureAPI } from '../../services/api';
+import { useUIStore } from '../../stores/uiStore';
 
 // ─── Sub-section Tabs ─────────────────────────────────
 type Section = 'vision' | 'stakeholders' | 'readiness';
@@ -128,10 +129,20 @@ function VisionSection() {
     generateVision, acceptVisionSuggestion, suggestPrinciples, acceptPrinciple,
     extractDocument, clearAISuggestions,
   } = useEnvisionStore();
+  const highlightField = useUIStore((s) => s.highlightedField);
+  const scopeRef = useRef<HTMLTextAreaElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const [showAIInput, setShowAIInput] = useState(false);
   const [aiDescription, setAIDescription] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-scroll to scope field when highlighted
+  useEffect(() => {
+    if (highlightField === 'scope' && scopeRef.current) {
+      scopeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scopeRef.current.focus();
+    }
+  }, [highlightField]);
 
   const autoSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
@@ -250,10 +261,15 @@ function VisionSection() {
       {/* Scope */}
       <FieldBlock label="Scope" hint="What does this architecture project cover?">
         <textarea
+          ref={scopeRef}
           value={vision.scope}
           onChange={(e) => handleChange('scope', e.target.value)}
           rows={3}
-          className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none"
+          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none ${
+            highlightField === 'scope'
+              ? 'border-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse'
+              : 'border-[var(--border-subtle)]'
+          }`}
           placeholder="e.g., Enterprise IT landscape modernization covering business, application, and technology layers..."
         />
       </FieldBlock>

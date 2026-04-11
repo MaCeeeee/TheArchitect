@@ -34,6 +34,8 @@ interface UIState {
   activeViewpoint: string | null;
   // Progressive disclosure
   showAllSections: boolean;
+  // Field highlight (pulsing green border)
+  highlightedField: string | null;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -62,6 +64,8 @@ interface UIState {
   setActiveViewpoint: (id: string | null) => void;
   // Progressive disclosure
   toggleShowAll: () => void;
+  // Field highlight
+  highlightField: (field: string) => void;
 }
 
 // Load favorites from localStorage
@@ -91,6 +95,7 @@ export const useUIStore = create<UIState>((set) => ({
   showComplianceOverlay: false,
   complianceOverlaySection: 'pipeline',
   showPolicyBoard: true,
+  highlightedField: null,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setFocusedLayer: (layer) => set({ focusedLayer: layer }),
@@ -144,4 +149,8 @@ export const useUIStore = create<UIState>((set) => ({
     localStorage.setItem('ta_show_all_sections', String(next));
     return { showAllSections: next };
   }),
+  highlightField: (field) => {
+    set({ highlightedField: field });
+    setTimeout(() => set({ highlightedField: null }), 3000);
+  },
 }));
