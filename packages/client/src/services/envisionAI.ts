@@ -51,6 +51,7 @@ export const envisionAIService = {
     return api.post<{ data: AIDocumentExtraction }>(
       `/projects/${projectId}/envision/ai/extract-document`,
       form,
+      { headers: { 'Content-Type': undefined }, timeout: 120_000 },
     ).then(r => r.data.data);
   },
 };

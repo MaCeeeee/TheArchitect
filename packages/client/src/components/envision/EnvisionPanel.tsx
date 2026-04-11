@@ -925,51 +925,19 @@ function StakeholderForm({ stakeholder: sh, onChange, onSave, onRemove }: {
 function ExportAsPersonasButton() {
   const { stakeholders } = useEnvisionStore();
   const projectId = useArchitectureStore((s) => s.projectId);
-  const { createPersonaFromStakeholder, loadPersonas } = useSimulationStore();
+  const { syncStakeholdersAsPersonas } = useSimulationStore();
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
     if (!projectId || stakeholders.length === 0) return;
     setExporting(true);
-
-    // Load existing personas to check for duplicates
-    await loadPersonas(projectId);
-    const existingNames = new Set(
-      useSimulationStore.getState().customPersonas.map((p) => p.name.toLowerCase().trim())
-    );
-
-    let created = 0;
-    let skipped = 0;
-    let failed = 0;
-    for (const sh of stakeholders) {
-      if (!sh.name.trim()) continue;
-      // Check duplicate by matching the persona name pattern: "Name (Role)"
-      const personaName = `${sh.name} (${sh.role})`.toLowerCase().trim();
-      if (existingNames.has(personaName)) {
-        skipped++;
-        continue;
-      }
-      // Ensure interests are not empty (MiroFish requires min 1 priority)
-      const patched = sh.interests.length > 0
-        ? sh
-        : { ...sh, interests: ['General architecture oversight'] };
-      try {
-        await createPersonaFromStakeholder(projectId, patched);
-        existingNames.add(personaName); // prevent intra-batch duplicates
-        created++;
-      } catch (err) {
-        failed++;
-        console.warn(`[EnvisionPanel] Failed to create persona for ${sh.name}:`, err);
-      }
+    try {
+      await syncStakeholdersAsPersonas(projectId, stakeholders);
+      toast.success('MiroFish Personas synced');
+    } catch {
+      toast.error('Failed to sync personas');
     }
     setExporting(false);
-    if (created > 0) {
-      toast.success(`${created} MiroFish Persona${created > 1 ? 's' : ''} created${skipped > 0 ? `, ${skipped} already existed` : ''}`);
-    } else if (skipped > 0) {
-      toast('All personas already exist in MiroFish', { icon: 'i' });
-    } else if (failed > 0) {
-      toast.error(`Failed to create personas. Check console for details.`);
-    }
   };
 
   return (
@@ -980,14 +948,14 @@ function ExportAsPersonasButton() {
         className="flex items-center justify-center gap-2 w-full px-3 py-2.5 text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/25 rounded-lg hover:bg-purple-500/20 transition disabled:opacity-50"
       >
         {exporting ? (
-          <><Loader2 size={14} className="animate-spin" /> Creating Personas...</>
+          <><Loader2 size={14} className="animate-spin" /> Syncing...</>
         ) : (
-          <><Users size={14} /> Export as MiroFish Personas</>
+          <><Users size={14} /> Sync MiroFish Personas</>
         )}
       </button>
       <div className="absolute left-0 right-0 bottom-full mb-2 px-3 py-2 rounded-lg bg-[var(--surface-overlay)] border border-[var(--border-subtle)] shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50">
         <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed">
-          Creates AI simulation personas from your stakeholders. Each persona evaluates architecture changes from their unique perspective — influence, attitude, and interests are mapped to risk thresholds and decision behavior. Run MiroFish simulations under <span className="text-purple-300">Simulate &gt; MiroFish</span> to see how stakeholders would react to proposed changes.
+          Stakeholders are auto-synced to MiroFish personas. Use this button to manually re-sync if needed. Each persona evaluates architecture changes from their unique perspective.
         </p>
       </div>
     </div>

@@ -256,6 +256,14 @@ const REGULATIONS = [
   { value: 'iso27001', label: 'ISO 27001' },
   { value: 'pci_dss', label: 'PCI DSS' },
   { value: 'hipaa', label: 'HIPAA' },
+  { value: 'iso15288', label: 'ISO 15288' },
+  { value: 'aspice', label: 'ASPICE' },
+  { value: 'iso26262', label: 'ISO 26262' },
+  { value: 'iso21434', label: 'ISO 21434' },
+  { value: 'unece_r155', label: 'UNECE R155' },
+  { value: 'unece_r156', label: 'UNECE R156' },
+  { value: 'iec62443', label: 'IEC 62443' },
+  { value: 'iso42001', label: 'ISO 42001' },
 ];
 
 const TEAM_SIZES = [

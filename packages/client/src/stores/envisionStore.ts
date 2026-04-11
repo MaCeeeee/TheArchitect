@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { projectAPI } from '../services/api';
 import { envisionAIService } from '../services/envisionAI';
+import { useSimulationStore } from './simulationStore';
 import type {
   AIVisionSuggestion,
   AIStakeholderSuggestion,
@@ -154,6 +155,10 @@ export const useEnvisionStore = create<EnvisionState>((set, get) => ({
     set({ saving: true });
     try {
       await projectAPI.update(projectId, { stakeholders });
+      // Auto-sync stakeholders → MiroFish personas
+      if (stakeholders.length > 0) {
+        useSimulationStore.getState().syncStakeholdersAsPersonas(projectId, stakeholders);
+      }
     } catch (err) {
       console.error('Failed to save stakeholders:', err);
     } finally {

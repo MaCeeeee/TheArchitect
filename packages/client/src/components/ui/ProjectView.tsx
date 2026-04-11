@@ -12,6 +12,7 @@ import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useEnvisionStore } from '../../stores/envisionStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 import { connectSocket, joinProject, getSocket } from '../../services/socket';
 import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
@@ -35,6 +36,7 @@ export default function ProjectView() {
   const isConnectionMode = useUIStore((s) => s.isConnectionMode);
   const connectionSourceId = useUIStore((s) => s.connectionSourceId);
   const exitConnectionMode = useUIStore((s) => s.exitConnectionMode);
+  const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const elements = useArchitectureStore((s) => s.elements);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -233,7 +235,7 @@ export default function ProjectView() {
 
         {/* Contextual next-step guidance floating above 3D scene */}
         {currentPhaseInfo?.nextAction && !isConnectionMode && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 w-[420px] max-w-[90%] pointer-events-auto">
+          <div className={`absolute left-1/2 -translate-x-1/2 z-30 w-[420px] max-w-[90%] pointer-events-auto ${isPlateauActive ? 'bottom-14' : 'bottom-4'}`}>
             <NextStepBanner
               message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
               actionLabel={currentPhaseInfo.nextAction.label}

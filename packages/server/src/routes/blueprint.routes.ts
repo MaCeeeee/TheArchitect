@@ -52,11 +52,12 @@ const BlueprintInputSchema = z.object({
 
 // ─── POST /:projectId/blueprint/generate — SSE streaming ───
 
-const aiRateLimit = rateLimit({ name: 'ai-blueprint', windowMs: 24 * 60 * 60 * 1000, max: 10 });
+const generateRateLimit = rateLimit({ name: 'ai-blueprint-generate', windowMs: 24 * 60 * 60 * 1000, max: 10 });
+const autofillRateLimit = rateLimit({ name: 'ai-blueprint-autofill', windowMs: 60 * 60 * 1000, max: 30 });
 
 router.post(
   '/:projectId/blueprint/generate',
-  aiRateLimit,
+  generateRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   async (req: Request, res: Response) => {
@@ -116,7 +117,7 @@ function handleUpload(req: Request, res: Response): Promise<void> {
 
 router.post(
   '/:projectId/blueprint/autofill',
-  aiRateLimit,
+  autofillRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   async (req: Request, res: Response) => {

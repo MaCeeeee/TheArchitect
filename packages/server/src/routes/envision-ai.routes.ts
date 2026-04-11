@@ -20,8 +20,9 @@ const router = Router();
 
 router.use(authenticate);
 
-// 20 AI calls per user per day (24h window)
-router.use(rateLimit({ name: 'ai-envision', windowMs: 24 * 60 * 60 * 1000, max: 20 }));
+// AI rate limits — per-endpoint to avoid document uploads eating generation quota
+const aiRateLimit = rateLimit({ name: 'ai-envision', windowMs: 24 * 60 * 60 * 1000, max: 20 });
+const uploadRateLimit = rateLimit({ name: 'ai-envision-upload', windowMs: 60 * 60 * 1000, max: 30 });
 
 // ─── Helper: check AI configured ───
 
@@ -33,6 +34,7 @@ function aiConfigured(): boolean {
 
 router.post(
   '/:projectId/envision/ai/generate-vision',
+  aiRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -61,6 +63,7 @@ router.post(
 
 router.post(
   '/:projectId/envision/ai/suggest-stakeholders',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -87,6 +90,7 @@ router.post(
 
 router.post(
   '/:projectId/envision/ai/suggest-principles',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -110,6 +114,7 @@ router.post(
 
 router.post(
   '/:projectId/envision/ai/detect-conflicts',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -136,6 +141,7 @@ router.post(
 
 router.post(
   '/:projectId/envision/ai/assess-readiness',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -162,6 +168,7 @@ router.post(
 
 router.post(
   '/:projectId/envision/ai/suggest-interests',
+  aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -209,6 +216,7 @@ function handleUpload(req: Request, res: Response): Promise<void> {
 
 router.post(
   '/:projectId/envision/ai/extract-document',
+  uploadRateLimit,
   requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {

@@ -875,8 +875,8 @@ function ResultsView({
                     +{el.projectedDelayMonths.toFixed(0)}mo
                   </span>
                 </div>
-                <div className="text-[10px] text-gray-500">
-                  {el.conflictRounds} conflict rounds — {el.involvedAgents.join(', ')}
+                <div className="text-[10px] text-gray-500 truncate" title={el.involvedAgents.join(', ')}>
+                  {el.conflictRounds} conflict rounds — {el.involvedAgents.slice(0, 3).join(', ')}{el.involvedAgents.length > 3 ? ` +${el.involvedAgents.length - 3} more` : ''}
                 </div>
               </div>
             ))}

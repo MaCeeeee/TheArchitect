@@ -93,6 +93,12 @@ interface SimulationState {
   updateCustomPersona: (projectId: string, personaId: string, input: Record<string, unknown>) => Promise<void>;
   deleteCustomPersona: (projectId: string, personaId: string) => Promise<void>;
 
+  // Auto-sync stakeholders → personas
+  syncStakeholdersAsPersonas: (projectId: string, stakeholders: Array<{
+    name: string; role: string; stakeholderType: string;
+    interests: string[]; influence: string; attitude: string;
+  }>) => Promise<void>;
+
   // Comparison actions (Phase 3)
   selectForComparison: (projectId: string, runId: string, slot: 'A' | 'B') => Promise<void>;
   computeComparison: () => void;
@@ -422,6 +428,74 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     } catch (err) {
       console.error('[SimulationStore] Delete persona error:', err);
       throw err;
+    }
+  },
+
+  // ─── Auto-sync Stakeholders → Personas ───
+
+  syncStakeholdersAsPersonas: async (projectId, stakeholders) => {
+    if (!stakeholders.length) return;
+
+    // Reuse the same mapping logic from createPersonaFromStakeholder
+    const LAYER_MAP: Record<string, string[]> = {
+      c_level: ['strategy', 'business', 'information', 'application', 'technology'],
+      business_unit: ['strategy', 'business'],
+      it_ops: ['application', 'technology'],
+      data_team: ['information', 'application'],
+      external: ['business'],
+    };
+    const DOMAIN_MAP: Record<string, string[]> = {
+      c_level: ['business', 'data', 'application', 'technology'],
+      business_unit: ['business'],
+      it_ops: ['application', 'technology'],
+      data_team: ['data', 'application'],
+      external: ['business'],
+    };
+    const DEPTH_MAP: Record<string, number> = { high: 5, medium: 3, low: 1 };
+    const CAPACITY_MAP: Record<string, number> = { high: 8, medium: 5, low: 3 };
+    const ATTITUDE_PROMPT: Record<string, string> = {
+      champion: 'You are an enthusiastic supporter of architecture changes. You focus on benefits and opportunities.',
+      supporter: 'You are generally supportive but want to see clear justification for changes.',
+      neutral: 'You evaluate changes objectively, weighing benefits against risks equally.',
+      critic: 'You are skeptical of changes. You focus on risks, costs, and potential negative impacts.',
+    };
+    function detectPreset(name: string, role: string, type: string): string {
+      const text = `${name} ${role}`.toLowerCase();
+      if (text.includes('ciso') || text.includes('security')) return 'security_officer';
+      if (text.includes('data') || text.includes('analytics')) return 'data_architect';
+      if (text.includes('ops') || text.includes('infrastructure') || text.includes('devops')) return 'it_operations_manager';
+      if (text.includes('business') || text.includes('product') || text.includes('sales') || text.includes('customer')) return 'business_unit_lead';
+      const TYPE_MAP: Record<string, string> = {
+        c_level: 'cto', business_unit: 'business_unit_lead',
+        it_ops: 'it_operations_manager', data_team: 'data_architect', external: 'business_unit_lead',
+      };
+      return TYPE_MAP[type] || 'cto';
+    }
+
+    const personas = stakeholders
+      .filter((sh) => sh.name.trim())
+      .map((sh) => ({
+        scope: 'project',
+        basedOnPresetId: detectPreset(sh.name, sh.role, sh.stakeholderType),
+        name: `${sh.name} (${sh.role})`,
+        stakeholderType: sh.stakeholderType,
+        visibleLayers: LAYER_MAP[sh.stakeholderType] || ['business'],
+        visibleDomains: DOMAIN_MAP[sh.stakeholderType] || ['business'],
+        maxGraphDepth: DEPTH_MAP[sh.influence] || 3,
+        expectedCapacity: CAPACITY_MAP[sh.influence] || 5,
+        riskThreshold: sh.attitude === 'critic' ? 'low' : sh.attitude === 'champion' ? 'high' : 'medium',
+        priorities: sh.interests.length > 0 ? sh.interests : ['General architecture oversight'],
+        systemPromptSuffix: `${ATTITUDE_PROMPT[sh.attitude] || ''} Your key interests are: ${sh.interests.join(', ')}.`,
+        description: `Auto-synced from stakeholder: ${sh.name}`,
+      }));
+
+    if (personas.length === 0) return;
+
+    try {
+      await simulationAPI.bulkCreatePersonas(projectId, personas);
+      await get().loadPersonas(projectId);
+    } catch (err) {
+      console.warn('[SimulationStore] Auto-sync personas failed (non-critical):', err);
     }
   },
 

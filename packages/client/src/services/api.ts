@@ -10,11 +10,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor - attach access token
+// Request interceptor - attach access token + fix FormData Content-Type
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // Let the browser set multipart/form-data with correct boundary
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
   }
   return config;
 });
@@ -37,7 +41,19 @@ function processQueue(error: unknown, token: string | null) {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
+
+    // ── 429 Too Many Requests → retry with exponential backoff ──
+    if (error.response?.status === 429) {
+      const retryCount = originalRequest._retryCount || 0;
+      if (retryCount < 3) {
+        originalRequest._retryCount = retryCount + 1;
+        const retryAfter = (error.response.data as { retryAfter?: number })?.retryAfter;
+        const delay = retryAfter ? retryAfter * 1000 : Math.min(1000 * 2 ** retryCount, 8000);
+        await new Promise((r) => setTimeout(r, delay));
+        return api(originalRequest);
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       const errorData = error.response.data as { code?: string } | undefined;
@@ -64,10 +80,26 @@ api.interceptors.response.use(
             throw new Error('No refresh token');
           }
 
-          const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
-          const newAccessToken = data.accessToken;
+          // Retry refresh up to 3 times if rate-limited (429)
+          let refreshData;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const resp = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
+              refreshData = resp.data;
+              break;
+            } catch (retryErr: unknown) {
+              const axErr = retryErr as AxiosError;
+              if (axErr.response?.status === 429 && attempt < 2) {
+                await new Promise((r) => setTimeout(r, 1000 * 2 ** attempt));
+                continue;
+              }
+              throw retryErr;
+            }
+          }
+          if (!refreshData) throw new Error('Token refresh failed after retries');
 
-          useAuthStore.getState().setTokens(newAccessToken, data.refreshToken);
+          const newAccessToken = refreshData.accessToken;
+          useAuthStore.getState().setTokens(newAccessToken, refreshData.refreshToken);
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           processQueue(null, newAccessToken);
 
@@ -427,6 +459,8 @@ export const simulationAPI = {
     api.get(`/projects/${projectId}/simulations/custom-personas`),
   createCustomPersona: (projectId: string, data: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/simulations/custom-personas`, data),
+  bulkCreatePersonas: (projectId: string, personas: Record<string, unknown>[]) =>
+    api.post(`/projects/${projectId}/simulations/custom-personas/bulk`, { personas }),
   updateCustomPersona: (projectId: string, personaId: string, data: Record<string, unknown>) =>
     api.patch(`/projects/${projectId}/simulations/custom-personas/${personaId}`, data),
   deleteCustomPersona: (projectId: string, personaId: string) =>

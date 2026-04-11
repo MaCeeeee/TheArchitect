@@ -450,11 +450,17 @@ export class EmergenceTracker {
         ? conflictRounds / this.totalRoundsElapsed
         : 0;
 
-      const involvedAgents = new Set<string>();
+      const involvedAgentIds = new Set<string>();
       for (const [, positions] of conflict.rounds) {
         for (const agentId of positions.keys()) {
-          involvedAgents.add(agentId);
+          involvedAgentIds.add(agentId);
         }
+      }
+      // Resolve IDs to readable persona names
+      const involvedAgents = new Set<string>();
+      for (const id of involvedAgentIds) {
+        const persona = this.personas.get(id);
+        involvedAgents.add(persona?.name || id);
       }
 
       const projectedDelayMonths = negotiationDrag * this.totalRoundsElapsed * roundToMonthFactor;

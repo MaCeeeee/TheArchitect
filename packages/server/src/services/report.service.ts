@@ -176,7 +176,7 @@ function drawTable(
     x = MARGIN;
     doc.font('Helvetica').fontSize(8).fillColor(DARK);
     for (let i = 0; i < rows[r].length; i++) {
-      doc.text(rows[r][i] || '-', x + 4, y + 5, { width: colWidths[i] - 8 });
+      doc.text(rows[r][i] || '-', x + 4, y + 5, { width: colWidths[i] - 8, height: rowHeight - 6, ellipsis: true, lineBreak: false });
       x += colWidths[i];
     }
     y += rowHeight;
@@ -377,13 +377,20 @@ async function renderSimulationReport(doc: PDFKit.PDFDocument, project: { name: 
     const perElement = fatigue.perElement as Array<Record<string, unknown>> | undefined;
     if (perElement && perElement.length > 0) {
       drawSectionTitle(doc, 'Bottleneck Elements');
-      const elementRows = perElement.slice(0, 10).map((e) => [
-        e.elementName as string || '-',
-        `${Math.round((e.negotiationDrag as number || 0) * 100)}%`,
-        `${e.conflictRounds || 0}`,
-        ((e.involvedAgents as string[]) || []).join(', '),
-        e.projectedDelayMonths ? `+${e.projectedDelayMonths}m` : '-',
-      ]);
+      const elementRows = perElement.slice(0, 10).map((e) => {
+        const agents = (e.involvedAgents as string[]) || [];
+        const maxShow = 3;
+        const agentStr = agents.length <= maxShow
+          ? agents.join(', ')
+          : agents.slice(0, maxShow).join(', ') + ` +${agents.length - maxShow} more`;
+        return [
+          e.elementName as string || '-',
+          `${Math.round((e.negotiationDrag as number || 0) * 100)}%`,
+          `${e.conflictRounds || 0}`,
+          agentStr,
+          e.projectedDelayMonths ? `+${e.projectedDelayMonths}m` : '-',
+        ];
+      });
       drawTable(doc, ['Element', 'Negotiation', 'Conflicts', 'Agents', 'Delay'],
         elementRows, [140, 75, 65, 140, 75], 'Simulation Report');
     }

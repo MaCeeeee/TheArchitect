@@ -158,7 +158,9 @@ ${typeList}
 ${ARCHITECTURE_LAYERS.map((l) => l.id).join(', ')}
 
 ## GUIDELINES FOR STARTUP ARCHITECTURES:
-- Even if the user didn't explicitly mention stakeholders, infer them from context (e.g., "2 developers" → business_actor)
+- STAKEHOLDERS: Always create INDIVIDUAL business_actor elements for each stakeholder role (e.g., "Frontend Developer", "Product Owner", "CEO", "End User").
+  NEVER create a single grouped "Stakeholders" or "Team" element. Each person/role gets their own element with a specific description of their responsibilities.
+  Infer stakeholders from context (e.g., "2 developers" → "Frontend Developer" + "Backend Developer", "marketing team" → "Marketing Manager")
 - Map vague goals to concrete ArchiMate goal elements with measurable descriptions
 - Infer technology layer from product type and tools mentioned
 - If the user mentions "React" → create application_component, if "AWS" → create node + technology_service
@@ -565,40 +567,43 @@ export async function generateBlueprint(
 
 // ─── Document Auto-Fill ───
 
-const AUTOFILL_SYSTEM_PROMPT = `You are an assistant that extracts business information from documents and maps it to a structured questionnaire.
+const AUTOFILL_SYSTEM_PROMPT = `You are an expert at extracting business and architecture information from documents and mapping it to a structured questionnaire.
 
-Given text extracted from a business document (pitch deck, business plan, strategy paper, etc.), extract the following fields. Return a JSON object with ONLY the fields you can confidently extract. Omit fields where the document provides no relevant information.
+Given text extracted from a document (strategy paper, business plan, pitch deck, transformation proposal, architecture blueprint, etc.), extract ALL relevant fields. Be thorough — scan the entire document for tables, role descriptions, tool lists, budget figures, process descriptions, and organizational structures.
 
 JSON structure:
 {
-  "businessDescription": "one-sentence summary of what the business does",
-  "targetUsers": "who the main users/customers are",
-  "problemSolved": "what problem the business solves",
-  "urgencyDriver": "why now, what drives urgency",
+  "businessDescription": "one-sentence summary of what the business/organization does and its core mission",
+  "targetUsers": "who the main users, customers, or stakeholders are (list ALL mentioned stakeholder groups)",
+  "problemSolved": "the core problem or challenge being addressed",
+  "urgencyDriver": "why now — regulatory pressure, market changes, deadlines, compliance requirements",
   "goals": ["goal 1", "goal 2", "goal 3"],
-  "successVision": "what success looks like",
-  "principles": "core principles or values",
-  "capabilities": "comma-separated list of key business capabilities",
-  "customerJourney": "typical customer journey description",
-  "teamDescription": "team composition and roles",
-  "mainProcesses": "key business processes",
+  "successVision": "what success looks like, target state description",
+  "principles": "core principles, values, standards, or methodologies guiding the work (comma-separated)",
+  "capabilities": "ALL business capabilities mentioned — extract from role tables, organizational pillars, service descriptions (comma-separated)",
+  "customerJourney": "typical workflow, value chain, or service delivery process",
+  "teamDescription": "ALL roles mentioned — extract from org charts, role tables, team descriptions. List each role with responsibility.",
+  "mainProcesses": "key processes, governance structures, review boards, approval workflows",
   "existingTools": ["tool1", "tool2"],
   "productType": "one of: web_app, mobile_app, api_platform, marketplace, saas, hardware_software, other",
-  "techDecisions": "technology decisions already made",
-  "constraints": "business constraints and limitations",
+  "techDecisions": "technology decisions, tool selections, platform choices already made or planned",
+  "constraints": "business constraints, budget limits, timelines, dependencies, risks. Include specific budget figures if mentioned.",
   "teamSize": "one of: 1-2, 3-5, 6-15, 16-50, 50+",
   "monthlyBudget": "one of: <500, 500-2K, 2K-10K, 10K-50K, 50+",
-  "regulations": ["gdpr", "soc2", "iso27001", "pci_dss", "hipaa"],
+  "regulations": ["standard1", "standard2"],
   "industryHint": "detected industry"
 }
 
-RULES:
-- goals MUST be an array of exactly 3 strings (use empty string "" if fewer than 3 found)
-- existingTools MUST be an array of strings
-- regulations MUST be an array of strings, only from the allowed values above
+EXTRACTION RULES:
+- goals MUST be an array of exactly 3 strings (pick the most important; use "" if fewer than 3)
+- existingTools: Extract ALL tools, platforms, and software mentioned anywhere in the document (tables, text, footnotes)
+- regulations: Extract ALL standards, norms, and compliance frameworks mentioned (e.g., "ISO 15288", "ASPICE 4.0", "ISO 26262", "ISO 21434", "UNECE R155", "GDPR", "SOC2", "ISO 27001", etc.)
+- capabilities: Be thorough — look at pillar descriptions, role tables, sub-capabilities lists, service catalogs
+- teamDescription: List every distinct role/position mentioned with a brief responsibility note
+- constraints: Include budget totals, phase budgets, timeline (e.g., "18-month transformation, total budget €1.9M")
+- monthlyBudget: Calculate from annual/total budget if not directly stated (total ÷ months)
 - productType MUST be one of the allowed enum values
 - teamSize and monthlyBudget MUST be one of the allowed enum values
-- Only include fields where the document provides clear information
 - Output ONLY the JSON object, no markdown or explanation`;
 
 export async function autofillFromDocument(documentText: string): Promise<Record<string, unknown>> {
@@ -608,7 +613,7 @@ export async function autofillFromDocument(documentText: string): Promise<Record
   }
 
   // Truncate very long documents to avoid token limits
-  const maxChars = 15000;
+  const maxChars = 30000;
   const truncated = documentText.length > maxChars
     ? documentText.slice(0, maxChars) + '\n\n[... document truncated ...]'
     : documentText;

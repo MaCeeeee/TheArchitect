@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { useAuthStore } from './authStore';
-import { blueprintAPI } from '../services/api';
+import { blueprintAPI, projectAPI } from '../services/api';
+import { useEnvisionStore } from './envisionStore';
+import { useSimulationStore } from './simulationStore';
 import type {
   BlueprintQuestionnaire,
   BlueprintInput,
@@ -59,6 +61,24 @@ interface BlueprintState {
   importBlueprint: (projectId: string, workspaceName?: string) => Promise<void>;
   autofill: (projectId: string, file: File) => Promise<void>;
   reset: () => void;
+}
+
+// ─── Helpers for stakeholder inference from architecture elements ───
+
+function inferStakeholderType(name: string, layer: string): 'c_level' | 'business_unit' | 'it_ops' | 'data_team' | 'external' {
+  const n = name.toLowerCase();
+  if (/ceo|cto|cio|cfo|chief|founder|director|head of/i.test(n)) return 'c_level';
+  if (/devops|sre|infra|ops|admin|platform/i.test(n)) return 'it_ops';
+  if (/data|analyst|bi|machine learning|ml|ai/i.test(n)) return 'data_team';
+  if (/customer|partner|vendor|supplier|regulator|external/i.test(n)) return 'external';
+  if (layer === 'technology') return 'it_ops';
+  return 'business_unit';
+}
+
+function inferInfluence(layer: string): string {
+  if (layer === 'strategy' || layer === 'motivation') return 'high';
+  if (layer === 'business') return 'medium';
+  return 'low';
 }
 
 const emptyQuestionnaire: BlueprintQuestionnaire = {
@@ -279,7 +299,7 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
   },
 
   importBlueprint: async (projectId: string, workspaceName?: string) => {
-    const { editedElements, editedConnections, result } = get();
+    const { editedElements, editedConnections, result, questionnaire } = get();
     if (!result) return;
 
     set({ isImporting: true, error: null, step: 4 });
@@ -291,6 +311,60 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
         input: result.input,
         workspaceName,
       });
+
+      // ─── Sync questionnaire data → Envision store ───
+      try {
+        const envision = useEnvisionStore.getState();
+
+        // Build vision from questionnaire fields
+        const vision = {
+          scope: questionnaire.businessDescription || '',
+          visionStatement: questionnaire.successVision || '',
+          principles: questionnaire.principles
+            ? questionnaire.principles.split(',').map((p) => p.trim()).filter(Boolean)
+            : [],
+          drivers: [questionnaire.urgencyDriver, questionnaire.constraints]
+            .filter(Boolean) as string[],
+          goals: questionnaire.goals.filter(Boolean),
+        };
+
+        // Extract individual stakeholders from generated business_actor elements
+        const stakeholderElements = editedElements.filter(
+          (e) => e.type === 'business_actor' || e.type === 'business_role',
+        );
+        const existingNames = new Set(
+          envision.stakeholders.map((s) => s.name.toLowerCase().trim()),
+        );
+        const newStakeholders = stakeholderElements
+          .filter((e) => !existingNames.has(e.name.toLowerCase().trim()))
+          .map((e) => ({
+            id: `sh-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: e.name,
+            role: e.description || e.name,
+            stakeholderType: inferStakeholderType(e.name, e.layer),
+            interests: [] as string[],
+            influence: inferInfluence(e.layer) as 'high' | 'medium' | 'low',
+            attitude: 'neutral' as const,
+          }));
+
+        // Update Envision store + persist to server
+        envision.updateVision(vision);
+        for (const sh of newStakeholders) {
+          envision.addStakeholder(sh);
+        }
+        const allStakeholders = [...envision.stakeholders, ...newStakeholders];
+        await projectAPI.update(projectId, {
+          vision,
+          stakeholders: allStakeholders,
+        });
+        // Auto-sync new stakeholders → MiroFish personas
+        if (newStakeholders.length > 0) {
+          useSimulationStore.getState().syncStakeholdersAsPersonas(projectId, allStakeholders);
+        }
+      } catch (syncErr) {
+        console.warn('[BlueprintStore] Envision sync failed (non-critical):', syncErr);
+      }
+
       set({
         isImporting: false,
         importResult: data.data || data,
@@ -315,30 +389,46 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
       set((s) => {
         const q = { ...s.questionnaire };
 
-        if (fields.businessDescription) q.businessDescription = fields.businessDescription;
-        if (fields.targetUsers) q.targetUsers = fields.targetUsers;
-        if (fields.problemSolved) q.problemSolved = fields.problemSolved;
-        if (fields.urgencyDriver) q.urgencyDriver = fields.urgencyDriver;
+        // Safely coerce AI field values to strings (AI may return objects/arrays for text fields)
+        const str = (v: unknown): string => {
+          if (typeof v === 'string') return v;
+          if (Array.isArray(v)) return v.map((item) =>
+            typeof item === 'object' && item !== null
+              ? Object.values(item).join(' — ')
+              : String(item)
+          ).join('\n');
+          if (typeof v === 'object' && v !== null) return Object.values(v).join(' — ');
+          return String(v ?? '');
+        };
+
+        if (fields.businessDescription) q.businessDescription = str(fields.businessDescription);
+        if (fields.targetUsers) q.targetUsers = str(fields.targetUsers);
+        if (fields.problemSolved) q.problemSolved = str(fields.problemSolved);
+        if (fields.urgencyDriver) q.urgencyDriver = str(fields.urgencyDriver);
         if (fields.goals && Array.isArray(fields.goals)) {
           q.goals = [
-            fields.goals[0] || q.goals[0],
-            fields.goals[1] || q.goals[1],
-            fields.goals[2] || q.goals[2],
+            String(fields.goals[0] || q.goals[0]),
+            String(fields.goals[1] || q.goals[1]),
+            String(fields.goals[2] || q.goals[2]),
           ];
         }
-        if (fields.successVision) q.successVision = fields.successVision;
-        if (fields.principles) q.principles = fields.principles;
-        if (fields.capabilities) q.capabilities = fields.capabilities;
-        if (fields.customerJourney) q.customerJourney = fields.customerJourney;
-        if (fields.teamDescription) q.teamDescription = fields.teamDescription;
-        if (fields.mainProcesses) q.mainProcesses = fields.mainProcesses;
-        if (fields.existingTools?.length) q.existingTools = fields.existingTools;
+        if (fields.successVision) q.successVision = str(fields.successVision);
+        if (fields.principles) q.principles = str(fields.principles);
+        if (fields.capabilities) q.capabilities = str(fields.capabilities);
+        if (fields.customerJourney) q.customerJourney = str(fields.customerJourney);
+        if (fields.teamDescription) q.teamDescription = str(fields.teamDescription);
+        if (fields.mainProcesses) q.mainProcesses = str(fields.mainProcesses);
+        if (fields.existingTools?.length) {
+          q.existingTools = (fields.existingTools as unknown[]).map((t) => typeof t === 'string' ? t : String(t));
+        }
         if (fields.productType) q.productType = fields.productType;
-        if (fields.techDecisions) q.techDecisions = fields.techDecisions;
-        if (fields.constraints) q.constraints = fields.constraints;
+        if (fields.techDecisions) q.techDecisions = str(fields.techDecisions);
+        if (fields.constraints) q.constraints = str(fields.constraints);
         if (fields.teamSize) q.teamSize = fields.teamSize;
         if (fields.monthlyBudget) q.monthlyBudget = fields.monthlyBudget;
-        if (fields.regulations?.length) q.regulations = fields.regulations;
+        if (fields.regulations?.length) {
+          q.regulations = (fields.regulations as unknown[]).map((r) => typeof r === 'string' ? r : String(r));
+        }
 
         return {
           questionnaire: q,

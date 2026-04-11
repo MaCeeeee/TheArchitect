@@ -273,6 +273,63 @@ router.post(
   },
 );
 
+// ─── POST /custom-personas/bulk — Bulk create personas (skips duplicates) ───
+
+router.post(
+  '/:projectId/simulations/custom-personas/bulk',
+  authenticate,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const { personas } = req.body;
+      if (!Array.isArray(personas) || personas.length === 0) {
+        return res.status(400).json({ error: 'personas array is required' });
+      }
+
+      const userId = (req as any).user._id;
+      const projectId = req.params.projectId;
+
+      // Load existing to detect duplicates
+      const existing = await CustomPersona.find({
+        $or: [
+          { userId, scope: 'user' },
+          { projectId, scope: 'project' },
+        ],
+      }).select('name').lean();
+      const existingNames = new Set(existing.map((p: any) => p.name?.toLowerCase().trim()));
+
+      let created = 0;
+      let skipped = 0;
+      for (const raw of personas.slice(0, 50)) { // cap at 50
+        try {
+          const parsed = CustomPersonaSchema.parse(raw);
+          if (existingNames.has(parsed.name?.toLowerCase().trim())) {
+            skipped++;
+            continue;
+          }
+          if (!PRESET_PERSONAS[parsed.basedOnPresetId]) continue;
+
+          await CustomPersona.create({
+            ...parsed,
+            projectId: parsed.scope === 'project' ? projectId : undefined,
+            userId,
+          });
+          existingNames.add(parsed.name?.toLowerCase().trim());
+          created++;
+        } catch {
+          // Skip invalid entries
+        }
+      }
+
+      res.status(201).json({ created, skipped, total: created + skipped });
+    } catch (err: any) {
+      console.error('[MiroFish] Bulk create personas error:', err.message);
+      res.status(500).json({ error: 'Failed to bulk create personas' });
+    }
+  },
+);
+
 // ─── GET /custom-personas — List custom personas ───
 
 router.get(
