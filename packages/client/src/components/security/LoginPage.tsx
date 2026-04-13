@@ -276,6 +276,9 @@ export default function LoginPage() {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 If an account exists for <strong className="text-[#d0d0d0]">{email}</strong>, you'll receive a password reset link shortly.
               </p>
+              <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
+                No email? If you signed up with Google, GitHub, or Microsoft, use those to sign in instead.
+              </p>
               <button type="button" onClick={() => switchMode('login')} className={btnPrimary}>
                 Back to Login
               </button>
