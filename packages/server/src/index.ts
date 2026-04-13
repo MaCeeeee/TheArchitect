@@ -64,11 +64,12 @@ async function main() {
   });
 
   // Global rate limit — disabled in dev to avoid 429s during rapid testing
-  // Raised to 2000/min: page refresh fires 30+ parallel reads; AI routes have
-  // their own strict per-endpoint limits, so the global limit only blocks abuse.
+  // SPA fires 30–50 parallel reads per page; API scripts add bursts on top.
+  // AI routes have their own strict per-endpoint limits, so the global limit
+  // only blocks actual abuse — keep it generous.
   const isDev = process.env.NODE_ENV !== 'production';
   if (!isDev) {
-    app.use(rateLimit({ windowMs: 60_000, max: 2000, name: 'global' }));
+    app.use(rateLimit({ windowMs: 60_000, max: 5000, name: 'global' }));
   }
 
   // Routes
