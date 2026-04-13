@@ -179,7 +179,7 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
       const res = await compliancePipelineAPI.getPipelineStatus(projectId);
       set({ pipelineStates: res.data });
     } catch (err: unknown) {
-      console.error('[ComplianceStore] Failed to refresh stats:', err);
+      if (import.meta.env.DEV) console.error('[ComplianceStore] Failed to refresh stats:', err);
     }
   },
 

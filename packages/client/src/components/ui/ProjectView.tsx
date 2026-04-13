@@ -106,7 +106,7 @@ export default function ProjectView() {
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error('Failed to load project data:', err);
+        if (import.meta.env.DEV) console.error('Failed to load project data:', err);
         setError('Failed to load project data');
         setElements([]);
         setConnections([]);

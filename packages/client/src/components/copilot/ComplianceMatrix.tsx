@@ -152,7 +152,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, onNex
       }));
       setElements(els);
     } catch (err) {
-      console.error('[ComplianceMatrix] Load failed:', err);
+      if (import.meta.env.DEV) console.error('[ComplianceMatrix] Load failed:', err);
       setError('Failed to load matrix');
     } finally {
       setLoading(false);

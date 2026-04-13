@@ -1002,7 +1002,7 @@ function SyncToExplorerButton() {
           createdElements.push({ id: element.id });
           created++;
         } catch (err) {
-          console.warn(`[SyncToExplorer] Failed to create ${sh.name}:`, err);
+          if (import.meta.env.DEV) console.warn(`[SyncToExplorer] Failed to create ${sh.name}:`, err);
         }
       }
 
@@ -1022,7 +1022,7 @@ function SyncToExplorerButton() {
             serverConnections.push(conn);
             connectionsCreated++;
           } catch (err) {
-            console.warn(`[SyncToExplorer] Failed to create connection:`, err);
+            if (import.meta.env.DEV) console.warn(`[SyncToExplorer] Failed to create connection:`, err);
           }
         }
       }
@@ -1040,8 +1040,8 @@ function SyncToExplorerButton() {
         toast('All stakeholders already exist in the Explorer', { icon: 'ℹ️' });
       }
     } catch (err) {
-      console.error('[SyncToExplorer] Failed:', err);
-      toast.error('Failed to sync stakeholders. Check console for details.');
+      if (import.meta.env.DEV) console.error('[SyncToExplorer] Failed:', err);
+      toast.error('Failed to sync stakeholders.');
     } finally {
       setSyncing(false);
     }

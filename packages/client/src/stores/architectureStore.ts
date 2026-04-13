@@ -188,9 +188,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     set((state) => ({ elements: [...state.elements, element] }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.createElement(projectId, { ...element } as Record<string, unknown>).catch((err) =>
-        console.error('Failed to sync addElement:', err)
-      );
+      architectureAPI.createElement(projectId, { ...element } as Record<string, unknown>).catch((err) => {
+        if (import.meta.env.DEV) console.error('Failed to sync addElement:', err);
+      });
     }
   },
   updateElement: (id, changes) => {
@@ -201,9 +201,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.updateElement(projectId, id, changes as Record<string, unknown>).catch((err) =>
-        console.error('Failed to sync updateElement:', err)
-      );
+      architectureAPI.updateElement(projectId, id, changes as Record<string, unknown>).catch((err) => {
+        if (import.meta.env.DEV) console.error('Failed to sync updateElement:', err);
+      });
     }
   },
   removeElement: (id) => {
@@ -222,9 +222,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.deleteElement(projectId, id).catch((err) =>
-        console.error('Failed to sync removeElement:', err)
-      );
+      architectureAPI.deleteElement(projectId, id).catch((err) => {
+        if (import.meta.env.DEV) console.error('Failed to sync removeElement:', err);
+      });
     }
   },
   selectElement: (id) =>
@@ -249,9 +249,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     set((state) => ({ connections: [...state.connections, connection] }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.createConnection(projectId, { ...connection } as Record<string, unknown>).catch((err) =>
-        console.error('Failed to sync addConnection:', err)
-      );
+      architectureAPI.createConnection(projectId, { ...connection } as Record<string, unknown>).catch((err) => {
+        if (import.meta.env.DEV) console.error('Failed to sync addConnection:', err);
+      });
     }
   },
   removeConnection: (id) => {
@@ -262,9 +262,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.deleteConnection(projectId, id).catch((err) =>
-        console.error('Failed to sync removeConnection:', err)
-      );
+      architectureAPI.deleteConnection(projectId, id).catch((err) => {
+        if (import.meta.env.DEV) console.error('Failed to sync removeConnection:', err);
+      });
     }
   },
   selectConnection: (id) => set({ selectedConnectionId: id, selectedElementId: null }),

@@ -109,7 +109,7 @@ export const useEnvisionStore = create<EnvisionState>((set, get) => ({
         loading: false,
       });
     } catch (err) {
-      console.error('Failed to load envision data:', err);
+      if (import.meta.env.DEV) console.error('Failed to load envision data:', err);
       set({ loading: false });
     }
   },
@@ -125,7 +125,7 @@ export const useEnvisionStore = create<EnvisionState>((set, get) => ({
     try {
       await projectAPI.update(projectId, { vision });
     } catch (err) {
-      console.error('Failed to save vision:', err);
+      if (import.meta.env.DEV) console.error('Failed to save vision:', err);
     } finally {
       set({ saving: false });
     }
@@ -160,7 +160,7 @@ export const useEnvisionStore = create<EnvisionState>((set, get) => ({
         useSimulationStore.getState().syncStakeholdersAsPersonas(projectId, stakeholders);
       }
     } catch (err) {
-      console.error('Failed to save stakeholders:', err);
+      if (import.meta.env.DEV) console.error('Failed to save stakeholders:', err);
     } finally {
       set({ saving: false });
     }

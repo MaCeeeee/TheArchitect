@@ -57,7 +57,7 @@ export default function PortfolioPage() {
       const url = `${window.location.origin}/shared/${data.data.token}`;
       setShareUrl(url);
     } catch (err) {
-      console.error('[Portfolio] Snapshot creation failed:', err);
+      if (import.meta.env.DEV) console.error('[Portfolio] Snapshot creation failed:', err);
     } finally {
       setShareLoading(false);
     }

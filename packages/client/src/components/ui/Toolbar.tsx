@@ -163,7 +163,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
       URL.revokeObjectURL(url);
       toast.success(`${type === 'executive' ? 'Executive Summary' : 'Architecture Inventory'} downloaded`);
     } catch (err) {
-      console.error(`[Export] Failed to download ${type} report:`, err);
+      if (import.meta.env.DEV) console.error(`[Export] Failed to download ${type} report:`, err);
       toast.error(`Failed to download ${type} report`);
     } finally {
       setExportLoading(null);

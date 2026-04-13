@@ -55,6 +55,22 @@ if (process.env.SENTRY_DSN) {
   log.info('[Sentry] Initialized');
 }
 
+// Process-level error handlers — prevent crashes during live demo
+process.on('unhandledRejection', (reason) => {
+  log.error({ err: reason }, 'Unhandled promise rejection');
+  if (process.env.SENTRY_DSN) Sentry.captureException(reason);
+});
+
+process.on('uncaughtException', (err) => {
+  log.fatal({ err }, 'Uncaught exception — shutting down');
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+    Sentry.close(2000).then(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 
 async function main() {
@@ -68,7 +84,7 @@ async function main() {
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000', credentials: true }));
   app.use(express.json({ limit: '10mb' }));
-  app.use(morgan('dev'));
+  if (process.env.NODE_ENV !== 'production') app.use(morgan('dev'));
 
   // Health check — verifies database connectivity
   app.get('/api/health', async (_req, res) => {

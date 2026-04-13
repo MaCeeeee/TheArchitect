@@ -46,15 +46,15 @@ export function connectSocket(): Socket {
   });
 
   socket.on('connect', () => {
-    console.log('[Socket] Connected:', socket!.id);
+    // connected
   });
 
   socket.on('connect_error', (err) => {
-    console.error('[Socket] Connection error:', err.message);
+    if (import.meta.env.DEV) console.error('[Socket] Connection error:', err.message);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log('[Socket] Disconnected:', reason);
+  socket.on('disconnect', (_reason) => {
+    // disconnected
   });
 
   return socket;

@@ -49,8 +49,6 @@ export default function LoginPage() {
     flow: 'auth-code',
     ux_mode: 'popup',
     onSuccess: async (codeResponse) => {
-      console.log('[OAuth] Google onSuccess triggered, code received');
-
       try {
         setIsLoading(true);
         setError('');
@@ -65,7 +63,7 @@ export default function LoginPage() {
         const serverMsg = axiosErr?.response?.data?.error;
         const status = axiosErr?.response?.status;
         const msg = serverMsg || 'Google authentication failed. Please try again or use email login.';
-        console.error('[OAuth] Google auth failed:', { status, serverMsg, err });
+        if (import.meta.env.DEV) console.error('[OAuth] Google auth failed:', { status, serverMsg, err });
         setError(msg);
         toast.error(msg);
       } finally {
@@ -73,13 +71,13 @@ export default function LoginPage() {
       }
     },
     onError: (errorResponse) => {
-      console.error('[OAuth] Google login error:', errorResponse);
+      if (import.meta.env.DEV) console.error('[OAuth] Google login error:', errorResponse);
       const msg = 'Google login failed. This may be a configuration issue — please try email login.';
       setError(msg);
       toast.error(msg);
     },
     onNonOAuthError: (err) => {
-      console.error('[OAuth] Non-OAuth error (popup blocked?):', err);
+      if (import.meta.env.DEV) console.error('[OAuth] Non-OAuth error (popup blocked?):', err);
       setError('Google login popup was blocked or closed. Please allow popups for this site.');
       toast.error('Google login popup was blocked or closed');
     },

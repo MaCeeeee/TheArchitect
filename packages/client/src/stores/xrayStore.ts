@@ -176,7 +176,7 @@ export const useXRayStore = create<XRayState>((set, get) => ({
       }
       set({ elementData });
     } catch (err) {
-      console.warn('[XRay] Graph cost fetch failed:', err);
+      if (import.meta.env.DEV) console.warn('[XRay] Graph cost fetch failed:', err);
     }
   },
 

@@ -149,7 +149,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         const { data } = await portfolioAPI.getSummary(projectId);
         set({ summary: data.data });
       } catch (err: any) {
-        console.error('[Portfolio] Summary fetch error:', err);
+        if (import.meta.env.DEV) console.error('[Portfolio] Summary fetch error:', err);
       }
     });
   },
@@ -160,7 +160,7 @@ export const usePortfolioStore = create<PortfolioState>((set, get) => ({
         const { data } = await portfolioAPI.getTimeline(projectId);
         set({ timeline: data.data });
       } catch (err: any) {
-        console.error('[Portfolio] Timeline fetch error:', err);
+        if (import.meta.env.DEV) console.error('[Portfolio] Timeline fetch error:', err);
       }
     });
   },

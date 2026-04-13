@@ -735,7 +735,7 @@ function ReportExportBar({ projectId, assessmentId, compact }: { projectId: stri
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (err) {
-      console.error(`[Oracle] ${format.toUpperCase()} download failed:`, err);
+      if (import.meta.env.DEV) console.error(`[Oracle] ${format.toUpperCase()} download failed:`, err);
     }
   };
 

@@ -265,7 +265,7 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
         set({ isGenerating: false, error: 'Generation stream ended unexpectedly' });
       }
     } catch (err: any) {
-      console.error('[BlueprintStore] Generation error:', err);
+      if (import.meta.env.DEV) console.error('[BlueprintStore] Generation error:', err);
       set({ isGenerating: false, error: err.message || 'Generation failed' });
     }
   },
@@ -362,7 +362,7 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
           useSimulationStore.getState().syncStakeholdersAsPersonas(projectId, allStakeholders);
         }
       } catch (syncErr) {
-        console.warn('[BlueprintStore] Envision sync failed (non-critical):', syncErr);
+        if (import.meta.env.DEV) console.warn('[BlueprintStore] Envision sync failed (non-critical):', syncErr);
       }
 
       set({
@@ -370,7 +370,7 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
         importResult: data.data || data,
       });
     } catch (err: any) {
-      console.error('[BlueprintStore] Import error:', err);
+      if (import.meta.env.DEV) console.error('[BlueprintStore] Import error:', err);
       set({
         isImporting: false,
         error: err.response?.data?.error || err.message || 'Import failed',
@@ -437,7 +437,7 @@ export const useBlueprintStore = create<BlueprintState>((set, get) => ({
         };
       });
     } catch (err: any) {
-      console.error('[BlueprintStore] Autofill error:', err);
+      if (import.meta.env.DEV) console.error('[BlueprintStore] Autofill error:', err);
       set({
         isAutofilling: false,
         error: err.response?.data?.error || err.message || 'Auto-fill failed',

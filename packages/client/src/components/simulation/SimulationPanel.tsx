@@ -776,7 +776,7 @@ function ResultsView({
       URL.revokeObjectURL(url);
       toast.success('Simulation report downloaded');
     } catch (err) {
-      console.error('[SimulationPanel] Failed to export PDF:', err);
+      if (import.meta.env.DEV) console.error('[SimulationPanel] Failed to export PDF:', err);
       toast.error('Failed to export simulation report');
     } finally {
       setExportLoading(false);

@@ -47,7 +47,7 @@ export default function WorkspaceBar() {
     toast.success('Workspace deleted');
     if (projectId) {
       workspaceAPI.delete(projectId, wsId).catch((err) => {
-        console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
+        if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
         toast.error('Failed to sync workspace deletion');
       });
     }

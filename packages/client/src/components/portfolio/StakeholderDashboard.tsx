@@ -49,7 +49,7 @@ export default function StakeholderDashboard() {
       });
       setShareUrl(`${window.location.origin}/shared/${data.data.token}`);
     } catch (err) {
-      console.error('[Stakeholder] Snapshot creation failed:', err);
+      if (import.meta.env.DEV) console.error('[Stakeholder] Snapshot creation failed:', err);
     } finally {
       setShareLoading(false);
     }

@@ -59,7 +59,7 @@ export default function AuditLogViewer() {
       setLogs(data.data);
       setTotal(data.total);
     } catch (err) {
-      console.error('Failed to load audit logs:', err);
+      if (import.meta.env.DEV) console.error('Failed to load audit logs:', err);
     } finally {
       setLoading(false);
     }

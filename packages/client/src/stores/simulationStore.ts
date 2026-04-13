@@ -205,11 +205,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       };
 
       processStream().catch((err) => {
-        console.error('[SimulationStore] Stream error:', err);
+        if (import.meta.env.DEV) console.error('[SimulationStore] Stream error:', err);
         set({ isRunning: false });
       });
     } catch (err: any) {
-      console.error('[SimulationStore] Start error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Start error:', err);
       set({ isRunning: false });
     }
   },
@@ -221,7 +221,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.cancel(projectId, activeRunId);
       set({ isRunning: false });
     } catch (err) {
-      console.error('[SimulationStore] Cancel error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Cancel error:', err);
     }
   },
 
@@ -230,7 +230,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       const response = await simulationAPI.list(projectId);
       set({ runs: response.data.runs });
     } catch (err) {
-      console.error('[SimulationStore] Load runs error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Load runs error:', err);
     }
   },
 
@@ -295,7 +295,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         })) || [],
       });
     } catch (err) {
-      console.error('[SimulationStore] Select run error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Select run error:', err);
     }
   },
 
@@ -332,7 +332,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         customPersonas: response.data.custom || [],
       });
     } catch (err) {
-      console.error('[SimulationStore] Load personas error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Load personas error:', err);
     }
   },
 
@@ -341,7 +341,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.createCustomPersona(projectId, input);
       await get().loadPersonas(projectId);
     } catch (err) {
-      console.error('[SimulationStore] Create persona error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Create persona error:', err);
       throw err;
     }
   },
@@ -406,7 +406,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.createCustomPersona(projectId, input);
       await get().loadPersonas(projectId);
     } catch (err) {
-      console.error('[SimulationStore] Create persona from stakeholder error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Create persona from stakeholder error:', err);
       throw err;
     }
   },
@@ -416,7 +416,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.updateCustomPersona(projectId, personaId, input);
       await get().loadPersonas(projectId);
     } catch (err) {
-      console.error('[SimulationStore] Update persona error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Update persona error:', err);
       throw err;
     }
   },
@@ -426,7 +426,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.deleteCustomPersona(projectId, personaId);
       await get().loadPersonas(projectId);
     } catch (err) {
-      console.error('[SimulationStore] Delete persona error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Delete persona error:', err);
       throw err;
     }
   },
@@ -495,7 +495,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       await simulationAPI.bulkCreatePersonas(projectId, personas);
       await get().loadPersonas(projectId);
     } catch (err) {
-      console.warn('[SimulationStore] Auto-sync personas failed (non-critical):', err);
+      if (import.meta.env.DEV) console.warn('[SimulationStore] Auto-sync personas failed (non-critical):', err);
     }
   },
 
@@ -511,7 +511,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         set({ comparisonRunB: run });
       }
     } catch (err) {
-      console.error('[SimulationStore] Select for comparison error:', err);
+      if (import.meta.env.DEV) console.error('[SimulationStore] Select for comparison error:', err);
     }
   },
 

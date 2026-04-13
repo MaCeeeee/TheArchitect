@@ -3,8 +3,12 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { Project } from '../models/Project';
+import { Standard } from '../models/Standard';
+import { Policy } from '../models/Policy';
 import { runCypher } from '../config/neo4j';
 import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo-architecture';
+import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES } from '../data/demo-seed';
+import { log } from '../config/logger';
 
 const router = Router();
 
@@ -24,18 +28,20 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
       });
     }
 
-    // Create project in MongoDB
+    // Create project in MongoDB with Vision + Stakeholders
     const project = await Project.create({
       name: DEMO_PROJECT_NAME,
-      description: 'A pre-built enterprise banking architecture demonstrating TheArchitect capabilities. Includes 16 elements across Business, Application, and Technology layers with 22 cross-layer connections.',
+      description: 'A pre-built enterprise banking architecture demonstrating TheArchitect capabilities. Includes 28 elements across Business, Application, and Technology layers with 35 cross-layer connections, cost data, compliance standards, and governance policies.',
       ownerId: userId,
       togafPhase: 'architecture_vision',
       tags: ['demo', 'enterprise', 'banking'],
+      vision: DEMO_VISION,
+      stakeholders: DEMO_STAKEHOLDERS,
     });
 
     const projectId = project._id.toString();
 
-    // Bulk-create elements in Neo4j
+    // Bulk-create elements in Neo4j with Tier 1-3 cost fields
     for (const el of DEMO_ELEMENTS) {
       await runCypher(
         `CREATE (e:ArchitectureElement {
@@ -44,6 +50,22 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
           maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
           posX: $posX, posY: $posY, posZ: $posZ,
           metadataJson: $metadataJson,
+          annualCost: $annualCost,
+          userCount: $userCount,
+          recordCount: $recordCount,
+          transformationStrategy: $transformationStrategy,
+          ksloc: $ksloc,
+          technicalFitness: $technicalFitness,
+          functionalFitness: $functionalFitness,
+          errorRatePercent: $errorRatePercent,
+          hourlyRate: $hourlyRate,
+          monthlyInfraCost: $monthlyInfraCost,
+          technicalDebtRatio: $technicalDebtRatio,
+          costEstimateOptimistic: $costEstimateOptimistic,
+          costEstimateMostLikely: $costEstimateMostLikely,
+          costEstimatePessimistic: $costEstimatePessimistic,
+          successProbability: $successProbability,
+          costOfDelayPerWeek: $costOfDelayPerWeek,
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`,
         {
@@ -61,6 +83,22 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
           posY: el.position3D.y,
           posZ: el.position3D.z,
           metadataJson: JSON.stringify(el.metadata),
+          annualCost: el.annualCost ?? 0,
+          userCount: el.userCount ?? 0,
+          recordCount: el.recordCount ?? 0,
+          transformationStrategy: el.transformationStrategy ?? 'retain',
+          ksloc: el.ksloc ?? 0,
+          technicalFitness: el.technicalFitness ?? 3,
+          functionalFitness: el.functionalFitness ?? 3,
+          errorRatePercent: el.errorRatePercent ?? 0,
+          hourlyRate: el.hourlyRate ?? 0,
+          monthlyInfraCost: el.monthlyInfraCost ?? 0,
+          technicalDebtRatio: el.technicalDebtRatio ?? 0,
+          costEstimateOptimistic: el.costEstimateOptimistic ?? 0,
+          costEstimateMostLikely: el.costEstimateMostLikely ?? 0,
+          costEstimatePessimistic: el.costEstimatePessimistic ?? 0,
+          successProbability: el.successProbability ?? 0.5,
+          costOfDelayPerWeek: el.costOfDelayPerWeek ?? 0,
         }
       );
     }
@@ -82,14 +120,51 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
       );
     }
 
+    // Seed compliance standards
+    for (const std of DEMO_STANDARDS) {
+      await Standard.create({
+        projectId: project._id,
+        name: std.name,
+        version: std.version,
+        type: std.type,
+        description: std.description,
+        sections: std.sections,
+        fullText: std.sections.map(s => `${s.number} ${s.title}\n${s.content}`).join('\n\n'),
+        pageCount: std.sections.length,
+        uploadedBy: userId,
+      });
+    }
+
+    // Seed governance policies
+    for (const pol of DEMO_POLICIES) {
+      await Policy.create({
+        projectId: project._id,
+        name: pol.name,
+        description: pol.description,
+        category: pol.category,
+        severity: pol.severity,
+        enabled: pol.enabled,
+        status: pol.status,
+        source: pol.source,
+        scope: pol.scope,
+        rules: pol.rules,
+        createdBy: userId,
+        version: 1,
+      });
+    }
+
+    log.info({ projectId, elements: DEMO_ELEMENTS.length, connections: DEMO_CONNECTIONS.length, standards: DEMO_STANDARDS.length, policies: DEMO_POLICIES.length }, '[Demo] Project created');
+
     res.status(201).json({
       projectId,
       elementsCreated: DEMO_ELEMENTS.length,
       connectionsCreated: DEMO_CONNECTIONS.length,
+      standardsCreated: DEMO_STANDARDS.length,
+      policiesCreated: DEMO_POLICIES.length,
       existing: false,
     });
   } catch (err) {
-    console.error('[Demo] Failed to create demo project:', err);
+    log.error({ err }, '[Demo] Failed to create demo project');
     res.status(500).json({ error: 'Failed to create demo project. Please try again.' });
   }
 });
