@@ -6,8 +6,17 @@ import { ApiKey } from '../models/ApiKey';
 
 // Types are extended via src/types/express.d.ts
 
-const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'thearchitect-dev-refresh-secret-change-in-production';
+const isDev = process.env.NODE_ENV !== 'production';
+
+function requireSecret(name: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (isDev) return `dev-only-${name}-not-for-production`;
+  throw new Error(`FATAL: ${name} environment variable is required in production`);
+}
+
+const JWT_SECRET = requireSecret('JWT_SECRET');
+const JWT_REFRESH_SECRET = requireSecret('JWT_REFRESH_SECRET');
 
 export function authenticate(req: Request, res: Response, next: NextFunction) {
   // Strategy 1: X-API-Key header

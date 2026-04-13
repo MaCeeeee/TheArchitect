@@ -155,6 +155,12 @@ export const authAPI = {
 
   resetPassword: (token: string, password: string) =>
     api.post('/auth/reset-password', { token, password }),
+
+  verifyEmail: (token: string) =>
+    api.get('/auth/verify-email', { params: { token } }),
+
+  resendVerification: (email: string) =>
+    api.post('/auth/resend-verification', { email }),
 };
 
 // Project API

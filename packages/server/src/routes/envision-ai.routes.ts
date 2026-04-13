@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
+import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import {
   generateVision,
@@ -19,6 +20,7 @@ import { extractText, isSupportedDocument, getSupportedFormats } from '../servic
 const router = Router();
 
 router.use(authenticate);
+router.use(requireVerifiedEmail);
 
 // AI rate limits — per-endpoint to avoid document uploads eating generation quota
 const aiRateLimit = rateLimit({ name: 'ai-envision', windowMs: 24 * 60 * 60 * 1000, max: 20 });

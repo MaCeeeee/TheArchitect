@@ -14,7 +14,7 @@ import {
   isPasswordValid,
 } from '@thearchitect/shared';
 
-type Mode = 'login' | 'register' | 'mfa' | 'forgot' | 'forgot-sent';
+type Mode = 'login' | 'register' | 'mfa' | 'forgot' | 'forgot-sent' | 'verify-email-sent';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -117,6 +117,13 @@ export default function LoginPage() {
         return;
       }
 
+      // Block unverified users — show "check your inbox" instead
+      if (data.user?.emailVerified === false) {
+        setMode('verify-email-sent');
+        setIsLoading(false);
+        return;
+      }
+
       login(data.user, data.accessToken, data.refreshToken);
       navigate(redirectTo);
     } catch (err: unknown) {
@@ -146,8 +153,16 @@ export default function LoginPage() {
 
     try {
       const { data } = await authAPI.register(email, password, name);
-      login(data.user, data.accessToken, data.refreshToken);
-      navigate(redirectTo);
+
+      // First user is auto-verified — log in directly
+      if (data.user?.emailVerified) {
+        login(data.user, data.accessToken, data.refreshToken);
+        navigate(redirectTo);
+        return;
+      }
+
+      // Others: show "check your inbox" screen
+      setMode('verify-email-sent');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Registration failed';
       setError(msg);
@@ -261,6 +276,36 @@ export default function LoginPage() {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 If an account exists for <strong className="text-[#d0d0d0]">{email}</strong>, you'll receive a password reset link shortly.
               </p>
+              <button type="button" onClick={() => switchMode('login')} className={btnPrimary}>
+                Back to Login
+              </button>
+            </div>
+          )}
+
+          {mode === 'verify-email-sent' && (
+            <div className="space-y-4 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-[#00ff41]/20 flex items-center justify-center">
+                <Mail size={24} className="text-[#00ff41]" />
+              </div>
+              <h2 className="text-sm font-semibold text-white">Verify Your Email</h2>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                We sent a verification link to <strong className="text-[#d0d0d0]">{email}</strong>. Please check your inbox and click the link to activate your account.
+              </p>
+              <p className="text-[11px] text-[var(--text-tertiary)]">The link expires in 24 hours. Check your spam folder if you don't see it.</p>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await authAPI.resendVerification(email);
+                    toast.success('Verification email resent');
+                  } catch {
+                    toast.error('Could not resend. Try again later.');
+                  }
+                }}
+                className="w-full rounded-lg border border-[var(--border-subtle)] px-4 py-2.5 text-xs text-[var(--text-secondary)] hover:text-white hover:border-[#00ff41]/50 transition-all"
+              >
+                Resend Verification Email
+              </button>
               <button type="button" onClick={() => switchMode('login')} className={btnPrimary}>
                 Back to Login
               </button>

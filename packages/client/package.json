@@ -17,6 +17,7 @@
     "@react-three/drei": "^9.120.0",
     "@react-three/fiber": "^8.17.0",
     "@react-three/postprocessing": "^2.16.0",
+    "@sentry/react": "^10.48.0",
     "@tanstack/react-query": "^5.62.0",
     "@thearchitect/shared": "*",
     "axios": "^1.7.0",

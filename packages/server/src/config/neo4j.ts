@@ -1,4 +1,5 @@
 import neo4j, { Driver } from 'neo4j-driver';
+import { log } from './logger';
 
 let driver: Driver;
 
@@ -10,9 +11,9 @@ export async function connectNeo4j() {
   try {
     driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
     await driver.verifyConnectivity();
-    console.log('[Neo4j] Connected successfully');
+    log.info('[Neo4j] Connected successfully');
   } catch (err) {
-    console.error('[Neo4j] Connection failed:', err);
+    log.error({ err }, '[Neo4j] Connection failed');
     throw err;
   }
 }

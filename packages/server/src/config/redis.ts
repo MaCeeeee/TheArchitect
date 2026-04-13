@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { log } from './logger';
 
 let redis: Redis;
 
@@ -10,8 +11,8 @@ export function getRedis(): Redis {
       password: process.env.REDIS_PASSWORD || undefined,
       maxRetriesPerRequest: 3,
     });
-    redis.on('connect', () => console.log('[Redis] Connected'));
-    redis.on('error', (err) => console.error('[Redis] Error:', err));
+    redis.on('connect', () => log.info('[Redis] Connected'));
+    redis.on('error', (err) => log.error({ err }, '[Redis] Error'));
   }
   return redis;
 }

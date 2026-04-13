@@ -23,7 +23,7 @@ import {
   type OAuthProfile,
 } from '../services/oauth.service';
 import { isPasswordValid } from '@thearchitect/shared';
-import { sendPasswordResetEmail } from '../services/email.service';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email.service';
 import { migrateTemporaryGraph } from '../services/upload.service';
 import { HealthReport } from '../models/HealthReport';
 import { Project } from '../models/Project';
@@ -53,7 +53,23 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     // First user on the platform becomes chief_architect automatically
     const userCount = await User.countDocuments();
     const role = userCount === 0 ? 'chief_architect' : 'enterprise_architect';
-    const user = await User.create({ email, passwordHash, name, role });
+    const isFirstUser = userCount === 0;
+
+    // Generate email verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const user = await User.create({
+      email, passwordHash, name, role,
+      emailVerified: isFirstUser, // first user auto-verified
+      emailVerificationToken: isFirstUser ? undefined : verificationToken,
+      emailVerificationExpires: isFirstUser ? undefined : new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+
+    // Send verification email (fire-and-forget)
+    if (!isFirstUser) {
+      sendVerificationEmail(email, verificationToken).catch((err) =>
+        console.error('[Auth] Failed to send verification email:', err),
+      );
+    }
 
     const accessToken = generateAccessToken(user._id.toString(), user.role);
     const refreshToken = generateRefreshToken(user._id.toString(), user.role);
@@ -68,13 +84,78 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     });
 
     res.status(201).json({
-      user: { id: user._id, email: user.email, name: user.name, role: user.role },
+      user: { id: user._id, email: user.email, name: user.name, role: user.role, emailVerified: user.emailVerified },
       accessToken,
       refreshToken,
+      emailVerificationRequired: !user.emailVerified,
     });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+// ─── GET /api/auth/verify-email — Verify email address ───
+
+router.get('/verify-email', async (req: Request, res: Response) => {
+  try {
+    const token = String(req.query.token || '');
+    if (!token) return res.status(400).json({ error: 'Verification token required' });
+
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+
+    await createAuditEntry({
+      userId: user._id.toString(),
+      action: 'email_verified',
+      entityType: 'user',
+      entityId: user._id.toString(),
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+
+    res.json({ success: true, message: 'Email verified successfully' });
+  } catch (err) {
+    console.error('Verify email error:', err);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+// ─── POST /api/auth/resend-verification — Resend verification email ───
+
+router.post('/resend-verification', authLimiter, async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user || user.emailVerified) {
+      // Don't reveal whether user exists
+      return res.json({ success: true, message: 'If the email exists and is unverified, a new link has been sent' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    await sendVerificationEmail(user.email, verificationToken);
+
+    res.json({ success: true, message: 'If the email exists and is unverified, a new link has been sent' });
+  } catch (err) {
+    console.error('Resend verification error:', err);
+    res.status(500).json({ error: 'Failed to resend verification email' });
   }
 });
 
@@ -187,6 +268,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
         name: user.name,
         role: user.role,
         mfaEnabled: user.mfaEnabled,
+        emailVerified: user.emailVerified ?? true,
       },
       accessToken,
       refreshToken,
@@ -720,7 +802,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
       userAgent: req.get('user-agent') || '',
     });
 
-    return res.json({ accessToken, refreshToken, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    return res.json({ accessToken, refreshToken, user: { id: user._id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified ?? true } });
   } catch (err) {
     console.error('[OAuth] Google token verification error:', err);
     return res.status(401).json({ error: 'Google authentication failed' });

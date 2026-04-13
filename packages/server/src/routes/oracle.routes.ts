@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
+import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { assessAcceptanceRisk } from '../services/oracle.service';
 import { generateAlternatives } from '../services/scenario-generator.service';
@@ -52,6 +53,7 @@ const aiRateLimit = rateLimit({ name: 'ai-oracle', windowMs: 24 * 60 * 60 * 1000
 router.post(
   '/:projectId/oracle/assess',
   authenticate,
+  requireVerifiedEmail,
   aiRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),

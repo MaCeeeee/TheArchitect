@@ -4,8 +4,20 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
+import * as Sentry from '@sentry/react';
 import App from './App';
 import './index.css';
+
+// Sentry — captures unhandled errors, promise rejections, and console.error
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: import.meta.env.PROD ? 0.2 : 1.0,
+  });
+}
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '692068107768-83beuiq6pen52fmo4sdgcshlmdf0t7fo.apps.googleusercontent.com';
 

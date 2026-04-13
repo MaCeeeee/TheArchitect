@@ -6,6 +6,7 @@ import AuthLayout from './components/security/AuthLayout';
 import LoginPage from './components/security/LoginPage';
 import OAuthCallbackPage from './components/security/OAuthCallbackPage';
 import ResetPasswordPage from './components/security/ResetPasswordPage';
+import VerifyEmailPage from './components/security/VerifyEmailPage';
 import InvitationPage from './components/security/InvitationPage';
 import DashboardPage from './components/ui/DashboardPage';
 import ProjectView from './components/ui/ProjectView';
@@ -43,6 +44,7 @@ export default function App() {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
       </Route>
       <Route path="/auth/callback" element={<OAuthCallbackPage />} />
       <Route path="/invitations/:token" element={<InvitationPage />} />

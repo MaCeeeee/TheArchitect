@@ -47,6 +47,36 @@ function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display: inline-block; background: ${ACCENT}; color: #000000; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600;">${label}</a>`;
 }
 
+export async function sendVerificationEmail(
+  to: string,
+  token: string,
+): Promise<boolean> {
+  const transporter = getTransporter();
+  const verifyUrl = `${getClientUrl()}/auth/verify-email?token=${token}`;
+
+  if (!transporter) {
+    console.log(`\n[DEV] Email verification link for ${to}:\n${verifyUrl}\n`);
+    return true;
+  }
+
+  await transporter.sendMail({
+    from: getFrom(),
+    to,
+    subject: `${APP_NAME} — Verify your email`,
+    html: emailWrapper(`
+      <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
+        Welcome to <strong style="color: ${TEXT_PRIMARY};">TheArchitect</strong>! Please verify your email address to activate your account. This link expires in <strong style="color: ${TEXT_PRIMARY};">24 hours</strong>.
+      </p>
+      ${ctaButton(verifyUrl, 'Verify Email')}
+      <p style="margin: 24px 0 0 0; font-size: 12px; color: ${TEXT_DIM}; line-height: 1.5;">
+        If you didn't create an account, you can safely ignore this email.
+      </p>
+    `),
+  });
+
+  return true;
+}
+
 export async function sendPasswordResetEmail(
   to: string,
   resetToken: string,

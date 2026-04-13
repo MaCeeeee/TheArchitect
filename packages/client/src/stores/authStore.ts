@@ -9,6 +9,7 @@ interface User {
   avatarUrl?: string;
   role: string;
   mfaEnabled?: boolean;
+  emailVerified?: boolean;
 }
 
 interface AuthState {

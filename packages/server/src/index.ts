@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import * as Sentry from '@sentry/node';
 import { connectMongoDB } from './config/database';
 import { connectNeo4j } from './config/neo4j';
 import { initSocketServer } from './websocket/socketServer';
@@ -40,8 +41,19 @@ import envisionAIRoutes from './routes/envision-ai.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 import { startSyncScheduler } from './services/sync-scheduler.service';
+import { log } from './config/logger';
 
 dotenv.config();
+
+// Sentry — initialize before anything else so it captures all errors
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development',
+    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+  });
+  log.info('[Sentry] Initialized');
+}
 
 const PORT = process.env.PORT || 4000;
 
@@ -58,9 +70,39 @@ async function main() {
   app.use(express.json({ limit: '10mb' }));
   app.use(morgan('dev'));
 
-  // Health check
-  app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), version: '0.1.0' });
+  // Health check — verifies database connectivity
+  app.get('/api/health', async (_req, res) => {
+    const checks: Record<string, 'ok' | 'error'> = {};
+
+    // MongoDB
+    try {
+      const mongoose = await import('mongoose');
+      checks.mongodb = mongoose.default.connection.readyState === 1 ? 'ok' : 'error';
+    } catch { checks.mongodb = 'error'; }
+
+    // Neo4j
+    try {
+      const { getNeo4jDriver } = await import('./config/neo4j');
+      const session = getNeo4jDriver().session();
+      await session.run('RETURN 1');
+      await session.close();
+      checks.neo4j = 'ok';
+    } catch { checks.neo4j = 'error'; }
+
+    // Redis
+    try {
+      const { getRedis } = await import('./config/redis');
+      await getRedis().ping();
+      checks.redis = 'ok';
+    } catch { checks.redis = 'error'; }
+
+    const allOk = Object.values(checks).every((v) => v === 'ok');
+    res.status(allOk ? 200 : 503).json({
+      status: allOk ? 'ok' : 'degraded',
+      timestamp: new Date().toISOString(),
+      version: '0.1.0',
+      checks,
+    });
   });
 
   // Global rate limit — disabled in dev to avoid 429s during rapid testing
@@ -117,7 +159,8 @@ async function main() {
 
   // Error handler
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('Unhandled error:', err);
+    log.error({ err }, 'Unhandled error');
+    if (process.env.SENTRY_DSN) Sentry.captureException(err);
     res.status(500).json({ error: 'Internal server error' });
   });
 
@@ -135,12 +178,17 @@ async function main() {
   startSyncScheduler();
 
   server.listen(PORT, () => {
-    console.log(`[TheArchitect] Server running on http://localhost:${PORT}`);
-    console.log(`[TheArchitect] WebSocket ready`);
+    log.info({ port: PORT }, 'Server running');
+    log.info('WebSocket ready');
   });
 }
 
 main().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
+  log.fatal({ err }, 'Failed to start server');
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+    Sentry.close(2000).then(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
 });

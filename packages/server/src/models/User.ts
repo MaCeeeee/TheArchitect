@@ -15,6 +15,9 @@ export interface IUser extends Document {
   avatarUrl: string;
   role: 'chief_architect' | 'enterprise_architect' | 'solution_architect' | 'data_architect' | 'business_architect' | 'analyst' | 'viewer';
   permissions: string[];
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpires?: Date;
   mfaEnabled: boolean;
   mfaSecret?: string;
   passwordResetToken?: string;
@@ -55,6 +58,9 @@ const userSchema = new Schema<IUser>(
       default: 'viewer',
     },
     permissions: [{ type: String }],
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
     mfaEnabled: { type: Boolean, default: false },
     mfaSecret: { type: String },
     passwordResetToken: { type: String },

@@ -5,6 +5,7 @@ import { getAllConnectorTypes, getConnector, getEnrichmentConnector, getAllEnric
 import { createTemporaryGraph, migrateTemporaryGraph } from '../services/upload.service';
 import type { ConnectorConfig, ConnectorType, AuthMethod } from '../services/connectors';
 import { Connection, decryptCredentials } from '../models/Connection';
+import { ConnectorConfigModel, toConnectorConfig, encryptCredentials } from '../models/ConnectorConfig';
 import { Project } from '../models/Project';
 import { SyncLog } from '../services/sync-scheduler.service';
 import { matchEnrichments } from '../services/enrichment-matcher.service';
@@ -14,15 +15,6 @@ import type { CostFields, ConflictStrategy, CostEnrichmentResult } from '@thearc
 const router = Router();
 
 router.use(authenticate);
-
-// In-memory connector configs (per project).
-// Production: move to MongoDB with encrypted credentials.
-const connectorStore = new Map<string, ConnectorConfig[]>();
-
-function getProjectConnectors(projectId: string): ConnectorConfig[] {
-  if (!connectorStore.has(projectId)) connectorStore.set(projectId, []);
-  return connectorStore.get(projectId)!;
-}
 
 // GET /api/projects/:projectId/connectors/types
 router.get(
@@ -39,7 +31,19 @@ router.get(
   requireProjectAccess('viewer'),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
-    const configs = getProjectConnectors(projectId).map(sanitize);
+    const docs = await ConnectorConfigModel.find({ projectId }).lean();
+    const configs = docs.map((d) => ({
+      type: d.type,
+      name: d.name,
+      baseUrl: d.baseUrl,
+      authMethod: d.authMethod,
+      hasCredentials: !!d.credentials,
+      mappingRules: d.mappingRules,
+      syncIntervalMinutes: d.syncIntervalMinutes,
+      filters: d.filters,
+      enabled: d.enabled,
+      projectId: d.projectId,
+    }));
     res.json({ success: true, data: configs });
   },
 );
@@ -62,18 +66,17 @@ router.post(
         return res.status(400).json({ success: false, error: `Unknown connector type: ${type}` });
       }
 
-      const config: ConnectorConfig = {
-        type, name, baseUrl, authMethod: authMethod || 'api_key',
-        credentials: credentials || {},
-        projectId,
+      const doc = await ConnectorConfigModel.create({
+        projectId, type, name, baseUrl,
+        authMethod: authMethod || 'api_key',
+        credentials: credentials ? encryptCredentials(credentials) : '',
         mappingRules: mappingRules || [],
         syncIntervalMinutes: syncIntervalMinutes || 0,
         filters: filters || {},
         enabled: true,
-      };
+      });
 
-      getProjectConnectors(projectId).push(config);
-      res.json({ success: true, data: sanitize(config) });
+      res.json({ success: true, data: sanitize(toConnectorConfig(doc)) });
     } catch (err) {
       console.error('[Connector] Create error:', err);
       res.status(500).json({ success: false, error: 'Failed to create connector' });
@@ -89,12 +92,12 @@ router.post(
     try {
       const projectId = String(req.params.projectId);
       const connectorName = String(req.params.connectorName);
-      const configs = getProjectConnectors(projectId);
-      const config = configs.find(c => c.name === connectorName);
+      const doc = await ConnectorConfigModel.findOne({ projectId, name: connectorName });
 
-      if (!config) return res.status(404).json({ success: false, error: 'Connector not found' });
+      if (!doc) return res.status(404).json({ success: false, error: 'Connector not found' });
 
-      const connector = getConnector(config.type);
+      const config = toConnectorConfig(doc);
+      const connector = getConnector(config.type as ConnectorType);
       if (!connector) return res.status(400).json({ success: false, error: 'Connector type not registered' });
 
       const result = await connector.testConnection(config);
@@ -113,12 +116,12 @@ router.post(
     try {
       const projectId = String(req.params.projectId);
       const connectorName = String(req.params.connectorName);
-      const configs = getProjectConnectors(projectId);
-      const config = configs.find(c => c.name === connectorName);
+      const doc = await ConnectorConfigModel.findOne({ projectId, name: connectorName });
 
-      if (!config) return res.status(404).json({ success: false, error: 'Connector not found' });
+      if (!doc) return res.status(404).json({ success: false, error: 'Connector not found' });
 
-      const connector = getConnector(config.type);
+      const config = toConnectorConfig(doc);
+      const connector = getConnector(config.type as ConnectorType);
       if (!connector) return res.status(400).json({ success: false, error: 'Connector type not registered' });
 
       const start = Date.now();
@@ -133,7 +136,7 @@ router.post(
       };
 
       const graph = await createTemporaryGraph(parsed);
-      const migrated = await migrateTemporaryGraph(graph.projectId, projectId);
+      await migrateTemporaryGraph(graph.projectId, projectId);
 
       const syncResult = {
         connectorId: connectorName,
@@ -166,9 +169,7 @@ router.delete(
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const connectorName = String(req.params.connectorName);
-    const configs = getProjectConnectors(projectId);
-    const idx = configs.findIndex(c => c.name === connectorName);
-    if (idx >= 0) configs.splice(idx, 1);
+    await ConnectorConfigModel.deleteOne({ projectId, name: connectorName });
     res.json({ success: true });
   },
 );
@@ -670,7 +671,7 @@ function serializeNeo4jProps(props: Record<string, unknown>): Record<string, unk
 }
 
 // Sanitize: strip credentials from response
-function sanitize(config: ConnectorConfig) {
+function sanitize(config: any) {
   return {
     type: config.type,
     name: config.name,
