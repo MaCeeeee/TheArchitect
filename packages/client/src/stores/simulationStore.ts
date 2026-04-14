@@ -17,6 +17,8 @@ import type {
   ValidationResult,
 } from '@thearchitect/shared/src/types/simulation.types';
 import { computeRunComparison, type RunComparisonData } from '../components/simulation/comparisonUtils';
+import { FALLBACK_PRESET_PERSONAS } from './personaFallback';
+import toast from 'react-hot-toast';
 
 export interface DiscussionBubble {
   id: string;                    // `${agentId}_r${round}_${elementId}`
@@ -327,12 +329,17 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
   loadPersonas: async (projectId) => {
     try {
       const response = await simulationAPI.getPersonas(projectId);
+      const presets = response.data.presets || [];
       set({
-        presetPersonas: response.data.presets || [],
+        presetPersonas: presets.length > 0 ? presets : FALLBACK_PRESET_PERSONAS,
         customPersonas: response.data.custom || [],
       });
     } catch (err) {
       if (import.meta.env.DEV) console.error('[SimulationStore] Load personas error:', err);
+      // Keep the UI usable when the persona endpoint is unreachable —
+      // fallback defaults let the user still configure a run.
+      set({ presetPersonas: FALLBACK_PRESET_PERSONAS, customPersonas: [] });
+      toast.error('Could not load personas — using defaults.');
     }
   },
 

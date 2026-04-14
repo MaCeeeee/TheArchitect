@@ -5,9 +5,10 @@ import { PERMISSIONS } from '@thearchitect/shared';
 import { Project } from '../models/Project';
 import { Standard } from '../models/Standard';
 import { Policy } from '../models/Policy';
+import { SimulationRun } from '../models/SimulationRun';
 import { runCypher } from '../config/neo4j';
 import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo-architecture';
-import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES } from '../data/demo-seed';
+import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES, DEMO_SIMULATION_RUN } from '../data/demo-seed';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -153,6 +154,20 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
       });
     }
 
+    // Seed pre-computed MiroFish simulation run
+    await SimulationRun.create({
+      projectId: project._id,
+      createdBy: userId,
+      name: DEMO_SIMULATION_RUN.name,
+      status: DEMO_SIMULATION_RUN.status,
+      scenarioType: DEMO_SIMULATION_RUN.scenarioType,
+      config: DEMO_SIMULATION_RUN.config,
+      rounds: DEMO_SIMULATION_RUN.rounds,
+      result: DEMO_SIMULATION_RUN.result,
+      totalTokensUsed: DEMO_SIMULATION_RUN.totalTokensUsed,
+      totalDurationMs: DEMO_SIMULATION_RUN.totalDurationMs,
+    });
+
     log.info({ projectId, elements: DEMO_ELEMENTS.length, connections: DEMO_CONNECTIONS.length, standards: DEMO_STANDARDS.length, policies: DEMO_POLICIES.length }, '[Demo] Project created');
 
     res.status(201).json({
@@ -161,6 +176,7 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
       connectionsCreated: DEMO_CONNECTIONS.length,
       standardsCreated: DEMO_STANDARDS.length,
       policiesCreated: DEMO_POLICIES.length,
+      simulationRunsCreated: 1,
       existing: false,
     });
   } catch (err) {

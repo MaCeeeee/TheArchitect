@@ -286,7 +286,7 @@ export default function SimulationPanel() {
     'config', 'results',
     ...(activeRun ? ['emergence' as ViewMode] : []),
     'history',
-    ...(comparisonData ? ['comparison' as ViewMode] : []),
+    'comparison',
   ];
 
   return (
@@ -384,6 +384,13 @@ export default function SimulationPanel() {
           <RunComparison
             data={comparisonData}
             onClear={() => { clearComparison(); setViewMode('history'); }}
+          />
+        )}
+
+        {viewMode === 'comparison' && !comparisonData && (
+          <ComparisonEmptyState
+            completedRunCount={runs.filter((r) => r.status === 'completed').length}
+            onOpenHistory={handleLoadHistory}
           />
         )}
       </div>
@@ -1091,6 +1098,34 @@ function MetricCard({ label, value }: { label: string; value: string | number })
     <div className="bg-[var(--surface-base)] rounded p-1.5">
       <div className="text-[10px] text-gray-500">{label}</div>
       <div className="text-xs text-gray-200 font-medium">{value}</div>
+    </div>
+  );
+}
+
+function ComparisonEmptyState({
+  completedRunCount,
+  onOpenHistory,
+}: {
+  completedRunCount: number;
+  onOpenHistory: () => void;
+}) {
+  const ready = completedRunCount >= 2;
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-10 px-6 gap-3">
+      <GitCompareArrows size={28} className="text-gray-500 opacity-60" />
+      <h3 className="text-sm font-medium text-gray-200">Compare Simulation Runs</h3>
+      <p className="text-xs text-gray-400 max-w-xs leading-relaxed">
+        {ready
+          ? 'Open History, toggle Compare Runs, pick any two completed runs, then tap Compare Selected.'
+          : `You need at least 2 completed runs to compare. You have ${completedRunCount}.`}
+      </p>
+      <button
+        onClick={onOpenHistory}
+        disabled={!ready}
+        className="mt-1 text-xs px-3 py-1.5 rounded border border-cyan-500/40 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Open History
+      </button>
     </div>
   );
 }

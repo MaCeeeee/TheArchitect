@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import toast from 'react-hot-toast';
 import { roadmapAPI } from '../services/api';
 import type {
   TransformationRoadmap, RoadmapListItem, RoadmapConfig,
@@ -97,8 +98,10 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
     try {
       const { data } = await roadmapAPI.list(projectId);
       set({ roadmaps: data.data || data || [] });
-    } catch {
-      // Silent fail for list
+    } catch (err: any) {
+      const message = err?.response?.data?.error || 'Failed to load roadmap list';
+      set({ error: message });
+      toast.error(message);
     }
   },
 
@@ -183,8 +186,10 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
         candidatesLoaded: true,
         dataConfidence: preview.dataConfidence || null,
       });
-    } catch {
-      set({ isCandidatesLoading: false, candidatesLoaded: true });
+    } catch (err: any) {
+      const message = err?.response?.data?.error || 'Failed to load migration candidates';
+      set({ isCandidatesLoading: false, candidatesLoaded: true, error: message });
+      toast.error(message);
     }
   },
 
