@@ -13,6 +13,7 @@ import CapacityPlanning from '../simulation/CapacityPlanning';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import ConnectorPanel from '../import/ConnectorPanel';
 import OraclePanel from '../oracle/OraclePanel';
+import SimulationPanel from '../simulation/SimulationPanel';
 
 export default function AnalyzePage() {
   const { projectId, section } = useParams<{ projectId: string; section?: string }>();
@@ -57,6 +58,8 @@ export default function AnalyzePage() {
           {activeSection === 'capacity' && <CapacityPlanning />}
 
           {activeSection === 'oracle' && <OraclePanel />}
+
+          {activeSection === 'mirofish' && <SimulationPanel />}
 
           {activeSection === 'roadmap' && <RoadmapPanel />}
 

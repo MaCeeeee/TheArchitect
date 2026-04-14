@@ -28,10 +28,10 @@ export default function RiskDashboard() {
 
     return {
       elements: assessed,
-      critical: assessed.filter((e) => e.riskScore >= 8).length,
-      high: assessed.filter((e) => e.riskScore >= 6 && e.riskScore < 8).length,
-      medium: assessed.filter((e) => e.riskScore >= 4 && e.riskScore < 6).length,
-      low: assessed.filter((e) => e.riskScore < 4).length,
+      critical: assessed.filter((e) => e.riskLevel === 'critical').length,
+      high: assessed.filter((e) => e.riskLevel === 'high').length,
+      medium: assessed.filter((e) => e.riskLevel === 'medium').length,
+      low: assessed.filter((e) => e.riskLevel === 'low' || !['critical', 'high', 'medium'].includes(e.riskLevel)).length,
       average: assessed.length > 0
         ? Math.round((assessed.reduce((s, e) => s + e.riskScore, 0) / assessed.length) * 10) / 10
         : 0,

@@ -33,7 +33,7 @@ import { reportAPI } from '../../services/api';
 import EmergenceDashboard from './EmergenceDashboard';
 import RunComparison from './RunComparison';
 import PersonaEditor from './PersonaEditor';
-import type { AgentPersona, ScenarioType, FatigueRating, CustomPersona } from '@thearchitect/shared/src/types/simulation.types';
+import type { AgentPersona, ScenarioType, FatigueRating, CustomPersona, SimulationRunSummary } from '@thearchitect/shared/src/types/simulation.types';
 import type { TransformationRoadmap } from '@thearchitect/shared/src/types/roadmap.types';
 
 // ─── Roadmap → Scenario Builder ───
@@ -233,6 +233,31 @@ export default function SimulationPanel() {
     loadPersonas(projectId).then(() => setPersonasLoaded(true));
   }, [projectId, personasLoaded, loadPersonas]);
 
+  // Load existing runs on mount — if there's a completed run, open History so
+  // pre-seeded demo simulations are visible without requiring a live run.
+  // The auto-switch fires exactly once; Config remains manually reachable after.
+  const [runsLoadedOnce, setRunsLoadedOnce] = useState(false);
+  const [autoSwitchedOnce, setAutoSwitchedOnce] = useState(false);
+  useEffect(() => {
+    if (!projectId || runsLoadedOnce) return;
+    loadRuns(projectId).then(() => setRunsLoadedOnce(true));
+  }, [projectId, runsLoadedOnce, loadRuns]);
+
+  useEffect(() => {
+    if (!runsLoadedOnce || autoSwitchedOnce || viewMode !== 'config') return;
+    const hasCompleted = runs.some((r) => r.status === 'completed');
+    setAutoSwitchedOnce(true);
+    if (hasCompleted) setViewMode('history');
+  }, [runsLoadedOnce, autoSwitchedOnce, runs, viewMode]);
+
+  const latestCompletedRun = useMemo(() => {
+    const completed = runs.filter((r) => r.status === 'completed');
+    if (completed.length === 0) return null;
+    return completed.reduce((latest, r) =>
+      new Date(r.createdAt) > new Date(latest.createdAt) ? r : latest,
+    );
+  }, [runs]);
+
   // Set default agents once presets are loaded
   useEffect(() => {
     if (presetPersonas.length > 0 && agents.length === 0) {
@@ -328,6 +353,12 @@ export default function SimulationPanel() {
             onCreatePersona={createCustomPersona}
             onUpdatePersona={updateCustomPersona}
             onDeletePersona={deleteCustomPersona}
+            latestCompletedRun={latestCompletedRun}
+            onViewPrecomputed={async () => {
+              if (!latestCompletedRun) return;
+              await selectRun(projectId, latestCompletedRun.id);
+              setViewMode('results');
+            }}
             onImportRoadmap={(desc, ids) => {
               setScenarioDescription(desc);
               setTargetElementIds(ids);
@@ -350,6 +381,7 @@ export default function SimulationPanel() {
 
         {viewMode === 'results' && (
           <ResultsView
+            activeRun={activeRun}
             fatigueReport={fatigueReport}
             emergenceMetrics={emergenceMetrics}
             emergenceEvents={emergenceEvents}
@@ -404,7 +436,7 @@ function ConfigView({
   scenarioType, setScenarioType, scenarioDescription, setScenarioDescription,
   maxRounds, setMaxRounds, agents, setAgents, expandedAgent, setExpandedAgent, onStart,
   presetPersonas, customPersonas, projectId, onCreatePersona, onUpdatePersona, onDeletePersona,
-  onImportRoadmap,
+  onImportRoadmap, latestCompletedRun, onViewPrecomputed,
 }: {
   scenarioType: ScenarioType;
   setScenarioType: (v: ScenarioType) => void;
@@ -424,6 +456,8 @@ function ConfigView({
   onUpdatePersona: (projectId: string, personaId: string, input: Record<string, unknown>) => Promise<void>;
   onDeletePersona: (projectId: string, personaId: string) => Promise<void>;
   onImportRoadmap: (description: string, targetIds: string[]) => void;
+  latestCompletedRun: SimulationRunSummary | null;
+  onViewPrecomputed: () => void;
 }) {
   const [showPersonaPicker, setShowPersonaPicker] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -462,6 +496,27 @@ function ConfigView({
         <Brain size={16} />
         <span className="font-semibold">MiroFish Simulation</span>
       </div>
+
+      {latestCompletedRun && (
+        <div className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-2.5 flex items-center gap-3">
+          <Activity size={16} className="text-cyan-300 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-cyan-200 truncate">
+              Pre-computed simulation ready: {latestCompletedRun.name}
+            </p>
+            <p className="text-[10px] text-cyan-400/80">
+              {latestCompletedRun.totalRounds} rounds · {latestCompletedRun.outcome || 'completed'}
+              {latestCompletedRun.fatigueRating && ` · fatigue ${latestCompletedRun.fatigueRating}`}
+            </p>
+          </div>
+          <button
+            onClick={onViewPrecomputed}
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded border border-cyan-400/50 bg-cyan-500/20 text-cyan-200 hover:bg-cyan-500/30 transition-colors"
+          >
+            View Results →
+          </button>
+        </div>
+      )}
 
       {/* Import from Roadmap */}
       <RoadmapImportButton onImport={onImportRoadmap} />
@@ -749,11 +804,12 @@ function RunningView({
 // ─── Results View (with Fatigue Scorecard) ───
 
 function ResultsView({
-  fatigueReport, emergenceMetrics, emergenceEvents,
+  activeRun, fatigueReport, emergenceMetrics, emergenceEvents,
   riskOverlay, costOverlay, showOverlay, onToggleOverlay,
   showBubbles, onToggleBubbles, bubbleCount,
   onNewRun, projectId, runId,
 }: {
+  activeRun: any;
   fatigueReport: any;
   emergenceMetrics: any;
   emergenceEvents: any[];
@@ -769,6 +825,29 @@ function ResultsView({
   runId: string | null;
 }) {
   const [exportLoading, setExportLoading] = useState(false);
+  const elements = useArchitectureStore((s) => s.elements);
+
+  const scope = useMemo(() => {
+    const targetIds: string[] = activeRun?.config?.targetElementIds ?? [];
+    if (targetIds.length === 0) return null;
+    const targetElements = elements.filter((el) => targetIds.includes(el.id));
+    const countBy = (arr: typeof elements) => {
+      const d = { critical: 0, high: 0, medium: 0, low: 0 };
+      for (const el of arr) {
+        const level = (el.riskLevel as keyof typeof d) ?? 'low';
+        if (level in d) d[level] += 1;
+        else d.low += 1;
+      }
+      return d;
+    };
+    return {
+      count: targetElements.length,
+      total: elements.length,
+      scenario: activeRun?.config?.scenarioType?.replace(/_/g, ' ') ?? 'scenario',
+      dist: countBy(targetElements),
+      portfolio: countBy(elements),
+    };
+  }, [activeRun, elements]);
 
   const handleExportPDF = async () => {
     if (!projectId || !runId) return;
@@ -799,6 +878,64 @@ function ResultsView({
 
   return (
     <>
+      {/* Simulation Scope Badge — reconciles scoped risks with portfolio-wide Dashboard */}
+      {scope && (
+        <div className="p-2 rounded-lg border border-[#7c3aed]/30 bg-[#7c3aed]/5 text-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[var(--text-secondary)] font-medium capitalize">
+              Scope: {scope.count} of {scope.total} elements · {scope.scenario}
+            </span>
+            <span className="text-[10px] text-[var(--text-tertiary)]">Wave 1</span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px]">
+            <span className="text-[var(--text-tertiary)] uppercase tracking-wider">Targets:</span>
+            {scope.dist.critical > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+                <span className="text-[#ef4444]">{scope.dist.critical} critical</span>
+              </span>
+            )}
+            {scope.dist.high > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+                <span className="text-[#f97316]">{scope.dist.high} high</span>
+              </span>
+            )}
+            {scope.dist.medium > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#eab308]" />
+                <span className="text-[#eab308]">{scope.dist.medium} medium</span>
+              </span>
+            )}
+            {scope.dist.low > 0 && (
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+                <span className="text-[#22c55e]">{scope.dist.low} low</span>
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-[10px] pt-1 border-t border-[#7c3aed]/20">
+            <span className="text-[var(--text-tertiary)] uppercase tracking-wider">Portfolio:</span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+              <span className="text-[var(--text-secondary)]">{scope.portfolio.critical} critical</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#f97316]" />
+              <span className="text-[var(--text-secondary)]">{scope.portfolio.high} high</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#eab308]" />
+              <span className="text-[var(--text-secondary)]">{scope.portfolio.medium} medium</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
+              <span className="text-[var(--text-secondary)]">{scope.portfolio.low} low</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Fatigue Scorecard — C-Level Core View */}
       <div className={`p-3 rounded-lg border ${FATIGUE_BG[fatigueReport.rating as FatigueRating]}`}>
         <div className="flex items-center justify-between mb-2">

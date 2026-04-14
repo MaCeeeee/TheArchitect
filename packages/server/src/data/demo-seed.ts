@@ -346,13 +346,13 @@ export const DEMO_SIMULATION_RUN = {
         roundToMonthFactor: 2,
         priorities: ['stability', 'security', 'maintenance_cost'],
         systemPromptSuffix:
-          'You are the IT Operations Manager. You block changes that threaten uptime and resist parallel migrations.',
+          'You are the IT Operations Manager. You enforce change-freeze windows and block parallel migrations of stateful services — each needs its own rollback window and load-test cycle. You resist any change above "low" risk unless justified.',
       },
     ],
   },
   rounds: [
     {
-      roundNumber: 1,
+      roundNumber: 0,
       agentTurns: [
         {
           agentPersonaId: 'cto',
@@ -399,6 +399,14 @@ export const DEMO_SIMULATION_RUN = {
               estimatedCostImpact: 90_000,
               estimatedRiskImpact: -2,
             },
+            {
+              type: 'approve_change',
+              targetElementId: 'demo-app-workflow-engine',
+              targetElementName: 'Workflow Engine',
+              reasoning: 'Parallel migration with blue/green deploy — auto-scaling outweighs transition risk.',
+              estimatedCostImpact: 210_000,
+              estimatedRiskImpact: -2,
+            },
           ],
           rejectedActions: [],
           llmTokensUsed: 2_140,
@@ -426,6 +434,14 @@ export const DEMO_SIMULATION_RUN = {
               targetElementId: 'demo-app-mobile-bff',
               targetElementName: 'Mobile BFF',
               reasoning: 'Unblocks Q2 2027 digital channels launch.',
+              estimatedCostImpact: 0,
+              estimatedRiskImpact: 0,
+            },
+            {
+              type: 'approve_change',
+              targetElementId: 'demo-app-workflow-engine',
+              targetElementName: 'Workflow Engine',
+              reasoning: 'Workflow Engine modernization accelerates loan approval SLA from 4h to 20min.',
               estimatedCostImpact: 0,
               estimatedRiskImpact: 0,
             },
@@ -471,7 +487,7 @@ export const DEMO_SIMULATION_RUN = {
           description: 'CTO and Business Unit Lead aligned on parallel migration for AI Scoring + Mobile BFF.',
           involvedAgents: ['cto', 'business_unit_lead'],
           severity: 0.3,
-          round: 1,
+          round: 0,
         },
       ],
       fatigueSnapshot: {
@@ -481,7 +497,7 @@ export const DEMO_SIMULATION_RUN = {
       },
     },
     {
-      roundNumber: 2,
+      roundNumber: 1,
       agentTurns: [
         {
           agentPersonaId: 'cto',
@@ -564,14 +580,14 @@ export const DEMO_SIMULATION_RUN = {
           description: 'CTO split Wave 1/Wave 2 to address IT Ops concerns; consensus reached.',
           involvedAgents: ['cto', 'it_operations_manager', 'business_unit_lead'],
           severity: 0.55,
-          round: 2,
+          round: 1,
         },
         {
           type: 'consensus',
           description: 'All three agents aligned on phased migration plan with observability budget.',
           involvedAgents: ['cto', 'business_unit_lead', 'it_operations_manager'],
           severity: 0.8,
-          round: 2,
+          round: 1,
         },
       ],
       fatigueSnapshot: {

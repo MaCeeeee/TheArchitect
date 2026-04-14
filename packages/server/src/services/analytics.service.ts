@@ -150,10 +150,10 @@ export async function assessRisk(projectId: string): Promise<{
 
   const summary = {
     total: elements.length,
-    critical: elements.filter((e) => e.riskScore >= 8).length,
-    high: elements.filter((e) => e.riskScore >= 6 && e.riskScore < 8).length,
-    medium: elements.filter((e) => e.riskScore >= 4 && e.riskScore < 6).length,
-    low: elements.filter((e) => e.riskScore < 4).length,
+    critical: elements.filter((e) => e.riskLevel === 'critical').length,
+    high: elements.filter((e) => e.riskLevel === 'high').length,
+    medium: elements.filter((e) => e.riskLevel === 'medium').length,
+    low: elements.filter((e) => e.riskLevel === 'low' || !['critical', 'high', 'medium'].includes(e.riskLevel)).length,
     averageScore: elements.length > 0
       ? Math.round((elements.reduce((s, e) => s + e.riskScore, 0) / elements.length) * 10) / 10
       : 0,

@@ -27,6 +27,7 @@ import ScenarioDashboard from '../analytics/ScenarioDashboard';
 import CapacityPlanning from '../simulation/CapacityPlanning';
 import MonteCarloSimulation from '../simulation/MonteCarloSimulation';
 import SimulationPanel from '../simulation/SimulationPanel';
+import OraclePanel from '../oracle/OraclePanel';
 import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import PhaseBar from './PhaseBar';
@@ -908,6 +909,7 @@ const ANALYTICS_GROUPS = [
       { id: 'scenario', label: 'Scenarios' },
       { id: 'capacity', label: 'Capacity' },
       { id: 'mirofish', label: 'MiroFish' },
+      { id: 'oracle', label: 'Oracle' },
     ],
   },
   {
@@ -927,7 +929,7 @@ const ANALYTICS_GROUPS = [
   },
 ] as const;
 
-type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'mirofish' | 'roadmap' | 'portfolio' | 'integrations';
+type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'mirofish' | 'oracle' | 'roadmap' | 'portfolio' | 'integrations';
 
 const ANALYTICS_ROUTE_MAP: Record<string, string> = {
   monte: 'monte-carlo',
@@ -1019,6 +1021,7 @@ function AnalyticsPanel() {
         {tab === 'scenario' && <ScenarioDashboard />}
         {tab === 'capacity' && <CapacityPlanning />}
         {tab === 'mirofish' && <SimulationPanel />}
+        {tab === 'oracle' && <OraclePanel />}
         {tab === 'roadmap' && <RoadmapPanel />}
         {tab === 'portfolio' && (
           <div className="p-3 space-y-2">
