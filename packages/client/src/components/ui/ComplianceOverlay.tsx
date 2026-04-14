@@ -55,7 +55,7 @@ export default function ComplianceOverlay({ isOpen, onClose, initialSection }: C
       <div className="flex-1" onClick={onClose} />
 
       {/* Panel */}
-      <div className="w-[480px] flex flex-col border-l border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl">
+      <div className="w-[480px] max-w-[45vw] min-w-[320px] flex flex-col border-l border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">Compliance</h2>

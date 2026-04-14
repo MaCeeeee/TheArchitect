@@ -10,6 +10,7 @@ import ScrollCamera from './ScrollCamera';
 import PostEffects from './PostEffects';
 import LandingOverlay from './LandingOverlay';
 import { SCROLL_ZONES } from './landing.constants';
+import type { Lang } from '../../hooks/useLang';
 
 type PerfLevel = 'high' | 'low';
 
@@ -76,10 +77,13 @@ interface Props {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDemoClick?: () => void;
   error: string | null;
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: string) => string;
 }
 
 export default function LandingScene({
-  initialPerfLevel, phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error,
+  initialPerfLevel, phase, dragOver, setDragOver, onDrop, onFileSelect, onDemoClick, error, lang, setLang, t,
 }: Props) {
   const [perfLevel, setPerfLevel] = useState<PerfLevel>(initialPerfLevel);
   const scrollRef = useRef(0);
@@ -134,6 +138,9 @@ export default function LandingScene({
           onFileSelect={onFileSelect}
           onDemoClick={onDemoClick}
           error={error}
+          lang={lang}
+          setLang={setLang}
+          t={t}
         />
       </div>
 
@@ -144,7 +151,7 @@ export default function LandingScene({
             {phase === 'uploading' && (
               <>
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-[#00ff41] border-t-transparent animate-spin" />
-                <p className="text-white font-medium">Uploading & parsing...</p>
+                <p className="text-white font-medium">{t('upload.uploading')}</p>
               </>
             )}
             {phase === 'scanning' && (
@@ -152,8 +159,8 @@ export default function LandingScene({
                 <div className="w-12 h-12 mx-auto mb-4 rounded-full border-2 border-[#00ff41] animate-pulse flex items-center justify-center">
                   <span className="text-[#00ff41] text-lg font-bold">AI</span>
                 </div>
-                <p className="text-white font-medium">Running AI Health Check...</p>
-                <p className="text-sm text-slate-500 mt-1">14 detectors analyzing your architecture</p>
+                <p className="text-white font-medium">{t('upload.scanning')}</p>
+                <p className="text-sm text-slate-500 mt-1">{t('upload.scanningDesc')}</p>
               </>
             )}
           </div>

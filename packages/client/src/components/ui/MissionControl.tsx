@@ -41,7 +41,7 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[480px] max-h-[80vh] overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl animate-[scaleIn_200ms_ease-out]">
+      <div className="w-[480px] max-w-[calc(100vw-3rem)] max-h-[80vh] overflow-y-auto rounded-xl border border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl animate-[scaleIn_200ms_ease-out]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
           <h2 className="text-sm font-semibold text-[var(--text-primary)]">Mission Control</h2>

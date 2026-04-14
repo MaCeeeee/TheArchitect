@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import HealthScoreRing from '../healthcheck/HealthScoreRing';
 import LandingFallback from './LandingFallback';
 import TheArchitectLogo from './TheArchitectLogo';
+import { useLang } from '../../hooks/useLang';
 
 const LandingScene = lazy(() => import('./LandingScene'));
 
@@ -39,6 +40,7 @@ function detectPerformanceLevel(): PerfLevel {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { lang, setLang, t } = useLang();
   const [phase, setPhase] = useState<Phase>('landing');
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function LandingPage() {
       const uploadData = await uploadRes.json();
 
       if (!uploadRes.ok || !uploadData.success) {
-        setError(uploadData.message || 'Upload failed');
+        setError(uploadData.message || t('error.upload'));
         setPhase('landing');
         return;
       }
@@ -71,7 +73,7 @@ export default function LandingPage() {
       const scanData = await scanRes.json();
 
       if (!scanRes.ok || !scanData.success) {
-        setError(scanData.message || 'Scan failed');
+        setError(scanData.message || t('error.scan'));
         setPhase('landing');
         return;
       }
@@ -79,10 +81,10 @@ export default function LandingPage() {
       setResult(scanData.data);
       setPhase('results');
     } catch {
-      setError('Connection failed. Please try again.');
+      setError(t('error.connection'));
       setPhase('landing');
     }
-  }, []);
+  }, [t]);
 
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -103,9 +105,9 @@ export default function LandingPage() {
       const file = new File([blob], 'demo-architecture.csv', { type: 'text/csv' });
       handleFile(file);
     } catch {
-      setError('Failed to load demo data.');
+      setError(t('upload.demoFailed'));
     }
-  }, [handleFile]);
+  }, [handleFile, t]);
 
   // ─── Results View ───
   if (phase === 'results' && result) {
@@ -125,11 +127,11 @@ export default function LandingPage() {
         <main className="max-w-3xl mx-auto px-6 py-12">
           <div className="text-center mb-8">
             <HealthScoreRing score={result.healthScore.total} size={200} />
-            <h1 className="text-2xl font-bold text-white mt-4">Your Architecture Health Score</h1>
+            <h1 className="text-2xl font-bold text-white mt-4">{t('results.title')}</h1>
             <p className="text-slate-400 mt-1">
-              {result.totalElements} elements analyzed in {(result.scanDurationMs / 1000).toFixed(1)}s
+              {result.totalElements} {t('results.analyzed.pre')} {(result.scanDurationMs / 1000).toFixed(1)}s
               {criticalCount > 0 && (
-                <span className="text-orange-400"> &middot; {criticalCount} issue{criticalCount > 1 ? 's' : ''} found</span>
+                <span className="text-orange-400"> &middot; {criticalCount} {t('results.issuesFound')}</span>
               )}
             </p>
           </div>
@@ -163,13 +165,13 @@ export default function LandingPage() {
               to={`/login?healthcheck=${result.reportId}&token=${result.uploadToken}`}
               className="flex-1 py-3 bg-[#00ff41] text-[#0a0a0a] rounded-lg hover:bg-[#00ff41]/90 transition-colors font-bold text-center"
             >
-              Save & Get Full Analysis
+              {t('results.save')}
             </Link>
             <button
               onClick={() => navigate(`/report/${result.reportId}`)}
               className="px-6 py-3 border border-white/10 text-slate-300 rounded-lg hover:bg-white/5 transition-colors"
             >
-              Share Report
+              {t('results.share')}
             </button>
           </div>
 
@@ -177,7 +179,7 @@ export default function LandingPage() {
             onClick={() => { setPhase('landing'); setResult(null); }}
             className="w-full mt-3 py-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
           >
-            Upload another file
+            {t('results.uploadAnother')}
           </button>
         </main>
       </div>
@@ -193,6 +195,9 @@ export default function LandingPage() {
     onFileSelect,
     onDemoClick,
     error,
+    lang,
+    setLang,
+    t,
   };
 
   if (perfLevel === 'minimal') {
