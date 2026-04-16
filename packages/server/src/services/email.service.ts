@@ -107,6 +107,43 @@ export async function sendPasswordResetEmail(
   return true;
 }
 
+export async function sendWaitlistAdminNotification(
+  signup: { email: string; name?: string | null; company?: string | null; referrer?: string | null },
+  totalSignups: number,
+): Promise<boolean> {
+  const transporter = getTransporter();
+  const adminTo = process.env.WAITLIST_ADMIN_EMAIL || 'macee@thearchitect.site';
+
+  if (!transporter) {
+    console.log(`\n[DEV] Waitlist signup (would notify ${adminTo}): ${signup.email}\n`);
+    return true;
+  }
+
+  const row = (label: string, value: string | null | undefined) => value
+    ? `<tr><td style="padding: 4px 12px 4px 0; color: ${TEXT_DIM}; font-size: 12px;">${label}</td><td style="padding: 4px 0; color: ${TEXT_PRIMARY}; font-size: 13px;">${value}</td></tr>`
+    : '';
+
+  await transporter.sendMail({
+    from: getFrom(),
+    to: adminTo,
+    subject: `[Waitlist] #${totalSignups} — ${signup.email}`,
+    html: emailWrapper(`
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: ${TEXT_MUTED};">New waitlist signup (#${totalSignups}):</p>
+      <div style="background: ${BG_PANEL}; border: 1px solid #1a2a1a; border-radius: 8px; padding: 16px; margin: 0 0 16px 0;">
+        <table style="border-collapse: collapse; width: 100%;">
+          ${row('Email', signup.email)}
+          ${row('Name', signup.name)}
+          ${row('Company', signup.company)}
+          ${row('Referrer', signup.referrer)}
+        </table>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: ${TEXT_DIM};">Sent from thearchitect.site</p>
+    `),
+  });
+
+  return true;
+}
+
 export async function sendProjectInvitationEmail(
   to: string,
   inviterName: string,

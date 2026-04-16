@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendWaitlistAdminNotification } from '../services/email.service';
 
 const router = Router();
 
@@ -54,6 +55,21 @@ router.post('/', async (req: Request, res: Response) => {
       console.error('[Waitlist] NocoDB error:', err);
       return res.status(502).json({ success: false, error: 'Failed to register' });
     }
+
+    // Fire-and-forget admin notification — must not block or fail user response
+    (async () => {
+      try {
+        const countRes = await fetch(
+          `${NOCODB_URL}/api/v2/tables/${TABLE_ID}/records?limit=1`,
+          { headers: { 'xc-token': NOCODB_TOKEN } },
+        );
+        const countData = (await countRes.json()) as { pageInfo?: { totalRows?: number } };
+        const total = countData.pageInfo?.totalRows ?? 0;
+        await sendWaitlistAdminNotification({ email, name, company, referrer }, total);
+      } catch (notifyErr) {
+        console.error('[Waitlist] Admin notification failed:', notifyErr);
+      }
+    })();
 
     res.status(201).json({ success: true, message: 'Welcome to the waitlist!' });
   } catch (err) {
