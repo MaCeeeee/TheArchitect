@@ -501,6 +501,7 @@ export const roadmapAPI = {
 
 export const demoAPI = {
   create: () => api.post('/demo/create'),
+  createBsh: () => api.post('/demo/create-bsh'),
 };
 
 export const blueprintAPI = {

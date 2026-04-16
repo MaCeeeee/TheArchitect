@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
 
   // Demo creation
-  const [creatingDemo, setCreatingDemo] = useState(false);
+  const [creatingDemo, setCreatingDemo] = useState<false | 'banking' | 'bsh'>(false);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<{ _id: string; name: string } | null>(null);
@@ -44,10 +44,10 @@ export default function DashboardPage() {
     }
   };
 
-  const handleTryDemo = async () => {
-    setCreatingDemo(true);
+  const handleTryDemo = async (variant: 'banking' | 'bsh' = 'banking') => {
+    setCreatingDemo(variant);
     try {
-      const { data } = await demoAPI.create();
+      const { data } = variant === 'bsh' ? await demoAPI.createBsh() : await demoAPI.create();
       if (data.existing) {
         toast.success('Opening existing demo project');
       } else {
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (sessionStorage.getItem('thearchitect-auto-demo') && !loading && projects.length === 0) {
       sessionStorage.removeItem('thearchitect-auto-demo');
-      handleTryDemo();
+      handleTryDemo('banking');
     }
   }, [loading, projects.length]);
 
@@ -104,6 +104,24 @@ export default function DashboardPage() {
             >
               <RefreshCw size={14} className={enriching ? 'animate-spin' : ''} />
               Refresh
+            </button>
+            <button
+              onClick={() => handleTryDemo('banking')}
+              disabled={!!creatingDemo}
+              title="Load Banking & Insurance demo project"
+              className="flex items-center gap-1.5 rounded-md border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-3 py-2 text-xs font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 disabled:opacity-50 transition"
+            >
+              {creatingDemo === 'banking' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              Banking Demo
+            </button>
+            <button
+              onClick={() => handleTryDemo('bsh')}
+              disabled={!!creatingDemo}
+              title="Load BSH ESG Compliance Transformation demo"
+              className="flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50 transition"
+            >
+              {creatingDemo === 'bsh' ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              ESG Demo
             </button>
             <button
               onClick={() => setShowCreate(true)}
@@ -154,9 +172,9 @@ export default function DashboardPage() {
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">No Projects Yet</h3>
             <p className="text-sm text-[var(--text-secondary)] max-w-md mx-auto mb-6">
-              Create your first enterprise architecture project or explore a pre-built demo with 16 elements across Business, Application, and Technology layers.
+              Create your first enterprise architecture project or explore a pre-built demo — Banking modernization or ESG Compliance Transformation.
             </p>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <button
                 onClick={() => setShowCreate(true)}
                 className="flex items-center gap-1.5 rounded-md bg-[var(--accent-default)] px-4 py-2.5 text-sm font-medium text-black hover:bg-[var(--accent-hover)] transition"
@@ -165,12 +183,20 @@ export default function DashboardPage() {
                 New Project
               </button>
               <button
-                onClick={handleTryDemo}
-                disabled={creatingDemo}
+                onClick={() => handleTryDemo('banking')}
+                disabled={!!creatingDemo}
                 className="flex items-center gap-1.5 rounded-md border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-4 py-2.5 text-sm font-medium text-[#a78bfa] hover:bg-[#7c3aed]/20 disabled:opacity-50 transition"
               >
-                {creatingDemo ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                {creatingDemo ? 'Creating Demo...' : 'Try Demo'}
+                {creatingDemo === 'banking' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {creatingDemo === 'banking' ? 'Creating Demo...' : 'Banking Demo'}
+              </button>
+              <button
+                onClick={() => handleTryDemo('bsh')}
+                disabled={!!creatingDemo}
+                className="flex items-center gap-1.5 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-300 hover:bg-emerald-500/20 disabled:opacity-50 transition"
+              >
+                {creatingDemo === 'bsh' ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                {creatingDemo === 'bsh' ? 'Creating Demo...' : 'ESG Compliance Demo'}
               </button>
             </div>
           </div>
