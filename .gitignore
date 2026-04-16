@@ -37,3 +37,7 @@ coverage/
 
 # Claude Code local settings, plans, skills
 .claude/
+
+# Local working files (not for Git)
+docs/AUTO_SE_Transformation_CostEnrichment.csv
+docs/thearchitect-user-flows.excalidraw
