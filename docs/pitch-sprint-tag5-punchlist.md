@@ -20,13 +20,13 @@ Ziel pro Rehearsal: Ist-Dauer pro Slide, Stolperstellen, Delivery-Lücken dokume
 
 | # | Slide | Soll (s) | Ist (s) | Δ | Kommentar |
 |---|-------|---------:|--------:|---|-----------|
-| 1 | Hook — "Frage, die kein CIO beantworten kann" | 10 | _ | _ | Pause nach "warum" halten? |
-| 2 | Problem — "800 IT-Systeme. Eine PowerPoint." | 40 | _ | _ | 3 Icons rechts rhythmisch? |
-| 3 | Lösung — "Was wäre, wenn die Karte lebt?" | 45 | _ | _ | "Google Earth für eure IT" als Punkt-Höhepunkt? |
-| 4 | Markt — "Drei Dinge passieren gleichzeitig" | 30 | _ | _ | $2B / 0 / 6 Mo sauber voneinander trennen? |
-| 5 | Traction + Ask | 30 | _ | _ | "Ich bin seit Jahren der Typ..." langsam + Pause? |
-| 6 | CTA — "thearchitect.site" | 15 | _ | _ | Drei Türen klar zeigen, nicht hetzen |
-| **∑** | | **170** | _ | _ | Ziel: **2:45–3:00** (mit Atem-Puffer) |
+| 1 | Hook — "Frage, die kein CIO beantworten kann" | 10 | _ | 30 | Pause nach "warum" halten? |
+| 2 | Problem — "800 IT-Systeme. Eine PowerPoint." | 40 | _ | 60 | 3 Icons rechts rhythmisch? |
+| 3 | Lösung — "Was wäre, wenn die Karte lebt?" | 45 | _ | 90 | "Google Earth für eure IT" als Punkt-Höhepunkt? |
+| 4 | Markt — "Drei Dinge passieren gleichzeitig" | 30 | _ | 60 | $2B / 0 / 6 Mo sauber voneinander trennen? |
+| 5 | Traction + Ask | 30 | _ | 30 | "Ich bin seit Jahren der Typ..." langsam + Pause? |
+| 6 | CTA — "thearchitect.site" | 15 | _ | 20 | Drei Türen klar zeigen, nicht hetzen |
+| **∑** | | **170** | _ | 300 | Ziel: **2:45–3:00** (mit Atem-Puffer) |
 
 **Wenn Ist > 3:10**: eine oder mehrere Slides überlang → Kürzungs-Kandidat markieren in "Entscheidungen".
 **Wenn Ist < 2:30**: zu schnell → Pausen einbauen, nicht mehr Text.
@@ -68,6 +68,24 @@ Der Übergang zwischen zwei Slides ist oft die schwächste Stelle. Pro Rehearsal
 - ⬜ 3 → 4 (Lösung → Markt) — _
 - ⬜ 4 → 5 (Markt → Traction) — _
 - ⬜ 5 → 6 (Traction → CTA) — _
+
+### Memorierte Transition-Sätze (Wort-für-Wort, nicht paraphrasieren)
+
+Diese 4 Sätze killen Ähms, weil das Hirn beim Übergang nicht mehr sucht. Jeder endet mit der Headline der nächsten Slide — Slide wechselt AUF den letzten Wörtern.
+
+**1 → 2** (Hook → Problem) — *nach 2s Pause:*
+> **"Die Antwort? Gibt's nicht. Weil achthundert Systeme in einer PowerPoint stehen."**
+
+**2 → 3** (Problem → Lösung) — *nach 1s Pause, Stimme senken:*
+> **"Was wäre, wenn diese PowerPoint leben würde?"**
+
+**3 → 4** (Lösung → Markt) — *nach 2s Pause, „Google Earth" wirken lassen:*
+> **"Warum das jetzt funktioniert? Drei Dinge passieren gleichzeitig."**
+
+**4 → 5** (Markt → Traction) — *nach 1s Pause, ruhiger werden:*
+> **"Bleibt eine Frage: Warum ich."**
+
+**Einüben:** Die 4 Sätze 10× hintereinander laut sprechen, ohne Slides, ohne Kontext. Erst wenn sie rhythmisch rollen, mit dem Rest zusammenführen.
 
 ---
 
