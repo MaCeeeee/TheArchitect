@@ -173,7 +173,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
         meshRef.current.scale.lerp(new THREE.Vector3(pulse, pulse, pulse), 0.15);
       } else {
         const baseScale = xraySubView === 'cost'
-          ? 0.5 + (xrayData.estimatedCost / 80000) * 1.0
+          ? Math.min(2.0, 0.5 + Math.log10(Math.max(1, xrayData.estimatedCost / 10000)) * 0.5)
           : 1;
         meshRef.current.scale.lerp(new THREE.Vector3(baseScale, baseScale, baseScale), 0.08);
       }
@@ -307,7 +307,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       if (xraySubView === 'cost') {
         // Expensive elements glow more, optimization targets glow green
         if (xrayData.optimizationPotential > 0) return 0.5;
-        return 0.15 + (xrayData.estimatedCost / 80000) * 0.4;
+        return Math.min(0.7, 0.15 + Math.log10(Math.max(1, xrayData.estimatedCost / 10000)) * 0.2);
       }
       return 0.3;
     }
@@ -397,11 +397,9 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
         />
       )}
 
-      {/* Label - always visible in 2D/Layer modes and for notable elements in X-Ray mode */}
-      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData && (
-        (xraySubView === 'risk' && xrayData.riskScore >= 7) ||
-        (xraySubView === 'cost' && (xrayData.estimatedCost >= 40000 || xrayData.optimizationPotential > 0))
-      ))) && (
+      {/* Label - always visible in 2D/Layer modes; in X-Ray only for critical path + hover/selection
+          (color/size/glow already communicate the metric — labels would obscure connections) */}
+      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath)) && (
         <Html
           position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center

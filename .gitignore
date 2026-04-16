@@ -34,3 +34,6 @@ coverage/
 
 # Agent skills (installed locally)
 .agents/
+
+# Claude Code local settings, plans, skills
+.claude/

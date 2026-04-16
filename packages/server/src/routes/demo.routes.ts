@@ -9,6 +9,8 @@ import { SimulationRun } from '../models/SimulationRun';
 import { runCypher } from '../config/neo4j';
 import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo-architecture';
 import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES, DEMO_SIMULATION_RUN } from '../data/demo-seed';
+import { DEMO_PROJECT_NAME_BSH, DEMO_ELEMENTS_BSH, DEMO_CONNECTIONS_BSH } from '../data/demo-architecture-bsh';
+import { DEMO_VISION_BSH, DEMO_STAKEHOLDERS_BSH, DEMO_STANDARDS_BSH, DEMO_POLICIES_BSH } from '../data/demo-seed-bsh';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -182,6 +184,158 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
   } catch (err) {
     log.error({ err }, '[Demo] Failed to create demo project');
     res.status(500).json({ error: 'Failed to create demo project. Please try again.' });
+  }
+});
+
+// POST /api/demo/create-bsh — BSH ESG Compliance Transformation demo (skeleton)
+router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_CREATE), async (req: Request, res: Response) => {
+  try {
+    const userId = (req as unknown as { user: { id: string } }).user.id;
+
+    const existing = await Project.findOne({ ownerId: userId, name: DEMO_PROJECT_NAME_BSH });
+    if (existing) {
+      return res.json({
+        projectId: existing._id,
+        elementsCreated: 0,
+        connectionsCreated: 0,
+        existing: true,
+      });
+    }
+
+    const project = await Project.create({
+      name: DEMO_PROJECT_NAME_BSH,
+      description:
+        'BSH Home Appliances ESG Compliance Transformation — CSRD, LkSG, CSDDD, EU Taxonomy, SBTi. Demonstrates motivation-layer drivers, business capabilities/processes, application landscape, and target architecture across 40 plants and ~8,000 suppliers.',
+      ownerId: userId,
+      togafPhase: 'architecture_vision',
+      tags: ['demo', 'esg', 'manufacturing', 'csrd', 'lksg'],
+      vision: DEMO_VISION_BSH,
+      stakeholders: DEMO_STAKEHOLDERS_BSH,
+    });
+
+    const projectId = project._id.toString();
+
+    for (const el of DEMO_ELEMENTS_BSH) {
+      await runCypher(
+        `CREATE (e:ArchitectureElement {
+          id: $id, projectId: $projectId, type: $type, name: $name,
+          description: $description, layer: $layer, togafDomain: $togafDomain,
+          maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
+          posX: $posX, posY: $posY, posZ: $posZ,
+          metadataJson: $metadataJson,
+          annualCost: $annualCost,
+          userCount: $userCount,
+          recordCount: $recordCount,
+          transformationStrategy: $transformationStrategy,
+          ksloc: $ksloc,
+          technicalFitness: $technicalFitness,
+          functionalFitness: $functionalFitness,
+          errorRatePercent: $errorRatePercent,
+          hourlyRate: $hourlyRate,
+          monthlyInfraCost: $monthlyInfraCost,
+          technicalDebtRatio: $technicalDebtRatio,
+          costEstimateOptimistic: $costEstimateOptimistic,
+          costEstimateMostLikely: $costEstimateMostLikely,
+          costEstimatePessimistic: $costEstimatePessimistic,
+          successProbability: $successProbability,
+          costOfDelayPerWeek: $costOfDelayPerWeek,
+          createdAt: datetime(), updatedAt: datetime()
+        }) RETURN e`,
+        {
+          id: el.id,
+          projectId,
+          type: el.type,
+          name: el.name,
+          description: el.description,
+          layer: el.layer,
+          togafDomain: el.togafDomain,
+          maturityLevel: el.maturityLevel,
+          riskLevel: el.riskLevel,
+          status: el.status,
+          posX: el.position3D.x,
+          posY: el.position3D.y,
+          posZ: el.position3D.z,
+          metadataJson: JSON.stringify(el.metadata),
+          annualCost: el.annualCost ?? 0,
+          userCount: el.userCount ?? 0,
+          recordCount: el.recordCount ?? 0,
+          transformationStrategy: el.transformationStrategy ?? 'retain',
+          ksloc: el.ksloc ?? 0,
+          technicalFitness: el.technicalFitness ?? 3,
+          functionalFitness: el.functionalFitness ?? 3,
+          errorRatePercent: el.errorRatePercent ?? 0,
+          hourlyRate: el.hourlyRate ?? 0,
+          monthlyInfraCost: el.monthlyInfraCost ?? 0,
+          technicalDebtRatio: el.technicalDebtRatio ?? 0,
+          costEstimateOptimistic: el.costEstimateOptimistic ?? 0,
+          costEstimateMostLikely: el.costEstimateMostLikely ?? 0,
+          costEstimatePessimistic: el.costEstimatePessimistic ?? 0,
+          successProbability: el.successProbability ?? 0.5,
+          costOfDelayPerWeek: el.costOfDelayPerWeek ?? 0,
+        }
+      );
+    }
+
+    for (const conn of DEMO_CONNECTIONS_BSH) {
+      await runCypher(
+        `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
+         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+         RETURN r`,
+        {
+          sourceId: conn.sourceId,
+          targetId: conn.targetId,
+          projectId,
+          connectionId: conn.id,
+          type: conn.type,
+          label: conn.label,
+        }
+      );
+    }
+
+    for (const std of DEMO_STANDARDS_BSH) {
+      await Standard.create({
+        projectId: project._id,
+        name: std.name,
+        version: std.version,
+        type: std.type,
+        description: std.description,
+        sections: std.sections,
+        fullText: std.sections.map(s => `${s.number} ${s.title}\n${s.content}`).join('\n\n'),
+        pageCount: std.sections.length,
+        uploadedBy: userId,
+      });
+    }
+
+    for (const pol of DEMO_POLICIES_BSH) {
+      await Policy.create({
+        projectId: project._id,
+        name: pol.name,
+        description: pol.description,
+        category: pol.category,
+        severity: pol.severity,
+        enabled: pol.enabled,
+        status: pol.status,
+        source: pol.source,
+        scope: pol.scope,
+        rules: pol.rules,
+        createdBy: userId,
+        version: 1,
+      });
+    }
+
+    log.info({ projectId, elements: DEMO_ELEMENTS_BSH.length, connections: DEMO_CONNECTIONS_BSH.length }, '[Demo BSH] Project created');
+
+    res.status(201).json({
+      projectId,
+      elementsCreated: DEMO_ELEMENTS_BSH.length,
+      connectionsCreated: DEMO_CONNECTIONS_BSH.length,
+      standardsCreated: DEMO_STANDARDS_BSH.length,
+      policiesCreated: DEMO_POLICIES_BSH.length,
+      existing: false,
+    });
+  } catch (err) {
+    log.error({ err }, '[Demo BSH] Failed to create BSH demo project');
+    res.status(500).json({ error: 'Failed to create BSH demo project.' });
   }
 });
 

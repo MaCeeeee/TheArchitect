@@ -1,0 +1,12 @@
+# Binary pitch backup assets — kept local only, never commited
+*.mp4
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.webm
+
+# Keep the index + this gitignore
+!README.md
+!.gitignore

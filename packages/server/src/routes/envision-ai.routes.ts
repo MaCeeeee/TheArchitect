@@ -22,9 +22,11 @@ const router = Router();
 router.use(authenticate);
 router.use(requireVerifiedEmail);
 
-// AI rate limits — per-endpoint to avoid document uploads eating generation quota
-const aiRateLimit = rateLimit({ name: 'ai-envision', windowMs: 24 * 60 * 60 * 1000, max: 20 });
-const uploadRateLimit = rateLimit({ name: 'ai-envision-upload', windowMs: 60 * 60 * 1000, max: 30 });
+// AI rate limits — env-overridable so dev/demo can rehearse without hitting prod quotas
+const AI_MAX = Number(process.env.AI_ENVISION_MAX_PER_DAY) || (process.env.NODE_ENV === 'production' ? 20 : 200);
+const AI_UPLOAD_MAX = Number(process.env.AI_ENVISION_UPLOAD_MAX_PER_HOUR) || (process.env.NODE_ENV === 'production' ? 30 : 100);
+const aiRateLimit = rateLimit({ name: 'ai-envision', windowMs: 24 * 60 * 60 * 1000, max: AI_MAX });
+const uploadRateLimit = rateLimit({ name: 'ai-envision-upload', windowMs: 60 * 60 * 1000, max: AI_UPLOAD_MAX });
 
 // ─── Helper: check AI configured ───
 
