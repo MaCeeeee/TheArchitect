@@ -1,3 +1,4 @@
+import { useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Home, Layers, Eye, EyeOff } from 'lucide-react';
 import { useRoadmapStore } from '../../stores/roadmapStore';
 import { flyToWorkspace, fitAllWorkspaces } from '../3d/ViewModeCamera';
@@ -19,28 +20,41 @@ export default function PlateauBar() {
 
   if (plateauSnapshots.length === 0) return null;
 
-  const handleSelect = (index: number) => {
+  const handleSelect = useCallback((index: number) => {
     selectPlateau(index);
     flyToWorkspace(index * WORKSPACE_GAP);
-  };
+  }, [selectPlateau]);
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     const prev = selectedPlateauIndex !== null && selectedPlateauIndex > 0
       ? selectedPlateauIndex - 1
       : plateauSnapshots.length - 1;
     handleSelect(prev);
-  };
+  }, [selectedPlateauIndex, plateauSnapshots.length, handleSelect]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     const next = selectedPlateauIndex !== null && selectedPlateauIndex < plateauSnapshots.length - 1
       ? selectedPlateauIndex + 1
       : 0;
     handleSelect(next);
-  };
+  }, [selectedPlateauIndex, plateauSnapshots.length, handleSelect]);
 
-  const handleFitAll = () => {
+  const handleFitAll = useCallback(() => {
     fitAllWorkspaces(plateauSnapshots.map((_, i) => ({ offsetX: i * WORKSPACE_GAP })));
-  };
+  }, [plateauSnapshots]);
+
+  // Keyboard navigation: ←/→ for prev/next, Home for fit all
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't intercept when user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); handlePrev(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); handleNext(); }
+      else if (e.key === 'Home') { e.preventDefault(); handleFitAll(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handlePrev, handleNext, handleFitAll]);
 
   return (
     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]/90 backdrop-blur-sm px-2 py-1.5 shadow-xl">

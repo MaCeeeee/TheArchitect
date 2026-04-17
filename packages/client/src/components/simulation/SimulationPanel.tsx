@@ -258,13 +258,18 @@ export default function SimulationPanel() {
     );
   }, [runs]);
 
-  // Set default agents once presets are loaded
+  // Set default agents once presets are loaded — prefer synced stakeholder personas
   useEffect(() => {
     if (presetPersonas.length > 0 && agents.length === 0) {
-      const defaultIds = ['cto', 'business_unit_lead', 'it_operations_manager'];
-      setAgents(presetPersonas.filter((p) => defaultIds.includes(p.id)));
+      if (customPersonas.length > 0) {
+        // Use stakeholder-synced personas (up to 5) as default agents
+        setAgents(customPersonas.slice(0, 5));
+      } else {
+        const defaultIds = ['cto', 'business_unit_lead', 'it_operations_manager'];
+        setAgents(presetPersonas.filter((p) => defaultIds.includes(p.id)));
+      }
     }
-  }, [presetPersonas, agents.length]);
+  }, [presetPersonas, customPersonas, agents.length]);
 
   const handleStart = async () => {
     if (!projectId || !scenarioDescription.trim()) return;

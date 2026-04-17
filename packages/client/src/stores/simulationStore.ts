@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { simulationAPI } from '../services/api';
 import { useAuthStore } from './authStore';
+import { useEnvisionStore } from './envisionStore';
 import type {
   SimulationRun,
   SimulationRunSummary,
@@ -330,10 +331,25 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     try {
       const response = await simulationAPI.getPersonas(projectId);
       const presets = response.data.presets || [];
+      const custom = response.data.custom || [];
       set({
         presetPersonas: presets.length > 0 ? presets : FALLBACK_PRESET_PERSONAS,
-        customPersonas: response.data.custom || [],
+        customPersonas: custom,
       });
+
+      // Auto-sync: if project has stakeholders but no custom personas yet,
+      // create personas from stakeholders so they appear as default agents.
+      if (custom.length === 0) {
+        const envisionState = useEnvisionStore.getState();
+        // Ensure envision data is loaded (stakeholders come from the project)
+        if (!envisionState.projectId || envisionState.projectId !== projectId) {
+          await useEnvisionStore.getState().load(projectId);
+        }
+        const { stakeholders } = useEnvisionStore.getState();
+        if (stakeholders.length > 0) {
+          await get().syncStakeholdersAsPersonas(projectId, stakeholders);
+        }
+      }
     } catch (err) {
       if (import.meta.env.DEV) console.error('[SimulationStore] Load personas error:', err);
       // Keep the UI usable when the persona endpoint is unreachable —

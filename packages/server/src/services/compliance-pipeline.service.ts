@@ -180,11 +180,11 @@ export async function getPortfolioOverview(projectId: string) {
   const portfolio = validStates.map((s) => {
     const std = standards.find((st) => String(st._id) === String(s.standardId))!;
     const coverage = s.mappingStats.total > 0
-      ? Math.round(
+      ? Math.min(100, Math.round(
           ((s.mappingStats.compliant + s.mappingStats.partial * 0.5) /
             s.mappingStats.total) *
             100
-        )
+        ))
       : 0;
     const maturityLevel = coverage < 20 ? 1 : coverage < 40 ? 2 : coverage < 60 ? 3 : coverage < 80 ? 4 : 5;
 

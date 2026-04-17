@@ -926,3 +926,144 @@ function computeFatigueForecast(
     overloadedStakeholders,
   };
 }
+
+// ─── System Suitability Assessment ───
+
+export interface SuitabilityAlternative {
+  name: string;
+  type: string;
+  rationale: string;
+  migrationEffort: 'low' | 'medium' | 'high';
+  estimatedCostDelta: string;
+}
+
+export interface SuitabilityAssessment {
+  elementId: string;
+  elementName: string;
+  elementType: string;
+  suitabilityScore: number; // 1-5
+  verdict: 'suitable' | 'adequate' | 'at_risk' | 'unsuitable';
+  strengths: string[];
+  weaknesses: string[];
+  alternatives: SuitabilityAlternative[];
+  recommendation: string;
+  durationMs: number;
+}
+
+export async function assessSystemSuitability(
+  projectId: string,
+  elementId: string,
+): Promise<SuitabilityAssessment> {
+  const start = Date.now();
+
+  const provider = detectProvider();
+  if (provider === 'none') throw new Error('NO_AI_KEY');
+
+  // Fetch the target element details + its business capability connections
+  const [details, capabilityMap] = await Promise.all([
+    fetchAffectedElementDetails(projectId, [elementId]),
+    fetchBusinessCapabilityMap(projectId, [elementId]),
+  ]);
+
+  if (details.length === 0) throw new Error('Element not found');
+
+  const el = details[0];
+  const capabilities = capabilityMap.length > 0
+    ? capabilityMap[0].capabilities.join(', ')
+    : 'No linked business capabilities';
+
+  const prompt = `You are an Enterprise Architecture Analyst specializing in IT system assessment.
+
+Evaluate the following IT system/application component for suitability within its enterprise architecture context.
+
+## System Under Assessment
+- Name: "${el.name}"
+- Type: ${el.type}
+- Layer: ${el.layer}
+- Status: ${el.status}
+- Maturity Level: ${el.maturityLevel}/5
+- Technical Fitness: ${el.technicalFitness || 'unknown'}/5
+- Functional Fitness: ${el.functionalFitness || 'unknown'}/5
+- Technical Debt Ratio: ${el.technicalDebtRatio ? `${(el.technicalDebtRatio * 100).toFixed(0)}%` : 'unknown'}
+- Annual Cost: ${el.annualCost ? `€${el.annualCost.toLocaleString()}` : 'unknown'}
+- Error Rate: ${el.errorRatePercent ? `${el.errorRatePercent}%` : 'unknown'}
+- User Count: ${el.userCount || 'unknown'}
+- Dependencies (outgoing): ${el.dependencyCount}
+- Dependencies (incoming): ${el.dependentCount}
+- Risk Level: ${el.riskLevel}
+
+## Business Context
+This system supports: ${capabilities}
+
+## Your Task
+1. Assess whether this system is suitable for its current role.
+2. Identify 2-3 concrete strengths and 2-3 concrete weaknesses.
+3. Suggest 2-3 alternative systems/technologies that could serve the same purpose better (with realistic names — e.g., if it's a CRM, suggest Salesforce, HubSpot, etc.; if it's a MES, suggest Siemens Opcenter, SAP ME, etc.).
+4. Give a clear recommendation.
+
+Respond ONLY with a JSON object (no markdown, no code fences):
+{
+  "suitabilityScore": <1-5, where 1=unsuitable, 5=excellent>,
+  "verdict": "<suitable|adequate|at_risk|unsuitable>",
+  "strengths": ["...", "...", "..."],
+  "weaknesses": ["...", "...", "..."],
+  "alternatives": [
+    {
+      "name": "<specific product/technology name>",
+      "type": "<e.g. SaaS CRM, On-Premise ERP, Cloud-Native MES>",
+      "rationale": "<why this is a better fit>",
+      "migrationEffort": "<low|medium|high>",
+      "estimatedCostDelta": "<e.g. +20%, -15%, comparable>"
+    }
+  ],
+  "recommendation": "<1-2 sentence actionable recommendation>"
+}`;
+
+  let raw = '';
+  try {
+    if (provider === 'openai') {
+      raw = await callOpenAISync(prompt, 'Assess this system and provide your structured evaluation.', 1200);
+    } else {
+      raw = await callAnthropicSync(prompt, 'Assess this system and provide your structured evaluation.', 1200);
+    }
+  } catch (err) {
+    // Fallback provider
+    if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
+      raw = await callAnthropicSync(prompt, 'Assess this system and provide your structured evaluation.', 1200);
+    } else if (provider === 'anthropic' && process.env.OPENAI_API_KEY) {
+      raw = await callOpenAISync(prompt, 'Assess this system and provide your structured evaluation.', 1200);
+    } else {
+      throw err;
+    }
+  }
+
+  // Parse response
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('Failed to parse AI response for suitability assessment');
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  const validVerdicts = ['suitable', 'adequate', 'at_risk', 'unsuitable'] as const;
+
+  return {
+    elementId: el.id,
+    elementName: el.name,
+    elementType: el.type,
+    suitabilityScore: Math.min(5, Math.max(1, Number(parsed.suitabilityScore) || 3)),
+    verdict: validVerdicts.includes(parsed.verdict) ? parsed.verdict : 'adequate',
+    strengths: Array.isArray(parsed.strengths) ? parsed.strengths.map(String).slice(0, 5) : [],
+    weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.map(String).slice(0, 5) : [],
+    alternatives: Array.isArray(parsed.alternatives)
+      ? parsed.alternatives.slice(0, 3).map((a: any) => ({
+          name: String(a.name || ''),
+          type: String(a.type || ''),
+          rationale: String(a.rationale || ''),
+          migrationEffort: ['low', 'medium', 'high'].includes(a.migrationEffort) ? a.migrationEffort : 'medium',
+          estimatedCostDelta: String(a.estimatedCostDelta || 'unknown'),
+        }))
+      : [],
+    recommendation: String(parsed.recommendation || ''),
+    durationMs: Date.now() - start,
+  };
+}

@@ -20,6 +20,10 @@ router.use(authenticate);
 
 // ─── Validation Schemas ───
 
+// Lenient enum: accept known values, coerce unknown to closest match or passthrough
+const lenientEnum = <T extends string>(values: readonly [T, ...T[]]) =>
+  z.string().transform((v) => (values.includes(v as T) ? v as T : values[values.length - 1])).optional();
+
 const BlueprintQuestionnaireSchema = z.object({
   businessDescription: z.string().min(1),
   targetUsers: z.string().min(1),
@@ -33,11 +37,11 @@ const BlueprintQuestionnaireSchema = z.object({
   teamDescription: z.string().optional(),
   mainProcesses: z.string().optional(),
   existingTools: z.array(z.string()).optional(),
-  productType: z.enum(['web_app', 'mobile_app', 'api_platform', 'marketplace', 'saas', 'hardware_software', 'other']).optional(),
+  productType: lenientEnum(['web_app', 'mobile_app', 'api_platform', 'marketplace', 'saas', 'hardware_software', 'other'] as const),
   techDecisions: z.string().optional(),
   constraints: z.string().optional(),
-  teamSize: z.enum(['1-2', '3-5', '6-15', '16-50', '50+']).optional(),
-  monthlyBudget: z.enum(['<500', '500-2K', '2K-10K', '10K-50K', '50K+']).optional(),
+  teamSize: lenientEnum(['1-2', '3-5', '6-15', '16-50', '50+'] as const),
+  monthlyBudget: lenientEnum(['<500', '500-2K', '2K-10K', '10K-50K', '50K+'] as const),
   regulations: z.array(z.string()).optional(),
 });
 

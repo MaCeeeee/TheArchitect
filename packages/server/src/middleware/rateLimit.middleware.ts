@@ -9,7 +9,9 @@ const stores = new Map<string, Map<string, RateLimitStore>>();
 const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
 export function rateLimit(options: { windowMs?: number; max?: number; name?: string } = {}) {
-  const { windowMs = 60_000, max = 100, name = 'default' } = options;
+  const isDev = process.env.NODE_ENV !== 'production';
+  const { windowMs = 60_000, max: rawMax = 100, name = 'default' } = options;
+  const max = isDev ? Math.max(rawMax * 100, 10000) : rawMax;
 
   if (!stores.has(name)) {
     stores.set(name, new Map());

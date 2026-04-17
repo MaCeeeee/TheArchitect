@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield } from 'lucide-react';
+import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
-import { governanceAPI } from '../../services/api';
+import { governanceAPI, oracleAPI } from '../../services/api';
 import type { PolicyViolationDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
@@ -39,9 +39,19 @@ export default function PropertyPanel() {
   const pushHistory = useArchitectureStore((s) => s.pushHistory);
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const togglePropertyPanel = useUIStore((s) => s.togglePropertyPanel);
+  const projectId = useArchitectureStore((s) => s.projectId);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [suitabilityResult, setSuitabilityResult] = useState<any>(null);
+  const [suitabilityLoading, setSuitabilityLoading] = useState(false);
+  const [suitabilityExpanded, setSuitabilityExpanded] = useState(false);
 
   const element = elements.find((el) => el.id === selectedElementId);
+  // Reset suitability when element changes
+  useEffect(() => {
+    setSuitabilityResult(null);
+    setSuitabilityExpanded(false);
+  }, [selectedElementId]);
+
   // Must call hooks unconditionally (before any early return)
   const health = useElementHealth(selectedElementId ?? null);
   const violationsByElement = useComplianceStore((s) => s.violationsByElement);
@@ -295,6 +305,139 @@ export default function PropertyPanel() {
             <PosField label="Z" value={element.position3D.z} onChange={(v) => handleFieldChange('position3D', { ...element.position3D, z: v })} />
           </div>
         </Section>
+
+        {/* AI Suitability Check */}
+        {projectId && ['application', 'technology'].includes(element.layer) && (
+          <Section title="AI Suitability Check">
+            {!suitabilityResult ? (
+              <button
+                onClick={async () => {
+                  setSuitabilityLoading(true);
+                  try {
+                    const res = await oracleAPI.checkSuitability(projectId, element.id);
+                    setSuitabilityResult(res.data.data);
+                    setSuitabilityExpanded(true);
+                  } catch (err: any) {
+                    toast.error(err.response?.data?.error || 'Suitability check failed');
+                  } finally {
+                    setSuitabilityLoading(false);
+                  }
+                }}
+                disabled={suitabilityLoading}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-3 py-2 text-xs text-[#a78bfa] hover:bg-[#7c3aed]/20 transition disabled:opacity-50"
+              >
+                {suitabilityLoading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-[#a78bfa] border-t-transparent rounded-full animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Search size={14} />
+                    Check Suitability
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                {/* Score + Verdict */}
+                <button
+                  onClick={() => setSuitabilityExpanded(!suitabilityExpanded)}
+                  className="flex items-center justify-between w-full text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
+                      suitabilityResult.suitabilityScore >= 4 ? 'bg-green-500/20 text-green-400' :
+                      suitabilityResult.suitabilityScore >= 3 ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      {suitabilityResult.suitabilityScore}/5
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-white capitalize">
+                        {suitabilityResult.verdict.replace('_', ' ')}
+                      </div>
+                      <div className="text-[10px] text-[var(--text-tertiary)]">
+                        {suitabilityResult.durationMs ? `${(suitabilityResult.durationMs / 1000).toFixed(1)}s` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  {suitabilityExpanded ? <ChevronUp size={14} className="text-[var(--text-tertiary)]" /> : <ChevronDown size={14} className="text-[var(--text-tertiary)]" />}
+                </button>
+
+                {suitabilityExpanded && (
+                  <div className="space-y-2 text-xs">
+                    {/* Strengths */}
+                    {suitabilityResult.strengths.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold text-green-400 uppercase mb-1">Strengths</div>
+                        {suitabilityResult.strengths.map((s: string, i: number) => (
+                          <div key={i} className="flex items-start gap-1.5 text-[var(--text-secondary)] py-0.5">
+                            <CheckCircle2 size={12} className="text-green-500 mt-0.5 shrink-0" />
+                            <span>{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Weaknesses */}
+                    {suitabilityResult.weaknesses.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold text-red-400 uppercase mb-1">Weaknesses</div>
+                        {suitabilityResult.weaknesses.map((w: string, i: number) => (
+                          <div key={i} className="flex items-start gap-1.5 text-[var(--text-secondary)] py-0.5">
+                            <AlertCircle size={12} className="text-red-500 mt-0.5 shrink-0" />
+                            <span>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Alternatives */}
+                    {suitabilityResult.alternatives.length > 0 && (
+                      <div>
+                        <div className="text-[10px] font-semibold text-[#a78bfa] uppercase mb-1">Alternatives</div>
+                        {suitabilityResult.alternatives.map((alt: any, i: number) => (
+                          <div key={i} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-overlay)] p-2 mb-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-white">{alt.name}</span>
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${
+                                alt.migrationEffort === 'low' ? 'bg-green-500/20 text-green-400' :
+                                alt.migrationEffort === 'high' ? 'bg-red-500/20 text-red-400' :
+                                'bg-amber-500/20 text-amber-400'
+                              }`}>{alt.migrationEffort}</span>
+                            </div>
+                            <div className="text-[10px] text-[var(--text-tertiary)]">{alt.type}</div>
+                            <div className="text-[var(--text-secondary)] mt-1">{alt.rationale}</div>
+                            {alt.estimatedCostDelta && (
+                              <div className="text-[10px] text-[var(--text-tertiary)] mt-0.5">Cost: {alt.estimatedCostDelta}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Recommendation */}
+                    {suitabilityResult.recommendation && (
+                      <div className="rounded-md border border-[#7c3aed]/30 bg-[#7c3aed]/5 p-2">
+                        <div className="text-[10px] font-semibold text-[#a78bfa] uppercase mb-1">Recommendation</div>
+                        <div className="text-[var(--text-secondary)]">{suitabilityResult.recommendation}</div>
+                      </div>
+                    )}
+
+                    {/* Re-run button */}
+                    <button
+                      onClick={() => { setSuitabilityResult(null); setSuitabilityExpanded(false); }}
+                      className="text-[10px] text-[var(--text-tertiary)] hover:text-white transition"
+                    >
+                      Run again
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </Section>
+        )}
 
         {/* Actions */}
         <div className="pt-2 border-t border-[var(--border-subtle)]">

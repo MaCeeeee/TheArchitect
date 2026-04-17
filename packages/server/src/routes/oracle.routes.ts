@@ -6,7 +6,7 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { requireVerifiedEmail } from '../middleware/requireVerifiedEmail.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
-import { assessAcceptanceRisk } from '../services/oracle.service';
+import { assessAcceptanceRisk, assessSystemSuitability } from '../services/oracle.service';
 import { generateAlternatives } from '../services/scenario-generator.service';
 import { OracleAssessment } from '../models/OracleAssessment';
 import { Project } from '../models/Project';
@@ -304,6 +304,58 @@ router.get(
     } catch (err: any) {
       console.error('[Oracle] JSON report error:', err);
       res.status(500).json({ success: false, error: err.message || 'JSON export failed' });
+    }
+  },
+);
+
+// ─── POST /:projectId/oracle/suitability — System Suitability Check ───
+
+const SuitabilityInputSchema = z.object({
+  elementId: z.string().min(1),
+});
+
+const suitabilityRateLimit = rateLimit({ name: 'ai-oracle-suitability', windowMs: 60 * 60 * 1000, max: 20 });
+
+router.post(
+  '/:projectId/oracle/suitability',
+  authenticate,
+  requireVerifiedEmail,
+  suitabilityRateLimit,
+  requireProjectAccess('viewer'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const parsed = SuitabilityInputSchema.parse(req.body);
+
+      const result = await assessSystemSuitability(projectId, parsed.elementId);
+
+      res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: err.errors.map((e) => ({ path: e.path.join('.'), message: e.message })),
+        });
+        return;
+      }
+
+      if (err instanceof Error && err.message === 'NO_AI_KEY') {
+        res.status(503).json({
+          success: false,
+          error: 'No AI API key configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.',
+        });
+        return;
+      }
+
+      if (err instanceof Error && err.message === 'Element not found') {
+        res.status(404).json({ success: false, error: 'Element not found in project' });
+        return;
+      }
+
+      console.error('[Oracle] Suitability check error:', err);
+      res.status(500).json({ success: false, error: 'Suitability assessment failed' });
     }
   },
 );

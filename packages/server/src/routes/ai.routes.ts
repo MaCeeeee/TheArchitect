@@ -11,7 +11,8 @@ const router = Router();
 
 router.use(authenticate);
 router.use(requireVerifiedEmail);
-router.use(rateLimit({ name: 'ai-chat', windowMs: 24 * 60 * 60 * 1000, max: 50 }));
+const isDev = process.env.NODE_ENV !== 'production';
+router.use(rateLimit({ name: 'ai-chat', windowMs: 24 * 60 * 60 * 1000, max: isDev ? 10000 : 50 }));
 
 // POST /:projectId/ai/chat — Streaming AI chat
 router.post(

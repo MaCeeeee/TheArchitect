@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Shield, CheckCircle, AlertTriangle, XCircle, Star } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -33,7 +34,8 @@ function MaturityStars({ level }: { level: number }) {
   );
 }
 
-function CoverageRing({ coverage }: { coverage: number }) {
+function CoverageRing({ coverage: rawCoverage }: { coverage: number }) {
+  const coverage = Math.min(100, rawCoverage);
   const radius = 18;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference - (coverage / 100) * circumference;
@@ -59,6 +61,8 @@ function CoverageRing({ coverage }: { coverage: number }) {
 export function CompliancePortfolioView() {
   const { portfolioOverview, isLoading, loadPortfolio } = useComplianceStore();
   const projectId = useArchitectureStore((s) => s.projectId);
+  const navigate = useNavigate();
+  const { projectId: routeProjectId } = useParams<{ projectId: string }>();
 
   useEffect(() => {
     if (projectId) loadPortfolio(projectId);
@@ -103,7 +107,8 @@ export function CompliancePortfolioView() {
       {portfolioOverview.portfolio.map((item) => (
         <div
           key={item.standardId}
-          className="bg-[#111827] border border-[var(--border-subtle)] rounded-lg p-3 hover:border-[var(--border-subtle)] transition-colors cursor-pointer"
+          className="bg-[#111827] border border-[var(--border-subtle)] rounded-lg p-3 hover:border-[var(--accent-default)] transition-colors cursor-pointer"
+          onClick={() => navigate(`/project/${routeProjectId || projectId}/compliance/matrix`)}
         >
           <div className="flex items-start justify-between mb-2">
             <div>
