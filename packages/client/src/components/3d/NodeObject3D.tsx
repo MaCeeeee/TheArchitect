@@ -216,6 +216,17 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
     }
   }, [element.id, selectElement, toggleSelectElement]);
 
+  const handleDoubleClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    // Activity-View drill-down: only on Business Processes (both 'process' and ArchiMate 'business_process'),
+    // only outside X-Ray
+    if (element.type !== 'process' && element.type !== 'business_process') return;
+    if (isXRayActive) return;
+    void import('../../stores/activityViewStore').then(({ useActivityViewStore }) => {
+      useActivityViewStore.getState().enter(element.id);
+    });
+  }, [element.id, element.type, isXRayActive]);
+
   const handleContextMenu = useCallback((e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     e.nativeEvent.preventDefault();
@@ -336,6 +347,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       <mesh
         ref={meshRef}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
         onPointerDown={isXRayActive ? undefined : handlePointerDown}
         onPointerMove={isXRayActive ? undefined : handlePointerMove}

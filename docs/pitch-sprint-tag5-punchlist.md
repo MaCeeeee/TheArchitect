@@ -73,17 +73,17 @@ Der Übergang zwischen zwei Slides ist oft die schwächste Stelle. Pro Rehearsal
 
 Diese 4 Sätze killen Ähms, weil das Hirn beim Übergang nicht mehr sucht. Jeder endet mit der Headline der nächsten Slide — Slide wechselt AUF den letzten Wörtern.
 
-**1 → 2** (Hook → Problem) — *nach 2s Pause:*
-> **"Die Antwort? Gibt's nicht. Weil achthundert Systeme in einer PowerPoint stehen."**
+**1 → 2** (Hook → "Tausende Prozesse. Eine Frage.") — *nach 2s Pause:*
+> **"Ich hab angefangen zu fragen. Und festgestellt: Jeder Fahrzeughersteller hat hunterte Prozesse. Und genau eine Frage, die niemand beantworten kann."**
 
-**2 → 3** (Problem → Lösung) — *nach 1s Pause, Stimme senken:*
-> **"Was wäre, wenn diese PowerPoint leben würde?"**
+**2 → 3** (Problem → "Die ganze Kette. Jederzeit.") — *nach 1s Pause, Stimme senken:*
+> **"Was, wenn man diese Kette sehen könnte? Nicht einmal im Jahr. Jederzeit."**
 
-**3 → 4** (Lösung → Markt) — *nach 2s Pause, „Google Earth" wirken lassen:*
-> **"Warum das jetzt funktioniert? Drei Dinge passieren gleichzeitig."**
+**3 → 4** (Lösung → "Drei Dinge passieren gleichzeitig.") — *nach 2s Pause, „Google Earth" wirken lassen:*
+> **"Die Frage ist nicht ob, sondern warum jetzt. Drei Dinge passieren gleichzeitig."**
 
-**4 → 5** (Markt → Traction) — *nach 1s Pause, ruhiger werden:*
-> **"Bleibt eine Frage: Warum ich."**
+**4 → 5** (Markt → "Was daraus geworden ist.") — *nach 1s Pause, ruhiger werden:*
+> **"Und während der Markt wartet — ist hier, was daraus geworden ist."**
 
 **Einüben:** Die 4 Sätze 10× hintereinander laut sprechen, ohne Slides, ohne Kontext. Erst wenn sie rhythmisch rollen, mit dem Rest zusammenführen.
 

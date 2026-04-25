@@ -80,6 +80,13 @@ export default function PropertyPanel() {
     updateElement(element.id, { [field]: value });
   };
 
+  const handleMetadataChange = (key: string, value: string) => {
+    pushHistory();
+    const elementWithMeta = element as typeof element & { metadata?: Record<string, unknown> };
+    const currentMeta = elementWithMeta.metadata ?? {};
+    updateElement(element.id, { metadata: { ...currentMeta, [key]: value } });
+  };
+
   const elementMeta = (element as typeof element & { metadata?: Record<string, unknown> }).metadata;
   const isPolicyNode = !!(elementMeta?.isPolicyNode);
   const elementViolationCount = violationsByElement.get(element.id) ?? 0;
@@ -237,6 +244,14 @@ export default function PropertyPanel() {
               />
             </div>
           </Section>
+        )}
+
+        {/* Activity-Steckbrief — only for elements with metadata.isActivity === true */}
+        {Boolean(elementMeta?.isActivity) && (
+          <ActivityProfileSection
+            metadata={elementMeta as Record<string, unknown>}
+            onChange={handleMetadataChange}
+          />
         )}
 
         {/* Description */}
@@ -1242,4 +1257,82 @@ function HealthIcon({ level }: { level: HealthLevel }) {
   if (level === 'good') return <CheckCircle2 size={11} className="text-green-400" />;
   if (level === 'warn') return <WarnIcon size={11} className="text-amber-400" />;
   return <AlertCircle size={11} className="text-red-400" />;
+}
+
+const ACTIVITY_FIELDS: { key: string; label: string; icon: string; placeholder: string }[] = [
+  { key: 'activityOwner',   label: 'Owner',    icon: '👤', placeholder: 'Role / Team' },
+  { key: 'activityAction',  label: 'Action',   icon: '🎯', placeholder: 'Verb + Object' },
+  { key: 'activitySystem',  label: 'System',   icon: '📍', placeholder: 'Tool / Platform' },
+  { key: 'activityWhen',    label: 'Due',      icon: '⏱',  placeholder: 'By when?' },
+  { key: 'activityOutput',  label: 'Output',   icon: '📦', placeholder: 'Deliverable' },
+  { key: 'activityEnables', label: 'Enables',  icon: '➡',  placeholder: 'Next activity' },
+];
+
+function ActivityProfileSection({
+  metadata,
+  onChange,
+}: {
+  metadata: Record<string, unknown>;
+  onChange: (key: string, value: string) => void;
+}) {
+  return (
+    <Section title="Activity Profile">
+      <div className="space-y-1.5">
+        {ACTIVITY_FIELDS.map((f) => {
+          const value = (metadata[f.key] as string | undefined) ?? '';
+          return (
+            <div key={f.key} className="grid grid-cols-[auto_70px_1fr] items-start gap-1.5">
+              <span className="text-[13px] leading-5 select-none" aria-hidden>{f.icon}</span>
+              <span className="text-[10px] leading-5 uppercase tracking-wider text-[var(--text-tertiary)]">
+                {f.label}
+              </span>
+              <DebouncedSingleLine
+                value={value}
+                placeholder={f.placeholder}
+                onChange={(v) => onChange(f.key, v)}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+function DebouncedSingleLine({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: string;
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
+  const [local, setLocal] = useState(value);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const prevValue = useRef(value);
+  if (prevValue.current !== value) {
+    prevValue.current = value;
+    setLocal(value);
+  }
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setLocal(v);
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChangeRef.current(v), 400);
+  }, []);
+
+  return (
+    <input
+      type="text"
+      value={local}
+      onChange={handleChange}
+      placeholder={placeholder}
+      className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-0.5 text-[11px] text-white outline-none focus:border-[#00ff41] transition"
+    />
+  );
 }

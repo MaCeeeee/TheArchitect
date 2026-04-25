@@ -1,0 +1,126 @@
+{
+  "name": "rag-query",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-query",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [240, 300],
+      "webhookId": "rag-query-webhook-0001",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "__HEADER_AUTH_CRED_ID__",
+          "name": "Data-Server API Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const body = $input.first().json.body || {};\nconst { projectId, text, topK, filters } = body;\n\nif (!projectId || typeof projectId !== 'string') throw new Error('projectId required');\nif (!text || typeof text !== 'string') throw new Error('text required');\n\nconst must = [{ key: 'metadata.projectId', match: { value: projectId } }];\nif (filters && typeof filters === 'object') {\n  if (filters.source) must.push({ key: 'metadata.source', match: { value: String(filters.source) } });\n  if (filters.jurisdiction) must.push({ key: 'metadata.jurisdiction', match: { value: String(filters.jurisdiction) } });\n  if (filters.regulationId) must.push({ key: 'metadata.regulationId', match: { value: String(filters.regulationId) } });\n}\n\nreturn [{\n  json: {\n    projectId,\n    text,\n    topK: Number.isFinite(topK) && topK > 0 ? Math.min(topK, 50) : 8,\n    filter: { must },\n  },\n}];"
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000002",
+      "name": "Build Filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000003",
+      "name": "Embeddings",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [680, 480],
+      "credentials": {
+        "openAiApi": {
+          "id": "__OPENAI_CRED_ID__",
+          "name": "OpenAI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "prompt": "={{ $('Build Filter').item.json.text }}",
+        "topK": "={{ $('Build Filter').item.json.topK }}",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "thearchitect-rag-v4"
+        },
+        "includeDocumentMetadata": true,
+        "options": {
+          "searchFilterJson": "={{ JSON.stringify($('Build Filter').item.json.filter) }}"
+        }
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000004",
+      "name": "Qdrant Load",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [680, 300],
+      "credentials": {
+        "qdrantApi": {
+          "id": "__QDRANT_CRED_ID__",
+          "name": "Qdrant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const items = $input.all() || [];\nconst chunks = items.map((it, idx) => {\n  const doc = it.json.document || it.json;\n  const metadata = (doc && doc.metadata) || it.json.metadata || {};\n  const text = (doc && (doc.pageContent || doc.content)) || it.json.pageContent || it.json.content || it.json.text || '';\n  const score = typeof it.json.score === 'number' ? it.json.score : (typeof doc?.score === 'number' ? doc.score : 0);\n  const documentId = metadata.documentId || '';\n  const chunkId = metadata.chunkId || (documentId ? `${documentId}-${idx}` : `chunk-${idx}`);\n  return { documentId, chunkId, text, score, metadata };\n});\nreturn [{ json: { chunks } }];"
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000005",
+      "name": "Map Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { chunks: $json.chunks } }}",
+        "options": {}
+      },
+      "id": "1a2b3c4d-0003-0000-0000-000000000006",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Build Filter", "type": "main", "index": 0 }]]
+    },
+    "Build Filter": {
+      "main": [[{ "node": "Qdrant Load", "type": "main", "index": 0 }]]
+    },
+    "Qdrant Load": {
+      "main": [[{ "node": "Map Response", "type": "main", "index": 0 }]]
+    },
+    "Map Response": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    },
+    "Embeddings": {
+      "ai_embedding": [[{ "node": "Qdrant Load", "type": "ai_embedding", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

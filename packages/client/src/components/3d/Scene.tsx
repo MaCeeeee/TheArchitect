@@ -8,6 +8,7 @@ import ViewModeCamera from './ViewModeCamera';
 import ContextMenu3D from './ContextMenu3D';
 import TransformationXRay from './TransformationXRay';
 import PlateauRenderer from './PlateauRenderer';
+import ActivityScene from './ActivityScene';
 import AgentAvatars3D from './AgentAvatars3D';
 import DiscussionBubbles3D from './DiscussionBubbles3D';
 import PolicyBoard from './PolicyBoard';
@@ -17,6 +18,7 @@ import CursorOverlay from '../collaboration/CursorOverlay';
 import WorkspaceBar from '../ui/WorkspaceBar';
 import PlateauBar from '../ui/PlateauBar';
 import PlateauHUD from '../ui/PlateauHUD';
+import ActivityHUD from '../ui/ActivityHUD';
 import Minimap from '../ui/Minimap';
 import LayerNavigator from '../ui/LayerNavigator';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -24,6 +26,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
+import { useActivityViewStore } from '../../stores/activityViewStore';
 import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 
 const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({
@@ -43,6 +46,8 @@ export default function Scene() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
+  const isActivityActive = useActivityViewStore((s) => s.isActive);
+  const exitActivityView = useActivityViewStore((s) => s.exit);
   const is3D = viewMode === '3d';
   const isLayerView = viewMode === 'layer';
 
@@ -52,6 +57,13 @@ export default function Scene() {
       deactivatePlateauView();
     }
   }, [is3D, isPlateauActive, deactivatePlateauView]);
+
+  // Guard: auto-deactivate Activity View when leaving 3D mode
+  useEffect(() => {
+    if (!is3D && isActivityActive) {
+      exitActivityView();
+    }
+  }, [is3D, isActivityActive, exitActivityView]);
 
   const handleCanvasClick = () => {
     clearSelection();
@@ -71,8 +83,10 @@ export default function Scene() {
           <directionalLight position={[10, 20, 10]} intensity={is3D ? (isXRayActive ? 0.5 : 0.8) : 0.4} castShadow={is3D} />
           {is3D && <pointLight position={[-10, 10, -10]} intensity={0.3} color="#00ff41" />}
 
-          {/* Plateau View: replaces normal architecture rendering */}
-          {isPlateauActive && is3D ? (
+          {/* Activity View: replaces normal rendering with pyramid drill-down */}
+          {isActivityActive && is3D ? (
+            <ActivityScene />
+          ) : isPlateauActive && is3D ? (
             <>
               <PlateauRenderer />
               <AgentAvatars3D />
@@ -146,8 +160,11 @@ export default function Scene() {
       {!isXRayActive && !isPlateauActive && is3D && <WorkspaceBar />}
 
       {/* Plateau navigation bar + HUD */}
-      {isPlateauActive && is3D && <PlateauBar />}
-      {isPlateauActive && is3D && <PlateauHUD />}
+      {isPlateauActive && is3D && !isActivityActive && <PlateauBar />}
+      {isPlateauActive && is3D && !isActivityActive && <PlateauHUD />}
+
+      {/* Activity-View HUD */}
+      {isActivityActive && is3D && <ActivityHUD />}
 
       {/* Minimap */}
       {!isXRayActive && !isPlateauActive && is3D && workspaces.length > 1 && <Minimap />}

@@ -113,13 +113,30 @@ export default function ConnectionLines() {
     return ids;
   }, [elements]);
 
+  // Build set of activity node IDs (drill-down sub-processes hidden in main scene)
+  const activityIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const el of elements) {
+      if (el.metadata?.isActivity) ids.add(el.id);
+    }
+    return ids;
+  }, [elements]);
+
   const visibleConnections = useMemo(() => {
+    // Dedupe by connection.id — Neo4j has no unique constraint on Connection.id,
+    // and EnvisionPanel.syncToExplorer can create same-id duplicates on repeated runs.
+    // This also prevents two 3D-lines being rendered on top of each other.
+    const seen = new Set<string>();
     return connections.filter((conn) => {
+      if (seen.has(conn.id)) return false;
+      seen.add(conn.id);
       const source = elementMap.get(conn.sourceId);
       const target = elementMap.get(conn.targetId);
       if (!source || !target) return false;
       // Filter out connections to/from policy nodes (INFLUENCES are internal plumbing)
       if (policyNodeIds.has(conn.sourceId) || policyNodeIds.has(conn.targetId)) return false;
+      // Filter out connections to/from activities (only visible inside Activity-View)
+      if (activityIds.has(conn.sourceId) || activityIds.has(conn.targetId)) return false;
       if (!visibleLayers.has(source.layer) || !visibleLayers.has(target.layer)) return false;
       // In layer mode, only show intra-layer connections
       if (isLayerMode) {
@@ -131,7 +148,7 @@ export default function ConnectionLines() {
       }
       return true;
     });
-  }, [connections, elementMap, visibleLayers, isLayerMode, is2DMode, focusedLayer, visibleElementIds, policyNodeIds]);
+  }, [connections, elementMap, visibleLayers, isLayerMode, is2DMode, focusedLayer, visibleElementIds, policyNodeIds, activityIds]);
 
   return (
     <group>

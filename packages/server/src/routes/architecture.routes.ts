@@ -112,6 +112,8 @@ const UpdateElementSchema = z.object({
   lastActiveDate: z.string().optional(),
   dataSources: z.array(z.string()).optional(),
   outputTargets: z.array(z.string()).optional(),
+  // Free-form metadata (Activity-Steckbrief, isActivity flag, sequenceIndex, etc.)
+  metadata: z.record(z.unknown()).optional(),
 });
 
 const CreateConnectionSchema = z.object({
@@ -302,6 +304,8 @@ router.put(
       if (parsed.lastActiveDate !== undefined) { setFields.push('e.lastActiveDate = $lastActiveDate'); params.lastActiveDate = parsed.lastActiveDate; }
       if (parsed.dataSources !== undefined) { setFields.push('e.dataSources = $dataSources'); params.dataSources = parsed.dataSources; }
       if (parsed.outputTargets !== undefined) { setFields.push('e.outputTargets = $outputTargets'); params.outputTargets = parsed.outputTargets; }
+      // Metadata (free-form JSON; e.g. activityOwner / activityWhen / isActivity / sequenceIndex)
+      if (parsed.metadata !== undefined) { setFields.push('e.metadataJson = $metadataJson'); params.metadataJson = JSON.stringify(parsed.metadata); }
 
       if (setFields.length === 0) {
         res.status(400).json({ success: false, error: 'No valid fields to update' });
@@ -382,6 +386,57 @@ router.get(
     } catch (err) {
       console.error('Get dependencies error:', err);
       res.status(500).json({ success: false, error: 'Failed to get dependencies' });
+    }
+  }
+);
+
+// Get composition-children of an element (used by Activity-View drill-down)
+router.get(
+  '/:projectId/elements/:elementId/children',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { elementId } = req.params;
+
+      const childRecords = await runCypher(
+        `MATCH (parent:ArchitectureElement {id: $elementId})-[r:CONNECTS_TO {type: 'composition'}]->(child:ArchitectureElement)
+         RETURN child`,
+        { elementId }
+      );
+      const children = childRecords.map((r) => {
+        const props = serializeNeo4jProperties(r.get('child').properties);
+        let metadata = {};
+        try { if (props.metadataJson) metadata = JSON.parse(props.metadataJson as string); } catch { /* ignore */ }
+        return {
+          ...props,
+          position3D: { x: props.posX || 0, y: props.posY || 0, z: props.posZ || 0 },
+          metadata,
+        };
+      });
+
+      if (children.length === 0) {
+        return res.json({ success: true, data: { children: [], flows: [] } });
+      }
+
+      const childIds = children.map((c) => (c as unknown as { id: string }).id);
+      const flowRecords = await runCypher(
+        `MATCH (a:ArchitectureElement)-[r:CONNECTS_TO {type: 'flow'}]->(b:ArchitectureElement)
+         WHERE a.id IN $childIds AND b.id IN $childIds
+         RETURN r.id as id, a.id as sourceId, b.id as targetId, r.label as label`,
+        { childIds }
+      );
+      const flows = flowRecords.map((r) => ({
+        id: r.get('id'),
+        sourceId: r.get('sourceId'),
+        targetId: r.get('targetId'),
+        type: 'flow',
+        label: r.get('label'),
+      }));
+
+      res.json({ success: true, data: { children, flows } });
+    } catch (err) {
+      console.error('Get children error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get children' });
     }
   }
 );

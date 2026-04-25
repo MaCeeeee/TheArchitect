@@ -28,6 +28,15 @@ const CAP_EPR = 'bsh-cap-epr-reporting';
 const PROC_SCOPE1_COLLECTION = 'bsh-proc-scope1-data-collection';
 const PROC_SUPPLIER_RISK = 'bsh-proc-supplier-risk-assessment';
 const PROC_CSRD_CYCLE = 'bsh-proc-csrd-reporting-cycle';
+const PROC_GDPR_INCIDENT = 'bsh-proc-gdpr-incident';
+
+// Re-export drillable process IDs so the activity seed can target them
+export const BSH_DRILLABLE_PROCESS_IDS = {
+  CSRD_CYCLE: PROC_CSRD_CYCLE,
+  SUPPLIER_RISK: PROC_SUPPLIER_RISK,
+  SCOPE1_COLLECTION: PROC_SCOPE1_COLLECTION,
+  GDPR_INCIDENT: PROC_GDPR_INCIDENT,
+} as const;
 
 // ── Application Layer (y=0) ──
 const APP_ESG_PLATFORM = 'bsh-app-esg-data-platform';
@@ -382,6 +391,34 @@ export const DEMO_ELEMENTS_BSH: DemoElement[] = [
     costEstimatePessimistic: 3200000,
     successProbability: 0.68,
     costOfDelayPerWeek: 60000,
+  },
+  {
+    id: PROC_GDPR_INCIDENT,
+    type: 'business_process',
+    name: 'GDPR Incident Response',
+    description: '72h breach notification process per Art. 33 GDPR — detection, classification, DPO involvement, authority notification.',
+    layer: 'business',
+    togafDomain: 'business',
+    maturityLevel: 3,
+    riskLevel: 'high',
+    status: 'current',
+    position3D: { x: 6, y: 4, z: 3 },
+    metadata: { owner: 'DPO + Security Operations' },
+    annualCost: 220000,
+    userCount: 12,
+    recordCount: 24,
+    transformationStrategy: 'retain',
+    technicalFitness: 4,
+    functionalFitness: 4,
+    errorRatePercent: 1.0,
+    hourlyRate: 130,
+    monthlyInfraCost: 1800,
+    technicalDebtRatio: 0.20,
+    costEstimateOptimistic: 200000,
+    costEstimateMostLikely: 240000,
+    costEstimatePessimistic: 350000,
+    successProbability: 0.92,
+    costOfDelayPerWeek: 4500,
   },
 
   // ── Application Layer ──

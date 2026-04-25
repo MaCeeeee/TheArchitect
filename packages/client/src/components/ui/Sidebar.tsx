@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDoubleClick } from '../../hooks/useDoubleClick';
 import {
@@ -52,6 +52,7 @@ export default function Sidebar() {
   const [searchQuery, setSearchQuery] = useState('');
   const projectId = useArchitectureStore((s) => s.projectId);
   const elements = useArchitectureStore((s) => s.elements);
+  const allConnections = useArchitectureStore((s) => s.connections);
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
   const toggleLayer = useArchitectureStore((s) => s.toggleLayer);
   const selectElement = useArchitectureStore((s) => s.selectElement);
@@ -134,9 +135,31 @@ export default function Sidebar() {
   };
 
   const handleElementClick = (id: string) => {
-    selectElement(id);
     const el = elements.find((e) => e.id === id);
-    if (el) flyToElement(el.position3D, el.id);
+    if (!el) {
+      selectElement(id);
+      return;
+    }
+
+    // If element is an Activity (drill-down sub-process), route through Activity-View:
+    // find the composition-parent process and open its pyramid, then select the activity.
+    if (el.metadata?.isActivity) {
+      const allConnections = useArchitectureStore.getState().connections;
+      const compEdge = allConnections.find(
+        (c) => c.targetId === id && c.type === 'composition',
+      );
+      if (compEdge) {
+        void import('../../stores/activityViewStore').then(({ useActivityViewStore }) => {
+          useActivityViewStore.getState().enter(compEdge.sourceId);
+          // Select the clicked activity AFTER the pyramid is loaded so the property panel + ring highlight match.
+          setTimeout(() => selectElement(id), 350);
+        });
+        return;
+      }
+    }
+
+    selectElement(id);
+    flyToElement(el.position3D, el.id);
   };
 
   return (
@@ -187,6 +210,7 @@ export default function Sidebar() {
                   <LayerSection
                     key={layer.id}
                     layer={layer}
+                    connections={allConnections}
                     isVisible={visibleLayers.has(layer.id)}
                     onToggleVisibility={() => toggleLayer(layer.id)}
                     selectedElementId={selectedElementId}
@@ -1063,16 +1087,64 @@ function AnalyticsPanel() {
   );
 }
 
+type LayerElement = {
+  id: string;
+  name: string;
+  type: string;
+  metadata?: Record<string, unknown>;
+};
+
 function LayerSection({
-  layer, isVisible, onToggleVisibility, selectedElementId, onSelectElement,
+  layer, connections, isVisible, onToggleVisibility, selectedElementId, onSelectElement,
 }: {
-  layer: { id: string; label: string; color: string; elements: { id: string; name: string; type: string }[] };
+  layer: { id: string; label: string; color: string; elements: LayerElement[] };
+  connections: { sourceId: string; targetId: string; type: string }[];
   isVisible: boolean;
   onToggleVisibility: () => void;
   selectedElementId: string | null;
   onSelectElement: (id: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+
+  // Build composition parent → children map limited to this layer
+  const { topLevel, childrenByParent } = useMemo<{
+    topLevel: LayerElement[];
+    childrenByParent: Map<string, LayerElement[]>;
+  }>(() => {
+    const elementIds = new Set(layer.elements.map((e) => e.id));
+
+    // childId → parentId (only composition edges where both are in this layer)
+    const parentByChild = new Map<string, string>();
+    for (const c of connections) {
+      if (c.type !== 'composition') continue;
+      if (!elementIds.has(c.sourceId) || !elementIds.has(c.targetId)) continue;
+      parentByChild.set(c.targetId, c.sourceId);
+    }
+
+    // parentId → children[]
+    const cMap = new Map<string, LayerElement[]>();
+    for (const el of layer.elements) {
+      const parentId = parentByChild.get(el.id);
+      if (parentId) {
+        if (!cMap.has(parentId)) cMap.set(parentId, []);
+        cMap.get(parentId)!.push(el);
+      }
+    }
+
+    // Sort children by sequenceIndex (BPMN-Reihenfolge)
+    for (const list of cMap.values()) {
+      list.sort((a, b) => {
+        const ai = (a.metadata as { sequenceIndex?: number } | undefined)?.sequenceIndex ?? 999;
+        const bi = (b.metadata as { sequenceIndex?: number } | undefined)?.sequenceIndex ?? 999;
+        return ai - bi;
+      });
+    }
+
+    // Top-level = elements without a composition-parent in the same layer
+    const top = layer.elements.filter((el) => !parentByChild.has(el.id));
+
+    return { topLevel: top, childrenByParent: cMap };
+  }, [layer.elements, connections]);
 
   return (
     <div className="mb-1">
@@ -1090,21 +1162,91 @@ function LayerSection({
 
       {isOpen && (
         <div className="ml-5">
-          {layer.elements.map((el) => (
-            <button
+          {topLevel.map((el) => (
+            <ElementTreeRow
               key={el.id}
-              onClick={() => onSelectElement(el.id)}
-              className={`flex w-full items-center gap-2 rounded px-2 py-1 text-xs transition ${
-                selectedElementId === el.id
-                  ? 'bg-[#00ff41]/20 text-[#33ff66] shadow-[0_0_10px_rgba(0,255,65,0.15)]'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-base)] hover:text-white'
-              }`}
-            >
-              <span className="truncate">{el.name}</span>
-            </button>
+              element={el}
+              depth={0}
+              childrenByParent={childrenByParent}
+              selectedElementId={selectedElementId}
+              onSelectElement={onSelectElement}
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function ElementTreeRow({
+  element, depth, childrenByParent, selectedElementId, onSelectElement,
+}: {
+  element: LayerElement;
+  depth: number;
+  childrenByParent: Map<string, LayerElement[]>;
+  selectedElementId: string | null;
+  onSelectElement: (id: string) => void;
+}) {
+  const children = childrenByParent.get(element.id) ?? [];
+  const hasChildren = children.length > 0;
+  const [expanded, setExpanded] = useState(false);
+  const isSelected = selectedElementId === element.id;
+  const seqIndex = (element.metadata as { sequenceIndex?: number } | undefined)?.sequenceIndex;
+
+  return (
+    <>
+      <div
+        className={`flex items-center gap-1 rounded px-1 py-0.5 text-xs transition ${
+          isSelected
+            ? 'bg-[#00ff41]/20 text-[#33ff66] shadow-[0_0_10px_rgba(0,255,65,0.15)]'
+            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-base)] hover:text-white'
+        }`}
+        style={{ paddingLeft: `${depth * 12}px` }}
+      >
+        {hasChildren ? (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            }}
+            className="text-[var(--text-tertiary)] hover:text-[#00ff41] transition shrink-0"
+            title={expanded ? 'Collapse' : 'Expand'}
+          >
+            {expanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+          </button>
+        ) : (
+          <span className="w-[11px] shrink-0" />
+        )}
+        <button
+          onClick={() => onSelectElement(element.id)}
+          className="flex-1 truncate text-left"
+        >
+          {seqIndex !== undefined && (
+            <span className="text-[10px] font-mono text-[var(--text-tertiary)] mr-1">
+              {String(seqIndex).padStart(2, '0')}
+            </span>
+          )}
+          {element.name}
+          {hasChildren && (
+            <span className="text-[10px] text-[var(--text-tertiary)] ml-1.5">({children.length})</span>
+          )}
+        </button>
+      </div>
+
+      {expanded && hasChildren && (
+        <div>
+          {children.map((child) => (
+            <ElementTreeRow
+              key={child.id}
+              element={child}
+              depth={depth + 1}
+              childrenByParent={childrenByParent}
+              selectedElementId={selectedElementId}
+              onSelectElement={onSelectElement}
+            />
+          ))}
+        </div>
+      )}
+    </>
   );
 }

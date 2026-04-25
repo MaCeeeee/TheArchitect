@@ -53,6 +53,38 @@ export function flyToElement(elementPosition: { x: number; y: number; z: number 
   flyProgress = 0;
 }
 
+// Activity-View pyramid camera — front aufsicht (BPMN-style)
+// Apex at (apex.x, apex.y, apex.z); activities spread on a plane below.
+export function flyToProcessPyramid(
+  apexPosition: { x: number; y: number; z: number },
+  activityCount: number,
+) {
+  const MAX_WIDTH = 30;
+  const MAX_PER_ROW = 12;
+  const rows = Math.max(1, Math.ceil(Math.max(activityCount, 1) / MAX_PER_ROW));
+  const widthEstimate = activityCount === 0 ? 6 : Math.min(MAX_WIDTH, (activityCount - 1) * 3.5);
+  const depthEstimate = (rows - 1) * 3.5;
+  const dist = Math.max(20, widthEstimate * 0.9 + depthEstimate * 1.5 + 8);
+
+  flyTarget = {
+    position: new THREE.Vector3(apexPosition.x, apexPosition.y + 4, apexPosition.z + dist),
+    lookAt: new THREE.Vector3(apexPosition.x, apexPosition.y - 2, apexPosition.z),
+  };
+  flyProgress = 0;
+}
+
+export function flyDeeperIntoPyramid(_activityId: string, _activityCount: number) {
+  // Phase 9 stub — full implementation lands with recursive drill-down.
+}
+
+export function flyBackToWorkspace() {
+  flyTarget = {
+    position: new THREE.Vector3(20, 15, 20),
+    lookAt: new THREE.Vector3(0, 4, 0),
+  };
+  flyProgress = 0;
+}
+
 export function flyToWorkspace(offsetX: number) {
   const viewMode = useUIStore.getState().viewMode;
   if (viewMode === '3d') {

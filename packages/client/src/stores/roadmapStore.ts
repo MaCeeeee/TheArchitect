@@ -278,6 +278,12 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
         useXRayStore.getState().toggleXRay();
       }
     });
+    // Mutual exclusion: deactivate Activity View if active
+    import('./activityViewStore').then(({ useActivityViewStore }) => {
+      if (useActivityViewStore.getState().isActive) {
+        useActivityViewStore.getState().exit();
+      }
+    });
 
     // Compute plateau snapshots
     const { snapshots, dependencies } = computePlateauSnapshotsMemoized(elements, activeRoadmap);

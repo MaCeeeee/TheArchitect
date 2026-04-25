@@ -15,6 +15,7 @@ export default function ArchitectureElements() {
   const visibleElements = elements.filter(
     (el) => visibleLayers.has(el.layer) && visibleElementIds.has(el.id)
       && !el.metadata?.isPolicyNode
+      && !el.metadata?.isActivity
   );
 
   // Convert preview elements to ArchitectureElement format for 3D rendering

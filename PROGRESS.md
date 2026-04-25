@@ -1,6 +1,143 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-03-22 (UC-ROADMAP-003 TPCV, View Mode Buttons, RVTM Skill, Linear-Integration, CSV Import ArchiMate 3.2)
+> Letztes Update: 2026-04-25 (BSH-Demo-Prep: Activity-Drill-Down End-to-End in ESG-Demo, Property-Panel Steckbrief, hierarchische Tree-View)
+
+---
+
+## 0. BSH-Demo-Vorbereitung — Activity-Drill-Down (2026-04-25)
+
+### Ziel
+Komplette top-down Klick-Pfad in EINEM Demo-Projekt für BSH-Pitch am 06.05.: Vision → Stakeholder → Capability → Process → **Activity** → Roadmap → Simulation. Bisher waren Activities nur im Standalone-Demo geseedet — Story-Bruch beim Demo-Wechsel.
+
+### Status: ✅ Demo-Ready (Probedemo am 05.05. ausstehend)
+
+#### UC-ADD-001 Activity-Drill-Down (Linear THE-Parent) — komplett live
+- 4 Pyramiden im ESG-Demo: CSRD (12 Activities), LkSG-Supplier-Risk (8), Scope 1 Data Collection (10), GDPR-Incident (6)
+- BPMN-linear Layout mit adaptive Multi-Row, Composition-Linien als Pyramidenflanken, animierte Flow-Particles
+- Front-Aufsicht-Camera (~0.7s Smooth-Fly), Reverse-Fly bei ESC
+- ActivityHUD: Breadcrumb + Counter + ESC-Hint, kein Pagination
+
+#### UC-ADD-003 — ESG-Demo-Integration (Linear THE-186, Done) — heute gebaut
+| Datei | Zweck |
+|---|---|
+| `packages/server/src/data/bsh-esg-activities.ts` (NEU) | 36 Activities × 6 Steckbrief-Felder + `buildBshTransformationActivities()` Builder |
+| `packages/server/src/data/demo-architecture-bsh.ts` | GDPR-Process als 4. drillbarer + `BSH_DRILLABLE_PROCESS_IDS` export |
+| `packages/server/src/routes/demo.routes.ts` | `/create-bsh` seedet jetzt auch Activities + composition + flow |
+| `packages/client/src/components/3d/NodeObject3D.tsx` | Doppelklick akzeptiert `'process'` UND `'business_process'` |
+| `packages/client/src/components/ui/Sidebar.tsx` | Hierarchische Tree-View, Activities klappbar unter Parent, sortiert nach sequenceIndex |
+| `packages/client/src/components/ui/PropertyPanel.tsx` | `ActivityProfileSection` mit 6 strukturierten Feldern (Owner / Action / System / Due / Output / Enables) |
+
+#### Activity-Steckbrief-Felder (Phase 10)
+Jede Activity bekommt 6 strukturierte Werte in `metadata`:
+- `activityOwner` — Rolle/Team (z.B. "DPO + Compliance")
+- `activityAction` — Verb + Objekt (z.B. "meldet Vorfall an Aufsichtsbehörde")
+- `activitySystem` — Tool/Plattform (z.B. "BfDI-Online-Meldeportal")
+- `activityWhen` — Frist (z.B. "strikt innerhalb 72h ab Erkennung")
+- `activityOutput` — Deliverable (z.B. "Behörden-Aktenzeichen")
+- `activityEnables` — Nächste Activity
+
+Inline editierbar via `DebouncedSingleLine`. Backend persistiert metadata-merge über `/api/projects/:id/elements/:elementId` PUT.
+
+#### Hierarchische Tree-View
+Sidebar zeigt Activities als nested Children unter ihren Composition-Parents:
+- Process-Row hat Chevron-Toggle wenn Composition-Children vorhanden
+- Counter `(N)` zeigt Activity-Anzahl
+- Activities sortiert nach `metadata.sequenceIndex`
+- Sequence-Number als 2-stelliger Mono-Prefix ("01", "02", ...)
+
+#### Bugs gefixt heute (sieben Iterationen)
+- Bob-Animation Y-Doppelung (Cubes bei Y=16 statt Y=8)
+- Camera-Target nutzte Process-World-Position statt Scene-Origin
+- Neo4j-Order-Drift bei Composition-Children → sequenceIndex-Sort
+- Activities-im-Hauptbild filtern (`metadata.isActivity`)
+- Connection-Lines duplicate-key dedupe (env-conn-* Race-Conditions)
+- Adaptive Label-Größe (6-11px), Hover-Expand auf 13px
+
+#### User-Strategie-Klarstellung
+BSH-Wunsch ist End-Produkt-Vision (Option C im Demo-Modal): *"einmal Architektur (Mission/Vision/Stakeholder/Capabilities) aufsetzen bis zur Aktivität runter und dann die Transformation dahin berechnen und simulieren."*
+
+→ TheArchitect deckt 85% der Vision schon ab. Lücke: AI-Auto-Generate Process→Activities (UC-ADD-004, post-BSH, Phase-2-Pitch-Hauptstoryline).
+
+#### Linear-Use-Case-Specs (heute angelegt)
+| Linear-ID | Use-Case | Status | Priority |
+|---|---|---|---|
+| THE-186 | UC-ADD-003: ESG-Demo Activity-Integration | ✅ Done | High (P0-MarketEntry) |
+| THE-187 | UC-ADD-002: Auto-Derivation aus Architektur + Collapsibility | Backlog | Medium |
+| THE-188 | UC-ADD-004: AI-Auto-Generate Architecture-Hierarchy | Backlog | High (Q3-Pitch) |
+
+Jede Spec ist self-contained mit Why / Approach / Files+Code-Pointers / AC / Risks / Out-of-Scope.
+
+#### Ergänzend: Production-Login-Fix
+5 Bestands-User auf VPS hatten `emailVerified: false` (oder undefined) seit Hardening-Deploy 2026-04-13. Verify-Middleware blockierte Passwort-Login. Mongo-`updateMany` flippte alle auf `true`. `m.ganzmann.info@gmail.com` ist OAuth-only by design.
+
+#### Offen pre-BSH (optional)
+- Probedemo am 05.05. (Stoppuhr + Beobachter)
+- Backup-Video als Demo-Tag-Fallback
+- UC-ADD-002 (Auto-Derive Enables + Section collapsible, 1h) — Polish
+- Demo-Storyboard verschriftlichen
+
+#### Klar post-BSH
+- UC-ADD-004 AI-Auto-Generate (8-12h Core, +20-30h Full)
+- Phase 9 Sierpinski-Recursive Drill (8-10h Stretch)
+- Connection-Dedupe in Neo4j (Cypher MERGE oder Unique-Constraint)
+- Socket-Reconnect mit Refresh-Token-Flow
+- Mongo-Passwort-Rotation (URI vs Container-Env Drift)
+- Standards/Pipeline-Status 403-Bug
+
+---
+
+## 1. RAG Data-Server Integration (2026-04-17)
+
+### Ziel
+Zweiter VPS (`n8n.thearchitect.site` / `100.106.223.83` via Tailscale) als RAG-Backend. TheArchitect-Primary (76.13.150.49) spricht über HTTP+Header-Auth mit n8n-Webhooks; n8n macht Chunking + OpenAI-Embedding und spricht mit Qdrant.
+
+### Status: ✅ Deployed (UI-Token-Check steht noch aus, 401-Proof-of-Wiring liegt vor)
+
+#### Drei n8n-Webhook-Workflows live
+| Workflow | Endpoint | Funktion |
+|---|---|---|
+| `rag-health` | `GET /webhook/rag-health` | Smoke-Test, returnt `{ok:true, version:"1.0.0"}` |
+| `rag-ingest` | `POST /webhook/rag-ingest` | Chunking (1500/200) + `text-embedding-3-small` → Qdrant Insert |
+| `rag-query` | `POST /webhook/rag-query` | Query-Embedding → Qdrant Similarity → Top-K Chunks |
+
+Collection: `thearchitect-rag-v4`, 1536-dim Vectors, Cosine-Distance, auto-create durch LangChain-Qdrant-Node.
+
+Workflow-JSONs committed unter `docs/data-server/workflows/` (ohne Secrets, Credential-IDs sind lokal zur n8n-Instanz).
+
+#### TheArchitect-Seite (Primary-VPS)
+| Komponente | Datei |
+|---|---|
+| HTTP-Client mit Header-Auth | `packages/server/src/services/dataServer.service.ts` |
+| 3 Routes `/api/rag/*` | `packages/server/src/routes/rag.routes.ts` |
+| Route-Registrierung | `packages/server/src/index.ts:166-167` |
+| Env-Scaffold | `.env.example:74-78` (`DATA_SERVER_URL`, `DATA_SERVER_SHARED_SECRET`) |
+| Docs | `docs/data-server/README.md` |
+
+#### Smoke-Tests (alle grün)
+```
+Health:  {"ok":true,"version":"1.0.0"}
+Ingest:  {"documentId":"697fa151-...","chunkCount":1}
+Query:   {"chunks":[{"text":"Doppelte...","score":0.6743958,...}]}
+```
+
+#### Proof of Integration
+`docker exec thearchitect-app wget -qO- http://localhost:4000/api/rag/health` → `HTTP 401 Unauthorized` (Auth-Middleware greift, Route existiert, DATA_SERVER-Env-Vars im Container präsent).
+
+#### Drei Debug-Stolperstellen
+1. **n8n Public API hat keinen Credential-Update** — Rotation via Delete+Create+Relink auf Workflows per PUT
+2. **`crypto is not defined`** in n8n-Sandbox — Math.random-basierter UUID-v4-Fallback im Validate-Node
+3. **LangChain-Qdrant: "Wrong input: Not existing vector name"** — `collectionConfig` entfernen, Node erstellt Schema selbst (named vs. unnamed-Vector-Mismatch)
+
+#### Infrastruktur-Recovery
+Zwischendurch Primary-VPS-Freeze (2% CPU + 32% Memory, dennoch SSH-Timeout → Reboot über hPanel). VPS-Source war 2+ Commits hinter Mac (RAG-Code fehlte), `docker-compose.yml` hatte keinen `env_file:`-Eintrag, VPS-lokale Prod-Compose-Modifikation war uncommitted. Alle über `git pull` + `cp docker-compose.prod.yml docker-compose.yml` + gezielte sed-Patches für `DATA_SERVER_URL`/`DATA_SERVER_SHARED_SECRET` behoben. 7 Named Volumes erhalten, kein Datenverlust.
+
+#### Offen
+- [ ] UI-Browser-Test: `/api/rag/health` mit eingeloggtem Token (erwartet `{configured:true, ok:true, version:"1.0.0"}`)
+- [ ] n8n Public-API JWT rotieren (derzeit in `.env.local`, nach Pitch austauschen)
+- [ ] RAG als Demo-Argument in Pitch-Script integrieren (optional)
+
+#### Spätere Erweiterbarkeit
+Architektur ist metadata-filterbar per `source`-Feld. Linear/Jira-Sync-Workflows können später in dieselbe Qdrant-Collection ingesten (`source: "linear-issue"` / `"jira-issue"`), Filter in `rag-query` funktionieren automatisch weiter. Kein Umbau nötig.
 
 ---
 

@@ -190,6 +190,12 @@ export const useXRayStore = create<XRayState>((set, get) => ({
           useRoadmapStore.getState().deactivatePlateauView();
         }
       });
+      // Mutual exclusion: deactivate Activity View if active
+      import('./activityViewStore').then(({ useActivityViewStore }) => {
+        if (useActivityViewStore.getState().isActive) {
+          useActivityViewStore.getState().exit();
+        }
+      });
       get().recompute();
     }
     set({ isActive: !wasActive });

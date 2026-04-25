@@ -12,6 +12,8 @@ import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo
 import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES, DEMO_SIMULATION_RUN } from '../data/demo-seed';
 import { DEMO_PROJECT_NAME_BSH, DEMO_ELEMENTS_BSH, DEMO_CONNECTIONS_BSH } from '../data/demo-architecture-bsh';
 import { DEMO_VISION_BSH, DEMO_STAKEHOLDERS_BSH, DEMO_STANDARDS_BSH, DEMO_POLICIES_BSH } from '../data/demo-seed-bsh';
+import { BSH_ACTIVITY_PROJECT_NAME, buildBshActivitySeed } from '../data/bsh-activity-demo';
+import { buildBshTransformationActivities } from '../data/bsh-esg-activities';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -299,6 +301,38 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
       );
     }
 
+    // Activity-Drill-Down (UC-ADD-003): seed composition-children for the 4 drillable processes
+    const activitySeed = buildBshTransformationActivities();
+    for (const el of activitySeed.elements) {
+      await runCypher(
+        `CREATE (e:ArchitectureElement {
+          id: $id, projectId: $projectId, type: $type, name: $name,
+          description: $description, layer: $layer, togafDomain: $togafDomain,
+          maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
+          posX: $posX, posY: $posY, posZ: $posZ,
+          metadataJson: $metadataJson,
+          createdAt: datetime(), updatedAt: datetime()
+        }) RETURN e`,
+        { ...el, projectId }
+      );
+    }
+    for (const conn of activitySeed.connections) {
+      await runCypher(
+        `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
+               (b:ArchitectureElement {id: $targetId, projectId: $projectId})
+         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+         RETURN r`,
+        {
+          sourceId: conn.sourceId,
+          targetId: conn.targetId,
+          projectId,
+          connectionId: conn.id,
+          type: conn.type,
+          label: conn.label,
+        }
+      );
+    }
+
     for (const std of DEMO_STANDARDS_BSH) {
       await Standard.create({
         projectId: project._id,
@@ -330,12 +364,21 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
       });
     }
 
-    log.info({ projectId, elements: DEMO_ELEMENTS_BSH.length, connections: DEMO_CONNECTIONS_BSH.length }, '[Demo BSH] Project created');
+    log.info(
+      {
+        projectId,
+        elements: DEMO_ELEMENTS_BSH.length + activitySeed.elements.length,
+        connections: DEMO_CONNECTIONS_BSH.length + activitySeed.connections.length,
+        activities: activitySeed.elements.length,
+      },
+      '[Demo BSH] Project created (incl. drillable activities)'
+    );
 
     res.status(201).json({
       projectId,
-      elementsCreated: DEMO_ELEMENTS_BSH.length,
-      connectionsCreated: DEMO_CONNECTIONS_BSH.length,
+      elementsCreated: DEMO_ELEMENTS_BSH.length + activitySeed.elements.length,
+      connectionsCreated: DEMO_CONNECTIONS_BSH.length + activitySeed.connections.length,
+      activitiesCreated: activitySeed.elements.length,
       standardsCreated: DEMO_STANDARDS_BSH.length,
       policiesCreated: DEMO_POLICIES_BSH.length,
       existing: false,
@@ -345,5 +388,86 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
     res.status(500).json({ error: 'Failed to create BSH demo project.' });
   }
 });
+
+// POST /api/demo/seed-bsh-activities — Activity-Drill-Down demo (Phase 7)
+router.post(
+  '/seed-bsh-activities',
+  authenticate,
+  requirePermission(PERMISSIONS.PROJECT_CREATE),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = (req as unknown as { user: { id: string } }).user.id;
+
+      let project = await Project.findOne({ ownerId: userId, name: BSH_ACTIVITY_PROJECT_NAME });
+      let isExisting = !!project;
+
+      if (!project) {
+        project = await Project.create({
+          name: BSH_ACTIVITY_PROJECT_NAME,
+          description:
+            'Activity-Drill-Down Demo for BSH (06.05.2026). 4 Business Processes with composition-children for the pyramidal Activity-View — GDPR (6), Supplier Onboarding (4), Product Recall (12), CSRD Reporting (28).',
+          ownerId: userId,
+          togafPhase: 'business_architecture',
+          tags: ['demo', 'bsh', 'activity-drill', 'esg'],
+        });
+      }
+
+      const projectId = project._id.toString();
+      const { elements, connections } = buildBshActivitySeed();
+
+      // Wipe any prior seed elements/connections from this project to keep it idempotent
+      await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId}) DETACH DELETE e`,
+        { projectId }
+      );
+
+      for (const el of elements) {
+        await runCypher(
+          `CREATE (e:ArchitectureElement {
+            id: $id, projectId: $projectId, type: $type, name: $name,
+            description: $description, layer: $layer, togafDomain: $togafDomain,
+            maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
+            posX: $posX, posY: $posY, posZ: $posZ,
+            metadataJson: $metadataJson,
+            createdAt: datetime(), updatedAt: datetime()
+          }) RETURN e`,
+          { ...el, projectId }
+        );
+      }
+
+      for (const conn of connections) {
+        await runCypher(
+          `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
+                 (b:ArchitectureElement {id: $targetId, projectId: $projectId})
+           CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+           RETURN r`,
+          {
+            sourceId: conn.sourceId,
+            targetId: conn.targetId,
+            projectId,
+            connectionId: conn.id,
+            type: conn.type,
+            label: conn.label,
+          }
+        );
+      }
+
+      log.info(
+        { projectId, elements: elements.length, connections: connections.length },
+        '[Demo BSH-Activity] Seed complete'
+      );
+
+      res.status(isExisting ? 200 : 201).json({
+        projectId,
+        elementsCreated: elements.length,
+        connectionsCreated: connections.length,
+        existing: isExisting,
+      });
+    } catch (err) {
+      log.error({ err }, '[Demo BSH-Activity] Seed failed');
+      res.status(500).json({ error: 'Failed to seed BSH activity demo.' });
+    }
+  }
+);
 
 export default router;

@@ -199,6 +199,8 @@ export const architectureAPI = {
     api.delete(`/projects/${projectId}/elements/${elementId}`),
   getDependencies: (projectId: string, elementId: string, depth = 3) =>
     api.get(`/projects/${projectId}/elements/${elementId}/dependencies?depth=${depth}`),
+  getChildren: (projectId: string, elementId: string) =>
+    api.get(`/projects/${projectId}/elements/${elementId}/children`),
   getConnections: (projectId: string) =>
     api.get(`/projects/${projectId}/connections`),
   createConnection: (projectId: string, data: Record<string, unknown>) =>
