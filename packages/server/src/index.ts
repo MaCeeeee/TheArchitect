@@ -39,6 +39,7 @@ import healthcheckRoutes from './routes/healthcheck.routes';
 import waitlistRoutes from './routes/waitlist.routes';
 import envisionAIRoutes from './routes/envision-ai.routes';
 import ragRoutes from './routes/rag.routes';
+import aiGeneratorRoutes from './routes/aiGenerator.routes';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 import { startSyncScheduler } from './services/sync-scheduler.service';
@@ -165,6 +166,7 @@ async function main() {
   app.use('/api/projects', envisionAIRoutes);
   app.use('/api', ragRoutes);          // Health: /api/rag/health
   app.use('/api/projects', ragRoutes); // Scoped: /api/projects/:projectId/rag/*
+  app.use('/api', aiGeneratorRoutes);  // /api/projects/:projectId/processes/:processId/generate-activities (SSE)
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {

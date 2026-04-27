@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -249,6 +249,7 @@ export default function PropertyPanel() {
         {/* Activity-Steckbrief — only for elements with metadata.isActivity === true */}
         {Boolean(elementMeta?.isActivity) && (
           <ActivityProfileSection
+            elementId={element.id}
             metadata={elementMeta as Record<string, unknown>}
             onChange={handleMetadataChange}
           />
@@ -1268,34 +1269,128 @@ const ACTIVITY_FIELDS: { key: string; label: string; icon: string; placeholder: 
   { key: 'activityEnables', label: 'Enables',  icon: '➡',  placeholder: 'Next activity' },
 ];
 
+const ACTIVITY_PROFILE_EXPANDED_KEY = 'ta_activity_profile_expanded';
+
 function ActivityProfileSection({
+  elementId,
   metadata,
   onChange,
 }: {
+  elementId: string;
   metadata: Record<string, unknown>;
   onChange: (key: string, value: string) => void;
 }) {
+  // Persisted expand state — global across all activities (per user-decision in UC-ADD-002)
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    try { return localStorage.getItem(ACTIVITY_PROFILE_EXPANDED_KEY) === 'true'; } catch { return false; }
+  });
+  const toggleExpanded = useCallback(() => {
+    setExpanded((prev) => {
+      const next = !prev;
+      try { localStorage.setItem(ACTIVITY_PROFILE_EXPANDED_KEY, String(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  // Auto-derive `Enables` from outgoing flow connection (UC-ADD-002 Step A)
+  const connections = useArchitectureStore((s) => s.connections);
+  const allElements = useArchitectureStore((s) => s.elements);
+  const selectFn = useArchitectureStore((s) => s.selectElement);
+  const enablesTarget = useMemo(() => {
+    const flow = connections.find((c) => c.sourceId === elementId && c.type === 'flow');
+    if (!flow) return null;
+    const target = allElements.find((e) => e.id === flow.targetId);
+    if (!target) return null;
+    return { id: target.id, name: target.name };
+  }, [connections, allElements, elementId]);
+
+  // Compact summary for collapsed header (Owner · Due · System)
+  const summary = useMemo(() => {
+    const parts: string[] = [];
+    const owner = metadata.activityOwner as string | undefined;
+    const when = metadata.activityWhen as string | undefined;
+    const sys = metadata.activitySystem as string | undefined;
+    if (owner) parts.push(owner);
+    if (when) parts.push(when);
+    if (sys) parts.push(sys);
+    return parts.slice(0, 3).join(' · ');
+  }, [metadata]);
+
   return (
-    <Section title="Activity Profile">
-      <div className="space-y-1.5">
-        {ACTIVITY_FIELDS.map((f) => {
-          const value = (metadata[f.key] as string | undefined) ?? '';
-          return (
-            <div key={f.key} className="grid grid-cols-[auto_70px_1fr] items-start gap-1.5">
-              <span className="text-[13px] leading-5 select-none" aria-hidden>{f.icon}</span>
-              <span className="text-[10px] leading-5 uppercase tracking-wider text-[var(--text-tertiary)]">
-                {f.label}
-              </span>
-              <DebouncedSingleLine
-                value={value}
-                placeholder={f.placeholder}
-                onChange={(v) => onChange(f.key, v)}
-              />
-            </div>
-          );
-        })}
-      </div>
-    </Section>
+    <div>
+      <button
+        type="button"
+        onClick={toggleExpanded}
+        className="flex w-full items-center gap-1.5 mb-2 group text-left"
+        aria-expanded={expanded}
+      >
+        {expanded
+          ? <ChevronDown size={11} className="shrink-0 text-[var(--text-tertiary)] group-hover:text-white transition" />
+          : <ChevronRight size={11} className="shrink-0 text-[var(--text-tertiary)] group-hover:text-white transition" />}
+        <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] group-hover:text-white transition shrink-0">
+          Activity Profile
+        </h4>
+        {!expanded && summary && (
+          <span
+            className="ml-auto text-[10px] text-[var(--text-tertiary)] truncate max-w-[180px]"
+            title={summary}
+          >
+            {summary}
+          </span>
+        )}
+      </button>
+
+      {expanded && (
+        <div className="space-y-1.5">
+          {ACTIVITY_FIELDS.map((f) => {
+            // Special-case Enables: show auto-derived target as clickable badge
+            if (f.key === 'activityEnables') {
+              return (
+                <div key={f.key} className="grid grid-cols-[auto_70px_1fr] items-center gap-1.5">
+                  <span className="text-[13px] leading-5 select-none" aria-hidden>{f.icon}</span>
+                  <span className="text-[10px] leading-5 uppercase tracking-wider text-[var(--text-tertiary)]">
+                    {f.label}
+                  </span>
+                  {enablesTarget ? (
+                    <button
+                      type="button"
+                      onClick={() => selectFn(enablesTarget.id)}
+                      className="flex items-center gap-1 rounded border border-[#00ff41]/40 bg-[#00ff41]/10 px-2 py-0.5 text-[11px] text-[#33ff66] hover:bg-[#00ff41]/20 hover:border-[#00ff41]/70 transition truncate text-left"
+                      title={`Jump to: ${enablesTarget.name}`}
+                    >
+                      <ArrowRightLeft size={10} className="shrink-0" />
+                      <span className="truncate">{enablesTarget.name}</span>
+                    </button>
+                  ) : (
+                    <span
+                      className="text-[11px] text-[var(--text-tertiary)] italic"
+                      title="Add a flow connection to define the next activity"
+                    >
+                      — no successor —
+                    </span>
+                  )}
+                </div>
+              );
+            }
+            // Normal editable field for the other 5 entries
+            const value = (metadata[f.key] as string | undefined) ?? '';
+            return (
+              <div key={f.key} className="grid grid-cols-[auto_70px_1fr] items-start gap-1.5">
+                <span className="text-[13px] leading-5 select-none" aria-hidden>{f.icon}</span>
+                <span className="text-[10px] leading-5 uppercase tracking-wider text-[var(--text-tertiary)]">
+                  {f.label}
+                </span>
+                <DebouncedSingleLine
+                  value={value}
+                  placeholder={f.placeholder}
+                  onChange={(v) => onChange(f.key, v)}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

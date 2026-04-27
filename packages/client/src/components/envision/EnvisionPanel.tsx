@@ -6,6 +6,7 @@ import {
   BarChart3, ChevronDown, ChevronUp, Layers,
 } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
+import HierarchyExtractionFlow from '../copilot/HierarchyExtractionFlow';
 import { useEnvisionStore, type Stakeholder, type Vision } from '../../stores/envisionStore';
 import { useArchitectureStore, type ArchitectureElement, type Connection } from '../../stores/architectureStore';
 import { useSimulationStore } from '../../stores/simulationStore';
@@ -27,6 +28,19 @@ const SECTIONS: { id: Section; label: string; icon: typeof Target }[] = [
   { id: 'stakeholders', label: 'Stakeholders', icon: Users },
   { id: 'readiness', label: 'Readiness', icon: CheckCircle2 },
 ];
+
+// Map a highlight-field hint (set by PhaseBar / MissionControl / next-action CTAs)
+// to the sub-section that contains it. Keeps CTA-clicks in lock-step with what
+// the user sees blinking.
+const FIELD_TO_SECTION: Record<string, Section> = {
+  scope: 'vision',
+  visionStatement: 'vision',
+  principles: 'vision',
+  drivers: 'vision',
+  goals: 'vision',
+  stakeholders: 'stakeholders',
+  readiness: 'readiness',
+};
 
 const STAKEHOLDER_TYPES = [
   { value: 'c_level', label: 'C-Level Executive' },
@@ -68,11 +82,20 @@ export default function EnvisionPanel() {
   const [section, setSection] = useState<Section>('vision');
   const projectId = useArchitectureStore((s) => s.projectId);
   const { vision, stakeholders, loading, saving, load, updateVision, saveVision, saveStakeholders } = useEnvisionStore();
+  const highlightedField = useUIStore((s) => s.highlightedField);
 
   // Load envision data when project changes
   useEffect(() => {
     if (projectId) load(projectId);
   }, [projectId, load]);
+
+  // When a CTA highlights a specific field (e.g. "Add Principles" → 'principles'),
+  // auto-switch to the section that contains it so the user lands on the right tab.
+  useEffect(() => {
+    if (!highlightedField) return;
+    const target = FIELD_TO_SECTION[highlightedField];
+    if (target && target !== section) setSection(target);
+  }, [highlightedField, section]);
 
   if (!projectId) {
     return (
@@ -131,16 +154,31 @@ function VisionSection() {
   } = useEnvisionStore();
   const highlightField = useUIStore((s) => s.highlightedField);
   const scopeRef = useRef<HTMLTextAreaElement>(null);
+  const visionStatementRef = useRef<HTMLTextAreaElement>(null);
+  const principlesRef = useRef<HTMLDivElement>(null);
+  const driversRef = useRef<HTMLDivElement>(null);
+  const goalsRef = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
   const [showAIInput, setShowAIInput] = useState(false);
+  const [showHierarchyFlow, setShowHierarchyFlow] = useState(false);
+  const projectIdForGen = useArchitectureStore((s) => s.projectId);
   const [aiDescription, setAIDescription] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to scope field when highlighted
+  // Auto-scroll + focus the highlighted field. Single effect handles every field
+  // so future fields just need a ref entry.
   useEffect(() => {
-    if (highlightField === 'scope' && scopeRef.current) {
-      scopeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      scopeRef.current.focus();
+    const targetEl: HTMLElement | null =
+      highlightField === 'scope' ? scopeRef.current
+      : highlightField === 'visionStatement' ? visionStatementRef.current
+      : highlightField === 'principles' ? principlesRef.current
+      : highlightField === 'drivers' ? driversRef.current
+      : highlightField === 'goals' ? goalsRef.current
+      : null;
+    if (!targetEl) return;
+    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof (targetEl as HTMLTextAreaElement).focus === 'function') {
+      (targetEl as HTMLTextAreaElement).focus();
     }
   }, [highlightField]);
 
@@ -184,6 +222,14 @@ function VisionSection() {
             className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-md hover:bg-purple-500/20 transition disabled:opacity-50"
           >
             <Sparkles size={10} /> AI Generate
+          </button>
+          <button
+            onClick={() => setShowHierarchyFlow(true)}
+            disabled={isGenerating}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium bg-[#00ff41]/10 text-[#33ff66] border border-[#00ff41]/30 rounded-md hover:bg-[#00ff41]/20 transition disabled:opacity-50"
+            title="Generate full architecture (Vision → Activity) from a regulatory document"
+          >
+            <Sparkles size={10} /> AI from PDF
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -277,27 +323,41 @@ function VisionSection() {
       {/* Vision Statement */}
       <FieldBlock label="Vision Statement" hint="What does success look like?">
         <textarea
+          ref={visionStatementRef}
           value={vision.visionStatement}
           onChange={(e) => handleChange('visionStatement', e.target.value)}
           rows={3}
-          className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none"
+          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none ${
+            highlightField === 'visionStatement'
+              ? 'border-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse'
+              : 'border-[var(--border-subtle)]'
+          }`}
           placeholder="e.g., A unified, cloud-native architecture that reduces operational costs by 30% and enables 2x faster feature delivery..."
         />
       </FieldBlock>
 
       {/* Principles (with AI suggest) */}
-      <TagListField
-        label="Principles"
-        hint="Non-negotiable architecture principles"
-        items={vision.principles}
-        onChange={(items) => handleChange('principles', items)}
-        placeholder="e.g., Cloud-First"
-        aiAction={{
-          onClick: () => suggestPrinciples(),
-          loading: isGenerating,
-          label: 'Suggest',
-        }}
-      />
+      <div
+        ref={principlesRef}
+        className={`rounded-md transition ${
+          highlightField === 'principles'
+            ? 'ring-2 ring-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse p-1 -m-1'
+            : ''
+        }`}
+      >
+        <TagListField
+          label="Principles"
+          hint="Non-negotiable architecture principles"
+          items={vision.principles}
+          onChange={(items) => handleChange('principles', items)}
+          placeholder="e.g., Cloud-First"
+          aiAction={{
+            onClick: () => suggestPrinciples(),
+            loading: isGenerating,
+            label: 'Suggest',
+          }}
+        />
+      </div>
       {/* Principle suggestion chips */}
       {aiSuggestions.principles && aiSuggestions.principles.length > 0 && (
         <div className="-mt-2 flex flex-wrap gap-1">
@@ -315,22 +375,40 @@ function VisionSection() {
       )}
 
       {/* Drivers */}
-      <TagListField
-        label="Drivers"
-        hint="What's driving this project?"
-        items={vision.drivers}
-        onChange={(items) => handleChange('drivers', items)}
-        placeholder="e.g., Regulatory Requirements"
-      />
+      <div
+        ref={driversRef}
+        className={`rounded-md transition ${
+          highlightField === 'drivers'
+            ? 'ring-2 ring-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse p-1 -m-1'
+            : ''
+        }`}
+      >
+        <TagListField
+          label="Drivers"
+          hint="What's driving this project?"
+          items={vision.drivers}
+          onChange={(items) => handleChange('drivers', items)}
+          placeholder="e.g., Regulatory Requirements"
+        />
+      </div>
 
       {/* Goals */}
-      <TagListField
-        label="Goals"
-        hint="Measurable strategic goals"
-        items={vision.goals}
-        onChange={(items) => handleChange('goals', items)}
-        placeholder="e.g., Reduce TCO by 25%"
-      />
+      <div
+        ref={goalsRef}
+        className={`rounded-md transition ${
+          highlightField === 'goals'
+            ? 'ring-2 ring-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse p-1 -m-1'
+            : ''
+        }`}
+      >
+        <TagListField
+          label="Goals"
+          hint="Measurable strategic goals"
+          items={vision.goals}
+          onChange={(items) => handleChange('goals', items)}
+          placeholder="e.g., Reduce TCO by 25%"
+        />
+      </div>
 
       {/* Save indicator */}
       {saving && (
@@ -338,6 +416,29 @@ function VisionSection() {
           <Loader2 size={10} className="animate-spin" /> Saving...
         </div>
       )}
+
+      {/* AI from PDF — full hierarchy extraction */}
+      <HierarchyExtractionFlow
+        isOpen={showHierarchyFlow}
+        onClose={() => setShowHierarchyFlow(false)}
+        projectId={projectIdForGen}
+        onApplied={() => {
+          toast.success('Architecture hierarchy applied');
+          // 1) Refresh 3D-element + connection store so the workspace shows new nodes
+          if (projectIdForGen) {
+            architectureAPI.getElements(projectIdForGen).then((res) => {
+              const data = (res.data?.data ?? res.data) as ArchitectureElement[];
+              useArchitectureStore.setState({ elements: data });
+            }).catch(() => { /* non-blocking */ });
+            architectureAPI.getConnections(projectIdForGen).then((res) => {
+              const data = (res.data?.data ?? res.data) as Connection[];
+              useArchitectureStore.setState({ connections: data });
+            }).catch(() => { /* non-blocking */ });
+            // 2) Reload Phase-A vision + stakeholders (form fields get the AI-extracted values)
+            useEnvisionStore.getState().load(projectIdForGen);
+          }
+        }}
+      />
     </div>
   );
 }
@@ -459,8 +560,18 @@ function StakeholderSection() {
     suggestStakeholders, acceptStakeholderSuggestion, acceptAllStakeholderSuggestions,
     detectConflicts, clearAISuggestions,
   } = useEnvisionStore();
+  const highlightField = useUIStore((s) => s.highlightedField);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+
+  // Auto-scroll + focus the Add Stakeholder button when CTA highlights this field
+  useEffect(() => {
+    if (highlightField === 'stakeholders' && addBtnRef.current) {
+      addBtnRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      addBtnRef.current.focus();
+    }
+  }, [highlightField]);
 
   const handleAdd = () => {
     const newSH: Stakeholder = {
@@ -592,8 +703,13 @@ function StakeholderSection() {
 
       {/* Add Button */}
       <button
+        ref={addBtnRef}
         onClick={handleAdd}
-        className="flex items-center gap-1.5 w-full px-3 py-2 text-xs text-[var(--text-secondary)] border border-dashed border-[var(--border-subtle)] rounded-lg hover:border-[var(--accent-default)] hover:text-[var(--accent-default)] transition"
+        className={`flex items-center gap-1.5 w-full px-3 py-2 text-xs text-[var(--text-secondary)] border border-dashed rounded-lg hover:border-[var(--accent-default)] hover:text-[var(--accent-default)] transition ${
+          highlightField === 'stakeholders'
+            ? 'border-[#22c55e] text-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse'
+            : 'border-[var(--border-subtle)]'
+        }`}
       >
         <Plus size={14} /> Add Stakeholder
       </button>

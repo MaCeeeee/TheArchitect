@@ -210,6 +210,9 @@ router.get(
 
       const custom = customDocs.map(toAgentPersona);
 
+      // Disable caching: client logic auto-syncs when `custom` is empty, and a
+      // stale 304 with an old empty body would loop the sync forever.
+      res.set('Cache-Control', 'no-store');
       res.json({
         presets,
         custom,
@@ -301,6 +304,7 @@ router.post(
 
       let created = 0;
       let skipped = 0;
+      const failures: Array<{ name?: string; reason: string }> = [];
       for (const raw of personas.slice(0, 50)) { // cap at 50
         try {
           const parsed = CustomPersonaSchema.parse(raw);
@@ -308,7 +312,13 @@ router.post(
             skipped++;
             continue;
           }
-          if (!PRESET_PERSONAS[parsed.basedOnPresetId]) continue;
+          if (!PRESET_PERSONAS[parsed.basedOnPresetId]) {
+            failures.push({
+              name: parsed.name,
+              reason: `unknown basedOnPresetId: "${parsed.basedOnPresetId}"`,
+            });
+            continue;
+          }
 
           await CustomPersona.create({
             ...parsed,
@@ -317,12 +327,26 @@ router.post(
           });
           existingNames.add(parsed.name?.toLowerCase().trim());
           created++;
-        } catch {
-          // Skip invalid entries
+        } catch (err: any) {
+          const rawName = (raw && typeof raw === 'object' && (raw as any).name) || undefined;
+          const reason = err?.name === 'ZodError'
+            ? `validation: ${(err.errors || []).map((e: any) => `${(e.path || []).join('.')} ${e.message}`).join('; ')}`
+            : err?.message || 'unknown error';
+          failures.push({ name: rawName, reason });
         }
       }
 
-      res.status(201).json({ created, skipped, total: created + skipped });
+      if (failures.length > 0) {
+        console.warn('[MiroFish] Bulk persona failures:', failures);
+      }
+
+      res.status(201).json({
+        created,
+        skipped,
+        failed: failures.length,
+        failures,
+        total: created + skipped + failures.length,
+      });
     } catch (err: any) {
       console.error('[MiroFish] Bulk create personas error:', err.message);
       res.status(500).json({ error: 'Failed to bulk create personas' });

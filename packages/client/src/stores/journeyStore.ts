@@ -28,7 +28,7 @@ export interface PhaseInfo {
   description: string;
   isDone: boolean;
   progress: PhaseProgress;
-  nextAction: { label: string; route: string } | null;
+  nextAction: { label: string; route: string; field?: string } | null;
 }
 
 interface JourneyState {
@@ -121,13 +121,13 @@ export const useJourneyStore = create<JourneyState>((set) => ({
     };
 
     // ─── Next actions ───────────────────────────────
-    const getNextAction = (phase: JourneyPhase): { label: string; route: string } => {
+    const getNextAction = (phase: JourneyPhase): { label: string; route: string; field?: string } => {
       switch (phase) {
         case 1: {
-          if (!hasScope) return { label: 'Define Scope', route: `__envision__` };
-          if (!hasVision) return { label: 'Write Vision', route: `__envision__` };
-          if (!enoughStakeholders) return { label: 'Add Stakeholders', route: `__envision_stakeholders__` };
-          return { label: 'Add Principles', route: `__envision__` };
+          if (!hasScope) return { label: 'Define Scope', route: `__envision__`, field: 'scope' };
+          if (!hasVision) return { label: 'Write Vision', route: `__envision__`, field: 'visionStatement' };
+          if (!enoughStakeholders) return { label: 'Add Stakeholders', route: `__envision_stakeholders__`, field: 'stakeholders' };
+          return { label: 'Add Principles', route: `__envision__`, field: 'principles' };
         }
         case 2: {
           if (elements.length === 0) return { label: 'Add First Element', route: `/project/${projectId}` };

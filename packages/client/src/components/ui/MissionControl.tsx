@@ -155,7 +155,9 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
                         } else if (p.nextAction!.route.startsWith('__envision')) {
                           useUIStore.getState().setSidebarPanel('envision');
                           useUIStore.setState({ isSidebarOpen: true });
-                          if (p.nextAction!.route === '__envision__') useUIStore.getState().highlightField('scope');
+                          const targetField = p.nextAction!.field
+                            ?? (p.nextAction!.route === '__envision_stakeholders__' ? 'stakeholders' : 'scope');
+                          useUIStore.getState().highlightField(targetField);
                         } else {
                           navigate(p.nextAction!.route);
                         }

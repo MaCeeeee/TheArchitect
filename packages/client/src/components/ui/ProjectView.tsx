@@ -245,7 +245,9 @@ export default function ProjectView() {
                 } else if (currentPhaseInfo.nextAction!.route.startsWith('__envision')) {
                   useUIStore.getState().setSidebarPanel('envision');
                   useUIStore.setState({ isSidebarOpen: true });
-                  useUIStore.getState().highlightField('scope');
+                  const targetField = currentPhaseInfo.nextAction!.field
+                    ?? (currentPhaseInfo.nextAction!.route === '__envision_stakeholders__' ? 'stakeholders' : 'scope');
+                  useUIStore.getState().highlightField(targetField);
                 } else {
                   navigate(currentPhaseInfo.nextAction!.route);
                 }

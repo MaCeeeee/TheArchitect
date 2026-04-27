@@ -117,6 +117,12 @@ interface LiveFeedEntry {
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+// Reentrancy guard to break the loadPersonas ↔ syncStakeholdersAsPersonas
+// recursion: if a sync is in flight for a project, loadPersonas must NOT
+// trigger another auto-sync, otherwise a 304-cached empty `custom` list
+// causes an infinite POST/GET loop.
+const _personaSyncInFlight = new Set<string>();
+
 export const useSimulationStore = create<SimulationState>((set, get) => ({
   activeRunId: null,
   activeRun: null,
@@ -339,7 +345,9 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
       // Auto-sync: if project has stakeholders but no custom personas yet,
       // create personas from stakeholders so they appear as default agents.
-      if (custom.length === 0) {
+      // Skip when a sync is already in flight — otherwise a 304-cached empty
+      // response triggers infinite POST/GET recursion.
+      if (custom.length === 0 && !_personaSyncInFlight.has(projectId)) {
         const envisionState = useEnvisionStore.getState();
         // Ensure envision data is loaded (stakeholders come from the project)
         if (!envisionState.projectId || envisionState.projectId !== projectId) {
@@ -410,10 +418,15 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       return TYPE_MAP[type] || 'cto';
     }
 
+    const combinedName = stakeholder.role
+      ? `${stakeholder.name} (${stakeholder.role})`
+      : stakeholder.name;
+    const safeName = combinedName.length <= 100 ? combinedName : stakeholder.name.slice(0, 100);
+
     const input = {
       scope: 'project',
       basedOnPresetId: detectPreset(stakeholder.name, stakeholder.role, stakeholder.stakeholderType),
-      name: `${stakeholder.name} (${stakeholder.role})`,
+      name: safeName,
       stakeholderType: stakeholder.stakeholderType,
       visibleLayers: LAYER_MAP[stakeholder.stakeholderType] || ['business'],
       visibleDomains: DOMAIN_MAP[stakeholder.stakeholderType] || ['business'],
@@ -495,12 +508,22 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       return TYPE_MAP[type] || 'cto';
     }
 
+    // Server schema caps name at 100 chars. AI-extracted stakeholders sometimes
+    // carry full sentences in `role`, so the combined "Name (Role)" form blows
+    // past the limit. Keep the descriptive form when it fits; otherwise fall
+    // back to just the name (also clamped).
+    const buildPersonaName = (name: string, role: string): string => {
+      const combined = role ? `${name} (${role})` : name;
+      if (combined.length <= 100) return combined;
+      return name.slice(0, 100);
+    };
+
     const personas = stakeholders
       .filter((sh) => sh.name.trim())
       .map((sh) => ({
         scope: 'project',
         basedOnPresetId: detectPreset(sh.name, sh.role, sh.stakeholderType),
-        name: `${sh.name} (${sh.role})`,
+        name: buildPersonaName(sh.name, sh.role),
         stakeholderType: sh.stakeholderType,
         visibleLayers: LAYER_MAP[sh.stakeholderType] || ['business'],
         visibleDomains: DOMAIN_MAP[sh.stakeholderType] || ['business'],
@@ -514,11 +537,31 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
 
     if (personas.length === 0) return;
 
+    // Mark in-flight so the inner loadPersonas() does not recurse back here.
+    if (_personaSyncInFlight.has(projectId)) return;
+    _personaSyncInFlight.add(projectId);
     try {
-      await simulationAPI.bulkCreatePersonas(projectId, personas);
+      const res = await simulationAPI.bulkCreatePersonas(projectId, personas);
+      const data = res.data as {
+        created?: number;
+        skipped?: number;
+        failed?: number;
+        failures?: Array<{ name?: string; reason: string }>;
+      };
+      // Surface validation / persistence failures so users don't see a green
+      // "synced" toast while nothing actually shows up in MiroFish.
+      if ((data.failed ?? 0) > 0) {
+        const first = data.failures?.[0];
+        const detail = first ? `${first.name ?? ''} — ${first.reason}` : '';
+        toast.error(`${data.failed} persona${data.failed === 1 ? '' : 's'} rejected. ${detail}`.trim());
+        if (import.meta.env.DEV) console.warn('[SimulationStore] Persona sync failures:', data.failures);
+      }
       await get().loadPersonas(projectId);
     } catch (err) {
-      if (import.meta.env.DEV) console.warn('[SimulationStore] Auto-sync personas failed (non-critical):', err);
+      if (import.meta.env.DEV) console.warn('[SimulationStore] Auto-sync personas failed:', err);
+      toast.error('Failed to sync personas');
+    } finally {
+      _personaSyncInFlight.delete(projectId);
     }
   },
 

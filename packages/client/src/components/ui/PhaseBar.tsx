@@ -53,7 +53,10 @@ export default function PhaseBar() {
     } else if (route === '__envision__' || route === '__envision_stakeholders__') {
       useUIStore.getState().setSidebarPanel('envision');
       useUIStore.setState({ isSidebarOpen: true });
-      if (route === '__envision__') useUIStore.getState().highlightField('scope');
+      // Use the explicit field hint from the next-action; fallback to scope only as last resort
+      const targetField = phaseInfo.nextAction.field
+        ?? (route === '__envision_stakeholders__' ? 'stakeholders' : 'scope');
+      useUIStore.getState().highlightField(targetField);
     } else {
       navigate(route);
     }

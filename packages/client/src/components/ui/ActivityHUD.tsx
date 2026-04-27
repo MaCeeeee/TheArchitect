@@ -1,28 +1,66 @@
-import { useEffect } from 'react';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ArrowLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { useActivityViewStore } from '../../stores/activityViewStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useActivityGenerator, type GeneratedActivity } from '../../hooks/useActivityGenerator';
+import ActivitySuggestionModal from '../copilot/ActivitySuggestionModal';
 
 export default function ActivityHUD() {
   const stack = useActivityViewStore((s) => s.stack);
   const back = useActivityViewStore((s) => s.back);
+  const enter = useActivityViewStore((s) => s.enter);
   const isLoading = useActivityViewStore((s) => s.isLoading);
   const error = useActivityViewStore((s) => s.error);
+  const projectId = useArchitectureStore((s) => s.projectId);
   const projectName = useArchitectureStore((s) => s.projectName);
+  const allElements = useArchitectureStore((s) => s.elements);
   const current = stack.length > 0 ? stack[stack.length - 1] : null;
+
+  const generator = useActivityGenerator(projectId);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') back();
+      if (e.key === 'Escape') {
+        // Close AI modal first if open, otherwise pop drill-stack
+        if (showModal) {
+          setShowModal(false);
+          generator.reset();
+        } else {
+          back();
+        }
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [back]);
+  }, [back, showModal, generator]);
 
   if (!current) return null;
 
   const activityCount = current.activities.length;
   const flowCount = current.flows.length;
+  const processElement = allElements.find((e) => e.id === current.processId);
+
+  const handleGenerateClick = async () => {
+    setShowModal(true);
+    await generator.generate(current.processId);
+  };
+
+  const handleApply = async (selected: GeneratedActivity[]) => {
+    const result = await generator.apply(current.processId, selected, {
+      x: processElement?.position3D.x ?? 0,
+      z: processElement?.position3D.z ?? 0,
+    });
+    if (result.success) {
+      // Re-fetch the drill-frame so the new activities + connections render in the pyramid
+      setShowModal(false);
+      generator.reset();
+      await enter(current.processId);
+    } else {
+      // Keep modal open with error
+      console.error('[ActivityHUD] apply failed', result.error);
+    }
+  };
 
   return (
     <>
@@ -81,13 +119,47 @@ export default function ActivityHUD() {
         </div>
       )}
 
+      {/* Empty-state with AI-Generate CTA */}
       {!isLoading && !error && activityCount === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10 gap-4 pointer-events-none">
           <div className="text-[14px] text-[var(--text-tertiary)]">
             No activities defined for this process yet.
           </div>
+          <button
+            type="button"
+            onClick={handleGenerateClick}
+            className="pointer-events-auto flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold transition hover:scale-[1.02]"
+            style={{
+              background: 'linear-gradient(135deg, #00ff41 0%, #33ff66 100%)',
+              color: '#0a0a0a',
+              boxShadow: '0 0 20px rgba(0,255,65,0.4)',
+            }}
+          >
+            <Sparkles size={16} />
+            Generate Activities with AI
+          </button>
+          <div className="text-[10px] text-[var(--text-tertiary)] text-center max-w-[280px]">
+            Claude will analyze this process and propose 5–12 BPMN-sequential activities,<br />
+            using your project's roles, applications, and compliance standards as context.
+          </div>
         </div>
       )}
+
+      {/* AI-Suggestion Modal */}
+      <ActivitySuggestionModal
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          generator.reset();
+        }}
+        status={generator.state.status}
+        activities={generator.state.activities}
+        ragChunks={generator.state.ragChunks}
+        processName={generator.state.processName ?? current.processName}
+        durationMs={generator.state.durationMs}
+        errorMessage={generator.state.error}
+        onApply={handleApply}
+      />
     </>
   );
 }

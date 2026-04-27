@@ -258,18 +258,28 @@ export default function SimulationPanel() {
     );
   }, [runs]);
 
-  // Set default agents once presets are loaded — prefer synced stakeholder personas
+  // Set default agents once presets are loaded — prefer synced stakeholder personas.
+  // Also swap preset-defaults for synced personas the moment they become available
+  // (e.g. after the user clicks "Sync MiroFish Personas"), so the previously seeded
+  // CTO/Business-Unit/IT-Ops fallbacks do not persist.
+  const DEFAULT_PRESET_IDS = ['cto', 'business_unit_lead', 'it_operations_manager'];
   useEffect(() => {
-    if (presetPersonas.length > 0 && agents.length === 0) {
-      if (customPersonas.length > 0) {
-        // Use stakeholder-synced personas (up to 5) as default agents
-        setAgents(customPersonas.slice(0, 5));
-      } else {
-        const defaultIds = ['cto', 'business_unit_lead', 'it_operations_manager'];
-        setAgents(presetPersonas.filter((p) => defaultIds.includes(p.id)));
+    if (presetPersonas.length === 0) return;
+    setAgents((prev) => {
+      if (prev.length === 0) {
+        return customPersonas.length > 0
+          ? customPersonas.slice(0, 5)
+          : presetPersonas.filter((p) => DEFAULT_PRESET_IDS.includes(p.id));
       }
-    }
-  }, [presetPersonas, customPersonas, agents.length]);
+      // If the current agents are only the seed-defaults and synced personas just
+      // arrived, replace them with the user's stakeholders.
+      const isAllSeedDefaults = prev.every((a) => DEFAULT_PRESET_IDS.includes(a.id));
+      if (isAllSeedDefaults && customPersonas.length > 0) {
+        return customPersonas.slice(0, 5);
+      }
+      return prev;
+    });
+  }, [presetPersonas, customPersonas]);
 
   const handleStart = async () => {
     if (!projectId || !scenarioDescription.trim()) return;
