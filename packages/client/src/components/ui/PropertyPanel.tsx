@@ -5,12 +5,14 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
-import { governanceAPI, oracleAPI } from '../../services/api';
+import { governanceAPI, oracleAPI, architectureAPI } from '../../services/api';
 import type { PolicyViolationDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
 import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, type StandardConnectionType } from '@thearchitect/shared/src/constants/archimate-rules';
-import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
+import type { ElementType, ArchitectureElement, Connection } from '@thearchitect/shared/src/types/architecture.types';
+import { useProcessGenerator, type GeneratedProcess } from '../../hooks/useProcessGenerator';
+import ProcessSuggestionModal from '../copilot/ProcessSuggestionModal';
 
 const RISK_COLORS: Record<string, string> = {
   low: '#22c55e',
@@ -51,6 +53,47 @@ export default function PropertyPanel() {
     setSuitabilityResult(null);
     setSuitabilityExpanded(false);
   }, [selectedElementId]);
+
+  // ─── Generator B: AI-Generate Processes for selected Capability ───
+  const processGenerator = useProcessGenerator(projectId);
+  const [showProcessModal, setShowProcessModal] = useState(false);
+
+  const handleGenerateProcesses = async () => {
+    if (!element) return;
+    setShowProcessModal(true);
+    await processGenerator.generate(element.id);
+  };
+
+  const handleApplyProcesses = async (selected: GeneratedProcess[]) => {
+    if (!element || !projectId) return;
+    const result = await processGenerator.apply(element.id, selected, {
+      x: element.position3D?.x ?? 0,
+      z: element.position3D?.z ?? 0,
+    });
+    if (result.success) {
+      // Refresh elements + connections so the new processes show up in 3D + sidebar
+      try {
+        const [elemRes, connRes] = await Promise.all([
+          architectureAPI.getElements(projectId),
+          architectureAPI.getConnections(projectId),
+        ]);
+        const newElements = (elemRes.data?.data ?? elemRes.data) as ArchitectureElement[];
+        const newConnections = (connRes.data?.data ?? connRes.data) as Connection[];
+        useArchitectureStore.setState({ elements: newElements, connections: newConnections });
+      } catch {
+        // non-blocking
+      }
+      toast.success(`${result.processIds?.length ?? selected.length} processes added`);
+      setShowProcessModal(false);
+      processGenerator.reset();
+    } else {
+      toast.error(result.error || 'Failed to apply processes');
+    }
+  };
+
+  const isCapabilityType = element
+    ? element.type === 'business_capability' || element.type === 'capability'
+    : false;
 
   // Must call hooks unconditionally (before any early return)
   const health = useElementHealth(selectedElementId ?? null);
@@ -243,6 +286,29 @@ export default function PropertyPanel() {
                 placeholder="$0"
               />
             </div>
+          </Section>
+        )}
+
+        {/* Capability AI-Generate-Processes CTA (Generator B) */}
+        {isCapabilityType && (
+          <Section title="AI Decompose">
+            <button
+              type="button"
+              onClick={handleGenerateProcesses}
+              className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition hover:scale-[1.01]"
+              style={{
+                background: 'linear-gradient(135deg, #00ff41 0%, #33ff66 100%)',
+                color: '#0a0a0a',
+                boxShadow: '0 0 10px rgba(0,255,65,0.25)',
+              }}
+              title="Claude proposes 3-7 BPMN-style processes that realize this capability"
+            >
+              <Sparkles size={12} />
+              Generate Processes with AI
+            </button>
+            <p className="mt-1.5 text-[9px] text-[var(--text-tertiary)] leading-snug">
+              Decompose this capability into 3-7 business processes using project context + uploaded standards (RAG).
+            </p>
           </Section>
         )}
 
@@ -486,6 +552,22 @@ export default function PropertyPanel() {
           )}
         </div>
       </div>
+
+      {/* Generator B: Process-Suggestion Modal */}
+      <ProcessSuggestionModal
+        isOpen={showProcessModal}
+        onClose={() => {
+          setShowProcessModal(false);
+          processGenerator.reset();
+        }}
+        status={processGenerator.state.status}
+        processes={processGenerator.state.processes}
+        ragChunks={processGenerator.state.ragChunks}
+        capabilityName={processGenerator.state.capabilityName ?? element.name}
+        durationMs={processGenerator.state.durationMs}
+        errorMessage={processGenerator.state.error}
+        onApply={handleApplyProcesses}
+      />
     </aside>
   );
 }

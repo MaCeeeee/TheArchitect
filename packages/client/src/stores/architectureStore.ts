@@ -326,3 +326,11 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     });
   },
 }));
+
+
+// Dev-only: expose store on window for smoke tests + debugging.
+// No-op in production builds.
+if (typeof window !== "undefined" && import.meta.env.DEV) {
+  (window as unknown as { useArchitectureStore: typeof useArchitectureStore }).useArchitectureStore = useArchitectureStore;
+}
+

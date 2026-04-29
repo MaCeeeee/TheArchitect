@@ -44,7 +44,7 @@ export async function generateActivitiesForProcess(opts: {
   projectId: string;
   processId: string;
   onEvent: (event: GeneratorEvent) => void;
-}): Promise<{ activities: GeneratedActivity[]; durationMs: number }> {
+}): Promise<{ activities: GeneratedActivity[]; durationMs: number; tokenEstimate: number }> {
   const start = Date.now();
 
   // 1) Load process from Neo4j
@@ -98,7 +98,7 @@ export async function generateActivitiesForProcess(opts: {
     '[ActivityGenerator] generation complete'
   );
 
-  return { activities, durationMs };
+  return { activities, durationMs, tokenEstimate };
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

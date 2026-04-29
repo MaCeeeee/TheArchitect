@@ -1,5 +1,6 @@
 // UC-ADD-004 — AI-Generator Routes
 // Generator A: Process → Activities (SSE stream)
+// Generator B: Capability → Processes (SSE stream + apply)
 // Generator C: PDF/Document → Full-Hierarchy (SSE stream + apply)
 
 import { Router, Request, Response } from 'express';
@@ -16,12 +17,18 @@ import {
   GeneratorEvent,
 } from '../services/activityGenerator.service';
 import {
+  generateProcessesForCapability,
+  GeneratedProcess,
+  ProcessGeneratorEvent,
+} from '../services/processGenerator.service';
+import {
   extractArchitectureFromDocument,
   HierarchyEvent,
   ExtractedHierarchy,
   Stakeholder as AIStakeholder,
 } from '../services/architectureGenerator.service';
 import { extractText, isSupportedDocument, getSupportedFormats } from '../services/document-parser.service';
+import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -49,7 +56,26 @@ router.post(
     };
 
     try {
-      await generateActivitiesForProcess({ projectId, processId, onEvent: sendEvent });
+      const result = await generateActivitiesForProcess({ projectId, processId, onEvent: sendEvent });
+      // AC-A9: log token-cost of the generation in the project audit log
+      const userId = (req as any).user?._id?.toString();
+      if (userId) {
+        await createAuditEntry({
+          userId,
+          projectId,
+          action: 'ai_generate_activities',
+          entityType: 'architecture_element',
+          entityId: processId,
+          after: {
+            activitiesProposed: result.activities.length,
+            tokenEstimate: result.tokenEstimate,
+            durationMs: result.durationMs,
+          },
+          ip: req.ip || req.socket.remoteAddress || '',
+          userAgent: req.get('user-agent') || '',
+          riskLevel: 'low',
+        });
+      }
     } catch (err) {
       log.error({ err, projectId, processId }, '[AI-Generator] activity generation failed');
       sendEvent({ type: 'error', message: (err as Error).message });
@@ -167,6 +193,151 @@ router.post(
   },
 );
 
+// ─── Generator B — Capability → Processes (SSE) ────────────────────────────
+
+router.post(
+  '/projects/:projectId/capabilities/:capabilityId/generate-processes',
+  requireProjectAccess('viewer'),
+  rateLimit({ windowMs: 60 * 60 * 1000, max: 5, name: 'aiGenerator-processes' }),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const capabilityId = String(req.params.capabilityId);
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    const sendEvent = (event: ProcessGeneratorEvent) => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    try {
+      const result = await generateProcessesForCapability({ projectId, capabilityId, onEvent: sendEvent });
+      const userId = (req as any).user?._id?.toString();
+      if (userId) {
+        await createAuditEntry({
+          userId,
+          projectId,
+          action: 'ai_generate_processes',
+          entityType: 'architecture_element',
+          entityId: capabilityId,
+          after: {
+            processesProposed: result.processes.length,
+            tokenEstimate: result.tokenEstimate,
+            durationMs: result.durationMs,
+          },
+          ip: req.ip || req.socket.remoteAddress || '',
+          userAgent: req.get('user-agent') || '',
+          riskLevel: 'low',
+        });
+      }
+    } catch (err) {
+      log.error({ err, projectId, capabilityId }, '[AI-Generator] process generation failed');
+      sendEvent({ type: 'error', message: (err as Error).message });
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  },
+);
+
+// ─── Apply Processes (bulk persist after user-accept) ──────────────────────
+
+interface ApplyProcessesRequest {
+  processes: GeneratedProcess[];
+  parentX?: number;
+  parentZ?: number;
+}
+
+router.post(
+  '/projects/:projectId/capabilities/:capabilityId/apply-processes',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const capabilityId = String(req.params.capabilityId);
+    const body = req.body as ApplyProcessesRequest;
+
+    if (!Array.isArray(body?.processes) || body.processes.length === 0) {
+      return res.status(400).json({ error: 'processes array is required' });
+    }
+
+    const parentX = body.parentX ?? 0;
+    const parentZ = body.parentZ ?? 0;
+    const Y_BUSINESS = 8;
+
+    const createdIds: string[] = [];
+
+    try {
+      // Layout child processes around the parent capability on the business layer.
+      // Span horizontally so they don't pile on top of each other.
+      const span = Math.max(20, body.processes.length * 5);
+      const layoutX = (i: number, total: number) =>
+        total > 1 ? parentX - span / 2 + (i / (total - 1)) * span : parentX;
+
+      for (let i = 0; i < body.processes.length; i++) {
+        const p = body.processes[i];
+        const pId = `${capabilityId}-proc-ai-${Date.now()}-${i + 1}`;
+        createdIds.push(pId);
+
+        const metadata = {
+          source: 'ai-generated',
+          aiGenerated: true,
+          aiGeneratedAt: new Date().toISOString(),
+          parentCapability: capabilityId,
+          generator: 'B',
+        };
+
+        await runCypher(
+          `CREATE (e:ArchitectureElement {
+            id: $id, projectId: $projectId, type: 'business_process', name: $name,
+            description: $description, layer: 'business', togafDomain: 'business',
+            maturityLevel: 3, riskLevel: 'low', status: 'current',
+            posX: $posX, posY: $posY, posZ: $posZ,
+            metadataJson: $metadataJson,
+            createdAt: datetime(), updatedAt: datetime()
+          }) RETURN e`,
+          {
+            id: pId,
+            projectId,
+            name: p.name,
+            description: p.description,
+            posX: layoutX(i, body.processes.length),
+            posY: Y_BUSINESS,
+            posZ: parentZ,
+            metadataJson: JSON.stringify(metadata),
+          },
+        );
+
+        // Composition: parent capability → child process
+        await runCypher(
+          `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
+                 (proc:ArchitectureElement {id: $procId, projectId: $projectId})
+           CREATE (cap)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(proc)
+           RETURN r`,
+          { capabilityId, procId: pId, projectId, connId: uuid() },
+        );
+      }
+
+      log.info(
+        { projectId, capabilityId, processesCreated: createdIds.length },
+        '[AI-Generator] processes applied successfully',
+      );
+
+      res.json({
+        success: true,
+        processIds: createdIds,
+        count: createdIds.length,
+      });
+    } catch (err) {
+      log.error({ err, projectId, capabilityId }, '[AI-Generator] apply-processes failed');
+      res.status(500).json({ error: (err as Error).message });
+    }
+  },
+);
+
 // ─── Generator C — PDF → Full-Hierarchy (SSE) ───────────────────────────────
 
 const docUpload = multer({
@@ -224,7 +395,7 @@ router.post(
         return res.end();
       }
 
-      await extractArchitectureFromDocument({
+      const result = await extractArchitectureFromDocument({
         projectId,
         fileBuffer: file.buffer,
         fileName: file.originalname,
@@ -232,6 +403,33 @@ router.post(
         documentText,
         onEvent: sendEvent,
       });
+      const userId = (req as any).user?._id?.toString();
+      if (userId) {
+        await createAuditEntry({
+          userId,
+          projectId,
+          action: 'ai_generate_hierarchy',
+          entityType: 'architecture_hierarchy',
+          entityId: file.originalname,
+          after: {
+            fileName: file.originalname,
+            fileSize: file.size,
+            documentChars: documentText.length,
+            tokenEstimate: result.tokenEstimate,
+            durationMs: result.durationMs,
+            counts: {
+              visionStatements: result.hierarchy.vision.visionStatements.length,
+              stakeholders: result.hierarchy.stakeholders.length,
+              capabilities: result.hierarchy.capabilities.length,
+              processes: result.hierarchy.processes.length,
+              activities: result.hierarchy.activities.length,
+            },
+          },
+          ip: req.ip || req.socket.remoteAddress || '',
+          userAgent: req.get('user-agent') || '',
+          riskLevel: 'medium',
+        });
+      }
     } catch (err) {
       log.error({ err, projectId }, '[Gen-C] hierarchy extraction failed');
       sendEvent({ type: 'error', message: (err as Error).message });
