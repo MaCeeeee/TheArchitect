@@ -926,4 +926,18 @@ router.get('/oauth/status', authenticate, async (req: Request, res: Response) =>
   });
 });
 
+// ── OAuth Provider Availability (public, used by LoginPage feature detection) ──
+// Returns ONLY boolean availability flags — no secrets, no env values, no admin info.
+// Lets the client hide unconfigured provider buttons instead of letting users click
+// a button that will silently fail.
+
+router.get('/oauth/providers', (_req: Request, res: Response) => {
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json({
+    google: !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET,
+    github: !!process.env.GITHUB_CLIENT_ID && !!process.env.GITHUB_CLIENT_SECRET,
+    microsoft: !!process.env.MICROSOFT_CLIENT_ID && !!process.env.MICROSOFT_CLIENT_SECRET,
+  });
+});
+
 export default router;
