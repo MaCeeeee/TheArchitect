@@ -13,6 +13,7 @@ import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, t
 import type { ElementType, ArchitectureElement, Connection } from '@thearchitect/shared/src/types/architecture.types';
 import { useProcessGenerator, type GeneratedProcess } from '../../hooks/useProcessGenerator';
 import ProcessSuggestionModal from '../copilot/ProcessSuggestionModal';
+import { useActivityViewStore } from '../../stores/activityViewStore';
 
 const RISK_COLORS: Record<string, string> = {
   low: '#22c55e',
@@ -47,7 +48,14 @@ export default function PropertyPanel() {
   const [suitabilityLoading, setSuitabilityLoading] = useState(false);
   const [suitabilityExpanded, setSuitabilityExpanded] = useState(false);
 
-  const element = elements.find((el) => el.id === selectedElementId);
+  // Activity drill-down may hold activities that haven't been refetched into the
+  // main store yet (e.g. immediately after Generator-A apply). Fall back to the
+  // current drill-frame so clicks on activities still populate the panel.
+  const drillStack = useActivityViewStore((s) => s.stack);
+  const element = elements.find((el) => el.id === selectedElementId)
+    ?? (selectedElementId
+      ? drillStack.flatMap((f) => f.activities).find((a) => a.id === selectedElementId)
+      : undefined);
   // Reset suitability when element changes
   useEffect(() => {
     setSuitabilityResult(null);

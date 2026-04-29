@@ -4,6 +4,8 @@ import { useActivityViewStore } from '../../stores/activityViewStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useActivityGenerator, type GeneratedActivity } from '../../hooks/useActivityGenerator';
 import ActivitySuggestionModal from '../copilot/ActivitySuggestionModal';
+import { architectureAPI } from '../../services/api';
+import type { ArchitectureElement, Connection } from '@thearchitect/shared/src/types/architecture.types';
 
 export default function ActivityHUD() {
   const stack = useActivityViewStore((s) => s.stack);
@@ -56,6 +58,22 @@ export default function ActivityHUD() {
       setShowModal(false);
       generator.reset();
       await enter(current.processId);
+      // Also refresh the global element + connection store so the new activities
+      // show up in PropertyPanel when clicked. Without this, clicks on freshly
+      // applied activities leave the panel empty (they live only in the drill-frame).
+      if (projectId) {
+        try {
+          const [elemRes, connRes] = await Promise.all([
+            architectureAPI.getElements(projectId),
+            architectureAPI.getConnections(projectId),
+          ]);
+          const newElements = (elemRes.data?.data ?? elemRes.data) as ArchitectureElement[];
+          const newConnections = (connRes.data?.data ?? connRes.data) as Connection[];
+          useArchitectureStore.setState({ elements: newElements, connections: newConnections });
+        } catch {
+          // Non-fatal — the PropertyPanel has a drill-frame fallback.
+        }
+      }
     } else {
       // Keep modal open with error
       console.error('[ActivityHUD] apply failed', result.error);
