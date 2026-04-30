@@ -489,11 +489,73 @@ async function loadProjectVision(projectId: string): Promise<ProjectVisionContex
 
 // ─── Round Summary Builder ───
 
+interface DisagreementEntry {
+  elementName: string;
+  positions: Array<{ agentName: string; position: AgentPosition; actionReasoning: string }>;
+}
+
+/**
+ * Surfaces elements where multiple agents took DIFFERENT positions or proposed
+ * conflicting action types. Without this, the next round's agents only see a
+ * narrative summary that flattens disagreement into per-agent paragraphs and
+ * the LLM has to infer conflicts itself — which it usually doesn't.
+ */
+function findDisagreements(turns: AgentTurn[]): DisagreementEntry[] {
+  // Map element name → agent positions that touched it
+  const byElement = new Map<string, Map<string, { position: AgentPosition; actionReasoning: string }>>();
+
+  for (const turn of turns) {
+    for (const action of turn.validatedActions) {
+      const elName = action.targetElementName || '(unknown element)';
+      if (!byElement.has(elName)) byElement.set(elName, new Map());
+      // If same agent touches the same element multiple times, keep the first
+      // (action reasoning is more specific than overall position).
+      const elMap = byElement.get(elName)!;
+      if (!elMap.has(turn.agentName)) {
+        elMap.set(turn.agentName, {
+          position: turn.position,
+          actionReasoning: action.reasoning || turn.reasoning,
+        });
+      }
+    }
+  }
+
+  const disagreements: DisagreementEntry[] = [];
+  for (const [elementName, agentMap] of byElement) {
+    if (agentMap.size < 2) continue; // single agent → no conflict to surface
+    const positions = Array.from(agentMap.entries()).map(([agentName, p]) => ({
+      agentName,
+      position: p.position,
+      actionReasoning: p.actionReasoning,
+    }));
+    const distinctPositions = new Set(positions.map((p) => p.position));
+    if (distinctPositions.size < 2) continue; // all same position → not a disagreement
+    disagreements.push({ elementName, positions });
+  }
+
+  return disagreements;
+}
+
 function buildRoundSummary(roundNum: number, turns: AgentTurn[]): string {
   const lines: string[] = [`## Round ${roundNum} Results`];
 
+  // Surface disagreements first — this is what the next round must react to.
+  const disagreements = findDisagreements(turns);
+  if (disagreements.length > 0) {
+    lines.push(`\n### Disagreements in Round ${roundNum} (resolve these next round)`);
+    for (const d of disagreements) {
+      lines.push(`- On "${d.elementName}":`);
+      for (const p of d.positions) {
+        const reason = p.actionReasoning ? p.actionReasoning.slice(0, 220) : '(no reasoning)';
+        lines.push(`    - ${p.agentName} (${p.position.toUpperCase()}): ${reason}`);
+      }
+    }
+  } else {
+    lines.push(`\n### All agents aligned this round — actively look for blind spots, missed constraints, or stakeholders whose concerns were overlooked.`);
+  }
+
   for (const turn of turns) {
-    lines.push(`### ${turn.agentName} (Position: ${turn.position})`);
+    lines.push(`\n### ${turn.agentName} (Position: ${turn.position})`);
     lines.push(turn.reasoning);
 
     if (turn.validatedActions.length > 0) {
