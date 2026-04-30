@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { buildAgentContext } from './agentContextFilter';
+import { buildAgentContext, type ProjectVisionContext } from './agentContextFilter';
 import { validateActions } from './actionValidator';
 import { EmergenceTracker } from './emergenceTracker';
+import { Project } from '../../models/Project';
 import type {
   AgentPersona,
   AgentTurn,
@@ -66,6 +67,11 @@ export class MiroFishEngine {
     let previousRoundSummary: string | undefined;
     const startTime = Date.now();
 
+    // Fetch project vision once — injected into every agent's context as
+    // non-negotiable framing. Without this, agents only see scenario text
+    // and default to APPROVE because they have no principle to defend.
+    const projectVision = await loadProjectVision(projectId);
+
     for (let roundNum = 0; roundNum < config.maxRounds; roundNum++) {
       if (this.cancelled) break;
 
@@ -86,6 +92,7 @@ export class MiroFishEngine {
           previousRoundSummary,
           roundNum,
           onEvent,
+          projectVision,
         );
 
         agentTurns.push(turn);
@@ -236,11 +243,12 @@ export class MiroFishEngine {
     previousRoundSummary: string | undefined,
     roundNum: number,
     onEvent: (event: SimulationStreamEvent) => void,
+    projectVision?: ProjectVisionContext,
   ): Promise<AgentTurn> {
     const turnStart = Date.now();
 
     // Build filtered context
-    const context = await buildAgentContext(projectId, persona, previousRoundSummary);
+    const context = await buildAgentContext(projectId, persona, previousRoundSummary, projectVision);
 
     // Build system prompt
     const systemPrompt = buildAgentSystemPrompt(persona, config, context);
@@ -456,6 +464,27 @@ function validatePosition(raw: unknown): AgentPosition {
   const valid: AgentPosition[] = ['approve', 'reject', 'modify', 'abstain'];
   const str = String(raw || 'abstain').toLowerCase() as AgentPosition;
   return valid.includes(str) ? str : 'abstain';
+}
+
+// ─── Project Vision Loader ───
+
+async function loadProjectVision(projectId: string): Promise<ProjectVisionContext | undefined> {
+  try {
+    const doc = await Project.findById(projectId).select('vision').lean();
+    if (!doc?.vision) return undefined;
+    const v = doc.vision;
+    return {
+      visionStatement: String(v.visionStatement || ''),
+      principles: Array.isArray(v.principles) ? v.principles.map(String) : [],
+      drivers: Array.isArray(v.drivers) ? v.drivers.map(String) : [],
+      goals: Array.isArray(v.goals) ? v.goals.map(String) : [],
+    };
+  } catch (err) {
+    // Vision is enriching context, not critical — degrade gracefully if MongoDB
+    // is slow/unavailable so the simulation can still run.
+    console.warn('[MiroFish] Failed to load project vision:', err);
+    return undefined;
+  }
 }
 
 // ─── Round Summary Builder ───

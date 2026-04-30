@@ -21,6 +21,18 @@ interface FilteredConnection {
 }
 
 /**
+ * Project-level vision context shared across all agents.
+ * Vision/principles/drivers/goals are non-negotiable framing — agents must
+ * reject actions that violate principles, regardless of scenario pressure.
+ */
+export interface ProjectVisionContext {
+  visionStatement: string;
+  principles: string[];
+  drivers: string[];
+  goals: string[];
+}
+
+/**
  * Builds a filtered architecture context for a specific agent persona.
  * Only includes elements within the persona's visible layers and domains.
  * Injects hard constraints (budget, risk threshold) into the prompt.
@@ -29,6 +41,7 @@ export async function buildAgentContext(
   projectId: string,
   persona: AgentPersona,
   previousRoundSummary?: string,
+  projectVision?: ProjectVisionContext,
 ): Promise<string> {
   // Query elements filtered by persona's visibility
   const elementRecords = await runCypher(
@@ -89,6 +102,34 @@ export async function buildAgentContext(
 
   // Build context text
   const lines: string[] = [];
+
+  // Project vision / principles / drivers / goals — non-negotiable framing.
+  // Agents must reject actions that violate principles regardless of scenario pressure.
+  if (projectVision) {
+    const hasVision = (projectVision.visionStatement || '').trim().length > 0;
+    const hasPrinciples = projectVision.principles && projectVision.principles.length > 0;
+    const hasDrivers = projectVision.drivers && projectVision.drivers.length > 0;
+    const hasGoals = projectVision.goals && projectVision.goals.length > 0;
+    if (hasVision || hasPrinciples || hasDrivers || hasGoals) {
+      lines.push(`## Enterprise Vision (NON-NEGOTIABLE)`);
+      if (hasVision) {
+        lines.push(`Vision: ${projectVision.visionStatement.trim()}`);
+      }
+      if (hasPrinciples) {
+        lines.push(`Principles (any action violating these MUST be rejected):`);
+        for (const p of projectVision.principles) {
+          if (p && p.trim()) lines.push(`  - ${p.trim()}`);
+        }
+      }
+      if (hasGoals) {
+        lines.push(`Project goals: ${projectVision.goals.filter((g) => g && g.trim()).join('; ')}`);
+      }
+      if (hasDrivers) {
+        lines.push(`Drivers: ${projectVision.drivers.filter((d) => d && d.trim()).join('; ')}`);
+      }
+      lines.push('');
+    }
+  }
 
   // Element listing with IDs (critical for action validation)
   lines.push(`## Your Visible Architecture (${elements.length} elements)`);
