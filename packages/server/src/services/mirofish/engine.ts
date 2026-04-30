@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { buildAgentContext, type ProjectVisionContext } from './agentContextFilter';
 import { validateActions } from './actionValidator';
 import { EmergenceTracker } from './emergenceTracker';
+import { parseScenarioConflicts, renderParsedScenario, type ParsedScenario } from './scenarioParser';
 import { Project } from '../../models/Project';
 import type {
   AgentPersona,
@@ -72,6 +73,11 @@ export class MiroFishEngine {
     // and default to APPROVE because they have no principle to defend.
     const projectVision = await loadProjectVision(projectId);
 
+    // Parse scenario into structured conflict-pairs (regex+heuristic). Free-text
+    // scenarios bury opposing positions in prose; agents miss them. The parsed
+    // form makes "CFO proposes X / HR insists Y" explicit before reasoning starts.
+    const parsedScenario = parseScenarioConflicts(config.scenarioDescription || '', config.agents);
+
     for (let roundNum = 0; roundNum < config.maxRounds; roundNum++) {
       if (this.cancelled) break;
 
@@ -93,6 +99,7 @@ export class MiroFishEngine {
           roundNum,
           onEvent,
           projectVision,
+          parsedScenario,
         );
 
         agentTurns.push(turn);
@@ -244,14 +251,17 @@ export class MiroFishEngine {
     roundNum: number,
     onEvent: (event: SimulationStreamEvent) => void,
     projectVision?: ProjectVisionContext,
+    parsedScenario?: ParsedScenario,
   ): Promise<AgentTurn> {
     const turnStart = Date.now();
 
     // Build filtered context
     const context = await buildAgentContext(projectId, persona, previousRoundSummary, projectVision);
 
-    // Build system prompt
-    const systemPrompt = buildAgentSystemPrompt(persona, config, context);
+    // Build system prompt (parsed-scenario block injected after the free-text
+    // scenario so the agent sees both: the original prose AND the structured
+    // conflict pairs extracted from it).
+    const systemPrompt = buildAgentSystemPrompt(persona, config, context, parsedScenario);
 
     // Call LLM
     let fullResponse = '';
@@ -326,14 +336,18 @@ function buildAgentSystemPrompt(
   persona: AgentPersona,
   config: SimulationConfig,
   filteredContext: string,
+  parsedScenario?: ParsedScenario,
 ): string {
+  const parsedBlock = parsedScenario ? renderParsedScenario(parsedScenario) : '';
+  const parsedBlockSection = parsedBlock ? `\n${parsedBlock}\n` : '';
+
   return `You are "${persona.name}", a ${persona.stakeholderType.replace('_', ' ')} stakeholder in an Enterprise Architecture transformation review.
 
 ${persona.systemPromptSuffix}
 
 ## Scenario
 ${config.scenarioDescription}
-
+${parsedBlockSection}
 ## Your Priorities
 ${persona.priorities.map((p) => `- ${p.replace('_', ' ')}`).join('\n')}
 
