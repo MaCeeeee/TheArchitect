@@ -123,6 +123,67 @@ const API_BASE = import.meta.env.VITE_API_URL || '/api';
 // causes an infinite POST/GET loop.
 const _personaSyncInFlight = new Set<string>();
 
+// ─── Persona prompt hardening (Patch 2) ─────────────────────────────────────
+// Without these, auto-extracted personas defaulted to APPROVE because their
+// systemPromptSuffix contained only attitude tone ("you are skeptical") and
+// interest list — no concrete REJECT/MODIFY trigger. These maps give each
+// stakeholder type a non-negotiable line they MUST defend.
+
+const STAKEHOLDER_HARD_CONSTRAINT: Record<string, string> = {
+  external:
+    'HARD CONSTRAINT: You MUST REJECT any action that lacks audit-trail evidence or violates regulatory requirements. Use REJECT or MODIFY whenever traceability is unclear, and demand concrete evidence in your reasoning.',
+  c_level:
+    'HARD CONSTRAINT: You MUST REJECT actions that exceed budget thresholds or violate stated strategic priorities. When cost or risk is unquantified, MODIFY with a concrete request for that data instead of approving blind.',
+  business_unit:
+    'HARD CONSTRAINT: You MUST MODIFY actions that lack operational feasibility or impact your team\'s capacity beyond stated limits. Demand a phased rollout or capacity plan before approving.',
+  it_ops:
+    'HARD CONSTRAINT: You MUST REJECT actions that risk system stability without rollback plans, monitoring, or runbook updates. MODIFY when these are absent.',
+  data_team:
+    'HARD CONSTRAINT: You MUST MODIFY actions affecting data lineage, schema, or quality without documented controls. REJECT only when data integrity is at concrete risk.',
+};
+
+const ATTITUDE_PROMPT_HARDENED: Record<string, string> = {
+  champion:
+    'You are an enthusiastic supporter of architecture changes. Focus on benefits and opportunities — but still ENFORCE your hard constraint above.',
+  supporter:
+    'You are generally supportive but want to see clear justification. APPROVE only when justification is concrete; otherwise MODIFY with the specific data you need.',
+  neutral:
+    'You evaluate changes objectively, weighing benefits against risks equally. Default to MODIFY when evidence is incomplete; APPROVE requires positive proof.',
+  critic:
+    'You are skeptical of changes. Default to REJECT or MODIFY unless the action passes your hard constraint above. APPROVE is reserved for proposals that resolve a concrete risk.',
+};
+
+const CONFLICT_TRIGGER_PROMPT =
+  'CONFLICT-TRIGGER: Look at the scenario for stakeholders whose interests conflict with yours (e.g., cost vs. compliance, speed vs. audit, in-house vs. outsource). Identify your opposing position before evaluating actions, and reference it in your reasoning.';
+
+/**
+ * Builds a hardened systemPromptSuffix for an auto-extracted persona.
+ *
+ * Layered structure (each layer is a separate paragraph in the prompt):
+ *   1. Stakeholder-type hard constraint  — the non-negotiable line
+ *   2. Attitude prompt                   — tone (champion / supporter / ...)
+ *   3. Conflict trigger                  — instruction to find opposing positions
+ *   4. Personal interests                — domain keywords (still useful as soft signal)
+ *
+ * Without this hardening, agents defaulted to APPROVE because they had no
+ * REJECT/MODIFY trigger. With it, each persona has a clear line they must defend.
+ */
+function buildHardenedSystemPromptSuffix(
+  stakeholderType: string,
+  attitude: string,
+  interests: string[],
+): string {
+  const constraint = STAKEHOLDER_HARD_CONSTRAINT[stakeholderType] || '';
+  const tone = ATTITUDE_PROMPT_HARDENED[attitude] || ATTITUDE_PROMPT_HARDENED.neutral;
+  const interestsList = (interests || []).filter((i) => i && i.trim()).join(', ');
+  const interestsLine = interestsList
+    ? `Your domain interests: ${interestsList}.`
+    : '';
+  return [constraint, tone, CONFLICT_TRIGGER_PROMPT, interestsLine]
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 export const useSimulationStore = create<SimulationState>((set, get) => ({
   activeRunId: null,
   activeRun: null,
@@ -395,12 +456,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     };
     const DEPTH_MAP: Record<string, number> = { high: 5, medium: 3, low: 1 };
     const CAPACITY_MAP: Record<string, number> = { high: 8, medium: 5, low: 3 };
-    const ATTITUDE_PROMPT: Record<string, string> = {
-      champion: 'You are an enthusiastic supporter of architecture changes. You focus on benefits and opportunities.',
-      supporter: 'You are generally supportive but want to see clear justification for changes.',
-      neutral: 'You evaluate changes objectively, weighing benefits against risks equally.',
-      critic: 'You are skeptical of changes. You focus on risks, costs, and potential negative impacts.',
-    };
     // Find closest preset — use name/role keywords for smarter matching
     function detectPreset(name: string, role: string, type: string): string {
       const text = `${name} ${role}`.toLowerCase();
@@ -434,7 +489,11 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
       expectedCapacity: CAPACITY_MAP[stakeholder.influence] || 5,
       riskThreshold: stakeholder.attitude === 'critic' ? 'low' : stakeholder.attitude === 'champion' ? 'high' : 'medium',
       priorities: stakeholder.interests.length > 0 ? stakeholder.interests : ['General architecture oversight'],
-      systemPromptSuffix: `${ATTITUDE_PROMPT[stakeholder.attitude] || ''} Your key interests are: ${stakeholder.interests.join(', ')}.`,
+      systemPromptSuffix: buildHardenedSystemPromptSuffix(
+        stakeholder.stakeholderType,
+        stakeholder.attitude,
+        stakeholder.interests,
+      ),
       description: `Imported from project stakeholder: ${stakeholder.name}, ${stakeholder.role}`,
     };
 
@@ -489,12 +548,6 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
     };
     const DEPTH_MAP: Record<string, number> = { high: 5, medium: 3, low: 1 };
     const CAPACITY_MAP: Record<string, number> = { high: 8, medium: 5, low: 3 };
-    const ATTITUDE_PROMPT: Record<string, string> = {
-      champion: 'You are an enthusiastic supporter of architecture changes. You focus on benefits and opportunities.',
-      supporter: 'You are generally supportive but want to see clear justification for changes.',
-      neutral: 'You evaluate changes objectively, weighing benefits against risks equally.',
-      critic: 'You are skeptical of changes. You focus on risks, costs, and potential negative impacts.',
-    };
     function detectPreset(name: string, role: string, type: string): string {
       const text = `${name} ${role}`.toLowerCase();
       if (text.includes('ciso') || text.includes('security')) return 'security_officer';
@@ -531,7 +584,7 @@ export const useSimulationStore = create<SimulationState>((set, get) => ({
         expectedCapacity: CAPACITY_MAP[sh.influence] || 5,
         riskThreshold: sh.attitude === 'critic' ? 'low' : sh.attitude === 'champion' ? 'high' : 'medium',
         priorities: sh.interests.length > 0 ? sh.interests : ['General architecture oversight'],
-        systemPromptSuffix: `${ATTITUDE_PROMPT[sh.attitude] || ''} Your key interests are: ${sh.interests.join(', ')}.`,
+        systemPromptSuffix: buildHardenedSystemPromptSuffix(sh.stakeholderType, sh.attitude, sh.interests),
         description: `Auto-synced from stakeholder: ${sh.name}`,
       }));
 
