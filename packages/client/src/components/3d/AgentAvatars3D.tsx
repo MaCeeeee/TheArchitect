@@ -24,10 +24,13 @@ export default function AgentAvatars3D() {
   const agents = activeRun?.config?.agents;
   const isVisible = isRunning || (showOverlay && activeRun?.result != null);
 
-  // Build element position map
+  // Build element position map — skip elements that are filtered from main render
+  // (activities live in drill-frame at y=-100, policy nodes are HUD overlays).
+  // Lines drawn to those targets would spike below the visible layer stack.
   const elementPositionMap = useMemo(() => {
     const map = new Map<string, THREE.Vector3>();
     for (const el of elements) {
+      if (el.metadata?.isActivity || el.metadata?.isPolicyNode) continue;
       map.set(el.id, new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
     }
     return map;

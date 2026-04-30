@@ -332,7 +332,7 @@ export default function SimulationPanel() {
   return (
     <div className="flex flex-col h-full text-sm">
       {/* Tab bar */}
-      <div className="flex border-b border-[var(--border-subtle)] px-2">
+      <div className="flex border-b border-[var(--border-subtle)] px-2 items-center">
         {tabs.map((mode) => (
           <button
             key={mode}
@@ -346,6 +346,17 @@ export default function SimulationPanel() {
             {mode === 'comparison' ? 'Compare' : mode}
           </button>
         ))}
+        {isRunning && (
+          <button
+            type="button"
+            onClick={() => setViewMode('running')}
+            title="Jump to live simulation feed"
+            className="ml-auto mr-1 flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#a78bfa]/15 border border-[#a78bfa]/40 text-[#a78bfa] text-[10px] font-medium hover:bg-[#a78bfa]/25 transition"
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#a78bfa] animate-pulse" />
+            Sim running · R{currentRound + 1}/{activeRun?.config?.maxRounds ?? maxRounds}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -840,7 +851,14 @@ function ResultsView({
   runId: string | null;
 }) {
   const [exportLoading, setExportLoading] = useState(false);
+  const [expandedFatigueAgent, setExpandedFatigueAgent] = useState<string | null>(null);
   const elements = useArchitectureStore((s) => s.elements);
+  const discussionBubbles = useSimulationStore((s) => s.discussionBubbles);
+  const isRunning = useSimulationStore((s) => s.isRunning);
+  const currentRound = useSimulationStore((s) => s.currentRound);
+  const currentAgent = useSimulationStore((s) => s.currentAgent);
+  const streamingText = useSimulationStore((s) => s.streamingText);
+  const runningMaxRounds = useSimulationStore((s) => s.activeRun?.config?.maxRounds ?? 5);
 
   const scope = useMemo(() => {
     const targetIds: string[] = activeRun?.config?.targetElementIds ?? [];
@@ -884,6 +902,44 @@ function ResultsView({
     }
   };
   if (!fatigueReport) {
+    if (isRunning) {
+      const pct = Math.min(100, ((currentRound + 1) / runningMaxRounds) * 100);
+      return (
+        <div className="space-y-3 p-2">
+          <div className="bg-[#7c3aed]/10 border border-[#7c3aed]/40 rounded-md p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-medium text-[#a78bfa]">
+                <span className="inline-block w-2 h-2 rounded-full bg-[#a78bfa] animate-pulse" />
+                Simulation running
+              </div>
+              <span className="text-[10px] text-gray-400">
+                Round {currentRound + 1} / {runningMaxRounds}
+              </span>
+            </div>
+            <div className="h-1 bg-[var(--surface-base)] rounded overflow-hidden">
+              <div
+                className="h-full bg-[#a78bfa] transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            {currentAgent && (
+              <div className="text-[11px] text-gray-300 flex items-center gap-1.5">
+                <span className="text-gray-500">Now:</span>
+                <span>{currentAgent} is thinking…</span>
+              </div>
+            )}
+            {streamingText && (
+              <div className="text-[10px] text-gray-400 italic line-clamp-3 leading-snug border-l-2 border-[#7c3aed]/40 pl-2">
+                {streamingText}
+              </div>
+            )}
+          </div>
+          <div className="text-[10px] text-gray-500 text-center">
+            Results will appear here when the simulation completes. Switch to the Config tab to watch the live agent feed.
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="text-xs text-gray-400 p-4 text-center">
         No simulation results yet. Run a simulation first.
@@ -997,27 +1053,72 @@ function ResultsView({
       <div>
         <div className="text-xs text-gray-400 mb-1 font-medium">Stakeholder Fatigue</div>
         <div className="space-y-1.5">
-          {fatigueReport.perAgent?.map((agent: any) => (
-            <div key={agent.agentId} className="bg-[var(--surface-raised)] rounded p-2">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-300">{agent.agentName}</span>
-                <span style={{ color: FATIGUE_COLORS[agent.fatigueIndex >= 0.8 ? 'red' : agent.fatigueIndex >= 0.6 ? 'orange' : agent.fatigueIndex >= 0.3 ? 'yellow' : 'green'] }}>
-                  {(agent.fatigueIndex * 100).toFixed(0)}%
-                </span>
-              </div>
-              {/* 3-Factor Bars */}
-              <div className="space-y-0.5">
-                <FactorBar label="Concurrency" value={agent.concurrencyLoad} />
-                <FactorBar label="Negotiation" value={agent.negotiationDrag} />
-                <FactorBar label="Constraint" value={agent.constraintPressure} />
-              </div>
-              {agent.projectedDelayMonths > 0 && (
-                <div className="text-[10px] text-gray-500 mt-1">
-                  +{agent.projectedDelayMonths.toFixed(1)} months delay
+          {fatigueReport.perAgent?.map((agent: any) => {
+            const isExpanded = expandedFatigueAgent === agent.agentId;
+            const agentBubbles = discussionBubbles
+              .filter((b) => b.agentId === agent.agentId)
+              .sort((a, b) => a.round - b.round || a.timestamp - b.timestamp);
+            const hasReasoning = agentBubbles.length > 0;
+            return (
+              <div key={agent.agentId} className="bg-[var(--surface-raised)] rounded p-2">
+                <button
+                  type="button"
+                  onClick={() => hasReasoning && setExpandedFatigueAgent(isExpanded ? null : agent.agentId)}
+                  className={`w-full flex items-center justify-between text-xs mb-1 ${hasReasoning ? 'cursor-pointer hover:text-gray-100' : 'cursor-default'}`}
+                  disabled={!hasReasoning}
+                >
+                  <span className="flex items-center gap-1 text-gray-300 text-left">
+                    {hasReasoning && (isExpanded ? <ChevronDown size={11} /> : <ChevronRight size={11} />)}
+                    {agent.agentName}
+                    {hasReasoning && (
+                      <span className="text-[9px] text-gray-500 ml-1">({agentBubbles.length} arg{agentBubbles.length !== 1 ? 's' : ''})</span>
+                    )}
+                  </span>
+                  <span style={{ color: FATIGUE_COLORS[agent.fatigueIndex >= 0.8 ? 'red' : agent.fatigueIndex >= 0.6 ? 'orange' : agent.fatigueIndex >= 0.3 ? 'yellow' : 'green'] }}>
+                    {(agent.fatigueIndex * 100).toFixed(0)}%
+                  </span>
+                </button>
+                {/* 3-Factor Bars */}
+                <div className="space-y-0.5">
+                  <FactorBar label="Concurrency" value={agent.concurrencyLoad} />
+                  <FactorBar label="Negotiation" value={agent.negotiationDrag} />
+                  <FactorBar label="Constraint" value={agent.constraintPressure} />
                 </div>
-              )}
-            </div>
-          ))}
+                {agent.projectedDelayMonths > 0 && (
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    +{agent.projectedDelayMonths.toFixed(1)} months delay
+                  </div>
+                )}
+                {isExpanded && hasReasoning && (
+                  <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] space-y-1.5">
+                    {agentBubbles.map((b) => {
+                      const positionColor =
+                        b.position === 'approve' ? '#22c55e' :
+                        b.position === 'reject' ? '#ef4444' :
+                        b.position === 'modify' ? '#eab308' : '#6b7280';
+                      return (
+                        <div key={b.id} className="text-[10px] leading-snug">
+                          <div className="flex items-center gap-1 mb-0.5">
+                            <span className="text-gray-500">R{b.round + 1}</span>
+                            <span
+                              className="px-1 py-px rounded uppercase font-semibold tracking-wide"
+                              style={{ color: positionColor, backgroundColor: `${positionColor}1a`, fontSize: 8 }}
+                            >
+                              {b.position}
+                            </span>
+                            <span className="text-gray-400 truncate" title={b.targetElementName}>
+                              on {b.targetElementName}
+                            </span>
+                          </div>
+                          <div className="text-gray-300 pl-3">{b.actionReasoning}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

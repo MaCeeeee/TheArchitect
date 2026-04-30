@@ -211,11 +211,11 @@ function VisionSection() {
   return (
     <div className="p-3 space-y-4">
       {/* Header with AI buttons */}
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed flex-1">
+      <div className="space-y-2">
+        <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed">
           TOGAF Phase A — Define what this architecture project covers, what success looks like, and which principles guide decisions.
         </p>
-        <div className="flex gap-1.5 shrink-0">
+        <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => setShowAIInput(!showAIInput)}
             disabled={isGenerating}
@@ -310,8 +310,8 @@ function VisionSection() {
           ref={scopeRef}
           value={vision.scope}
           onChange={(e) => handleChange('scope', e.target.value)}
-          rows={3}
-          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none ${
+          rows={4}
+          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-y min-h-[4.5rem] ${
             highlightField === 'scope'
               ? 'border-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse'
               : 'border-[var(--border-subtle)]'
@@ -326,8 +326,8 @@ function VisionSection() {
           ref={visionStatementRef}
           value={vision.visionStatement}
           onChange={(e) => handleChange('visionStatement', e.target.value)}
-          rows={3}
-          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-none ${
+          rows={4}
+          className={`w-full bg-[var(--surface-base)] border rounded-md px-2.5 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:border-[var(--accent-default)] focus:outline-none resize-y min-h-[4.5rem] ${
             highlightField === 'visionStatement'
               ? 'border-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.4)] animate-pulse'
               : 'border-[var(--border-subtle)]'

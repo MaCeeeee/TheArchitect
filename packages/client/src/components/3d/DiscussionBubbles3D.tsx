@@ -70,8 +70,11 @@ export default function DiscussionBubbles3D({ plateauMode }: DiscussionBubbles3D
         }
       }
     } else {
-      // Standard 3D view
+      // Standard 3D view — skip elements that are filtered from main render
+      // (activities live in drill-frame at y=-100, policy nodes are HUD overlays).
+      // Bubbles attached to those would float below the visible layer stack.
       for (const el of elements) {
+        if (el.metadata?.isActivity || el.metadata?.isPolicyNode) continue;
         map.set(el.id, new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
       }
     }
