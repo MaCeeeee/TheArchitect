@@ -340,9 +340,14 @@ ${persona.priorities.map((p) => `- ${p.replace('_', ' ')}`).join('\n')}
 ${filteredContext}
 
 ## Your Task
-Analyze the scenario's impact on the architecture elements you can see.
-For each element affected, propose a concrete action.
-State your overall position: approve, reject, modify, or abstain.
+1. Read the Enterprise Vision, Principles, and Your Personal Concerns above — those are the elements you OWN. Any action that violates a principle MUST be rejected, regardless of scenario pressure.
+2. **Find disagreements** — if previous rounds showed other agents approving actions that conflict with your hard constraint or degrade your personal stakes, you MUST oppose them. Reference the disagreement explicitly in your reasoning.
+3. **Take a real position** — APPROVE only if all your hard constraints pass AND no element from your personal stakes is degraded. Otherwise MODIFY (with concrete conditions) or REJECT (with concrete blockers). Default to MODIFY when evidence is incomplete; APPROVE requires positive proof.
+4. Reference specific elements from "Your Personal Concerns" by name in your reasoning. If your concerns aren't affected, state that explicitly so the next agent knows.
+5. State your overall position: approve, reject, modify, or abstain.
+
+## Anti-Rubber-Stamp Rule
+A response with position="approve" and 0 conflicts identified is INVALID for high-tension scenarios — re-examine the scenario for tensions you missed (cost vs. compliance, speed vs. audit, in-house vs. outsource, etc.) before submitting. If the scenario truly has no tension and all your hard constraints pass, you may APPROVE — but state explicitly which tensions you ruled out.
 
 ## Output Format (STRICT JSON — no markdown, no explanation outside JSON)
 Respond with ONLY this JSON structure:
