@@ -32,10 +32,65 @@ export interface ProjectVisionContext {
   goals: string[];
 }
 
+// Generic words that match too broadly to be useful as personal-concern filters.
+// Without this skip-list, every persona with priorities like "General architecture
+// oversight" would match every element with "architecture" in name/description.
+const GENERIC_PRIORITY_WORDS = new Set([
+  'general', 'architecture', 'oversight', 'the', 'and', 'for', 'with',
+  'all', 'any', 'new', 'old', 'use', 'has', 'have',
+]);
+
+/**
+ * Splits persona.priorities into individual lowercase keywords (>= 3 chars,
+ * non-generic) for case-insensitive Cypher CONTAINS matching.
+ *
+ * Example: ["cost_reduction", "audit-trail compliance"] → ["cost", "reduction", "audit", "trail", "compliance"]
+ */
+function extractPriorityKeywords(priorities: string[] | undefined): string[] {
+  if (!priorities || priorities.length === 0) return [];
+  const words = new Set<string>();
+  for (const p of priorities) {
+    const parts = String(p).toLowerCase().split(/[\s_\-,/]+/);
+    for (const w of parts) {
+      const trimmed = w.trim();
+      if (trimmed.length >= 3 && !GENERIC_PRIORITY_WORDS.has(trimmed)) {
+        words.add(trimmed);
+      }
+    }
+  }
+  return Array.from(words);
+}
+
+function toFilteredElement(props: Record<string, unknown>): FilteredElement {
+  return {
+    id: String(props.id || ''),
+    name: String(props.name || ''),
+    type: String(props.type || ''),
+    layer: String(props.layer || ''),
+    togafDomain: String(props.togafDomain || ''),
+    status: String(props.status || ''),
+    riskLevel: String(props.riskLevel || ''),
+    maturityLevel: Number(props.maturityLevel) || 0,
+    description: String(props.description || '').slice(0, 100),
+  };
+}
+
 /**
  * Builds a filtered architecture context for a specific agent persona.
  * Only includes elements within the persona's visible layers and domains.
  * Injects hard constraints (budget, risk threshold) into the prompt.
+ *
+ * Two-tier element rendering:
+ * - "Personal Concerns" — elements matching the persona's priorities (keyword
+ *   match on name/description) plus their 1-hop CONNECTS_TO neighbors. This is
+ *   what gives different stakeholder types DIFFERENT element views, which is
+ *   the primary driver of authentic disagreement.
+ * - "Background Architecture" — the broad layer/domain-filtered listing,
+ *   unchanged from the prior implementation, kept for reference.
+ *
+ * Backward-compatible: if no priority keywords match (or persona has only
+ * generic priorities like "General architecture oversight"), the Personal
+ * Concerns section is omitted and the prompt looks like before.
  */
 export async function buildAgentContext(
   projectId: string,
@@ -43,7 +98,7 @@ export async function buildAgentContext(
   previousRoundSummary?: string,
   projectVision?: ProjectVisionContext,
 ): Promise<string> {
-  // Query elements filtered by persona's visibility
+  // Query elements filtered by persona's visibility (broad background view)
   const elementRecords = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
      WHERE e.layer IN $visibleLayers
@@ -61,20 +116,67 @@ export async function buildAgentContext(
     },
   );
 
-  const elements: FilteredElement[] = elementRecords.map((r) => {
-    const props = serializeNeo4jProperties(r.toObject());
-    return {
-      id: String(props.id || ''),
-      name: String(props.name || ''),
-      type: String(props.type || ''),
-      layer: String(props.layer || ''),
-      togafDomain: String(props.togafDomain || ''),
-      status: String(props.status || ''),
-      riskLevel: String(props.riskLevel || ''),
-      maturityLevel: Number(props.maturityLevel) || 0,
-      description: String(props.description || '').slice(0, 100),
-    };
-  });
+  const elements: FilteredElement[] = elementRecords.map((r) =>
+    toFilteredElement(serializeNeo4jProperties(r.toObject())),
+  );
+
+  // Personal-Concerns query — elements matching the persona's priority keywords.
+  // This is what diverges per stakeholder: CFO sees cost/budget elements, CSO
+  // sees ESG/compliance elements, HR sees grievance/rights elements, etc.
+  const priorityKeywords = extractPriorityKeywords(persona.priorities);
+  let primaryConcerns: FilteredElement[] = [];
+  let neighborConcerns: FilteredElement[] = [];
+
+  if (priorityKeywords.length > 0) {
+    const primaryRecords = await runCypher(
+      `MATCH (e:ArchitectureElement {projectId: $projectId})
+       WHERE e.layer IN $visibleLayers
+         AND ANY(kw IN $keywords WHERE
+           toLower(coalesce(e.name, '')) CONTAINS kw OR
+           toLower(coalesce(e.description, '')) CONTAINS kw
+         )
+       RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
+              e.togafDomain as togafDomain, e.status as status,
+              e.riskLevel as riskLevel, e.maturityLevel as maturityLevel,
+              e.description as description
+       ORDER BY e.layer, e.name
+       LIMIT 30`,
+      {
+        projectId,
+        visibleLayers: persona.visibleLayers,
+        keywords: priorityKeywords,
+      },
+    );
+    primaryConcerns = primaryRecords.map((r) =>
+      toFilteredElement(serializeNeo4jProperties(r.toObject())),
+    );
+
+    // 1-hop CONNECTS_TO neighbors of the primary concerns — gives the agent the
+    // immediate dependencies / dependents of the elements they care about.
+    if (primaryConcerns.length > 0) {
+      const primaryIds = primaryConcerns.map((p) => p.id);
+      const neighborRecords = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId})-[:CONNECTS_TO]-(n:ArchitectureElement {projectId: $projectId})
+         WHERE e.id IN $primaryIds
+           AND NOT n.id IN $primaryIds
+           AND n.layer IN $visibleLayers
+         RETURN DISTINCT n.id as id, n.name as name, n.type as type, n.layer as layer,
+                n.togafDomain as togafDomain, n.status as status,
+                n.riskLevel as riskLevel, n.maturityLevel as maturityLevel,
+                n.description as description
+         ORDER BY n.layer, n.name
+         LIMIT 20`,
+        {
+          projectId,
+          primaryIds,
+          visibleLayers: persona.visibleLayers,
+        },
+      );
+      neighborConcerns = neighborRecords.map((r) =>
+        toFilteredElement(serializeNeo4jProperties(r.toObject())),
+      );
+    }
+  }
 
   // Query connections between visible elements
   const connRecords = await runCypher(
@@ -131,8 +233,38 @@ export async function buildAgentContext(
     }
   }
 
+  // Personal Concerns — elements matching this persona's priority keywords,
+  // plus their 1-hop neighbors. Different personas see different concerns,
+  // which is the structural lever against the all-APPROVE consensus pattern.
+  if (primaryConcerns.length > 0) {
+    const matchedKeywordsLine = priorityKeywords.length > 0
+      ? ` (matched on: ${priorityKeywords.slice(0, 6).join(', ')}${priorityKeywords.length > 6 ? '…' : ''})`
+      : '';
+    lines.push(
+      `## Your Personal Concerns (${primaryConcerns.length} elements directly tied to your priorities)${matchedKeywordsLine}`,
+    );
+    lines.push(`### Primary stakes — your decisions on these matter most`);
+    for (const el of primaryConcerns) {
+      lines.push(
+        `- [ID:${el.id}] "${el.name}" [${el.type}] status=${el.status}, risk=${el.riskLevel}, maturity=${el.maturityLevel}${el.description ? ` — ${el.description}` : ''}`,
+      );
+    }
+    if (neighborConcerns.length > 0) {
+      lines.push(`### Connected dependencies (1-hop) — affected when your stakes change`);
+      for (const el of neighborConcerns) {
+        lines.push(
+          `- [ID:${el.id}] "${el.name}" [${el.type}] status=${el.status}, risk=${el.riskLevel}${el.description ? ` — ${el.description}` : ''}`,
+        );
+      }
+    }
+    lines.push('');
+  }
+
   // Element listing with IDs (critical for action validation)
-  lines.push(`## Your Visible Architecture (${elements.length} elements)`);
+  const backgroundHeader = primaryConcerns.length > 0
+    ? `## Background Architecture (Reference — ${elements.length} elements)`
+    : `## Your Visible Architecture (${elements.length} elements)`;
+  lines.push(backgroundHeader);
 
   const byLayer: Record<string, FilteredElement[]> = {};
   for (const el of elements) {
