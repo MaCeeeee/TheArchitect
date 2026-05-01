@@ -217,6 +217,14 @@ export const architectureAPI = {
     api.post(`/projects/${projectId}/import/n8n/fetch`, data),
   importCSV: (projectId: string, data: { elements: unknown[]; connections: unknown[] }) =>
     api.post(`/projects/${projectId}/import/csv`, data),
+  healConnections: (
+    projectId: string,
+    opts: {
+      mode: 'dryRun' | 'apply';
+      minConfidence?: number;
+      whitelist?: Array<{ sourceId: string; targetId: string; type: string }>;
+    },
+  ) => api.post(`/projects/${projectId}/heal-connections`, opts),
 };
 
 // Workspace API
