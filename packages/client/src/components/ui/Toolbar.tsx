@@ -29,6 +29,7 @@ import {
   Link2,
   Eye,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -42,6 +43,7 @@ import { useCollaborationStore } from '../../stores/collaborationStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
 import ProjectCollaborators from './ProjectCollaborators';
 import HealthScoreRing from '../copilot/HealthScoreRing';
+import { HealWorkspaceModal } from '../copilot/HealWorkspaceModal';
 import { Crosshair } from 'lucide-react';
 import { ARCHIMATE_VIEWPOINTS, VIEWPOINT_CATEGORIES } from '@thearchitect/shared/src/constants/archimate-viewpoints';
 
@@ -87,6 +89,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   const currentPhase = useJourneyStore((s) => s.currentPhase);
   const [showViewpointMenu, setShowViewpointMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [healOpen, setHealOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
   const viewpointRef = useRef<HTMLDivElement>(null);
 
@@ -382,6 +385,15 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         {isToolbarActionVisible('xray', currentPhase, showAllSections) && (
           <>
             <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
+            {projectId && (
+              <button
+                onClick={() => setHealOpen(true)}
+                title="Heal Workspace — auto-connect isolated elements"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
+              >
+                <Sparkles size={14} />
+              </button>
+            )}
             <ToolbarButton
               icon={<Play size={16} />}
               title={isScenarioMode ? 'Exit Scenario Mode' : 'Enter Scenario Mode'}
@@ -471,6 +483,17 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
           isOpen={showCollaborators}
           onClose={() => setShowCollaborators(false)}
           projectId={projectId}
+        />
+      )}
+      {projectId && (
+        <HealWorkspaceModal
+          projectId={projectId}
+          isOpen={healOpen}
+          onClose={() => setHealOpen(false)}
+          onApplied={() => {
+            // Reload to fetch fresh connections — safe fallback for demo timeline
+            window.location.reload();
+          }}
         />
       )}
     </header>
