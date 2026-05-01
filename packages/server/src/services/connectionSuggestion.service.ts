@@ -21,6 +21,8 @@ export interface ExistingConnection {
 }
 export interface Suggestion {
   sourceId: string;
+  sourceName: string;
+  sourceType: string;
   targetId: string;
   targetName: string;
   targetType: string;
@@ -270,6 +272,8 @@ export async function suggestConnectionsForIsolatedElements(
           if (s.confidence < minConfidence) return null;
           return {
             sourceId: el.id,
+            sourceName: el.name,
+            sourceType: el.type,
             targetId: s.targetId,
             targetName: target.name,
             targetType: target.type,
