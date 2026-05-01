@@ -505,13 +505,14 @@ router.post(
       // Load all elements for the project
       const elementRecords = await runCypher(
         `MATCH (e:ArchitectureElement {projectId: $projectId})
-         RETURN e.id AS id, e.type AS type, e.name AS name`,
+         RETURN e.id AS id, e.type AS type, e.name AS name, e.description AS description`,
         { projectId }
       );
       const elements = elementRecords.map(r => ({
         id: r.get('id'),
         type: r.get('type'),
         name: r.get('name'),
+        description: r.get('description') ?? undefined,
       }));
 
       // Load all existing connections for the project. Defensive projectId
@@ -530,6 +531,7 @@ router.post(
       }));
 
       const report: HealReport = await suggestConnectionsForIsolatedElements({
+        projectId: String(projectId),
         elements,
         connections,
         minConfidence: body.minConfidence,
@@ -564,6 +566,7 @@ router.post(
         targetId: s.targetId,
         type: s.relationshipType,
         confidence: s.confidence,
+        aiReason: s.reasoning ?? '',
         cid: uuid(),
       }));
 
@@ -600,8 +603,8 @@ router.post(
                    (b:ArchitectureElement {id: row.targetId, projectId: $projectId})
              MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
              ON CREATE SET r.id = row.cid, r.label = '', r.source = 'ai-heal',
-                           r.confidence = row.confidence, r.projectId = $projectId,
-                           r.createdAt = timestamp()
+                           r.confidence = row.confidence, r.aiReason = row.aiReason,
+                           r.projectId = $projectId, r.createdAt = timestamp()
              RETURN r.id AS id, row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type`,
             { rows: newRows, projectId }
           );
