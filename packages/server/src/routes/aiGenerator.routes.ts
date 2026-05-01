@@ -465,7 +465,7 @@ router.post(
     }
 
     const accept = body.accept ?? {};
-    const counts = { goals: 0, stakeholders: 0, capabilities: 0, processes: 0, activities: 0, connections: 0 };
+    const counts = { goals: 0, drivers: 0, stakeholders: 0, capabilities: 0, processes: 0, activities: 0, connections: 0 };
 
     // Layer Y-positions (matching togaf.constants ARCHITECTURE_LAYERS)
     const Y_MOTIVATION = 16;
@@ -517,6 +517,34 @@ router.post(
             metadata: { source: 'ai-generated', aiGenerated: true, kind: 'mission' },
           });
           counts.goals++;
+        }
+      }
+
+      // ─── 1.5) Drivers (ArchiMate Motivation Layer) ────────────────────
+      // Without this loop, drivers extracted from the PDF were only stored
+      // as text strings on Project.vision.drivers — they showed up in the
+      // Envision panel but never as real architecture elements in Neo4j,
+      // so the 3D scene + sidebar showed 0 drivers and the realization
+      // chain (Driver → Goal → Capability → Process) had no roots.
+      if (accept.vision !== false) {
+        const drivers = body.hierarchy.vision.drivers ?? [];
+        for (let i = 0; i < drivers.length; i++) {
+          const d = drivers[i];
+          if (!d || !d.trim()) continue;
+          await createElement({
+            projectId,
+            id: `ai-drv-${Date.now()}-${i}`,
+            type: 'driver',
+            name: d.length > 100 ? d.slice(0, 97) + '…' : d,
+            description: d,
+            layer: 'motivation',
+            togafDomain: 'motivation',
+            posX: layoutX(i, drivers.length, 22),
+            posY: Y_MOTIVATION,
+            posZ: -14,
+            metadata: { source: 'ai-generated', aiGenerated: true, kind: 'driver' },
+          });
+          counts.drivers++;
         }
       }
 
