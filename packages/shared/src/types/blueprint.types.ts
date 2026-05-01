@@ -49,6 +49,14 @@ export interface BlueprintInput {
   industryHint?: string;
   complexityHint?: BlueprintComplexity;
   rawQuestionnaire: BlueprintQuestionnaire;
+  /**
+   * If true (default), generated connections are persisted to Neo4j as part
+   * of generateBlueprint. If false, only the stream events are emitted and the
+   * caller is responsible for persisting.
+   */
+  applyConnections?: boolean;
+  /** Required when applyConnections is true (default). */
+  projectId?: string;
 }
 
 // ─── Generated Output ───
@@ -101,5 +109,6 @@ export type BlueprintStreamEvent =
   | { type: 'progress'; phase: 'elements' | 'connections' | 'validation'; message: string; percent: number }
   | { type: 'elements_ready'; count: number }
   | { type: 'connections_ready'; count: number }
+  | { type: 'connections_persisted'; count: number }
   | { type: 'complete'; result: BlueprintResult }
   | { type: 'error'; message: string };

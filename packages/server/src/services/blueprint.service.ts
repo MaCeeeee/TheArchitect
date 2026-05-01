@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { v4 as uuid } from 'uuid';
+import { runCypher } from '../config/neo4j';
 import {
   ARCHIMATE_STANDARD_TYPES,
   ARCHIMATE_STANDARD_CONNECTION_TYPES,
@@ -521,6 +523,41 @@ export async function generateBlueprint(
   const { connections, warnings: connectionWarnings } = validateConnections(rawConnections, elements);
 
   onEvent({ type: 'connections_ready', count: connections.length });
+
+  // ── Phase 2.5: Persist connections (default-on per UC-CONN-001) ──
+  const shouldApply = input.applyConnections !== false;
+  if (shouldApply) {
+    if (!input.projectId) {
+      console.warn('[Blueprint] applyConnections=true but projectId missing; skipping persist');
+    } else {
+      const rows = connections.map(c => ({
+        sourceId: c.sourceId,
+        targetId: c.targetId,
+        type: c.type,
+        label: c.label || '',
+        cid: c.id || uuid(),
+      }));
+      let persisted = 0;
+      if (rows.length > 0) {
+        try {
+          const records = await runCypher(
+            `UNWIND $rows AS row
+             MATCH (a:ArchitectureElement {id: row.sourceId, projectId: $projectId}),
+                   (b:ArchitectureElement {id: row.targetId, projectId: $projectId})
+             MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
+             ON CREATE SET r.id = row.cid, r.label = row.label, r.source = 'blueprint-auto',
+                           r.projectId = $projectId, r.createdAt = timestamp()
+             RETURN count(r) AS n`,
+            { rows, projectId: input.projectId },
+          );
+          persisted = records[0]?.get('n')?.toNumber?.() ?? rows.length;
+        } catch (err) {
+          console.warn('[Blueprint] Connection persist failed:', (err as Error).message);
+        }
+      }
+      onEvent({ type: 'connections_persisted', count: persisted });
+    }
+  }
 
   // ── Phase 3: Validation ──
   onEvent({ type: 'progress', phase: 'validation', message: 'Running final validation...', percent: 90 });
