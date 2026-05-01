@@ -332,6 +332,7 @@ export default function PropertyPanel() {
         {/* Description */}
         <Section title="Description">
           <DebouncedTextarea
+            key={element.id}
             value={element.description}
             onChange={(v) => handleFieldChange('description', v)}
           />
@@ -656,12 +657,12 @@ function DebouncedTextarea({ value, onChange }: { value: string; onChange: (v: s
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Reset local when element changes
-  const prevValue = useRef(value);
-  if (prevValue.current !== value) {
-    prevValue.current = value;
+  // Sync local state when the prop value changes — a useEffect is
+  // strict-mode-safe (the prior setLocal-during-render anti-pattern caused
+  // stale state on element switch in React 18 strict mode).
+  useEffect(() => {
     setLocal(value);
-  }
+  }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;
