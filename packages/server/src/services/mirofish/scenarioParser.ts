@@ -195,11 +195,59 @@ export function parseScenarioConflicts(
 }
 
 /**
+ * Heuristic match of a persona to an opposingPositions entry.
+ *
+ * Scenario text uses short labels ("CFO", "HR", "Deloitte") while personas
+ * carry full titles ("Chief Financial Officer (Program Sponsor & ESG…)").
+ * We compare on individual whole words >= 3 chars (lowercase) so that
+ * "CFO" matches "...Chief Financial Officer..." via the explicit "CFO"
+ * acronym OR via the descriptive words.
+ *
+ * Returns true when at least one significant token from the scenario
+ * stakeholder name appears as a whole word in the persona name (or vice
+ * versa for short acronyms). False positives are possible but acceptable
+ * because the worst case is "Your scenario role" stays empty.
+ */
+function personaMatchesStakeholder(personaName: string, stakeholderName: string): boolean {
+  const personaLower = personaName.toLowerCase();
+  const stakeholderLower = stakeholderName.toLowerCase();
+
+  // Direct substring (cheap path): "CFO" inside the persona's full title.
+  if (personaLower.includes(stakeholderLower) || stakeholderLower.includes(personaLower)) {
+    return true;
+  }
+
+  // Token-level: look for shared significant words. Stop-words filter the
+  // generic noise ("the", "of", "and", role suffixes that appear everywhere).
+  const STOP = new Set([
+    'the', 'of', 'and', 'for', 'a', 'an', 'to', 'in', 'on', 'with',
+    'group', 'chief', 'officer', 'director', 'lead', 'manager',
+    'authority', 'representative', 'partner', 'partners',
+  ]);
+  const tokenize = (s: string) =>
+    s.split(/[\s()/,&\-—]+/).map((t) => t.trim()).filter((t) => t.length >= 3 && !STOP.has(t));
+  const personaTokens = new Set(tokenize(personaLower));
+  const stakeholderTokens = tokenize(stakeholderLower);
+  for (const t of stakeholderTokens) {
+    if (personaTokens.has(t)) return true;
+  }
+  return false;
+}
+
+/**
  * Renders a ParsedScenario as a markdown section ready to inject into the
  * agent system prompt. Returns empty string when nothing structured was
  * extracted, so the caller can omit the section entirely.
+ *
+ * When a personaName is provided, the renderer splits opposingPositions into
+ * "Your scenario role" (the position matching this persona) and "Other
+ * stakeholders" (the rest). Without this split, agents read their own
+ * scenario position as "an opposing position" and flip away from their
+ * stated role — e.g. CFO (who proposes outsourcing in the scenario) starts
+ * REJECTING outsourcing because it sees "CFO proposes outsourcing" in the
+ * "you MUST reconcile these" list.
  */
-export function renderParsedScenario(parsed: ParsedScenario): string {
+export function renderParsedScenario(parsed: ParsedScenario, personaName?: string): string {
   const hasContent =
     parsed.opposingPositions.length > 0 ||
     parsed.decisionCriteria.length > 0 ||
@@ -216,11 +264,32 @@ export function renderParsedScenario(parsed: ParsedScenario): string {
   if (parsed.decisionCriteria.length > 0) {
     lines.push(`Decision criteria (treat as hard constraints): ${parsed.decisionCriteria.join('; ')}`);
   }
+
   if (parsed.opposingPositions.length > 0) {
-    lines.push('Opposing stakeholder positions (you MUST reconcile these):');
-    for (const p of parsed.opposingPositions) {
-      const rationale = p.rationale ? ` — ${p.rationale}` : '';
-      lines.push(`  - ${p.stakeholder} (${p.position})${rationale}`);
+    // Split into self vs. others when the persona is known.
+    const yours = personaName
+      ? parsed.opposingPositions.filter((p) => personaMatchesStakeholder(personaName, p.stakeholder))
+      : [];
+    const others = personaName
+      ? parsed.opposingPositions.filter((p) => !personaMatchesStakeholder(personaName, p.stakeholder))
+      : parsed.opposingPositions;
+
+    if (yours.length > 0) {
+      lines.push('Your scenario role (DEFEND this position in negotiation, but verify it does not violate hard principles):');
+      for (const p of yours) {
+        const rationale = p.rationale ? ` — ${p.rationale}` : '';
+        lines.push(`  - You (${p.position})${rationale}`);
+      }
+    }
+    if (others.length > 0) {
+      const header = yours.length > 0
+        ? 'Other stakeholders\' positions (reconcile or oppose):'
+        : 'Stakeholder positions in this scenario (reconcile or oppose):';
+      lines.push(header);
+      for (const p of others) {
+        const rationale = p.rationale ? ` — ${p.rationale}` : '';
+        lines.push(`  - ${p.stakeholder} (${p.position})${rationale}`);
+      }
     }
   }
   return lines.join('\n');

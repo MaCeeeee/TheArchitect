@@ -338,7 +338,12 @@ function buildAgentSystemPrompt(
   filteredContext: string,
   parsedScenario?: ParsedScenario,
 ): string {
-  const parsedBlock = parsedScenario ? renderParsedScenario(parsedScenario) : '';
+  // Pass persona.name so the renderer can label this agent's own scenario
+  // position as "Your scenario role" instead of dumping it into the
+  // "opposing positions" list (Patch 7 — fixes CFO-position-flip bug where
+  // the CFO agent rejected outsourcing because it saw its own stated
+  // "CFO proposes outsourcing" framed as something to oppose).
+  const parsedBlock = parsedScenario ? renderParsedScenario(parsedScenario, persona.name) : '';
   const parsedBlockSection = parsedBlock ? `\n${parsedBlock}\n` : '';
 
   return `You are "${persona.name}", a ${persona.stakeholderType.replace('_', ' ')} stakeholder in an Enterprise Architecture transformation review.
