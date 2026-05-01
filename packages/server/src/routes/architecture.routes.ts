@@ -9,6 +9,10 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { evaluateElementPolicies } from '../services/policy-evaluation.service';
+import {
+  suggestConnectionsForIsolatedElements,
+  type HealReport,
+} from '../services/connectionSuggestion.service';
 
 const router = Router();
 
@@ -472,6 +476,165 @@ router.post(
       }
       console.error('Create connection error:', err);
       res.status(500).json({ success: false, error: 'Failed to create connection' });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Heal Connections — auto-connect isolated elements via the rule engine
+// ─────────────────────────────────────────────────────────────────────────────
+const HealConnectionsBodySchema = z.object({
+  mode: z.enum(['dryRun', 'apply']).default('dryRun'),
+  minConfidence: z.number().min(0).max(1).default(0.7),
+  whitelist: z.array(z.object({
+    sourceId: z.string(),
+    targetId: z.string(),
+    type: z.string(),
+  })).optional(),
+});
+
+router.post(
+  '/:projectId/heal-connections',
+  requirePermission(PERMISSIONS.CONNECTION_CREATE),
+  audit({ action: 'heal_connections', entityType: 'connection', riskLevel: 'low' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const body = HealConnectionsBodySchema.parse(req.body ?? {});
+
+      // Load all elements for the project
+      const elementRecords = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId})
+         RETURN e.id AS id, e.type AS type, e.name AS name`,
+        { projectId }
+      );
+      const elements = elementRecords.map(r => ({
+        id: r.get('id'),
+        type: r.get('type'),
+        name: r.get('name'),
+      }));
+
+      // Load all existing connections for the project. Defensive projectId
+      // filter on the edge itself prevents any cross-project edge leakage.
+      const connectionRecords = await runCypher(
+        `MATCH (a:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(b:ArchitectureElement {projectId: $projectId})
+         WHERE coalesce(r.projectId, $projectId) = $projectId
+         RETURN r.id AS id, a.id AS sourceId, b.id AS targetId, r.type AS type`,
+        { projectId }
+      );
+      const connections = connectionRecords.map(r => ({
+        id: r.get('id'),
+        sourceId: r.get('sourceId'),
+        targetId: r.get('targetId'),
+        type: r.get('type'),
+      }));
+
+      const report: HealReport = await suggestConnectionsForIsolatedElements({
+        elements,
+        connections,
+        minConfidence: body.minConfidence,
+      });
+
+      // Convert Map to plain object for JSON serialization
+      const perElementJson: Record<string, unknown> = {};
+      for (const [k, v] of report.perElement.entries()) perElementJson[k] = v;
+
+      if (body.mode === 'dryRun') {
+        res.json({
+          success: true,
+          mode: 'dryRun',
+          data: {
+            elementsAnalyzed: report.elementsAnalyzed,
+            suggestionsTotal: report.suggestionsTotal,
+            perElement: perElementJson,
+          },
+        });
+        return;
+      }
+
+      // mode === 'apply'
+      const allSuggestions = Array.from(report.perElement.values()).flat();
+      const toApply = body.whitelist
+        ? allSuggestions.filter(s => (body.whitelist ?? []).some(w =>
+            w.sourceId === s.sourceId && w.targetId === s.targetId && w.type === s.relationshipType))
+        : allSuggestions;
+
+      const rows = toApply.map(s => ({
+        sourceId: s.sourceId,
+        targetId: s.targetId,
+        type: s.relationshipType,
+        confidence: s.confidence,
+        cid: uuid(),
+      }));
+
+      // Two-step idempotent batch:
+      //   1) UNWIND read existing edges to count "skipped" accurately
+      //   2) UNWIND-MERGE only the rows that don't already exist
+      // Both runs send a single Cypher round-trip regardless of N (~50×4=200 BSH).
+      let appliedCount = 0;
+      let skippedExistingCount = 0;
+      const applied: Array<{ id: string; sourceId: string; targetId: string; type: string }> = [];
+
+      if (rows.length > 0) {
+        const existingRecords = await runCypher(
+          `UNWIND $rows AS row
+           OPTIONAL MATCH (a:ArchitectureElement {id: row.sourceId, projectId: $projectId})
+                          -[r:CONNECTS_TO {type: row.type}]->
+                          (b:ArchitectureElement {id: row.targetId, projectId: $projectId})
+           RETURN row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type, r IS NOT NULL AS exists`,
+          { rows, projectId }
+        );
+        const existsKey = (s: string, t: string, ty: string) => `${s}|${t}|${ty}`;
+        const alreadyExists = new Set(
+          existingRecords
+            .filter(rec => rec.get('exists'))
+            .map(rec => existsKey(rec.get('sourceId'), rec.get('targetId'), rec.get('type')))
+        );
+        const newRows = rows.filter(r => !alreadyExists.has(existsKey(r.sourceId, r.targetId, r.type)));
+        skippedExistingCount = rows.length - newRows.length;
+
+        if (newRows.length > 0) {
+          const writeRecords = await runCypher(
+            `UNWIND $rows AS row
+             MATCH (a:ArchitectureElement {id: row.sourceId, projectId: $projectId}),
+                   (b:ArchitectureElement {id: row.targetId, projectId: $projectId})
+             MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
+             ON CREATE SET r.id = row.cid, r.label = '', r.source = 'ai-heal',
+                           r.confidence = row.confidence, r.projectId = $projectId,
+                           r.createdAt = timestamp()
+             RETURN r.id AS id, row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type`,
+            { rows: newRows, projectId }
+          );
+          for (const rec of writeRecords) {
+            applied.push({
+              id: rec.get('id'),
+              sourceId: rec.get('sourceId'),
+              targetId: rec.get('targetId'),
+              type: rec.get('type'),
+            });
+          }
+          appliedCount = applied.length;
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        mode: 'apply',
+        data: {
+          elementsAnalyzed: report.elementsAnalyzed,
+          suggestionsConsidered: allSuggestions.length,
+          appliedCount,
+          skippedAsAlreadyExisting: skippedExistingCount,
+          applied,
+        },
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        res.status(400).json({ success: false, error: 'Validation failed', details: err.errors });
+        return;
+      }
+      console.error('Heal connections error:', err);
+      res.status(500).json({ success: false, error: 'Failed to heal connections' });
     }
   }
 );
