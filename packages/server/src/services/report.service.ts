@@ -523,23 +523,34 @@ async function renderSimulationReport(doc: PDFKit.PDFDocument, project: { name: 
     }
   }
 
-  // ─── Page: Resistance Factors + Mitigations + Methodology + Audit ───
+  // ─── Page: Resistance Factors + Next Steps + Methodology + Audit ───
   addNewPage(doc, `MiroFish Simulation — ${project.name}`, subtitle);
 
-  // Resistance Factors — derived from REJECT/MODIFY actions
-  const resistanceFactors: Array<{ factor: string; severity: string; source: string }> = [];
-  for (const agg of agentAggregates.values()) {
-    for (const a of agg.actionDetails) {
-      if (a.position !== 'reject' && a.position !== 'modify') continue;
-      const severity = a.position === 'reject' ? 'high' : 'medium';
-      resistanceFactors.push({
-        factor: `${a.position.toUpperCase()} on "${a.element}": ${a.reasoning.slice(0, 110)}`,
-        severity,
-        source: agg.agentName,
-      });
+  // Resistance Factors — prefer the LLM-extracted ones from Patch 9, fall
+  // back to deriving from REJECT/MODIFY actions for pre-Patch-9 historical runs.
+  const llmResistanceFactors = (result.resistanceFactors as Array<Record<string, unknown>> | undefined) || [];
+  type RF = { factor: string; severity: string; source: string };
+  let resistanceFactors: RF[] = [];
+  if (llmResistanceFactors.length > 0) {
+    resistanceFactors = llmResistanceFactors.slice(0, 20).map((f) => ({
+      factor: String(f.factor || ''),
+      severity: String(f.severity || 'medium'),
+      source: String(f.source || ''),
+    }));
+  } else {
+    for (const agg of agentAggregates.values()) {
+      for (const a of agg.actionDetails) {
+        if (a.position !== 'reject' && a.position !== 'modify') continue;
+        const severity = a.position === 'reject' ? 'high' : 'medium';
+        resistanceFactors.push({
+          factor: `${a.position.toUpperCase()} on "${a.element}": ${a.reasoning.slice(0, 110)}`,
+          severity,
+          source: agg.agentName,
+        });
+        if (resistanceFactors.length >= 20) break;
+      }
       if (resistanceFactors.length >= 20) break;
     }
-    if (resistanceFactors.length >= 20) break;
   }
 
   if (resistanceFactors.length > 0) {
@@ -553,34 +564,70 @@ async function renderSimulationReport(doc: PDFKit.PDFDocument, project: { name: 
     doc.moveDown(0.6);
   }
 
-  // Mitigation Suggestions — derived from fatigue recommendation + bottlenecks
-  const mitigations: string[] = [];
-  if (fatigue?.recommendation) {
-    mitigations.push(String(fatigue.recommendation));
-  }
-  const overloadedAgents = (fatigue?.perAgent as Array<Record<string, unknown>> | undefined)
-    ?.filter((a) => Number(a.concurrencyLoad || 0) >= 0.8)
-    ?.map((a) => String(a.agentName || '')) || [];
-  if (overloadedAgents.length > 0) {
-    mitigations.push(`Phase work for overloaded stakeholders (${overloadedAgents.join(', ')}) to reduce concurrent load below 80%.`);
-  }
-  const topBottleneck = (fatigue?.perElement as Array<Record<string, unknown>> | undefined)?.[0];
-  if (topBottleneck && Number(topBottleneck.conflictRounds || 0) >= 2) {
-    mitigations.push(`Schedule a stakeholder workshop for "${topBottleneck.elementName}" (${topBottleneck.conflictRounds} conflict rounds) to resolve the deadlock pattern before implementation.`);
-  }
-  if (resistanceFactors.length >= 5) {
-    mitigations.push(`Document each REJECT/MODIFY rationale in a decision log; assign a change champion to address each before progressing.`);
-  }
+  // Next Steps — LLM-reasoned recommendations (Patch 9). Falls back to the
+  // heuristic mitigation strings if the simulation predates Patch 9.
+  const nextSteps = (result.nextSteps as Array<Record<string, unknown>> | undefined) || [];
 
-  if (mitigations.length > 0) {
-    drawSectionTitle(doc, 'Mitigation Suggestions');
-    doc.font('Helvetica').fontSize(9).fillColor(DARK);
-    mitigations.forEach((m, i) => {
-      checkPageBreak(doc, 20);
-      doc.text(`${i + 1}. ${m}`, MARGIN, doc.y, { width: CONTENT_W });
-      doc.moveDown(0.3);
-    });
+  if (nextSteps.length > 0) {
+    drawSectionTitle(doc, 'Next Steps (AI-recommended actions)');
+    doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+    doc.text('Each step targets a specific resistance factor or bottleneck identified above. Owner / cost / timeline are advisory and require human review before scheduling.', MARGIN, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.4);
+
+    drawTable(doc,
+      ['#', 'Category', 'Action', 'Owner', 'Cost', 'Timeline'],
+      nextSteps.map((s, i) => [
+        String(i + 1),
+        String(s.category || 'mitigation').replace('_', ' '),
+        String(s.action || '').slice(0, 110),
+        String(s.ownerHint || '—').slice(0, 28),
+        String(s.costEstimateRange || '—').slice(0, 18),
+        String(s.timelineHint || '—').slice(0, 18),
+      ]),
+      [20, 65, 230, 75, 50, 55],
+      'Next Steps',
+    );
     doc.moveDown(0.5);
+
+    // Per-step rationale block — gives the WHY behind each recommendation
+    doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+    nextSteps.forEach((s, i) => {
+      const rationale = String(s.rationale || '').trim();
+      if (!rationale) return;
+      checkPageBreak(doc, 18);
+      doc.text(`${i + 1}. Why: ${rationale}`, MARGIN, doc.y, { width: CONTENT_W });
+      doc.moveDown(0.2);
+    });
+    doc.moveDown(0.4);
+  } else {
+    // Fallback heuristic mitigations for pre-Patch-9 runs
+    const mitigations: string[] = [];
+    if (fatigue?.recommendation) {
+      mitigations.push(String(fatigue.recommendation));
+    }
+    const overloadedAgents = (fatigue?.perAgent as Array<Record<string, unknown>> | undefined)
+      ?.filter((a) => Number(a.concurrencyLoad || 0) >= 0.8)
+      ?.map((a) => String(a.agentName || '')) || [];
+    if (overloadedAgents.length > 0) {
+      mitigations.push(`Phase work for overloaded stakeholders (${overloadedAgents.join(', ')}) to reduce concurrent load below 80%.`);
+    }
+    const topBottleneck = (fatigue?.perElement as Array<Record<string, unknown>> | undefined)?.[0];
+    if (topBottleneck && Number(topBottleneck.conflictRounds || 0) >= 2) {
+      mitigations.push(`Schedule a stakeholder workshop for "${topBottleneck.elementName}" (${topBottleneck.conflictRounds} conflict rounds) to resolve the deadlock pattern before implementation.`);
+    }
+    if (resistanceFactors.length >= 5) {
+      mitigations.push(`Document each REJECT/MODIFY rationale in a decision log; assign a change champion to address each before progressing.`);
+    }
+    if (mitigations.length > 0) {
+      drawSectionTitle(doc, 'Mitigation Suggestions (heuristic — Patch 9 not yet active for this run)');
+      doc.font('Helvetica').fontSize(9).fillColor(DARK);
+      mitigations.forEach((m, i) => {
+        checkPageBreak(doc, 20);
+        doc.text(`${i + 1}. ${m}`, MARGIN, doc.y, { width: CONTENT_W });
+        doc.moveDown(0.3);
+      });
+      doc.moveDown(0.5);
+    }
   }
 
   // Scoring Methodology

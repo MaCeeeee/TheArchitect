@@ -852,6 +852,7 @@ function ResultsView({
 }) {
   const [exportLoading, setExportLoading] = useState(false);
   const [expandedFatigueAgent, setExpandedFatigueAgent] = useState<string | null>(null);
+  const [expandedNextStep, setExpandedNextStep] = useState<number | null>(null);
   const elements = useArchitectureStore((s) => s.elements);
   const discussionBubbles = useSimulationStore((s) => s.discussionBubbles);
   const isRunning = useSimulationStore((s) => s.isRunning);
@@ -1046,6 +1047,62 @@ function ResultsView({
         <div className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded p-2 text-xs text-gray-300">
           <div className="text-xs text-gray-400 mb-1 font-medium">Recommendation</div>
           {fatigueReport.recommendation}
+        </div>
+      )}
+
+      {/* Next Steps (Patch 9 — LLM-reasoned actionable recommendations) */}
+      {Array.isArray(activeRun?.result?.nextSteps) && activeRun.result.nextSteps.length > 0 && (
+        <div>
+          <div className="text-xs text-gray-400 mb-1 font-medium">
+            Next Steps ({activeRun.result.nextSteps.length})
+            <span className="text-[10px] text-gray-500 ml-2">AI-recommended actions to unblock the scenario</span>
+          </div>
+          <div className="space-y-1.5">
+            {activeRun.result.nextSteps.map((step: any, idx: number) => {
+              const isExpanded = expandedNextStep === idx;
+              const categoryColor: Record<string, string> = {
+                mitigation: '#3b82f6',
+                remediation: '#22c55e',
+                phase_shift: '#eab308',
+                governance: '#7c3aed',
+                escalation: '#ef4444',
+              };
+              const color = categoryColor[step.category] || '#6b7280';
+              const meta = [step.ownerHint, step.costEstimateRange, step.timelineHint]
+                .filter(Boolean)
+                .join(' · ');
+              return (
+                <div key={idx} className="bg-[var(--surface-raised)] rounded p-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedNextStep(isExpanded ? null : idx)}
+                    className="w-full flex items-start justify-between text-xs cursor-pointer hover:text-gray-100 text-left"
+                  >
+                    <div className="flex items-start gap-1.5 flex-1">
+                      {isExpanded ? <ChevronDown size={11} className="mt-0.5 shrink-0" /> : <ChevronRight size={11} className="mt-0.5 shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                          <span
+                            className="px-1.5 py-px rounded uppercase font-semibold tracking-wide"
+                            style={{ color, backgroundColor: `${color}1a`, fontSize: 8 }}
+                          >
+                            {String(step.category).replace('_', ' ')}
+                          </span>
+                          {meta && <span className="text-[10px] text-gray-500">{meta}</span>}
+                        </div>
+                        <div className="text-gray-200 leading-snug">{step.action}</div>
+                      </div>
+                    </div>
+                  </button>
+                  {isExpanded && step.rationale && (
+                    <div className="mt-2 pt-2 border-t border-[var(--border-subtle)] text-[10px] text-gray-400 leading-snug pl-4">
+                      <span className="text-gray-500 font-medium">Why: </span>{step.rationale}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

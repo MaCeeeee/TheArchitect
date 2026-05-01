@@ -173,6 +173,53 @@ export interface EmergenceMetrics {
   budgetAtRisk: number;
 }
 
+// ─── Next-Step Synthesis (Patch 9) ───
+
+/**
+ * Categorizes the kind of action the AI is recommending after a simulation.
+ * Drives badge color in UI and grouping in PDF.
+ */
+export type NextStepCategory =
+  | 'mitigation'   // address resistance / negotiate compromise
+  | 'remediation'  // fix a bottleneck or invest in a missing capability
+  | 'phase_shift'  // re-time a roadmap initiative
+  | 'governance'   // process / oversight / audit-trail change
+  | 'escalation';  // raise to a higher decision-maker
+
+/**
+ * A single concrete recommendation produced by generateNextSteps after a
+ * MiroFish run completes. Mirrors the shape of Oracle's mitigation array
+ * but adds owner / cost / timeline metadata so each step is actionable
+ * on its own (Oracle returns plain strings).
+ */
+export interface NextStep {
+  category: NextStepCategory;
+  /** 1-2 sentences, specific and actionable. */
+  action: string;
+  /** Comma-separated owner suggestion, e.g. "CFO + HR Director". */
+  ownerHint?: string;
+  /** Free-form cost range, e.g. "~80k EUR" or "0 EUR". */
+  costEstimateRange?: string;
+  /** Free-form timeline, e.g. "Q2 2026" or "within 90 days". */
+  timelineHint?: string;
+  /** Element IDs that triggered this recommendation (for traceability). */
+  sourceElementIds?: string[];
+  /** 1 sentence: why this addresses the underlying resistance / risk. */
+  rationale?: string;
+}
+
+/**
+ * Aggregated resistance signal from REJECT / MODIFY actions across all
+ * rounds. Mirrors Oracle's ResistanceFactor but tracks the affected
+ * element name (MiroFish has multi-element actions per turn).
+ */
+export interface MiroFishResistanceFactor {
+  factor: string;
+  severity: 'high' | 'medium' | 'low';
+  source: string;          // agent name
+  elementName?: string;    // affected element, when available
+}
+
 // ─── Simulation Result ───
 
 export interface SimulationResult {
@@ -183,6 +230,11 @@ export interface SimulationResult {
   recommendedActions: ProposedAction[];
   fatigue: FatigueReport;
   emergenceMetrics: EmergenceMetrics;
+  /** LLM-generated actionable recommendations (Patch 9). Optional for
+   *  backward compatibility with pre-Patch-9 historical runs. */
+  nextSteps?: NextStep[];
+  /** Aggregated resistance signal from REJECT/MODIFY actions (Patch 9). */
+  resistanceFactors?: MiroFishResistanceFactor[];
 }
 
 // ─── Simulation Config ───

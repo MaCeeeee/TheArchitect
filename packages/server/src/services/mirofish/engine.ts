@@ -4,6 +4,7 @@ import { buildAgentContext, type ProjectVisionContext } from './agentContextFilt
 import { validateActions } from './actionValidator';
 import { EmergenceTracker } from './emergenceTracker';
 import { parseScenarioConflicts, renderParsedScenario, type ParsedScenario } from './scenarioParser';
+import { extractMiroFishResistanceFactors, generateNextSteps } from './nextStepSynthesizer';
 import { Project } from '../../models/Project';
 import type {
   AgentPersona,
@@ -217,6 +218,24 @@ export class MiroFishEngine {
       `Projected delay: ${fatigueReport.totalProjectedDelayMonths} months. ` +
       `Budget at risk: $${fatigueReport.budgetAtRisk.toLocaleString()}.`;
 
+    // Synthesize actionable next-steps via 2nd LLM call (Patch 9). Failure
+    // here must not crash the simulation — next-steps are enriching, not
+    // critical, and the engine returns a usable result without them.
+    const resistanceFactors = extractMiroFishResistanceFactors(rounds);
+    let nextSteps: SimulationResult['nextSteps'] = [];
+    try {
+      nextSteps = await generateNextSteps({
+        scenarioDescription: config.scenarioDescription || '',
+        parsedScenario,
+        projectVision,
+        rounds,
+        fatigueReport,
+        resistanceFactors,
+      });
+    } catch (err) {
+      console.warn('[MiroFish] Failed to synthesize next steps:', err);
+    }
+
     const result: SimulationResult = {
       outcome,
       summary,
@@ -225,6 +244,8 @@ export class MiroFishEngine {
       recommendedActions,
       fatigue: fatigueReport,
       emergenceMetrics: metrics,
+      nextSteps,
+      resistanceFactors,
     };
 
     onEvent({ type: 'complete', result });
