@@ -483,9 +483,16 @@ export class EmergenceTracker {
   private countConflictRounds(conflict: ElementConflict): number {
     let count = 0;
     for (const [, positions] of conflict.rounds) {
+      // Any round where 2+ agents took DISTINCT positions on the same element
+      // is a conflict — including approve+modify (rubber-stamp risk vs.
+      // conditional accept) and modify+reject (conditional accept vs. block).
+      // The narrower "reject + approve only" rule misses the most common
+      // form of disagreement post-Quick-Fix, where critic agents go MODIFY
+      // (not REJECT) but other agents APPROVE.
       const values = [...positions.values()];
-      const hasConflict = values.includes('reject') && (values.includes('approve') || values.includes('modify'));
-      if (hasConflict) count++;
+      if (values.length < 2) continue;
+      const distinct = new Set(values);
+      if (distinct.size >= 2) count++;
     }
     return count;
   }
