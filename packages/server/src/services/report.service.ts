@@ -409,6 +409,237 @@ async function renderSimulationReport(doc: PDFKit.PDFDocument, project: { name: 
     drawMetricCard(doc, MARGIN + (cardW4 + 10) * 3, emY, cardW4, 'Hallucinations Blocked', `${emergence.blockedHallucinations || 0}`);
     doc.y = emY + 70;
   }
+
+  // ─── EU AI Act compliance sections (Patch 8) ─────────────────
+  // Mirrors the Oracle report structure so MiroFish runs are equally
+  // auditable. Pulls per-round agent reasoning + actions for the
+  // detailed sections.
+
+  const rounds = (run.rounds as Array<Record<string, unknown>>) || [];
+  const runConfig = run.config as Record<string, unknown> | undefined;
+  const personas = (runConfig?.agents as Array<Record<string, unknown>>) || [];
+
+  // Build per-agent aggregate from rounds (last position + all reasoning)
+  type AgentAggregate = {
+    agentId: string;
+    agentName: string;
+    persona?: Record<string, unknown>;
+    finalPosition: string;
+    totalActions: number;
+    rejectedActions: number;
+    modifiedActions: number;
+    reasoning: string[];
+    actionDetails: Array<{ round: number; type: string; element: string; reasoning: string; position: string }>;
+  };
+  const agentAggregates = new Map<string, AgentAggregate>();
+  for (const persona of personas) {
+    const id = String(persona.id || '');
+    if (!id) continue;
+    agentAggregates.set(id, {
+      agentId: id,
+      agentName: String(persona.name || id),
+      persona,
+      finalPosition: 'unknown',
+      totalActions: 0,
+      rejectedActions: 0,
+      modifiedActions: 0,
+      reasoning: [],
+      actionDetails: [],
+    });
+  }
+  for (const round of rounds) {
+    const roundNum = Number(round.roundNumber || 0);
+    const turns = (round.agentTurns as Array<Record<string, unknown>>) || [];
+    for (const turn of turns) {
+      const id = String(turn.agentPersonaId || '');
+      const agg = agentAggregates.get(id);
+      if (!agg) continue;
+      const position = String(turn.position || 'abstain');
+      agg.finalPosition = position; // last turn wins
+      const reasoning = String(turn.reasoning || '');
+      if (reasoning) agg.reasoning.push(`R${roundNum + 1}: ${reasoning}`);
+      const validated = (turn.validatedActions as Array<Record<string, unknown>>) || [];
+      agg.totalActions += validated.length;
+      for (const a of validated) {
+        if (position === 'reject') agg.rejectedActions += 1;
+        if (position === 'modify') agg.modifiedActions += 1;
+        agg.actionDetails.push({
+          round: roundNum + 1,
+          type: String(a.type || ''),
+          element: String(a.targetElementName || ''),
+          reasoning: String(a.reasoning || ''),
+          position,
+        });
+      }
+    }
+  }
+
+  // ─── Page: Detailed Stakeholder Reasoning ───
+  if (agentAggregates.size > 0) {
+    addNewPage(doc, `MiroFish Simulation — ${project.name}`, subtitle);
+    drawSectionTitle(doc, 'Detailed Stakeholder Reasoning');
+
+    for (const agg of agentAggregates.values()) {
+      checkPageBreak(doc, 120);
+      const persona = agg.persona || {};
+      const posColor = POSITION_COLORS[agg.finalPosition] || GRAY;
+
+      doc.font('Helvetica-Bold').fontSize(10).fillColor(posColor)
+        .text(`${agg.agentName} — ${agg.finalPosition.toUpperCase()} (${agg.actionDetails.length} actions across ${rounds.length} rounds)`, MARGIN);
+      doc.moveDown(0.2);
+
+      // Context box
+      doc.font('Helvetica').fontSize(7).fillColor(GRAY);
+      const ctx = [
+        persona.riskThreshold ? `Risk threshold: ${persona.riskThreshold}` : '',
+        persona.budgetConstraint ? `Budget: $${Number(persona.budgetConstraint).toLocaleString()}` : '',
+        persona.expectedCapacity ? `Capacity: ${persona.expectedCapacity} parallel` : '',
+        Array.isArray(persona.visibleLayers) ? `Layers: ${(persona.visibleLayers as string[]).join(', ')}` : '',
+      ].filter(Boolean).join(' | ');
+      if (ctx) {
+        doc.text(ctx, MARGIN);
+        doc.moveDown(0.2);
+      }
+
+      // Round-by-round reasoning
+      doc.font('Helvetica').fontSize(9).fillColor(DARK);
+      for (const r of agg.reasoning.slice(0, 5)) {
+        checkPageBreak(doc, 24);
+        doc.text(r, MARGIN, doc.y, { width: CONTENT_W });
+        doc.moveDown(0.2);
+      }
+
+      // Top action details
+      const topActions = agg.actionDetails.slice(0, 3);
+      if (topActions.length > 0) {
+        doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+        for (const a of topActions) {
+          checkPageBreak(doc, 14);
+          doc.text(`  → R${a.round} ${a.position.toUpperCase()} on "${a.element}": ${a.reasoning.slice(0, 200)}`, MARGIN, doc.y, { width: CONTENT_W - 10 });
+          doc.moveDown(0.15);
+        }
+      }
+      doc.moveDown(0.5);
+    }
+  }
+
+  // ─── Page: Resistance Factors + Mitigations + Methodology + Audit ───
+  addNewPage(doc, `MiroFish Simulation — ${project.name}`, subtitle);
+
+  // Resistance Factors — derived from REJECT/MODIFY actions
+  const resistanceFactors: Array<{ factor: string; severity: string; source: string }> = [];
+  for (const agg of agentAggregates.values()) {
+    for (const a of agg.actionDetails) {
+      if (a.position !== 'reject' && a.position !== 'modify') continue;
+      const severity = a.position === 'reject' ? 'high' : 'medium';
+      resistanceFactors.push({
+        factor: `${a.position.toUpperCase()} on "${a.element}": ${a.reasoning.slice(0, 110)}`,
+        severity,
+        source: agg.agentName,
+      });
+      if (resistanceFactors.length >= 20) break;
+    }
+    if (resistanceFactors.length >= 20) break;
+  }
+
+  if (resistanceFactors.length > 0) {
+    drawSectionTitle(doc, 'Resistance Factors');
+    drawTable(doc,
+      ['Factor', 'Severity', 'Source'],
+      resistanceFactors.map((f) => [f.factor.slice(0, 90), f.severity, f.source.slice(0, 30)]),
+      [310, 50, 135],
+      'Resistance Factors',
+    );
+    doc.moveDown(0.6);
+  }
+
+  // Mitigation Suggestions — derived from fatigue recommendation + bottlenecks
+  const mitigations: string[] = [];
+  if (fatigue?.recommendation) {
+    mitigations.push(String(fatigue.recommendation));
+  }
+  const overloadedAgents = (fatigue?.perAgent as Array<Record<string, unknown>> | undefined)
+    ?.filter((a) => Number(a.concurrencyLoad || 0) >= 0.8)
+    ?.map((a) => String(a.agentName || '')) || [];
+  if (overloadedAgents.length > 0) {
+    mitigations.push(`Phase work for overloaded stakeholders (${overloadedAgents.join(', ')}) to reduce concurrent load below 80%.`);
+  }
+  const topBottleneck = (fatigue?.perElement as Array<Record<string, unknown>> | undefined)?.[0];
+  if (topBottleneck && Number(topBottleneck.conflictRounds || 0) >= 2) {
+    mitigations.push(`Schedule a stakeholder workshop for "${topBottleneck.elementName}" (${topBottleneck.conflictRounds} conflict rounds) to resolve the deadlock pattern before implementation.`);
+  }
+  if (resistanceFactors.length >= 5) {
+    mitigations.push(`Document each REJECT/MODIFY rationale in a decision log; assign a change champion to address each before progressing.`);
+  }
+
+  if (mitigations.length > 0) {
+    drawSectionTitle(doc, 'Mitigation Suggestions');
+    doc.font('Helvetica').fontSize(9).fillColor(DARK);
+    mitigations.forEach((m, i) => {
+      checkPageBreak(doc, 20);
+      doc.text(`${i + 1}. ${m}`, MARGIN, doc.y, { width: CONTENT_W });
+      doc.moveDown(0.3);
+    });
+    doc.moveDown(0.5);
+  }
+
+  // Scoring Methodology
+  drawSectionTitle(doc, 'Scoring Methodology (Compliance)');
+  doc.font('Helvetica').fontSize(9).fillColor(DARK);
+  doc.text('Method: Composite Fatigue Index (3-factor model)', MARGIN);
+  doc.text('Formula: FatigueIndex = 0.4 × ConcurrencyLoad + 0.4 × NegotiationDrag + 0.2 × ConstraintPressure', MARGIN);
+  doc.moveDown(0.3);
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  doc.text('Factor definitions:', MARGIN);
+  doc.text('  - ConcurrencyLoad = parallel changes / expected capacity (capped at 1.0)', MARGIN);
+  doc.text('  - NegotiationDrag = conflict rounds touched / total rounds elapsed', MARGIN);
+  doc.text('  - ConstraintPressure = budget/risk-threshold violations / total proposals', MARGIN);
+  doc.moveDown(0.3);
+  doc.text('Conflict definition: any round where 2+ agents take distinct positions on the same element.', MARGIN);
+  doc.text('Deadlock: a conflict round where at least one agent rejects while at least one approves.', MARGIN);
+  doc.text('Hallucination: an agent action targeting an element ID not in the agent\'s visible architecture (blocked by validator).', MARGIN);
+  doc.moveDown(0.3);
+  doc.text('Rating thresholds: Green < 0.30 | Yellow 0.30-0.59 | Orange 0.60-0.79 | Red >= 0.80', MARGIN);
+  doc.moveDown(0.5);
+
+  // Audit Metadata (Patch 8 — EU AI Act Art. 12 record-keeping)
+  drawSectionTitle(doc, 'Audit Metadata');
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  doc.text(`Run ID: ${run._id || 'unknown'}`, MARGIN);
+  doc.text(`Run Name: ${run.name || '-'}`, MARGIN);
+  doc.text(`Created: ${run.createdAt ? new Date(run.createdAt as Date).toISOString() : '-'}`, MARGIN);
+  doc.text(`Status: ${run.status || '-'}`, MARGIN);
+  doc.text(`LLM Provider: ${process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'unknown'}`, MARGIN);
+  doc.text(`Model: ${process.env.OPENAI_MODEL || process.env.ANTHROPIC_MODEL || 'default'}`, MARGIN);
+  doc.text(`Project: ${project.name}`, MARGIN);
+  doc.text(`Total Tokens Used: ${run.totalTokensUsed || 0}`, MARGIN);
+  doc.text(`Total Duration: ${Math.round(Number(run.totalDurationMs || 0) / 1000)}s`, MARGIN);
+  doc.text(`Rounds Executed: ${rounds.length} of ${(runConfig?.maxRounds as number) || 5}`, MARGIN);
+  doc.text(`Personas: ${personas.length}`, MARGIN);
+
+  // ─── Page: EU AI Act Compliance ───
+  addNewPage(doc, `MiroFish Simulation — ${project.name}`, subtitle);
+
+  drawSectionTitle(doc, 'System Risk Classification (EU AI Act Art. 6-7)');
+  doc.font('Helvetica').fontSize(9).fillColor(DARK);
+  doc.text('Classification Level: limited (decision support, not autonomous)', MARGIN);
+  doc.text('Human Oversight Required: Yes', MARGIN);
+  doc.text('Legal Reference: EU AI Act 2024/1689, Art. 6(2), Art. 52(1)', MARGIN);
+  doc.moveDown(0.3);
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  doc.text('MiroFish multi-agent simulations produce stakeholder consensus signals for human enterprise architects. The system does NOT autonomously change architecture state, allocate budgets, or execute decisions. All recommended actions require explicit human approval before being applied to the architecture model.', MARGIN, doc.y, { width: CONTENT_W });
+  doc.moveDown(0.6);
+
+  drawSectionTitle(doc, 'Human Oversight Status (EU AI Act Art. 14)');
+  doc.font('Helvetica-Bold').fontSize(10).fillColor('#eab308').text('PENDING REVIEW', MARGIN);
+  doc.moveDown(0.2);
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  doc.text('This simulation report must be reviewed by an authorized enterprise architect before any of its recommended actions are applied to the architecture model. The reviewer should evaluate the validity of stakeholder reasoning, the proportionality of identified resistance factors, and whether the proposed mitigations are operationally feasible. Reviewer sign-off must be documented in the project audit log.', MARGIN, doc.y, { width: CONTENT_W });
+  doc.moveDown(0.6);
+
+  drawSectionTitle(doc, 'Transparency Notice (EU AI Act Art. 13)');
+  doc.font('Helvetica').fontSize(8).fillColor(GRAY);
+  doc.text('All stakeholder reasoning shown in this report was generated by a Large Language Model conditioned on the persona definition, project vision/principles, and visible architecture context. Reasoning is non-deterministic; re-running the same scenario may produce different specific phrasings while preserving the underlying position pattern. The scoring methodology section above describes the deterministic numerical aggregation applied to model output.', MARGIN, doc.y, { width: CONTENT_W });
 }
 
 // ─── Inventory Report ────────────────────────────────────
