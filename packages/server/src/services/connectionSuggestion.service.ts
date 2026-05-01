@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {
   hasStrongRelationship,
+  getValidRelationships,
   CATEGORY_BY_TYPE,
   type StandardConnectionType,
   type ElementType,
@@ -37,6 +38,8 @@ export interface HealReport {
   perElement: Map<string, Suggestion[]>;
   ragContextUsed: boolean;
   llmCallsMade: number;
+  /** Suggestions dropped because the LLM picked an ArchiMate-invalid relationshipType. */
+  invalidRelationshipDrops: number;
 }
 export interface HealOptions {
   projectId: string;
@@ -69,16 +72,18 @@ export type LLMReasoner = (input: {
 
 const SYSTEM_PROMPT = `You are an enterprise-architecture reviewer working with the ArchiMate 3.2 standard.
 
-You receive ONE source architecture element (with name + description) and a list of CANDIDATE elements (also with name + description). You also receive optional REGULATORY CONTEXT (chunks from CSRD/LkSG/etc. documents the customer uploaded).
+You receive ONE source architecture element (with name + description) and a list of CANDIDATE elements. Each candidate is annotated with the relationship types that are VALID for this exact source→target pair according to the ArchiMate 3.2 spec — you MUST pick one of those listed types, no other type is allowed.
+
+You may also receive REGULATORY CONTEXT (chunks from CSRD/LkSG/etc. documents the customer uploaded) to inform your judgment.
 
 Your job: pick the candidates that are semantically and methodically appropriate to connect to the source. Be strict — only suggest connections that an experienced ArchiMate architect would draw manually based on what the elements actually represent.
 
 Rules:
-- Do NOT suggest a connection just because the structural ArchiMate rules allow it. Two stakeholders may be structurally connectible via composition, but unless the descriptions show one really contains the other, do not suggest it.
+- "relationshipType" MUST be one of the values in the candidate's "valid" list. Picking any other relationship is an ArchiMate spec violation and will be rejected. If only "association" is valid for a candidate, that almost always means the pair is too weak — drop it unless the descriptions show a very strong semantic match.
+- Do NOT suggest a connection just because the structural ArchiMate rules allow it. Two elements may be structurally connectible via composition, but unless the descriptions show one really contains the other, do not suggest it.
 - Do NOT suggest connections to candidates whose description has no semantic relation to the source.
 - Output a maximum of 5 suggestions, ordered by confidence (most plausible first). Prefer fewer high-quality suggestions over many weak ones.
 - "confidence" is your subjective belief that an architect would draw this connection (0.0-1.0). 0.9+ = obvious, 0.7-0.9 = plausible, below 0.7 = drop it.
-- "relationshipType" must be one of: composition, aggregation, assignment, realization, serving, access, influence, triggering, flow, specialization, association.
 - "reasoning" is a single short sentence (max ~25 words) explaining WHY this connection makes sense, citing specific words from the descriptions.
 
 Return ONLY valid JSON in this exact shape, no prose, no markdown fences:
@@ -92,7 +97,10 @@ const defaultLLM: LLMReasoner = async ({ source, candidates, ragContext }) => {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const candidateBlock = candidates
-    .map((c, i) => `[${i + 1}] id=${c.id} type=${c.type} name="${c.name}" description="${(c.description || '').replace(/"/g, "'").slice(0, 400)}"`)
+    .map((c, i) => {
+      const valid = getValidRelationships(source.type as ElementType, c.type as ElementType);
+      return `[${i + 1}] id=${c.id} type=${c.type} valid=[${valid.join(', ')}] name="${c.name}" description="${(c.description || '').replace(/"/g, "'").slice(0, 400)}"`;
+    })
     .join('\n');
 
   const userMessage = [
@@ -232,6 +240,7 @@ export async function suggestConnectionsForIsolatedElements(
 
   let ragContextUsed = false;
   let llmCallsMade = 0;
+  let invalidRelationshipDrops = 0;
   const elementById = new Map(opts.elements.map((e) => [e.id, e]));
   const perElement = new Map<string, Suggestion[]>();
   let total = 0;
@@ -270,6 +279,19 @@ export async function suggestConnectionsForIsolatedElements(
           const target = elementById.get(s.targetId);
           if (!target) return null;
           if (s.confidence < minConfidence) return null;
+
+          // Post-validation: even if the LLM was told the valid set per pair,
+          // it may still hallucinate an invalid relationshipType. Reject those
+          // — never persist an ArchiMate-spec-violating edge.
+          const validForPair = getValidRelationships(
+            el.type as ElementType,
+            target.type as ElementType,
+          );
+          if (!validForPair.includes(s.relationshipType)) {
+            invalidRelationshipDrops++;
+            return null;
+          }
+
           return {
             sourceId: el.id,
             sourceName: el.name,
@@ -301,5 +323,6 @@ export async function suggestConnectionsForIsolatedElements(
     perElement,
     ragContextUsed,
     llmCallsMade,
+    invalidRelationshipDrops,
   };
 }

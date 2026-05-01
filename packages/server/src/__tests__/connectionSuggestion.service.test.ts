@@ -120,4 +120,31 @@ describe('suggestConnectionsForIsolatedElements (LLM+RAG)', () => {
     expect(r.perElement.has('s1')).toBe(false);
     expect(r.perElement.has('d1')).toBe(false);
   });
+
+  it('drops suggestions whose relationshipType is ArchiMate-invalid for the pair', async () => {
+    // stakeholder→business_capability is motivation→strategy.
+    // Per ArchiMate 3.2 §7.6 the only valid relationships are 'influence' and 'association'.
+    // 'serving' is structurally invalid and must be dropped post-LLM.
+    const capability: El = {
+      id: 'c1',
+      type: 'business_capability',
+      name: 'Cap',
+      description: 'A capability.',
+    };
+    const llmHallucinatesServing: LLMReasoner = async () => [{
+      targetId: 'c1',
+      relationshipType: 'serving' as const,
+      confidence: 0.95,
+      reasoning: 'looks plausible',
+    }];
+    const r = await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [stakeholder, capability],
+      connections: [],
+      minConfidence: 0.7,
+      llm: llmHallucinatesServing,
+    });
+    expect(r.suggestionsTotal).toBe(0);
+    expect(r.invalidRelationshipDrops).toBeGreaterThan(0);
+  });
 });
