@@ -455,10 +455,16 @@ router.post(
       const parsed = CreateConnectionSchema.parse(req.body);
       const connectionId = parsed.id || uuid();
 
+      // MERGE on (sourceId, targetId, type) so deterministic-id callers
+      // (e.g. envisionSync.ts: `env-conn-${src}-${tgt}`) and accidental
+      // double-clicks no longer create duplicate edges. Uniqueness on r.id is
+      // enforced by the CONNECTS_TO_id_unique Neo4j constraint.
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
-         RETURN r`,
+         MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
+         ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp()
+         ON MATCH  SET r.label = coalesce($label, r.label)
+         RETURN r.id AS id`,
         {
           sourceId: parsed.sourceId,
           targetId: parsed.targetId,
