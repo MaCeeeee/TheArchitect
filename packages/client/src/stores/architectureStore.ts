@@ -223,6 +223,16 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
         if (import.meta.env.DEV) console.error('Failed to sync updateElement:', err);
       });
     }
+    // If X-Ray is active and the change affects a metric the X-Ray uses for
+    // bucketing (status, riskLevel, maturityLevel, annualCost), recompute so
+    // the element snaps to its new column without requiring an X-Ray toggle.
+    const metricKeys = ['status', 'riskLevel', 'maturityLevel', 'annualCost', 'transformationStrategy'];
+    const changed = metricKeys.some((k) => k in (changes as Record<string, unknown>));
+    if (changed) {
+      void import('./xrayStore').then(({ useXRayStore }) => {
+        if (useXRayStore.getState().isActive) useXRayStore.getState().recompute();
+      });
+    }
   },
   removeElement: (id) => {
     get().pushHistory();

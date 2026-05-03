@@ -370,29 +370,44 @@ export const useXRayStore = create<XRayState>((set, get) => ({
       const count = layerElements.length;
       if (count === 0) continue;
 
-      // Determine bucket boundaries from the metric range (per layer scale).
-      // Risk uses fixed 0–10 thresholds so visuals match the demo bucket lines.
-      let thresholds: number[];
+      // Determine bucket assignment per view. Risk + timeline use FIXED bucket
+      // semantics so the same value lands in the same column across all
+      // layers (otherwise "transitional" can sit dead-centre in one layer and
+      // hard right in another, depending on the layer's metric range).
+      // Cost falls back to per-layer quintiles since cost magnitudes vary
+      // wildly across layers and a fixed currency scale would be misleading.
+      let bucketOf: (el: ArchitectureElement) => number;
       if (view === 'risk') {
-        thresholds = [2, 4, 6, 8]; // → 5 buckets: <2, 2-<4, 4-<6, 6-<8, ≥8
+        const thresholds = [2, 4, 6, 8]; // → 5 buckets: <2, 2-<4, 4-<6, 6-<8, ≥8
+        bucketOf = (el) => {
+          const score = metricOf(el);
+          for (let i = 0; i < thresholds.length; i++) if (score < thresholds[i]) return i;
+          return thresholds.length;
+        };
+      } else if (view === 'timeline') {
+        // Discrete status → fixed columns (consistent across all layers)
+        // Bucket 0 = current, 1 = transitional, 2 = (visual gap), 3 = target, 4 = retired
+        const statusBucket: Record<string, number> = {
+          current: 0, transitional: 1, target: 3, retired: 4,
+        };
+        bucketOf = (el) => statusBucket[el.status] ?? 0;
       } else {
+        // Cost: per-layer quintiles
         const values = layerElements.map(metricOf).sort((a, b) => a - b);
         const min = values[0] ?? 0;
         const max = values[values.length - 1] ?? min + 1;
         const span = max - min || 1;
-        thresholds = [1, 2, 3, 4].map((i) => min + (span * i) / NUM_BUCKETS);
+        const thresholds = [1, 2, 3, 4].map((i) => min + (span * i) / NUM_BUCKETS);
+        bucketOf = (el) => {
+          const score = metricOf(el);
+          for (let i = 0; i < thresholds.length; i++) if (score < thresholds[i]) return i;
+          return thresholds.length;
+        };
       }
-
-      const bucketOf = (score: number): number => {
-        for (let i = 0; i < thresholds.length; i++) {
-          if (score < thresholds[i]) return i;
-        }
-        return thresholds.length;
-      };
 
       // Place elements into buckets
       const buckets: ArchitectureElement[][] = Array.from({ length: NUM_BUCKETS }, () => []);
-      for (const el of layerElements) buckets[bucketOf(metricOf(el))].push(el);
+      for (const el of layerElements) buckets[bucketOf(el)].push(el);
 
       // Bucket center X positions evenly spread across SCALE_WIDTH
       // (NUM_BUCKETS is a constant >= 2, so plain division is safe)
