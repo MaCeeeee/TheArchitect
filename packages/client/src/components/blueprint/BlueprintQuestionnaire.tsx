@@ -69,7 +69,14 @@ function TextField({
   required?: boolean;
   multiline?: boolean;
 }) {
-  const Tag = multiline ? 'textarea' : 'input';
+  // Auto-promote to textarea when the value is long enough that a
+  // single-line input would truncate it (auto-fill from PDF often
+  // produces paragraphs). User can still type short values; only the
+  // rendered TAG switches when content exceeds the threshold.
+  const isLong = value.length > 80;
+  const Tag = (multiline || isLong) ? 'textarea' : 'input';
+  // Estimate row count so the textarea grows with content (cap at 8).
+  const estRows = Math.min(8, Math.max(2, Math.ceil(value.length / 70)));
   return (
     <div>
       <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">
@@ -79,8 +86,8 @@ function TextField({
         value={value}
         onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-none"
-        rows={multiline ? 3 : undefined}
+        className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y"
+        rows={(multiline || isLong) ? estRows : undefined}
       />
       {hint && <p className="text-[10px] text-[var(--text-disabled)] mt-1 italic">{hint}</p>}
     </div>
@@ -449,23 +456,29 @@ export default function BlueprintQuestionnaire({ onGenerate }: BlueprintQuestion
           <label className="text-xs font-medium text-[var(--text-secondary)] block">
             Your Top 3 Business Goals <span className="text-[#ef4444]">*</span>
           </label>
-          {q.goals.map((goal, i) => (
-            <input
-              key={i}
-              value={goal}
-              onChange={(e) => {
-                const newGoals = [...q.goals] as [string, string, string];
-                newGoals[i] = e.target.value;
-                update({ goals: newGoals });
-              }}
-              placeholder={[
-                'e.g. 10,000 active users in 6 months',
-                'e.g. Break-even within 18 months',
-                'e.g. Partnerships with 50 sustainable brands',
-              ][i]}
-              className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition"
-            />
-          ))}
+          {q.goals.map((goal, i) => {
+            const isLong = goal.length > 80;
+            const GoalTag = isLong ? 'textarea' : 'input';
+            const estRows = Math.min(6, Math.max(2, Math.ceil(goal.length / 70)));
+            return (
+              <GoalTag
+                key={i}
+                value={goal}
+                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                  const newGoals = [...q.goals] as [string, string, string];
+                  newGoals[i] = e.target.value;
+                  update({ goals: newGoals });
+                }}
+                rows={isLong ? estRows : undefined}
+                placeholder={[
+                  'e.g. 10,000 active users in 6 months',
+                  'e.g. Break-even within 18 months',
+                  'e.g. Partnerships with 50 sustainable brands',
+                ][i]}
+                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y"
+              />
+            );
+          })}
         </div>
         <TextField
           label="What does success look like for you?"
