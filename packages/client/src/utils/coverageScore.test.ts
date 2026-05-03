@@ -92,6 +92,25 @@ describe('computeRequirementCoverage', () => {
     expect(r.coverage).toBe(0);
   });
 
+  test('ignores Driver→Requirement influence (motivation source ≠ realizer)', () => {
+    const req = el({ id: 'r1', type: 'requirement', layer: 'motivation' });
+    const driver = el({ id: 'd1', type: 'driver', layer: 'motivation', status: 'current', maturityLevel: 5 });
+    // CSRD-like: Driver INFLUENCES requirement. ArchiMate-correct edge,
+    // but the driver doesn't *realize* the requirement.
+    const r = computeRequirementCoverage('r1', [req, driver], [conn('d1', 'r1', 'influence')]);
+    expect(r.coverage).toBe(0);
+    expect(r.fulfillingCount).toBe(0);
+    expect(r.reason).toMatch(/No element realizes/);
+  });
+
+  test('ignores Goal→Requirement influence as well', () => {
+    const req = el({ id: 'r1', type: 'requirement', layer: 'motivation' });
+    const goal = el({ id: 'g1', type: 'goal', layer: 'motivation', status: 'current', maturityLevel: 5 });
+    const r = computeRequirementCoverage('r1', [req, goal], [conn('g1', 'r1', 'influence')]);
+    expect(r.coverage).toBe(0);
+    expect(r.fulfillingCount).toBe(0);
+  });
+
   test('accepts both "realization" and "realisation" spellings', () => {
     const req = el({ id: 'r1', type: 'requirement', layer: 'motivation' });
     const cap = el({ id: 'c1', status: 'current', maturityLevel: 5 });

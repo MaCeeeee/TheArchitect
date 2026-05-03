@@ -25,6 +25,26 @@ const FULFILLMENT_TYPES = new Set([
   'serving',
 ]);
 
+/**
+ * Source-element types that DO NOT count as fulfillers, even when they
+ * have an incoming fulfillment-typed edge to the requirement. ArchiMate
+ * Driver/Goal/Principle MOTIVATE a requirement (often via 'influence');
+ * they don't realize it. Treating them as realizers makes a barely-
+ * connected requirement look "covered" when nothing concrete actually
+ * implements it.
+ */
+const NON_FULFILLER_SOURCE_TYPES = new Set([
+  'driver',
+  'goal',
+  'principle',
+  'requirement',
+  'constraint',
+  'assessment',
+  'value',
+  'meaning',
+  'outcome',
+]);
+
 const STATUS_MULTIPLIER: Record<string, number> = {
   current: 1.0,
   transitional: 0.5,
@@ -72,6 +92,10 @@ export function computeRequirementCoverage(
   for (const conn of incoming) {
     const src = elementById.get(conn.sourceId);
     if (!src) continue;
+    // Skip motivation-layer "source-of-requirement" links — Driver/Goal
+    // INFLUENCE the requirement but don't fulfill it. Including them
+    // would inflate coverage just because the upstream regulation exists.
+    if (NON_FULFILLER_SOURCE_TYPES.has(src.type)) continue;
     const statusMult = STATUS_MULTIPLIER[src.status] ?? 0;
     const maturityNorm = Math.max(0, Math.min(1, (src.maturityLevel ?? 0) / MAX_MATURITY));
     const contribution = statusMult * maturityNorm;

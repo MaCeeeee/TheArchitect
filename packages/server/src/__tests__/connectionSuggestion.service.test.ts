@@ -121,6 +121,57 @@ describe('suggestConnectionsForIsolatedElements (LLM+RAG)', () => {
     expect(r.perElement.has('d1')).toBe(false);
   });
 
+  it('treats Requirement with only upstream Driver-influence as fulfillment-isolated (still heal-iterated)', async () => {
+    // Real-world case: ESRS policy gets projected as a Requirement and
+    // simultaneously gets a Driver→Requirement influence edge from
+    // CSRD. With the legacy "any-edge → not isolated" rule, Heal would
+    // skip this Requirement entirely. With the fulfillment-isolated
+    // rule, Heal still scans it because no Capability fulfills it yet.
+    const req: El = { id: 'req1', type: 'requirement', name: 'Materiality Assessment Requirement', description: 'Perform materiality assessment.' };
+    const driver: El = { id: 'd1', type: 'driver', name: 'CSRD', description: 'EU regulation.' };
+    const cap: El = { id: 'cap1', type: 'business_capability', name: 'Materiality Analysis', description: 'Identifies material ESG topics.' };
+
+    const seen: string[] = [];
+    const recordingLLM: LLMReasoner = async ({ source }) => {
+      seen.push(source.id);
+      return [];
+    };
+
+    await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [req, driver, cap],
+      connections: [{ id: 'c1', sourceId: 'd1', targetId: 'req1', type: 'influence' }],
+      minConfidence: 0.7,
+      llm: recordingLLM,
+    });
+
+    // Driver and Cap are 0-isolated → scanned. Requirement has 1 edge
+    // (driver-influence) but ZERO fulfilling realizers → also scanned.
+    expect(seen).toContain('req1');
+  });
+
+  it('does NOT scan a Requirement that already has a realizing Capability', async () => {
+    const req: El = { id: 'req1', type: 'requirement', name: 'Disclosure Req', description: 'Disclose carbon.' };
+    const cap: El = { id: 'cap1', type: 'business_capability', name: 'Carbon Accounting', description: 'Tracks GHG emissions.' };
+
+    const seen: string[] = [];
+    const recordingLLM: LLMReasoner = async ({ source }) => {
+      seen.push(source.id);
+      return [];
+    };
+
+    await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [req, cap],
+      connections: [{ id: 'c1', sourceId: 'cap1', targetId: 'req1', type: 'realization' }],
+      minConfidence: 0.7,
+      llm: recordingLLM,
+    });
+
+    // Requirement is fulfilled (Capability realizes it) → NOT scanned
+    expect(seen).not.toContain('req1');
+  });
+
   it('honours bidirectional direction: Capability realizes Requirement (edge runs Capability→Requirement)', async () => {
     // The isolated element is a Requirement. Per ArchiMate the edge runs
     // Capability → Requirement (incoming), not the reverse. The heal must

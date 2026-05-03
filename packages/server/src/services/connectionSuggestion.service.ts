@@ -64,6 +64,39 @@ const DEFAULT_TOP_N = 4;
 const DEFAULT_MAX_CANDIDATES = 20;
 
 /**
+ * Edge types that count as "fulfilling" a Requirement (mirrors the
+ * client-side Coverage utility — keep in sync).
+ */
+const FULFILLMENT_EDGE_TYPES = new Set([
+  'realization',
+  'realisation',
+  'influence',
+  'assignment',
+  'serving',
+]);
+
+/**
+ * Source-element types that DO NOT fulfill a Requirement even when
+ * connected via a fulfillment-typed edge. ArchiMate Driver/Goal/etc.
+ * MOTIVATE a requirement (often via 'influence'); they don't realize
+ * it. Without this exception, every projected ESRS Requirement would
+ * be considered "non-isolated" the moment its upstream regulatory
+ * Driver-edge is created (see policy-to-requirement.service.ts), and
+ * Heal would never propose realizing Capabilities for it.
+ */
+const NON_FULFILLER_SOURCE_TYPES = new Set([
+  'driver',
+  'goal',
+  'principle',
+  'requirement',
+  'constraint',
+  'assessment',
+  'value',
+  'meaning',
+  'outcome',
+]);
+
+/**
  * Functional shape of the LLM step. The default impl uses Haiku 4.5; tests can
  * inject a stub.
  */
@@ -275,7 +308,26 @@ export async function suggestConnectionsForIsolatedElements(
     connectedPairs.add(pairKey(c.sourceId, c.targetId));
   }
 
+  // For Requirements specifically, count only INCOMING fulfillment-typed
+  // edges from non-motivation sources. A requirement that has only its
+  // upstream Driver-influence edge is still uncovered from a compliance
+  // standpoint and must be heal-iterated.
+  const elementByIdLocal = new Map(opts.elements.map((e) => [e.id, e]));
+  const fulfillmentInCount = new Map<string, number>();
+  for (const c of opts.connections) {
+    if (!FULFILLMENT_EDGE_TYPES.has(c.type)) continue;
+    const src = elementByIdLocal.get(c.sourceId);
+    if (!src) continue;
+    if (NON_FULFILLER_SOURCE_TYPES.has(src.type)) continue;
+    fulfillmentInCount.set(c.targetId, (fulfillmentInCount.get(c.targetId) ?? 0) + 1);
+  }
+
   const isolatedElements = opts.elements.filter((el) => {
+    if (el.type === 'requirement') {
+      // Compliance-isolated: zero fulfilling realizers, regardless of
+      // upstream Driver/Goal connections.
+      return (fulfillmentInCount.get(el.id) ?? 0) === 0;
+    }
     const cnt = connectionCount.get(el.id) ?? 0;
     return cnt === 0 || (includeWeak && cnt === 1);
   });
