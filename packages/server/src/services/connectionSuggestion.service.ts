@@ -97,6 +97,103 @@ const NON_FULFILLER_SOURCE_TYPES = new Set([
 ]);
 
 /**
+ * Spec-chain isolation: an element of a known spec-chain type is
+ * considered "isolated for heal purposes" if it lacks the specific
+ * required edge in the ArchiMate spec chain
+ *   Motivation → Strategy → Capability → Process → Activity,
+ * REGARDLESS of how many other connections it has. Without this,
+ * a Process with 5 Actor/Application connections but no realizing
+ * link to a Capability would be skipped — exactly the BSH-demo
+ * blocker where Compliance Audits / GHG Reporting / Supplier Due
+ * Diligence Processes had Salesforce/SAP edges but none to a
+ * Capability.
+ *
+ * Each entry says: this element type needs a connection in the given
+ * direction, with one of the given relationship types, to one of the
+ * given partner types. If at least one such edge exists, not isolated.
+ */
+interface SpecChainNeed {
+  direction: 'incoming' | 'outgoing';
+  edgeTypes: ReadonlyArray<string>;
+  partnerTypes: ReadonlyArray<string>;
+}
+
+const SPEC_CHAIN_NEEDS: Record<string, SpecChainNeed> = {
+  process: {
+    direction: 'outgoing',
+    edgeTypes: ['realization', 'realisation'],
+    partnerTypes: ['business_capability', 'capability'],
+  },
+  business_process: {
+    direction: 'outgoing',
+    edgeTypes: ['realization', 'realisation'],
+    partnerTypes: ['business_capability', 'capability'],
+  },
+  business_capability: {
+    direction: 'incoming',
+    edgeTypes: ['realization', 'realisation'],
+    partnerTypes: ['process', 'business_process'],
+  },
+  capability: {
+    direction: 'incoming',
+    edgeTypes: ['realization', 'realisation'],
+    partnerTypes: ['process', 'business_process'],
+  },
+};
+
+function isSpecChainIsolated(
+  el: SuggestionInput,
+  connections: ExistingConnection[],
+  elementById: Map<string, SuggestionInput>,
+): boolean {
+  const need = SPEC_CHAIN_NEEDS[el.type];
+  if (!need) return false;
+  for (const c of connections) {
+    if (!need.edgeTypes.includes(c.type)) continue;
+    if (need.direction === 'outgoing') {
+      if (c.sourceId !== el.id) continue;
+      const tgt = elementById.get(c.targetId);
+      if (tgt && need.partnerTypes.includes(tgt.type)) return false;
+    } else {
+      if (c.targetId !== el.id) continue;
+      const src = elementById.get(c.sourceId);
+      if (src && need.partnerTypes.includes(src.type)) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Whitelist of spec-chain pair → relationship types that are valid in
+ * the ArchiMate spec but missing from the shared archimate-rules
+ * `getValidRelationships` (which has a gap for the `strategy` aspect:
+ * Process↔Capability returns only 'association' even though ArchiMate
+ * 3.2 §7.3 explicitly says Process realizes Capability).
+ *
+ * Used to override hasStrongRelationship in pre-filter AND the
+ * post-validation in the worker loop. Fixing the shared constants
+ * properly is post-demo work.
+ */
+const SPEC_CHAIN_VALID_RELATIONS: Record<string, Set<string>> = {
+  'process->business_capability': new Set(['realization', 'realisation']),
+  'business_process->business_capability': new Set(['realization', 'realisation']),
+  'business_capability->process': new Set(['realization', 'realisation']),
+  'business_capability->business_process': new Set(['realization', 'realisation']),
+  'process->capability': new Set(['realization', 'realisation']),
+  'business_process->capability': new Set(['realization', 'realisation']),
+  'capability->process': new Set(['realization', 'realisation']),
+  'capability->business_process': new Set(['realization', 'realisation']),
+};
+
+function specChainHasStrong(srcType: string, tgtType: string): boolean {
+  return `${srcType}->${tgtType}` in SPEC_CHAIN_VALID_RELATIONS;
+}
+
+function specChainAllows(srcType: string, tgtType: string, relType: string): boolean {
+  return SPEC_CHAIN_VALID_RELATIONS[`${srcType}->${tgtType}`]?.has(relType) ?? false;
+}
+
+/**
  * Functional shape of the LLM step. The default impl uses Haiku 4.5; tests can
  * inject a stub.
  */
@@ -254,9 +351,16 @@ function preFilterCandidates(
     if (alreadyConnected.has(pairKeyFn(source.id, c.id))) continue;
     if (c.type === source.type) continue;
     const cType = c.type as ElementType;
-    if (!CATEGORY_BY_TYPE.get(cType)) continue;
-    const allowOutgoing = hasStrongRelationship(sourceType, cType);
-    const allowIncoming = hasStrongRelationship(cType, sourceType);
+    // Accept candidate if it's either in the canonical category map OR
+    // a known spec-chain type (the shared map is missing some aliases
+    // like 'business_process' / 'capability').
+    if (!CATEGORY_BY_TYPE.get(cType) && !(c.type in SPEC_CHAIN_NEEDS)) continue;
+    // hasStrongRelationship has a gap for the 'strategy' aspect (e.g.
+    // Process→Capability falls back to 'association' only). Spec-chain
+    // pairs whitelist these missing realization edges so heal can
+    // propose them.
+    const allowOutgoing = hasStrongRelationship(sourceType, cType) || specChainHasStrong(sourceType, cType);
+    const allowIncoming = hasStrongRelationship(cType, sourceType) || specChainHasStrong(cType, sourceType);
     if (!allowOutgoing && !allowIncoming) continue;
     filtered.push({ candidate: c, allowOutgoing, allowIncoming });
     if (filtered.length >= maxN) break;
@@ -327,6 +431,11 @@ export async function suggestConnectionsForIsolatedElements(
       // Compliance-isolated: zero fulfilling realizers, regardless of
       // upstream Driver/Goal connections.
       return (fulfillmentInCount.get(el.id) ?? 0) === 0;
+    }
+    if (el.type in SPEC_CHAIN_NEEDS) {
+      // Spec-chain isolation: scan if the required Capability↔Process
+      // realization is missing, even if other edges exist.
+      return isSpecChainIsolated(el, opts.connections, elementByIdLocal);
     }
     const cnt = connectionCount.get(el.id) ?? 0;
     return cnt === 0 || (includeWeak && cnt === 1);
@@ -400,7 +509,9 @@ export async function suggestConnectionsForIsolatedElements(
             realSource.type as ElementType,
             realTarget.type as ElementType,
           );
-          if (!validForPair.includes(s.relationshipType)) {
+          const isValid = validForPair.includes(s.relationshipType)
+            || specChainAllows(realSource.type, realTarget.type, s.relationshipType);
+          if (!isValid) {
             invalidRelationshipDrops++;
             return null;
           }

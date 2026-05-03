@@ -150,6 +150,82 @@ describe('suggestConnectionsForIsolatedElements (LLM+RAG)', () => {
     expect(seen).toContain('req1');
   });
 
+  it('scans a Process that has Actor/App connections but no realizing Capability (spec-chain isolated)', async () => {
+    // BSH demo case: "Compliance Audits Process" had connections to
+    // Group Legal (assignment), Salesforce (serving), SAP S/4HANA
+    // (serving) — but ZERO outgoing realization to a Capability. The
+    // legacy isolation rule (cnt > 0 → skip) hid it from heal.
+    const proc: El = { id: 'p1', type: 'business_process', name: 'Compliance Audits Process', description: 'Conducts ESG audits.' };
+    const actor: El = { id: 'a1', type: 'business_actor', name: 'Group Legal', description: 'Legal team.' };
+    const app: El = { id: 'app1', type: 'application_component', name: 'SAP S/4HANA', description: 'ERP.' };
+    const cap: El = { id: 'c1', type: 'business_capability', name: 'Compliance Auditing Capability', description: 'Ability to audit.' };
+
+    const seen: string[] = [];
+    const recordingLLM: LLMReasoner = async ({ source }) => {
+      seen.push(source.id);
+      return [];
+    };
+
+    await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [proc, actor, app, cap],
+      // Process has 2 connections, but neither is realization-to-Capability
+      connections: [
+        { id: 'c1', sourceId: 'a1', targetId: 'p1', type: 'assignment' },
+        { id: 'c2', sourceId: 'app1', targetId: 'p1', type: 'serving' },
+      ],
+      minConfidence: 0.7,
+      llm: recordingLLM,
+    });
+
+    expect(seen).toContain('p1');
+  });
+
+  it('does NOT scan a Process that already realizes a Capability', async () => {
+    const proc: El = { id: 'p1', type: 'business_process', name: 'Reporting Process', description: 'Reports things.' };
+    const cap: El = { id: 'c1', type: 'business_capability', name: 'Reporting Capability', description: 'Ability to report.' };
+
+    const seen: string[] = [];
+    const recordingLLM: LLMReasoner = async ({ source }) => {
+      seen.push(source.id);
+      return [];
+    };
+
+    await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [proc, cap],
+      connections: [{ id: 'c1', sourceId: 'p1', targetId: 'c1', type: 'realization' }],
+      minConfidence: 0.7,
+      llm: recordingLLM,
+    });
+
+    // Process is spec-chain-complete (realizes a Capability) → not scanned
+    expect(seen).not.toContain('p1');
+  });
+
+  it('scans a Capability that has Goal-influence but no realizing Process', async () => {
+    const cap: El = { id: 'c1', type: 'business_capability', name: 'GHG Accounting', description: 'Track GHG.' };
+    const goal: El = { id: 'g1', type: 'goal', name: 'Reduce emissions', description: 'By 2030.' };
+    const proc: El = { id: 'p1', type: 'business_process', name: 'GHG Reporting Process', description: 'Report GHG.' };
+
+    const seen: string[] = [];
+    const recordingLLM: LLMReasoner = async ({ source }) => {
+      seen.push(source.id);
+      return [];
+    };
+
+    await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [cap, goal, proc],
+      connections: [{ id: 'e1', sourceId: 'g1', targetId: 'c1', type: 'influence' }],
+      minConfidence: 0.7,
+      llm: recordingLLM,
+    });
+
+    // Capability has Goal-influence but no Process-realization → scanned
+    expect(seen).toContain('c1');
+  });
+
   it('does NOT scan a Requirement that already has a realizing Capability', async () => {
     const req: El = { id: 'req1', type: 'requirement', name: 'Disclosure Req', description: 'Disclose carbon.' };
     const cap: El = { id: 'cap1', type: 'business_capability', name: 'Carbon Accounting', description: 'Tracks GHG emissions.' };
