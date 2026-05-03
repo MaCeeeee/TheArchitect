@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack, ChevronDown, ChevronUp } from 'lucide-react';
+import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack, ChevronDown, ChevronUp, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { governanceAPI } from '../../services/api';
 
@@ -38,6 +38,7 @@ export default function PolicyManager() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(new Set(['dora', 'nis2']));
   const [seeding, setSeeding] = useState(false);
+  const [reEvaluating, setReEvaluating] = useState(false);
 
   // Create form
   const [newName, setNewName] = useState('');
@@ -136,6 +137,25 @@ export default function PolicyManager() {
     }
   };
 
+  const handleReEvaluate = async () => {
+    if (!projectId) return;
+    setReEvaluating(true);
+    try {
+      const { data } = await governanceAPI.reEvaluateViolations(projectId);
+      const evaluated = data?.data?.policiesEvaluated ?? 0;
+      const cleaned = data?.data?.selfViolationsResolved ?? 0;
+      toast.success(
+        cleaned > 0
+          ? `Re-evaluated ${evaluated} policies · cleaned up ${cleaned} self-violation${cleaned === 1 ? '' : 's'}`
+          : `Re-evaluated ${evaluated} policies`,
+      );
+    } catch {
+      toast.error('Failed to re-evaluate policies');
+    } finally {
+      setReEvaluating(false);
+    }
+  };
+
   const toggleTemplate = (t: string) => {
     setSelectedTemplates((prev) => {
       const next = new Set(prev);
@@ -181,6 +201,15 @@ export default function PolicyManager() {
         >
           <FileStack size={14} />
           Templates
+        </button>
+        <button
+          onClick={handleReEvaluate}
+          disabled={reEvaluating}
+          title="Re-evaluate all active policies against current architecture and clean up stale self-violations"
+          className="flex-1 rounded-md bg-[#1a2a1a] px-4 py-2 text-xs font-medium text-white hover:bg-[#3a4a3a] transition flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {reEvaluating ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}
+          {reEvaluating ? 'Re-evaluating…' : 'Re-evaluate'}
         </button>
       </div>
 
