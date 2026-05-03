@@ -30,6 +30,14 @@ export interface Suggestion {
   relationshipType: StandardConnectionType;
   confidence: number;
   reasoning: string;
+  /**
+   * 'outgoing' = isolated element is the SOURCE of the proposed edge
+   * 'incoming' = isolated element is the TARGET (Capability → Requirement etc.)
+   * Needed because heal scans only isolated elements but ArchiMate edges have
+   * a direction — e.g. a Requirement is realized BY a Capability, the edge
+   * runs Capability → Requirement, not the reverse.
+   */
+  direction: 'outgoing' | 'incoming';
 }
 export interface HealReport {
   elementsAnalyzed: number;
@@ -68,26 +76,43 @@ export type LLMReasoner = (input: {
   relationshipType: StandardConnectionType;
   confidence: number;
   reasoning: string;
+  /**
+   * 'outgoing' = source → target  (default for backward compat)
+   * 'incoming' = target → source  (e.g. Capability realizes Requirement)
+   * The LLM is told both directions are possible per candidate; it picks one.
+   */
+  direction?: 'outgoing' | 'incoming';
 }>>;
 
 const SYSTEM_PROMPT = `You are an enterprise-architecture reviewer working with the ArchiMate 3.2 standard.
 
-You receive ONE source architecture element (with name + description) and a list of CANDIDATE elements. Each candidate is annotated with the relationship types that are VALID for this exact source→target pair according to the ArchiMate 3.2 spec — you MUST pick one of those listed types, no other type is allowed.
+You receive ONE source architecture element (with name + description) and a list of CANDIDATE elements. Each candidate is annotated with relationship types that are VALID per ArchiMate 3.2 in two possible directions:
+  outgoing = source → candidate
+  incoming = candidate → source
 
-You may also receive REGULATORY CONTEXT (chunks from CSRD/LkSG/etc. documents the customer uploaded) to inform your judgment.
+You MUST:
+  1) pick the correct DIRECTION for each suggestion. ArchiMate edges are directed.
+     For example: a Capability REALIZES a Requirement, so the edge runs
+     Capability → Requirement (incoming, if Requirement is the source). A
+     Stakeholder is ASSOCIATED WITH a Driver, so the edge runs
+     Stakeholder → Driver. Pick the direction an architect would actually draw.
+  2) pick a relationshipType that is in the listed valid set FOR THE CHOSEN
+     DIRECTION. Picking outside the set is a spec violation and will be rejected.
 
-Your job: pick the candidates that are semantically and methodically appropriate to connect to the source. Be strict — only suggest connections that an experienced ArchiMate architect would draw manually based on what the elements actually represent.
+You may also receive REGULATORY CONTEXT (chunks from CSRD/LkSG/etc.) to inform judgment.
+
+Your job: pick candidates that are semantically and methodically appropriate. Be strict — only suggest connections an experienced ArchiMate architect would draw manually.
 
 Rules:
-- "relationshipType" MUST be one of the values in the candidate's "valid" list. Picking any other relationship is an ArchiMate spec violation and will be rejected. If only "association" is valid for a candidate, that almost always means the pair is too weak — drop it unless the descriptions show a very strong semantic match.
-- Do NOT suggest a connection just because the structural ArchiMate rules allow it. Two elements may be structurally connectible via composition, but unless the descriptions show one really contains the other, do not suggest it.
-- Do NOT suggest connections to candidates whose description has no semantic relation to the source.
+- "direction" MUST be "outgoing" or "incoming" and consistent with what an architect would draw.
+- "relationshipType" MUST be in the valid set for the chosen direction. If only "association" is valid, that almost always means the pair is too weak — drop it unless descriptions show a very strong semantic match.
+- Do NOT suggest a connection just because structural rules allow it. Descriptions must show a real semantic link.
 - Output a maximum of 5 suggestions, ordered by confidence (most plausible first). Prefer fewer high-quality suggestions over many weak ones.
 - "confidence" is your subjective belief that an architect would draw this connection (0.0-1.0). 0.9+ = obvious, 0.7-0.9 = plausible, below 0.7 = drop it.
-- "reasoning" is a single short sentence (max ~25 words) explaining WHY this connection makes sense, citing specific words from the descriptions.
+- "reasoning" is one short sentence (max ~25 words) explaining WHY, citing specific words from the descriptions.
 
 Return ONLY valid JSON in this exact shape, no prose, no markdown fences:
-{"suggestions": [{"targetId": "...", "relationshipType": "...", "confidence": 0.0, "reasoning": "..."}]}
+{"suggestions": [{"targetId": "...", "direction": "outgoing|incoming", "relationshipType": "...", "confidence": 0.0, "reasoning": "..."}]}
 If no candidate fits well, return {"suggestions": []}`;
 
 const defaultLLM: LLMReasoner = async ({ source, candidates, ragContext }) => {
@@ -98,8 +123,11 @@ const defaultLLM: LLMReasoner = async ({ source, candidates, ragContext }) => {
 
   const candidateBlock = candidates
     .map((c, i) => {
-      const valid = getValidRelationships(source.type as ElementType, c.type as ElementType);
-      return `[${i + 1}] id=${c.id} type=${c.type} valid=[${valid.join(', ')}] name="${c.name}" description="${(c.description || '').replace(/"/g, "'").slice(0, 400)}"`;
+      const validOut = getValidRelationships(source.type as ElementType, c.type as ElementType);
+      const validIn = getValidRelationships(c.type as ElementType, source.type as ElementType);
+      const outBlock = validOut.length > 0 ? `validOutgoing(source→candidate)=[${validOut.join(', ')}]` : 'validOutgoing=[]';
+      const inBlock = validIn.length > 0 ? `validIncoming(candidate→source)=[${validIn.join(', ')}]` : 'validIncoming=[]';
+      return `[${i + 1}] id=${c.id} type=${c.type} ${outBlock} ${inBlock} name="${c.name}" description="${(c.description || '').replace(/"/g, "'").slice(0, 400)}"`;
     })
     .join('\n');
 
@@ -140,11 +168,13 @@ const defaultLLM: LLMReasoner = async ({ source, candidates, ragContext }) => {
     })
     .map((s: unknown) => {
       const rec = s as Record<string, unknown>;
+      const dir = rec.direction === 'incoming' ? 'incoming' : rec.direction === 'outgoing' ? 'outgoing' : undefined;
       return {
         targetId: String(rec.targetId),
         relationshipType: String(rec.relationshipType || 'association') as StandardConnectionType,
         confidence: Math.max(0, Math.min(1, Number(rec.confidence) || 0)),
         reasoning: String(rec.reasoning || '').slice(0, 300),
+        direction: dir,
       };
     });
 };
@@ -168,6 +198,14 @@ function extractJsonObject(text: string): { suggestions?: unknown[] } | null {
  * existing ArchiMate rule engine to drop pairs that are structurally
  * meaningless, then drop same-type pairs (e.g. stakeholder→stakeholder) which
  * almost always need explicit user intent rather than auto-suggestion.
+ *
+ * Bidirectional: a candidate is kept if a strong relationship exists in
+ * EITHER direction (source→candidate OR candidate→source). This is critical
+ * for elements like Requirement that are mostly the TARGET of edges (a
+ * Capability realizes a Requirement, not the other way round). Without this,
+ * an isolated Requirement would never receive its 'realizing capability' edge
+ * because heal only iterates isolated elements and would only consider
+ * Requirement-as-source pairs.
  */
 function preFilterCandidates(
   source: SuggestionInput,
@@ -175,15 +213,19 @@ function preFilterCandidates(
   alreadyConnected: Set<string>,
   pairKeyFn: (a: string, b: string) => string,
   maxN: number,
-): SuggestionInput[] {
-  const filtered: SuggestionInput[] = [];
+): Array<{ candidate: SuggestionInput; allowOutgoing: boolean; allowIncoming: boolean }> {
+  const filtered: Array<{ candidate: SuggestionInput; allowOutgoing: boolean; allowIncoming: boolean }> = [];
+  const sourceType = source.type as ElementType;
   for (const c of all) {
     if (c.id === source.id) continue;
     if (alreadyConnected.has(pairKeyFn(source.id, c.id))) continue;
-    if (c.type === source.type) continue; // same-type → only via explicit user action
-    if (!hasStrongRelationship(source.type as ElementType, c.type as ElementType)) continue;
-    if (!CATEGORY_BY_TYPE.get(c.type as ElementType)) continue;
-    filtered.push(c);
+    if (c.type === source.type) continue;
+    const cType = c.type as ElementType;
+    if (!CATEGORY_BY_TYPE.get(cType)) continue;
+    const allowOutgoing = hasStrongRelationship(sourceType, cType);
+    const allowIncoming = hasStrongRelationship(cType, sourceType);
+    if (!allowOutgoing && !allowIncoming) continue;
+    filtered.push({ candidate: c, allowOutgoing, allowIncoming });
     if (filtered.length >= maxN) break;
   }
   return filtered;
@@ -253,14 +295,21 @@ export async function suggestConnectionsForIsolatedElements(
       const el = queue.shift();
       if (!el) break;
 
-      const candidates = preFilterCandidates(
+      const candidatePairs = preFilterCandidates(
         el,
         opts.elements,
         connectedPairs,
         pairKey,
         DEFAULT_MAX_CANDIDATES,
       );
-      if (candidates.length === 0) continue;
+      if (candidatePairs.length === 0) continue;
+
+      // Pass plain SuggestionInput[] to the LLM (existing contract); the
+      // direction information is reconstructed during post-validation.
+      const candidates = candidatePairs.map((p) => p.candidate);
+      const directionByCandidate = new Map(
+        candidatePairs.map((p) => [p.candidate.id, { allowOutgoing: p.allowOutgoing, allowIncoming: p.allowIncoming }]),
+      );
 
       const ragQuery = `${el.name} ${el.description ?? ''}`.trim().slice(0, 500);
       const { context, used } = await fetchRagContextSafe(opts.projectId, ragQuery);
@@ -280,12 +329,24 @@ export async function suggestConnectionsForIsolatedElements(
           if (!target) return null;
           if (s.confidence < minConfidence) return null;
 
-          // Post-validation: even if the LLM was told the valid set per pair,
-          // it may still hallucinate an invalid relationshipType. Reject those
-          // — never persist an ArchiMate-spec-violating edge.
+          // Decide the actual edge direction. If the LLM specified, honour it
+          // (when permitted by the pre-filter). Otherwise auto-pick: prefer
+          // the direction that has a strong relationship; if both, prefer
+          // outgoing (back-compat).
+          const allowed = directionByCandidate.get(s.targetId) ?? { allowOutgoing: true, allowIncoming: false };
+          let direction: 'outgoing' | 'incoming';
+          if (s.direction === 'incoming' && allowed.allowIncoming) direction = 'incoming';
+          else if (s.direction === 'outgoing' && allowed.allowOutgoing) direction = 'outgoing';
+          else if (allowed.allowOutgoing) direction = 'outgoing';
+          else if (allowed.allowIncoming) direction = 'incoming';
+          else { invalidRelationshipDrops++; return null; }
+
+          // Post-validation: relationship must be valid for the chosen direction
+          const realSource = direction === 'outgoing' ? el : target;
+          const realTarget = direction === 'outgoing' ? target : el;
           const validForPair = getValidRelationships(
-            el.type as ElementType,
-            target.type as ElementType,
+            realSource.type as ElementType,
+            realTarget.type as ElementType,
           );
           if (!validForPair.includes(s.relationshipType)) {
             invalidRelationshipDrops++;
@@ -293,15 +354,16 @@ export async function suggestConnectionsForIsolatedElements(
           }
 
           return {
-            sourceId: el.id,
-            sourceName: el.name,
-            sourceType: el.type,
-            targetId: s.targetId,
-            targetName: target.name,
-            targetType: target.type,
+            sourceId: realSource.id,
+            sourceName: realSource.name,
+            sourceType: realSource.type,
+            targetId: realTarget.id,
+            targetName: realTarget.name,
+            targetType: realTarget.type,
             relationshipType: s.relationshipType,
             confidence: Number(s.confidence.toFixed(3)),
             reasoning: s.reasoning,
+            direction,
           };
         })
         .filter((x): x is Suggestion => x !== null)

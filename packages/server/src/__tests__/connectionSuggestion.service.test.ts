@@ -121,6 +121,46 @@ describe('suggestConnectionsForIsolatedElements (LLM+RAG)', () => {
     expect(r.perElement.has('d1')).toBe(false);
   });
 
+  it('honours bidirectional direction: Capability realizes Requirement (edge runs Capability→Requirement)', async () => {
+    // The isolated element is a Requirement. Per ArchiMate the edge runs
+    // Capability → Requirement (incoming), not the reverse. The heal must
+    // swap source/target so the persisted edge is in the spec-correct
+    // direction even though we iterate over the isolated Requirement.
+    const requirement: El = {
+      id: 'req1',
+      type: 'requirement',
+      name: 'Disclose Scope-3 emissions',
+      description: 'Per ESRS E1 §51.',
+    };
+    const capability: El = {
+      id: 'cap1',
+      type: 'business_capability',
+      name: 'Carbon Accounting',
+      description: 'Tracks GHG emissions across the value chain.',
+    };
+    const llmRealizes: LLMReasoner = async () => [{
+      targetId: 'cap1',
+      relationshipType: 'realization' as const,
+      confidence: 0.92,
+      reasoning: 'capability fulfils the disclosure requirement',
+      direction: 'incoming',
+    }];
+    const r = await suggestConnectionsForIsolatedElements({
+      projectId: 'p1',
+      elements: [requirement, capability],
+      connections: [],
+      minConfidence: 0.7,
+      llm: llmRealizes,
+    });
+    const sugs = r.perElement.get('req1') ?? [];
+    expect(sugs.length).toBe(1);
+    // Edge must be Capability → Requirement, not Requirement → Capability
+    expect(sugs[0].sourceId).toBe('cap1');
+    expect(sugs[0].targetId).toBe('req1');
+    expect(sugs[0].direction).toBe('incoming');
+    expect(sugs[0].relationshipType).toBe('realization');
+  });
+
   it('drops suggestions whose relationshipType is ArchiMate-invalid for the pair', async () => {
     // stakeholder→business_capability is motivation→strategy.
     // Per ArchiMate 3.2 §7.6 the only valid relationships are 'influence' and 'association'.
