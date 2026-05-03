@@ -114,7 +114,7 @@ export default function ScenarioDashboard() {
           <GitCompare size={14} className="text-[#06b6d4]" />
           Scenario Dashboard
         </h3>
-        <p className="text-[10px] text-[var(--text-tertiary)] mt-1">
+        <p className="text-[12px] text-[var(--text-tertiary)] mt-1">
           {scenarios.length} scenario{scenarios.length !== 1 ? 's' : ''} &middot; Delta comparison
         </p>
       </div>
@@ -123,7 +123,7 @@ export default function ScenarioDashboard() {
       <div className="flex gap-1 px-3 py-2 border-b border-[var(--border-subtle)] flex-wrap">
         {(['scenarios', 'compare', 'rank', 'compliance'] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={`px-2 py-1 rounded text-[10px] font-medium transition ${
+            className={`px-2 py-1 rounded text-[12px] font-medium transition ${
               tab === t ? 'bg-[#06b6d4]/20 text-[#06b6d4]' : 'text-[var(--text-disabled)] hover:text-white'
             }`}>
             {t === 'scenarios' ? 'Scenarios' : t === 'compare' ? 'Compare' : t === 'rank' ? 'MCDA' : 'Compliance'}
@@ -148,7 +148,7 @@ export default function ScenarioDashboard() {
               <button
                 onClick={handleCreate}
                 disabled={!newName.trim() || loading}
-                className="rounded-md bg-[#06b6d4] px-2.5 py-1.5 text-[10px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition flex items-center gap-1"
+                className="rounded-md bg-[#06b6d4] px-2.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition flex items-center gap-1"
               >
                 <Plus size={10} />
               </button>
@@ -158,7 +158,7 @@ export default function ScenarioDashboard() {
             <button
               onClick={handleGenerateVariants}
               disabled={generatingVariants || loading}
-              className="w-full rounded-md border border-[#a855f7]/30 bg-[#a855f7]/10 px-3 py-1.5 text-[10px] font-medium text-[#a855f7] hover:bg-[#a855f7]/20 disabled:opacity-30 transition flex items-center justify-center gap-1"
+              className="w-full rounded-md border border-[#a855f7]/30 bg-[#a855f7]/10 px-3 py-1.5 text-[12px] font-medium text-[#a855f7] hover:bg-[#a855f7]/20 disabled:opacity-30 transition flex items-center justify-center gap-1"
             >
               <Sparkles size={10} />
               {generatingVariants ? 'Generating AI Variants...' : 'Generate AI Variants'}
@@ -168,8 +168,8 @@ export default function ScenarioDashboard() {
             {scenarios.length === 0 ? (
               <div className="text-center py-6">
                 <GitCompare size={20} className="mx-auto text-[var(--text-disabled)] mb-2" />
-                <p className="text-[10px] font-medium text-[var(--text-tertiary)]">No scenarios yet</p>
-                <p className="text-[9px] text-[var(--text-disabled)] mt-0.5 max-w-[200px] mx-auto">
+                <p className="text-[12px] font-medium text-[var(--text-tertiary)]">No scenarios yet</p>
+                <p className="text-[11px] text-[var(--text-disabled)] mt-0.5 max-w-[200px] mx-auto">
                   Create "what-if" scenarios to compare alternative architecture decisions side by side.
                 </p>
                 <span className="inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded-full bg-[var(--status-purple)]/10 text-[8px] font-medium text-[var(--status-purple)]">
@@ -193,14 +193,14 @@ export default function ScenarioDashboard() {
                         {isExpanded ? <ChevronDown size={10} className="text-[var(--text-disabled)]" /> :
                           <ChevronRight size={10} className="text-[var(--text-disabled)]" />}
                         <div className="flex-1 min-w-0 text-left">
-                          <div className="text-[10px] text-white truncate">{sc.name}</div>
-                          <div className="text-[9px] text-[var(--text-disabled)]">
+                          <div className="text-[12px] text-white truncate">{sc.name}</div>
+                          <div className="text-[11px] text-[var(--text-disabled)]">
                             {sc.deltas?.length || 0} deltas
                             {sc.costProfile && ` · ${formatK(sc.costProfile.totalCost)} EUR`}
                           </div>
                         </div>
                         {sc.costProfile && sc.costProfile.deltaPercent !== 0 && (
-                          <span className={`text-[9px] font-mono ${
+                          <span className={`text-[11px] font-mono ${
                             sc.costProfile.deltaPercent > 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'
                           }`}>
                             {sc.costProfile.deltaPercent > 0 ? '+' : ''}{sc.costProfile.deltaPercent}%
@@ -220,7 +220,7 @@ export default function ScenarioDashboard() {
                       {isExpanded && (
                         <div className="px-2.5 pb-2.5 space-y-2 border-t border-[var(--border-subtle)]">
                           {sc.description && (
-                            <p className="text-[9px] text-[var(--text-tertiary)] pt-1.5">{sc.description}</p>
+                            <p className="text-[11px] text-[var(--text-tertiary)] pt-1.5">{sc.description}</p>
                           )}
 
                           {/* Cost profile summary */}
@@ -228,15 +228,15 @@ export default function ScenarioDashboard() {
                             <div className="grid grid-cols-3 gap-1 pt-1">
                               <div className="rounded border border-[var(--border-subtle)] p-1.5 text-center">
                                 <div className="text-[8px] text-[var(--text-disabled)] font-mono">P10</div>
-                                <div className="text-[10px] font-bold text-white">{formatK(sc.costProfile.p10)}</div>
+                                <div className="text-[12px] font-bold text-white">{formatK(sc.costProfile.p10)}</div>
                               </div>
                               <div className="rounded border border-[var(--border-subtle)] p-1.5 text-center">
                                 <div className="text-[8px] text-[var(--text-disabled)] font-mono">P50</div>
-                                <div className="text-[10px] font-bold text-white">{formatK(sc.costProfile.p50)}</div>
+                                <div className="text-[12px] font-bold text-white">{formatK(sc.costProfile.p50)}</div>
                               </div>
                               <div className="rounded border border-[var(--border-subtle)] p-1.5 text-center">
                                 <div className="text-[8px] text-[var(--text-disabled)] font-mono">P90</div>
-                                <div className="text-[10px] font-bold text-white">{formatK(sc.costProfile.p90)}</div>
+                                <div className="text-[12px] font-bold text-white">{formatK(sc.costProfile.p90)}</div>
                               </div>
                             </div>
                           )}
@@ -244,13 +244,13 @@ export default function ScenarioDashboard() {
                           {/* Dimension breakdown */}
                           {sc.costProfile?.dimensions && Object.keys(sc.costProfile.dimensions).length > 0 && (
                             <div className="space-y-0.5 pt-1">
-                              <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">Dimensions</p>
+                              <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">Dimensions</p>
                               {Object.entries(sc.costProfile.dimensions)
                                 .filter(([, v]) => (v as number) > 0)
                                 .sort(([, a], [, b]) => (b as number) - (a as number))
                                 .slice(0, 5)
                                 .map(([key, val]) => (
-                                  <div key={key} className="flex items-center justify-between text-[9px]">
+                                  <div key={key} className="flex items-center justify-between text-[11px]">
                                     <span className="text-[var(--text-tertiary)]">{COST_DIMENSION_LABELS?.[key] || key}</span>
                                     <span className="text-white font-mono">{formatK(val as number)}</span>
                                   </div>
@@ -261,9 +261,9 @@ export default function ScenarioDashboard() {
                           {/* Delta list */}
                           {sc.deltas && sc.deltas.length > 0 && (
                             <div className="space-y-0.5 pt-1">
-                              <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">Changes</p>
+                              <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">Changes</p>
                               {sc.deltas.slice(0, 5).map((d, i) => (
-                                <div key={i} className="flex items-center gap-1.5 text-[9px]">
+                                <div key={i} className="flex items-center gap-1.5 text-[11px]">
                                   <span className="text-[var(--text-tertiary)] truncate flex-1">
                                     {d.elementId.slice(0, 8)}… .{d.field}
                                   </span>
@@ -281,8 +281,8 @@ export default function ScenarioDashboard() {
                           {sc.mcdaScore != null && (
                             <div className="flex items-center gap-1 pt-1">
                               <Trophy size={9} className="text-[#f59e0b]" />
-                              <span className="text-[9px] text-[var(--text-tertiary)]">MCDA Score:</span>
-                              <span className="text-[10px] text-white font-mono font-bold">{(sc.mcdaScore * 100).toFixed(1)}%</span>
+                              <span className="text-[11px] text-[var(--text-tertiary)]">MCDA Score:</span>
+                              <span className="text-[12px] text-white font-mono font-bold">{(sc.mcdaScore * 100).toFixed(1)}%</span>
                             </div>
                           )}
 
@@ -290,7 +290,7 @@ export default function ScenarioDashboard() {
                           <button
                             onClick={(e) => { e.stopPropagation(); handleRealOptions(id); }}
                             disabled={loading}
-                            className="w-full mt-1 rounded border border-[#f59e0b]/30 px-2 py-1 text-[9px] text-[#f59e0b] hover:bg-[#f59e0b]/10 transition flex items-center justify-center gap-1"
+                            className="w-full mt-1 rounded border border-[#f59e0b]/30 px-2 py-1 text-[11px] text-[#f59e0b] hover:bg-[#f59e0b]/10 transition flex items-center justify-center gap-1"
                           >
                             <Target size={9} />
                             Real Options (Black-Scholes)
@@ -298,15 +298,15 @@ export default function ScenarioDashboard() {
 
                           {realOptionsResult && realOptionsResult.scenarioId === id && (
                             <div className="rounded border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-2 mt-1 space-y-1">
-                              <div className="flex items-center justify-between text-[9px]">
+                              <div className="flex items-center justify-between text-[11px]">
                                 <span className="text-[var(--text-tertiary)]">Option Value</span>
                                 <span className="text-white font-mono">{formatK(realOptionsResult.callValue)} EUR</span>
                               </div>
-                              <div className="flex items-center justify-between text-[9px]">
+                              <div className="flex items-center justify-between text-[11px]">
                                 <span className="text-[var(--text-tertiary)]">Defer Value</span>
                                 <span className="text-white font-mono">{formatK(realOptionsResult.deferValue)} EUR</span>
                               </div>
-                              <div className="flex items-center justify-between text-[9px]">
+                              <div className="flex items-center justify-between text-[11px]">
                                 <span className="text-[var(--text-tertiary)]">Recommendation</span>
                                 <span className={`font-mono font-bold ${
                                   realOptionsResult.recommendation === 'proceed' ? 'text-[#22c55e]' :
@@ -333,7 +333,7 @@ export default function ScenarioDashboard() {
             {/* Scenario selectors */}
             <div className="space-y-2">
               <div>
-                <label className="text-[9px] text-[var(--text-disabled)] uppercase font-semibold">Scenario A</label>
+                <label className="text-[11px] text-[var(--text-disabled)] uppercase font-semibold">Scenario A</label>
                 <select
                   value={compareA}
                   onChange={(e) => setCompareA(e.target.value)}
@@ -346,7 +346,7 @@ export default function ScenarioDashboard() {
                 <ArrowUpDown size={14} className="text-[var(--text-disabled)]" />
               </div>
               <div>
-                <label className="text-[9px] text-[var(--text-disabled)] uppercase font-semibold">Scenario B</label>
+                <label className="text-[11px] text-[var(--text-disabled)] uppercase font-semibold">Scenario B</label>
                 <select
                   value={compareB}
                   onChange={(e) => setCompareB(e.target.value)}
@@ -362,7 +362,7 @@ export default function ScenarioDashboard() {
               <button
                 onClick={handleCompare}
                 disabled={!compareB || loading}
-                className="w-full rounded-md bg-[#06b6d4] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition"
+                className="w-full rounded-md bg-[#06b6d4] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition"
               >
                 {loading ? 'Comparing...' : 'Compare'}
               </button>
@@ -374,7 +374,7 @@ export default function ScenarioDashboard() {
                 {/* Cost delta header */}
                 <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-white font-semibold">Cost Delta</span>
+                    <span className="text-[12px] text-white font-semibold">Cost Delta</span>
                     <div className="flex items-center gap-1">
                       <DeltaArrow value={comparisonResult.costDelta} />
                       <span className={`text-xs font-bold font-mono ${
@@ -384,15 +384,15 @@ export default function ScenarioDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between text-[9px]">
+                  <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-tertiary)]">{comparisonResult.scenarioA.name}</span>
                     <span className="text-white font-mono">{formatK(comparisonResult.scenarioA.totalCost)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[9px]">
+                  <div className="flex items-center justify-between text-[11px]">
                     <span className="text-[var(--text-tertiary)]">{comparisonResult.scenarioB.name}</span>
                     <span className="text-white font-mono">{formatK(comparisonResult.scenarioB.totalCost)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[9px] pt-1 border-t border-[var(--border-subtle)] mt-1">
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-[var(--border-subtle)] mt-1">
                     <span className="text-[var(--text-tertiary)]">Change</span>
                     <span className={`font-mono ${
                       comparisonResult.costDeltaPercent > 0 ? 'text-[#ef4444]' : 'text-[#22c55e]'
@@ -421,7 +421,7 @@ export default function ScenarioDashboard() {
                 {/* Dimension waterfall */}
                 {Object.keys(comparisonResult.dimensionDeltas).length > 0 && (
                   <div className="space-y-1">
-                    <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">Dimension Deltas</p>
+                    <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">Dimension Deltas</p>
                     {Object.entries(comparisonResult.dimensionDeltas)
                       .filter(([, v]) => v !== 0)
                       .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
@@ -433,7 +433,7 @@ export default function ScenarioDashboard() {
                         const pct = Math.abs(val) / maxDelta * 100;
                         return (
                           <div key={key} className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-[var(--text-tertiary)] w-16 truncate">
+                            <span className="text-[11px] text-[var(--text-tertiary)] w-16 truncate">
                               {COST_DIMENSION_LABELS?.[key] || key}
                             </span>
                             <div className="flex-1 h-2 rounded-full bg-[var(--surface-base)] relative">
@@ -462,37 +462,37 @@ export default function ScenarioDashboard() {
             {scenarios.length < 2 ? (
               <div className="text-center py-6">
                 <Trophy size={20} className="mx-auto text-[var(--text-disabled)] mb-2" />
-                <p className="text-[10px] text-[var(--text-tertiary)]">Need 2+ scenarios to rank</p>
+                <p className="text-[12px] text-[var(--text-tertiary)]">Need 2+ scenarios to rank</p>
               </div>
             ) : (
               <>
                 {/* Method toggle */}
                 <div className="flex gap-1">
                   <button onClick={() => setRankMethod('wsm')}
-                    className={`flex-1 px-2 py-1 rounded text-[10px] font-medium transition ${
+                    className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition ${
                       rankMethod === 'wsm' ? 'bg-[#06b6d4]/20 text-[#06b6d4]' : 'text-[var(--text-disabled)] hover:text-white'
                     }`}>WSM</button>
                   <button onClick={() => setRankMethod('topsis')}
-                    className={`flex-1 px-2 py-1 rounded text-[10px] font-medium transition ${
+                    className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition ${
                       rankMethod === 'topsis' ? 'bg-[#a855f7]/20 text-[#a855f7]' : 'text-[var(--text-disabled)] hover:text-white'
                     }`}>TOPSIS</button>
                 </div>
 
                 {/* Weight sliders */}
                 <div className="space-y-1.5">
-                  <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">
+                  <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">
                     Weights ({rankMethod.toUpperCase()})
                   </p>
                   {(Object.entries(weights) as [keyof McdaWeights, number][]).map(([key, val]) => (
                     <div key={key} className="flex items-center gap-1.5">
-                      <span className="text-[9px] text-[var(--text-tertiary)] w-16 capitalize">{key}</span>
+                      <span className="text-[11px] text-[var(--text-tertiary)] w-16 capitalize">{key}</span>
                       <input
                         type="range" min="0" max="100" step="5"
                         value={Math.round(val * 100)}
                         onChange={(e) => setWeights((w) => ({ ...w, [key]: parseInt(e.target.value) / 100 }))}
                         className="flex-1 h-1 accent-[#06b6d4]"
                       />
-                      <span className="text-[9px] text-white font-mono w-8 text-right">{Math.round(val * 100)}%</span>
+                      <span className="text-[11px] text-white font-mono w-8 text-right">{Math.round(val * 100)}%</span>
                     </div>
                   ))}
                 </div>
@@ -500,7 +500,7 @@ export default function ScenarioDashboard() {
                 <button
                   onClick={handleRank}
                   disabled={loading}
-                  className="w-full rounded-md bg-[#06b6d4] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition flex items-center justify-center gap-1"
+                  className="w-full rounded-md bg-[#06b6d4] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#0891b2] disabled:opacity-30 transition flex items-center justify-center gap-1"
                 >
                   <Trophy size={10} />
                   {loading ? 'Ranking...' : 'Rank Scenarios'}
@@ -509,21 +509,21 @@ export default function ScenarioDashboard() {
                 {/* MCDA / TOPSIS Results */}
                 {(mcdaResult || topsisResult) && (
                   <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
-                    <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">
+                    <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">
                       Ranking ({(topsisResult || mcdaResult)!.method.toUpperCase()})
                     </p>
                     {(topsisResult || mcdaResult)!.scores.map((s) => (
                       <div key={s.scenarioId} className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
                         <div className="flex items-center gap-2 mb-1.5">
-                          <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold ${
+                          <span className={`flex items-center justify-center h-5 w-5 rounded-full text-[12px] font-bold ${
                             s.rank === 1 ? 'bg-[#f59e0b]/20 text-[#f59e0b]' :
                             s.rank === 2 ? 'bg-[#94a3b8]/20 text-[#94a3b8]' :
                             'bg-[var(--surface-raised)] text-[var(--text-disabled)]'
                           }`}>
                             {s.rank}
                           </span>
-                          <span className="text-[10px] text-white font-medium flex-1 truncate">{s.scenarioName}</span>
-                          <span className="text-[10px] text-[#06b6d4] font-mono font-bold">
+                          <span className="text-[12px] text-white font-medium flex-1 truncate">{s.scenarioName}</span>
+                          <span className="text-[12px] text-[#06b6d4] font-mono font-bold">
                             {(s.weightedScore * 100).toFixed(1)}
                           </span>
                         </div>
@@ -558,11 +558,11 @@ export default function ScenarioDashboard() {
             {/* Framework selector */}
             <div className="space-y-2">
               <div>
-                <label className="text-[9px] text-[var(--text-disabled)] uppercase font-semibold">Framework</label>
+                <label className="text-[11px] text-[var(--text-disabled)] uppercase font-semibold">Framework</label>
                 <div className="flex gap-1 mt-1">
                   {(['dora', 'nis2', 'kritis'] as const).map((fw) => (
                     <button key={fw} onClick={() => setCompFramework(fw)}
-                      className={`flex-1 px-2 py-1 rounded text-[10px] font-medium transition uppercase ${
+                      className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition uppercase ${
                         compFramework === fw ? 'bg-[#22c55e]/20 text-[#22c55e]' : 'text-[var(--text-disabled)] hover:text-white'
                       }`}>{fw}</button>
                   ))}
@@ -570,7 +570,7 @@ export default function ScenarioDashboard() {
               </div>
 
               <div>
-                <label className="text-[9px] text-[var(--text-disabled)] uppercase font-semibold">Scenario</label>
+                <label className="text-[11px] text-[var(--text-disabled)] uppercase font-semibold">Scenario</label>
                 <select
                   value={compScenarioId}
                   onChange={(e) => setCompScenarioId(e.target.value)}
@@ -583,7 +583,7 @@ export default function ScenarioDashboard() {
               <button
                 onClick={handleCompliance}
                 disabled={loading}
-                className="w-full rounded-md bg-[#22c55e] px-3 py-1.5 text-[10px] font-medium text-white hover:bg-[#16a34a] disabled:opacity-30 transition flex items-center justify-center gap-1"
+                className="w-full rounded-md bg-[#22c55e] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#16a34a] disabled:opacity-30 transition flex items-center justify-center gap-1"
               >
                 <Shield size={10} />
                 {loading ? 'Analyzing...' : 'Analyze Compliance'}
@@ -596,7 +596,7 @@ export default function ScenarioDashboard() {
                 {/* Score card */}
                 <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] text-white font-semibold uppercase">{complianceResult.framework}</span>
+                    <span className="text-[12px] text-white font-semibold uppercase">{complianceResult.framework}</span>
                     <span className={`text-sm font-bold font-mono ${
                       complianceResult.score >= 0.8 ? 'text-[#22c55e]' :
                       complianceResult.score >= 0.5 ? 'text-[#f59e0b]' : 'text-[#ef4444]'
@@ -605,15 +605,15 @@ export default function ScenarioDashboard() {
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <div className="text-[9px]">
+                    <div className="text-[11px]">
                       <span className="text-[var(--text-disabled)]">Gaps</span>
                       <div className="text-white font-mono">{complianceResult.gapCount}</div>
                     </div>
-                    <div className="text-[9px]">
+                    <div className="text-[11px]">
                       <span className="text-[var(--text-disabled)]">Est. Penalty</span>
                       <div className="text-[#ef4444] font-mono">{formatK(complianceResult.estimatedPenalty)} EUR</div>
                     </div>
-                    <div className="text-[9px] col-span-2">
+                    <div className="text-[11px] col-span-2">
                       <span className="text-[var(--text-disabled)]">Remediation Cost</span>
                       <div className="text-[#f59e0b] font-mono">{formatK(complianceResult.estimatedRemediationCost)} EUR</div>
                     </div>
@@ -622,14 +622,14 @@ export default function ScenarioDashboard() {
 
                 {/* Area details */}
                 <div className="space-y-1">
-                  <p className="text-[9px] text-[var(--text-disabled)] font-semibold uppercase">Compliance Areas</p>
+                  <p className="text-[11px] text-[var(--text-disabled)] font-semibold uppercase">Compliance Areas</p>
                   {complianceResult.details.map((d, i) => (
                     <div key={i} className="flex items-center gap-1.5">
                       <span className={`h-2 w-2 rounded-full shrink-0 ${
                         d.status === 'compliant' ? 'bg-[#22c55e]' :
                         d.status === 'partial' ? 'bg-[#f59e0b]' : 'bg-[#ef4444]'
                       }`} />
-                      <span className="text-[9px] text-[var(--text-secondary)] flex-1 truncate">{d.area}</span>
+                      <span className="text-[11px] text-[var(--text-secondary)] flex-1 truncate">{d.area}</span>
                       {d.penalty > 0 && (
                         <span className="text-[8px] text-[#ef4444] font-mono">{formatK(d.penalty)}</span>
                       )}
