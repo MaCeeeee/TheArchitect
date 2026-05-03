@@ -101,11 +101,12 @@ const SCALE_LABELS: Record<string, { ticks: { x: number; label: string; isAccent
     lineColor: '#f97316',
   },
   timeline: {
+    // Just the endpoints — the bucket positions of intermediate statuses
+    // (transitional, target) are visually obvious from the columns themselves.
+    // Reduces cognitive load per BSH demo feedback 2026-05-03.
     ticks: [
-      { x: -12, label: 'Current' },        // bucket 0
-      { x: -6,  label: 'Transitional' },   // bucket 1
-      { x: 6,   label: 'Target' },         // bucket 3
-      { x: 12,  label: 'Retired', isAccent: true }, // bucket 4
+      { x: -12, label: 'Current' },                  // bucket 0
+      { x: 12,  label: 'Retired', isAccent: true },  // bucket 4
     ],
     lineColor: '#3b82f6',
   },
