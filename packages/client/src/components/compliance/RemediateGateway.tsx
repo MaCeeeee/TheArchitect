@@ -37,6 +37,20 @@ export default function RemediateGateway() {
   const pendingProposals = proposals.filter((p) => p.status === 'validated' || p.status === 'draft');
   const appliedProposals = proposals.filter((p) => p.status === 'applied' || p.status === 'partially_applied');
 
+  // Sections that already have a proposal (pending or applied) — running the
+  // generator again for these would only produce duplicates of the same
+  // 'Governance Structure' suggestion the LLM already made. We only want fresh
+  // generation for gap sections that have no proposal yet.
+  const sectionsWithProposal = new Set<string>();
+  for (const p of [...pendingProposals, ...appliedProposals]) {
+    for (const id of p.sourceRef?.sectionIds ?? []) sectionsWithProposal.add(id);
+    for (const el of p.elements ?? []) {
+      if (el.sectionReference) sectionsWithProposal.add(el.sectionReference);
+    }
+  }
+  const unprocessedGapSectionIds = gapSectionIds.filter((id) => !sectionsWithProposal.has(id));
+  const unprocessedCount = unprocessedGapSectionIds.length;
+
   useEffect(() => {
     if (!projectId || projectId === 'null') return;
     if (proposals.length === 0 && !isGenerating) {
@@ -57,11 +71,13 @@ export default function RemediateGateway() {
   }, [projectId, selectedStandardId]);  // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGenerate = () => {
-    if (!projectId || !selectedStandardId || gapSectionIds.length === 0) return;
+    if (!projectId || !selectedStandardId || unprocessedGapSectionIds.length === 0) return;
+    // Only feed sections that don't already have a proposal — prevents the
+    // 5x-Governance-Structure duplicate behaviour the user hit on the dry-run.
     generate(projectId, {
       source: 'compliance',
       standardId: selectedStandardId,
-      gapSectionIds,
+      gapSectionIds: unprocessedGapSectionIds,
     });
   };
 
@@ -128,14 +144,21 @@ export default function RemediateGateway() {
       )}
 
       {/* Generate Button */}
-      {totalIssues > 0 && selectedStandardId && !isGenerating && (
-        <button
-          onClick={handleGenerate}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#7c3aed]/10 border border-[#7c3aed]/30 text-[#a78bfa] hover:bg-[#7c3aed]/20 transition text-sm font-medium mb-4"
-        >
-          <Sparkles size={16} />
-          Generate AI Fix for {totalIssues} issue{totalIssues !== 1 ? 's' : ''}
-        </button>
+      {selectedStandardId && !isGenerating && (
+        unprocessedCount > 0 ? (
+          <button
+            onClick={handleGenerate}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[#7c3aed]/10 border border-[#7c3aed]/30 text-[#a78bfa] hover:bg-[#7c3aed]/20 transition text-sm font-medium mb-4"
+          >
+            <Sparkles size={16} />
+            Generate AI Fix for {unprocessedCount} unmapped gap{unprocessedCount !== 1 ? 's' : ''}
+          </button>
+        ) : gapSectionIds.length > 0 && (
+          <div className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] text-[var(--text-tertiary)] text-sm mb-4">
+            <CheckCircle2 size={14} className="text-emerald-400" />
+            All {gapSectionIds.length} gap{gapSectionIds.length !== 1 ? 's have' : ' has'} a proposal — review them below
+          </div>
+        )
       )}
 
       {/* Generation Progress */}
