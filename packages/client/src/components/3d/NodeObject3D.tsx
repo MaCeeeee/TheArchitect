@@ -8,6 +8,13 @@ import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
+import { computeRequirementCoverage } from '../../utils/coverageScore';
+
+const COVERAGE_BAND_COLORS: Record<'red' | 'yellow' | 'green', string> = {
+  red: '#ef4444',
+  yellow: '#eab308',
+  green: '#22c55e',
+};
 
 const LAYER_COLORS: Record<string, string> = {
   motivation: '#ec4899',
@@ -58,8 +65,21 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   const setDraggingStore = useArchitectureStore((s) => s.setDragging);
 
   const isSelected = selectedId === element.id || selectedIds.has(element.id);
-  const baseColor = LAYER_COLORS[element.layer] || '#4a5a4a';
+  const layerColor = LAYER_COLORS[element.layer] || '#4a5a4a';
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
+
+  // Compliance Requirement coverage color: red = no realizing capability,
+  // yellow = partial / target-only, green = current+mature realizer present.
+  // Surfaces compliance gaps directly in 3D without entering X-Ray.
+  const allElements = useArchitectureStore((s) => s.elements);
+  const allConnections = useArchitectureStore((s) => s.connections);
+  const requirementCoverageColor = useMemo(() => {
+    if (element.type !== 'requirement') return null;
+    const r = computeRequirementCoverage(element.id, allElements, allConnections);
+    return COVERAGE_BAND_COLORS[r.band];
+  }, [element.id, element.type, allElements, allConnections]);
+
+  const baseColor = requirementCoverageColor ?? layerColor;
 
   // Policy violation data
   const elementMeta = (element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata;
