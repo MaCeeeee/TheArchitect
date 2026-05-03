@@ -213,8 +213,24 @@ export const useXRayStore = create<XRayState>((set, get) => ({
   setLoadingNarrative: (loading) => set({ isLoadingNarrative: loading }),
 
   recompute: () => {
-    const { elements, connections } = useArchitectureStore.getState();
-    if (elements.length === 0) return;
+    const { elements: allElements, connections: allConnections } = useArchitectureStore.getState();
+    if (allElements.length === 0) return;
+
+    // Drilldown-Activity-Filter: elements parked at posY <= -50 are sub-process
+    // activities hidden under the architecture (see bsh-activity-demo.ts /
+    // aiGenerator.routes.ts where ACTIVITY_HIDDEN_Y = -100). They belong to a
+    // separate drill-frame view, not the main architecture, so they must NOT
+    // appear in X-Ray risk metrics or critical-path calculations — otherwise
+    // the critical-path beam reaches into the y=-100 underworld and looks like
+    // it ends in the void.
+    const HIDDEN_Y_THRESHOLD = -50;
+    const isHidden = (el: { position3D?: { y?: number } }) =>
+      typeof el.position3D?.y === 'number' && el.position3D.y <= HIDDEN_Y_THRESHOLD;
+    const visibleIds = new Set(allElements.filter((e) => !isHidden(e)).map((e) => e.id));
+    const elements = allElements.filter((e) => visibleIds.has(e.id));
+    const connections = allConnections.filter(
+      (c) => visibleIds.has(c.sourceId) && visibleIds.has(c.targetId),
+    );
 
     const elementDataMap = new Map<string, XRayElementData>();
 
