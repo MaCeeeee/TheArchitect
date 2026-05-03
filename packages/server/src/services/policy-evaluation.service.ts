@@ -66,6 +66,15 @@ async function loadElement(elementId: string): Promise<Neo4jElement | null> {
  *     Consistency Requirement" violates the "Reporting Period
  *     Consistency" policy because its description doesn't contain
  *     keywords from itself).
+ *   - ALL motivation-layer elements (Goal, Driver, Principle,
+ *     Requirement, Constraint, Stakeholder, Value, Meaning, Outcome,
+ *     Assessment). These describe the abstract WHY of the
+ *     architecture, not what concrete elements DO. Evaluating
+ *     content-checking rules against them (e.g. "description must
+ *     contain X") produces 8-12 false-positive violations per Goal —
+ *     the BSH-demo blocker. Architects should target Strategy/Business/
+ *     Application/Technology/Implementation elements with their
+ *     compliance policies.
  */
 async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
   const records = await runCypher(
@@ -73,6 +82,7 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
      WHERE NOT (e.metadataJson CONTAINS '"isPolicyNode":true' OR e.metadataJson CONTAINS '"isPolicyNode": true')
        AND NOT (e.metadataJson CONTAINS '"source":"compliance-policy"' OR e.metadataJson CONTAINS '"source": "compliance-policy"')
        AND e.sourcePolicyId IS NULL
+       AND e.layer <> 'motivation'
      RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
             e.togafDomain as domain, e.maturityLevel as maturity,
             e.riskLevel as riskLevel, e.status as status,
@@ -128,6 +138,12 @@ export async function evaluateElementPolicies(
   // projectPoliciesAsRequirements). They ARE policies in element form —
   // evaluating policies against them produces self-violations.
   if (element.metadata?.source === 'compliance-policy') return;
+
+  // Skip motivation-layer elements (Goal, Driver, Requirement,
+  // Constraint, Principle, Stakeholder, Value, Meaning, Outcome,
+  // Assessment). They are abstractions of intent — policies operate
+  // on concrete realizers (Process, Capability, Application).
+  if (element.layer === 'motivation') return;
 
   const policies = await Policy.find({
     projectId,
@@ -263,23 +279,25 @@ export async function evaluateAllForPolicy(
 }
 
 /**
- * One-time cleanup: resolve open violations targeting compliance-policy
- * Requirement projections. Such violations were created before the
- * skip-rule in loadProjectElements / evaluateElementPolicies was added,
- * and represent "policy X is violated by Requirement-of-policy-X" —
- * semantically self-violations.
+ * One-time cleanup: resolve open violations that policies should never
+ * have created in the first place — namely violations targeting
+ * compliance-policy Requirement projections OR any motivation-layer
+ * element. Both categories are now skipped at evaluation time, but
+ * pre-existing violations from earlier evaluation runs need scrubbing.
  *
  * Returns the number of violations resolved.
  */
 export async function cleanupCompliancePolicySelfViolations(
   projectId: string,
 ): Promise<{ resolvedCount: number; affectedElementIds: string[] }> {
-  // 1) Find all compliance-policy element IDs in the project
+  // 1) Find element IDs to clean: compliance-policy projections OR
+  //    any motivation-layer element.
   const records = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
      WHERE e.metadataJson CONTAINS '"source":"compliance-policy"'
         OR e.metadataJson CONTAINS '"source": "compliance-policy"'
         OR e.sourcePolicyId IS NOT NULL
+        OR e.layer = 'motivation'
      RETURN e.id AS id`,
     { projectId },
   );
@@ -296,7 +314,7 @@ export async function cleanupCompliancePolicySelfViolations(
       $set: {
         status: 'resolved',
         resolvedAt: new Date(),
-        details: 'Auto-resolved: self-violation against compliance-policy projection',
+        details: 'Auto-resolved: out-of-scope element (compliance-policy projection or motivation-layer element)',
       },
     },
   );

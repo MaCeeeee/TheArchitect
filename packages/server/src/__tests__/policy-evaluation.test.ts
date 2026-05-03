@@ -1143,6 +1143,71 @@ describe('UC-GOV-001: compliance-policy projections', () => {
     expect(violations).toHaveLength(0);
   });
 
+  it('evaluateElementPolicies skips ALL motivation-layer elements (Goal, Driver, etc.)', async () => {
+    // BSH-demo case: ESG Compliance Goal showed 8 false-positive
+    // policy violations because content-checking rules can't match an
+    // abstract goal description.
+    await Policy.create(createPolicyDoc({
+      name: 'Reporting must mention reporting',
+      scope: { domains: [], elementTypes: [], layers: [] },  // unscoped
+      rules: [{ field: 'description', operator: 'contains', value: 'reporting period', message: 'Need reporting period' }],
+    }));
+
+    const goalId = 'goal-esg';
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: goalId,
+        name: 'ESG Compliance Goal',
+        type: 'goal',
+        layer: 'motivation',
+        domain: 'motivation',
+        maturity: { toNumber: () => 1 },
+        riskLevel: 'low',
+        status: 'target',
+        description: 'Achieve auditable CSRD-compliant reporting by Q1 2026.',
+        metadataJson: null,
+      }),
+    ]);
+
+    await evaluateElementPolicies(PROJECT_ID.toString(), goalId, 'create');
+
+    const violations = await PolicyViolation.find({ elementId: goalId, status: 'open' });
+    expect(violations).toHaveLength(0);
+  });
+
+  it('cleanup also resolves open violations on motivation-layer elements', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'Some policy',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'description', operator: 'contains', value: 'foo', message: 'Need foo' }],
+    }));
+
+    const goalId = 'goal-1';
+
+    await PolicyViolation.create({
+      projectId: PROJECT_ID,
+      policyId: policy._id,
+      elementId: goalId,
+      field: 'description',
+      violationType: 'violation',
+      severity: 'warning',
+      message: 'phantom on goal',
+      status: 'open',
+      detectedAt: new Date(),
+    });
+
+    // Mock cypher returns the goal as in-scope-for-cleanup
+    mockRunCypher.mockResolvedValueOnce([fakeNeo4jRecord({ id: goalId })]);
+
+    const result = await cleanupCompliancePolicySelfViolations(PROJECT_ID.toString());
+
+    expect(result.resolvedCount).toBe(1);
+    expect(result.affectedElementIds).toContain(goalId);
+
+    const stillOpen = await PolicyViolation.find({ elementId: goalId, status: 'open' });
+    expect(stillOpen).toHaveLength(0);
+  });
+
   it('cleanupCompliancePolicySelfViolations resolves stale self-violations', async () => {
     const policy = await Policy.create(createPolicyDoc({
       name: 'Some Policy',
