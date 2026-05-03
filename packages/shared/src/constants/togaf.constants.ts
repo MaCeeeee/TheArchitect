@@ -267,3 +267,27 @@ export const ARCHIMATE_STANDARD_CONNECTION_TYPES: ReadonlySet<string> = new Set(
   'triggering', 'flow', 'specialization',
   'association',
 ]);
+
+// ──────────────────────────────────────────────────────────
+// Default lifecycle status by element type for AI-generated
+// content. Imported documents typically describe what *exists*
+// (Ist-State), so the default is `current`. Only types that
+// represent aspirations / future commitments default to `target`.
+// The LLM may still override these per-element via its own
+// `status` field — this only applies when the LLM omits status
+// or returns an invalid value.
+// ──────────────────────────────────────────────────────────
+const TARGET_DEFAULT_TYPES: ReadonlySet<ElementType> = new Set<ElementType>([
+  'goal',         // aspirational by definition
+  'outcome',      // intended future result
+  'requirement',  // something to be fulfilled
+  'work_package', // planned implementation effort
+  'deliverable',  // planned artifact
+  'gap',          // identified delta to close
+]);
+
+export type LifecycleStatus = 'current' | 'transitional' | 'target' | 'retired';
+
+export function defaultStatusForType(type: ElementType): LifecycleStatus {
+  return TARGET_DEFAULT_TYPES.has(type) ? 'target' : 'current';
+}

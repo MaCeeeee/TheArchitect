@@ -8,6 +8,7 @@ import {
   LEGACY_TYPE_MAP,
   ARCHITECTURE_LAYERS,
   ELEMENT_TYPES,
+  defaultStatusForType,
 } from '@thearchitect/shared';
 import type {
   BlueprintInput,
@@ -48,6 +49,18 @@ const DOMAIN_TO_LAYER: Record<string, ArchitectureLayer> = {
 
 const STRATEGY_TYPES = new Set(['business_capability', 'value_stream', 'resource', 'course_of_action']);
 const PHYSICAL_TYPES = new Set(['equipment', 'facility', 'distribution_network', 'material']);
+
+// Types whose lifecycle status is structurally fixed by ArchiMate semantics.
+// For these, ignore whatever the LLM returns and use the type-default.
+// Goals/outcomes/requirements/work_packages/deliverables/gaps are always target;
+// stakeholders/actors/roles/principles/constraints/drivers etc. are always current.
+const HARD_LOCKED_STATUS_TYPES = new Set<string>([
+  'stakeholder', 'business_actor', 'business_role',
+  'principle', 'constraint',
+  'driver', 'assessment', 'meaning', 'am_value',
+  'goal', 'outcome', 'requirement',
+  'work_package', 'deliverable', 'gap',
+]);
 
 function inferLayer(type: string): ArchitectureLayer {
   if (STRATEGY_TYPES.has(type)) return 'strategy';
@@ -169,7 +182,19 @@ ${ARCHITECTURE_LAYERS.map((l) => l.id).join(', ')}
 - Create implementation_migration elements: at minimum a "Current State" plateau, "MVP" work_package, and "Target State" plateau
 - For capabilities the user didn't mention but are implied (e.g., any business needs "User Management", "Payment Processing" if it's a marketplace), add them proactively
 - Every element MUST have a description (1-2 sentences max)
-- Use status "target" for things to be built, "current" for things that already exist
+
+## STATUS RULES (very important — pick per element):
+Default is "current" (the element exists today). Use "target" ONLY when the source text clearly signals a future state — words like "geplant", "soll eingeführt werden", "future", "to-be", "roadmap", "wir wollen", "Vision", "Ziel bis 20XX".
+
+Hard rules that override the text:
+- stakeholder, business_actor, business_role → ALWAYS "current" (people/roles exist today)
+- principle, constraint → ALWAYS "current" (architecture principles are guiding rules in force today, not aspirations)
+- driver, assessment, meaning, am_value → ALWAYS "current" (motivational context describing today's situation)
+- goal, outcome, requirement → ALWAYS "target" (aspirations / future commitments by definition)
+- work_package, deliverable, gap → ALWAYS "target" (planned implementation effort)
+- application_component, node, system_software, technology_service, business_capability, business_process, data_object → "current" UNLESS the text explicitly describes them as new / planned / to-be-built
+
+Example: "SAP S/4HANA" mentioned in a current architecture doc → current. "We will introduce a new ESG dashboard" → target. "Cloud-First Principle" → current (it is a principle in force, not an aspiration).
 
 ## OUTPUT FORMAT:
 Output ONLY a valid JSON array. No markdown, no commentary, no code fences.
@@ -342,7 +367,16 @@ function validateElements(raw: RawElement[]): {
       ? (r.layer as ArchitectureLayer)
       : inferLayer(type);
     const togafDomain = inferDomain(type);
-    const status = (r.status === 'target' || r.status === 'transitional' || r.status === 'retired') ? r.status : 'current';
+
+    // Status: hard-locked types ignore the LLM; soft types respect a valid LLM
+    // value and otherwise fall back to the type-default (usually `current`).
+    const llmStatus = (r.status === 'current' || r.status === 'target' || r.status === 'transitional' || r.status === 'retired')
+      ? r.status
+      : undefined;
+    const status: 'current' | 'target' | 'transitional' | 'retired' =
+      HARD_LOCKED_STATUS_TYPES.has(type)
+        ? defaultStatusForType(type)
+        : (llmStatus ?? defaultStatusForType(type));
 
     elements.push({
       id: generateId('bp'),
