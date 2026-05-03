@@ -76,10 +76,39 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-const SCALE_LABELS: Record<string, { left: string; right: string; color: string }> = {
-  risk: { left: 'Low Risk', right: 'Critical Risk', color: '#ef4444' },
-  cost: { left: '€ Low', right: '€ High', color: '#f97316' },
-  timeline: { left: 'Current', right: 'Target', color: '#3b82f6' },
+// Bucket-aligned tick labels per subview. Positions correspond to the X-axis
+// columns produced by xrayStore.computePositions (5 buckets evenly spread
+// across SCALE_WIDTH=24, so bucket b sits at x = (b/4)*24 - 12).
+//
+// Risk: continuous skala — only show endpoints.
+// Cost: continuous skala — only show endpoints.
+// Timeline: discrete buckets per status — show one label per used bucket so
+//   the user knows column 0 = Current, 1 = Transitional, 3 = Target,
+//   4 = Retired (column 2 stays empty as a visual gap).
+const SCALE_LABELS: Record<string, { ticks: { x: number; label: string; isAccent?: boolean }[]; lineColor: string }> = {
+  risk: {
+    ticks: [
+      { x: -12, label: 'Low Risk' },
+      { x: 12, label: 'Critical Risk', isAccent: true },
+    ],
+    lineColor: '#ef4444',
+  },
+  cost: {
+    ticks: [
+      { x: -12, label: '€ Low' },
+      { x: 12, label: '€ High', isAccent: true },
+    ],
+    lineColor: '#f97316',
+  },
+  timeline: {
+    ticks: [
+      { x: -12, label: 'Current' },        // bucket 0
+      { x: -6,  label: 'Transitional' },   // bucket 1
+      { x: 6,   label: 'Target' },         // bucket 3
+      { x: 12,  label: 'Retired', isAccent: true }, // bucket 4
+    ],
+    lineColor: '#3b82f6',
+  },
 };
 
 function ScaleAxisLabels({ subView }: { subView: XRaySubView }) {
@@ -91,8 +120,8 @@ function ScaleAxisLabels({ subView }: { subView: XRaySubView }) {
     return ARCHITECTURE_LAYERS.filter((l) => layerSet.has(l.id));
   }, [elements]);
 
-  const labels = SCALE_LABELS[subView];
-  if (!labels) return null;
+  const config = SCALE_LABELS[subView];
+  if (!config) return null;
 
   const HALF_WIDTH = 12;
 
@@ -100,46 +129,37 @@ function ScaleAxisLabels({ subView }: { subView: XRaySubView }) {
     <group>
       {activeLayers.map((layer) => (
         <group key={layer.id}>
-          {/* Left label */}
-          <Html
-            position={[-HALF_WIDTH - 1.5, layer.yPosition, 0]}
-            center
-            style={{ pointerEvents: 'none' }}
-          >
-            <div style={{
-              color: '#22c55e',
-              fontSize: '10px',
-              fontFamily: 'monospace',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              textShadow: '0 0 6px rgba(0,0,0,0.8)',
-              opacity: 0.8,
-            }}>
-              {labels.left}
-            </div>
-          </Html>
-          {/* Right label */}
-          <Html
-            position={[HALF_WIDTH + 1.5, layer.yPosition, 0]}
-            center
-            style={{ pointerEvents: 'none' }}
-          >
-            <div style={{
-              color: labels.color,
-              fontSize: '10px',
-              fontFamily: 'monospace',
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-              textShadow: '0 0 6px rgba(0,0,0,0.8)',
-              opacity: 0.8,
-            }}>
-              {labels.right}
-            </div>
-          </Html>
+          {config.ticks.map((tick, idx) => {
+            // Push the leftmost tick a bit further left, the rightmost further
+            // right, to keep them off the layer-plateau edge.
+            const isFirst = idx === 0;
+            const isLast = idx === config.ticks.length - 1;
+            const xOffset = isFirst ? tick.x - 1.5 : isLast ? tick.x + 1.5 : tick.x;
+            return (
+              <Html
+                key={`${layer.id}-${idx}`}
+                position={[xOffset, layer.yPosition, 0]}
+                center
+                style={{ pointerEvents: 'none' }}
+              >
+                <div style={{
+                  color: tick.isAccent ? config.lineColor : '#22c55e',
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  textShadow: '0 0 6px rgba(0,0,0,0.8)',
+                  opacity: 0.8,
+                }}>
+                  {tick.label}
+                </div>
+              </Html>
+            );
+          })}
           {/* Scale line */}
           <mesh position={[0, layer.yPosition - 0.05, 0]} rotation={[0, 0, 0]}>
             <boxGeometry args={[HALF_WIDTH * 2, 0.02, 0.02]} />
-            <meshBasicMaterial color={labels.color} transparent opacity={0.3} />
+            <meshBasicMaterial color={config.lineColor} transparent opacity={0.3} />
           </mesh>
         </group>
       ))}

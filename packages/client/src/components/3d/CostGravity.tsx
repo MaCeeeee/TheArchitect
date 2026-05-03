@@ -220,7 +220,12 @@ export default function CostGravity() {
   const elementData = useXRayStore((s) => s.elementData);
   const subView = useXRayStore((s) => s.subView);
 
-  // Compute max cost for normalization
+  const xrayPositions = useXRayStore((s) => s.xrayPositions);
+
+  // Compute max cost for normalization. Element positions follow xrayPositions
+  // when X-Ray reflows them onto bucket columns — otherwise the cost beams and
+  // optimization rings would float at the user's manual layout while the
+  // actual element cube has moved 8+ units away (the "alone in space" bug).
   const { maxCost, totalCost, costElements } = useMemo(() => {
     if (subView !== 'cost') return { maxCost: 1, totalCost: 0, costElements: [] };
 
@@ -235,9 +240,14 @@ export default function CostGravity() {
       if (data.estimatedCost > max) max = data.estimatedCost;
       total += data.estimatedCost;
 
+      const xp = xrayPositions.get(el.id);
+      const px = xp ? xp.x : el.position3D.x;
+      const py = xp ? xp.y : el.position3D.y;
+      const pz = xp ? xp.z : el.position3D.z;
+
       items.push({
         id: el.id,
-        position: new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z),
+        position: new THREE.Vector3(px, py, pz),
         cost: data.estimatedCost,
         optimization: data.optimizationPotential,
         isRetired: el.status === 'retired',
@@ -246,7 +256,7 @@ export default function CostGravity() {
     }
 
     return { maxCost: max || 1, totalCost: total, costElements: items };
-  }, [elements, elementData, subView]);
+  }, [elements, elementData, subView, xrayPositions]);
 
   if (subView !== 'cost') return null;
 
