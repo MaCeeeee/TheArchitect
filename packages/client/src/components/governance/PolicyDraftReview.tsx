@@ -55,8 +55,19 @@ export function PolicyDraftReview() {
   }, [projectId, pipelineStates.length, loadPipelineStatus]);
 
   const [draftStates, setDraftStates] = useState<DraftState[]>([]);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [expandedIndices, setExpandedIndices] = useState<Set<number>>(new Set());
   const [isApproving, setIsApproving] = useState(false);
+
+  const toggleExpanded = (i: number) => {
+    setExpandedIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+  const expandAll = () => setExpandedIndices(new Set(draftStates.map((_, i) => i)));
+  const collapseAll = () => setExpandedIndices(new Set());
   const [savedCount, setSavedCount] = useState(0);
   const [noDraftsFound, setNoDraftsFound] = useState(false);
 
@@ -279,6 +290,12 @@ export function PolicyDraftReview() {
               {draftStates.length} drafts — {approvedCount} approved, {rejectedCount} rejected, {pendingCount} pending
             </span>
             <div className="flex gap-2">
+              <button
+                onClick={expandedIndices.size === draftStates.length ? collapseAll : expandAll}
+                className="text-xs px-3 py-1.5 rounded bg-slate-500/10 text-slate-300 hover:bg-slate-500/20"
+              >
+                {expandedIndices.size === draftStates.length ? 'Collapse all' : 'Expand all'}
+              </button>
               <button onClick={approveAll} className="text-xs px-3 py-1.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20">
                 Approve All
               </button>
@@ -293,7 +310,7 @@ export function PolicyDraftReview() {
             {draftStates.map((ds, i) => {
               const sev = SEVERITY_CONFIG[ds.draft.severity];
               const SevIcon = sev.icon;
-              const isExpanded = expandedIndex === i;
+              const isExpanded = expandedIndices.has(i);
 
               return (
                 <div
@@ -336,7 +353,7 @@ export function PolicyDraftReview() {
 
                   {/* Expandable Rules */}
                   <button
-                    onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                    onClick={() => toggleExpanded(i)}
                     className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 mt-2"
                   >
                     {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

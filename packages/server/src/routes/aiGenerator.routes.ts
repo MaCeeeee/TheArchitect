@@ -30,6 +30,8 @@ import {
 import { extractText, isSupportedDocument, getSupportedFormats } from '../services/document-parser.service';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
+import { defaultStatusForType } from '@thearchitect/shared';
+import type { ElementType } from '@thearchitect/shared';
 
 const router = Router();
 router.use(authenticate);
@@ -465,7 +467,7 @@ router.post(
     }
 
     const accept = body.accept ?? {};
-    const counts = { goals: 0, stakeholders: 0, capabilities: 0, processes: 0, activities: 0, connections: 0 };
+    const counts = { goals: 0, drivers: 0, stakeholders: 0, capabilities: 0, processes: 0, activities: 0, connections: 0 };
 
     // Layer Y-positions (matching togaf.constants ARCHITECTURE_LAYERS)
     const Y_MOTIVATION = 16;
@@ -517,6 +519,34 @@ router.post(
             metadata: { source: 'ai-generated', aiGenerated: true, kind: 'mission' },
           });
           counts.goals++;
+        }
+      }
+
+      // ─── 1.5) Drivers (ArchiMate Motivation Layer) ────────────────────
+      // Without this loop, drivers extracted from the PDF were only stored
+      // as text strings on Project.vision.drivers — they showed up in the
+      // Envision panel but never as real architecture elements in Neo4j,
+      // so the 3D scene + sidebar showed 0 drivers and the realization
+      // chain (Driver → Goal → Capability → Process) had no roots.
+      if (accept.vision !== false) {
+        const drivers = body.hierarchy.vision.drivers ?? [];
+        for (let i = 0; i < drivers.length; i++) {
+          const d = drivers[i];
+          if (!d || !d.trim()) continue;
+          await createElement({
+            projectId,
+            id: `ai-drv-${Date.now()}-${i}`,
+            type: 'driver',
+            name: d.length > 100 ? d.slice(0, 97) + '…' : d,
+            description: d,
+            layer: 'motivation',
+            togafDomain: 'motivation',
+            posX: layoutX(i, drivers.length, 22),
+            posY: Y_MOTIVATION,
+            posZ: -14,
+            metadata: { source: 'ai-generated', aiGenerated: true, kind: 'driver' },
+          });
+          counts.drivers++;
         }
       }
 
@@ -700,11 +730,18 @@ interface ElementInsert {
 }
 
 async function createElement(el: ElementInsert): Promise<void> {
+  // Status follows ArchiMate semantics: stakeholders/principles/drivers etc.
+  // exist today (`current`); goals/outcomes/work_packages are aspirations
+  // (`target`). Capabilities/processes/components default to `current` because
+  // the source document typically describes the as-is architecture.
+  const status = defaultStatusForType(el.type as ElementType);
+  // Maturity mirrors status: target = nascent (2), current = established (3).
+  const maturityLevel = status === 'target' ? 2 : 3;
   await runCypher(
     `CREATE (e:ArchitectureElement {
       id: $id, projectId: $projectId, type: $type, name: $name,
       description: $description, layer: $layer, togafDomain: $togafDomain,
-      maturityLevel: 3, riskLevel: 'low', status: 'target',
+      maturityLevel: $maturityLevel, riskLevel: 'low', status: $status,
       posX: $posX, posY: $posY, posZ: $posZ,
       metadataJson: $metadataJson,
       createdAt: datetime(), updatedAt: datetime()
@@ -717,6 +754,8 @@ async function createElement(el: ElementInsert): Promise<void> {
       description: el.description,
       layer: el.layer,
       togafDomain: el.togafDomain,
+      status,
+      maturityLevel,
       posX: el.posX,
       posY: el.posY,
       posZ: el.posZ,

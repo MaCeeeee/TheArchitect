@@ -6,6 +6,7 @@ import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
+import { useXRayStore } from '../../stores/xrayStore';
 import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 import { computeViewPositions } from '../../hooks/useViewPositions';
 
@@ -23,16 +24,37 @@ let flyProgress = 1;
 export function flyToElement(elementPosition: { x: number; y: number; z: number }, elementId?: string) {
   const viewMode = useUIStore.getState().viewMode;
 
+  // Resolve where the element is *actually rendered*. Sidebar callers pass
+  // element.position3D, but X-Ray reflows elements onto bucket positions
+  // (xrayStore.computePositions) and 2D/Layer views compute their own grid
+  // (computeViewPositions). Without this lookup the camera flies to a phantom
+  // location while the user-selected element sits 10+ units away.
+  const resolvePosition = (): { x: number; y: number; z: number } => {
+    if (!elementId) return elementPosition;
+    // X-Ray override takes precedence (only in 3D view — the 2D/layer code
+    // path has its own grid and ignores X-Ray positioning).
+    if (viewMode === '3d') {
+      const { isActive, xrayPositions } = useXRayStore.getState();
+      if (isActive) {
+        const xp = xrayPositions.get(elementId);
+        if (xp) return xp;
+      }
+    }
+    return elementPosition;
+  };
+
+  const resolved = resolvePosition();
+
   if (viewMode === '3d') {
-    const target = new THREE.Vector3(elementPosition.x, elementPosition.y, elementPosition.z);
+    const target = new THREE.Vector3(resolved.x, resolved.y, resolved.z);
     flyTarget = {
       position: target.clone().add(new THREE.Vector3(5, 4, 5)),
       lookAt: target,
     };
   } else {
     // Compute the actual view position for this element
-    let targetX = elementPosition.x;
-    let targetZ = elementPosition.z;
+    let targetX = resolved.x;
+    let targetZ = resolved.z;
 
     if (elementId) {
       const { viewMode: vm, focusedLayer } = useUIStore.getState();

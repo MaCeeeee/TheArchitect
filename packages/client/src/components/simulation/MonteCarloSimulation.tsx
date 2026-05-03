@@ -165,7 +165,7 @@ export default function MonteCarloSimulation() {
       {/* Config */}
       <div className="p-3 space-y-2">
         {/* Data quality info */}
-        <div className="text-[9px] text-[var(--text-tertiary)] bg-[var(--surface-base)] rounded px-2 py-1.5 border border-[var(--border-subtle)]">
+        <div className="text-[11px] text-[var(--text-tertiary)] bg-[var(--surface-base)] rounded px-2 py-1.5 border border-[var(--border-subtle)]">
           <span className="text-white font-medium">{simElements.length}</span> elements with cost data
           {tier3Count > 0 && (
             <> · <span className="text-[#00ff41]">{tier3Count}</span> with O/M/P (Tier 3)</>
@@ -176,11 +176,11 @@ export default function MonteCarloSimulation() {
         </div>
 
         <div>
-          <label className="text-[9px] text-[var(--text-tertiary)] block mb-1">Iterations</label>
+          <label className="text-[11px] text-[var(--text-tertiary)] block mb-1">Iterations</label>
           <select
             value={iterations}
             onChange={(e) => setIterations(parseInt(e.target.value))}
-            className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[10px] text-white outline-none"
+            className="w-full bg-[var(--surface-base)] border border-[var(--border-subtle)] rounded px-2 py-1 text-[12px] text-white outline-none"
           >
             <option value="1000">1,000</option>
             <option value="5000">5,000</option>
@@ -191,7 +191,7 @@ export default function MonteCarloSimulation() {
         <button
           onClick={runSimulation}
           disabled={running || simElements.length === 0}
-          className="w-full rounded-md bg-[#00ff41] px-3 py-1.5 text-[10px] font-medium text-black hover:bg-[#00ff41]/90 disabled:opacity-30 transition flex items-center justify-center gap-1"
+          className="w-full rounded-md bg-[#00ff41] px-3 py-1.5 text-[12px] font-medium text-black hover:bg-[#00ff41]/90 disabled:opacity-30 transition flex items-center justify-center gap-1"
         >
           <Play size={10} />
           {running ? `Running ${iterations.toLocaleString()} iterations...` : 'Run Simulation'}
@@ -204,15 +204,15 @@ export default function MonteCarloSimulation() {
           {/* P10 / P50 / P90 */}
           <div className="grid grid-cols-3 gap-1">
             <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
-              <div className="text-[9px] text-[var(--text-tertiary)]">P10 (optimistic)</div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">P10 (optimistic)</div>
               <div className="text-xs font-bold text-[#22c55e]">{fmt(result.p10)}</div>
             </div>
             <div className="rounded-md border border-[#00ff41]/30 bg-[#00ff41]/10 p-1.5 text-center">
-              <div className="text-[9px] text-[var(--text-tertiary)]">P50 (expected)</div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">P50 (expected)</div>
               <div className="text-xs font-bold text-white">{fmt(result.p50)}</div>
             </div>
             <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5 text-center">
-              <div className="text-[9px] text-[var(--text-tertiary)]">P90 (risk)</div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">P90 (risk)</div>
               <div className="text-xs font-bold text-[#ef4444]">{fmt(result.p90)}</div>
             </div>
           </div>
@@ -220,17 +220,17 @@ export default function MonteCarloSimulation() {
           {/* VaR + Confidence */}
           <div className="grid grid-cols-2 gap-1">
             <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5">
-              <div className="text-[9px] text-[var(--text-tertiary)]">VaR 95%</div>
-              <div className="text-[10px] font-bold text-orange-400">{fmt(result.var95)}</div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">VaR 95%</div>
+              <div className="text-[12px] font-bold text-orange-400">{fmt(result.var95)}</div>
             </div>
             <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-1.5">
-              <div className="text-[9px] text-[var(--text-tertiary)]">Spread (P90−P10)</div>
-              <div className="text-[10px] font-bold text-white">{fmt(result.p90 - result.p10)}</div>
+              <div className="text-[11px] text-[var(--text-tertiary)]">Spread (P90−P10)</div>
+              <div className="text-[12px] font-bold text-white">{fmt(result.p90 - result.p10)}</div>
             </div>
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-0.5 text-[9px]">
+          <div className="flex gap-0.5 text-[11px]">
             {(['overview', 'tornado', 'domains'] as const).map((t) => (
               <button
                 key={t}
@@ -247,7 +247,7 @@ export default function MonteCarloSimulation() {
           {/* Distribution tab */}
           {tab === 'overview' && (
             <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2">
-              <div className="text-[9px] text-[var(--text-tertiary)] mb-1 flex items-center gap-1">
+              <div className="text-[11px] text-[var(--text-tertiary)] mb-1 flex items-center gap-1">
                 <BarChart3 size={8} /> Cost Distribution ({iterations.toLocaleString()} runs)
               </div>
               <div className="flex items-end gap-px h-20">
@@ -271,7 +271,7 @@ export default function MonteCarloSimulation() {
                 <span>{fmt(result.histogram[0]?.bucket || 0)}</span>
                 <span>{fmt(result.histogram[result.histogram.length - 1]?.bucket || 0)}</span>
               </div>
-              <div className="text-[9px] text-[var(--text-disabled)] text-center mt-1">
+              <div className="text-[11px] text-[var(--text-disabled)] text-center mt-1">
                 Mean: {fmt(result.mean)} | StdDev: {fmt(result.stdDev)} | CoV: {result.mean > 0 ? ((result.stdDev / result.mean) * 100).toFixed(1) : 0}%
               </div>
             </div>
@@ -280,7 +280,7 @@ export default function MonteCarloSimulation() {
           {/* Tornado / Risk Drivers tab */}
           {tab === 'tornado' && (
             <div className="space-y-1">
-              <div className="text-[9px] text-[var(--text-tertiary)] flex items-center gap-1 mb-1">
+              <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1 mb-1">
                 <AlertTriangle size={8} /> Top cost uncertainty drivers
               </div>
               {result.elementContributions.slice(0, 10).map((ec) => {
@@ -288,7 +288,7 @@ export default function MonteCarloSimulation() {
                 const el = simElements.find((e) => e.elementId === ec.elementId);
                 return (
                   <div key={ec.elementId} className="bg-[var(--surface-base)] rounded px-2 py-1 border border-[var(--border-subtle)]">
-                    <div className="flex justify-between text-[10px]">
+                    <div className="flex justify-between text-[12px]">
                       <span className="text-gray-300 truncate flex-1">{ec.name}</span>
                       <span className="text-orange-400 ml-2 font-medium">{pct}%</span>
                     </div>
@@ -309,7 +309,7 @@ export default function MonteCarloSimulation() {
                 );
               })}
               {result.elementContributions.length === 0 && (
-                <div className="text-[9px] text-[var(--text-tertiary)] text-center py-2">
+                <div className="text-[11px] text-[var(--text-tertiary)] text-center py-2">
                   No variance data — add O/M/P estimates to elements
                 </div>
               )}
@@ -319,7 +319,7 @@ export default function MonteCarloSimulation() {
           {/* Domain breakdown tab */}
           {tab === 'domains' && (
             <div className="space-y-1">
-              <div className="text-[9px] text-[var(--text-tertiary)] flex items-center gap-1 mb-1">
+              <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1 mb-1">
                 <Layers size={8} /> Cost distribution by architecture domain
               </div>
               {domainResults.map((d) => {
@@ -327,7 +327,7 @@ export default function MonteCarloSimulation() {
                 const color = DOMAIN_COLORS[d.domain] || '#94a3b8';
                 return (
                   <div key={d.domain} className="bg-[var(--surface-base)] rounded px-2 py-1.5 border border-[var(--border-subtle)]">
-                    <div className="flex justify-between text-[10px] mb-0.5">
+                    <div className="flex justify-between text-[12px] mb-0.5">
                       <span className="font-medium" style={{ color }}>{d.domain}</span>
                       <span className="text-[var(--text-tertiary)]">{d.elementCount} elements</span>
                     </div>
@@ -367,7 +367,7 @@ export default function MonteCarloSimulation() {
           <div className="text-center space-y-1">
             <TrendingUp size={20} className="mx-auto text-[var(--text-disabled)]" />
             <p className="text-xs text-[var(--text-tertiary)]">No cost data available</p>
-            <p className="text-[9px] text-[var(--text-disabled)]">Add annual costs or O/M/P estimates via Cost → Enrich Cost Data</p>
+            <p className="text-[11px] text-[var(--text-disabled)]">Add annual costs or O/M/P estimates via Cost → Enrich Cost Data</p>
           </div>
         </div>
       )}

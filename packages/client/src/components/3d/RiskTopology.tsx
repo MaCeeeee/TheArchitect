@@ -110,12 +110,28 @@ export default function RiskTopology() {
   const elementData = useXRayStore((s) => s.elementData);
   const criticalPath = useXRayStore((s) => s.criticalPath);
   const subView = useXRayStore((s) => s.subView);
+  const xrayPositions = useXRayStore((s) => s.xrayPositions);
 
   const elementMap = useMemo(() => {
     const map = new Map<string, (typeof elements)[0]>();
     for (const el of elements) map.set(el.id, el);
     return map;
   }, [elements]);
+
+  /**
+   * Resolve the actual rendered position of an element. In X-Ray mode the
+   * NodeObject3D component renders elements at xrayPositions[id] (sorted by
+   * the active subView's metric, with overflow rows stacked along Z). The
+   * critical-path beam must follow the same coordinate system — otherwise it
+   * zigzags through empty space because computePositions has reordered the
+   * elements onto a 1D scale per layer while the original position3D still
+   * reflects the user's manual layout.
+   */
+  const renderPos = (el: { id: string; position3D: { x: number; y: number; z: number } }) => {
+    const xp = xrayPositions.get(el.id);
+    if (xp) return { x: xp.x, y: xp.y, z: xp.z };
+    return { x: el.position3D.x, y: el.position3D.y, z: el.position3D.z };
+  };
 
   // Critical path beam segments
   const criticalPathSegments = useMemo(() => {
@@ -133,21 +149,15 @@ export default function RiskTopology() {
       const sourceDisplacement = sourceData ? -(sourceData.riskScore / 10) * 2 : 0;
       const targetDisplacement = targetData ? -(targetData.riskScore / 10) * 2 : 0;
 
+      const sp = renderPos(sourceEl);
+      const tp = renderPos(targetEl);
       segments.push({
-        start: new THREE.Vector3(
-          sourceEl.position3D.x,
-          sourceEl.position3D.y + sourceDisplacement,
-          sourceEl.position3D.z
-        ),
-        end: new THREE.Vector3(
-          targetEl.position3D.x,
-          targetEl.position3D.y + targetDisplacement,
-          targetEl.position3D.z
-        ),
+        start: new THREE.Vector3(sp.x, sp.y + sourceDisplacement, sp.z),
+        end:   new THREE.Vector3(tp.x, tp.y + targetDisplacement, tp.z),
       });
     }
     return segments;
-  }, [criticalPath, elementMap, elementData, subView]);
+  }, [criticalPath, elementMap, elementData, subView, xrayPositions]);
 
   // High-risk elements for auras and rings
   const highRiskElements = useMemo(() => {
@@ -160,13 +170,14 @@ export default function RiskTopology() {
       .map((el) => {
         const data = elementData.get(el.id)!;
         const displacement = -(data.riskScore / 10) * 2;
+        const p = renderPos(el);
         return {
           id: el.id,
-          position: new THREE.Vector3(el.position3D.x, el.position3D.y + displacement, el.position3D.z),
+          position: new THREE.Vector3(p.x, p.y + displacement, p.z),
           riskScore: data.riskScore,
         };
       });
-  }, [elements, elementData, subView]);
+  }, [elements, elementData, subView, xrayPositions]);
 
   if (subView !== 'risk') return null;
 

@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
+import { findMatchingDriver, projectPoliciesAsRequirements } from '../services/policy-to-requirement.service';
 import {
   parseAndStore,
   getStandards,
@@ -587,7 +588,11 @@ router.post(
           name: draft.name,
           description: draft.description || '',
           category: 'compliance' as const,
-          framework: 'Standard Compliance',
+          // Policy schema enum is ['custom', 'dora', 'nis2', 'togaf', 'archimate', 'iso27001'].
+          // Standards uploaded by users (e.g. ESRS-1) are not in the enum, so we
+          // store them as 'custom' and keep the actual standard id on standardId
+          // + sourceSectionNumber for traceability.
+          framework: 'custom' as const,
           severity: draft.severity || 'warning',
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
           rules: draft.rules || [],
@@ -598,10 +603,33 @@ router.post(
         }))
       );
 
+      // ─── ArchiMate Requirement projection ───
+      // Per ArchiMate 3.2 §6 a Disclosure Requirement from a regulatory
+      // standard belongs in the Motivation layer as a `requirement` element,
+      // influenced by the regulatory Driver and realized by Capabilities.
+      // Without this projection the policies live only in the Policy Manager
+      // silo, not in the architecture graph — breaking traceability from
+      // Driver → Requirement → Capability → Process → Activity.
+      const standardDoc = await getStandard(standardId).catch(() => null);
+      const standardName = standardDoc?.name ?? '';
+      const driverMatch = await findMatchingDriver(projectId, standardName);
+
+      const requirementSummary = await projectPoliciesAsRequirements({
+        projectId,
+        standardId,
+        standardName,
+        driverId: driverMatch?.id ?? null,
+        policies: policies as unknown as Array<{ _id: { toString(): string }; name: string; description: string; sourceSectionNumber: string }>,
+      });
+
       // Update pipeline state
       await refreshPolicyStats(projectId, standardId);
 
-      res.status(201).json({ created: policies.length, policies });
+      res.status(201).json({
+        created: policies.length,
+        policies,
+        requirements: requirementSummary,
+      });
     } catch (err) {
       console.error('[Standards] Approve policies error:', err);
       res.status(500).json({ error: 'Failed to approve policies' });

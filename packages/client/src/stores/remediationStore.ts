@@ -1,6 +1,28 @@
 import { create } from 'zustand';
-import { remediationAPI } from '../services/api';
+import { remediationAPI, architectureAPI } from '../services/api';
 import { useAuthStore } from './authStore';
+import { useArchitectureStore } from './architectureStore';
+
+/**
+ * Apply* writes new ArchitectureElements + CONNECTS_TO edges directly into
+ * Neo4j on the server. Without an explicit refetch, the client architecture
+ * store is unaware of them — sidebar tree stays empty, 3D scene doesn't render
+ * the new nodes, X-Ray ignores them. Pull the fresh state in after every apply.
+ */
+async function refreshArchitectureFromServer(projectId: string): Promise<void> {
+  if (!projectId) return;
+  try {
+    const [elementsRes, connectionsRes] = await Promise.all([
+      architectureAPI.getElements(projectId),
+      architectureAPI.getConnections(projectId),
+    ]);
+    const store = useArchitectureStore.getState();
+    if (elementsRes?.data?.data) store.setElements(elementsRes.data.data);
+    if (connectionsRes?.data?.data) store.setConnections(connectionsRes.data.data);
+  } catch (err) {
+    if (import.meta.env.DEV) console.warn('[remediation] post-apply refresh failed:', err);
+  }
+}
 import type {
   RemediationProposal,
   RemediationContext,
@@ -165,6 +187,10 @@ export const useRemediationStore = create<RemediationState>((set, get) => ({
         previewElements: [],
         selectedProposalId: null,
       }));
+      // Server has just written new ArchitectureElements + CONNECTS_TO edges to
+      // Neo4j. Refetch them so the sidebar tree, 3D scene, and X-Ray reflect
+      // the change without requiring a full page reload.
+      await refreshArchitectureFromServer(projectId);
     } catch (err) {
       set({ isApplying: false, error: (err as Error).message || 'Apply failed' });
     }
@@ -181,6 +207,7 @@ export const useRemediationStore = create<RemediationState>((set, get) => ({
         isApplying: false,
         previewElements: [],
       }));
+      await refreshArchitectureFromServer(projectId);
     } catch (err) {
       set({ isApplying: false, error: (err as Error).message || 'Batch apply failed' });
     }

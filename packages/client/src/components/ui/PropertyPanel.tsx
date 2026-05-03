@@ -14,6 +14,7 @@ import type { ElementType, ArchitectureElement, Connection } from '@thearchitect
 import { useProcessGenerator, type GeneratedProcess } from '../../hooks/useProcessGenerator';
 import ProcessSuggestionModal from '../copilot/ProcessSuggestionModal';
 import { useActivityViewStore } from '../../stores/activityViewStore';
+import { computeRequirementCoverage } from '../../utils/coverageScore';
 
 const RISK_COLORS: Record<string, string> = {
   low: '#22c55e',
@@ -102,6 +103,12 @@ export default function PropertyPanel() {
   const isCapabilityType = element
     ? element.type === 'business_capability' || element.type === 'capability'
     : false;
+
+  const isRequirementType = element?.type === 'requirement';
+  const requirementCoverage = useMemo(
+    () => (isRequirementType && element ? computeRequirementCoverage(element.id, elements as any, connections as any) : null),
+    [isRequirementType, element, elements, connections],
+  );
 
   // Must call hooks unconditionally (before any early return)
   const health = useElementHealth(selectedElementId ?? null);
@@ -255,6 +262,14 @@ export default function PropertyPanel() {
           </div>
         </Section>
 
+        {/* Compliance Coverage — only for ArchiMate requirement elements */}
+        {isRequirementType && requirementCoverage && (
+          <CoverageSection
+            coverage={requirementCoverage}
+            onSelect={(id) => selectElement(id)}
+          />
+        )}
+
         {/* Cost Input (Tier 1) */}
         <CostInputSection element={element} onChange={handleFieldChange} />
 
@@ -332,6 +347,7 @@ export default function PropertyPanel() {
         {/* Description */}
         <Section title="Description">
           <DebouncedTextarea
+            key={element.id}
             value={element.description}
             onChange={(v) => handleFieldChange('description', v)}
           />
@@ -580,6 +596,80 @@ export default function PropertyPanel() {
   );
 }
 
+function CoverageSection({
+  coverage,
+  onSelect,
+}: {
+  coverage: ReturnType<typeof computeRequirementCoverage>;
+  onSelect: (id: string) => void;
+}) {
+  const pct = Math.round(coverage.coverage * 100);
+  const bandColor =
+    coverage.band === 'green' ? '#22c55e' : coverage.band === 'yellow' ? '#eab308' : '#ef4444';
+  const bandLabel =
+    coverage.band === 'green' ? 'Well covered' : coverage.band === 'yellow' ? 'Partial' : 'Gap';
+
+  return (
+    <Section title="Compliance Coverage">
+      <div className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield size={12} style={{ color: bandColor }} />
+            <span className="text-white text-xs font-semibold">{pct}%</span>
+            <span className="text-[10px] uppercase tracking-wider" style={{ color: bandColor }}>{bandLabel}</span>
+          </div>
+          <span className="text-[10px] text-[var(--text-tertiary)]">
+            {coverage.fulfillingCount} realizer{coverage.fulfillingCount === 1 ? '' : 's'}
+          </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="h-1.5 rounded-full bg-[var(--surface-raised)] overflow-hidden">
+          <div
+            className="h-full transition-all"
+            style={{ width: `${pct}%`, backgroundColor: bandColor }}
+          />
+        </div>
+
+        <p className="text-[10px] text-[var(--text-secondary)] leading-snug">
+          {coverage.reason}
+        </p>
+
+        {/* Top contributors (up to 3) */}
+        {coverage.contributions.length > 0 && (
+          <div className="space-y-1 pt-1 border-t border-[var(--border-subtle)]">
+            <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)]">
+              Realizing elements
+            </div>
+            {coverage.contributions.slice(0, 3).map((c) => (
+              <button
+                key={c.elementId}
+                onClick={() => onSelect(c.elementId)}
+                className="w-full text-left flex items-center justify-between gap-2 hover:bg-[var(--surface-raised)] rounded px-1 py-0.5 transition"
+                title={`${c.elementType.replace(/_/g, ' ')} • ${c.relationshipType} • status=${c.status} • maturity=${c.maturityLevel}/5`}
+              >
+                <span className="text-[10px] text-white truncate flex-1">{c.elementName}</span>
+                <span className="text-[9px] text-[var(--text-tertiary)] capitalize">{c.status}</span>
+                <span
+                  className="text-[10px] font-mono w-8 text-right"
+                  style={{ color: c.contribution >= 0.7 ? '#22c55e' : c.contribution >= 0.3 ? '#eab308' : '#ef4444' }}
+                >
+                  {Math.round(c.contribution * 100)}%
+                </span>
+              </button>
+            ))}
+            {coverage.contributions.length > 3 && (
+              <div className="text-[9px] text-[var(--text-tertiary)] px-1">
+                + {coverage.contributions.length - 3} more
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
@@ -656,12 +746,12 @@ function DebouncedTextarea({ value, onChange }: { value: string; onChange: (v: s
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Reset local when element changes
-  const prevValue = useRef(value);
-  if (prevValue.current !== value) {
-    prevValue.current = value;
+  // Sync local state when the prop value changes — a useEffect is
+  // strict-mode-safe (the prior setLocal-during-render anti-pattern caused
+  // stale state on element switch in React 18 strict mode).
+  useEffect(() => {
     setLocal(value);
-  }
+  }, [value]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const v = e.target.value;

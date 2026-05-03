@@ -1,8 +1,11 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
-import { buildAgentContext } from './agentContextFilter';
+import { buildAgentContext, type ProjectVisionContext } from './agentContextFilter';
 import { validateActions } from './actionValidator';
 import { EmergenceTracker } from './emergenceTracker';
+import { parseScenarioConflicts, renderParsedScenario, type ParsedScenario } from './scenarioParser';
+import { extractMiroFishResistanceFactors, generateNextSteps } from './nextStepSynthesizer';
+import { Project } from '../../models/Project';
 import type {
   AgentPersona,
   AgentTurn,
@@ -66,6 +69,16 @@ export class MiroFishEngine {
     let previousRoundSummary: string | undefined;
     const startTime = Date.now();
 
+    // Fetch project vision once — injected into every agent's context as
+    // non-negotiable framing. Without this, agents only see scenario text
+    // and default to APPROVE because they have no principle to defend.
+    const projectVision = await loadProjectVision(projectId);
+
+    // Parse scenario into structured conflict-pairs (regex+heuristic). Free-text
+    // scenarios bury opposing positions in prose; agents miss them. The parsed
+    // form makes "CFO proposes X / HR insists Y" explicit before reasoning starts.
+    const parsedScenario = parseScenarioConflicts(config.scenarioDescription || '', config.agents);
+
     for (let roundNum = 0; roundNum < config.maxRounds; roundNum++) {
       if (this.cancelled) break;
 
@@ -86,6 +99,8 @@ export class MiroFishEngine {
           previousRoundSummary,
           roundNum,
           onEvent,
+          projectVision,
+          parsedScenario,
         );
 
         agentTurns.push(turn);
@@ -203,6 +218,24 @@ export class MiroFishEngine {
       `Projected delay: ${fatigueReport.totalProjectedDelayMonths} months. ` +
       `Budget at risk: $${fatigueReport.budgetAtRisk.toLocaleString()}.`;
 
+    // Synthesize actionable next-steps via 2nd LLM call (Patch 9). Failure
+    // here must not crash the simulation — next-steps are enriching, not
+    // critical, and the engine returns a usable result without them.
+    const resistanceFactors = extractMiroFishResistanceFactors(rounds);
+    let nextSteps: SimulationResult['nextSteps'] = [];
+    try {
+      nextSteps = await generateNextSteps({
+        scenarioDescription: config.scenarioDescription || '',
+        parsedScenario,
+        projectVision,
+        rounds,
+        fatigueReport,
+        resistanceFactors,
+      });
+    } catch (err) {
+      console.warn('[MiroFish] Failed to synthesize next steps:', err);
+    }
+
     const result: SimulationResult = {
       outcome,
       summary,
@@ -211,6 +244,8 @@ export class MiroFishEngine {
       recommendedActions,
       fatigue: fatigueReport,
       emergenceMetrics: metrics,
+      nextSteps,
+      resistanceFactors,
     };
 
     onEvent({ type: 'complete', result });
@@ -236,14 +271,18 @@ export class MiroFishEngine {
     previousRoundSummary: string | undefined,
     roundNum: number,
     onEvent: (event: SimulationStreamEvent) => void,
+    projectVision?: ProjectVisionContext,
+    parsedScenario?: ParsedScenario,
   ): Promise<AgentTurn> {
     const turnStart = Date.now();
 
     // Build filtered context
-    const context = await buildAgentContext(projectId, persona, previousRoundSummary);
+    const context = await buildAgentContext(projectId, persona, previousRoundSummary, projectVision);
 
-    // Build system prompt
-    const systemPrompt = buildAgentSystemPrompt(persona, config, context);
+    // Build system prompt (parsed-scenario block injected after the free-text
+    // scenario so the agent sees both: the original prose AND the structured
+    // conflict pairs extracted from it).
+    const systemPrompt = buildAgentSystemPrompt(persona, config, context, parsedScenario);
 
     // Call LLM
     let fullResponse = '';
@@ -318,23 +357,37 @@ function buildAgentSystemPrompt(
   persona: AgentPersona,
   config: SimulationConfig,
   filteredContext: string,
+  parsedScenario?: ParsedScenario,
 ): string {
+  // Pass persona.name so the renderer can label this agent's own scenario
+  // position as "Your scenario role" instead of dumping it into the
+  // "opposing positions" list (Patch 7 — fixes CFO-position-flip bug where
+  // the CFO agent rejected outsourcing because it saw its own stated
+  // "CFO proposes outsourcing" framed as something to oppose).
+  const parsedBlock = parsedScenario ? renderParsedScenario(parsedScenario, persona.name) : '';
+  const parsedBlockSection = parsedBlock ? `\n${parsedBlock}\n` : '';
+
   return `You are "${persona.name}", a ${persona.stakeholderType.replace('_', ' ')} stakeholder in an Enterprise Architecture transformation review.
 
 ${persona.systemPromptSuffix}
 
 ## Scenario
 ${config.scenarioDescription}
-
+${parsedBlockSection}
 ## Your Priorities
 ${persona.priorities.map((p) => `- ${p.replace('_', ' ')}`).join('\n')}
 
 ${filteredContext}
 
 ## Your Task
-Analyze the scenario's impact on the architecture elements you can see.
-For each element affected, propose a concrete action.
-State your overall position: approve, reject, modify, or abstain.
+1. Read the Enterprise Vision, Principles, and Your Personal Concerns above — those are the elements you OWN. Any action that violates a principle MUST be rejected, regardless of scenario pressure.
+2. **Find disagreements** — if previous rounds showed other agents approving actions that conflict with your hard constraint or degrade your personal stakes, you MUST oppose them. Reference the disagreement explicitly in your reasoning.
+3. **Take a real position** — APPROVE only if all your hard constraints pass AND no element from your personal stakes is degraded. Otherwise MODIFY (with concrete conditions) or REJECT (with concrete blockers). Default to MODIFY when evidence is incomplete; APPROVE requires positive proof.
+4. Reference specific elements from "Your Personal Concerns" by name in your reasoning. If your concerns aren't affected, state that explicitly so the next agent knows.
+5. State your overall position: approve, reject, modify, or abstain.
+
+## Anti-Rubber-Stamp Rule
+A response with position="approve" and 0 conflicts identified is INVALID for high-tension scenarios — re-examine the scenario for tensions you missed (cost vs. compliance, speed vs. audit, in-house vs. outsource, etc.) before submitting. If the scenario truly has no tension and all your hard constraints pass, you may APPROVE — but state explicitly which tensions you ruled out.
 
 ## Output Format (STRICT JSON — no markdown, no explanation outside JSON)
 Respond with ONLY this JSON structure:
@@ -458,13 +511,96 @@ function validatePosition(raw: unknown): AgentPosition {
   return valid.includes(str) ? str : 'abstain';
 }
 
+// ─── Project Vision Loader ───
+
+async function loadProjectVision(projectId: string): Promise<ProjectVisionContext | undefined> {
+  try {
+    const doc = await Project.findById(projectId).select('vision').lean();
+    if (!doc?.vision) return undefined;
+    const v = doc.vision;
+    return {
+      visionStatement: String(v.visionStatement || ''),
+      principles: Array.isArray(v.principles) ? v.principles.map(String) : [],
+      drivers: Array.isArray(v.drivers) ? v.drivers.map(String) : [],
+      goals: Array.isArray(v.goals) ? v.goals.map(String) : [],
+    };
+  } catch (err) {
+    // Vision is enriching context, not critical — degrade gracefully if MongoDB
+    // is slow/unavailable so the simulation can still run.
+    console.warn('[MiroFish] Failed to load project vision:', err);
+    return undefined;
+  }
+}
+
 // ─── Round Summary Builder ───
+
+interface DisagreementEntry {
+  elementName: string;
+  positions: Array<{ agentName: string; position: AgentPosition; actionReasoning: string }>;
+}
+
+/**
+ * Surfaces elements where multiple agents took DIFFERENT positions or proposed
+ * conflicting action types. Without this, the next round's agents only see a
+ * narrative summary that flattens disagreement into per-agent paragraphs and
+ * the LLM has to infer conflicts itself — which it usually doesn't.
+ */
+function findDisagreements(turns: AgentTurn[]): DisagreementEntry[] {
+  // Map element name → agent positions that touched it
+  const byElement = new Map<string, Map<string, { position: AgentPosition; actionReasoning: string }>>();
+
+  for (const turn of turns) {
+    for (const action of turn.validatedActions) {
+      const elName = action.targetElementName || '(unknown element)';
+      if (!byElement.has(elName)) byElement.set(elName, new Map());
+      // If same agent touches the same element multiple times, keep the first
+      // (action reasoning is more specific than overall position).
+      const elMap = byElement.get(elName)!;
+      if (!elMap.has(turn.agentName)) {
+        elMap.set(turn.agentName, {
+          position: turn.position,
+          actionReasoning: action.reasoning || turn.reasoning,
+        });
+      }
+    }
+  }
+
+  const disagreements: DisagreementEntry[] = [];
+  for (const [elementName, agentMap] of byElement) {
+    if (agentMap.size < 2) continue; // single agent → no conflict to surface
+    const positions = Array.from(agentMap.entries()).map(([agentName, p]) => ({
+      agentName,
+      position: p.position,
+      actionReasoning: p.actionReasoning,
+    }));
+    const distinctPositions = new Set(positions.map((p) => p.position));
+    if (distinctPositions.size < 2) continue; // all same position → not a disagreement
+    disagreements.push({ elementName, positions });
+  }
+
+  return disagreements;
+}
 
 function buildRoundSummary(roundNum: number, turns: AgentTurn[]): string {
   const lines: string[] = [`## Round ${roundNum} Results`];
 
+  // Surface disagreements first — this is what the next round must react to.
+  const disagreements = findDisagreements(turns);
+  if (disagreements.length > 0) {
+    lines.push(`\n### Disagreements in Round ${roundNum} (resolve these next round)`);
+    for (const d of disagreements) {
+      lines.push(`- On "${d.elementName}":`);
+      for (const p of d.positions) {
+        const reason = p.actionReasoning ? p.actionReasoning.slice(0, 220) : '(no reasoning)';
+        lines.push(`    - ${p.agentName} (${p.position.toUpperCase()}): ${reason}`);
+      }
+    }
+  } else {
+    lines.push(`\n### All agents aligned this round — actively look for blind spots, missed constraints, or stakeholders whose concerns were overlooked.`);
+  }
+
   for (const turn of turns) {
-    lines.push(`### ${turn.agentName} (Position: ${turn.position})`);
+    lines.push(`\n### ${turn.agentName} (Position: ${turn.position})`);
     lines.push(turn.reasoning);
 
     if (turn.validatedActions.length > 0) {

@@ -10,7 +10,7 @@ import { PolicyViolation } from '../models/PolicyViolation';
 import { AuditLog } from '../models/AuditLog';
 import { checkCompliance } from '../services/compliance.service';
 import { syncPolicyToNeo4j, syncPolicyInfluenceRelationships, removePolicyFromNeo4j } from '../services/policy-graph.service';
-import { evaluateAllForPolicy } from '../services/policy-evaluation.service';
+import { evaluateAllForPolicy, cleanupCompliancePolicySelfViolations } from '../services/policy-evaluation.service';
 import { SEED_POLICIES } from '../data/seed-policies';
 
 const router = Router();
@@ -449,10 +449,39 @@ router.post(
         evaluated++;
       }
 
-      res.json({ success: true, data: { policiesEvaluated: evaluated } });
+      // Auto-clean stale self-violations (compliance-policy projections
+      // that were evaluated against their own source policy before the
+      // skip-rule existed). Idempotent — safe to run every re-eval.
+      const cleanup = await cleanupCompliancePolicySelfViolations(projectId);
+
+      res.json({
+        success: true,
+        data: {
+          policiesEvaluated: evaluated,
+          selfViolationsResolved: cleanup.resolvedCount,
+        },
+      });
     } catch (err) {
       console.error('Re-evaluate violations error:', err);
       res.status(500).json({ success: false, error: 'Failed to re-evaluate policies' });
+    }
+  }
+);
+
+// One-shot cleanup of compliance-policy self-violations. Use when you
+// don't want a full re-eval but only want to scrub the stale violations.
+router.post(
+  '/:projectId/violations/cleanup-self-violations',
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const result = await cleanupCompliancePolicySelfViolations(projectId);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      console.error('Cleanup self-violations error:', err);
+      res.status(500).json({ success: false, error: 'Failed to clean up self-violations' });
     }
   }
 );

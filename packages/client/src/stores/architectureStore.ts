@@ -1,7 +1,24 @@
 import { create } from 'zustand';
 import { architectureAPI } from '../services/api';
-import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
+import { ARCHITECTURE_LAYERS, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
 import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
+
+/**
+ * Layer-Y enforcement: keep `position3D.y` consistent with the element's layer.
+ * Hidden drilldown activities (parked at y <= -50, see ACTIVITY_HIDDEN_Y in
+ * server data files) are exempt — they live in a separate frame.
+ *
+ * Without this guard, malformed inbound data (legacy persistence quirks across
+ * multiple writers: blueprint.calculatePositions, envisionSync, manual drag,
+ * AI generators) leaves elements rendering on the wrong layer plateau even
+ * though their `layer` field is correct.
+ */
+function alignYToLayer<T extends { layer: ArchitectureLayer; position3D: { x: number; y: number; z: number } }>(el: T): T {
+  if (el.position3D.y <= -50) return el; // hidden activity — leave it
+  const expected = LAYER_Y[el.layer];
+  if (expected === undefined || el.position3D.y === expected) return el;
+  return { ...el, position3D: { ...el.position3D, y: expected } };
+}
 
 export interface Position3D {
   x: number;
@@ -182,13 +199,14 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
 
   setProjectId: (projectId) => set({ projectId }),
   setProjectName: (name) => set({ projectName: name }),
-  setElements: (elements) => set({ elements }),
+  setElements: (elements) => set({ elements: elements.map(alignYToLayer) }),
   addElement: (element) => {
     get().pushHistory();
-    set((state) => ({ elements: [...state.elements, element] }));
+    const aligned = alignYToLayer(element);
+    set((state) => ({ elements: [...state.elements, aligned] }));
     const projectId = get().projectId;
     if (projectId) {
-      architectureAPI.createElement(projectId, { ...element } as Record<string, unknown>).catch((err) => {
+      architectureAPI.createElement(projectId, { ...aligned } as Record<string, unknown>).catch((err) => {
         if (import.meta.env.DEV) console.error('Failed to sync addElement:', err);
       });
     }
@@ -203,6 +221,16 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
     if (projectId) {
       architectureAPI.updateElement(projectId, id, changes as Record<string, unknown>).catch((err) => {
         if (import.meta.env.DEV) console.error('Failed to sync updateElement:', err);
+      });
+    }
+    // If X-Ray is active and the change affects a metric the X-Ray uses for
+    // bucketing (status, riskLevel, maturityLevel, annualCost), recompute so
+    // the element snaps to its new column without requiring an X-Ray toggle.
+    const metricKeys = ['status', 'riskLevel', 'maturityLevel', 'annualCost', 'transformationStrategy'];
+    const changed = metricKeys.some((k) => k in (changes as Record<string, unknown>));
+    if (changed) {
+      void import('./xrayStore').then(({ useXRayStore }) => {
+        if (useXRayStore.getState().isActive) useXRayStore.getState().recompute();
       });
     }
   },

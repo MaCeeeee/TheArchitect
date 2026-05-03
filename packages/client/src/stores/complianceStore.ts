@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { compliancePipelineAPI, governanceAPI } from '../services/api';
+import { compliancePipelineAPI, governanceAPI, architectureAPI } from '../services/api';
+import { useArchitectureStore } from './architectureStore';
 import type { PolicyDraft, PolicyViolationDTO } from '@thearchitect/shared';
 
 interface PipelineState {
@@ -199,6 +200,22 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
       set({ policyDrafts: [] });
       await get().refreshStats(projectId, standardId);
       await get().loadPortfolio(projectId);
+      // Server now also projects each approved policy as an ArchiMate
+      // requirement element on the motivation plateau (with an influence
+      // edge from the regulatory driver). Pull the new elements + edges
+      // into the architecture store so the sidebar / 3D / X-Ray reflect
+      // them without a full reload.
+      try {
+        const [elementsRes, connectionsRes] = await Promise.all([
+          architectureAPI.getElements(projectId),
+          architectureAPI.getConnections(projectId),
+        ]);
+        const archStore = useArchitectureStore.getState();
+        if (elementsRes?.data?.data) archStore.setElements(elementsRes.data.data);
+        if (connectionsRes?.data?.data) archStore.setConnections(connectionsRes.data.data);
+      } catch {
+        // architecture refresh is best-effort — the policies were saved
+      }
       return created;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to approve policies';
