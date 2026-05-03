@@ -56,13 +56,19 @@ export async function generateActivitiesForProcess(opts: {
   // 2) Load existing roles + applications as anti-hallucination hint
   const projectContext = await loadProjectContext(opts.projectId);
 
+  // 2b) Walk the spec chain UP from this process — realized Capabilities,
+  // fulfilled Requirements (transitively, with source-standard cite), and
+  // upstream/downstream Processes. Lets the LLM tie each Activity to a
+  // concrete compliance anchor instead of staying generic.
+  const specChain = await loadSpecChainContext(opts.projectId, opts.processId);
+
   // 3) RAG-query for compliance-context (best-effort, non-blocking)
   const ragChunks = await queryRagSafe(opts.projectId, proc);
   opts.onEvent({ type: 'context', ragChunks: ragChunks.length, processName: proc.name });
 
   // 4) Build prompt
   const systemPrompt = buildSystemPrompt();
-  const userMessage = buildUserMessage(proc, projectContext, ragChunks);
+  const userMessage = buildUserMessage(proc, projectContext, specChain, ragChunks);
   opts.onEvent({ type: 'thinking' });
 
   // 5) Claude call (bulk, then stream-emit per activity)
@@ -146,6 +152,115 @@ async function loadProjectContext(projectId: string): Promise<ProjectContext> {
   return ctx;
 }
 
+interface SpecChainContext {
+  realizedCapabilities: Array<{ name: string; description: string }>;
+  fulfilledRequirements: Array<{
+    name: string;
+    description: string;
+    sourceStandardName?: string;
+    sourceSection?: string;
+  }>;
+  upstreamProcesses: string[];
+  downstreamProcesses: string[];
+}
+
+/**
+ * Walk the ArchiMate spec chain UPSTREAM from this Process, so the LLM can
+ * generate Activities that explicitly reference what they fulfill instead of
+ * staying generic. Three slices:
+ *
+ *   1. Realized Capabilities — Process --realization--> Capability
+ *      (the business abilities this process implements)
+ *   2. Fulfilled Requirements — transitively via Capability:
+ *      Process -realization-> Capability -realization-> Requirement
+ *      (so an ESRS-projected Requirement that the Capability covers
+ *      gets surfaced; we also pull the source standard + section so
+ *      the LLM can cite it in the Activity action)
+ *   3. Upstream / downstream Processes via triggering / flow edges
+ *      (BPMN context — what comes before/after THIS process)
+ */
+async function loadSpecChainContext(
+  projectId: string,
+  processId: string,
+): Promise<SpecChainContext> {
+  const ctx: SpecChainContext = {
+    realizedCapabilities: [],
+    fulfilledRequirements: [],
+    upstreamProcesses: [],
+    downstreamProcesses: [],
+  };
+
+  // 1) Realized Capabilities (Process --realization--> Capability)
+  const capRecords = await runCypher(
+    `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId})
+       -[r:CONNECTS_TO]->(cap:ArchitectureElement)
+     WHERE r.type IN ['realization', 'realisation']
+       AND cap.type IN ['business_capability', 'capability']
+       AND cap.projectId = $projectId
+     RETURN cap.id AS id, cap.name AS name, cap.description AS description
+     LIMIT 10`,
+    { projectId, processId },
+  );
+  const capabilityIds: string[] = [];
+  for (const r of capRecords) {
+    const id = r.get('id') as string;
+    const name = r.get('name') as string;
+    if (!id || !name) continue;
+    capabilityIds.push(id);
+    ctx.realizedCapabilities.push({
+      name,
+      description: (r.get('description') as string) ?? '',
+    });
+  }
+
+  // 2) Fulfilled Requirements (Capability -realization-> Requirement)
+  if (capabilityIds.length > 0) {
+    const reqRecords = await runCypher(
+      `MATCH (cap:ArchitectureElement {projectId: $projectId})
+         -[r:CONNECTS_TO]->(req:ArchitectureElement {type: 'requirement', projectId: $projectId})
+       WHERE cap.id IN $capabilityIds
+         AND r.type IN ['realization', 'realisation']
+       RETURN DISTINCT req.name AS name, req.description AS description,
+              req.sourceStandardName AS sourceStandardName,
+              req.sourceSection AS sourceSection
+       LIMIT 15`,
+      { projectId, capabilityIds },
+    );
+    for (const r of reqRecords) {
+      const name = r.get('name') as string;
+      if (!name) continue;
+      ctx.fulfilledRequirements.push({
+        name,
+        description: (r.get('description') as string) ?? '',
+        sourceStandardName: (r.get('sourceStandardName') as string) ?? undefined,
+        sourceSection: (r.get('sourceSection') as string) ?? undefined,
+      });
+    }
+  }
+
+  // 3) Upstream + downstream Processes (BPMN flow context)
+  const flowRecords = await runCypher(
+    `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId})
+     OPTIONAL MATCH (upstream:ArchitectureElement {projectId: $projectId})
+       -[ru:CONNECTS_TO]->(p)
+     WHERE ru.type IN ['triggering', 'flow']
+       AND upstream.type IN ['process', 'business_process']
+     OPTIONAL MATCH (p)-[rd:CONNECTS_TO]->(downstream:ArchitectureElement {projectId: $projectId})
+     WHERE rd.type IN ['triggering', 'flow']
+       AND downstream.type IN ['process', 'business_process']
+     RETURN collect(DISTINCT upstream.name) AS upstream,
+            collect(DISTINCT downstream.name) AS downstream`,
+    { projectId, processId },
+  );
+  if (flowRecords.length > 0) {
+    const r = flowRecords[0];
+    ctx.upstreamProcesses = (r.get('upstream') as (string | null)[]).filter((n): n is string => !!n).slice(0, 8);
+    ctx.downstreamProcesses = (r.get('downstream') as (string | null)[]).filter((n): n is string => !!n).slice(0, 8);
+  }
+
+  return ctx;
+}
+
 async function queryRagSafe(projectId: string, proc: ProcessRow): Promise<string[]> {
   if (!isRagConfigured()) return [];
   try {
@@ -179,6 +294,9 @@ Constraints:
 - BPMN-sequential order: Activity[i].enables MUST be Activity[i+1].name (or a final terminal state for the last one)
 - Use German Compliance-Realität when the process domain is German/EU regulation (DPO, BfDI, BAuA, LkSG, CSRD, ESRS)
 - Prefer concrete real-world systems over generic terms ("SAP Ariba" not "Procurement System")
+- When the user message lists Business Capabilities this process realizes, the Activities together MUST advance those capabilities (don't drift into unrelated work)
+- When the user message lists Compliance Requirements, anchor the Activities that produce evidence for them by name-citing the requirement (and §section if given) in the action or output field. NEVER invent regulation citations that aren't in the listed requirements.
+- When upstream/downstream processes are listed, the FIRST activity should pick up where upstream leaves off, and the LAST activity's "enables" should hand off to the first downstream process
 
 Output format: a single JSON array of activity objects. NO prose, NO markdown fences, just the array.`;
 }
@@ -186,6 +304,7 @@ Output format: a single JSON array of activity objects. NO prose, NO markdown fe
 function buildUserMessage(
   proc: ProcessRow,
   ctx: ProjectContext,
+  spec: SpecChainContext,
   ragChunks: string[],
 ): string {
   const lines: string[] = [];
@@ -194,6 +313,38 @@ function buildUserMessage(
   if (proc.description) lines.push(`Description: ${proc.description}`);
   lines.push('');
 
+  // ─── Spec-chain anchors (NEW — most important context) ───
+  if (spec.realizedCapabilities.length > 0) {
+    lines.push(`# Business Capabilities this process realizes`);
+    lines.push(`(Activities should advance these capabilities — name them in the action when appropriate)`);
+    for (const c of spec.realizedCapabilities) {
+      lines.push(`- ${c.name}${c.description ? `: ${c.description.slice(0, 240)}` : ''}`);
+    }
+    lines.push('');
+  }
+  if (spec.fulfilledRequirements.length > 0) {
+    lines.push(`# Compliance Requirements fulfilled (via the realized Capabilities)`);
+    lines.push(`(When an Activity directly satisfies one of these, mention the requirement by name in the action and the source section in the output.)`);
+    for (const r of spec.fulfilledRequirements) {
+      const cite = [r.sourceStandardName, r.sourceSection].filter(Boolean).join(' §');
+      const head = cite ? `${r.name} (${cite})` : r.name;
+      lines.push(`- ${head}${r.description ? `: ${r.description.slice(0, 280)}` : ''}`);
+    }
+    lines.push('');
+  }
+  if (spec.upstreamProcesses.length > 0 || spec.downstreamProcesses.length > 0) {
+    lines.push(`# BPMN flow context`);
+    if (spec.upstreamProcesses.length > 0) {
+      lines.push(`Triggered by: ${spec.upstreamProcesses.join(', ')}`);
+    }
+    if (spec.downstreamProcesses.length > 0) {
+      lines.push(`Triggers: ${spec.downstreamProcesses.join(', ')}`);
+      lines.push(`(The LAST activity should hand off cleanly to the first downstream process.)`);
+    }
+    lines.push('');
+  }
+
+  // ─── Project-wide actor/system pools (anti-hallucination) ───
   if (ctx.businessRoles.length > 0) {
     lines.push(`# Existing project roles (prefer these as Owner)`);
     lines.push(ctx.businessRoles.slice(0, 20).join(', '));
@@ -205,18 +356,21 @@ function buildUserMessage(
     lines.push('');
   }
   if (ctx.capabilities.length > 0) {
-    lines.push(`# Project capabilities (broader context)`);
+    lines.push(`# Other project capabilities (broader context)`);
     lines.push(ctx.capabilities.slice(0, 10).join(', '));
     lines.push('');
   }
   if (ragChunks.length > 0) {
-    lines.push(`# Relevant compliance excerpts (from project standards)`);
+    lines.push(`# Relevant compliance excerpts (from project standards via RAG)`);
     ragChunks.forEach((c, i) => lines.push(`[${i + 1}] ${c.slice(0, 600)}`));
     lines.push('');
   }
 
   lines.push(`# Task`);
   lines.push(`Generate 5-12 BPMN-sequential Activities for the process above.`);
+  if (spec.fulfilledRequirements.length > 0) {
+    lines.push(`Where an Activity directly produces evidence for one of the listed Compliance Requirements, cite the requirement name (and §section if present) in the action OR output field. Do NOT cite requirements that aren't listed.`);
+  }
   lines.push(`Output a JSON array of objects with the structured fields described in the system prompt.`);
 
   return lines.join('\n');
