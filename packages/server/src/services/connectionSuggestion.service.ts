@@ -253,8 +253,17 @@ const defaultLLM: LLMReasoner = async ({ source, candidates, ragContext }) => {
 
   const candidateBlock = candidates
     .map((c, i) => {
-      const validOut = getValidRelationships(source.type as ElementType, c.type as ElementType);
-      const validIn = getValidRelationships(c.type as ElementType, source.type as ElementType);
+      // Merge shared archimate-rules with spec-chain whitelist so the
+      // LLM SEES realization as a valid option for Process↔Capability
+      // (otherwise it falls back to the only thing in the list — the
+      // weak 'association' — even when realization is the architect-
+      // correct edge).
+      const validOutBase = getValidRelationships(source.type as ElementType, c.type as ElementType);
+      const validInBase = getValidRelationships(c.type as ElementType, source.type as ElementType);
+      const wlOut = SPEC_CHAIN_VALID_RELATIONS[`${source.type}->${c.type}`];
+      const wlIn = SPEC_CHAIN_VALID_RELATIONS[`${c.type}->${source.type}`];
+      const validOut = [...new Set([...validOutBase, ...(wlOut ? Array.from(wlOut) : [])])];
+      const validIn = [...new Set([...validInBase, ...(wlIn ? Array.from(wlIn) : [])])];
       const outBlock = validOut.length > 0 ? `validOutgoing(source→candidate)=[${validOut.join(', ')}]` : 'validOutgoing=[]';
       const inBlock = validIn.length > 0 ? `validIncoming(candidate→source)=[${validIn.join(', ')}]` : 'validIncoming=[]';
       return `[${i + 1}] id=${c.id} type=${c.type} ${outBlock} ${inBlock} name="${c.name}" description="${(c.description || '').replace(/"/g, "'").slice(0, 400)}"`;
