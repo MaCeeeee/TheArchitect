@@ -216,7 +216,9 @@ export default function ProposalCard({
                   className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#7c3aed] text-white hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   <Play size={9} />
-                  {selectedTempIds.size === proposal.elements.length ? 'Apply All' : `Apply ${selectedTempIds.size}`}
+                  {selectedTempIds.size === proposal.elements.length
+                    ? (proposal.elements.length === 1 ? 'Apply this' : `Apply all ${proposal.elements.length}`)
+                    : `Apply ${selectedTempIds.size} of ${proposal.elements.length}`}
                 </button>
                 <button
                   onClick={() => onEdit(proposal.id, { status: 'rejected' })}
