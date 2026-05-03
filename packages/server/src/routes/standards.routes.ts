@@ -587,7 +587,11 @@ router.post(
           name: draft.name,
           description: draft.description || '',
           category: 'compliance' as const,
-          framework: 'Standard Compliance',
+          // Policy schema enum is ['custom', 'dora', 'nis2', 'togaf', 'archimate', 'iso27001'].
+          // Standards uploaded by users (e.g. ESRS-1) are not in the enum, so we
+          // store them as 'custom' and keep the actual standard id on standardId
+          // + sourceSectionNumber for traceability.
+          framework: 'custom' as const,
           severity: draft.severity || 'warning',
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
           rules: draft.rules || [],
