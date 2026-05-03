@@ -335,7 +335,16 @@ export const useXRayStore = create<XRayState>((set, get) => ({
     const elementData = get().elementData;
     if (elements.length === 0 || elementData.size === 0) return;
 
-    const SCALE_WIDTH = 24; // Total X spread: -12 to +12
+    // 2D Risk-Heatmap layout per layer:
+    //   X = bucket of the active metric (5 buckets along the layer axis)
+    //   Z = slot inside the bucket (depth column)
+    // Elements in the same risk class cluster on the same X column, deeper
+    // columns extend backward in Z, sub-columns in X handle very dense buckets.
+    // No more single-row overflow stacking that pushes elements behind the
+    // critical-path beam.
+    const SCALE_WIDTH = 24;          // X: -12 .. +12
+    const DEPTH_RANGE = 14;          // Z: -7 .. +7
+    const NUM_BUCKETS = 5;           // 5 risk buckets along X
     const positions = new Map<string, XRayPosition>();
 
     // Group elements by layer
@@ -345,33 +354,70 @@ export const useXRayStore = create<XRayState>((set, get) => ({
       byLayer.get(el.layer)!.push(el);
     }
 
+    const metricOf = (el: ArchitectureElement): number => {
+      const d = elementData.get(el.id);
+      if (!d) return 0;
+      if (view === 'risk') return d.riskScore;        // 0..10
+      if (view === 'cost') return d.estimatedCost;     // currency
+      if (view === 'timeline') {
+        const statusOrder: Record<string, number> = { current: 0, transitional: 1, target: 2, retired: 3 };
+        return statusOrder[el.status] ?? 0;
+      }
+      return 0;
+    };
+
     for (const [, layerElements] of byLayer) {
-      // Sort elements by the metric for this view
-      const sorted = [...layerElements].sort((a, b) => {
-        const aData = elementData.get(a.id);
-        const bData = elementData.get(b.id);
-        if (!aData || !bData) return 0;
+      const count = layerElements.length;
+      if (count === 0) continue;
 
-        if (view === 'risk') return aData.riskScore - bData.riskScore;
-        if (view === 'cost') return aData.estimatedCost - bData.estimatedCost;
-        if (view === 'timeline') {
-          const statusOrder: Record<string, number> = { current: 0, transitional: 1, target: 2, retired: 3 };
-          return (statusOrder[a.status] ?? 0) - (statusOrder[b.status] ?? 0);
+      // Determine bucket boundaries from the metric range (per layer scale).
+      // Risk uses fixed 0–10 thresholds so visuals match the demo bucket lines.
+      let thresholds: number[];
+      if (view === 'risk') {
+        thresholds = [2, 4, 6, 8]; // → 5 buckets: <2, 2-<4, 4-<6, 6-<8, ≥8
+      } else {
+        const values = layerElements.map(metricOf).sort((a, b) => a - b);
+        const min = values[0] ?? 0;
+        const max = values[values.length - 1] ?? min + 1;
+        const span = max - min || 1;
+        thresholds = [1, 2, 3, 4].map((i) => min + (span * i) / NUM_BUCKETS);
+      }
+
+      const bucketOf = (score: number): number => {
+        for (let i = 0; i < thresholds.length; i++) {
+          if (score < thresholds[i]) return i;
         }
-        return 0;
-      });
+        return thresholds.length;
+      };
 
-      // Place elements along X axis based on sorted position
-      const count = sorted.length;
-      const rowSize = Math.min(count, Math.ceil(SCALE_WIDTH / 2.5)); // Max elements per row
-      for (let i = 0; i < count; i++) {
-        const el = sorted[i];
-        const col = i % rowSize;
-        const row = Math.floor(i / rowSize);
-        // Spread across X axis: normalized position within the scale
-        const x = count <= 1 ? 0 : (col / (rowSize - 1 || 1)) * SCALE_WIDTH - SCALE_WIDTH / 2;
-        const z = row * 3; // Stack rows in Z if overflow
-        positions.set(el.id, { x, y: el.position3D.y, z });
+      // Place elements into buckets
+      const buckets: ArchitectureElement[][] = Array.from({ length: NUM_BUCKETS }, () => []);
+      for (const el of layerElements) buckets[bucketOf(metricOf(el))].push(el);
+
+      // Bucket center X positions evenly spread across SCALE_WIDTH
+      // (NUM_BUCKETS is a constant >= 2, so plain division is safe)
+      const bucketCenterX = (b: number): number =>
+        (b / (NUM_BUCKETS - 1)) * SCALE_WIDTH - SCALE_WIDTH / 2;
+
+      const SUB_COL_SPACING = 1.6;
+      for (let b = 0; b < NUM_BUCKETS; b++) {
+        const inBucket = buckets[b];
+        const n = inBucket.length;
+        if (n === 0) continue;
+
+        const cx = bucketCenterX(b);
+        const subCols = Math.max(1, Math.ceil(n / 7)); // grow sideways for dense buckets
+        const rowsPerCol = Math.ceil(n / subCols);
+
+        for (let i = 0; i < n; i++) {
+          const subCol = i % subCols;
+          const rowIdx = Math.floor(i / subCols);
+          const subOffset = subCols === 1 ? 0 : (subCol - (subCols - 1) / 2) * SUB_COL_SPACING;
+          const z = rowsPerCol === 1
+            ? 0
+            : (rowIdx / (rowsPerCol - 1)) * DEPTH_RANGE - DEPTH_RANGE / 2;
+          positions.set(inBucket[i].id, { x: cx + subOffset, y: inBucket[i].position3D.y, z });
+        }
       }
     }
 
