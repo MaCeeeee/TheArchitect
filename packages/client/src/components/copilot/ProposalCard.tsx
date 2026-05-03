@@ -86,7 +86,7 @@ export default function ProposalCard({
                 value={titleDraft}
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                className="text-[10px] font-medium text-white bg-[#0f172a] border border-[#7c3aed]/50 rounded px-1.5 py-0.5 w-full outline-none"
+                className="text-sm font-medium text-white bg-[#0f172a] border border-[#7c3aed]/50 rounded px-1.5 py-0.5 w-full outline-none"
                 autoFocus
               />
               <button onClick={handleSaveTitle} className="text-[#00ff41] hover:text-[#33ff66]">
@@ -95,7 +95,7 @@ export default function ProposalCard({
             </div>
           ) : (
             <div className="flex items-center gap-1">
-              <p className="text-[10px] font-medium text-white leading-tight truncate">{proposal.title}</p>
+              <p className="text-sm font-semibold text-white leading-tight truncate">{proposal.title}</p>
               {canApply && (
                 <button
                   onClick={(e) => { e.stopPropagation(); setEditingTitle(true); }}
@@ -107,13 +107,13 @@ export default function ProposalCard({
             </div>
           )}
           <div className="flex items-center gap-2 mt-1">
-            <span className={`text-[8px] px-1.5 py-0.5 rounded-full ${status.color}`}>
+            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${status.color}`}>
               {status.label}
             </span>
-            <span className={`text-[8px] ${confidenceColor(proposal.confidence)}`}>
+            <span className={`text-[11px] ${confidenceColor(proposal.confidence)}`}>
               {Math.round(proposal.confidence * 100)}% confidence
             </span>
-            <span className="text-[8px] text-[var(--text-tertiary)]">
+            <span className="text-[11px] text-[var(--text-tertiary)]">
               {proposal.elements.length} elements, {proposal.connections.length} connections
             </span>
           </div>
@@ -128,14 +128,14 @@ export default function ProposalCard({
       {expanded && (
         <div className="px-2.5 pb-2.5 space-y-2">
           {proposal.description && (
-            <p className="text-[9px] text-[var(--text-secondary)] leading-relaxed">{proposal.description}</p>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{proposal.description}</p>
           )}
 
           {/* Elements List */}
           <div className="space-y-1">
             <div className="flex items-center gap-1">
               <Layers size={9} className="text-[#7c3aed]" />
-              <span className="text-[8px] text-[var(--text-tertiary)] uppercase tracking-wider">Proposed Elements</span>
+              <span className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wider">Proposed Elements</span>
             </div>
             {proposal.elements.map((el) => (
               <div
@@ -155,16 +155,16 @@ export default function ProposalCard({
                   </button>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[9px] text-white truncate">{el.name}</p>
+                  <p className="text-xs text-white truncate">{el.name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[7px] text-[var(--text-disabled)]">{el.type}</span>
-                    <span className="text-[7px] text-[var(--text-disabled)]">{el.layer}</span>
+                    <span className="text-[10px] text-[var(--text-disabled)]">{el.type}</span>
+                    <span className="text-[10px] text-[var(--text-disabled)]">{el.layer}</span>
                     {el.sectionReference && (
-                      <span className="text-[7px] text-[#7c3aed]">{el.sectionReference}</span>
+                      <span className="text-[10px] text-[#7c3aed]">{el.sectionReference}</span>
                     )}
                   </div>
                 </div>
-                <span className={`text-[8px] shrink-0 ${confidenceColor(el.confidence)}`}>
+                <span className={`text-[11px] shrink-0 ${confidenceColor(el.confidence)}`}>
                   {Math.round(el.confidence * 100)}%
                 </span>
               </div>
@@ -176,10 +176,10 @@ export default function ProposalCard({
             <div className="space-y-1">
               <div className="flex items-center gap-1">
                 <Link2 size={9} className="text-[#7c3aed]" />
-                <span className="text-[8px] text-[var(--text-tertiary)] uppercase tracking-wider">Proposed Connections</span>
+                <span className="text-[11px] text-[var(--text-tertiary)] uppercase tracking-wider">Proposed Connections</span>
               </div>
               {proposal.connections.map((conn) => (
-                <div key={conn.tempId} className="px-1.5 py-0.5 text-[8px] text-[var(--text-secondary)]">
+                <div key={conn.tempId} className="px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)]">
                   {conn.sourceTempId} <span className="text-[#7c3aed]">--[{conn.type}]--&gt;</span> {conn.targetTempId}
                 </div>
               ))}
@@ -189,12 +189,12 @@ export default function ProposalCard({
           {/* Validation Warnings */}
           {proposal.validation && !proposal.validation.overallValid && (
             <div className="space-y-0.5">
-              <span className="text-[8px] text-yellow-400 uppercase tracking-wider">Validation Issues</span>
+              <span className="text-[11px] text-yellow-400 uppercase tracking-wider">Validation Issues</span>
               {proposal.validation.elementResults
                 .filter((r) => r.warnings.length > 0 || r.errors.length > 0)
                 .slice(0, 5)
                 .map((r) => (
-                  <div key={r.tempId} className="text-[8px]">
+                  <div key={r.tempId} className="text-[11px]">
                     {r.errors.map((e, i) => (
                       <p key={i} className="text-red-400">{r.tempId}: {e}</p>
                     ))}
@@ -213,14 +213,14 @@ export default function ProposalCard({
                 <button
                   onClick={handleApply}
                   disabled={isApplying || selectedTempIds.size === 0}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-[9px] font-medium bg-[#7c3aed] text-white hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-[#7c3aed] text-white hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   <Play size={9} />
                   {selectedTempIds.size === proposal.elements.length ? 'Apply All' : `Apply ${selectedTempIds.size}`}
                 </button>
                 <button
                   onClick={() => onEdit(proposal.id, { status: 'rejected' })}
-                  className="flex items-center gap-1 px-2 py-1 rounded text-[9px] text-red-400 hover:bg-red-500/10 transition"
+                  className="flex items-center gap-1 px-2 py-1 rounded text-xs text-red-400 hover:bg-red-500/10 transition"
                 >
                   <X size={9} />
                   Reject
@@ -231,7 +231,7 @@ export default function ProposalCard({
               <button
                 onClick={() => onRollback(proposal.id)}
                 disabled={isApplying}
-                className="flex items-center gap-1 px-2 py-1 rounded text-[9px] text-yellow-400 hover:bg-yellow-500/10 disabled:opacity-50 transition"
+                className="flex items-center gap-1 px-2 py-1 rounded text-xs text-yellow-400 hover:bg-yellow-500/10 disabled:opacity-50 transition"
               >
                 <RotateCcw size={9} />
                 Rollback
