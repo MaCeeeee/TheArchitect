@@ -87,6 +87,17 @@ function normalizePdfText(text: string): string {
   // Pattern: "©   VDA Quality Management Center   15  PUBLIC PUBLIC  3.1. Title"
   result = result.replace(/©\s+VDA Quality Management Center\s+\d+\s+PUBLIC\s+PUBLIC\s+/g, '\n');
 
+  // German law: insert newline before § N <Title> patterns
+  // pdf-parse v2 flattens text to a single line; the § N regex needs a
+  // ^/\n boundary to match. We treat any whitespace + § + digit as a
+  // potential paragraph start. The title runs until the next "(N)"
+  // subsection marker, the next "§ M", or end-of-doc.
+  result = result.replace(/\s(§\s*\d+[a-z]?\s+[A-Za-zÄÖÜäöüß])/g, '\n$1');
+  // Also break before "Abschnitt N" container headings
+  result = result.replace(/\s(Abschnitt\s+\d+)/g, '\n$1');
+  // And before "Anlage" (LkSG, etc.)
+  result = result.replace(/\s(Anlage\s*\(zu)/g, '\n$1');
+
   return result;
 }
 
