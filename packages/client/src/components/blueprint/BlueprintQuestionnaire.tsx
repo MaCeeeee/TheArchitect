@@ -69,25 +69,28 @@ function TextField({
   required?: boolean;
   multiline?: boolean;
 }) {
-  // Auto-promote to textarea when the value is long enough that a
+  // Auto-resize textarea when the value is long enough that a
   // single-line input would truncate it (auto-fill from PDF often
-  // produces paragraphs). User can still type short values; only the
-  // rendered TAG switches when content exceeds the threshold.
-  const isLong = value.length > 80;
-  const Tag = (multiline || isLong) ? 'textarea' : 'input';
-  // Estimate row count so the textarea grows with content (cap at 8).
-  const estRows = Math.min(8, Math.max(2, Math.ceil(value.length / 70)));
+  // produces paragraphs). We ALWAYS render textarea — never swap the
+  // element type mid-render, otherwise React unmounts/remounts on the
+  // type change and the cleanup propagates onChange→update→parent
+  // setState DURING the child render (setState-in-render warning).
+  // rows=1 keeps the visual close to a single-line input when short.
+  const isLong = (value || '').length > 80;
+  const rows = (multiline || isLong)
+    ? Math.min(8, Math.max(2, Math.ceil(value.length / 70)))
+    : 1;
   return (
     <div>
       <label className="text-xs font-medium text-[var(--text-secondary)] mb-1 block">
         {label} {required && <span className="text-[#ef4444]">*</span>}
       </label>
-      <Tag
+      <textarea
         value={value}
-        onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y"
-        rows={(multiline || isLong) ? estRows : undefined}
+        rows={rows}
+        className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y leading-relaxed"
       />
       {hint && <p className="text-[10px] text-[var(--text-disabled)] mt-1 italic">{hint}</p>}
     </div>
@@ -457,25 +460,25 @@ export default function BlueprintQuestionnaire({ onGenerate }: BlueprintQuestion
             Your Top 3 Business Goals <span className="text-[#ef4444]">*</span>
           </label>
           {q.goals.map((goal, i) => {
-            const isLong = goal.length > 80;
-            const GoalTag = isLong ? 'textarea' : 'input';
-            const estRows = Math.min(6, Math.max(2, Math.ceil(goal.length / 70)));
+            const isLong = (goal || '').length > 80;
+            // Always render textarea — see TextField comment above for why.
+            const rows = isLong ? Math.min(6, Math.max(2, Math.ceil(goal.length / 70))) : 1;
             return (
-              <GoalTag
+              <textarea
                 key={i}
                 value={goal}
-                onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   const newGoals = [...q.goals] as [string, string, string];
                   newGoals[i] = e.target.value;
                   update({ goals: newGoals });
                 }}
-                rows={isLong ? estRows : undefined}
+                rows={rows}
                 placeholder={[
                   'e.g. 10,000 active users in 6 months',
                   'e.g. Break-even within 18 months',
                   'e.g. Partnerships with 50 sustainable brands',
                 ][i]}
-                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y"
+                className="w-full rounded-md border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-sm text-white placeholder:text-[var(--text-disabled)] outline-none focus:border-[#7c3aed] transition resize-y leading-relaxed"
               />
             );
           })}
