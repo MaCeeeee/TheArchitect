@@ -221,12 +221,26 @@ export const ARCHIMATE_STANDARD_TYPES: ReadonlySet<ElementType> = new Set<Elemen
 // Wird vom Blueprint Generator und bei ArchiMate-Exporten
 // verwendet um non-standard Typen auf Standard zu mappen.
 // ──────────────────────────────────────────────────────────
-export const LEGACY_TYPE_MAP: Partial<Record<ElementType, ElementType>> = {
+// Keys are arbitrary strings the LLM might emit (incl. ArchiMate-3.2
+// canonical names not in our internal ElementType union). Values must
+// be valid ElementType.
+export const LEGACY_TYPE_MAP: Record<string, ElementType> = {
   'application': 'application_component',
   'service': 'application_service',
   'platform_service': 'technology_service',
   'technology_component': 'node',
   'infrastructure': 'node',
+  // ArchiMate-3.2-canonical aliases (LLM frequently emits these)
+  'business_process': 'process',
+  'business_function': 'process',
+  'application_function': 'application_component',
+  'infrastructure_function': 'technology_function',
+  'infrastructure_service': 'technology_service',
+  'database': 'data_object',
+  'data_store': 'data_object',
+  'document': 'data_object',
+  'system_software': 'node',
+  'device': 'node',
 };
 
 // ──────────────────────────────────────────────────────────
