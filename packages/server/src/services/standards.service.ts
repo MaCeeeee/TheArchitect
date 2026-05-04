@@ -405,6 +405,27 @@ function looksLikeGermanLaw(text: string): boolean {
   return (paragraphMatches?.length ?? 0) >= 3;
 }
 
+/**
+ * Distinguish real LkSG paragraph titles from cross-references that
+ * happen to start with "§ N". Cross-references look like:
+ *   "§ 30 des Gesetzes über Ordnungswidrigkeiten"
+ *   "§ 52 Absatz 1 der Strafprozessordnung"
+ *   "§ 13d des Handelsgesetzbuchs"
+ *   "§ 24 Absatz 2 Satz 1 Nummer 2"
+ * They start with a German function word (des/der/Absatz/Satz/Nummer
+ * etc.) instead of a noun-titled paragraph heading.
+ *
+ * Real LkSG titles always start with a capitalized noun:
+ *   "§ 1 Anwendungsbereich"
+ *   "§ 8 Beschwerdeverfahren"
+ *   "§ 9 Mittelbare Zulieferer; Verordnungsermächtigung"
+ */
+function looksLikeCrossReference(title: string): boolean {
+  const firstWord = title.trim().split(/\s+/)[0] ?? '';
+  // German function words that start a cross-reference, never a real title
+  return /^(des|der|den|dem|Absatz|Abs\.?|Satz|Nummer|Nr\.?|Buchstabe|Ziffer|Halbsatz|in|auch|gilt|sowie)$/i.test(firstWord);
+}
+
 function parseSectionsGermanLaw(text: string): ParsedSection[] {
   const sections: ParsedSection[] = [];
 
@@ -421,6 +442,9 @@ function parseSectionsGermanLaw(text: string): ParsedSection[] {
     const title = m[2].trim();
     // Skip noise: very short / non-title entries (cross-references like "§ 5")
     if (title.length < 3) continue;
+    // Skip cross-references to other laws ("§ 30 des Gesetzes über
+    // Ordnungswidrigkeiten" etc. — the parser's #1 false-positive source)
+    if (looksLikeCrossReference(title)) continue;
     // Skip duplicate paragraph numbers (cross-references in body text)
     if (positions.some((p) => p.number === num)) continue;
     positions.push({ index: m.index, number: num, title });
