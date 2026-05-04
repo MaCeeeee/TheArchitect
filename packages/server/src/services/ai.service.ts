@@ -485,6 +485,91 @@ interface MappingSuggestion {
   confidence: number;
 }
 
+interface ElementInfo {
+  id: string;
+  name: string;
+  layer: string;
+  type: string;
+  description: string;
+}
+
+interface SectionInfo {
+  id: string;
+  number: string;
+  title: string;
+  description?: string;
+}
+
+/**
+ * Per-section LLM call. Maps ONE compliance section against the full
+ * element list. Token budget per call is small + bounded, so the
+ * response always fits and the JSON array is always complete (no
+ * truncation mid-array — the failure mode that made the previous
+ * single-shot version drop most of the matrix silently).
+ */
+async function suggestForOneSection(
+  section: SectionInfo,
+  elements: ElementInfo[],
+  provider: 'openai' | 'anthropic',
+): Promise<MappingSuggestion[]> {
+  const systemPrompt = `You are an enterprise architecture compliance mapping expert.
+
+Your task: given ONE compliance standard section, identify which architecture elements demonstrate compliance with that section, AND identify if a coverage gap exists.
+
+Output ONLY a JSON array. No prose, no markdown fences. Each entry is one of:
+
+A) Compliance mapping (an existing element addresses the section):
+{"sectionId":"<uuid>","sectionNumber":"<num>","elementId":"<uuid>","elementName":"<name>","elementLayer":"<layer>","status":"compliant"|"partial"|"gap","notes":"<one short sentence why>","confidence":0.0-1.0}
+
+B) Coverage gap (no suitable element exists for this section):
+{"sectionId":"<uuid>","sectionNumber":"<num>","elementId":"__COVERAGE_GAP__","elementName":"Coverage Gap","coverageGap":true,"suggestedElementName":"<name>","suggestedElementType":"<archimate type>","suggestedElementLayer":"business"|"application"|"technology","confidence":0.0-1.0,"description":"<what would this element do, 1 sentence>"}
+
+Rules:
+- Aim for completeness ACROSS ALL ARCHITECTURAL LAYERS the section concerns. A reporting requirement might map to a business_process (Business), an application_component (Application) AND a data_object (Information). Don't stop after one layer.
+- 1-7 mapping entries per section is the typical range. Include EVERY layer that has a relevant element.
+- If NO element on a needed layer matches the section, add a coverage-gap entry for that layer.
+- Only include mapping entries with confidence >= 0.55. Coverage-gap entries have no confidence threshold.
+- "status":"compliant" = element clearly satisfies the section; "partial" = element is relevant but doesn't fully satisfy; "gap" = element is in scope but does not satisfy.`;
+
+  const elementBlock = elements
+    .map((e) => `- ${e.id} | ${e.name} | layer=${e.layer} | type=${e.type}${e.description ? ` | desc="${e.description.slice(0, 200).replace(/"/g, "'")}"` : ''}`)
+    .join('\n');
+
+  const userMessage = `# Section to map
+sectionId: ${section.id}
+sectionNumber: ${section.number}
+title: ${section.title}
+${section.description ? `description: ${section.description.slice(0, 800)}` : ''}
+
+# Available architecture elements (${elements.length} total)
+${elementBlock}
+
+# Task
+Output a JSON array of mapping entries (and optionally coverage-gap entries) for this section.`;
+
+  let fullText = '';
+  const collect = (t: string) => { fullText += t; };
+
+  // 4000 tokens is generous for 1-7 entries × ~200 tokens each.
+  const MAX_TOKENS_PER_SECTION = 4000;
+  if (provider === 'openai') {
+    await streamOpenAI(systemPrompt, [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION);
+  } else {
+    await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION);
+  }
+
+  // Strip markdown fences just in case
+  const cleaned = fullText.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
+  const m = cleaned.match(/\[[\s\S]*\]/);
+  if (!m) return [];
+  try {
+    const parsed = JSON.parse(m[0]);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMappingSuggestions(
   projectId: string,
   standardId: string,
@@ -499,9 +584,6 @@ export async function generateMappingSuggestions(
     return;
   }
 
-  const architectureContext = await buildProjectContext(projectId);
-  const standardContext = await buildStandardContext(standardId, sectionIds);
-
   const standard = await Standard.findById(standardId);
   if (!standard) {
     onError(new Error('Standard not found'));
@@ -513,22 +595,30 @@ export async function generateMappingSuggestions(
     sections = sections.filter((s) => sectionIds.includes(s.id));
   }
 
-  // Get elements with IDs for mapping
+  if (sections.length === 0) {
+    onDone([]);
+    return;
+  }
+
+  // Element loader: bumped from LIMIT 150 → 500 (BSH-class projects can
+  // easily exceed 150) and now also pulls description so the LLM has
+  // semantic context per element instead of just name+layer+type.
   const elementRecords = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
-     RETURN e.id as id, e.name as name, e.layer as layer, e.type as type
+     RETURN e.id as id, e.name as name, e.layer as layer, e.type as type, e.description as description
      ORDER BY e.layer, e.name
-     LIMIT 150`,
+     LIMIT 500`,
     { projectId },
   );
 
-  const elements = elementRecords.map((r) => {
+  const elements: ElementInfo[] = elementRecords.map((r) => {
     const props = serializeNeo4jProperties(r.toObject());
     return {
       id: String(props.id || ''),
       name: String(props.name || ''),
       layer: String(props.layer || ''),
       type: String(props.type || ''),
+      description: String(props.description || ''),
     };
   });
 
@@ -537,87 +627,58 @@ export async function generateMappingSuggestions(
     return;
   }
 
-  const sectionList = sections.map((s) => `- sectionId: "${s.id}", number: "${s.number}", title: "${s.title}"`).join('\n');
-  const elementList = elements.map((e) => `- elementId: "${e.id}", name: "${e.name}", layer: "${e.layer}", type: "${e.type}"`).join('\n');
+  onChunk(`AI Match: ${sections.length} sections × ${elements.length} elements (batched per-section, concurrency 5)\n`);
 
-  const systemPrompt = `You are an ISO/ASPICE compliance mapping expert. Analyze the architecture elements against the standard sections and suggest mappings.
+  // Per-section parallel batching with capped concurrency. The OLD
+  // single-shot strategy stuffed every section + every element into one
+  // 2500-token-budget LLM call → JSON array got truncated mid-stream
+  // → silent JSON.parse failure → most of the matrix dropped (you'd
+  // see Motivation+Strategy+Business begun, then Information/App/Tech
+  // entirely empty). One section per call keeps the output always
+  // <500 tokens and the JSON always complete.
+  const CONCURRENCY = 5;
+  const queue = [...sections];
+  const allSuggestions: MappingSuggestion[] = [];
+  let completed = 0;
+  let failed = 0;
 
---- ARCHITECTURE ---
-${architectureContext}
---- END ARCHITECTURE ---
-
---- STANDARD ---
-${standardContext}
---- END STANDARD ---
-
-## Available Sections (use these exact IDs):
-${sectionList}
-
-## Available Elements (use these exact IDs):
-${elementList}
-
-## Instructions
-For each relevant section-element pair, determine the compliance status.
-Respond with ONLY a JSON array. No other text. Each entry:
-{"sectionId":"...","sectionNumber":"...","elementId":"...","elementName":"...","elementLayer":"...","status":"compliant|partial|gap","notes":"brief explanation","confidence":0.0-1.0}
-
-Only include meaningful mappings where the element is relevant to the section. Skip irrelevant pairs.
-
-Additionally, for any standard section that has NO suitable matching architecture element,
-include an entry with:
-- sectionId: the section's UUID
-- sectionNumber: the section's number (e.g. "4.2.1")
-- elementId: "__COVERAGE_GAP__"
-- elementName: "Coverage Gap"
-- coverageGap: true
-- suggestedElementName: a descriptive name for the missing element
-- suggestedElementType: appropriate ArchiMate element type
-- suggestedElementLayer: "business", "application", or "technology"
-- confidence: your confidence that this section needs a new element (0.0-1.0)`;
-
-  let fullResponse = '';
-
-  const collectChunk = (text: string) => {
-    fullResponse += text;
-    onChunk(text);
-  };
-
-  const parseAndFinish = async () => {
-    try {
-      // Extract JSON array from response
-      const jsonMatch = fullResponse.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const suggestions: MappingSuggestion[] = JSON.parse(jsonMatch[0]);
-        await onDone(suggestions);
-      } else {
-        await onDone([]);
+  const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const section = queue.shift();
+      if (!section) break;
+      try {
+        const sectionSuggestions = await suggestForOneSection(
+          {
+            id: section.id,
+            number: section.number,
+            title: section.title,
+            description: (section as { description?: string }).description,
+          },
+          elements,
+          provider as 'openai' | 'anthropic',
+        );
+        // Defensive: ensure each entry carries the section's id+number even
+        // if the LLM omitted them.
+        for (const s of sectionSuggestions) {
+          if (!s.sectionId) s.sectionId = section.id;
+          if (!s.sectionNumber) s.sectionNumber = section.number;
+        }
+        allSuggestions.push(...sectionSuggestions);
+        completed++;
+        onChunk(`✓ §${section.number} (${sectionSuggestions.length} mappings) [${completed + failed}/${sections.length}]\n`);
+      } catch (err) {
+        failed++;
+        const reason = err instanceof Error ? err.message : String(err);
+        onChunk(`✗ §${section.number} failed: ${reason} [${completed + failed}/${sections.length}]\n`);
       }
-    } catch {
-      console.warn('[AI] Failed to parse mapping suggestions, returning empty');
-      await onDone([]);
     }
-  };
+  });
 
   try {
-    if (provider === 'openai') {
-      await streamOpenAI(systemPrompt, [{ role: 'user', content: 'Generate the compliance mapping suggestions as JSON.' }], collectChunk, () => {});
-    } else {
-      await streamAnthropic(systemPrompt, [{ role: 'user', content: 'Generate the compliance mapping suggestions as JSON.' }], collectChunk, () => {});
-    }
-    await parseAndFinish();
+    await Promise.all(workers);
+    onChunk(`\nDone: ${allSuggestions.length} total mappings across ${completed} sections${failed > 0 ? ` (${failed} sections failed)` : ''}\n`);
+    await onDone(allSuggestions);
   } catch (err) {
-    // Fallback
-    if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
-      try {
-        fullResponse = '';
-        await streamAnthropic(systemPrompt, [{ role: 'user', content: 'Generate the compliance mapping suggestions as JSON.' }], collectChunk, () => {});
-        await parseAndFinish();
-        return;
-      } catch (fallbackErr) {
-        onError(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)));
-        return;
-      }
-    }
     onError(err instanceof Error ? err : new Error(String(err)));
   }
 }
