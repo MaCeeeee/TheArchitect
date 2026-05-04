@@ -366,8 +366,76 @@ function parseSections(text: string): ParsedSection[] {
     if (sections.length > 0) return sections;
   }
 
+  // Specialized fallback: German-law format (LkSG, GwG, GeschGehG, ...)
+  // Detected by presence of § N <Title> patterns. These laws don't use the
+  // dotted ToC format the standard ToC parser expects (1.2.3 Title......15)
+  // and instead structure content as numbered paragraphs.
+  if (looksLikeGermanLaw(cleanedText)) {
+    const germanSections = parseSectionsGermanLaw(cleanedText);
+    if (germanSections.length > 1) return germanSections;
+  }
+
   // Fallback: no ToC detected — use improved regex-only parser
   return parseSectionsFallback(cleanedText);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// German law parser (§ N notation: LkSG, GwG, GeschGehG, BDSG, ...)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function looksLikeGermanLaw(text: string): boolean {
+  // Requires at least 3 § N occurrences AND a "Gesetz" or "Verordnung"
+  // signature in the first 2000 chars (avoids false positives on docs that
+  // happen to mention §-symbols in body text)
+  const head = text.slice(0, 2000);
+  const isGermanLegal = /Gesetz|Verordnung|Bundesministerium|Bundesgesetzblatt|BGBl/i.test(head);
+  if (!isGermanLegal) return false;
+  const paragraphMatches = text.match(/^§\s*\d+[a-z]?\s+\S/gm);
+  return (paragraphMatches?.length ?? 0) >= 3;
+}
+
+function parseSectionsGermanLaw(text: string): ParsedSection[] {
+  const sections: ParsedSection[] = [];
+
+  // German laws structure: § N [letter] <Title>
+  //   "§ 1 Anwendungsbereich"
+  //   "§ 13d Zweigniederlassungen"
+  //   "§ 24 Bußgeldvorschriften"
+  // Title runs to end of line; subsequent paragraphs are body until next §.
+  const paragraphRegex = /^§\s*(\d+[a-z]?)\s+(.+?)\s*$/gm;
+  const positions: { index: number; number: string; title: string }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = paragraphRegex.exec(text)) !== null) {
+    const num = m[1];
+    const title = m[2].trim();
+    // Skip noise: very short / non-title entries (cross-references like "§ 5")
+    if (title.length < 3) continue;
+    // Skip duplicate paragraph numbers (cross-references in body text)
+    if (positions.some((p) => p.number === num)) continue;
+    positions.push({ index: m.index, number: num, title });
+  }
+
+  // Optionally also pick up the "Anlage" at the end (LkSG §2 Abs. 1 references it)
+  const anlageMatch = /^Anlage\s+(\(zu\s+§[^)]+\))?\s*$/m.exec(text);
+  if (anlageMatch) {
+    positions.push({ index: anlageMatch.index, number: 'Anlage', title: 'Anlage' });
+  }
+
+  // Slice content between consecutive paragraph starts
+  positions.sort((a, b) => a.index - b.index);
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].index;
+    const end = i + 1 < positions.length ? positions[i + 1].index : text.length;
+    const content = text.slice(start, end).trim();
+    sections.push({
+      number: positions[i].number,
+      title: positions[i].title.slice(0, 500),
+      content: content.slice(0, 8000),
+      level: 1,
+    });
+  }
+
+  return sections;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
