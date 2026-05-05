@@ -701,8 +701,12 @@ function processEvent(
       const state = get();
       const agentIds = state.activeRun?.config?.agents?.map((a) => a.id) || [];
       const colorIndex = agentIds.indexOf(event.agentId);
-      const newBubbles: DiscussionBubble[] = event.validatedActions.map((action: ProposedAction) => ({
-        id: `${event.agentId}_r${event.round}_${action.targetElementId}`,
+      const newBubbles: DiscussionBubble[] = event.validatedActions.map((action: ProposedAction, idx: number) => ({
+        // Include action index + type so a single agent emitting multiple
+        // validated actions on the same element in the same round (e.g.
+        // modify_status + request_budget on the same target) gets distinct
+        // React keys instead of duplicates.
+        id: `${event.agentId}_r${event.round}_${action.targetElementId}_${idx}_${action.type}`,
         agentId: event.agentId,
         agentName: event.agentName,
         agentColorIndex: colorIndex >= 0 ? colorIndex : 0,
@@ -772,8 +776,13 @@ function processEvent(
         costOverlay.set(id, delta);
       }
 
+      // Advance the round counter to maxRounds so the progress bar reads
+      // "N/N" instead of staying frozen at the round where shouldTerminate
+      // fired (e.g. early-deadlock at round 4/5 was being read as "stuck").
+      const maxRounds = get().activeRun?.config?.maxRounds ?? get().currentRound + 1;
       set((s) => ({
         isRunning: false,
+        currentRound: Math.max(s.currentRound, maxRounds - 1),
         riskOverlay,
         costOverlay,
         showOverlay: true,

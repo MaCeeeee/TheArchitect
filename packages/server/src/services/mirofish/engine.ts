@@ -67,6 +67,7 @@ export class MiroFishEngine {
     const rounds: SimulationRound[] = [];
     this.rounds = rounds;
     let previousRoundSummary: string | undefined;
+    let terminationReason: string | undefined;
     const startTime = Date.now();
 
     // Fetch project vision once — injected into every agent's context as
@@ -159,6 +160,7 @@ export class MiroFishEngine {
       // Check termination
       const termination = tracker.shouldTerminate(roundNum);
       if (termination.terminate) {
+        terminationReason = termination.reason;
         break;
       }
     }
@@ -172,7 +174,11 @@ export class MiroFishEngine {
     // Determine outcome
     const lastRound = rounds[rounds.length - 1];
     const allApprove = lastRound?.agentTurns.every((t) => t.position === 'approve');
-    const hasDeadlock = metrics.deadlockCount > 0 && !allApprove;
+    // Treat shouldTerminate's "deadlock" reason as a real deadlock signal even
+    // when analyzeRound() didn't separately raise one — they use different
+    // criteria but mean the same thing: agents stopped moving.
+    const terminatedByDeadlock = !!terminationReason && terminationReason.toLowerCase().includes('deadlock');
+    const hasDeadlock = (metrics.deadlockCount > 0 || terminatedByDeadlock) && !allApprove;
 
     let outcome: SimulationResult['outcome'];
     if (allApprove) {
@@ -213,7 +219,10 @@ export class MiroFishEngine {
           .flatMap((t) => t.validatedActions)
       : [];
 
-    const summary = `Simulation completed after ${rounds.length} rounds. Outcome: ${outcome}. ` +
+    const earlyExitNote = terminationReason && rounds.length < config.maxRounds
+      ? ` Ended early at round ${rounds.length}/${config.maxRounds}: ${terminationReason}`
+      : '';
+    const summary = `Simulation completed after ${rounds.length} rounds. Outcome: ${outcome}.${earlyExitNote} ` +
       `Fatigue Index: ${fatigueReport.globalIndex} (${fatigueReport.rating}). ` +
       `Projected delay: ${fatigueReport.totalProjectedDelayMonths} months. ` +
       `Budget at risk: $${fatigueReport.budgetAtRisk.toLocaleString()}.`;
