@@ -193,6 +193,8 @@ export const architectureAPI = {
     api.get(`/projects/${projectId}/elements`),
   createElement: (projectId: string, data: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/elements`, data),
+  getElement: (projectId: string, elementId: string) =>
+    api.get(`/projects/${projectId}/elements/${elementId}`),
   updateElement: (projectId: string, elementId: string, data: Record<string, unknown>) =>
     api.put(`/projects/${projectId}/elements/${elementId}`, data),
   deleteElement: (projectId: string, elementId: string) =>

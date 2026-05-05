@@ -63,6 +63,31 @@ export default function PropertyPanel() {
     setSuitabilityExpanded(false);
   }, [selectedElementId]);
 
+  // Activities are background-mutated by Generator A, AI auto-fill, and the
+  // Activity-Drilldown apply path. The main `elements` snapshot can lag behind
+  // Neo4j, leaving the Activity Profile (Owner/Action/System/Due/Output)
+  // showing data from a previously-clicked activity. Re-fetch the single
+  // element on every activity click and merge fresh metadata into the store.
+  const elementType = element?.type;
+  const elementIsActivity = Boolean((element as typeof element & { metadata?: Record<string, unknown> })?.metadata?.isActivity);
+  useEffect(() => {
+    if (!projectId || !selectedElementId || !elementIsActivity) return;
+    let cancelled = false;
+    architectureAPI.getElement(projectId, selectedElementId).then((res) => {
+      if (cancelled) return;
+      const fresh = (res.data?.data ?? res.data) as ArchitectureElement | undefined;
+      if (!fresh || fresh.id !== selectedElementId) return;
+      useArchitectureStore.setState((s) => ({
+        elements: s.elements.some((e) => e.id === fresh.id)
+          ? s.elements.map((e) => (e.id === fresh.id ? { ...e, ...fresh } : e))
+          : [...s.elements, fresh],
+      }));
+    }).catch(() => { /* non-blocking */ });
+    return () => { cancelled = true; };
+    // intentionally not depending on `element` itself to avoid refetch loops
+    // when we update the store from the response
+  }, [projectId, selectedElementId, elementIsActivity, elementType]);
+
   // ─── Generator B: AI-Generate Processes for selected Capability ───
   const processGenerator = useProcessGenerator(projectId);
   const [showProcessModal, setShowProcessModal] = useState(false);

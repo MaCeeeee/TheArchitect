@@ -342,6 +342,40 @@ router.put(
   }
 );
 
+// Get a single element by ID. Used by the PropertyPanel to refresh activity
+// metadata on every click — main `elements` store snapshot can be stale after
+// background mutations (Generator A, Remediate apply, AI auto-fill).
+router.get(
+  '/:projectId/elements/:elementId',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { elementId } = req.params;
+      const records = await runCypher(
+        'MATCH (e:ArchitectureElement {id: $elementId}) RETURN e',
+        { elementId }
+      );
+      if (records.length === 0) {
+        return res.status(404).json({ success: false, error: 'Element not found' });
+      }
+      const props = serializeNeo4jProperties(records[0].get('e').properties);
+      let metadata: Record<string, unknown> = {};
+      try { if (props.metadataJson) metadata = JSON.parse(props.metadataJson as string); } catch { /* ignore */ }
+      res.json({
+        success: true,
+        data: {
+          ...props,
+          position3D: { x: props.posX || 0, y: props.posY || 0, z: props.posZ || 0 },
+          metadata,
+        },
+      });
+    } catch (err) {
+      console.error('Get element error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get element' });
+    }
+  }
+);
+
 // Delete element
 router.delete(
   '/:projectId/elements/:elementId',
