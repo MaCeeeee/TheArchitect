@@ -2,7 +2,22 @@ import { v4 as uuid } from 'uuid';
 import { runCypher, runCypherTransaction, serializeNeo4jProperties } from '../config/neo4j';
 import { RemediationProposal } from '../models/RemediationProposal';
 import { LAYER_Y } from '@thearchitect/shared';
-import type { ProposalElement, ProposalConnection } from '@thearchitect/shared';
+import type { ElementStatus, ProposalElement, ProposalConnection } from '@thearchitect/shared';
+
+// Canonical ArchiMate ElementStatus. Remediate LLMs sometimes emit values
+// like "plan"/"planned" for newly-suggested elements; normalize before write
+// so downstream Roadmap/Zod validation sees a canonical status.
+const CANONICAL_STATUSES: ReadonlySet<ElementStatus> = new Set(['current', 'target', 'transitional', 'retired']);
+function canonicalElementStatus(raw: string | undefined): ElementStatus {
+  if (!raw) return 'target';
+  if (CANONICAL_STATUSES.has(raw as ElementStatus)) return raw as ElementStatus;
+  const s = raw.toLowerCase();
+  if (s === 'plan' || s === 'planned' || s === 'proposed' || s === 'new') return 'target';
+  if (s === 'active' || s === 'live' || s === 'production') return 'current';
+  if (s === 'transition' || s === 'migrating') return 'transitional';
+  if (s === 'retire' || s === 'deprecated' || s === 'sunset') return 'retired';
+  return 'target';
+}
 
 // ─── Apply Proposal ───
 
@@ -89,7 +104,7 @@ export async function applyProposal(
         togafDomain: el.togafDomain,
         maturityLevel: el.maturityLevel || 1,
         riskLevel: el.riskLevel || 'low',
-        status: el.status || 'target',
+        status: canonicalElementStatus(el.status),
         posX: pos.x,
         posY: pos.y,
         posZ: pos.z,

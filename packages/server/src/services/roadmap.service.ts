@@ -392,23 +392,39 @@ function identifyCandidates(
 
 // ─── TOGAF Gap Classification ───
 
+const CANONICAL_STATUSES: ReadonlySet<ElementStatus> = new Set(['current', 'target', 'transitional', 'retired']);
+
+// Map non-canonical legacy/LLM-produced statuses (e.g. Remediate may emit
+// "plan"/"planned" as a new-element status) onto canonical ElementStatus.
+function normalizeStatus(raw: string | undefined): ElementStatus {
+  if (!raw) return 'target';
+  if (CANONICAL_STATUSES.has(raw as ElementStatus)) return raw as ElementStatus;
+  const s = raw.toLowerCase();
+  if (s === 'plan' || s === 'planned' || s === 'proposed' || s === 'new') return 'target';
+  if (s === 'active' || s === 'live' || s === 'production') return 'current';
+  if (s === 'transition' || s === 'migrating') return 'transitional';
+  if (s === 'retire' || s === 'deprecated' || s === 'sunset') return 'retired';
+  return 'target';
+}
+
 function classifyGap(node: GraphNode): { gapCategory: GapCategory; suggestedTarget: ElementStatus; autoSelected: boolean } {
-  if (node.status === 'target') {
+  const status = normalizeStatus(node.status);
+  if (status === 'target') {
     return { gapCategory: 'new', suggestedTarget: 'current', autoSelected: true };
   }
-  if (node.status === 'transitional') {
+  if (status === 'transitional') {
     return { gapCategory: 'upgrade', suggestedTarget: 'target', autoSelected: true };
   }
-  if (node.status === 'retired') {
+  if (status === 'retired') {
     return { gapCategory: 'retire', suggestedTarget: 'retired', autoSelected: node.dependsOn.length > 0 };
   }
-  if (node.status === 'current') {
+  if (status === 'current') {
     if (node.riskLevel === 'critical' || node.riskLevel === 'high') {
       return { gapCategory: 'modernize', suggestedTarget: 'target', autoSelected: true };
     }
     return { gapCategory: 'retain', suggestedTarget: 'current', autoSelected: false };
   }
-  return { gapCategory: 'retain', suggestedTarget: node.status as ElementStatus, autoSelected: false };
+  return { gapCategory: 'retain', suggestedTarget: 'current', autoSelected: false };
 }
 
 async function fetchConnectionCounts(projectId: string): Promise<Map<string, number>> {
@@ -493,7 +509,7 @@ export async function previewCandidates(projectId: string): Promise<CandidatesPr
         name: node.name,
         type: node.type,
         togafDomain: node.togafDomain || node.layer,
-        currentStatus: node.status as ElementStatus,
+        currentStatus: normalizeStatus(node.status),
         suggestedTarget,
         riskLevel: node.riskLevel,
         connectionCount: connCount,
