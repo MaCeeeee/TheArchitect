@@ -180,6 +180,31 @@ function RoadmapImportButton({ onImport }: { onImport: (description: string, tar
   );
 }
 
+// Anthropic Haiku/Sonnet wrap structured output in ```json { "reasoning":
+// "...", "actions": [...], "position": "..." } ``` and stream it char-by-char.
+// The final report parser strips this, but the live feed shows the raw
+// envelope until then. Extract just the reasoning text (even partial) so
+// the demo audience sees agent thinking, not JSON internals.
+function cleanStreamingText(raw: string): string {
+  if (!raw) return raw;
+  // Skip the markdown fence prefix if present
+  const noFence = raw.replace(/^\s*```(?:json|JSON)?\s*\n?/, '');
+  // If it looks like JSON (starts with `{`), pull out the reasoning string
+  if (/^\s*\{/.test(noFence)) {
+    const m = noFence.match(/"reasoning"\s*:\s*"((?:[^"\\]|\\.)*)/);
+    if (m) {
+      return m[1]
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\\\/g, '\\');
+    }
+    // Reasoning field hasn't been streamed yet — show a placeholder
+    return '…';
+  }
+  return noFence;
+}
+
 const SCENARIO_TYPES: { value: ScenarioType; label: string; icon: typeof Brain }[] = [
   { value: 'cloud_migration', label: 'Cloud Migration', icon: Zap },
   { value: 'mna_integration', label: 'M&A Integration', icon: Users },
@@ -221,7 +246,19 @@ export default function SimulationPanel() {
   const [viewMode, setViewMode] = useState<ViewMode>('config');
   const [scenarioType, setScenarioType] = useState<ScenarioType>('cloud_migration');
   const [scenarioDescription, setScenarioDescription] = useState('');
-  const [maxRounds, setMaxRounds] = useState(5);
+  // Persist across mounts — the slider was resetting to 5 on every panel
+  // remount, contradicting the user's deliberate selection from earlier runs.
+  const [maxRounds, setMaxRoundsInner] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('mirofish_max_rounds');
+      const n = stored ? parseInt(stored, 10) : NaN;
+      return Number.isFinite(n) && n >= 2 && n <= 10 ? n : 5;
+    } catch { return 5; }
+  });
+  const setMaxRounds = (v: number) => {
+    setMaxRoundsInner(v);
+    try { localStorage.setItem('mirofish_max_rounds', String(v)); } catch { /* ignore */ }
+  };
   const [agents, setAgents] = useState<AgentPersona[]>([]);
   const [expandedAgent, setExpandedAgent] = useState<string | null>(null);
   const [personasLoaded, setPersonasLoaded] = useState(false);
@@ -802,7 +839,7 @@ function RunningView({
       {/* Streaming reasoning */}
       {streamingText && (
         <div className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded p-2 text-xs text-gray-300 max-h-32 overflow-y-auto">
-          {streamingText}
+          {cleanStreamingText(streamingText)}
         </div>
       )}
 
@@ -931,7 +968,7 @@ function ResultsView({
             )}
             {streamingText && (
               <div className="text-[10px] text-gray-400 italic line-clamp-3 leading-snug border-l-2 border-[#7c3aed]/40 pl-2">
-                {streamingText}
+                {cleanStreamingText(streamingText)}
               </div>
             )}
           </div>
