@@ -656,8 +656,14 @@ async function renderSimulationReport(doc: PDFKit.PDFDocument, project: { name: 
   doc.text(`Run Name: ${run.name || '-'}`, MARGIN);
   doc.text(`Created: ${run.createdAt ? new Date(run.createdAt as Date).toISOString() : '-'}`, MARGIN);
   doc.text(`Status: ${run.status || '-'}`, MARGIN);
-  doc.text(`LLM Provider: ${process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'unknown'}`, MARGIN);
-  doc.text(`Model: ${process.env.OPENAI_MODEL || process.env.ANTHROPIC_MODEL || 'default'}`, MARGIN);
+  const activeProvider = process.env.OPENAI_API_KEY ? 'openai' : process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'unknown';
+  const activeModel = activeProvider === 'openai'
+    ? (process.env.OPENAI_MODEL || 'gpt-4o-mini')
+    : activeProvider === 'anthropic'
+      ? (process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001')
+      : 'default';
+  doc.text(`LLM Provider: ${activeProvider}`, MARGIN);
+  doc.text(`Model: ${activeModel}`, MARGIN);
   doc.text(`Project: ${project.name}`, MARGIN);
   doc.text(`Total Tokens Used: ${run.totalTokensUsed || 0}`, MARGIN);
   doc.text(`Total Duration: ${Math.round(Number(run.totalDurationMs || 0) / 1000)}s`, MARGIN);

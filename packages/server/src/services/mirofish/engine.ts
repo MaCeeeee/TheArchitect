@@ -463,7 +463,9 @@ async function callAnthropic(systemPrompt: string, onChunk: (text: string) => vo
     messages: [
       { role: 'user', content: 'Analyze the scenario and provide your structured response.' },
     ],
-    max_tokens: 2000,
+    // Haiku produces longer structured reasoning than gpt-4o-mini; 2000 was
+    // truncating mid-JSON and tripping the parser fallback.
+    max_tokens: 4000,
   });
 
   let tokens = 0;
@@ -480,23 +482,39 @@ async function callAnthropic(systemPrompt: string, onChunk: (text: string) => vo
 // ─── Response Parsing ───
 
 function parseAgentResponse(raw: string): AgentLLMResponse {
+  // Anthropic Haiku/Sonnet wrap JSON in ```json ... ``` markdown fences;
+  // strip them so the JSON regex below sees clean braces.
+  const stripped = raw
+    .replace(/^\s*```(?:json|JSON)?\s*\n?/m, '')
+    .replace(/\n?\s*```\s*$/m, '')
+    .trim();
+
   try {
-    // Extract JSON from response (may have markdown wrapping)
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      return { reasoning: raw, actions: [], position: 'abstain' };
+      return { reasoning: stripped, actions: [], position: 'abstain' };
     }
-
     const parsed = JSON.parse(jsonMatch[0]);
-
     return {
       reasoning: String(parsed.reasoning || ''),
       actions: Array.isArray(parsed.actions) ? parsed.actions.map(sanitizeAction) : [],
       position: validatePosition(parsed.position),
     };
   } catch {
+    // Truncated or malformed JSON (common when max_tokens cuts mid-object):
+    // salvage just the "reasoning" string so the report still shows useful
+    // text instead of a raw JSON dump that scares auditors.
+    const reasoningMatch = stripped.match(/"reasoning"\s*:\s*"((?:[^"\\]|\\.)*)/);
+    if (reasoningMatch) {
+      const reasoning = reasoningMatch[1]
+        .replace(/\\"/g, '"')
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t')
+        .replace(/\\\\/g, '\\');
+      return { reasoning, actions: [], position: 'abstain' };
+    }
     console.warn('[MiroFish] Failed to parse agent response, treating as abstain');
-    return { reasoning: raw.slice(0, 500), actions: [], position: 'abstain' };
+    return { reasoning: stripped.slice(0, 500), actions: [], position: 'abstain' };
   }
 }
 
