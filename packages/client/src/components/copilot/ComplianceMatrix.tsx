@@ -130,13 +130,18 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, onNex
   const [editStatus, setEditStatus] = useState<string>('');
   const [editNotes, setEditNotes] = useState('');
 
-  const loadMatrix = useCallback(async () => {
+  const loadMatrix = useCallback(async (opts?: { bypassCache?: boolean }) => {
     if (!projectId) return;
     try {
       setLoading(true);
+      // After AI-Match the underlying mappings just changed. Express auto-
+      // generates ETags, browser may serve a 304 with cached body that no
+      // longer matches reality. Cache-bust via timestamp param so each
+      // post-mutation reload is a clean fetch.
+      const bust = opts?.bypassCache ? Date.now() : undefined;
       const [matrixRes, mappingsRes, elementsRes] = await Promise.all([
-        standardsAPI.getMatrix(projectId, standardId, sectionIds),
-        standardsAPI.getMappings(projectId, standardId),
+        standardsAPI.getMatrix(projectId, standardId, sectionIds, bust),
+        standardsAPI.getMappings(projectId, standardId, bust),
         architectureAPI.getElements(projectId),
       ]);
       setMatrix(matrixRes.data);
@@ -200,8 +205,17 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, onNex
           try {
             const parsed = JSON.parse(line.slice(6));
             if (parsed.done) {
-              // Suggestions saved, reload matrix + refresh pipeline stats
-              await loadMatrix();
+              // Suggestions saved. Two things to do, in this order:
+              // 1) Force-clear local matrix/mappings state so React renders
+              //    a clean "loading" frame — eliminates any reference-equality
+              //    short-circuit where setMatrix(samestructure) is skipped.
+              // 2) Reload with bypassCache=true. Without this, the browser
+              //    can serve a 304 with the pre-AI-Match cached body and
+              //    the user sees an empty matrix until they navigate out
+              //    and back in (which forces a fresh component mount).
+              setMatrix(null);
+              setMappings([]);
+              await loadMatrix({ bypassCache: true });
               if (projectId) await refreshStats(projectId, standardId);
             }
           } catch {
@@ -303,7 +317,7 @@ export default function ComplianceMatrix({ standardId, sectionIds, onBack, onNex
           {error || 'Failed to load matrix. The standard may not have parseable sections.'}
         </p>
         <button
-          onClick={loadMatrix}
+          onClick={() => loadMatrix()}
           className="text-sm px-4 py-2 rounded border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] transition"
         >
           Retry

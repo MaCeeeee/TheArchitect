@@ -354,11 +354,16 @@ export const standardsAPI = {
     api.get(`/projects/${projectId}/standards/${standardId}`),
   delete: (projectId: string, standardId: string) =>
     api.delete(`/projects/${projectId}/standards/${standardId}`),
-  getMappings: (projectId: string, standardId: string) =>
-    api.get(`/projects/${projectId}/standards/${standardId}/mappings`),
-  getMatrix: (projectId: string, standardId: string, sectionIds?: string[]) =>
+  getMappings: (projectId: string, standardId: string, cacheBust?: number) =>
+    api.get(`/projects/${projectId}/standards/${standardId}/mappings`, {
+      params: cacheBust ? { _t: cacheBust } : {},
+    }),
+  getMatrix: (projectId: string, standardId: string, sectionIds?: string[], cacheBust?: number) =>
     api.get(`/projects/${projectId}/standards/${standardId}/matrix`, {
-      params: sectionIds ? { sectionIds: sectionIds.join(',') } : {},
+      params: {
+        ...(sectionIds ? { sectionIds: sectionIds.join(',') } : {}),
+        ...(cacheBust ? { _t: cacheBust } : {}),
+      },
     }),
   upsertMapping: (projectId: string, standardId: string, data: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/standards/${standardId}/mappings`, data),
