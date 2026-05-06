@@ -430,7 +430,7 @@ export default function PropertyPanel() {
                       title={`Delete ${connDef?.label || conn.type} connection to "${other?.name || otherId}"`}
                       aria-label="Delete connection"
                     >
-                      \u00d7
+                      {'\u00d7'}
                     </button>
                   </div>
                 );
