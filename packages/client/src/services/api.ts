@@ -226,7 +226,11 @@ export const architectureAPI = {
       minConfidence?: number;
       whitelist?: Array<{ sourceId: string; targetId: string; type: string }>;
     },
-  ) => api.post(`/projects/${projectId}/heal-connections`, opts),
+    // Heal fires one LLM call per isolated element (concurrency 5) +
+    // optional RAG lookup. The default 30s timeout was tripping on
+    // larger projects (BSH ESG: ~20 isolated elements). 5 min is generous
+    // enough for the demo without hiding genuine server hangs.
+  ) => api.post(`/projects/${projectId}/heal-connections`, opts, { timeout: 300_000 }),
 };
 
 // Workspace API
