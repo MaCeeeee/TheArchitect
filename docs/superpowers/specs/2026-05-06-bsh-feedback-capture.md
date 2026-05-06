@@ -7,7 +7,7 @@
 
 1. ✅ Neuralgische Punkte in der Architektur sofort erkennbar machen
 2. ✅ Gesetz als Soll-Architektur laden + Side-by-Side vs. Ist
-3. ⏸ Plateau / Transformation View mit Checkbox — **Originaltext abgeschnitten, Klärung offen**
+3. ✅ Plateau-Checkbox: Wave-Elements als "implementiert" markieren → Progress-Bars
 
 ---
 
@@ -101,22 +101,53 @@ Side-by-Side-Diff-View + Harmonization     (NEU, baut auf PlateauCompare)
 
 ---
 
-## UC-PLATEAU-???-001 — Transformation-View Plateau-Checkbox ⏸
+## UC-PLATEAU-001 — Wave-Element Execution-Tracking via Done-Häkchen
 
 ### Goal
-**TBD — Originaltext abgeschnitten:**
-> *"…super wäre es wenn es so etwas wie einen Check oder Checkbox geben würde, dass diese …"*
+Jedes Element in einer Roadmap-Wave bekommt eine **Checkbox "implementiert"**. Der Architekt kann den Roadmap-Fortschritt gegen die Realität abgleichen — Plateau-Progress-Bars zeigen, wo das Programm tatsächlich steht.
 
-### Klärungs-Optionen (zur Auswahl)
+### Warum (BSH-Kontext)
+*"Bei der Transformation-View im Plateau super wäre es wenn es so etwas wie einen Check oder Checkbox geben würde, dass diese [Elemente bereits implementiert sind]."*
 
-| Hypothese | Was die Checkbox bedeuten würde | Trigger |
+Heute zeigt die Plateau-View den **Soll-Zustand pro Wave**, aber es gibt keinen Mechanismus, um zu tracken **was davon bereits Realität ist**. Der Architekt muss die Roadmap im Kopf gegen den aktuellen Element-Status abgleichen. Bei BSH mit 31 Elementen über 4 Waves ist das praktisch nicht machbar.
+
+### Konzept-Trennung (wichtig)
+Es existieren **zwei verschiedene "Status"-Konzepte**, die nicht vermischt werden dürfen:
+
+| Konzept | Was es ausdrückt | Wo es lebt |
 |---|---|---|
-| **A — Plateau-Sign-Off** | Plateau wird als "abgeschlossen / freigegeben" markiert nach Stakeholder-Review | Approval-Workflow analog Policy-Approval |
-| **B — Element-bereits-implementiert** | einzelne Wave-Elements werden als "done" gehakt → Plateau-Progress-Bar | Wave-Element-Tracking gegen Realität |
-| **C — Wave/Plateau-Auswahl** | Multi-Select für vergleichende Plateau-Analyse (mehrere Plateaus gleichzeitig im Diff) | Plateau-Compare-Erweiterung |
-| **D — Cherry-Pick für Roadmap-Variante** | "diese Elements aus Plateau X übernehmen, jene aus Plateau Y" | Roadmap-Editor |
+| `element.status` (current/target/transitional/retired) | **Realität** — was hat dieses Element gerade in der Architektur | `ArchitectureElement` (Neo4j) |
+| `waveElement.implementedAt` (NEU) | **Roadmap-Execution** — ist diese geplante Veränderung erledigt | `TransformationRoadmap.waves[].elements[]` (Mongo) |
 
-→ **Frage an User:** welche der Optionen A-D triffts oder ist es etwas anderes?
+→ Die Checkbox setzt **nur** `implementedAt`. Optional kann sie das Element-Status-Feld synchronisieren (Confirm-Dialog), aber das ist eine separate User-Aktion.
+
+### REQs
+
+| REQ | Beschreibung | Akzeptanzkriterium |
+|---|---|---|
+| **REQ-PLATEAU-001** | Datenmodell: `WaveElement` erhält `implementedAt: Date \| null`, `implementedBy: userId \| null`, `implementationNote: string \| null` | Mongo-Migration: bestehende Roadmaps haben `implementedAt: null` für alle Wave-Elemente |
+| **REQ-PLATEAU-002** | Endpoint `PATCH /api/projects/:projectId/roadmaps/:roadmapId/waves/:waveNumber/elements/:elementId/implementation` mit Body `{implemented: boolean, note?: string}`. Idempotent. Audit-Log via existing Middleware. | curl mit `{implemented:true}` → 200 + Wave-Element-Doc mit Timestamp; zweiter Call mit demselben Wert → 200 (no-op) |
+| **REQ-PLATEAU-003** | UI: Checkbox links neben jedem Element in `WaveCard.tsx`. Bei Klick → Optimistic Update + API-Call. Bei Fehler → Rollback + Toast. | Manuell: Klick auf Checkbox → sofort grünes Häkchen, API-Call im Network-Tab sichtbar, Reload zeigt Häkchen weiterhin |
+| **REQ-PLATEAU-004** | Plateau-Progress-Bar: pro Plateau `implementedCount / totalCount` als Bar oben in der Plateau-View. Color-Coded: <33% rot, 33-66% gelb, >66% grün. | Plateau mit 5 Elementen, 2 abgehakt → "2/5 (40%)" gelb |
+| **REQ-PLATEAU-005** | Roadmap-Summary: Gesamt-Progress (% über alle Waves) im Roadmap-Header. Klickbar → springt zum nächsten unimplementierten Element. | Roadmap-Header zeigt "12/31 implementiert (39%)" |
+| **REQ-PLATEAU-006** | 3D-Visualisierung: Implementierte Elements bekommen kleine grüne Check-Badge oben rechts. Im Plateau-Mode wird die Glow-Color gedimmt (vom "wird-gerade-verändert"-orange zu "fertig"-grün). | Im Plateau-Mode der BSH-Demo: 3 abgehakte Elemente zeigen Check-Badge |
+| **REQ-PLATEAU-007** | Filter-Toggle "Outstanding only" / "Implemented only" / "All" in der Plateau-View. Default: All. | Klick "Outstanding only" → nur unabgehakte Elements visible, Plateau-Bar bleibt aber bei Gesamt-% |
+| **REQ-PLATEAU-008** | Optional-Sync: bei Toggle "implemented:true" zeigt Confirm-Dialog *"Element-Status auch von 'target' auf 'current' setzen?"*. Bei Confirm → zweiter API-Call an Element-Update-Endpoint. | Confirm "Ja" → Element in 3D wechselt von Target-Style zu Current-Style; Confirm "Nein" → nur Wave-Element-Flag |
+| **REQ-PLATEAU-009** | Audit-Trail-Zugriff: jeder Toggle erzeugt Audit-Eintrag mit `action: 'mark_implementation'`, `entityType: 'wave_element'`, `before/after` Diff. Im Audit-Log-Viewer filterbar. | Audit-Logs zeigen alle Implementation-Toggles mit User, Timestamp, Element-Name |
+| **REQ-PLATEAU-010** | RBAC: nur User mit `ROADMAP_UPDATE` Permission können togglen. Viewer/Read-Only sehen Checkbox aber disabled. | Token mit Viewer-Rolle: Klick auf Checkbox → 403 + Toast |
+
+### Out of Scope (V1)
+- Auto-Detection (z.B. "Element-Status ist 'current' geworden → Wave-Element auto-mark als implementiert"). Manueller Check ist explizit, V2.
+- Partial-Implementation-Percentages pro Element (z.B. "75% fertig"). Binary für V1.
+- Notifications wenn ganze Wave implementiert. V2.
+- Comments-Thread pro Wave-Element. V2.
+
+### Bestehende Bausteine die wiederverwendet werden
+- `TransformationRoadmap` Mongo-Modell — Schema-Erweiterung statt neuer Collection
+- `WaveCard.tsx` — Checkbox wird in existing Element-Liste eingehängt
+- `plateauComputation.ts` — Progress-Berechnung kommt zu den Snapshot-Metriken dazu
+- `audit.middleware.ts` — Existiert bereits, nur neue `action`-String registrieren
+- `STATUS_COLORS` aus den Plateau-Visualisierungen — wird um "implemented"-Variante ergänzt
 
 ---
 
@@ -124,18 +155,22 @@ Side-by-Side-Diff-View + Harmonization     (NEU, baut auf PlateauCompare)
 
 **Bevor ein einziger Code-Edit passiert** — siehe `feedback_preflight_before_plan`:
 
-1. **Klärung Punkt 3** (kurzer User-Ping mit Auswahl A/B/C/D oder Freitext)
-2. **Pre-Flight-Check pro UC:**
+1. **Pre-Flight-Check pro UC:**
    - Linear durchsuchen: existiert schon ein Issue mit ähnlichem Scope?
    - Codebase-Scan: gibt es bereits eine partielle Implementation?
    - Linear-Issues anlegen (UC + Sub-REQs) per Linear-MCP
-3. **8-Kriterien-Scoring** pro REQ — siehe `feedback_requirement_scoring`. Output: WSJF-Ranking, Top-5 für Sprint-Planning
-4. **User-Confirmation** der Reihenfolge → erst dann `writing-plans` ausführen
-5. **RVTM-Datei** pro UC, dann implementation via `subagent-driven-development`
+2. **8-Kriterien-Scoring** pro REQ — siehe `feedback_requirement_scoring`. Output: WSJF-Ranking, Top-5 für Sprint-Planning
+3. **User-Confirmation** der Reihenfolge → erst dann `writing-plans` ausführen
+4. **RVTM-Datei** pro UC, dann implementation via `subagent-driven-development`
 
 **Geschätzter Scope:**
-- UC-CRIT-001: medium (1-2 Sprints, viel Konzept-Arbeit, wenig neue Infrastruktur)
-- UC-GAP-001: large (3-4 Sprints, neuer Project-Typ + neuer Diff-Viewer, baut aber auf existierenden Bausteinen)
-- UC-PLATEAU-???-001: TBD (klein bis mittel je nach Hypothese)
+- UC-CRIT-001: **medium** (1-2 Sprints, viel Konzept-Arbeit für die "neuralgisch"-Definition, wenig neue Infrastruktur)
+- UC-GAP-001: **large** (3-4 Sprints, neuer Project-Typ + neuer Diff-Viewer, baut aber auf 4 existierenden Bausteinen)
+- UC-PLATEAU-001: **small-medium** (1 Sprint, Schema-Migration + UI-Erweiterung + neuer Endpoint; rein additiv, kein Refactor)
+
+**Empfohlene Reihenfolge (vor Pre-Flight subjektiv):**
+1. **UC-PLATEAU-001 zuerst** — kleinster Aufwand, höchster Daily-Value, BSH sieht direkt Fortschritt im aktuellen Demo-Projekt
+2. **UC-CRIT-001 als zweites** — Konzept-Workshop mit BSH parallel zum Sprint, dann Implementation
+3. **UC-GAP-001 als drittes** — größter Hebel, aber lohnt einen vorgelagerten Concept-Workshop, weil "Standard→ArchiMate"-Mapping nicht-trivial ist
 
 Insgesamt **post-Demo-Backlog**, nicht kurzfristig. UC-GAP-001 ist die mächtigste der drei Ideen — wenn sich BSH dafür begeistert, lohnt sich ein Konzept-Workshop.
