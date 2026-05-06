@@ -562,6 +562,14 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response) 
     user.passwordHash = await bcrypt.hash(password, 12);
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;
+    // Successful password reset proves the user controls the inbox the
+    // reset link was sent to. That's a stronger signal than the original
+    // verification email (which is just a click-through). Mark the email
+    // as verified so users aren't trapped behind the verify-gate when
+    // SMTP for the verification mail fails but the reset mail got
+    // through (or was delivered out-of-band).
+    const wasUnverified = !user.emailVerified;
+    user.emailVerified = true;
     await user.save();
 
     await createAuditEntry({
@@ -571,6 +579,7 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response) 
       riskLevel: 'high',
       ip: req.ip || '',
       userAgent: req.get('user-agent') || '',
+      after: wasUnverified ? { autoVerifiedEmail: true } : undefined,
     });
 
     res.json({ message: 'Password has been reset successfully' });
