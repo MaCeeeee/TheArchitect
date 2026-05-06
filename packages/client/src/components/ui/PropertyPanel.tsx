@@ -40,6 +40,7 @@ export default function PropertyPanel() {
   const connections = useArchitectureStore((s) => s.connections);
   const updateElement = useArchitectureStore((s) => s.updateElement);
   const removeElement = useArchitectureStore((s) => s.removeElement);
+  const removeConnection = useArchitectureStore((s) => s.removeConnection);
   const pushHistory = useArchitectureStore((s) => s.pushHistory);
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const togglePropertyPanel = useUIStore((s) => s.togglePropertyPanel);
@@ -403,19 +404,35 @@ export default function PropertyPanel() {
                 const other = elements.find((el) => el.id === otherId);
                 const connDef = CONNECTION_TYPES.find(c => c.type === conn.type);
                 return (
-                  <button
+                  <div
                     key={conn.id}
-                    onClick={() => selectElement(otherId)}
-                    className="flex w-full items-center gap-1.5 text-xs rounded px-1 py-0.5 hover:bg-[var(--surface-base)] transition"
+                    className="group flex items-center gap-1.5 text-xs rounded px-1 py-0.5 hover:bg-[var(--surface-base)] transition"
                   >
-                    <div
-                      className="h-1.5 w-1.5 rounded-full shrink-0"
-                      style={{ backgroundColor: connDef?.color || '#64748b' }}
-                    />
-                    <span className="text-[var(--text-tertiary)] text-[10px] shrink-0">{isSource ? '\u2192' : '\u2190'}</span>
-                    <span className="text-[var(--text-secondary)] truncate hover:text-white">{other?.name || otherId}</span>
-                    <span className="text-[9px] text-[var(--text-disabled)] ml-auto shrink-0">{connDef?.label || conn.type}</span>
-                  </button>
+                    <button
+                      onClick={() => selectElement(otherId)}
+                      className="flex flex-1 min-w-0 items-center gap-1.5 text-left"
+                    >
+                      <div
+                        className="h-1.5 w-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: connDef?.color || '#64748b' }}
+                      />
+                      <span className="text-[var(--text-tertiary)] text-[10px] shrink-0">{isSource ? '\u2192' : '\u2190'}</span>
+                      <span className="text-[var(--text-secondary)] truncate hover:text-white">{other?.name || otherId}</span>
+                      <span className="text-[9px] text-[var(--text-disabled)] ml-auto shrink-0">{connDef?.label || conn.type}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        pushHistory();
+                        removeConnection(conn.id);
+                        toast.success('Connection removed');
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition shrink-0 text-[var(--text-tertiary)] hover:text-red-400 px-1"
+                      title={`Delete ${connDef?.label || conn.type} connection to "${other?.name || otherId}"`}
+                      aria-label="Delete connection"
+                    >
+                      \u00d7
+                    </button>
+                  </div>
                 );
               })}
             </div>
