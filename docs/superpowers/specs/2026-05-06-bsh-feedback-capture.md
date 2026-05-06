@@ -3,11 +3,18 @@
 > **Status:** Draft / Feedback-Erfassung. **Pre-Flight-Check und Linear-Issue-Erstellung stehen noch aus** (siehe `feedback_preflight_before_plan` — Pre-Flight muss VOR dem Plan laufen).
 > **8-Kriterien-Scoring:** für jede REQ in einem späteren Schritt (siehe `feedback_requirement_scoring`).
 
-**Quelle:** Live-Feedback während BSH-Demo, drei Kernpunkte:
+**Quelle:** Live-Feedback während BSH-Demo + Nachgespräch mit BSH-Kollegen, **sieben Kernpunkte**:
 
-1. ✅ Neuralgische Punkte in der Architektur sofort erkennbar machen
-2. ✅ Gesetz als Soll-Architektur laden + Side-by-Side vs. Ist
-3. ✅ Plateau-Checkbox: Wave-Elements als "implementiert" markieren → Progress-Bars
+**Aus Demo-Live-Feedback:**
+1. ✅ Neuralgische Punkte in der Architektur sofort erkennbar machen → UC-CRIT-001
+2. ✅ Gesetz als Soll-Architektur laden + Side-by-Side vs. Ist → UC-GAP-001
+3. ✅ Plateau-Checkbox: Wave-Elements als "implementiert" markieren → UC-PLATEAU-001
+
+**Aus Nachgespräch:**
+4. ✅ Harmonisierung von zwei realen Architekturen (Post-Merger / Multi-Region) → UC-HARM-001
+5. ✅ Redundanz-Detection mit klar definierten Parametern → UC-RED-001
+6. ✅ Generator-Chain-Lücke: Business-Layer → Data-Objects → UC-DATA-001
+7. ✅ C-Level-Board: einfache Zahlen/Daten/Fakten-Sicht für Executive → UC-EXEC-001
 
 ---
 
@@ -151,7 +158,192 @@ Es existieren **zwei verschiedene "Status"-Konzepte**, die nicht vermischt werde
 
 ---
 
-## Nächste Schritte (workflow-konform)
+## UC-HARM-001 — Architecture-zu-Architecture Harmonisierung
+
+### Goal
+Zwei reale Architektur-Projekte (Post-Merger, Multi-Region, Legacy↔New) werden side-by-side geladen, automatisch gematcht, in Kategorien einsortiert (SAME / SIMILAR / UNIQUE / CONFLICT), und der User bekommt **Harmonisierungs-Aktionen** auf Knopfdruck.
+
+### Warum (BSH-Kontext)
+*"Ist es möglich durch meine Software eine Harmonisierung von zwei Architekturen durchzuführen?"*
+
+BSH-Use-Cases:
+- BSH übernimmt einen Wettbewerber → 2 EA-Landschaften müssen konsolidiert werden
+- BSH-Deutschland vs. BSH-USA: zwei regionale Architekturen, soll ein gemeinsamer Kern entstehen
+- Legacy-System-Migration: alte Architektur ↔ neue Ziel-Architektur, was wird gemerged
+
+Heute ist das ein 6-monatiger Consultant-Auftrag. Ziel: **innerhalb 1 Tags ein erstes Diff-Ergebnis**.
+
+### Beziehung zu UC-GAP-001
+UC-GAP-001 macht **synthetisch (Standard) ↔ real**. UC-HARM-001 macht **real ↔ real**. Diff-Viewer + Element-Matching werden geteilt; HARM addiert Konflikt-Resolution + Result-Project-Generation.
+
+### REQs
+
+| REQ | Beschreibung | Akzeptanzkriterium |
+|---|---|---|
+| **REQ-HARM-001** | Multi-Project-Loader: 2 Projekte gleichzeitig in einer View (Read-Only-Mode auf beiden) | UI lädt Project-A + Project-B, beide in 3D sichtbar mit Workspace-Offset |
+| **REQ-HARM-002** | Element-Matching wie REQ-GAP-003, aber bidirektional und mit Confidence-Tiers (>0.9 = SAME, 0.6-0.9 = SIMILAR, <0.6 = UNIQUE) | Test: 2 BSH-Demo-Projekte mit überlappenden Capabilities → ≥80% korrekte Matches manuell verifiziert |
+| **REQ-HARM-003** | Match-Kategorisierung: jedes Match-Pair bekommt einen von 5 Tags: **SAME** (identisch), **SIMILAR** (funktional gleich, Detail-Unterschiede), **CONFLICT** (gleicher Name, inkompatible Specs), **UNIQUE-A**, **UNIQUE-B** | UI-Filter zeigt jeweils nur die gewählte Kategorie |
+| **REQ-HARM-004** | Konflikt-Resolution-Workflow: bei CONFLICT → Side-by-Side-Detail-View (Properties, Connections, Metadata) + 4 Resolutions: keep-A, keep-B, merge-into-new, both-required | Klick "merge-into-new" → Wizard fragt nach Name + nimmt Properties beider Sources auf |
+| **REQ-HARM-005** | Harmonisierungs-Aktionen UI: Multi-Select über Diff-Liste, Bulk-Actions ("Keep all SIMILAR-Matches from Project A", "Merge all CONFLICTs", etc.) | Bulk-Action "Keep A für alle SIMILAR" reduziert die Diff-Liste um die SIMILAR-Einträge |
+| **REQ-HARM-006** | Result-Project-Generation: aus den getroffenen Entscheidungen entsteht ein neues `harmonized_project` mit Linage-Metadaten (jedes Element kennt seine Quellen aus A und/oder B) | Result-Projekt zeigt 100% der "Keep"-Entscheidungen + alle Merged-Elements |
+| **REQ-HARM-007** | Auto-Migration-Roadmap: vom Result-Project zurück zu A und B → 2 separate Roadmaps pro Source, die A/B in Richtung Result transformieren | Klick "Generate Migration Roadmap" → 2 Roadmaps mit Waves entstanden |
+| **REQ-HARM-008** | Audit + Versionierung: jede Harmonisierungs-Entscheidung wird als Audit-Eintrag persistiert + Result-Project bekommt Version-Tag inkl. Decision-Snapshot | Audit-Logs zeigen alle merge-Entscheidungen mit User + Timestamp |
+
+### Out of Scope (V1)
+- Mehr als 2 Projekte gleichzeitig (V2: N-Way-Harmonization für globale Konzerne)
+- Auto-Resolution ohne User-Input (immer human-in-the-loop für CONFLICTs)
+
+### Bestehende Bausteine (heavy reuse)
+- UC-GAP-001 Diff-Viewer + Element-Matching (REQ-GAP-003/004) — geteilte Codebase
+- `roadmap.service.generate()` — wird für Migration-Roadmaps wiederverwendet
+- `xrayStore` Multi-Workspace-Logik — Basis für Side-by-Side-Loader
+
+---
+
+## UC-RED-001 — Redundanz-Detection mit definierten Parametern
+
+### Goal
+Auto-Erkennung von redundanten Elementen in einer Architektur — auf Basis **klar definierter, transparenter Parameter**, nicht als Black-Box. Output: priorisierte Redundanz-Cluster mit Cost-Saving-Schätzung.
+
+### Warum (BSH-Kontext)
+*"Wie decke ich Redundanzen auf, und welche Parameter ziehe ich dafür heran?"*
+
+Redundanzen sind **eines der größten EA-Optimierungspotenziale**: 30-40% der Tools/Capabilities in Konzern-Landschaften sind funktional doppelt. Heute findet man sie nur durch Workshops und Glück. Der BSH-Architekt will das systematisch.
+
+### Parameter-Katalog (transparent, gewichtet)
+
+| Parameter | Was misst es | Range | Default-Gewicht |
+|---|---|---|---|
+| **P1 — Name-Similarity** | Levenshtein + Cosine auf Element-Name | 0..1 | 0.15 |
+| **P2 — Type+Layer-Match** | gleicher `type` UND `layer` | 0 oder 1 (Hard-Filter) | Filter |
+| **P3 — Description-Embedding** | Cosine-Similarity der Description-Embeddings (LLM) | 0..1 | 0.30 |
+| **P4 — Capability-Realization** | beide realisieren dieselbe Capability/Requirement | 0 oder 1 | 0.20 |
+| **P5 — Connection-Pattern-Similarity** | Jaccard-Index auf Sets der Dependents/Dependencies | 0..1 | 0.15 |
+| **P6 — Functional-Overlap (LLM)** | LLM-Frage: "Sind diese 2 Elemente funktional austauschbar?" | 0..1 | 0.20 |
+
+→ **Redundancy-Score** = Σ (Pi × wi). Nur Pairs mit **Type+Layer-Match** kommen in den Score. Schwellwert ≥0.6 = Redundanz-Verdacht. ≥0.8 = starke Redundanz.
+
+Cluster-Bildung: transitiv über die Score-Schwelle (A↔B redundant + B↔C redundant → {A,B,C} ein Cluster).
+
+### REQs
+
+| REQ | Beschreibung | Akzeptanzkriterium |
+|---|---|---|
+| **REQ-RED-001** | `redundancy.service.ts`: pure Score-Engine. Input: elements + connections + standardMappings + Embeddings → Output: `RedundancyCluster[]` mit Score + Parameter-Breakdown pro Cluster | Unit-Test: 3 als Duplikate angelegte Application-Components werden korrekt als Cluster erkannt |
+| **REQ-RED-002** | Mongo-Modell `RedundancyCluster`: `{projectId, elementIds, score, parameterBreakdown, recommendation, costSaving, computedAt}` | DB-Doc-Struktur dokumentiert + Indexes |
+| **REQ-RED-003** | On-Demand-Endpoint `POST /api/projects/:projectId/scan-redundancies` + Background-Job-Variante (täglich) | curl-Smoke-Test liefert Cluster zurück; Cron-Trigger im Server-Index |
+| **REQ-RED-004** | Redundancy-Dashboard: Liste der Top-N-Cluster, sortiert nach Score × Cost-Saving. Pro Cluster: Mini-3D-View, Member-Liste, Score-Bar mit Parameter-Breakdown | UI: BSH-Demo zeigt mind. 1 erkannten Cluster (Risk Management System Duplikate aus Run 3) |
+| **REQ-RED-005** | Cost-Saving-Calculation: für jedes Cluster wird die Σ-Kosten der nicht-Lead-Elemente als potenzielles Saving angezeigt | Cluster mit 3 Application-Components × €43K/€48K/€42K → Saving-Range €85K-€91K |
+| **REQ-RED-006** | Recommendation-Engine: pro Cluster automatischer Vorschlag "Lead = X (höchste Maturity), Retire = Y, Z" + Begründung | UI zeigt Recommendation-Card mit "Why this lead" |
+| **REQ-RED-007** | Drill-Down "Why are these redundant?": klickbare Parameter-Breakdown-Bars zeigen pro Pair und pro Parameter Score + Quelle (z.B. Embedding-Distance, Connection-Jaccard) | Hover auf Score-Bar zeigt Tooltip mit Wert |
+| **REQ-RED-008** | One-Click-Action "Apply Recommendation": Lead bleibt, Andere bekommen status='retired' + Connections umgehängt auf Lead | Klick → Confirm-Dialog → Aktion in Audit-Log + Cluster wird auf "resolved" gesetzt |
+
+### Out of Scope (V1)
+- Cross-Layer-Redundanz (z.B. Business-Capability ↔ Application-Service als "doppelt") — komplex, V2
+- Automatische Anwendung ohne Confirm (Hard-Stop: User entscheidet)
+
+---
+
+## UC-DATA-001 — Generator D: Business-Layer → Data-Objects (Spec-Chain-Lücke schließen)
+
+### Goal
+Die Generator-Chain endet aktuell bei Process/Activity (Business-Layer). **Datenobjekte werden nicht generiert** — der Layer-Sprung Business → Information ist eine Lücke. UC-DATA-001 ergänzt Generator D, der aus jedem Business-Process die benötigten Data-Objects ableitet und mit "access"-Relationships verknüpft.
+
+### Warum (BSH-Kontext)
+*"Der Übergang von Business zu Datenobjekten ist momentan gar nicht abgedeckt."*
+
+ArchiMate-Spec-Chain ist nur dann tragfähig, wenn JEDE Layer-Verbindung lückenlos generiert/validiert werden kann:
+
+```
+Motivation → Strategy → Capability → Process → Activity → ApplicationService → ApplicationComponent → Technology
+                                          ↓
+                                    Data-Object ← LÜCKE
+                                          ↓
+                                  Application-Layer Data
+```
+
+Ohne Data-Objects ist die Architektur **datenblind** — Compliance-Mappings (DSGVO/CSRD/LkSG fragen oft konkrete Daten ab), Lineage-Analysen, und Cost-Modelle (Datenvolumen → Storage-Kosten) sind nicht möglich.
+
+### Mechanik
+1. Eingabe: ein Business-Process oder eine Capability
+2. LLM-Prompt: *"Welche Daten produziert/konsumiert dieser Process? Pro Datum: Name, Typ (Customer-PII / Transaktional / Master / Reference), CRUD-Verhalten."*
+3. Output validieren gegen ArchiMate-Data-Object-Rules
+4. Erzeuge Data-Object-Elemente (information layer)
+5. Erzeuge Connections: `Process` --[access:R/W/CRUD]-→ `Data-Object`
+
+### REQs
+
+| REQ | Beschreibung | Akzeptanzkriterium |
+|---|---|---|
+| **REQ-DATA-001** | LLM-Service `generateDataObjectsFromProcess(processId)`: liefert `{name, dataClass, sensitivity, crudOperations}[]` pro Process | Test: BSH "Collect Emissions Data" Process → ≥3 Data-Objects (Emissions-Record, Facility-Master, Audit-Log) |
+| **REQ-DATA-002** | Schema-Validation: jedes generierte Data-Object muss ArchiMate-konform sein (information layer, type ∈ {data_object, data_entity, data_model}) | Validator-Test schlägt fehl wenn LLM unbekannten Type liefert |
+| **REQ-DATA-003** | Auto-Connection: jede generierte Data-Object-Beziehung wird mit korrektem `access`-Relationship-Type angelegt (nicht generic "association") | Manuell: nach Generation hat Process die `access`-Edges in Neo4j |
+| **REQ-DATA-004** | UI: Button "Generate Data-Objects" im PropertyPanel von Process/Capability/Activity-Elementen | Klick → Modal mit LLM-Stream + Preview vor Apply |
+| **REQ-DATA-005** | Bulk-Mode: "Generate Data-Objects for whole project" — iteriert über alle Business-Layer-Elemente, mit Concurrency 5 | Bulk-Run für BSH-Demo → ≥30 Data-Objects neu, ≥60 access-Connections |
+| **REQ-DATA-006** | Data-Lineage-View: Filter im 3D-View "show data flows" → zeigt Data-Objects + access-Connections, alles andere gedimmt | Toggle "Data-Lineage" zeigt aufgeräumte Sicht nur auf Information-Layer |
+| **REQ-DATA-007** | CRUD-Matrix-Export: 2D-Tabelle Process × Data-Object × C/R/U/D als CSV/PDF | Export liefert Datei mit korrekten Markierungen |
+| **REQ-DATA-008** | Sensitivity-Tagging: jedes Data-Object bekommt `sensitivity`-Property (public/internal/confidential/PII). Rendering färbt Data-Objects entsprechend (z.B. PII = rot) | BSH-Demo zeigt PII-Daten (Employee-Records) rot |
+| **REQ-DATA-009** | Compliance-Hook: bei `sensitivity=PII` automatisches Mapping gegen DSGVO-Anforderungen (Art. 5/6/9) wenn DSGVO-Standard im Workspace existiert | Auto-Mapping erscheint in Compliance-Matrix für PII-Elemente |
+
+### Out of Scope (V1)
+- Automatische Field-Level-Schemas pro Data-Object (V2 — bräuchte Datenbank-Inspection-Connectoren)
+- Reverse: Data-Object → suggested Process (V2)
+
+### Bestehende Bausteine
+- `aiGenerator.routes.ts` Pattern für Generator-A/B/C — Generator-D folgt demselben Aufbau
+- ArchiMate-Rules in `archimate-rules.ts` haben bereits `access`-Relationship-Definitionen
+- Standard-Mapping kann erweitert werden um data-object-spezifische Compliance-Regeln
+
+---
+
+## UC-EXEC-001 — C-Level Executive Briefing Board
+
+### Goal
+Eine **einseitige, vereinfachte Sicht** auf die Architektur — gemacht für CEO/CFO/Board-Meetings. Keine Element-IDs, keine Type-Codes, keine Layer-Diagramme. Nur **Zahlen, Daten, Fakten** in der Sprache, in der ein Vorstand denkt.
+
+### Warum (BSH-Kontext)
+*"Für C-Level ist die Vorstellung einer Architektur zu komplex — gibt es ein Board um Zahlen, Daten, Fakten einfach, verständlich zu präsentieren?"*
+
+Das aktuelle Dashboard zeigt Portfolio-KPIs aber spricht weiterhin EA-Sprache (Compliance-Coverage, Risk-Levels, TOGAF-Phasen). Ein Vorstand fragt:
+- "Was sind unsere drei größten Risiken?"
+- "Wo liegen wir im Plan?"
+- "Was haben wir letzten Monat erreicht?"
+- "Was kostet uns die nächste Welle?"
+
+Die EA-Software muss diese Fragen in einer Sprache beantworten, die ohne Erklärung verstanden wird.
+
+### Design-Prinzipien
+1. **One-Pager** — alles passt auf einen Bildschirm / eine A4-Seite
+2. **Keine Jargon** — "Capability" wird zu "Geschäftsfähigkeit", "Risk Level: critical" wird zu "akute Bedrohung"
+3. **Trends statt Snapshots** — wo möglich Sparklines (was hat sich in 30/90 Tagen verändert?)
+4. **Top-3 statt Vollständigkeit** — Vorstände wollen die wichtigsten Punkte, nicht Listen
+5. **Print-fähig** — PDF-Export A4 hochformat für Board-Mappen
+
+### REQs
+
+| REQ | Beschreibung | Akzeptanzkriterium |
+|---|---|---|
+| **REQ-EXEC-001** | Neue Route + View `/projects/:projectId/executive-briefing` separat vom Dashboard. Auth wie Dashboard. | URL erreichbar, Layout one-pager |
+| **REQ-EXEC-002** | 5 Top-Level-Kacheln: (1) Health-Score "Stabilität", (2) Critical-Hotspots-Count "Akute Bedrohungen", (3) Roadmap-Progress "Plan-Erfüllung", (4) Compliance-Coverage "Gesetzes-Erfüllung", (5) Budget-Burn "Investition" | Alle 5 Werte aus existing Stores; jede Kachel mit Big-Number + Trend-Sparkline |
+| **REQ-EXEC-003** | Trend-Lines: für jede Top-Level-Metrik 30/90/180-Tage-Verlauf. Datenbasis aus täglichen Snapshots (neuer Cron-Job). | Sparkline rendert min. 30 Datenpunkte; toggle 30/90/180 Tage |
+| **REQ-EXEC-004** | "Top 3 Action Items" Card: AI-kuratiert aus Critical-Hotspots × Roadmap-Deviations × Compliance-Gaps. Pro Item: Klartext-Beschreibung, Impact, empfohlene nächste Aktion | Card zeigt max 3 Items, jeder Eintrag in Klartext (kein Element-ID) |
+| **REQ-EXEC-005** | Plain-Language-Renderer: Service der Element-Types/Layer/Risk-Levels in Klartext übersetzt. Konfigurierbare Sprache (DE/EN). | "application_component" → "IT-System", "risk:critical" → "akute Bedrohung" |
+| **REQ-EXEC-006** | One-Page-PDF-Export: Klick "Briefing Drucken" → PDF A4 hochformat mit allen Kacheln, optimiert für Schwarz-Weiß-Druck | PDF lädt, ist 1 Seite, lesbar in S/W |
+| **REQ-EXEC-007** | Auto-Briefing-Mode: Vollbild-Modus für Board-Room-Display (Smart-TV / Beamer). Rotiert alle X Sekunden zwischen 3-4 Detail-Sichten (Risk-Heatmap, Top-Action-Items, Roadmap-Progress, Budget) | Klick "Beamer-Mode" → Fullscreen, Auto-Rotation alle 15s |
+| **REQ-EXEC-008** | "Was hat sich seit letzten Briefing verändert?"-Card: Diff-Highlight (z.B. "2 neue Action-Items, 1 Compliance-Gap geschlossen") | Card zeigt Diff zum letzten Briefing-Snapshot |
+| **REQ-EXEC-009** | Branding-Mode: Logo-Upload + Color-Theme pro Workspace. PDF + Briefing-View nutzen Brand-Farben | Settings → Logo + 2-Color-Picker; PDF zeigt Logo |
+
+### Out of Scope (V1)
+- Live-Multi-Project-Übersicht (Konzern-Briefing über alle Subsidiaries) — V2
+- Editorial-Mode (Vorstandsassistenz kann Action-Items überschreiben) — V2
+- Voice-Briefing (TTS-Audio für Auto-Mode) — V3
+
+### Bestehende Bausteine
+- `Dashboard.tsx` — bietet existierende KPI-Berechnungen, wird **nicht** ersetzt sondern komplementiert
+- `report.service.ts` — PDF-Generation-Pipeline existiert, neue Layout-Variante reicht
+- `criticality.service.ts` (UC-CRIT-001) — liefert Top-Action-Items; UC-EXEC-001 hängt von UC-CRIT-001 ab
+
+---
 
 **Bevor ein einziger Code-Edit passiert** — siehe `feedback_preflight_before_plan`:
 
@@ -163,14 +355,39 @@ Es existieren **zwei verschiedene "Status"-Konzepte**, die nicht vermischt werde
 3. **User-Confirmation** der Reihenfolge → erst dann `writing-plans` ausführen
 4. **RVTM-Datei** pro UC, dann implementation via `subagent-driven-development`
 
-**Geschätzter Scope:**
-- UC-CRIT-001: **medium** (1-2 Sprints, viel Konzept-Arbeit für die "neuralgisch"-Definition, wenig neue Infrastruktur)
-- UC-GAP-001: **large** (3-4 Sprints, neuer Project-Typ + neuer Diff-Viewer, baut aber auf 4 existierenden Bausteinen)
-- UC-PLATEAU-001: **small-medium** (1 Sprint, Schema-Migration + UI-Erweiterung + neuer Endpoint; rein additiv, kein Refactor)
+**Geschätzter Scope (alle 7 UCs):**
 
-**Empfohlene Reihenfolge (vor Pre-Flight subjektiv):**
-1. **UC-PLATEAU-001 zuerst** — kleinster Aufwand, höchster Daily-Value, BSH sieht direkt Fortschritt im aktuellen Demo-Projekt
-2. **UC-CRIT-001 als zweites** — Konzept-Workshop mit BSH parallel zum Sprint, dann Implementation
-3. **UC-GAP-001 als drittes** — größter Hebel, aber lohnt einen vorgelagerten Concept-Workshop, weil "Standard→ArchiMate"-Mapping nicht-trivial ist
+| UC | Scope | Sprints | Abhängigkeiten | Konzept-Workshop nötig |
+|---|---|---|---|---|
+| UC-PLATEAU-001 | small-medium | 1 | keine | nein |
+| UC-DATA-001 | medium | 1-2 | keine | leicht (Sensitivity-Klassen) |
+| UC-EXEC-001 | medium | 1-2 | UC-CRIT-001 (für Top-Action-Items) | ja (Plain-Language-Mapping) |
+| UC-RED-001 | medium | 2 | Embeddings-Infra | ja (Parameter-Gewichte) |
+| UC-CRIT-001 | medium | 1-2 | keine (Konzept-Workshop) | ja ("neuralgisch"-Definition) |
+| UC-GAP-001 | large | 3-4 | keine | ja (Standard→ArchiMate-Mapping) |
+| UC-HARM-001 | large | 3 | UC-GAP-001 (Diff-Viewer geteilt) | ja (Konflikt-Resolution-Workflow) |
 
-Insgesamt **post-Demo-Backlog**, nicht kurzfristig. UC-GAP-001 ist die mächtigste der drei Ideen — wenn sich BSH dafür begeistert, lohnt sich ein Konzept-Workshop.
+**Empfohlene Reihenfolge (vor Pre-Flight + Scoring):**
+
+**Tier 1 — Quick-Wins (Sprint 1-2)** — sofortiger Daily-Value, kleine Footprints:
+1. **UC-PLATEAU-001** — Wave-Element-Done-Häkchen → BSH sieht direkt Fortschritt im aktuellen Demo-Projekt
+2. **UC-DATA-001** — Generator-D Business→Data → schließt klaffende Spec-Chain-Lücke, große Compliance-Wirkung
+
+**Tier 2 — Konzept-Arbeit + Sprint (Sprint 3-5)** — parallel zum Workshop:
+3. **UC-CRIT-001** — Workshop "Was ist neuralgisch?" mit BSH, dann 7-Faktor-Score implementieren
+4. **UC-EXEC-001** — baut auf UC-CRIT-001 für Top-Action-Items; Workshop für Plain-Language-Mapping
+
+**Tier 3 — Strategische Hebel (Sprint 6+)** — größter Business-Impact, größter Scope:
+5. **UC-RED-001** — wenn Embeddings-Infrastruktur steht (kann mit anderen UCs synergieren)
+6. **UC-GAP-001** — Standard-as-Target — Wettbewerbsvorteil, braucht Concept-Workshop
+7. **UC-HARM-001** — Architecture-Harmonization — baut auf UC-GAP-001-Diff-Viewer
+
+**Synergien zu nutzen:**
+- UC-GAP-001 + UC-HARM-001 teilen sich Diff-Viewer (REQ-GAP-004 / REQ-HARM-001-005)
+- UC-CRIT-001 + UC-EXEC-001 teilen sich Critical-Hotspots-Daten
+- UC-RED-001 + UC-DATA-001 nutzen beide Embedding-Infrastruktur (1× aufbauen, 2× nutzen)
+- UC-PLATEAU-001 + UC-EXEC-001 teilen sich Roadmap-Progress-Berechnung
+
+**Ressourcen-Schätzung gesamt:** ~12-16 Sprints für alle 7 UCs bei sequenzieller Bearbeitung. Bei 2 Tracks parallel: ~8-10 Sprints.
+
+UC-GAP-001 + UC-HARM-001 sind zusammen **die mächtigste Story** — wenn BSH sich dafür begeistert, ist das ein klarer Konzern-Vertrag-Argument. Beide brauchen aber Concept-Work upfront.
