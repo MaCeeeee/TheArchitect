@@ -765,7 +765,10 @@ Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" 
     onChunk(text);
   };
 
-  const POLICY_MAX_TOKENS = 4096;
+  // 4096 was truncating Haiku's policy arrays for German-law standards with
+  // 20+ sections. 8192 keeps headroom; if the model still hits the cap we
+  // fall through to per-object salvage below.
+  const POLICY_MAX_TOKENS = 8192;
 
   const parseAndFinish = async () => {
     if (!fullResponse.trim()) {
@@ -774,22 +777,55 @@ Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" 
       return;
     }
 
-    try {
-      // Try to extract JSON array — handle markdown code blocks too
-      const cleaned = fullResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const drafts: PolicyDraft[] = JSON.parse(jsonMatch[0]);
+    // Strip markdown fences (Haiku/Sonnet wrap arrays in ```json ... ```)
+    const cleaned = fullResponse.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+
+    // Path 1: clean array parse
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      try {
+        const drafts: PolicyDraft[] = JSON.parse(arrayMatch[0]);
         console.log(`[AI] Extracted ${drafts.length} policy drafts`);
         await onDone(drafts);
-      } else {
-        console.warn(`[AI] No JSON array found in response (${fullResponse.length} chars)`);
-        onError(new Error('AI response did not contain valid policy rules — the standard may lack concrete requirements'));
+        return;
+      } catch {
+        // fall through to salvage
       }
-    } catch (parseErr) {
-      console.warn(`[AI] Failed to parse policy drafts (${fullResponse.length} chars):`, (parseErr as Error).message);
-      onError(new Error('Failed to parse AI response — the output may have been truncated. Try again.'));
     }
+
+    // Path 2: salvage individual policy objects from a truncated/malformed
+    // array. Match {...} blocks at top level (depth=1) so partial output
+    // still yields usable drafts instead of zero.
+    const drafts: PolicyDraft[] = [];
+    let depth = 0;
+    let start = -1;
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i];
+      if (ch === '{') {
+        if (depth === 0) start = i;
+        depth++;
+      } else if (ch === '}') {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          try {
+            const obj = JSON.parse(cleaned.slice(start, i + 1));
+            if (obj && typeof obj === 'object' && obj.name && Array.isArray(obj.rules)) {
+              drafts.push(obj);
+            }
+          } catch { /* skip malformed object */ }
+          start = -1;
+        }
+      }
+    }
+
+    if (drafts.length > 0) {
+      console.log(`[AI] Salvaged ${drafts.length} policy drafts from truncated response (${fullResponse.length} chars)`);
+      await onDone(drafts);
+      return;
+    }
+
+    console.warn(`[AI] Failed to parse policy drafts (${fullResponse.length} chars), no salvageable objects`);
+    onError(new Error('Failed to parse AI response — the output may have been truncated. Try again.'));
   };
 
   const userMessage = 'Extract policy rules from the standard sections as JSON.';
