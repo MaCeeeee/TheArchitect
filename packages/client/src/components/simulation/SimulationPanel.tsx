@@ -433,7 +433,9 @@ export default function SimulationPanel() {
         {viewMode === 'running' && (
           <RunningView
             currentRound={currentRound}
-            maxRounds={maxRounds}
+            // Always read from the in-flight run's config — the local slider
+            // value can drift if the user changed it after pressing Start.
+            maxRounds={activeRun?.config?.maxRounds ?? maxRounds}
             currentAgent={currentAgent}
             streamingText={streamingText}
             fatigueTimeline={fatigueTimeline}
