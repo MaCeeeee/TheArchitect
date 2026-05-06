@@ -59,22 +59,29 @@ export async function sendVerificationEmail(
     return true;
   }
 
-  await transporter.sendMail({
-    from: getFrom(),
-    to,
-    subject: `${APP_NAME} — Verify your email`,
-    html: emailWrapper(`
-      <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
-        Welcome to <strong style="color: ${TEXT_PRIMARY};">TheArchitect</strong>! Please verify your email address to activate your account. This link expires in <strong style="color: ${TEXT_PRIMARY};">24 hours</strong>.
-      </p>
-      ${ctaButton(verifyUrl, 'Verify Email')}
-      <p style="margin: 24px 0 0 0; font-size: 12px; color: ${TEXT_DIM}; line-height: 1.5;">
-        If you didn't create an account, you can safely ignore this email.
-      </p>
-    `),
-  });
-
-  return true;
+  // Same defensive pattern as sendPasswordResetEmail — don't let SMTP errors
+  // 500 the registration request.
+  try {
+    await transporter.sendMail({
+      from: getFrom(),
+      to,
+      subject: `${APP_NAME} — Verify your email`,
+      html: emailWrapper(`
+        <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
+          Welcome to <strong style="color: ${TEXT_PRIMARY};">TheArchitect</strong>! Please verify your email address to activate your account. This link expires in <strong style="color: ${TEXT_PRIMARY};">24 hours</strong>.
+        </p>
+        ${ctaButton(verifyUrl, 'Verify Email')}
+        <p style="margin: 24px 0 0 0; font-size: 12px; color: ${TEXT_DIM}; line-height: 1.5;">
+          If you didn't create an account, you can safely ignore this email.
+        </p>
+      `),
+    });
+    return true;
+  } catch (err) {
+    console.error(`[email] sendVerificationEmail FAILED for ${to}:`, err);
+    console.error(`[email] Verify URL (use as fallback): ${verifyUrl}`);
+    return false;
+  }
 }
 
 export async function sendPasswordResetEmail(
@@ -89,22 +96,31 @@ export async function sendPasswordResetEmail(
     return true;
   }
 
-  await transporter.sendMail({
-    from: getFrom(),
-    to,
-    subject: `${APP_NAME} — Password Reset`,
-    html: emailWrapper(`
-      <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
-        You requested a password reset. Click the button below to set a new password. This link expires in <strong style="color: ${TEXT_PRIMARY};">1 hour</strong>.
-      </p>
-      ${ctaButton(resetUrl, 'Reset Password')}
-      <p style="margin: 24px 0 0 0; font-size: 12px; color: ${TEXT_DIM}; line-height: 1.5;">
-        If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
-      </p>
-    `),
-  });
-
-  return true;
+  // Don't let SMTP failures bubble up and 500 the /forgot-password route —
+  // the reset token is already persisted, so the user can still use the link
+  // if it reaches them via a side channel (admin export). Log loudly so
+  // production SMTP issues are visible in server logs / Sentry.
+  try {
+    await transporter.sendMail({
+      from: getFrom(),
+      to,
+      subject: `${APP_NAME} — Password Reset`,
+      html: emailWrapper(`
+        <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
+          You requested a password reset. Click the button below to set a new password. This link expires in <strong style="color: ${TEXT_PRIMARY};">1 hour</strong>.
+        </p>
+        ${ctaButton(resetUrl, 'Reset Password')}
+        <p style="margin: 24px 0 0 0; font-size: 12px; color: ${TEXT_DIM}; line-height: 1.5;">
+          If you didn't request this, you can safely ignore this email. Your password will remain unchanged.
+        </p>
+      `),
+    });
+    return true;
+  } catch (err) {
+    console.error(`[email] sendPasswordResetEmail FAILED for ${to}:`, err);
+    console.error(`[email] Reset URL (use as fallback): ${resetUrl}`);
+    return false;
+  }
 }
 
 export async function sendWaitlistAdminNotification(
