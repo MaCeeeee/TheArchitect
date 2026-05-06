@@ -1,7 +1,8 @@
 # BSH Feedback-Capture (Demo 2026-05-06)
 
-> **Status:** Draft / Feedback-Erfassung. **Pre-Flight-Check und Linear-Issue-Erstellung stehen noch aus** (siehe `feedback_preflight_before_plan` — Pre-Flight muss VOR dem Plan laufen).
-> **8-Kriterien-Scoring:** für jede REQ in einem späteren Schritt (siehe `feedback_requirement_scoring`).
+> **Status:** Tier-1-UCs angelegt in Linear (UC-PLATEAU-001 = THE-217, UC-DATA-001 = THE-228). Tier 2/3 noch UC-Drafts — Pre-Flight folgt nach Tier-1-Sprint.
+> **8-Kriterien-Scoring:** noch ausstehend pro REQ (siehe `feedback_requirement_scoring`).
+> **Pre-Flight-Bericht (Tier 1):** siehe Section "Pre-Flight-Findings" am Ende dieses Dokuments.
 
 **Quelle:** Live-Feedback während BSH-Demo + Nachgespräch mit BSH-Kollegen, **sieben Kernpunkte**:
 
@@ -391,3 +392,63 @@ Die EA-Software muss diese Fragen in einer Sprache beantworten, die ohne Erklär
 **Ressourcen-Schätzung gesamt:** ~12-16 Sprints für alle 7 UCs bei sequenzieller Bearbeitung. Bei 2 Tracks parallel: ~8-10 Sprints.
 
 UC-GAP-001 + UC-HARM-001 sind zusammen **die mächtigste Story** — wenn BSH sich dafür begeistert, ist das ein klarer Konzern-Vertrag-Argument. Beide brauchen aber Concept-Work upfront.
+
+---
+
+## Pre-Flight-Findings & Linear-Issues (Tier 1, durchgeführt 2026-05-06)
+
+### UC-PLATEAU-001 → [THE-217](https://linear.app/thearchitect/issue/THE-217)
+
+**Linear-Search Ergebnis:** Parent-UC **THE-60 (UC-ROADMAP-003 TPCV)** existiert, "In Progress", 13 Sub-Issues davon 12 Done. Plateau-View ist Code-Complete mit 33 Unit-Tests. UC-PLATEAU-001 ist eine **additive Erweiterung** — daher als Child von THE-60 angelegt.
+
+**Codebase-Scan Ergebnis:**
+- Kein `implementedAt` / `isImplemented` / `markImplemented` im Code → clean slate
+- `TransformationRoadmap.waves` ist `Schema.Types.Mixed` → additive Schema-Erweiterung ohne Migration
+- Bestehende Dateien zur Erweiterung verifiziert: `WaveCard.tsx`, `plateauComputation.ts`, `PlateauHUD.tsx`, `roadmap.routes.ts`
+- Stale UI-Text in `RoadmapPanel.tsx:451` ("Track implementation progress next") — wird durch REQ-PLATEAU-005 zu echtem Feature
+
+**Linear-Issues angelegt:**
+| ID | Titel |
+|---|---|
+| THE-217 | UC-PLATEAU-001 (Parent unter THE-60) |
+| THE-218 | REQ-PLATEAU-001: Datenmodell `WaveElement.implementedAt/By/Note` |
+| THE-219 | REQ-PLATEAU-002: PATCH-Endpoint Wave-Element-Implementation |
+| THE-220 | REQ-PLATEAU-003: UI-Checkbox in WaveCard mit Optimistic Update |
+| THE-221 | REQ-PLATEAU-004: Plateau-Progress-Bar (color-coded) |
+| THE-222 | REQ-PLATEAU-005: Roadmap-Header Gesamt-Progress + Jump-to-Next |
+| THE-223 | REQ-PLATEAU-006: 3D-Check-Badge auf implementierten Elementen |
+| THE-224 | REQ-PLATEAU-007: Filter-Toggle Outstanding/Implemented/All |
+| THE-225 | REQ-PLATEAU-008: Optional Element-Status-Sync mit Confirm-Dialog |
+| THE-226 | REQ-PLATEAU-009: Audit-Trail-Eintrag pro Implementation-Toggle |
+| THE-227 | REQ-PLATEAU-010: RBAC ROADMAP_UPDATE-Permission |
+
+### UC-DATA-001 → [THE-228](https://linear.app/thearchitect/issue/THE-228)
+
+**Linear-Search Ergebnis:** Parent-UC **THE-188 (UC-ADD-004 AI-Auto-Generate Architecture-Hierarchy)** existiert, "In Progress" mit Generator A/B/C im Scope. Generator-D (Process → Data-Objects) ist **nicht** in THE-188 — daher als Child von THE-188 angelegt für konzeptuelle Einheit.
+
+**Codebase-Scan Ergebnis:**
+- `data_object` ArchiMate-Type bereits in 14 Dateien unterstützt: Parsers (archimate-exchange, leanix), Connectors (sap, servicenow, github), Validators (remediation, smart-cost), Blueprint-Defaults, AI-Mapping-Rules
+- `aiGenerator.routes.ts` hat 6 existierende POST-Routen (Generator A/B/C-Varianten) — Generator-D folgt demselben Pattern
+- `activityGenerator.service.ts` ist 1:1-Template für `dataObjectGenerator.service.ts`
+- ArchiMate-Rules in `archimate-rules.ts` haben `access`-Relationship-Definitionen für Process→Data-Object
+- Keine bestehende LLM-driven Process→DataObject-Extraction → clean slate
+
+**Linear-Issues angelegt:**
+| ID | Titel |
+|---|---|
+| THE-228 | UC-DATA-001 (Parent unter THE-188) |
+| THE-229 | REQ-DATA-001: LLM-Service generateDataObjectsFromProcess |
+| THE-230 | REQ-DATA-002: Schema-Validation gegen ArchiMate-Data-Object-Rules |
+| THE-231 | REQ-DATA-003: Auto-Connection Process → Data-Object via access |
+| THE-232 | REQ-DATA-004: UI-Button "Generate Data-Objects" in PropertyPanel |
+| THE-233 | REQ-DATA-005: Bulk-Mode "Generate Data-Objects for whole project" |
+| THE-234 | REQ-DATA-006: Data-Lineage-View (3D-Filter) |
+| THE-235 | REQ-DATA-007: CRUD-Matrix-Export (CSV/PDF) |
+| THE-236 | REQ-DATA-008: Sensitivity-Tagging mit Color-Coding |
+| THE-237 | REQ-DATA-009: Compliance-Hook PII → Auto-Mapping gegen DSGVO Art. 5/6/9 |
+
+### Pre-Flight-Outcome
+**Beide UCs bestätigt als rein additiv** — keine Refactor-Risiken, kein Konflikt mit existierenden Issues, klare Wiederverwendung etablierter Patterns. **Implementation kann nach User-Confirmation und 8-Kriterien-Scoring starten.**
+
+### Tier 2 + 3 (UC-CRIT-001, UC-EXEC-001, UC-RED-001, UC-GAP-001, UC-HARM-001)
+Pre-Flight + Linear-Issues für diese UCs sind **nach Tier-1-Sprint** geplant — sie brauchen vorgelagerte Concept-Workshops mit BSH (siehe Empfohlene Reihenfolge weiter oben).
