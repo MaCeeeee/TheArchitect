@@ -33,6 +33,16 @@ export interface WaveElement {
   costModel?: 'n8n' | 'enterprise';
   estimatedHours?: number;
   topologyComplexity?: number; // 1.0 - 10.0
+  // ─── Implementation Tracking (UC-PLATEAU-001 / REQ-PLATEAU-001) ─────────
+  // null/undefined = not yet implemented in reality. The architect ticks
+  // this checkbox in the Plateau view to track real-world execution
+  // progress against the planned roadmap.
+  // Important: this is roadmap-execution state, NOT to be confused with
+  // element.status (current/target/transitional/retired) which lives in
+  // the Neo4j ArchitectureElement and reflects the actual architecture.
+  implementedAt?: string | null;       // ISO timestamp
+  implementedBy?: string | null;       // userId who toggled
+  implementationNote?: string | null;  // optional free-text note
 }
 
 // ─── Wave Metrics ───
