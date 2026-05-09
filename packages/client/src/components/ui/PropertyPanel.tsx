@@ -13,6 +13,8 @@ import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, t
 import type { ElementType, ArchitectureElement, Connection } from '@thearchitect/shared/src/types/architecture.types';
 import { useProcessGenerator, type GeneratedProcess } from '../../hooks/useProcessGenerator';
 import ProcessSuggestionModal from '../copilot/ProcessSuggestionModal';
+import { useDataObjectGenerator, type GeneratedDataObject } from '../../hooks/useDataObjectGenerator';
+import DataObjectSuggestionModal from '../copilot/DataObjectSuggestionModal';
 import { useActivityViewStore } from '../../stores/activityViewStore';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
 
@@ -126,8 +128,47 @@ export default function PropertyPanel() {
     }
   };
 
+  // ─── Generator D (UC-DATA-001): AI-Generate Data-Objects for selected Process/Capability/Activity ───
+  const dataObjectGenerator = useDataObjectGenerator(projectId);
+  const [showDataObjectModal, setShowDataObjectModal] = useState(false);
+
+  const handleGenerateDataObjects = async () => {
+    if (!element) return;
+    setShowDataObjectModal(true);
+    await dataObjectGenerator.generate(element.id);
+  };
+
+  const handleApplyDataObjects = async (selected: GeneratedDataObject[]) => {
+    if (!element || !projectId) return;
+    const result = await dataObjectGenerator.apply(element.id, selected, {
+      x: element.position3D?.x ?? 0,
+      z: element.position3D?.z ?? 0,
+    });
+    if (result.success) {
+      try {
+        const [elemRes, connRes] = await Promise.all([
+          architectureAPI.getElements(projectId),
+          architectureAPI.getConnections(projectId),
+        ]);
+        const newElements = (elemRes.data?.data ?? elemRes.data) as ArchitectureElement[];
+        const newConnections = (connRes.data?.data ?? connRes.data) as Connection[];
+        useArchitectureStore.setState({ elements: newElements, connections: newConnections });
+      } catch {
+        // non-blocking
+      }
+      toast.success(`${selected.length} data-object${selected.length === 1 ? '' : 's'} added`);
+      setShowDataObjectModal(false);
+      dataObjectGenerator.reset();
+    } else {
+      toast.error(result.error || 'Failed to apply data-objects');
+    }
+  };
+
   const isCapabilityType = element
     ? element.type === 'business_capability' || element.type === 'capability'
+    : false;
+  const isDataObjectGenerableType = element
+    ? ['process', 'business_process', 'business_capability', 'capability', 'activity'].includes(element.type)
     : false;
 
   const isRequirementType = element?.type === 'requirement';
@@ -357,6 +398,29 @@ export default function PropertyPanel() {
             </button>
             <p className="mt-1.5 text-[9px] text-[var(--text-tertiary)] leading-snug">
               Decompose this capability into 3-7 business processes using project context + uploaded standards (RAG).
+            </p>
+          </Section>
+        )}
+
+        {/* Generator D (UC-DATA-001): AI-Generate Data-Objects for Process / Capability / Activity */}
+        {isDataObjectGenerableType && (
+          <Section title="AI Data-Objects">
+            <button
+              type="button"
+              onClick={handleGenerateDataObjects}
+              className="w-full flex items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-semibold transition hover:scale-[1.01]"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                color: '#ffffff',
+                boxShadow: '0 0 10px rgba(124,58,237,0.30)',
+              }}
+              title="Claude derives the data-objects this element produces or consumes (with sensitivity tagging)"
+            >
+              <Sparkles size={12} />
+              Generate Data-Objects with AI
+            </button>
+            <p className="mt-1.5 text-[9px] text-[var(--text-tertiary)] leading-snug">
+              Closes the spec-chain gap to the Information-Layer. PII/Confidential/Internal/Public auto-classified.
             </p>
           </Section>
         )}
@@ -633,6 +697,24 @@ export default function PropertyPanel() {
         durationMs={processGenerator.state.durationMs}
         errorMessage={processGenerator.state.error}
         onApply={handleApplyProcesses}
+      />
+
+      {/* Generator D (UC-DATA-001): Data-Object-Suggestion Modal */}
+      <DataObjectSuggestionModal
+        isOpen={showDataObjectModal}
+        onClose={() => {
+          setShowDataObjectModal(false);
+          dataObjectGenerator.reset();
+        }}
+        status={dataObjectGenerator.state.status}
+        dataObjects={dataObjectGenerator.state.dataObjects}
+        ragChunks={dataObjectGenerator.state.ragChunks}
+        processName={dataObjectGenerator.state.processName ?? element.name}
+        existingDataObjectCount={dataObjectGenerator.state.existingDataObjectCount}
+        durationMs={dataObjectGenerator.state.durationMs}
+        rejectedCount={dataObjectGenerator.state.rejectedCount}
+        errorMessage={dataObjectGenerator.state.error}
+        onApply={handleApplyDataObjects}
       />
     </aside>
   );

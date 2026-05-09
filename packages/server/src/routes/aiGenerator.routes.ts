@@ -2,6 +2,7 @@
 // Generator A: Process → Activities (SSE stream)
 // Generator B: Capability → Processes (SSE stream + apply)
 // Generator C: PDF/Document → Full-Hierarchy (SSE stream + apply)
+// Generator D: Process → Data-Objects (SSE stream + apply) — UC-DATA-001
 
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
@@ -27,6 +28,11 @@ import {
   ExtractedHierarchy,
   Stakeholder as AIStakeholder,
 } from '../services/architectureGenerator.service';
+import {
+  generateDataObjectsForProcess,
+  GeneratedDataObject,
+  DataObjectGeneratorEvent,
+} from '../services/dataObjectGenerator.service';
 import { extractText, isSupportedDocument, getSupportedFormats } from '../services/document-parser.service';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
@@ -190,6 +196,188 @@ router.post(
       });
     } catch (err) {
       log.error({ err, projectId, processId }, '[AI-Generator] apply-activities failed');
+      res.status(500).json({ error: (err as Error).message });
+    }
+  },
+);
+
+// ─── Generator D — Process → Data-Objects (SSE) — UC-DATA-001 ─────────────
+
+router.post(
+  '/projects/:projectId/processes/:processId/generate-data-objects',
+  requireProjectAccess('viewer'),
+  rateLimit({ windowMs: 60 * 60 * 1000, max: 5, name: 'aiGenerator-data-objects' }),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const processId = String(req.params.processId);
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    const sendEvent = (event: DataObjectGeneratorEvent) => {
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+    };
+
+    try {
+      const result = await generateDataObjectsForProcess({ projectId, processId, onEvent: sendEvent });
+      const userId = (req as any).user?._id?.toString();
+      if (userId) {
+        await createAuditEntry({
+          userId,
+          projectId,
+          action: 'ai_generate_data_objects',
+          entityType: 'architecture_element',
+          entityId: processId,
+          after: {
+            dataObjectsProposed: result.dataObjects.length,
+            rejectedCount: result.rejectedCount,
+            tokenEstimate: result.tokenEstimate,
+            durationMs: result.durationMs,
+          },
+          ip: req.ip || req.socket.remoteAddress || '',
+          userAgent: req.get('user-agent') || '',
+          riskLevel: 'low',
+        });
+      }
+    } catch (err) {
+      log.error({ err, projectId, processId }, '[AI-Generator] data-object generation failed');
+      sendEvent({ type: 'error', message: (err as Error).message });
+    }
+
+    res.write('data: [DONE]\n\n');
+    res.end();
+  },
+);
+
+// ─── Apply Data-Objects (bulk persist after user-accept) — UC-DATA-001 ────
+
+interface ApplyDataObjectsRequest {
+  dataObjects: GeneratedDataObject[];
+  parentX?: number;
+  parentZ?: number;
+}
+
+router.post(
+  '/projects/:projectId/processes/:processId/apply-data-objects',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const processId = String(req.params.processId);
+    const body = req.body as ApplyDataObjectsRequest;
+
+    if (!Array.isArray(body?.dataObjects) || body.dataObjects.length === 0) {
+      return res.status(400).json({ error: 'dataObjects array is required' });
+    }
+
+    const parentX = body.parentX ?? 0;
+    const parentZ = body.parentZ ?? 0;
+    const INFORMATION_LAYER_Y = 4; // matches LAYER_Y.information
+
+    const createdElementIds: string[] = [];
+    const createdConnectionIds: string[] = [];
+
+    try {
+      for (let i = 0; i < body.dataObjects.length; i++) {
+        const d = body.dataObjects[i];
+        // Reuse-by-name (V1): if a data-object with this exact name already
+        // exists in the project, link to it instead of creating a duplicate.
+        // V2 will use embedding-similarity for semantic reuse — see
+        // docs/strategy/2026-05-06-predictive-architecture.md.
+        const existing = await runCypher(
+          `MATCH (e:ArchitectureElement {projectId: $projectId, name: $name})
+           WHERE e.type IN ['data_object', 'data_entity', 'data_model']
+           RETURN e.id AS id LIMIT 1`,
+          { projectId, name: d.name },
+        );
+
+        let dataObjectId: string;
+        if (existing.length > 0) {
+          dataObjectId = existing[0].get('id') as string;
+        } else {
+          dataObjectId = `${processId}-do-ai-${Date.now()}-${i + 1}`;
+          createdElementIds.push(dataObjectId);
+
+          const metadata = {
+            source: 'ai-generated',
+            aiGenerated: true,
+            aiGeneratedAt: new Date().toISOString(),
+            aiSourceProcessId: processId,
+            sensitivity: d.sensitivity,
+            dataClass: d.dataClass,
+          };
+
+          // Spread data-objects horizontally next to the parent process at
+          // information-layer height. V2 might do smarter graph-aware layout.
+          const offsetX = parentX + (i - body.dataObjects.length / 2) * 3;
+
+          await runCypher(
+            `CREATE (e:ArchitectureElement {
+              id: $id, projectId: $projectId, type: $type, name: $name,
+              description: $description, layer: 'information', togafDomain: 'data',
+              maturityLevel: 3, riskLevel: 'low', status: 'current',
+              posX: $posX, posY: $posY, posZ: $posZ,
+              metadataJson: $metadataJson,
+              createdAt: datetime(), updatedAt: datetime()
+            }) RETURN e`,
+            {
+              id: dataObjectId,
+              projectId,
+              type: d.archimateType,
+              name: d.name,
+              description: d.description,
+              posX: offsetX,
+              posY: INFORMATION_LAYER_Y,
+              posZ: parentZ,
+              metadataJson: JSON.stringify(metadata),
+            },
+          );
+        }
+
+        // Process --access--> Data-Object
+        // Map CRUD letters to ArchiMate access type:
+        //   only R     → read
+        //   only W/U/D → write
+        //   any combination → read-write
+        const ops = d.crudOperations.toUpperCase();
+        const reads = ops.includes('R');
+        const writes = /[CUD]/.test(ops);
+        const accessLabel = reads && writes ? 'read-write' : writes ? 'write' : 'read';
+
+        const connectionId = uuid();
+        await runCypher(
+          `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
+                 (d:ArchitectureElement {id: $dataId, projectId: $projectId})
+           MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $dataId, type: 'access'}]->(d)
+           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+           ON MATCH  SET r.label = coalesce($label, r.label)
+           RETURN r.id AS id`,
+          { processId, projectId, dataId: dataObjectId, connId: connectionId, label: accessLabel },
+        );
+        createdConnectionIds.push(connectionId);
+      }
+
+      log.info(
+        {
+          projectId,
+          processId,
+          dataObjectsCreated: createdElementIds.length,
+          connectionsCreated: createdConnectionIds.length,
+        },
+        '[AI-Generator] data-objects applied successfully',
+      );
+
+      res.json({
+        success: true,
+        dataObjectIds: createdElementIds,
+        connectionIds: createdConnectionIds,
+        count: createdElementIds.length,
+      });
+    } catch (err) {
+      log.error({ err, projectId, processId }, '[AI-Generator] apply-data-objects failed');
       res.status(500).json({ error: (err as Error).message });
     }
   },
