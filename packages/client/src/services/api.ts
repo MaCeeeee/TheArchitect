@@ -516,6 +516,18 @@ export const roadmapAPI = {
     api.delete(`/projects/${projectId}/roadmaps/${roadmapId}`),
   regenerate: (projectId: string, roadmapId: string, config: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/roadmaps/${roadmapId}/regenerate`, config),
+  // UC-PLATEAU-001 / REQ-PLATEAU-002: toggle wave-element implementation flag
+  markImplementation: (
+    projectId: string,
+    roadmapId: string,
+    waveNumber: number,
+    elementId: string,
+    body: { implemented: boolean; note?: string },
+  ) =>
+    api.patch(
+      `/projects/${projectId}/roadmaps/${roadmapId}/waves/${waveNumber}/elements/${encodeURIComponent(elementId)}/implementation`,
+      body,
+    ),
   downloadPDF: (projectId: string, roadmapId: string) =>
     api.get(`/projects/${projectId}/reports/roadmap`, { params: { roadmapId }, responseType: 'blob' }),
 };

@@ -425,6 +425,7 @@ export default function RoadmapPanel() {
                     isSelected={selectedWave === wave.waveNumber}
                     onSelect={() => selectWave(selectedWave === wave.waveNumber ? null : wave.waveNumber)}
                     onElementClick={handleElementClick}
+                    roadmapId={activeRoadmap.id}
                   />
                 ))}
               </div>

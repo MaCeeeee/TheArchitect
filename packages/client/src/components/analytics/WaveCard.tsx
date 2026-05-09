@@ -2,8 +2,12 @@ import { useState } from 'react';
 import {
   ChevronDown, ChevronRight, DollarSign, Clock, AlertTriangle,
   Shield, Users, ArrowRight, Lightbulb, X, Cpu, GitBranch, TrendingUp,
+  CheckCircle2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import type { RoadmapWave, WaveElement } from '@thearchitect/shared';
+import { roadmapAPI } from '../../services/api';
+import { useArchitectureStore } from '../../stores/architectureStore';
 
 const STATUS_COLORS: Record<string, string> = {
   current: '#3b82f6',
@@ -116,11 +120,57 @@ interface WaveCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onElementClick?: (elementId: string) => void;
+  roadmapId?: string;
 }
 
-export default function WaveCard({ wave, isSelected, onSelect, onElementClick }: WaveCardProps) {
+export default function WaveCard({ wave, isSelected, onSelect, onElementClick, roadmapId }: WaveCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+
+  // ─── REQ-PLATEAU-003: optimistic-implementation tracking per element ─────
+  // Local optimistic state mirrors implementedAt — string timestamp, null,
+  // or undefined. On API-error we revert. On success we keep the optimistic
+  // value; canonical state comes back on next roadmap fetch.
+  type ImplState = string | null | undefined;
+  const [implOverrides, setImplOverrides] = useState<Record<string, ImplState>>({});
+  const projectId = useArchitectureStore((s) => s.projectId);
+
+  const getImplemented = (el: WaveElement): boolean => {
+    const override = implOverrides[el.elementId];
+    if (override !== undefined) return override !== null;
+    return el.implementedAt != null;
+  };
+
+  const toggleImplementation = async (el: WaveElement) => {
+    if (!projectId || !roadmapId) {
+      toast.error('Save the roadmap before tracking implementation');
+      return;
+    }
+    const wasImplemented = getImplemented(el);
+    const optimisticValue: ImplState = wasImplemented ? null : new Date().toISOString();
+    setImplOverrides((prev) => ({ ...prev, [el.elementId]: optimisticValue }));
+
+    try {
+      await roadmapAPI.markImplementation(projectId, roadmapId, wave.waveNumber, el.elementId, {
+        implemented: !wasImplemented,
+      });
+      // Keep optimistic state — server confirmed
+    } catch (err) {
+      // Revert
+      setImplOverrides((prev) => {
+        const next = { ...prev };
+        delete next[el.elementId];
+        return next;
+      });
+      toast.error(`Failed to update: ${(err as Error).message}`);
+    }
+  };
+
+  const implementedCount = wave.elements.filter((el) => getImplemented(el)).length;
+  const totalCount = wave.elements.length;
+  const implPercent = totalCount === 0 ? 0 : Math.round((implementedCount / totalCount) * 100);
+  const implColor =
+    implPercent >= 67 ? '#22c55e' : implPercent >= 33 ? '#f59e0b' : '#ef4444';
 
   return (
     <div
@@ -205,38 +255,79 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick }:
 
           {/* Elements */}
           <div className="space-y-1.5">
-            <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Elements</div>
-            {wave.elements.map((el) => (
-              <div key={el.elementId}>
-                <button
-                  onClick={() => setSelectedElement(selectedElement === el.elementId ? null : el.elementId)}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded transition text-left ${
-                    selectedElement === el.elementId
-                      ? 'bg-[#1a2a1a] ring-1 ring-[#00ff41]/30'
-                      : 'bg-[var(--surface-base)] hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: RISK_COLOR(el.riskScore) }}
-                  />
-                  <span className="text-sm text-white flex-1 truncate">{el.name}</span>
-                  <div className="flex items-center gap-1.5 text-xs shrink-0">
-                    <span style={{ color: STATUS_COLORS[el.currentStatus] || '#7a8a7a' }}>
-                      {el.currentStatus}
-                    </span>
-                    <ArrowRight size={10} className="text-[var(--text-tertiary)]" />
-                    <span style={{ color: STATUS_COLORS[el.targetStatus] || '#7a8a7a' }}>
-                      {el.targetStatus}
-                    </span>
-                  </div>
-                  <span className="text-xs text-[var(--text-tertiary)]">{formatCost(el.estimatedCost)}</span>
-                </button>
-                {selectedElement === el.elementId && (
-                  <CostBreakdown el={el} onClose={() => setSelectedElement(null)} />
-                )}
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">Elements</div>
+              {/* REQ-PLATEAU-004 Progress (mini-version, full bar comes in next sprint task) */}
+              <div className="flex items-center gap-1.5 text-[10px] font-mono" title={`${implementedCount} of ${totalCount} implemented`}>
+                <CheckCircle2 size={10} style={{ color: implColor }} />
+                <span style={{ color: implColor }}>{implementedCount}/{totalCount}</span>
+                <span className="text-[var(--text-tertiary)]">({implPercent}%)</span>
               </div>
-            ))}
+            </div>
+            {wave.elements.map((el) => {
+              const isImplemented = getImplemented(el);
+              return (
+                <div key={el.elementId}>
+                  <div
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded transition ${
+                      selectedElement === el.elementId
+                        ? 'bg-[#1a2a1a] ring-1 ring-[#00ff41]/30'
+                        : 'bg-[var(--surface-base)] hover:bg-[#1a1a1a]'
+                    } ${isImplemented ? 'opacity-70' : ''}`}
+                  >
+                    {/* Implementation checkbox (REQ-PLATEAU-003) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void toggleImplementation(el);
+                      }}
+                      className={`w-4 h-4 rounded-sm border flex items-center justify-center shrink-0 transition ${
+                        isImplemented
+                          ? 'border-[#22c55e] bg-[#22c55e]/20'
+                          : 'border-[#444] hover:border-[#22c55e]'
+                      }`}
+                      title={
+                        roadmapId
+                          ? isImplemented
+                            ? 'Mark as not yet implemented'
+                            : 'Mark as implemented in reality'
+                          : 'Save roadmap to track implementation'
+                      }
+                      disabled={!roadmapId}
+                    >
+                      {isImplemented && <CheckCircle2 size={10} className="text-[#22c55e]" />}
+                    </button>
+
+                    <button
+                      onClick={() => setSelectedElement(selectedElement === el.elementId ? null : el.elementId)}
+                      className="flex-1 flex items-center gap-2.5 text-left min-w-0"
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: RISK_COLOR(el.riskScore) }}
+                      />
+                      <span className={`text-sm flex-1 truncate ${isImplemented ? 'text-[var(--text-secondary)] line-through' : 'text-white'}`}>
+                        {el.name}
+                      </span>
+                      <div className="flex items-center gap-1.5 text-xs shrink-0">
+                        <span style={{ color: STATUS_COLORS[el.currentStatus] || '#7a8a7a' }}>
+                          {el.currentStatus}
+                        </span>
+                        <ArrowRight size={10} className="text-[var(--text-tertiary)]" />
+                        <span style={{ color: STATUS_COLORS[el.targetStatus] || '#7a8a7a' }}>
+                          {el.targetStatus}
+                        </span>
+                      </div>
+                      <span className="text-xs text-[var(--text-tertiary)]">{formatCost(el.estimatedCost)}</span>
+                    </button>
+                  </div>
+                  {selectedElement === el.elementId && (
+                    <CostBreakdown el={el} onClose={() => setSelectedElement(null)} />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Recommendation */}
