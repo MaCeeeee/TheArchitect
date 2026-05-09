@@ -7,6 +7,7 @@ import { PERMISSIONS } from '@thearchitect/shared';
 import { generateRoadmap, previewCandidates } from '../services/roadmap.service';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
 import { CompliancePipelineState } from '../models/CompliancePipelineState';
+import { createAuditEntry } from '../middleware/audit.middleware';
 
 const router = Router();
 
@@ -181,6 +182,124 @@ router.delete(
     }
   },
 );
+
+// ─── REQ-PLATEAU-002: Mark Wave-Element as implemented ─────────────────────
+// Toggle the implementedAt/By/Note fields on a single wave-element.
+// Idempotent: re-toggling the same value is a no-op (no audit duplicate).
+// Important: this only updates the roadmap-execution flag. The actual
+// element.status (current/target/transitional/retired) is intentionally
+// not touched — that sync happens via REQ-PLATEAU-008 with explicit user
+// confirmation in a later sprint.
+
+const MarkImplementationSchema = z.object({
+  implemented: z.boolean(),
+  note: z.string().max(500).optional(),
+});
+
+router.patch(
+  '/:projectId/roadmaps/:roadmapId/waves/:waveNumber/elements/:elementId/implementation',
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
+  async (req: Request, res: Response) => {
+    try {
+      const projectId = String(req.params.projectId);
+      const roadmapId = String(req.params.roadmapId);
+      const waveNumber = parseInt(String(req.params.waveNumber), 10);
+      const elementId = String(req.params.elementId);
+      const userId = String((req as any).user?._id || (req as any).user?.id);
+
+      if (!Number.isFinite(waveNumber) || waveNumber < 1) {
+        return res.status(400).json({ success: false, error: 'Invalid waveNumber' });
+      }
+
+      const parsed = MarkImplementationSchema.parse(req.body);
+
+      const doc = await TransformationRoadmap.findOne({ _id: roadmapId, projectId });
+      if (!doc) return res.status(404).json({ success: false, error: 'Roadmap not found' });
+
+      const waves = (doc.waves as Record<string, unknown>[]) || [];
+      const wave = waves.find((w) => (w as { waveNumber?: number }).waveNumber === waveNumber);
+      if (!wave) {
+        return res.status(404).json({ success: false, error: `Wave ${waveNumber} not found` });
+      }
+
+      const elements = ((wave as { elements?: Record<string, unknown>[] }).elements) || [];
+      const elIdx = elements.findIndex(
+        (el) => (el as { elementId?: string }).elementId === elementId,
+      );
+      if (elIdx < 0) {
+        return res
+          .status(404)
+          .json({ success: false, error: `Element ${elementId} not in wave ${waveNumber}` });
+      }
+
+      const before = elements[elIdx] as Record<string, unknown>;
+      const wasImplemented = before.implementedAt != null;
+
+      // Idempotent — same toggle value is a no-op (no DB write, no audit)
+      if (parsed.implemented === wasImplemented && parsed.note === undefined) {
+        return res.json({
+          success: true,
+          data: { element: before, plateauProgress: computePlateauProgress(elements) },
+          changed: false,
+        });
+      }
+
+      const after = parsed.implemented
+        ? {
+            ...before,
+            implementedAt: new Date().toISOString(),
+            implementedBy: userId,
+            implementationNote: parsed.note ?? before.implementationNote ?? null,
+          }
+        : {
+            ...before,
+            implementedAt: null,
+            implementedBy: null,
+            implementationNote: parsed.note ?? null,
+          };
+
+      elements[elIdx] = after;
+      doc.markModified('waves');
+      await doc.save();
+
+      await createAuditEntry({
+        userId,
+        projectId,
+        action: 'mark_implementation',
+        entityType: 'wave_element',
+        entityId: `${roadmapId}.${waveNumber}.${elementId}`,
+        before: { implementedAt: before.implementedAt ?? null },
+        after: { implementedAt: after.implementedAt ?? null, note: parsed.note },
+        ip: req.ip || '',
+        userAgent: req.get('user-agent') || '',
+      });
+
+      res.json({
+        success: true,
+        data: { element: after, plateauProgress: computePlateauProgress(elements) },
+        changed: true,
+      });
+    } catch (err: any) {
+      if (err.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Invalid body', details: err.errors });
+      }
+      console.error('[Roadmap] Mark-implementation error:', err);
+      res.status(500).json({ success: false, error: 'Failed to mark implementation' });
+    }
+  },
+);
+
+function computePlateauProgress(elements: Record<string, unknown>[]): {
+  total: number;
+  implemented: number;
+  percent: number;
+} {
+  const total = elements.length;
+  const implemented = elements.filter((el) => el.implementedAt != null).length;
+  const percent = total === 0 ? 0 : Math.round((implemented / total) * 100);
+  return { total, implemented, percent };
+}
 
 // Regenerate roadmap with new config
 router.post(
