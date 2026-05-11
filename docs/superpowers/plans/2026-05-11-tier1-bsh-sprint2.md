@@ -16,26 +16,36 @@
 
 ---
 
-## Spike-0 — Embedding-Backend-Decision (Woche 1, Tag 0, ~2h)
+## Spike-0 — Embedding-Backend-Decision ✅ DONE (2026-05-11, 45 Min)
 
-**Frage:** Wie lassen wir die Embeddings auf Production laufen?
+**Decision:** **Option B — Lokales Python-Sidecar mit `sentence-transformers/all-mpnet-base-v2`**
 
-| Option | Pro | Con |
-|---|---|---|
-| **A — Voyage AI API** (Anthropic-empfohlen) | Keine Infrastructure, sofort skalierbar, Embeddings-as-a-Service | API-Cost ~$0.05 / 1k tokens, Cross-Border-Datenfluss |
-| **B — Lokales Python-Sidecar** (PoC-Setup) | Volle Kontrolle, kein API-Cost, DSGVO-clean | Ein neuer Container, Latenz-Overhead via HTTP, Maintenance |
-| **C — Anthropic-Voyage** via existing API-Key | Wir haben den Key schon | Voyage ist eigenes Produkt, separater Sub-Account-Setup nötig |
+**Vollständiges Decision-Doc:** [notebooks/predictive-poc/embedding-backend-decision.md](../../../notebooks/predictive-poc/embedding-backend-decision.md)
 
-**Spike-Tasks:**
-- [ ] **0.1** — 100 BSH-Demo-Elements via Voyage API embedden (mit Cost-Snapshot)
-- [ ] **0.2** — Quality-Vergleich mit PoC-Resultat: ist Voyage gleichgut wie all-mpnet-base-v2?
-- [ ] **0.3** — Decision dokumentieren in `notebooks/predictive-poc/embedding-backend-decision.md`
+**Begründung kompakt:**
+- PoC hat 5/5 PASS mit dem lokalen Modell — Quality nicht der Bottleneck
+- DSGVO-Story (Daten verlassen System NIE) ist konzern-verkaufsentscheidend für BSH
+- Cost ist sowieso vernachlässigbar bei unserer Skala (selbst Voyage wäre <$1/Workspace/Jahr)
+- Migration-Pfad zu Voyage-4-nano (open-weight) bleibt offen falls später nötig
 
-**Recommendation upfront:** Option A wenn Voyage-Quality matched, sonst B. Option C ist Option A unter anderem Namen.
+**Architektur-Konsequenz:** docker-compose bekommt einen neuen `embedding-sidecar` Container (Task A0 unten).
 
 ---
 
-## Track A — Similarity-Foundation (~4 Tage)
+## Track A — Similarity-Foundation (~4 Tage + 0.5d für A0)
+
+### Task A0 — Embedding-Sidecar Container (~3h)
+**Score:** Foundation für alle SIM-REQs | **Estimate:** 0.5d
+
+Aus Spike-0 Decision: lokaler Python-Container mit sentence-transformers, exponiert HTTP-Service.
+
+- [ ] **A0.1** Neues `Dockerfile.embedding-sidecar` mit Python 3.11 + sentence-transformers + FastAPI
+- [ ] **A0.2** FastAPI-Service mit single Endpoint `POST /embed { text: string } → { vector: number[] }`
+- [ ] **A0.3** Pre-warm: Modell beim Container-Start in Memory laden (5-10s Cold-Start)
+- [ ] **A0.4** Healthcheck endpoint `GET /health` → 200 wenn Modell geladen
+- [ ] **A0.5** docker-compose.yml: neuer Service `embedding-sidecar`, port `:8001` interne Network
+- [ ] **A0.6** Manual: curl gegen Container → Vektor zurück
+- [ ] **A0.7** Commit: `feat(embedding-sidecar): local sentence-transformers HTTP service for similarity foundation`
 
 ### Task A1 — REQ-SIM-001 (Service-Skelett)
 **Linear:** [THE-239](https://linear.app/thearchitect/issue/THE-239) | **Score:** 80.0 | **Estimate:** 1.5d
