@@ -41,3 +41,7 @@ coverage/
 # Local working files (not for Git)
 docs/AUTO_SE_Transformation_CostEnrichment.csv
 docs/thearchitect-user-flows.excalidraw
+
+# Predictive-Architecture PoC artifacts (data + venv kept local)
+notebooks/predictive-poc/venv/
+notebooks/predictive-poc/data/embeddings.npz
