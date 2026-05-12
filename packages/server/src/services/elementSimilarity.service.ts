@@ -289,11 +289,19 @@ export async function findSimilarElements(
   if (opts.text) {
     vector = await callSidecar(opts.text);
   } else {
-    const points = await qdrant().retrieve(collection, {
-      ids: [elementIdToPointId(opts.elementId!)],
-      with_vector: true,
-      with_payload: false,
-    });
+    let points: Array<{ vector?: number[] | number[][] | null | undefined }>;
+    try {
+      points = (await qdrant().retrieve(collection, {
+        ids: [elementIdToPointId(opts.elementId!)],
+        with_vector: true,
+        with_payload: false,
+      })) as Array<{ vector?: number[] | number[][] | null | undefined }>;
+    } catch {
+      // Collection doesn't exist → element by definition isn't there.
+      // Wrap as a workspace-bounded message so callers can't tell the
+      // difference between "wrong workspace" and "element doesn't exist".
+      throw new Error(`element ${opts.elementId} not found in workspace index`);
+    }
     if (points.length === 0) {
       throw new Error(`element ${opts.elementId} not found in workspace index`);
     }
@@ -309,14 +317,22 @@ export async function findSimilarElements(
   const exclude = new Set(opts.excludeElementIds ?? []);
   if (opts.elementId) exclude.add(opts.elementId);
 
-  // Qdrant search — we pull topK + buffer to allow excludes
+  // Qdrant search — we pull topK + buffer to allow excludes.
+  // If the collection doesn't exist yet (workspace has no indexed elements),
+  // treat it as empty rather than an error — querying an empty workspace
+  // is a valid state.
   const buffer = Math.max(exclude.size, 0);
-  const searchRes = await qdrant().search(collection, {
-    vector,
-    limit: topK + buffer,
-    score_threshold: scoreThreshold,
-    with_payload: true,
-  });
+  let searchRes: Array<{ id: string | number; score: number; payload?: Record<string, unknown> | null }>;
+  try {
+    searchRes = (await qdrant().search(collection, {
+      vector,
+      limit: topK + buffer,
+      score_threshold: scoreThreshold,
+      with_payload: true,
+    })) as Array<{ id: string | number; score: number; payload?: Record<string, unknown> | null }>;
+  } catch {
+    return { results: [], confidence: 'low', topGap: 0 };
+  }
 
   const results: SimilarElement[] = [];
   for (const hit of searchRes) {
