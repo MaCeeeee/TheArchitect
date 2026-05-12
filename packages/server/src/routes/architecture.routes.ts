@@ -192,6 +192,75 @@ const SimilarSearchSchema = z
     message: 'Provide exactly one of `text` or `elementId`',
   });
 
+// REQ-SIM-002 (bulk backfill): reindex every element in the project's
+// workspace. Synchronous up to MAX_REINDEX elements (~5 minutes on a single
+// sidecar at 100 elements/min). Larger projects will need a background job
+// — out of Sprint-2 scope.
+//
+// Rate-limited very low (5/hour) since this is a heavy operation and only
+// ops/admin should call it.
+const MAX_REINDEX = 500;
+
+router.post(
+  '/:projectId/elements/reindex',
+  rateLimit({ windowMs: 60 * 60_000, max: 5, name: 'similarity-reindex' }),
+  requirePermission(PERMISSIONS.ELEMENT_UPDATE),
+  audit({ action: 'similarity_reindex', entityType: 'project', riskLevel: 'medium' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const records = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId})
+         RETURN e LIMIT ${MAX_REINDEX}`,
+        { projectId },
+      );
+
+      let succeeded = 0;
+      let failed = 0;
+      for (const r of records) {
+        const props = serializeNeo4jProperties(r.get('e').properties) as Record<string, unknown>;
+        try {
+          await upsertEmbedding(String(projectId), {
+            id: String(props.id ?? ''),
+            name: String(props.name ?? ''),
+            description: typeof props.description === 'string' ? props.description : '',
+            type: String(props.type ?? ''),
+            layer: String(props.layer ?? ''),
+            projectId: String(projectId),
+          });
+          succeeded++;
+        } catch (e) {
+          failed++;
+          log.warn(
+            { err: (e as Error).message, projectId, elementId: props.id },
+            '[similarity] reindex single-element failed',
+          );
+        }
+      }
+
+      log.info(
+        { projectId, total: records.length, succeeded, failed },
+        '[similarity] bulk reindex completed',
+      );
+      res.json({
+        success: true,
+        data: {
+          total: records.length,
+          succeeded,
+          failed,
+          truncated: records.length === MAX_REINDEX,
+        },
+      });
+    } catch (err) {
+      log.error(
+        { err: (err as Error).message, projectId: req.params.projectId },
+        '[similarity] reindex endpoint failed',
+      );
+      res.status(500).json({ success: false, error: 'Failed to reindex elements' });
+    }
+  },
+);
+
 router.post(
   '/:projectId/elements/similar',
   rateLimit({ windowMs: 60_000, max: 30, name: 'similarity-search' }),

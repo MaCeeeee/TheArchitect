@@ -234,6 +234,47 @@ describe('REQ-SIM-002 — async re-embed hook in architecture.routes', () => {
     expect(mockDeleteEmbedding.mock.calls[0][1]).toBe('el-1');
   });
 
+  it('POST /elements/reindex backfills every element in the project', async () => {
+    // First call: MATCH … RETURN e (the listing query). Mock 3 elements.
+    mockRunCypher.mockResolvedValueOnce([
+      { get: () => ({ properties: { id: 'el-a', name: 'A', type: 'data_object', layer: 'information', description: '' } }) },
+      { get: () => ({ properties: { id: 'el-b', name: 'B', type: 'business_process', layer: 'business', description: 'desc-b' } }) },
+      { get: () => ({ properties: { id: 'el-c', name: 'C', type: 'application_component', layer: 'application', description: '' } }) },
+    ]);
+
+    const res = await request(app)
+      .post(`/api/architecture/${PROJECT_ID}/elements/reindex`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.total).toBe(3);
+    expect(res.body.data.succeeded).toBe(3);
+    expect(res.body.data.failed).toBe(0);
+
+    expect(mockUpsertEmbedding).toHaveBeenCalledTimes(3);
+    expect(mockUpsertEmbedding.mock.calls[0][1].id).toBe('el-a');
+    expect(mockUpsertEmbedding.mock.calls[2][1].id).toBe('el-c');
+  });
+
+  it('POST /elements/reindex counts partial failures without aborting', async () => {
+    mockRunCypher.mockResolvedValueOnce([
+      { get: () => ({ properties: { id: 'el-x', name: 'X', type: 'data_object', layer: 'information', description: '' } }) },
+      { get: () => ({ properties: { id: 'el-y', name: 'Y', type: 'data_object', layer: 'information', description: '' } }) },
+    ]);
+    mockUpsertEmbedding
+      .mockRejectedValueOnce(new Error('sidecar down'))
+      .mockResolvedValueOnce(undefined);
+
+    const res = await request(app)
+      .post(`/api/architecture/${PROJECT_ID}/elements/reindex`)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.total).toBe(2);
+    expect(res.body.data.succeeded).toBe(1);
+    expect(res.body.data.failed).toBe(1);
+  });
+
   it('upsertEmbedding rejection does not crash the route or affect response', async () => {
     mockRunCypher.mockResolvedValue([]);
     mockUpsertEmbedding.mockRejectedValueOnce(new Error('sidecar timeout'));
