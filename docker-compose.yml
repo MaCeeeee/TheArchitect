@@ -52,6 +52,22 @@ services:
       - minio_data:/data
     restart: unless-stopped
 
+  # UC-SIM-001 — Embedding-Sidecar for elementSimilarity.service.ts
+  # See services/embedding-sidecar/README.md and
+  # notebooks/predictive-poc/embedding-backend-decision.md
+  embedding-sidecar:
+    build:
+      context: ./services/embedding-sidecar
+      dockerfile: Dockerfile
+    container_name: thearchitect-embedding-sidecar
+    ports:
+      - '8001:8001'
+    environment:
+      - EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
+      - MAX_BATCH_SIZE=64
+      - MAX_TEXT_LENGTH=8000
+    restart: unless-stopped
+
 volumes:
   neo4j_data:
   neo4j_logs:

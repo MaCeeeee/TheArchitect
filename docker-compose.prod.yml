@@ -77,11 +77,14 @@ services:
       - NOCODB_URL=${NOCODB_URL:-}
       - NOCODB_API_TOKEN=${NOCODB_API_TOKEN:-}
       - NOCODB_TABLE_ID=${NOCODB_TABLE_ID:-}
+      # UC-SIM-001 — embedding sidecar URL (internal docker network)
+      - EMBEDDING_SIDECAR_URL=${EMBEDDING_SIDECAR_URL:-http://embedding-sidecar:8001}
     depends_on:
       - mongodb
       - neo4j
       - redis
       - minio
+      - embedding-sidecar
 
   mongodb:
     image: mongo:7
@@ -123,3 +126,19 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+
+  # UC-SIM-001 — Embedding-Sidecar for elementSimilarity.service.ts
+  # Provides on-prem embedding compute so architecture data never leaves
+  # the customer's infrastructure (DSGVO-clean, see embedding-backend-decision.md).
+  embedding-sidecar:
+    build:
+      context: ./services/embedding-sidecar
+      dockerfile: Dockerfile
+    container_name: thearchitect-embedding-sidecar
+    restart: unless-stopped
+    environment:
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-mpnet-base-v2}
+      - MAX_BATCH_SIZE=${EMBEDDING_MAX_BATCH_SIZE:-64}
+      - MAX_TEXT_LENGTH=${EMBEDDING_MAX_TEXT_LENGTH:-8000}
+    # Not exposed to host — only reachable via the internal docker network.
+    # Main app talks to it via http://embedding-sidecar:8001
