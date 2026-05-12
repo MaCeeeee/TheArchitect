@@ -68,9 +68,22 @@ services:
       - MAX_TEXT_LENGTH=8000
     restart: unless-stopped
 
+  # UC-SIM-001 — Qdrant vector store for element-similarity index
+  # Collection naming: elements-{workspaceId} for hard tenant-isolation (REQ-SIM-005)
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: thearchitect-qdrant
+    ports:
+      - '6333:6333'  # REST API
+      - '6334:6334'  # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
 volumes:
   neo4j_data:
   neo4j_logs:
   mongodb_data:
   redis_data:
   minio_data:
+  qdrant_data:

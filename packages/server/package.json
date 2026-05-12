@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@qdrant/js-client-rest": "^1.18.0",
     "@sentry/node": "^10.48.0",
     "@thearchitect/shared": "*",
     "adm-zip": "^0.5.16",

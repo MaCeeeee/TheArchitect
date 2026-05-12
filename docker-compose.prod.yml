@@ -6,6 +6,7 @@ volumes:
   minio_data:
   caddy_data:
   caddy_config:
+  qdrant_data:
 
 services:
   caddy:
@@ -77,14 +78,17 @@ services:
       - NOCODB_URL=${NOCODB_URL:-}
       - NOCODB_API_TOKEN=${NOCODB_API_TOKEN:-}
       - NOCODB_TABLE_ID=${NOCODB_TABLE_ID:-}
-      # UC-SIM-001 — embedding sidecar URL (internal docker network)
+      # UC-SIM-001 — embedding sidecar + qdrant (internal docker network)
       - EMBEDDING_SIDECAR_URL=${EMBEDDING_SIDECAR_URL:-http://embedding-sidecar:8001}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
     depends_on:
       - mongodb
       - neo4j
       - redis
       - minio
       - embedding-sidecar
+      - qdrant
 
   mongodb:
     image: mongo:7
@@ -142,3 +146,14 @@ services:
       - MAX_TEXT_LENGTH=${EMBEDDING_MAX_TEXT_LENGTH:-8000}
     # Not exposed to host — only reachable via the internal docker network.
     # Main app talks to it via http://embedding-sidecar:8001
+
+  # UC-SIM-001 — Qdrant vector store for element-similarity index
+  # Collection naming: elements-{workspaceId} for hard tenant-isolation (REQ-SIM-005)
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: thearchitect-qdrant
+    restart: unless-stopped
+    volumes:
+      - qdrant_data:/qdrant/storage
+    # Not exposed to host — internal docker network only.
+    # Main app talks to it via http://qdrant:6333
