@@ -150,7 +150,9 @@ services:
   # UC-SIM-001 — Qdrant vector store for element-similarity index
   # Collection naming: elements-{workspaceId} for hard tenant-isolation (REQ-SIM-005)
   qdrant:
-    image: qdrant/qdrant:v1.12.4
+    # Pinned to match @qdrant/js-client-rest minor version (1.18.x).
+    # Qdrant requires server/client major to match and minor-diff <= 1.
+    image: qdrant/qdrant:v1.18.0
     container_name: thearchitect-qdrant
     restart: unless-stopped
     volumes:
