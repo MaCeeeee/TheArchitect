@@ -16,7 +16,9 @@ import {
 import {
   upsertEmbedding,
   deleteEmbedding,
+  findSimilarElements,
 } from '../services/elementSimilarity.service';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -167,6 +169,70 @@ router.get(
       res.status(500).json({ success: false, error: 'Failed to get elements' });
     }
   }
+);
+
+// ─── REQ-SIM-003: Public similarity search ──────────────────────────────────
+//
+// POST /:projectId/elements/similar — find elements similar to either
+// free-text or an existing element, scoped to the calling project's
+// workspace (REQ-SIM-005 isolation).
+//
+// Rate-limited to 30 req/min/IP because each call hits the embedding
+// sidecar and Qdrant; well below the global limit.
+
+const SimilarSearchSchema = z
+  .object({
+    text: z.string().min(1).max(2000).optional(),
+    elementId: z.string().min(1).optional(),
+    topK: z.number().int().min(1).max(50).optional(),
+    scoreThreshold: z.number().min(-1).max(1).optional(),
+    excludeElementIds: z.array(z.string()).max(100).optional(),
+  })
+  .refine((d) => Boolean(d.text) !== Boolean(d.elementId), {
+    message: 'Provide exactly one of `text` or `elementId`',
+  });
+
+router.post(
+  '/:projectId/elements/similar',
+  rateLimit({ windowMs: 60_000, max: 30, name: 'similarity-search' }),
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  audit({ action: 'similarity_search', entityType: 'element', riskLevel: 'low' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const parsed = SimilarSearchSchema.parse(req.body);
+
+      const result = await findSimilarElements(String(projectId), {
+        text: parsed.text,
+        elementId: parsed.elementId,
+        topK: parsed.topK,
+        scoreThreshold: parsed.scoreThreshold,
+        excludeElementIds: parsed.excludeElementIds,
+      });
+
+      res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: err.errors,
+        });
+      }
+      const msg = (err as Error).message || '';
+      // "not found in workspace index" → caller queried by elementId that
+      // isn't indexed in this project. Surface as 404 so clients can
+      // distinguish from a real server fault.
+      if (msg.includes('not found in workspace index')) {
+        return res.status(404).json({ success: false, error: msg });
+      }
+      log.error(
+        { err: msg, projectId: req.params.projectId },
+        '[similarity] search endpoint failed',
+      );
+      res.status(500).json({ success: false, error: 'Failed to search similar elements' });
+    }
+  },
 );
 
 // Create element
