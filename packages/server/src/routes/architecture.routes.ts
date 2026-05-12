@@ -13,6 +13,11 @@ import {
   suggestConnectionsForIsolatedElements,
   type HealReport,
 } from '../services/connectionSuggestion.service';
+import {
+  upsertEmbedding,
+  deleteEmbedding,
+} from '../services/elementSimilarity.service';
+import { log } from '../config/logger';
 
 const router = Router();
 
@@ -243,6 +248,23 @@ router.post(
       evaluateElementPolicies(String(projectId), element.id, 'create').catch((e) =>
         console.error('[PolicyEval] create hook error:', e),
       );
+
+      // REQ-SIM-002: fire-and-forget similarity-index update. Failure must
+      // never block the user-facing create — the index can rebuild on next
+      // edit. workspace-isolation key = projectId (per REQ-SIM-005).
+      upsertEmbedding(String(projectId), {
+        id: element.id,
+        name: element.name,
+        description: element.description,
+        type: element.type,
+        layer: element.layer,
+        projectId: String(projectId),
+      }).catch((e) =>
+        log.warn(
+          { err: (e as Error).message, projectId, elementId: element.id },
+          '[similarity] upsert hook failed (create)',
+        ),
+      );
     } catch (err) {
       if (err instanceof z.ZodError) {
         res.status(400).json({ success: false, error: 'Validation failed', details: err.errors });
@@ -331,6 +353,41 @@ router.put(
       evaluateElementPolicies(String(req.params.projectId), String(elementId), 'update').catch((e) =>
         console.error('[PolicyEval] update hook error:', e),
       );
+
+      // REQ-SIM-002: re-embed only when an embedding-relevant field changed
+      // (name / description / layer / type). Other field changes (cost, status,
+      // position) don't affect similarity — skip the work.
+      const embedRelevantChanged =
+        parsed.name !== undefined ||
+        parsed.description !== undefined ||
+        parsed.layer !== undefined;
+      if (embedRelevantChanged) {
+        // Re-fetch the canonical element so partial updates produce a
+        // fresh full-context embedding (we don't have the unchanged fields
+        // in `parsed`).
+        runCypher(
+          'MATCH (e:ArchitectureElement {id: $elementId}) RETURN e',
+          { elementId },
+        )
+          .then((records) => {
+            if (records.length === 0) return;
+            const props = serializeNeo4jProperties(records[0].get('e').properties) as Record<string, unknown>;
+            return upsertEmbedding(String(req.params.projectId), {
+              id: String(props.id ?? elementId),
+              name: String(props.name ?? ''),
+              description: typeof props.description === 'string' ? props.description : '',
+              type: String(props.type ?? ''),
+              layer: String(props.layer ?? ''),
+              projectId: String(req.params.projectId),
+            });
+          })
+          .catch((e) =>
+            log.warn(
+              { err: (e as Error).message, projectId: req.params.projectId, elementId },
+              '[similarity] upsert hook failed (update)',
+            ),
+          );
+      }
     } catch (err) {
       if (err instanceof z.ZodError) {
         res.status(400).json({ success: false, error: 'Validation failed', details: err.errors });
@@ -394,6 +451,15 @@ router.delete(
         { elementId }
       );
       res.json({ success: true, message: 'Element deleted' });
+
+      // REQ-SIM-002: drop from similarity index. Idempotent — if the vector
+      // never made it in (workspace had no collection), this is a no-op.
+      deleteEmbedding(String(req.params.projectId), String(elementId)).catch((e) =>
+        log.warn(
+          { err: (e as Error).message, projectId: req.params.projectId, elementId },
+          '[similarity] delete hook failed',
+        ),
+      );
     } catch (err) {
       console.error('Delete element error:', err);
       res.status(500).json({ success: false, error: 'Failed to delete element' });

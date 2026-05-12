@@ -31,39 +31,43 @@
 // per-test inspection. Built as a plain `Map<string, any>` so jest's
 // auto-mock-hoisting doesn't trip over TypeScript-only syntax.
 
+type SimPoint = { id: string; vector: number[]; payload: Record<string, unknown> };
+type SimCollection = { name: string; points: Map<string, SimPoint> };
+
 jest.mock('@qdrant/js-client-rest', () => {
-  // No TS types inside this factory — jest hoists it above imports and
-  // some setups parse it with plain babel which trips on annotations.
-  const cols = new Map();
-  const cosine = (a, b) => {
+  const cols = new Map<string, SimCollection>();
+  const cosine = (a: number[], b: number[]): number => {
     let s = 0;
     for (let i = 0; i < a.length; i++) s += a[i] * b[i];
     return s;
   };
   const sim = {
     __collections: cols,
-    getCollection: jest.fn(async (name) => {
+    getCollection: jest.fn(async (name: string) => {
       const c = cols.get(name);
       if (!c) throw new Error(`collection ${name} not found`);
       return { name };
     }),
-    createCollection: jest.fn(async (name) => {
+    createCollection: jest.fn(async (name: string) => {
       cols.set(name, { name, points: new Map() });
       return {};
     }),
-    upsert: jest.fn(async (name, opts) => {
+    upsert: jest.fn(async (name: string, opts: { points: SimPoint[] }) => {
       const c = cols.get(name);
       if (!c) throw new Error(`collection ${name} not found`);
       for (const p of opts.points) c.points.set(p.id, p);
       return {};
     }),
-    delete: jest.fn(async (name, opts) => {
+    delete: jest.fn(async (name: string, opts: { points: string[] }) => {
       const c = cols.get(name);
       if (!c) throw new Error(`collection ${name} not found`);
       for (const id of opts.points) c.points.delete(id);
       return {};
     }),
-    search: jest.fn(async (name, opts) => {
+    search: jest.fn(async (
+      name: string,
+      opts: { vector: number[]; limit: number; score_threshold?: number },
+    ) => {
       const c = cols.get(name);
       if (!c) throw new Error(`collection ${name} not found`);
       const ranked = Array.from(c.points.values())
@@ -76,7 +80,10 @@ jest.mock('@qdrant/js-client-rest', () => {
         .filter((p) => (opts.score_threshold ?? -1) <= p.score);
       return ranked.slice(0, opts.limit);
     }),
-    retrieve: jest.fn(async (name, opts) => {
+    retrieve: jest.fn(async (
+      name: string,
+      opts: { ids: string[]; with_vector?: boolean },
+    ) => {
       const c = cols.get(name);
       if (!c) throw new Error(`collection ${name} not found`);
       return opts.ids
@@ -97,10 +104,11 @@ jest.mock('@qdrant/js-client-rest', () => {
   };
 });
 
-// Reach back into the mock to inspect collection-state in tests
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const qdrantMockModule = require('@qdrant/js-client-rest');
-const collections = qdrantMockModule.__sim.__collections as Map<string, { name: string; points: Map<string, unknown> }>;
+// Reach back into the mock to inspect collection-state in tests.
+const qdrantMockModule = jest.requireMock('@qdrant/js-client-rest') as {
+  __sim: { __collections: Map<string, SimCollection> };
+};
+const collections = qdrantMockModule.__sim.__collections;
 
 // ─── Sidecar mock: deterministic per-text vector ────────────────────────────
 //
@@ -128,8 +136,8 @@ function fakeEmbed(text: string): number[] {
 
 const originalFetch = global.fetch;
 beforeAll(() => {
-  global.fetch = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
-    const body = JSON.parse((init?.body as string) ?? '{}');
+  global.fetch = jest.fn(async (_url: unknown, init?: { body?: string }) => {
+    const body = JSON.parse(init?.body ?? '{}');
     return {
       ok: true,
       json: async () => ({
@@ -137,7 +145,7 @@ beforeAll(() => {
         dim: 768,
         model: 'mock',
       }),
-    } as unknown as Response;
+    };
   }) as unknown as typeof fetch;
 });
 
