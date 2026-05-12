@@ -1,10 +1,67 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-04-25 (BSH-Demo-Prep: Activity-Drill-Down End-to-End in ESG-Demo, Property-Panel Steckbrief, hierarchische Tree-View)
+> Letztes Update: 2026-05-12 (Sprint 2 Track A — Predictive-Architecture Similarity-Foundation production-deployed)
 
 ---
 
-## 0. BSH-Demo-Vorbereitung — Activity-Drill-Down (2026-04-25)
+## 0. Sprint 2 Track A — Similarity Foundation (2026-05-12)
+
+### Ziel
+UC-SIM-001 (Element-Similarity) end-to-end aufbauen: lokale Embeddings (DSGVO), Vector-Store mit Tenant-Isolation, automatisches Re-Embedden bei CRUD, Public API für Downstream-UCs (Generator-D V2, Redundanz-Erkennung, Harmonisierung). Strategischer Hebel: Variante B aus dem 2026-05-07-Briefing — eine geteilte Similarity-Foundation statt drei isolierter Implementierungen.
+
+### Status: ✅ Production-Live auf https://thearchitect.site
+
+#### Commits dieser Session
+| Hash | Scope |
+|---|---|
+| `2e1d043` | A0 — embedding-sidecar Container (Python 3.11 + FastAPI + sentence-transformers, ~2GB Image, Model im Build pre-cached) |
+| `cd2b362` | A1 — elementSimilarity.service.ts Foundation + 31 Unit-Tests + Smoke + Qdrant-Infra in beide compose-Files |
+| `5c4a820` | A2 — Tenant-Isolation behavioral suite (8 Tests, Workspace-aware Qdrant-Simulator) + Service-Hardening (graceful empty-collection) |
+| `1500f5e` | A3 — Async Re-Embed-Hook auf POST/PUT/DELETE element + 7 Supertest (Skip-Logic für non-embedding-relevant fields) |
+| `706c4c9` | A4 — Public Similar-API `POST /api/projects/:projectId/elements/similar` + 8 Supertest (5 happy + 3 error paths) |
+| `a5b038a` | A3.4 — Bulk-Reindex-Endpoint + 2 Tests (max 500 elems, rate-limit 5/h, partial-failure counting) |
+| `a4d72a5` | Qdrant Server v1.12.4 → v1.18.0 (Client/Server Minor-Diff Compliance) |
+
+#### Stack
+| Komponente | Was |
+|---|---|
+| `services/embedding-sidecar/` (NEU) | Python 3.11 + FastAPI Service. 4 Endpoints (`/health`, `/info`, `/embed`, `/embed/batch`). sentence-transformers/all-mpnet-base-v2 (768-dim, normalize_embeddings=True). CPU-only torch. Modell im Dockerfile vor-gedownloaded → ~440MB Modell-Layer, dann ~30s Boot. Healthcheck alle 10s. |
+| `packages/server/src/services/elementSimilarity.service.ts` (NEU) | Foundation API: `upsertEmbedding`, `findSimilarElements`, `deleteEmbedding`, `similarityHealthCheck`. Score-Tier-Mapping (≥0.85 SAME, 0.65–0.85 SIMILAR, <0.65 UNIQUE). Confidence-Indicator via topGap < 0.05 → "low". UUID-Hashing für arbitrary Element-IDs (Qdrant Constraint). |
+| Collection-Naming | `elements-{workspaceId}` mit strict Regex-Validation `[A-Za-z0-9_-]+` → `WorkspaceMismatchError` bei Injection-Versuchen. REQ-SIM-005 Hard-Stop. |
+| `packages/server/src/routes/architecture.routes.ts` | 3 neue Hooks (POST/PUT/DELETE element) + 2 neue Endpoints (similar, reindex). Workspace-Key = projectId. Fire-and-forget, log.warn bei Failure, App-Response nie blockiert. |
+| `docker-compose.yml` + `prod.yml` | Qdrant v1.18.0 service + embedding-sidecar service. Prod: nur internal docker network (kein Host-Port-Mapping). Caddy `:443` → `app:4000` einziger Ingress. |
+
+#### Test-Coverage (lokal alle grün)
+| Suite | # | Was |
+|---|:---:|---|
+| `elementSimilarity.service.test.ts` | 31 | Service-API-Shape (mock-Qdrant), score-tier boundaries, exclude-logic, confidence calc, upsert/delete |
+| `elementSimilarity.tenant-isolation.test.ts` | 8 | Behavioral isolation (workspace-aware sim-qdrant), Injection-Patterns rejected, Cross-WS-Query blocked, multi-WS no-bleed, collection-name collision-resistance |
+| `architecture.routes.similarity-hook.test.ts` | 9 | POST/PUT/DELETE trigger, skip-non-embed-relevant fields, bulk-reindex full + partial-failure |
+| `architecture.routes.similar-api.test.ts` | 8 | Happy paths (text, elementId, exclude, topK clamp, scoreThreshold), error paths (missing both, both set, 404 "not found in workspace index") |
+| **Σ** | **56** | |
+
+#### Production-Validation
+- Real-Stack Smoke (`scripts/smoke-similarity.ts`) lokal: DE→EN Cross-Language-Match bei 0.6234 (PoC-Score reproduziert), negative test 0.088, self-exclude greift, Sidecar 23-65ms/embed
+- VPS-Deploy: Sidecar healthy + Modell in 2.5s geladen, Qdrant v1.18.0 boot ohne Panic, App env vars korrekt (`EMBEDDING_SIDECAR_URL=http://embedding-sidecar:8001`, `QDRANT_URL=http://qdrant:6333`)
+- UI-Save → Log-Zeile `[similarity] created qdrant collection {collection: "elements-69d3b14d64a6922b5118ff54"}` → Qdrant `/collections` zeigt Collection. End-to-end greift.
+
+#### Deploy-Pitfalls dieser Session (für nächstes Mal)
+- `/root/docker-compose.prod.yml` war eine **alte Version vom 6. April** ohne Sprint-2-env-vars. Compose nimmt das File wenn man aus `~` heraus aufruft → keine env vars im Container. **Lösung:** immer `cd /docker/thearchitect` vor compose-Befehlen. Umbenannt zu `.OLD-PRE-SPRINT2-DO-NOT-USE`.
+- Qdrant Server/Client Minor-Diff ≤ 1 erforderlich — beim ersten Hochfahren war Server 1.12 + npm-Client 1.18 (6 Minors auseinander). Bump auf 1.18 funktioniert sauber bei leerem Volume; bei Production-Daten step-by-step durch jede Minor-Version.
+- `docker compose up -d app` zieht Image neu, aber bei bereits laufendem Container mit altem Name werden env vars NICHT refreshed. Hilft: `docker rm -f thearchitect-app && docker compose up -d --no-deps app` (no-deps wegen Konflikt mit laufenden Dependencies).
+- App-Port: **4000** (nicht 3000), nur intern. Caddy mit Domain `thearchitect.site` ist einziger Außenkontakt.
+
+#### Bekannte Gap (für Track B oder Sprint 3)
+DataObjectGenerator-Service legt Elements über einen eigenen Code-Pfad an (im Log: `[AI-Generator] data-objects applied successfully`), nicht über `/api/projects/.../elements`. Re-Embed-Hook feuert dort NICHT → Vektoren fehlen für Generator-erstellte Elements. Track B2 (Generator-D V2) wird diesen Pfad sowieso umbauen → dort mit-fixen.
+
+#### Verbleibend Sprint 2
+- **B1** — REQ-DATA-008 Sensitivity-Color 3D (Score 82.9, 0.5d) — DSGVO-Demo-Wow
+- **B2** — REQ-SIM-004 Generator-D V2 Reuse-Upgrade (77.1, ~1d) — schließt obigen Gap, löst Variante-B-Frage
+- **C** — REQ-PLATEAU-004 Progress-Bar full (71.4, 0.5d) — Visual-Upgrade aufbauend auf Sprint-1-V1
+
+---
+
+## 1. BSH-Demo-Vorbereitung — Activity-Drill-Down (2026-04-25)
 
 ### Ziel
 Komplette top-down Klick-Pfad in EINEM Demo-Projekt für BSH-Pitch am 06.05.: Vision → Stakeholder → Capability → Process → **Activity** → Roadmap → Simulation. Bisher waren Activities nur im Standalone-Demo geseedet — Story-Bruch beim Demo-Wechsel.
