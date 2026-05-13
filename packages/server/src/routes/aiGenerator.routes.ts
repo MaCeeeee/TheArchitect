@@ -1006,10 +1006,11 @@ router.post(
       for (let i = 0; i < cList.length; i++) {
         if (accept.capabilities && accept.capabilities[i] === false) continue;
         const c = cList[i];
-        const cId = `ai-cap-${Date.now()}-${i}`;
-        await createElement({
+        // realCId may differ from the proposed id when createElement
+        // resolves a similar pre-existing capability (REQ-SIM-004 Stage 5).
+        const realCId = await createElement({
           projectId,
-          id: cId,
+          id: `ai-cap-${Date.now()}-${i}`,
           type: 'business_capability',
           name: c.name,
           description: c.description,
@@ -1020,7 +1021,7 @@ router.post(
           posZ: 0,
           metadata: { source: 'ai-generated', aiGenerated: true, level: c.level ?? 1 },
         });
-        capabilityIdByName.set(c.name, cId);
+        capabilityIdByName.set(c.name, realCId);
         counts.capabilities++;
       }
 
@@ -1029,10 +1030,9 @@ router.post(
       for (let i = 0; i < pList.length; i++) {
         if (accept.processes && accept.processes[i] === false) continue;
         const p = pList[i];
-        const pId = `ai-proc-${Date.now()}-${i}`;
-        await createElement({
+        const realPId = await createElement({
           projectId,
-          id: pId,
+          id: `ai-proc-${Date.now()}-${i}`,
           type: 'business_process',
           name: p.name,
           description: p.description,
@@ -1043,13 +1043,13 @@ router.post(
           posZ: 3,
           metadata: { source: 'ai-generated', aiGenerated: true, parentCapability: p.parentCapability },
         });
-        processIdByName.set(p.name, pId);
+        processIdByName.set(p.name, realPId);
         counts.processes++;
 
-        // Composition: capability → process
+        // Composition: capability → process (createConnection is MERGE-safe)
         const capId = capabilityIdByName.get(p.parentCapability);
         if (capId) {
-          await createConnection(projectId, capId, pId, 'composition', 'composes');
+          await createConnection(projectId, capId, realPId, 'composition', 'composes');
           counts.connections++;
         }
       }
@@ -1063,10 +1063,9 @@ router.post(
         const parentProcId = processIdByName.get(a.parentProcess);
         if (!parentProcId) continue; // orphan activity, skip
 
-        const aId = `ai-act-${Date.now()}-${i}`;
-        await createElement({
+        const realAId = await createElement({
           projectId,
-          id: aId,
+          id: `ai-act-${Date.now()}-${i}`,
           type: 'process',
           name: a.name,
           description: `${a.owner} ${a.action} (${a.system}) — ${a.when}. Output: ${a.output} → ermöglicht ${a.enables || '—'}.`,
@@ -1091,13 +1090,14 @@ router.post(
         });
         counts.activities++;
 
-        // Composition: process → activity
-        await createConnection(projectId, parentProcId, aId, 'composition', 'composes');
+        // Composition: process → activity (MERGE-safe via createConnection)
+        await createConnection(projectId, parentProcId, realAId, 'composition', 'composes');
         counts.connections++;
 
-        // Track for flow connections within same process
+        // Track the real id for flow connections so reused activities
+        // are correctly wired into the sequential chain.
         if (!activityIdsByProcess.has(parentProcId)) activityIdsByProcess.set(parentProcId, []);
-        activityIdsByProcess.get(parentProcId)!.push(aId);
+        activityIdsByProcess.get(parentProcId)!.push(realAId);
       }
 
       // Flow-Connections between sibling activities
@@ -1150,7 +1150,47 @@ interface ElementInsert {
   metadata: Record<string, unknown>;
 }
 
-async function createElement(el: ElementInsert): Promise<void> {
+/**
+ * Create-or-reuse an architecture element.
+ *
+ * REQ-SIM-004 Stage 5: returns the final element id — which may be the
+ * caller-proposed `el.id` (newly created) or the id of an existing
+ * element when similarity ≥ 0.85 with a same-type match is found.
+ *
+ * The reuse policy here mirrors activities/processes (Stages 3+4):
+ * SAME-only auto-reuse, no pending-confirm, type-filter == el.type
+ * so we never reuse a stakeholder as a capability.
+ *
+ * Callers that need the returned id for parent-child linking
+ * (capabilities → processes → activities) must use the returned value
+ * rather than the proposed `el.id`.
+ */
+async function createElement(el: ElementInsert): Promise<string> {
+  // SAME-tier similarity check — same-type only.
+  let topMatch: { elementId: string; type: string; score: number } | null = null;
+  try {
+    const sim = await findSimilarElements(String(el.projectId), {
+      text: `${el.name} — ${el.description}`,
+      topK: 3,
+      scoreThreshold: REUSE_SAME_THRESHOLD,
+    });
+    const firstMatch = sim.results.find((r) => r.type === el.type);
+    if (firstMatch) topMatch = firstMatch;
+  } catch (e) {
+    log.warn(
+      { err: (e as Error).message, projectId: el.projectId, name: el.name, type: el.type },
+      '[similarity] findSimilar failed in createElement, falling back to CREATE',
+    );
+  }
+
+  if (topMatch) {
+    log.debug(
+      { projectId: el.projectId, proposedId: el.id, reusedId: topMatch.elementId, score: topMatch.score, type: el.type },
+      '[similarity] reused element in createElement (Stage 5)',
+    );
+    return topMatch.elementId;
+  }
+
   // Status follows ArchiMate semantics: stakeholders/principles/drivers etc.
   // exist today (`current`); goals/outcomes/work_packages are aspirations
   // (`target`). Capabilities/processes/components default to `current` because
@@ -1199,6 +1239,8 @@ async function createElement(el: ElementInsert): Promise<void> {
       '[similarity] upsert hook failed (ai-gen hierarchy)',
     ),
   );
+
+  return el.id;
 }
 
 // Map AI hierarchy.vision into Project.vision-shape (text fields the EnvisionPanel reads)
@@ -1263,10 +1305,14 @@ async function createConnection(
   type: string,
   label: string,
 ): Promise<void> {
+  // MERGE (not CREATE) — Stage 5 of REQ-SIM-004 introduces helper-level
+  // reuse so the same target node can be re-linked under multiple parents
+  // across generator runs. With CREATE that would emit duplicate edges.
   await runCypher(
     `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
            (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-     CREATE (a)-[r:CONNECTS_TO {id: $connId, type: $type, label: $label}]->(b)
+     MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
+     ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
      RETURN r`,
     { sourceId, targetId, projectId, connId: uuid(), type, label },
   );

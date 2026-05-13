@@ -438,6 +438,88 @@ describe('Stage 4 — Processes V2 reuse (SAME-only, type=business_process)', ()
   });
 });
 
+// ─── Hierarchy V2 Reuse (Stage 5) ───────────────────────────────────────────
+
+const postHierarchy = (capabilities: unknown[], processes: unknown[] = []) =>
+  request(app)
+    .post(`/api/ai-generator/projects/${PROJECT_ID}/architecture/apply-hierarchy`)
+    .send({
+      hierarchy: {
+        vision: { visionStatements: [], mission: '', drivers: [], principles: [], goals: [] },
+        stakeholders: [],
+        capabilities,
+        processes,
+        activities: [],
+      },
+      accept: { vision: false, capabilities: [], processes: [], stakeholders: [] },
+    });
+
+describe('Stage 5 — Hierarchy createElement reuses by type-matched similarity', () => {
+  it('returns the existing element id when SAME-tier match has correct type', async () => {
+    // Capability → SAME match with type=business_capability → reuse.
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'pre-existing-cap', name: 'Reporting', type: 'business_capability',
+        layer: 'strategy', projectId: PROJECT_ID, score: 0.88, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postHierarchy([
+      { name: 'Reporting', description: 'Internal reporting capability', level: 1 },
+    ]);
+
+    expect(res.status).toBe(200);
+    // Capability was reused → createConnection / id-map should have used
+    // the existing id. Since this test posts only a capability (no parent,
+    // no child process) we can't easily assert the linkage, but we CAN
+    // assert that no embedding upsert fired (reuse path skips it).
+    expect(mockUpsertEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('createElement creates fresh when match type differs from el.type', async () => {
+    // findSimilar returns a stakeholder for a capability query → must
+    // be ignored (type-filter), capability is created fresh.
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'wrong-type', name: 'X', type: 'stakeholder',
+        layer: 'motivation', projectId: PROJECT_ID, score: 0.99, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postHierarchy([
+      { name: 'Compliance', description: 'Regulatory compliance capability', level: 1 },
+    ]);
+
+    expect(res.status).toBe(200);
+    // Capability was created → upsertEmbedding fired
+    await flushMicrotasks();
+    expect(mockUpsertEmbedding).toHaveBeenCalledTimes(1);
+    expect(mockUpsertEmbedding.mock.calls[0][1].type).toBe('business_capability');
+  });
+
+  it('reused capability id is propagated to child-process composition (MERGE-safe)', async () => {
+    // First call (capability findSimilar) → reuse
+    mockFindSimilarElements
+      .mockResolvedValueOnce({
+        results: [{ elementId: 'cap-canonical', name: 'Capability X', type: 'business_capability',
+          layer: 'strategy', projectId: PROJECT_ID, score: 0.92, tier: 'same' }],
+        confidence: 'high', topGap: 0,
+      })
+      // Second call (process findSimilar) → no match → create
+      .mockResolvedValueOnce({ results: [], confidence: 'low', topGap: 0 });
+
+    const res = await postHierarchy(
+      [{ name: 'Capability X', description: 'Reused capability', level: 1 }],
+      [{ name: 'Process Y', description: 'Child process', parentCapability: 'Capability X' }],
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // Only the process was created (capability was reused).
+    await flushMicrotasks();
+    expect(mockUpsertEmbedding).toHaveBeenCalledTimes(1);
+    expect(mockUpsertEmbedding.mock.calls[0][1].type).toBe('business_process');
+  });
+});
+
 // ─── Mixed batch: each item routed independently ───────────────────────────
 
 describe('Mixed batch: items take different tiers in a single request', () => {
