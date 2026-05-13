@@ -156,7 +156,32 @@ export default function PropertyPanel() {
       } catch {
         // non-blocking
       }
-      toast.success(`${selected.length} data-object${selected.length === 1 ? '' : 's'} added`);
+      // REQ-SIM-004 Stage 6: surface the V2-reuse outcome from the
+      // Generator-D backend. The breakdown is what the user actually
+      // cares about — "I asked for 5, system created 2, reused 2 from
+      // the project, 1 needs my decision".
+      const created = result.dataObjectIds?.length ?? 0;
+      const reusedCount = result.reused?.length ?? 0;
+      const pendingCount = result.pendingConfirm?.length ?? 0;
+
+      const parts: string[] = [];
+      if (created > 0) parts.push(`${created} neu`);
+      if (reusedCount > 0) parts.push(`${reusedCount} wiederverwendet`);
+
+      if (pendingCount > 0) {
+        // Pending items are not yet attached — give the user a clear
+        // call to action. Future Sub-Stage 6b will open a merge modal.
+        toast(
+          `${parts.length ? parts.join(' · ') + ' · ' : ''}${pendingCount} brauchen Entscheidung (TODO: Confirm-Dialog folgt)`,
+          { icon: '⚠️', duration: 6000 },
+        );
+      } else if (parts.length > 0) {
+        toast.success(parts.join(' · '));
+      } else {
+        // edge case: zero of everything — still close the modal
+        toast.success('Verarbeitung abgeschlossen');
+      }
+
       setShowDataObjectModal(false);
       dataObjectGenerator.reset();
     } else {

@@ -122,6 +122,21 @@ export function useDataObjectGenerator(projectId: string | null) {
       success: boolean;
       dataObjectIds?: string[];
       connectionIds?: string[];
+      // REQ-SIM-004 Stage 6: Generator-D V2 reuse outcome —
+      // surfaced so the property-panel can show "X reused, Y to confirm"
+      // and (eventually) trigger the confirm modal.
+      reused?: Array<{
+        originalIndex: number;
+        originalName: string;
+        reusedAs: string;
+        via: 'exact-name' | 'similarity';
+        score?: number;
+      }>;
+      pendingConfirm?: Array<{
+        originalIndex: number;
+        original: GeneratedDataObject;
+        suggestion: { elementId: string; name: string; type: string; score: number };
+      }>;
       error?: string;
     }> => {
       if (!projectId) return { success: false, error: 'No project loaded' };
@@ -153,6 +168,8 @@ export function useDataObjectGenerator(projectId: string | null) {
           success: true,
           dataObjectIds: data.dataObjectIds,
           connectionIds: data.connectionIds,
+          reused: data.reused,
+          pendingConfirm: data.pendingConfirm,
         };
       } catch (err) {
         return { success: false, error: (err as Error).message };
