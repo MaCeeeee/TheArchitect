@@ -17,6 +17,7 @@ import { useDataObjectGenerator, type GeneratedDataObject } from '../../hooks/us
 import DataObjectSuggestionModal from '../copilot/DataObjectSuggestionModal';
 import { useActivityViewStore } from '../../stores/activityViewStore';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
+import { getSensitivityColor, getSensitivityLabel } from '../3d/sensitivityColors';
 
 const RISK_COLORS: Record<string, string> = {
   low: '#22c55e',
@@ -352,6 +353,11 @@ export default function PropertyPanel() {
             </div>
             <span className="text-white text-[10px] ml-1">{element.maturityLevel}/5</span>
           </div>
+          {/* REQ-DATA-008: Sensitivity classification readout. Only shown
+              when the element is a data-* and has been classified
+              (Generator-D sets this in metadata at apply-time). The 3D
+              scene already colors the element accordingly. */}
+          <SensitivityRow element={element} />
         </Section>
 
         {/* Compliance Coverage — only for ArchiMate requirement elements */}
@@ -824,6 +830,30 @@ function Section({ title, children }: { title: string; children: React.ReactNode
     <div>
       <h4 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2">{title}</h4>
       {children}
+    </div>
+  );
+}
+
+/**
+ * REQ-DATA-008 — Sensitivity classification row.
+ * Renders only when (a) the element is a data-* type AND (b) the
+ * metadata.sensitivity is set. Matches the same colors NodeObject3D
+ * uses so the property-panel readout and the 3D-bubble agree.
+ */
+function SensitivityRow({ element }: { element: { type: string; metadata?: Record<string, unknown> } }) {
+  const color = getSensitivityColor(element);
+  if (!color) return null;
+  const sensitivity = String(element.metadata?.sensitivity ?? '');
+  return (
+    <div className="flex items-center gap-2 text-xs mt-2">
+      <Shield size={12} style={{ color }} />
+      <span className="text-[var(--text-secondary)]">Sensitivity:</span>
+      <span
+        className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider"
+        style={{ color, border: `1px solid ${color}55`, background: `${color}15` }}
+      >
+        {getSensitivityLabel(sensitivity)}
+      </span>
     </div>
   );
 }
