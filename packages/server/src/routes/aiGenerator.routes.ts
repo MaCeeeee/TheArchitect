@@ -119,91 +119,137 @@ router.post(
     const parentZ = body.parentZ ?? 0;
     const HIDDEN_Y = -100;
 
-    const createdIds: string[] = [];
+    const processedIds: string[] = [];  // every activity-id in input order — used for sequential flow
+    const createdIds: string[] = [];    // newly created only
+    const reused: ReusedItem[] = [];
 
     try {
       for (let i = 0; i < body.activities.length; i++) {
         const a = body.activities[i];
-        const aId = `${processId}-act-ai-${Date.now()}-${i + 1}`;
-        createdIds.push(aId);
-
-        const metadata = {
-          source: 'ai-generated',
-          aiGenerated: true,
-          aiGeneratedAt: new Date().toISOString(),
-          isActivity: true,
-          sequenceIndex: i + 1,
-          activityOwner: a.owner,
-          activityAction: a.action,
-          activitySystem: a.system,
-          activityWhen: a.when,
-          activityOutput: a.output,
-          activityEnables: a.enables,
-        };
-
         const description = `${a.owner} ${a.action} (${a.system}) — ${a.when}. Output: ${a.output} → ermöglicht ${a.enables}.`;
 
-        await runCypher(
-          `CREATE (e:ArchitectureElement {
-            id: $id, projectId: $projectId, type: 'process', name: $name,
-            description: $description, layer: 'business', togafDomain: 'business',
-            maturityLevel: 3, riskLevel: 'low', status: 'current',
-            posX: $posX, posY: $posY, posZ: $posZ,
-            metadataJson: $metadataJson,
-            createdAt: datetime(), updatedAt: datetime()
-          }) RETURN e`,
-          {
+        // REQ-SIM-004 Stage 3 — V2 reuse for activities. No V1-baseline,
+        // no pending-confirm (would be UX-hell on a 36-activity pyramid).
+        // Only SAME-tier (>=0.85) auto-reuse; everything else creates.
+        let topActivityMatch: { elementId: string; name: string; type: string; score: number } | null = null;
+        try {
+          const sim = await findSimilarElements(String(projectId), {
+            text: `${a.name} — ${description}`,
+            topK: 3,
+            scoreThreshold: REUSE_SAME_THRESHOLD,
+          });
+          const firstActivityMatch = sim.results.find((r) => r.type === 'process');
+          if (firstActivityMatch) topActivityMatch = firstActivityMatch;
+        } catch (e) {
+          log.warn(
+            { err: (e as Error).message, projectId, name: a.name },
+            '[similarity] findSimilar failed in apply-activities, falling back to CREATE',
+          );
+        }
+
+        let aId: string;
+        if (topActivityMatch) {
+          // Tier 2a — silent reuse
+          aId = topActivityMatch.elementId;
+          reused.push({
+            originalIndex: i,
+            originalName: a.name,
+            reusedAs: aId,
+            via: 'similarity',
+            score: topActivityMatch.score,
+          });
+          // Composition is MERGEd (idempotent) so re-attaching to a new
+          // parent process doesn't create a duplicate edge.
+          await runCypher(
+            `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
+                   (c:ArchitectureElement {id: $childId, projectId: $projectId})
+             MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $childId, type: 'composition'}]->(c)
+             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp()
+             RETURN r`,
+            { processId, projectId, childId: aId, connId: uuid() },
+          );
+        } else {
+          // Tier 3 — CREATE
+          aId = `${processId}-act-ai-${Date.now()}-${i + 1}`;
+          createdIds.push(aId);
+
+          const metadata = {
+            source: 'ai-generated',
+            aiGenerated: true,
+            aiGeneratedAt: new Date().toISOString(),
+            isActivity: true,
+            sequenceIndex: i + 1,
+            activityOwner: a.owner,
+            activityAction: a.action,
+            activitySystem: a.system,
+            activityWhen: a.when,
+            activityOutput: a.output,
+            activityEnables: a.enables,
+          };
+
+          await runCypher(
+            `CREATE (e:ArchitectureElement {
+              id: $id, projectId: $projectId, type: 'process', name: $name,
+              description: $description, layer: 'business', togafDomain: 'business',
+              maturityLevel: 3, riskLevel: 'low', status: 'current',
+              posX: $posX, posY: $posY, posZ: $posZ,
+              metadataJson: $metadataJson,
+              createdAt: datetime(), updatedAt: datetime()
+            }) RETURN e`,
+            {
+              id: aId,
+              projectId,
+              name: a.name,
+              description,
+              posX: parentX,
+              posY: HIDDEN_Y,
+              posZ: parentZ,
+              metadataJson: JSON.stringify(metadata),
+            },
+          );
+
+          upsertEmbedding(String(projectId), {
             id: aId,
-            projectId,
             name: a.name,
             description,
-            posX: parentX,
-            posY: HIDDEN_Y,
-            posZ: parentZ,
-            metadataJson: JSON.stringify(metadata),
-          },
-        );
+            type: 'process',
+            layer: 'business',
+            projectId: String(projectId),
+          }).catch((e) =>
+            log.warn(
+              { err: (e as Error).message, projectId, elementId: aId },
+              '[similarity] upsert hook failed (ai-gen activity)',
+            ),
+          );
 
-        // REQ-SIM-002: fire-and-forget embedding so the new activity is
-        // findable by similarity search and dedup-by-similarity can later
-        // skip duplicates (Stage 2 of REQ-SIM-004 will use this).
-        upsertEmbedding(String(projectId), {
-          id: aId,
-          name: a.name,
-          description,
-          type: 'process',
-          layer: 'business',
-          projectId: String(projectId),
-        }).catch((e) =>
-          log.warn(
-            { err: (e as Error).message, projectId, elementId: aId },
-            '[similarity] upsert hook failed (ai-gen activity)',
-          ),
-        );
+          await runCypher(
+            `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
+                   (c:ArchitectureElement {id: $childId, projectId: $projectId})
+             CREATE (p)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(c)
+             RETURN r`,
+            { processId, projectId, childId: aId, connId: uuid() },
+          );
+        }
 
-        // Composition: parent process → child activity
-        await runCypher(
-          `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
-                 (c:ArchitectureElement {id: $childId, projectId: $projectId})
-           CREATE (p)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(c)
-           RETURN r`,
-          { processId, projectId, childId: aId, connId: uuid() },
-        );
+        processedIds.push(aId);
       }
 
-      // Sequential flow connections between siblings
-      for (let i = 0; i < createdIds.length - 1; i++) {
+      // Sequential flow connections between siblings — operates on the
+      // full ordered list (created + reused) so the pyramid wiring is
+      // intact even when some activities came from prior runs.
+      for (let i = 0; i < processedIds.length - 1; i++) {
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $from, projectId: $projectId}),
                  (b:ArchitectureElement {id: $to, projectId: $projectId})
-           CREATE (a)-[r:CONNECTS_TO {id: $connId, type: 'flow', label: 'next'}]->(b)
+           MERGE (a)-[r:CONNECTS_TO {sourceElementId: $from, targetElementId: $to, type: 'flow'}]->(b)
+           ON CREATE SET r.id = $connId, r.label = 'next', r.createdAt = timestamp()
            RETURN r`,
-          { from: createdIds[i], to: createdIds[i + 1], projectId, connId: uuid() },
+          { from: processedIds[i], to: processedIds[i + 1], projectId, connId: uuid() },
         );
       }
 
       log.info(
-        { projectId, processId, activitiesCreated: createdIds.length },
+        { projectId, processId, activitiesCreated: createdIds.length, reused: reused.length },
         '[AI-Generator] activities applied successfully',
       );
 
@@ -211,6 +257,10 @@ router.post(
         success: true,
         activityIds: createdIds,
         count: createdIds.length,
+        // REQ-SIM-004: ids that came from similarity-reuse (already in the
+        // project, attached to this new parent). Sequential flow uses both.
+        reused,
+        activityIdsAll: processedIds,
       });
     } catch (err) {
       log.error({ err, projectId, processId }, '[AI-Generator] apply-activities failed');
@@ -583,6 +633,7 @@ router.post(
     const Y_BUSINESS = 8;
 
     const createdIds: string[] = [];
+    const reused: ReusedItem[] = [];
 
     try {
       // Layout child processes around the parent capability on the business layer.
@@ -593,65 +644,107 @@ router.post(
 
       for (let i = 0; i < body.processes.length; i++) {
         const p = body.processes[i];
-        const pId = `${capabilityId}-proc-ai-${Date.now()}-${i + 1}`;
-        createdIds.push(pId);
 
-        const metadata = {
-          source: 'ai-generated',
-          aiGenerated: true,
-          aiGeneratedAt: new Date().toISOString(),
-          parentCapability: capabilityId,
-          generator: 'B',
-        };
+        // REQ-SIM-004 Stage 4 — V2 reuse for business-processes. Same
+        // SAME-only-tier policy as activities (Stage 3): no V1, no
+        // pending-confirm. Type filter: only 'business_process' matches
+        // (so we never reuse an activity by mistake — activities are
+        // type='process').
+        let topProcessMatch: { elementId: string; name: string; type: string; score: number } | null = null;
+        try {
+          const sim = await findSimilarElements(String(projectId), {
+            text: `${p.name} — ${p.description}`,
+            topK: 3,
+            scoreThreshold: REUSE_SAME_THRESHOLD,
+          });
+          const firstProcessMatch = sim.results.find((r) => r.type === 'business_process');
+          if (firstProcessMatch) topProcessMatch = firstProcessMatch;
+        } catch (e) {
+          log.warn(
+            { err: (e as Error).message, projectId, name: p.name },
+            '[similarity] findSimilar failed in apply-processes, falling back to CREATE',
+          );
+        }
 
-        await runCypher(
-          `CREATE (e:ArchitectureElement {
-            id: $id, projectId: $projectId, type: 'business_process', name: $name,
-            description: $description, layer: 'business', togafDomain: 'business',
-            maturityLevel: 3, riskLevel: 'low', status: 'current',
-            posX: $posX, posY: $posY, posZ: $posZ,
-            metadataJson: $metadataJson,
-            createdAt: datetime(), updatedAt: datetime()
-          }) RETURN e`,
-          {
+        let pId: string;
+        if (topProcessMatch) {
+          pId = topProcessMatch.elementId;
+          reused.push({
+            originalIndex: i,
+            originalName: p.name,
+            reusedAs: pId,
+            via: 'similarity',
+            score: topProcessMatch.score,
+          });
+          // Composition MERGE — idempotent, supports attaching the same
+          // canonical process under multiple capabilities.
+          await runCypher(
+            `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
+                   (proc:ArchitectureElement {id: $procId, projectId: $projectId})
+             MERGE (cap)-[r:CONNECTS_TO {sourceElementId: $capabilityId, targetElementId: $procId, type: 'composition'}]->(proc)
+             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp()
+             RETURN r`,
+            { capabilityId, procId: pId, projectId, connId: uuid() },
+          );
+        } else {
+          pId = `${capabilityId}-proc-ai-${Date.now()}-${i + 1}`;
+          createdIds.push(pId);
+
+          const metadata = {
+            source: 'ai-generated',
+            aiGenerated: true,
+            aiGeneratedAt: new Date().toISOString(),
+            parentCapability: capabilityId,
+            generator: 'B',
+          };
+
+          await runCypher(
+            `CREATE (e:ArchitectureElement {
+              id: $id, projectId: $projectId, type: 'business_process', name: $name,
+              description: $description, layer: 'business', togafDomain: 'business',
+              maturityLevel: 3, riskLevel: 'low', status: 'current',
+              posX: $posX, posY: $posY, posZ: $posZ,
+              metadataJson: $metadataJson,
+              createdAt: datetime(), updatedAt: datetime()
+            }) RETURN e`,
+            {
+              id: pId,
+              projectId,
+              name: p.name,
+              description: p.description,
+              posX: layoutX(i, body.processes.length),
+              posY: Y_BUSINESS,
+              posZ: parentZ,
+              metadataJson: JSON.stringify(metadata),
+            },
+          );
+
+          upsertEmbedding(String(projectId), {
             id: pId,
-            projectId,
             name: p.name,
             description: p.description,
-            posX: layoutX(i, body.processes.length),
-            posY: Y_BUSINESS,
-            posZ: parentZ,
-            metadataJson: JSON.stringify(metadata),
-          },
-        );
+            type: 'business_process',
+            layer: 'business',
+            projectId: String(projectId),
+          }).catch((e) =>
+            log.warn(
+              { err: (e as Error).message, projectId, elementId: pId },
+              '[similarity] upsert hook failed (ai-gen process)',
+            ),
+          );
 
-        // REQ-SIM-002: index the new business-process.
-        upsertEmbedding(String(projectId), {
-          id: pId,
-          name: p.name,
-          description: p.description,
-          type: 'business_process',
-          layer: 'business',
-          projectId: String(projectId),
-        }).catch((e) =>
-          log.warn(
-            { err: (e as Error).message, projectId, elementId: pId },
-            '[similarity] upsert hook failed (ai-gen process)',
-          ),
-        );
-
-        // Composition: parent capability → child process
-        await runCypher(
-          `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
-                 (proc:ArchitectureElement {id: $procId, projectId: $projectId})
-           CREATE (cap)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(proc)
-           RETURN r`,
-          { capabilityId, procId: pId, projectId, connId: uuid() },
-        );
+          await runCypher(
+            `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
+                   (proc:ArchitectureElement {id: $procId, projectId: $projectId})
+             CREATE (cap)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(proc)
+             RETURN r`,
+            { capabilityId, procId: pId, projectId, connId: uuid() },
+          );
+        }
       }
 
       log.info(
-        { projectId, capabilityId, processesCreated: createdIds.length },
+        { projectId, capabilityId, processesCreated: createdIds.length, reused: reused.length },
         '[AI-Generator] processes applied successfully',
       );
 
@@ -659,6 +752,7 @@ router.post(
         success: true,
         processIds: createdIds,
         count: createdIds.length,
+        reused,
       });
     } catch (err) {
       log.error({ err, projectId, capabilityId }, '[AI-Generator] apply-processes failed');

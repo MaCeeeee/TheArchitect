@@ -134,6 +134,29 @@ const post = (dataObjects: unknown[]) =>
     .post(`/api/ai-generator/projects/${PROJECT_ID}/processes/${PROCESS_ID}/apply-data-objects`)
     .send({ dataObjects });
 
+const CAPABILITY_ID = 'cap-test-id';
+const postActivities = (activities: unknown[]) =>
+  request(app)
+    .post(`/api/ai-generator/projects/${PROJECT_ID}/processes/${PROCESS_ID}/apply-activities`)
+    .send({ activities });
+const postProcesses = (processes: unknown[]) =>
+  request(app)
+    .post(`/api/ai-generator/projects/${PROJECT_ID}/capabilities/${CAPABILITY_ID}/apply-processes`)
+    .send({ processes });
+
+const sampleActivity = (overrides: Record<string, unknown> = {}) => ({
+  name: 'Vorfall melden', owner: 'DPO', action: 'meldet',
+  system: 'BfDI-Portal', when: 'innerhalb 72h',
+  output: 'Aktenzeichen', enables: 'Audit-Trail',
+  ...overrides,
+});
+
+const sampleProcess = (overrides: Record<string, unknown> = {}) => ({
+  name: 'ESG-Reporting',
+  description: 'Quartalsweise CSRD-Compliance-Reports erstellen',
+  ...overrides,
+});
+
 // ─── Tier 1 — exact-name (V1) ──────────────────────────────────────────────
 
 describe('Tier 1 — V1 exact-name match', () => {
@@ -281,6 +304,137 @@ describe('Type filter: only data-* types are considered for reuse', () => {
     expect(res.body.reused).toEqual([]);
     expect(res.body.pendingConfirm).toEqual([]);
     expect(res.body.dataObjectIds).toHaveLength(1);
+  });
+});
+
+// ─── Activities V2 Reuse (Stage 3) ──────────────────────────────────────────
+
+describe('Stage 3 — Activities V2 reuse (SAME-only, no pending-confirm)', () => {
+  it('reuses an activity when similarity >= 0.85 and type=process', async () => {
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'reused-act-1', name: 'Vorfall meldet', type: 'process',
+        layer: 'business', projectId: PROJECT_ID, score: 0.92, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postActivities([sampleActivity()]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.activityIds).toEqual([]);
+    expect(res.body.reused).toHaveLength(1);
+    expect(res.body.reused[0]).toMatchObject({
+      reusedAs: 'reused-act-1',
+      via: 'similarity',
+      score: 0.92,
+    });
+    expect(res.body.activityIdsAll).toEqual(['reused-act-1']);
+    expect(mockUpsertEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('ignores SAME-tier match when type is not process (e.g. business_process)', async () => {
+    // A high-scoring business_process must not be reused as an activity.
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'bp-1', name: 'X', type: 'business_process',
+        layer: 'business', projectId: PROJECT_ID, score: 0.95, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postActivities([sampleActivity()]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.reused).toEqual([]);
+    expect(res.body.activityIds).toHaveLength(1); // created
+  });
+
+  it('SIMILAR tier (0.65-0.85) is treated as no-match → CREATE (no pending-confirm)', async () => {
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [], // service already filters at threshold 0.85
+      confidence: 'low', topGap: 0,
+    });
+
+    const res = await postActivities([sampleActivity({ name: 'Brand-new activity' })]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.reused).toEqual([]);
+    expect(res.body.activityIds).toHaveLength(1);
+    expect(res.body.pendingConfirm).toBeUndefined(); // activities don't expose this field
+  });
+
+  it('sequential flow is wired over reused + created activities (activityIdsAll)', async () => {
+    // Order: reused, create, reused. activityIdsAll should match.
+    mockFindSimilarElements
+      .mockResolvedValueOnce({
+        results: [{ elementId: 'reused-A', name: 'A', type: 'process',
+          layer: 'business', projectId: PROJECT_ID, score: 0.9, tier: 'same' }],
+        confidence: 'high', topGap: 0,
+      })
+      .mockResolvedValueOnce({ results: [], confidence: 'low', topGap: 0 })
+      .mockResolvedValueOnce({
+        results: [{ elementId: 'reused-C', name: 'C', type: 'process',
+          layer: 'business', projectId: PROJECT_ID, score: 0.88, tier: 'same' }],
+        confidence: 'high', topGap: 0,
+      });
+
+    const res = await postActivities([
+      sampleActivity({ name: 'A' }),
+      sampleActivity({ name: 'B-new' }),
+      sampleActivity({ name: 'C' }),
+    ]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.activityIds).toHaveLength(1); // only B-new created
+    expect(res.body.reused).toHaveLength(2);
+    expect(res.body.activityIdsAll).toHaveLength(3); // full ordered list
+    expect(res.body.activityIdsAll[0]).toBe('reused-A');
+    expect(res.body.activityIdsAll[2]).toBe('reused-C');
+  });
+});
+
+// ─── Processes V2 Reuse (Stage 4) ──────────────────────────────────────────
+
+describe('Stage 4 — Processes V2 reuse (SAME-only, type=business_process)', () => {
+  it('reuses a process when similarity >= 0.85 and type=business_process', async () => {
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'reused-bp', name: 'ESG-Report', type: 'business_process',
+        layer: 'business', projectId: PROJECT_ID, score: 0.89, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postProcesses([sampleProcess()]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.processIds).toEqual([]);
+    expect(res.body.reused).toHaveLength(1);
+    expect(res.body.reused[0]).toMatchObject({
+      reusedAs: 'reused-bp',
+      via: 'similarity',
+      score: 0.89,
+    });
+  });
+
+  it('ignores match when type is process (not business_process) — type guard', async () => {
+    // An activity (type=process) must not be reused as a process.
+    mockFindSimilarElements.mockResolvedValueOnce({
+      results: [{ elementId: 'act-x', name: 'X', type: 'process',
+        layer: 'business', projectId: PROJECT_ID, score: 0.95, tier: 'same' }],
+      confidence: 'high', topGap: 0,
+    });
+
+    const res = await postProcesses([sampleProcess()]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.reused).toEqual([]);
+    expect(res.body.processIds).toHaveLength(1);
+  });
+
+  it('falls through to CREATE when findSimilar throws', async () => {
+    mockFindSimilarElements.mockRejectedValueOnce(new Error('qdrant down'));
+
+    const res = await postProcesses([sampleProcess()]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.processIds).toHaveLength(1);
+    expect(res.body.reused).toEqual([]);
   });
 });
 
