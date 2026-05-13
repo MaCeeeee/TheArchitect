@@ -15,6 +15,7 @@ import { useProcessGenerator, type GeneratedProcess } from '../../hooks/useProce
 import ProcessSuggestionModal from '../copilot/ProcessSuggestionModal';
 import { useDataObjectGenerator, type GeneratedDataObject } from '../../hooks/useDataObjectGenerator';
 import DataObjectSuggestionModal from '../copilot/DataObjectSuggestionModal';
+import DataObjectConfirmModal, { type PendingConfirmItem } from '../copilot/DataObjectConfirmModal';
 import { useActivityViewStore } from '../../stores/activityViewStore';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
 import { getSensitivityColor, getSensitivityLabel } from '../3d/sensitivityColors';
@@ -132,6 +133,9 @@ export default function PropertyPanel() {
   // ─── Generator D (UC-DATA-001): AI-Generate Data-Objects for selected Process/Capability/Activity ───
   const dataObjectGenerator = useDataObjectGenerator(projectId);
   const [showDataObjectModal, setShowDataObjectModal] = useState(false);
+  // REQ-SIM-004 Stage 6b: confirm-modal state for the pendingConfirm[]
+  // items that come back from apply-data-objects.
+  const [pendingConfirmItems, setPendingConfirmItems] = useState<PendingConfirmItem[]>([]);
 
   const handleGenerateDataObjects = async () => {
     if (!element) return;
@@ -170,13 +174,23 @@ export default function PropertyPanel() {
       if (reusedCount > 0) parts.push(`${reusedCount} wiederverwendet`);
 
       if (pendingCount > 0) {
-        // Pending items are not yet attached — give the user a clear
-        // call to action. Future Sub-Stage 6b will open a merge modal.
-        toast(
-          `${parts.length ? parts.join(' · ') + ' · ' : ''}${pendingCount} brauchen Entscheidung (TODO: Confirm-Dialog folgt)`,
-          { icon: '⚠️', duration: 6000 },
-        );
-      } else if (parts.length > 0) {
+        // REQ-SIM-004 Stage 6b — open the confirm modal so the user can
+        // pick merge / create per pending item. We close the generation
+        // modal first so the two don't stack.
+        setShowDataObjectModal(false);
+        setPendingConfirmItems(result.pendingConfirm ?? []);
+        if (parts.length > 0) {
+          toast(
+            `${parts.join(' · ')} · ${pendingCount} brauchen Entscheidung`,
+            { icon: '⚠️', duration: 4000 },
+          );
+        }
+        // Don't reset() yet — keep the generator state until the user
+        // either confirms or cancels the merge modal.
+        return;
+      }
+
+      if (parts.length > 0) {
         toast.success(parts.join(' · '));
       } else {
         // edge case: zero of everything — still close the modal
@@ -187,6 +201,47 @@ export default function PropertyPanel() {
       dataObjectGenerator.reset();
     } else {
       toast.error(result.error || 'Failed to apply data-objects');
+    }
+  };
+
+  // REQ-SIM-004 Stage 6b — submit handler for the confirm modal.
+  // Round-trips the per-item decisions, refreshes the scene, toasts a
+  // summary, and clears the pending state.
+  const handleConfirmDecisions = async (
+    decisions: Array<{
+      originalIndex: number;
+      action: 'merge' | 'create';
+      original: GeneratedDataObject;
+      suggestion?: { elementId: string; name: string };
+    }>,
+  ) => {
+    if (!element || !projectId) return;
+    const result = await dataObjectGenerator.applyDecisions(element.id, decisions, {
+      x: element.position3D?.x ?? 0,
+      z: element.position3D?.z ?? 0,
+    });
+    if (result.success) {
+      try {
+        const [elemRes, connRes] = await Promise.all([
+          architectureAPI.getElements(projectId),
+          architectureAPI.getConnections(projectId),
+        ]);
+        const newElements = (elemRes.data?.data ?? elemRes.data) as ArchitectureElement[];
+        const newConnections = (connRes.data?.data ?? connRes.data) as Connection[];
+        useArchitectureStore.setState({ elements: newElements, connections: newConnections });
+      } catch {
+        /* non-blocking */
+      }
+      const merged = result.reused?.length ?? 0;
+      const created = result.dataObjectIds?.length ?? 0;
+      const parts: string[] = [];
+      if (created > 0) parts.push(`${created} neu`);
+      if (merged > 0) parts.push(`${merged} verknüpft`);
+      toast.success(parts.length ? parts.join(' · ') : 'Entscheidungen verarbeitet');
+      setPendingConfirmItems([]);
+      dataObjectGenerator.reset();
+    } else {
+      toast.error(result.error || 'Failed to apply decisions');
     }
   };
 
@@ -746,6 +801,17 @@ export default function PropertyPanel() {
         rejectedCount={dataObjectGenerator.state.rejectedCount}
         errorMessage={dataObjectGenerator.state.error}
         onApply={handleApplyDataObjects}
+      />
+
+      {/* REQ-SIM-004 Stage 6b: Confirm-decision modal for SIMILAR matches */}
+      <DataObjectConfirmModal
+        isOpen={pendingConfirmItems.length > 0}
+        onClose={() => {
+          setPendingConfirmItems([]);
+          dataObjectGenerator.reset();
+        }}
+        items={pendingConfirmItems}
+        onSubmit={handleConfirmDecisions}
       />
     </aside>
   );

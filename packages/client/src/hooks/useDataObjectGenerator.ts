@@ -178,13 +178,70 @@ export function useDataObjectGenerator(projectId: string | null) {
     [projectId],
   );
 
+  // REQ-SIM-004 Stage 6b — send the user's merge/create choices to the
+  // backend follow-up endpoint, after the original apply returned
+  // pendingConfirm[]. Returns the same shape as apply() so the caller's
+  // toast logic can stay identical.
+  const applyDecisions = useCallback(
+    async (
+      processId: string,
+      decisions: Array<{
+        originalIndex: number;
+        action: 'merge' | 'create';
+        original: GeneratedDataObject;
+        suggestion?: { elementId: string; name: string };
+      }>,
+      parentPos?: { x: number; z: number },
+    ): Promise<{
+      success: boolean;
+      dataObjectIds?: string[];
+      reused?: Array<{ originalIndex: number; originalName: string; reusedAs: string; via: string }>;
+      error?: string;
+    }> => {
+      if (!projectId) return { success: false, error: 'No project loaded' };
+      const token = useAuthStore.getState().token;
+      if (!token) return { success: false, error: 'Not authenticated' };
+
+      try {
+        const res = await fetch(
+          `${API_BASE}/projects/${projectId}/processes/${processId}/apply-data-object-decisions`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              decisions,
+              parentX: parentPos?.x ?? 0,
+              parentZ: parentPos?.z ?? 0,
+            }),
+          },
+        );
+        if (!res.ok) {
+          const errText = await res.text().catch(() => '');
+          return { success: false, error: errText || `HTTP ${res.status}` };
+        }
+        const data = await res.json();
+        return {
+          success: true,
+          dataObjectIds: data.dataObjectIds,
+          reused: data.reused,
+        };
+      } catch (err) {
+        return { success: false, error: (err as Error).message };
+      }
+    },
+    [projectId],
+  );
+
   const reset = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     setState(initialState);
   }, []);
 
-  return { state, generate, apply, reset };
+  return { state, generate, apply, applyDecisions, reset };
 }
 
 function applyEvent(setState: React.Dispatch<React.SetStateAction<State>>, event: unknown) {

@@ -438,6 +438,107 @@ describe('Stage 4 — Processes V2 reuse (SAME-only, type=business_process)', ()
   });
 });
 
+// ─── Stage 6b — Apply Data-Object Decisions (merge / create) ───────────────
+
+const postDecisions = (decisions: unknown[]) =>
+  request(app)
+    .post(`/api/ai-generator/projects/${PROJECT_ID}/processes/${PROCESS_ID}/apply-data-object-decisions`)
+    .send({ decisions });
+
+const decision = (
+  action: 'merge' | 'create',
+  overrides: Record<string, unknown> = {},
+) => ({
+  originalIndex: 0,
+  action,
+  original: sampleDataObject(),
+  ...(action === 'merge'
+    ? { suggestion: { elementId: 'existing-id', name: 'Existing Match' } }
+    : {}),
+  ...overrides,
+});
+
+describe('Stage 6b — apply-data-object-decisions endpoint', () => {
+  it('merge: links the parent process to the suggested element, no CREATE', async () => {
+    const res = await postDecisions([
+      decision('merge', {
+        original: sampleDataObject({ name: 'Customer-Data' }),
+        suggestion: { elementId: 'pre-existing-customer', name: 'Customer Master' },
+      }),
+    ]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.dataObjectIds).toEqual([]);
+    expect(res.body.reused).toHaveLength(1);
+    expect(res.body.reused[0]).toMatchObject({
+      reusedAs: 'pre-existing-customer',
+      via: 'similarity',
+    });
+    expect(res.body.connectionIds).toHaveLength(1);
+    expect(mockUpsertEmbedding).not.toHaveBeenCalled();
+  });
+
+  it('create: force-creates the original even when a suggestion was offered', async () => {
+    const res = await postDecisions([
+      decision('create', {
+        original: sampleDataObject({ name: 'Force-New' }),
+      }),
+    ]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.dataObjectIds).toHaveLength(1);
+    expect(res.body.reused).toEqual([]);
+    await flushMicrotasks();
+    expect(mockUpsertEmbedding).toHaveBeenCalledTimes(1);
+    expect(mockUpsertEmbedding.mock.calls[0][1].name).toBe('Force-New');
+  });
+
+  it('create path bypasses findSimilar (user already decided)', async () => {
+    await postDecisions([decision('create')]);
+    expect(mockFindSimilarElements).not.toHaveBeenCalled();
+  });
+
+  it('mixed batch: merge + create in one request', async () => {
+    const res = await postDecisions([
+      decision('merge', {
+        originalIndex: 0,
+        original: sampleDataObject({ name: 'A' }),
+        suggestion: { elementId: 'existing-A', name: 'Existing-A' },
+      }),
+      decision('create', {
+        originalIndex: 1,
+        original: sampleDataObject({ name: 'B-Force' }),
+      }),
+    ]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.dataObjectIds).toHaveLength(1);    // only B created
+    expect(res.body.reused).toHaveLength(1);            // A merged
+    expect(res.body.connectionIds).toHaveLength(2);     // both got access edges
+  });
+
+  it('400 when decisions array is empty', async () => {
+    const res = await postDecisions([]);
+    expect(res.status).toBe(400);
+  });
+
+  it('400 when merge decision is missing suggestion.elementId', async () => {
+    const res = await postDecisions([
+      { originalIndex: 0, action: 'merge', original: sampleDataObject() }, // no suggestion
+    ]);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('suggestion.elementId');
+  });
+
+  it('400 when action is unknown', async () => {
+    const res = await postDecisions([
+      { originalIndex: 0, action: 'ignore', original: sampleDataObject() },
+    ]);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toContain('merge');
+  });
+});
+
 // ─── Hierarchy V2 Reuse (Stage 5) ───────────────────────────────────────────
 
 const postHierarchy = (capabilities: unknown[], processes: unknown[] = []) =>

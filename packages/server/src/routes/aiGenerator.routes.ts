@@ -557,6 +557,188 @@ router.post(
   },
 );
 
+// ─── Apply Data-Object Decisions (REQ-SIM-004 Stage 6b) ────────────────────
+//
+// Follow-up endpoint for items the user had to confirm:
+//   - 'merge'  -> link the parent process to the suggested existing
+//                 data-object (no new element, MERGE-safe access edge)
+//   - 'create' -> bypass similarity-reuse and force-create the
+//                 originally-proposed item (still gets an embedding)
+//
+// Bodies look like:
+//   {
+//     decisions: [
+//       { originalIndex, action: 'merge',  original, suggestion: { elementId, name } },
+//       { originalIndex, action: 'create', original },
+//     ],
+//     parentX?, parentZ?
+//   }
+
+interface ConfirmDecision {
+  originalIndex: number;
+  action: 'merge' | 'create';
+  original: GeneratedDataObject;
+  suggestion?: { elementId: string; name: string };
+}
+
+interface ApplyDataObjectDecisionsRequest {
+  decisions: ConfirmDecision[];
+  parentX?: number;
+  parentZ?: number;
+}
+
+router.post(
+  '/projects/:projectId/processes/:processId/apply-data-object-decisions',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const processId = String(req.params.processId);
+    const body = req.body as ApplyDataObjectDecisionsRequest;
+
+    if (!Array.isArray(body?.decisions) || body.decisions.length === 0) {
+      return res.status(400).json({ error: 'decisions array is required' });
+    }
+
+    const parentX = body.parentX ?? 0;
+    const parentZ = body.parentZ ?? 0;
+    const INFORMATION_LAYER_Y = 4;
+
+    const createdElementIds: string[] = [];
+    const createdConnectionIds: string[] = [];
+    const reused: ReusedItem[] = [];
+
+    try {
+      for (let i = 0; i < body.decisions.length; i++) {
+        const d = body.decisions[i];
+        const orig = d.original;
+        if (!orig?.name) {
+          return res.status(400).json({ error: `decisions[${i}] missing original.name` });
+        }
+
+        let dataObjectId: string;
+
+        if (d.action === 'merge') {
+          if (!d.suggestion?.elementId) {
+            return res.status(400).json({
+              error: `decisions[${i}] action=merge requires suggestion.elementId`,
+            });
+          }
+          dataObjectId = d.suggestion.elementId;
+          reused.push({
+            originalIndex: d.originalIndex,
+            originalName: orig.name,
+            reusedAs: dataObjectId,
+            via: 'similarity', // user-confirmed similarity-based merge
+          });
+        } else if (d.action === 'create') {
+          // Force-create — bypasses the similarity check entirely. We
+          // intentionally do NOT call findSimilar here because the user
+          // already saw the suggestion and chose to create anyway.
+          dataObjectId = `${processId}-do-ai-${Date.now()}-${i + 1}`;
+          createdElementIds.push(dataObjectId);
+
+          const metadata = {
+            source: 'ai-generated',
+            aiGenerated: true,
+            aiGeneratedAt: new Date().toISOString(),
+            aiSourceProcessId: processId,
+            sensitivity: orig.sensitivity,
+            dataClass: orig.dataClass,
+            forceCreated: true, // audit hint: user chose create-anyway
+          };
+
+          const offsetX = parentX + (i - body.decisions.length / 2) * 3;
+
+          await runCypher(
+            `CREATE (e:ArchitectureElement {
+              id: $id, projectId: $projectId, type: $type, name: $name,
+              description: $description, layer: 'information', togafDomain: 'data',
+              maturityLevel: 3, riskLevel: 'low', status: 'current',
+              posX: $posX, posY: $posY, posZ: $posZ,
+              metadataJson: $metadataJson,
+              createdAt: datetime(), updatedAt: datetime()
+            }) RETURN e`,
+            {
+              id: dataObjectId,
+              projectId,
+              type: orig.archimateType,
+              name: orig.name,
+              description: orig.description,
+              posX: offsetX,
+              posY: INFORMATION_LAYER_Y,
+              posZ: parentZ,
+              metadataJson: JSON.stringify(metadata),
+            },
+          );
+
+          upsertEmbedding(String(projectId), {
+            id: dataObjectId,
+            name: orig.name,
+            description: orig.description,
+            type: orig.archimateType,
+            layer: 'information',
+            projectId: String(projectId),
+          }).catch((e) =>
+            log.warn(
+              { err: (e as Error).message, projectId, elementId: dataObjectId },
+              '[similarity] upsert hook failed (ai-gen force-create)',
+            ),
+          );
+        } else {
+          return res.status(400).json({
+            error: `decisions[${i}] action must be "merge" or "create" (got "${d.action}")`,
+          });
+        }
+
+        // Access-connection — MERGE-safe so re-running the same decision
+        // doesn't double up edges. CRUD-letter mapping mirrors the
+        // primary apply-data-objects route.
+        const ops = orig.crudOperations.toUpperCase();
+        const reads = ops.includes('R');
+        const writes = /[CUD]/.test(ops);
+        const accessLabel = reads && writes ? 'read-write' : writes ? 'write' : 'read';
+
+        const connectionId = uuid();
+        await runCypher(
+          `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
+                 (d:ArchitectureElement {id: $dataId, projectId: $projectId})
+           MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $dataId, type: 'access'}]->(d)
+           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+           ON MATCH  SET r.label = coalesce($label, r.label)
+           RETURN r.id AS id`,
+          { processId, projectId, dataId: dataObjectId, connId: connectionId, label: accessLabel },
+        );
+        createdConnectionIds.push(connectionId);
+      }
+
+      log.info(
+        {
+          projectId,
+          processId,
+          decisions: body.decisions.length,
+          merged: reused.length,
+          created: createdElementIds.length,
+        },
+        '[AI-Generator] data-object decisions applied',
+      );
+
+      res.json({
+        success: true,
+        dataObjectIds: createdElementIds,
+        connectionIds: createdConnectionIds,
+        count: createdElementIds.length,
+        reused,
+      });
+    } catch (err) {
+      log.error(
+        { err, projectId, processId },
+        '[AI-Generator] apply-data-object-decisions failed',
+      );
+      res.status(500).json({ error: (err as Error).message });
+    }
+  },
+);
+
 // ─── Generator B — Capability → Processes (SSE) ────────────────────────────
 
 router.post(
