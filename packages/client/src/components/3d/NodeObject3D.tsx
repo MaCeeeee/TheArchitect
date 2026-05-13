@@ -80,12 +80,14 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
     return COVERAGE_BAND_COLORS[r.band];
   }, [element.id, element.type, allElements, allConnections]);
 
-  // REQ-DATA-008: sensitivity coloring for data-* elements. Wins over
-  // the layer-color but loses to requirement-coverage (which is a
-  // compliance signal) and X-Ray sub-views (set further down).
+  // REQ-DATA-008: sensitivity classification is available as a helper
+  // and consumed in the X-Ray "sensitivity" sub-view below. We keep the
+  // normal-mode color stack on ArchiMate-layer convention so puristic
+  // architects don't lose layer-readability — the X-Ray heatmap is
+  // opt-in for compliance officers.
   const sensitivityColor = useMemo(() => getSensitivityColor(element), [element]);
 
-  const baseColor = requirementCoverageColor ?? sensitivityColor ?? layerColor;
+  const baseColor = requirementCoverageColor ?? layerColor;
 
   // Policy violation data
   const elementMeta = (element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata;
@@ -120,7 +122,15 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
     if (isPolicyNode) {
       return violationCount > 0 ? '#ef4444' : '#22c55e';
     }
-    if (!isXRayActive || !xrayData) return baseColor;
+    if (!isXRayActive) return baseColor;
+    // REQ-DATA-008 — Sensitivity sub-view doesn't need xrayData
+    // (it's a pure color overlay driven by metadata.sensitivity).
+    // Non-data or unclassified nodes get a dim gray so the heatmap
+    // is clearly "data only".
+    if (xraySubView === 'sensitivity') {
+      return sensitivityColor ?? '#3a4a3a';
+    }
+    if (!xrayData) return baseColor;
     if (xraySubView === 'risk') {
       const score = xrayData.riskScore;
       if (score >= 8) return '#ef4444';
@@ -151,7 +161,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       return '#4a5a4a';
     }
     return baseColor;
-  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta, element.status, isPolicyNode, violationCount]);
+  }, [isXRayActive, xrayData, xraySubView, baseColor, simCombinedDelta, element.status, isPolicyNode, violationCount, sensitivityColor]);
 
   // X-Ray scale positioning: use precomputed positions when active
   const xrayPosition = useMemo(() => {

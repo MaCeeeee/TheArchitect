@@ -7,6 +7,7 @@ const SUB_VIEW_LABELS: Record<XRaySubView, { label: string; color: string }> = {
   cost: { label: 'COST GRAVITY', color: '#22c55e' },
   timeline: { label: 'TRANSFORMATION TIMELINE', color: '#06b6d4' },
   simulation: { label: 'SIMULATION DELTAS', color: '#a855f7' },
+  sensitivity: { label: 'DATA SENSITIVITY (DSGVO)', color: '#ef4444' },
 };
 
 function formatCurrency(n: number): string {
@@ -30,9 +31,11 @@ export default function XRayHUD() {
   const fatigueReport = useSimulationStore((s) => s.fatigueReport);
   const emergenceMetrics = useSimulationStore((s) => s.emergenceMetrics);
 
-  // Dynamically available views — simulation only when result exists
+  // Dynamically available views — simulation only when result exists.
+  // Sensitivity (REQ-DATA-008) is always available because the helper
+  // gracefully no-ops on elements without metadata.sensitivity.
   const availableViews = useMemo<XRaySubView[]>(() => {
-    const base: XRaySubView[] = ['risk', 'cost', 'timeline'];
+    const base: XRaySubView[] = ['risk', 'cost', 'timeline', 'sensitivity'];
     if (hasSimulationResult) base.push('simulation');
     return base;
   }, [hasSimulationResult]);

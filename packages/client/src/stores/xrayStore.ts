@@ -4,7 +4,7 @@ import type { ElementCostProfile, GraphCentralityMetrics, CostTier } from '@thea
 import { BASE_COSTS_BY_TYPE, STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
 import { analyticsAPI } from '../services/api';
 
-export type XRaySubView = 'risk' | 'cost' | 'timeline' | 'simulation';
+export type XRaySubView = 'risk' | 'cost' | 'timeline' | 'simulation' | 'sensitivity';
 
 export interface XRayMetrics {
   totalRiskExposure: number;
@@ -334,6 +334,15 @@ export const useXRayStore = create<XRayState>((set, get) => ({
     const { elements } = useArchitectureStore.getState();
     const elementData = get().elementData;
     if (elements.length === 0 || elementData.size === 0) return;
+
+    // REQ-DATA-008 — Sensitivity sub-view is a pure color overlay (it
+    // re-tints the data-* nodes by their metadata.sensitivity). We do
+    // NOT re-position elements: the architecture's natural data-layer
+    // position remains intact, so context isn't lost.
+    if (view === 'sensitivity') {
+      set({ xrayPositions: new Map() });
+      return;
+    }
 
     // 2D Risk-Heatmap layout per layer:
     //   X = bucket of the active metric (5 buckets along the layer axis)
