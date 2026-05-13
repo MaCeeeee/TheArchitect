@@ -34,7 +34,7 @@ import {
   DataObjectGeneratorEvent,
 } from '../services/dataObjectGenerator.service';
 import { extractText, isSupportedDocument, getSupportedFormats } from '../services/document-parser.service';
-import { upsertEmbedding } from '../services/elementSimilarity.service';
+import { upsertEmbedding, findSimilarElements } from '../services/elementSimilarity.service';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
 import { defaultStatusForType } from '@thearchitect/shared';
@@ -279,6 +279,33 @@ interface ApplyDataObjectsRequest {
   parentZ?: number;
 }
 
+// REQ-SIM-004 V2 reuse tiers — score thresholds inherited from the PoC
+// (notebooks/predictive-poc/findings.md). Kept here so changes in the
+// service constants don't silently shift the dedup behavior in Gen-D.
+const REUSE_SAME_THRESHOLD = 0.85;     // silent auto-reuse
+const REUSE_SIMILAR_THRESHOLD = 0.65;  // ask the user via pendingConfirm
+const DATA_TYPES = ['data_object', 'data_entity', 'data_model'] as const;
+type DataType = typeof DATA_TYPES[number];
+
+interface PendingConfirmItem {
+  originalIndex: number;
+  original: GeneratedDataObject;
+  suggestion: {
+    elementId: string;
+    name: string;
+    type: string;
+    score: number;
+  };
+}
+
+interface ReusedItem {
+  originalIndex: number;
+  originalName: string;
+  reusedAs: string;
+  via: 'exact-name' | 'similarity';
+  score?: number;
+}
+
 router.post(
   '/projects/:projectId/processes/:processId/apply-data-objects',
   requireProjectAccess('viewer'),
@@ -297,14 +324,16 @@ router.post(
 
     const createdElementIds: string[] = [];
     const createdConnectionIds: string[] = [];
+    const reused: ReusedItem[] = [];
+    const pendingConfirm: PendingConfirmItem[] = [];
 
     try {
       for (let i = 0; i < body.dataObjects.length; i++) {
         const d = body.dataObjects[i];
-        // Reuse-by-name (V1): if a data-object with this exact name already
-        // exists in the project, link to it instead of creating a duplicate.
-        // V2 will use embedding-similarity for semantic reuse — see
-        // docs/strategy/2026-05-06-predictive-architecture.md.
+
+        // Tier 1 — V1 exact-name-match: if a data-object with this exact
+        // name already exists in the project, link to it. Cheapest check,
+        // always reliable, doesn't depend on the embedding stack.
         const existing = await runCypher(
           `MATCH (e:ArchitectureElement {projectId: $projectId, name: $name})
            WHERE e.type IN ['data_object', 'data_entity', 'data_model']
@@ -315,7 +344,60 @@ router.post(
         let dataObjectId: string;
         if (existing.length > 0) {
           dataObjectId = existing[0].get('id') as string;
+          reused.push({
+            originalIndex: i,
+            originalName: d.name,
+            reusedAs: dataObjectId,
+            via: 'exact-name',
+          });
         } else {
+          // Tier 2 — V2 semantic similarity. Pull the top suggestion that
+          // lives in a data-* type so we don't suggest reusing a process
+          // when the user wanted a data-object.
+          let topMatch: { elementId: string; name: string; type: string; score: number } | null = null;
+          try {
+            const sim = await findSimilarElements(String(projectId), {
+              text: `${d.name}${d.description ? ` — ${d.description}` : ''}`,
+              topK: 3,
+              scoreThreshold: REUSE_SIMILAR_THRESHOLD,
+            });
+            const firstDataMatch = sim.results.find((r) =>
+              (DATA_TYPES as readonly string[]).includes(r.type),
+            );
+            if (firstDataMatch) topMatch = firstDataMatch;
+          } catch (e) {
+            // Sidecar / Qdrant unavailable → fall through to CREATE. We
+            // never let an embedding-stack outage block element creation.
+            log.warn(
+              { err: (e as Error).message, projectId, name: d.name },
+              '[similarity] findSimilar failed in apply-data-objects, falling back to CREATE',
+            );
+          }
+
+          // Tier 2a — SAME: silent auto-reuse, no user prompt
+          if (topMatch && topMatch.score >= REUSE_SAME_THRESHOLD) {
+            dataObjectId = topMatch.elementId;
+            reused.push({
+              originalIndex: i,
+              originalName: d.name,
+              reusedAs: dataObjectId,
+              via: 'similarity',
+              score: topMatch.score,
+            });
+          }
+          // Tier 2b — SIMILAR: ask the user, do NOT create an element or
+          // connection for this item. The frontend will collect choices
+          // and re-submit via a follow-up endpoint (Stage 6).
+          else if (topMatch && topMatch.score >= REUSE_SIMILAR_THRESHOLD) {
+            pendingConfirm.push({
+              originalIndex: i,
+              original: d,
+              suggestion: topMatch,
+            });
+            continue; // skip CREATE + access-connection for this iteration
+          }
+          // Tier 3 — UNIQUE: brand new, create it
+          else {
           dataObjectId = `${processId}-do-ai-${Date.now()}-${i + 1}`;
           createdElementIds.push(dataObjectId);
 
@@ -370,7 +452,8 @@ router.post(
               '[similarity] upsert hook failed (ai-gen data-object)',
             ),
           );
-        }
+          } // end Tier 3 (UNIQUE)
+        } // end outer else (V2 wrapper)
 
         // Process --access--> Data-Object
         // Map CRUD letters to ArchiMate access type:
@@ -401,6 +484,8 @@ router.post(
           processId,
           dataObjectsCreated: createdElementIds.length,
           connectionsCreated: createdConnectionIds.length,
+          reused: reused.length,
+          pendingConfirm: pendingConfirm.length,
         },
         '[AI-Generator] data-objects applied successfully',
       );
@@ -410,6 +495,10 @@ router.post(
         dataObjectIds: createdElementIds,
         connectionIds: createdConnectionIds,
         count: createdElementIds.length,
+        // REQ-SIM-004: V2 reuse outcome — frontend uses these to render
+        // "reused N, confirm M" badges and the pending-confirm modal.
+        reused,
+        pendingConfirm,
       });
     } catch (err) {
       log.error({ err, projectId, processId }, '[AI-Generator] apply-data-objects failed');
