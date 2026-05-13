@@ -9,6 +9,7 @@ import { useSimulationStore } from '../../stores/simulationStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
+import { getSensitivityColor } from './sensitivityColors';
 
 const COVERAGE_BAND_COLORS: Record<'red' | 'yellow' | 'green', string> = {
   red: '#ef4444',
@@ -79,7 +80,12 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
     return COVERAGE_BAND_COLORS[r.band];
   }, [element.id, element.type, allElements, allConnections]);
 
-  const baseColor = requirementCoverageColor ?? layerColor;
+  // REQ-DATA-008: sensitivity coloring for data-* elements. Wins over
+  // the layer-color but loses to requirement-coverage (which is a
+  // compliance signal) and X-Ray sub-views (set further down).
+  const sensitivityColor = useMemo(() => getSensitivityColor(element), [element]);
+
+  const baseColor = requirementCoverageColor ?? sensitivityColor ?? layerColor;
 
   // Policy violation data
   const elementMeta = (element as ArchitectureElement & { metadata?: Record<string, unknown> }).metadata;
