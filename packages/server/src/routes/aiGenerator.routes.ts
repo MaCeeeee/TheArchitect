@@ -34,6 +34,7 @@ import {
   DataObjectGeneratorEvent,
 } from '../services/dataObjectGenerator.service';
 import { extractText, isSupportedDocument, getSupportedFormats } from '../services/document-parser.service';
+import { upsertEmbedding } from '../services/elementSimilarity.service';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
 import { defaultStatusForType } from '@thearchitect/shared';
@@ -161,6 +162,23 @@ router.post(
             posZ: parentZ,
             metadataJson: JSON.stringify(metadata),
           },
+        );
+
+        // REQ-SIM-002: fire-and-forget embedding so the new activity is
+        // findable by similarity search and dedup-by-similarity can later
+        // skip duplicates (Stage 2 of REQ-SIM-004 will use this).
+        upsertEmbedding(String(projectId), {
+          id: aId,
+          name: a.name,
+          description,
+          type: 'process',
+          layer: 'business',
+          projectId: String(projectId),
+        }).catch((e) =>
+          log.warn(
+            { err: (e as Error).message, projectId, elementId: aId },
+            '[similarity] upsert hook failed (ai-gen activity)',
+          ),
         );
 
         // Composition: parent process → child activity
@@ -335,6 +353,23 @@ router.post(
               metadataJson: JSON.stringify(metadata),
             },
           );
+
+          // REQ-SIM-002: index the new data-object so future generator runs
+          // can reuse-by-similarity (V2 logic in this same endpoint will
+          // replace the exact-name-match path above).
+          upsertEmbedding(String(projectId), {
+            id: dataObjectId,
+            name: d.name,
+            description: d.description,
+            type: d.archimateType,
+            layer: 'information',
+            projectId: String(projectId),
+          }).catch((e) =>
+            log.warn(
+              { err: (e as Error).message, projectId, elementId: dataObjectId },
+              '[similarity] upsert hook failed (ai-gen data-object)',
+            ),
+          );
         }
 
         // Process --access--> Data-Object
@@ -499,6 +534,21 @@ router.post(
             posZ: parentZ,
             metadataJson: JSON.stringify(metadata),
           },
+        );
+
+        // REQ-SIM-002: index the new business-process.
+        upsertEmbedding(String(projectId), {
+          id: pId,
+          name: p.name,
+          description: p.description,
+          type: 'business_process',
+          layer: 'business',
+          projectId: String(projectId),
+        }).catch((e) =>
+          log.warn(
+            { err: (e as Error).message, projectId, elementId: pId },
+            '[similarity] upsert hook failed (ai-gen process)',
+          ),
         );
 
         // Composition: parent capability → child process
@@ -949,6 +999,22 @@ async function createElement(el: ElementInsert): Promise<void> {
       posZ: el.posZ,
       metadataJson: JSON.stringify(el.metadata),
     },
+  );
+
+  // REQ-SIM-002: index the new element so all 7 callers of this helper
+  // (Gen-C hierarchy) populate the similarity store.
+  upsertEmbedding(String(el.projectId), {
+    id: el.id,
+    name: el.name,
+    description: el.description,
+    type: el.type,
+    layer: el.layer,
+    projectId: String(el.projectId),
+  }).catch((e) =>
+    log.warn(
+      { err: (e as Error).message, projectId: el.projectId, elementId: el.id },
+      '[similarity] upsert hook failed (ai-gen hierarchy)',
+    ),
   );
 }
 
