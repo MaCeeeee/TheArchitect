@@ -1,10 +1,84 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-05-12 (Sprint 2 Track A — Predictive-Architecture Similarity-Foundation production-deployed)
+> Letztes Update: 2026-05-13 (Sprint 2 Track B — Generator-D V2 Reuse + Sensitivity-Visualization production-deployed)
 
 ---
 
-## 0. Sprint 2 Track A — Similarity Foundation (2026-05-12)
+## 0. Sprint 2 Track B — Generator-D V2 Reuse + Sensitivity-Visualization (2026-05-13)
+
+### Ziel
+Die gestern gebaute Similarity-Foundation in Wirkung bringen — bisher war sie "tote Infrastruktur" weil der DataObjectGenerator-Service einen eigenen Code-Pfad nutzte und den Re-Embed-Hook nie auslöste. Heute: Embed-Hooks in **alle 4 Generator-D-Pfade** + Similarity-basierte Reuse-Logik mit 3-Tier-Klassifikation (SAME / SIMILAR / UNIQUE) + Pending-Confirm-Modal mit Merge/Create-Decision für SIMILAR-Treffer. Parallel REQ-DATA-008 Sensitivity-Visualization als X-Ray-Sub-View (Compliance-Heatmap ohne ArchiMate-Layer-Konvention zu brechen).
+
+### Status: ✅ Production-Live auf https://thearchitect.site
+
+#### Commits dieser Session (heute, 9 Stück)
+
+**REQ-SIM-004 — Generator-D V2 Reuse:**
+| Hash | Scope |
+|---|---|
+| `bf6b6fe` | Stage 1 — `upsertEmbedding`-Hook auf alle 4 Generator-Pfade (apply-activities / apply-data-objects / apply-processes / Gen-C `createElement`-Helper). Schließt den Production-Gap von gestern (Generator-erstellte Elements hatten keine Vektoren). +5 Supertests |
+| `f10cb8b` | Stage 2 — V2 Similarity-Reuse für data-objects mit 3-Tier-Policy (V1 exact-name → V2 ≥0.85 silent reuse → V2 0.65-0.85 pending-confirm → CREATE neu). Response-Schema erweitert um `reused[]` + `pendingConfirm[]`. +8 Supertests |
+| `e189895` | Stages 3+4 — V2 Reuse für activities + processes (SAME-only-Tier, kein pending-confirm — 36 Activities pro Pyramide × Confirm-Modal wäre UX-Hell). Type-Guards: activity-reuse erfordert `type='process'`, process-reuse erfordert `type='business_process'`. +7 Supertests |
+| `cc223eb` | Stage 5 — V2 Reuse im Gen-C `createElement`-Helper. Signatur void → `Promise<string>`. 3 Caller-Sites aktualisiert (capabilities/processes/activities) damit `realCId` für parent-child-Linking benutzt wird. `createConnection` CREATE → MERGE (idempotent). +3 Supertests |
+| `0f979f3` | Stage 6a — UI Toast-Feedback im PropertyPanel: "N neu · M wiederverwendet · K brauchen Entscheidung". Hook-`apply`-Return-Type erweitert |
+| `f77ea30` | Stage 6b — Pending-Confirm-Modal mit Merge/Create-Decision pro Item. Neuer Backend-Endpoint `apply-data-object-decisions` (force-create bypasst similarity-check). +7 Supertests |
+
+**REQ-DATA-008 — Sensitivity-Visualization:**
+| Hash | Scope |
+|---|---|
+| `dbce775` | B1 Core — `sensitivityColors.ts` Helper (Hex-Map + Duck-typed `getSensitivityColor`). `NodeObject3D` baseColor erweitert. +9 Unit-Tests |
+| `732488f` | B1 Property-Panel — `SensitivityRow` Component, Shield-Icon + farbiges Badge in der Assessment-Sektion |
+| `eb0969a` | **Refactor:** Sensitivity raus aus normal-mode (ArchiMate-Layer-Konvention wiederhergestellt), rein als **X-Ray Sub-View**. Auslöser: manuelle UI-Review zeigte echten Konflikt — Architekten-Lager wollte Layer-Konvention behalten, Compliance-Lager wollte DSGVO-Heatmap. X-Ray-Pattern löst beide Lager elegant |
+| `6b7629c` | X-Ray Sensitivity Re-Layout — Data-* Elements werden in 4 Buckets entlang X-Achse sortiert (public → internal → confidential → PII, von harmlos links nach kritisch rechts, konsistent mit Risk-Topology). Non-data bleibt grau an Original-Position |
+
+#### Stack-Komponenten (NEU/MODIFIED)
+| Komponente | Was |
+|---|---|
+| `packages/server/src/routes/aiGenerator.routes.ts` | 4 Hook-Stellen + 2 neue Routes (`apply-data-object-decisions`, V2-Reuse-Logik in apply-data-objects/activities/processes/createElement) |
+| `packages/client/src/components/3d/sensitivityColors.ts` (NEU) | Hex-Map + Helper für Compliance-Heatmap |
+| `packages/client/src/components/3d/NodeObject3D.tsx` | Color-Priority-Stack inkl. `xraySubView === 'sensitivity'`-Branch |
+| `packages/client/src/components/3d/XRayHUD.tsx` | Neuer Sub-View-Tab "DATA SENSITIVITY (DSGVO)" |
+| `packages/client/src/stores/xrayStore.ts` | Type `XRaySubView` + `'sensitivity'`, `computePositions` 4-Bucket-Layout für Data-* |
+| `packages/client/src/components/copilot/DataObjectConfirmModal.tsx` (NEU) | Pending-Confirm-Modal mit Merge/Create-Decision-Buttons, Side-by-side AI-Proposal vs Existing-Match-Card |
+| `packages/client/src/hooks/useDataObjectGenerator.ts` | `applyDecisions()`-Methode für den neuen Decisions-Endpoint, Return-Type erweitert |
+| `packages/client/src/components/ui/PropertyPanel.tsx` | `SensitivityRow`-Sub-Component, Confirm-Modal-Wiring, Toast-Feedback-Logik |
+
+#### Test-Coverage (alle grün)
+| Suite | # | Was |
+|---|:---:|---|
+| `elementSimilarity.service.test.ts` | 31 | Service-API (unchanged) |
+| `elementSimilarity.tenant-isolation.test.ts` | 8 | Behavioral isolation (unchanged) |
+| `architecture.routes.similarity-hook.test.ts` | 9 | architecture.routes hooks (unchanged) |
+| `architecture.routes.similar-api.test.ts` | 8 | Similar-API (unchanged) |
+| `aiGenerator.routes.similarity-hook.test.ts` (NEU heute) | 5 | Embed-Hook auf alle 4 Gen-D-Pfade |
+| `aiGenerator.routes.similarity-reuse.test.ts` (NEU heute) | 25 | V2 Tier-Logic + Decisions-Endpoint |
+| `sensitivityColors.test.ts` (NEU heute, Vitest) | 9 | Helper-Funktion |
+| `dataObject-apply.routes.test.ts` | 13 | Existing V1-Reuse (unchanged, regression-check) |
+| **Σ Server** | **91** | |
+| **Σ Client** | **112** | (inkl. 9 neue sensitivity-tests) |
+| **Gesamt** | **203** | |
+
+#### Manuelle Production-Validation (3 UseCase-Tests)
+- **Test 1 (REQ-DATA-008):** Sensitivity-Color sichtbar im X-Ray-Mode, Re-Layout in 4 Buckets greift, Property-Panel-Badge konsistent. Normal-Mode wieder ArchiMate-Layer-konform ✓
+- **Test 2 (REQ-SIM-004 Stage 6a):** Apply zeigt Toast "8 wiederverwendet · 1 brauchen Entscheidung" — Counts korrekt durchgereicht ✓
+- **Test 3 (REQ-SIM-004 Stage 6b):** Confirm-Modal öffnet sich automatisch, Side-by-side-Vergleich mit 67% Score, Create-Pfad erstellt neues Element, CONNECTIONS-Counter von 11→12 ✓
+
+#### Architektur-Diskussion (sichtbar im Commit-History)
+Mitten in der Stage erwischte uns ein Trade-off zwischen Compliance-Pragmatik und ArchiMate-Purismus: Sensitivity-Coloring im Normal-Mode bricht die Layer-Konvention. Lösung: **X-Ray-Pattern wiederverwendet** (existiert schon für risk/cost/timeline/simulation) → Default ist ArchiMate-konform, Sensitivity ist opt-in via X-Ray. Beide Lager glücklich.
+
+Plus: Sensitivity-Sub-View bucketet Elements in 4 Spalten (public → PII von links nach rechts, gleiche Lese-Richtung wie Risk-Heatmap). Demo-Story: "Schau, alle PII-Würfel clustern rechts — DSGVO-Brennpunkte in 5 Sekunden gefunden."
+
+#### Deploy-Pitfalls dieser Session
+- **Recreate ohne Rebuild reicht nicht.** Nach Code-Änderungen muss `docker compose build app` laufen, sonst nimmt der recreate dasselbe alte Image. (Heute Vormittag-Deploy: rsync vergessen; Mittag-Deploy: build vergessen — beides per `docker exec ... grep` auf laufendem Container sofort sichtbar gemacht)
+- **Hostinger-Web-Terminal vs Mac-Terminal-Verwechslung:** rsync von Mac muss vom Mac-Terminal kommen, nicht von einem VPS-internen Terminal. Pitfall durch User klar identifiziert.
+
+#### Bekannte Follow-ups (für Sprint 3)
+- **Token-Refresh-Bug in 4 Generator-Hooks** (useDataObjectGenerator, useActivityGenerator, useHierarchyGenerator, useProcessGenerator). fetch+Bearer direkt, kein axios-Interceptor → bei expired Token kommt `{"error":"Token expired"}` als 401 durch. Fix: fetch-wrapper mit Refresh-Token-Logic. 1-2h Aufwand.
+- **Track C** (REQ-PLATEAU-004 Progress-Bar full, Score 71.4, 0.5d) — letzter offener Track im Sprint 2
+
+---
+
+## 1. Sprint 2 Track A — Similarity Foundation (2026-05-12)
 
 ### Ziel
 UC-SIM-001 (Element-Similarity) end-to-end aufbauen: lokale Embeddings (DSGVO), Vector-Store mit Tenant-Isolation, automatisches Re-Embedden bei CRUD, Public API für Downstream-UCs (Generator-D V2, Redundanz-Erkennung, Harmonisierung). Strategischer Hebel: Variante B aus dem 2026-05-07-Briefing — eine geteilte Similarity-Foundation statt drei isolierter Implementierungen.
