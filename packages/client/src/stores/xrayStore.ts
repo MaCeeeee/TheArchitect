@@ -335,12 +335,62 @@ export const useXRayStore = create<XRayState>((set, get) => ({
     const elementData = get().elementData;
     if (elements.length === 0 || elementData.size === 0) return;
 
-    // REQ-DATA-008 — Sensitivity sub-view is a pure color overlay (it
-    // re-tints the data-* nodes by their metadata.sensitivity). We do
-    // NOT re-position elements: the architecture's natural data-layer
-    // position remains intact, so context isn't lost.
+    // REQ-DATA-008 — Sensitivity sub-view: bucket data-* elements
+    // horizontally by their metadata.sensitivity classification.
+    // Mirrors the risk-topology pattern but with 4 buckets and the
+    // axis direction "harmless -> critical" left-to-right so the eye
+    // ends on the PII column (it stays in memory longer).
+    //   X = -12    -6      0     +6   +12
+    //   bucket   public  internal  confidential  PII
+    // Non-data nodes get NO xrayPosition entry → keep their original
+    // architecture position. NodeObject3D will render them dim gray.
     if (view === 'sensitivity') {
-      set({ xrayPositions: new Map() });
+      const positions = new Map<string, XRayPosition>();
+      const DATA_TYPES = new Set<string>(['data_object', 'data_entity', 'data_model']);
+      const SENS_BUCKET: Record<string, number> = {
+        public: 0,
+        internal: 1,
+        confidential: 2,
+        PII: 3,
+      };
+      const SENS_BUCKETS = 4;
+      const SCALE_WIDTH = 24;     // X: -12 .. +12
+      const DEPTH_RANGE = 14;     // Z: -7 .. +7
+      const dataLayerY = 4;       // information layer Y
+
+      // Collect only data-* elements
+      const dataElements = elements.filter((el) => DATA_TYPES.has(el.type));
+      if (dataElements.length === 0) {
+        set({ xrayPositions: positions });
+        return;
+      }
+
+      // Distribute into 4 buckets by sensitivity (default public if unset)
+      const buckets: ArchitectureElement[][] = Array.from({ length: SENS_BUCKETS }, () => []);
+      for (const el of dataElements) {
+        const sens = (el.metadata as Record<string, unknown> | undefined)?.sensitivity;
+        const idx = typeof sens === 'string' && sens in SENS_BUCKET ? SENS_BUCKET[sens] : 0;
+        buckets[idx].push(el);
+      }
+
+      // Bucket centers evenly spread across X — left=public, right=PII
+      const bucketCenterX = (b: number): number =>
+        (b / (SENS_BUCKETS - 1)) * SCALE_WIDTH - SCALE_WIDTH / 2;
+
+      for (let b = 0; b < SENS_BUCKETS; b++) {
+        const items = buckets[b];
+        if (items.length === 0) continue;
+        const centerX = bucketCenterX(b);
+        // Z fan inside the bucket — center to outer alternation
+        items.forEach((el, idx) => {
+          const z = items.length === 1
+            ? 0
+            : ((idx / (items.length - 1)) * DEPTH_RANGE - DEPTH_RANGE / 2);
+          positions.set(el.id, { x: centerX, y: dataLayerY, z });
+        });
+      }
+
+      set({ xrayPositions: positions });
       return;
     }
 
