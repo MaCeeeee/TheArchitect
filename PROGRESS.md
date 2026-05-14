@@ -1,10 +1,89 @@
 # PROGRESS.md — TheArchitect
 
-> Letztes Update: 2026-05-13 (Sprint 2 Track B — Generator-D V2 Reuse + Sensitivity-Visualization production-deployed)
+> Letztes Update: 2026-05-14 (Sprint 2 vollständig abgeschlossen — Track C Plateau-Progress-Bar production-deployed)
 
 ---
 
-## 0. Sprint 2 Track B — Generator-D V2 Reuse + Sensitivity-Visualization (2026-05-13)
+## 0. Sprint 2 Track C — Plateau-Progress-Bar (2026-05-14)
+
+### Ziel
+Letzter offener Sprint-2-Track. Die existierende Mini-Readout in der WaveCard ("3/5 (60%)") wird ergänzt durch eine **vollwertige animierte Progress-Bar** im persistenten PlateauBar — damit der Architekt den Roadmap-Execution-Fortschritt pro Wave sehen kann, ohne das rechte Analytics-Panel zu öffnen.
+
+### Status: ✅ Production-Live auf https://thearchitect.site — Sprint 2 komplett
+
+#### Commits (REQ-PLATEAU-004)
+| Hash | Scope |
+|---|---|
+| `0904aeb` | C1.1-C1.5 — Berechnung in `plateauComputation.ts` (`implementedCount`/`totalChangedCount`/`implementationProgress` + `progressBand`/`progressColor`-Helper). Render in `PlateauBar.tsx` als 48×3 px animated bar mit color-bands (red/amber/green). `roadmapStore.applyImplementationToggle`-Action bumpt `roadmap.version` für memoized-cache-Invalidation + recomputed-Snapshots wenn Plateau-View aktiv. WaveCard-Wiring. +12 Tests. |
+| `f4dbfba` | UI-Tweak — Track-Rail bei 0%-State sichtbarer gemacht (`#2a3a2a` + subtle border statt `#1a2a1a`), Empty-State kommuniziert "tracked but not started" statt unsichtbar zu sein. |
+
+#### Stack
+| Komponente | Was |
+|---|---|
+| `packages/shared/src/types/roadmap.types.ts` | `PlateauSnapshot` erweitert um `implementedCount`/`totalChangedCount`/`implementationProgress` (0-1 ratio) |
+| `packages/client/src/utils/plateauComputation.ts` | Counts `implementedAt` während Snapshot-Build + exportiert `progressBand`/`progressColor`/`PROGRESS_BAND_COLORS` als shared helpers |
+| `packages/client/src/components/ui/PlateauBar.tsx` | Animated 48×3 px rail rendered conditional auf wave tabs, mit transition: width 0.4s ease-out + tooltip "X/Y implemented (Z%)" |
+| `packages/client/src/stores/roadmapStore.ts` | `applyImplementationToggle`-Action mit Snapshot-Recompute wenn `isPlateauViewActive` (lazy `architectureStore`-Import vermeidet circular dep) |
+| `packages/client/src/components/analytics/WaveCard.tsx` | Ruft `applyImplementationToggle` nach erfolgreichem `markImplementation` API-Call |
+
+#### Color-Band-Schema (konsistent mit WaveCard Mini-Readout)
+- **< 33%** rot (`#ef4444`) — initial/stalled
+- **< 67%** amber (`#f59e0b`) — in flight
+- **≥ 67%** grün (`#22c55e`) — mostly done
+
+#### Real-Time-Update-Flow
+1. WaveCard-Checkbox toggled → `roadmapAPI.markImplementation` API-Call
+2. Server confirms → WaveCard ruft `roadmapStore.applyImplementationToggle`
+3. Store patcht `activeRoadmap.waves[].elements[].implementedAt`, bumpt `roadmap.version`
+4. `computePlateauSnapshotsMemoized`-Cache invalidiert auf version-mismatch
+5. Wenn Plateau-View aktiv: Snapshots werden in-place neu berechnet
+6. PlateauBar re-rendered mit neuer Bar-Width + Color
+
+#### Test-Coverage (+12 Cases)
+**plateauComputation.test.ts** (+8): As-Is zero-progress · 0% red-band · 50% amber-band · 100% green-band · implementedAt=null nicht gezählt · progress per-wave nicht cumulative · exact threshold values · progressColor hex-Werte.
+
+**roadmapStore.test.ts** (+4): Toggle bumpt version · un-implement bei implemented=false · andere Waves/Elements unverändert · No-op bei activeRoadmap=null.
+
+**Σ Client-Tests: 124 grün** (112 + 12)
+
+#### Production-Validation (manueller End-to-End-Test)
+- ✓ Plateau-View aktiviert, alle 5 Tabs sichtbar (As-Is + 4 Waves)
+- ✓ Checkbox in WaveCard getickt → PlateauBar zeigt animierte Bar sofort
+- ✓ Color-Wechsel rot → amber → grün beim weiteren Ticken
+- ✓ Track-Rail bei 0% jetzt sichtbar (CSS-Tweak)
+
+---
+
+## Sprint-2-Bilanz (3 Tage, 2026-05-12 bis 2026-05-14)
+
+```
+Track A   2026-05-12   Similarity-Foundation        7 Commits   56 Tests   ✓ live
+Track B   2026-05-13   Generator-D V2 + Sensitivity 9 Commits  147 Tests   ✓ live
+Track C   2026-05-14   Plateau-Progress-Bar         2 Commits   12 Tests   ✓ live
+─────────────────────────────────────────────────────────────────────────────
+Σ                                                  18 Commits  215 Tests   ✓ live
+```
+
+**Was Sprint 2 für die User auf https://thearchitect.site liefert:**
+- **Predictive Architecture Foundation** — Embedding-Indexing aller Elemente, Similarity-Search, Tenant-Isolation per Workspace-Collection (Track A)
+- **Generator-D V2 Reuse** — Keine Duplikate mehr durch AI-Generator. Pending-Confirm-Modal bei SIMILAR-Matches, Force-Create-Bypass möglich (Track B)
+- **Sensitivity-Heatmap als X-Ray-Sub-View** — DSGVO-Brennpunkte auf einen Blick, ArchiMate-Konvention im Normal-Mode unverändert (Track B)
+- **Plateau-Progress-Bar** — Live-Fortschritt pro Wave sichtbar im persistenten Plateau-View (Track C)
+
+**Architektur-Entscheidungen im Sprint:**
+- Sensitivity-Coloring als X-Ray-Sub-View statt Normal-Mode-Override (Konflikt Architekt/Compliance-Lager gelöst)
+- 4-Bucket-Layout in der Sensitivity-View, public→PII von links nach rechts (konsistent mit Risk-Topology)
+- V2-Reuse-Tier-Policy differenziert per Type: data-objects 3-tier (mit pending-confirm), activities/processes/hierarchy SAME-only (no-confirm wegen Pyramid-UX)
+- `createElement`-Helper-Signatur void → `Promise<string>` damit Reuse-IDs durch Caller propagieren
+- `createConnection` CREATE → MERGE für Idempotenz bei Reuse-Szenarien
+
+**Bekannte Follow-ups (Sprint 3):**
+- Token-Refresh-Bug in 4 Generator-Hooks (fetch+Bearer ohne axios-Interceptor, 1-2h)
+- Sprint-3-Backlog: REQ-PLATEAU-005/006/007/008/009 (Header-Progress, 3D-Badge, Filter, Status-Sync, Audit-Filter)
+
+---
+
+## 1. Sprint 2 Track B — Generator-D V2 Reuse + Sensitivity-Visualization (2026-05-13)
 
 ### Ziel
 Die gestern gebaute Similarity-Foundation in Wirkung bringen — bisher war sie "tote Infrastruktur" weil der DataObjectGenerator-Service einen eigenen Code-Pfad nutzte und den Re-Embed-Hook nie auslöste. Heute: Embed-Hooks in **alle 4 Generator-D-Pfade** + Similarity-basierte Reuse-Logik mit 3-Tier-Klassifikation (SAME / SIMILAR / UNIQUE) + Pending-Confirm-Modal mit Merge/Create-Decision für SIMILAR-Treffer. Parallel REQ-DATA-008 Sensitivity-Visualization als X-Ray-Sub-View (Compliance-Heatmap ohne ArchiMate-Layer-Konvention zu brechen).
