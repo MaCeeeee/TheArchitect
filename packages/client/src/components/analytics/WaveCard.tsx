@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import type { RoadmapWave, WaveElement } from '@thearchitect/shared';
 import { roadmapAPI } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 
 const STATUS_COLORS: Record<string, string> = {
   current: '#3b82f6',
@@ -134,6 +135,9 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick, r
   type ImplState = string | null | undefined;
   const [implOverrides, setImplOverrides] = useState<Record<string, ImplState>>({});
   const projectId = useArchitectureStore((s) => s.projectId);
+  // REQ-PLATEAU-004 — patches activeRoadmap + bumps version so the
+  // PlateauBar progress-bar re-renders in real time after a toggle.
+  const applyImplementationToggle = useRoadmapStore((s) => s.applyImplementationToggle);
 
   const getImplemented = (el: WaveElement): boolean => {
     const override = implOverrides[el.elementId];
@@ -154,7 +158,10 @@ export default function WaveCard({ wave, isSelected, onSelect, onElementClick, r
       await roadmapAPI.markImplementation(projectId, roadmapId, wave.waveNumber, el.elementId, {
         implemented: !wasImplemented,
       });
-      // Keep optimistic state — server confirmed
+      // Keep optimistic state — server confirmed.
+      // REQ-PLATEAU-004: mirror the change into the store so the
+      // PlateauBar progress recomputes immediately.
+      applyImplementationToggle(wave.waveNumber, el.elementId, !wasImplemented);
     } catch (err) {
       // Revert
       setImplOverrides((prev) => {

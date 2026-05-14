@@ -266,4 +266,56 @@ describe('roadmapStore — Plateau Actions', () => {
     expect(deps[0].sourceElementId).toBe('e1');
     expect(deps[0].targetElementId).toBe('e2');
   });
+
+  // ─── REQ-PLATEAU-004 — applyImplementationToggle ───
+  describe('applyImplementationToggle', () => {
+    test('marks element implemented and bumps roadmap version', () => {
+      const waves = [makeWave(1, { elements: [makeWaveElement('e1')] })];
+      const roadmap = makeRoadmap(waves, { version: 1 });
+      useRoadmapStore.setState({ activeRoadmap: roadmap });
+
+      useRoadmapStore.getState().applyImplementationToggle(1, 'e1', true);
+
+      const after = useRoadmapStore.getState().activeRoadmap!;
+      expect(after.version).toBe(2);
+      const we = after.waves[0].elements[0];
+      expect(we.implementedAt).toBeTruthy();
+      expect(typeof we.implementedAt).toBe('string');
+    });
+
+    test('un-implements element when implemented=false', () => {
+      const waves = [makeWave(1, {
+        elements: [makeWaveElement('e1', { implementedAt: '2026-05-13T10:00:00Z' })],
+      })];
+      const roadmap = makeRoadmap(waves);
+      useRoadmapStore.setState({ activeRoadmap: roadmap });
+
+      useRoadmapStore.getState().applyImplementationToggle(1, 'e1', false);
+
+      const we = useRoadmapStore.getState().activeRoadmap!.waves[0].elements[0];
+      expect(we.implementedAt).toBeNull();
+    });
+
+    test('leaves unrelated waves and elements unchanged', () => {
+      const waves = [
+        makeWave(1, { elements: [makeWaveElement('e1'), makeWaveElement('e2')] }),
+        makeWave(2, { elements: [makeWaveElement('e3')] }),
+      ];
+      useRoadmapStore.setState({ activeRoadmap: makeRoadmap(waves) });
+
+      useRoadmapStore.getState().applyImplementationToggle(1, 'e1', true);
+
+      const after = useRoadmapStore.getState().activeRoadmap!;
+      expect(after.waves[0].elements[0].implementedAt).toBeTruthy();
+      expect(after.waves[0].elements[1].implementedAt).toBeFalsy();
+      expect(after.waves[1].elements[0].implementedAt).toBeFalsy();
+    });
+
+    test('no-op when activeRoadmap is null', () => {
+      useRoadmapStore.setState({ activeRoadmap: null });
+      // Should not throw
+      useRoadmapStore.getState().applyImplementationToggle(1, 'e1', true);
+      expect(useRoadmapStore.getState().activeRoadmap).toBeNull();
+    });
+  });
 });

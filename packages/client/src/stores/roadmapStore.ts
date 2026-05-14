@@ -53,6 +53,12 @@ interface RoadmapState {
   deactivatePlateauView: () => void;
   selectPlateau: (index: number | null) => void;
   setPlateauViewMode: (mode: 'full' | 'changed-only') => void;
+
+  // REQ-PLATEAU-004 — patch the local active roadmap after a successful
+  // markImplementation API call. Bumps roadmap.version so the memoized
+  // snapshot cache invalidates and PlateauBar re-renders with the new
+  // implementationProgress in real time.
+  applyImplementationToggle: (waveNumber: number, elementId: string, implemented: boolean) => void;
 }
 
 export const useRoadmapStore = create<RoadmapState>((set, get) => ({
@@ -308,5 +314,59 @@ export const useRoadmapStore = create<RoadmapState>((set, get) => ({
 
   setPlateauViewMode: (mode) => {
     set({ plateauViewMode: mode });
+  },
+
+  applyImplementationToggle: (waveNumber, elementId, implemented) => {
+    const { activeRoadmap, isPlateauViewActive } = get();
+    if (!activeRoadmap) return;
+
+    // Find and patch the wave-element. Bumps roadmap.version so the
+    // memoized snapshot cache (cachedRoadmapVersion check) misses on the
+    // next computePlateauSnapshotsMemoized() call.
+    const nextWaves = activeRoadmap.waves.map((w) => {
+      if (w.waveNumber !== waveNumber) return w;
+      return {
+        ...w,
+        elements: w.elements.map((el) =>
+          el.elementId === elementId
+            ? { ...el, implementedAt: implemented ? new Date().toISOString() : null }
+            : el,
+        ),
+      };
+    });
+
+    const nextRoadmap = {
+      ...activeRoadmap,
+      waves: nextWaves,
+      version: (activeRoadmap.version ?? 0) + 1,
+    };
+
+    // If the plateau view is open, recompute snapshots in-place so the
+    // PlateauBar shows the new progress immediately. We re-read elements
+    // from the architecture store (the snapshot input).
+    if (isPlateauViewActive) {
+      // Lazy import avoids circular dep
+      import('./architectureStore').then(({ useArchitectureStore }) => {
+        const elements = useArchitectureStore.getState().elements.map((el) => ({
+          id: el.id,
+          name: el.name,
+          type: el.type,
+          layer: el.layer,
+          status: el.status,
+          position3D: el.position3D,
+        }));
+        const { snapshots, dependencies } = computePlateauSnapshotsMemoized(elements, nextRoadmap);
+        set({
+          activeRoadmap: nextRoadmap,
+          plateauSnapshots: snapshots,
+          crossPlateauDeps: dependencies,
+        });
+      });
+      // Set the roadmap synchronously so even without the recompute
+      // (e.g. plateau view not yet open) the next computePlateaus sees it.
+      set({ activeRoadmap: nextRoadmap });
+    } else {
+      set({ activeRoadmap: nextRoadmap });
+    }
   },
 }));

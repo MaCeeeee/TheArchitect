@@ -180,6 +180,12 @@ export interface PlateauSnapshot {
   cumulativeCost: number;           // sum of costs through this plateau
   cumulativeRiskDelta: number;      // sum of risk deltas through this plateau
   metrics: WaveMetrics | null;      // wave metrics (null for As-Is)
+  // ─── REQ-PLATEAU-004 Implementation-Progress (full bar) ────────────────
+  // Counts how many of THIS wave's elements are marked as implemented
+  // (via REQ-PLATEAU-002 markImplementation endpoint). null for As-Is.
+  implementedCount: number;         // elements with implementedAt != null
+  totalChangedCount: number;        // size of changedElementIds (same as length)
+  implementationProgress: number;   // 0..1 ratio; 0 if totalChangedCount===0
 }
 
 export interface CrossPlateauDependency {

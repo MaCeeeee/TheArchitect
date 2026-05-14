@@ -3,6 +3,9 @@ import {
   computePlateauSnapshots,
   computeCrossPlateauDependencies,
   computePlateauSnapshotsMemoized,
+  progressBand,
+  progressColor,
+  PROGRESS_BAND_COLORS,
   type PlateauInputElement,
 } from './plateauComputation';
 import type {
@@ -497,5 +500,128 @@ describe('computePlateauSnapshotsMemoized', () => {
     const result2 = computePlateauSnapshotsMemoized(elements2, roadmap);
 
     expect(result1.snapshots).not.toBe(result2.snapshots);
+  });
+});
+
+// ─── REQ-PLATEAU-004 — Progress-Bar metrics + color-bands ─────────────────
+
+describe('REQ-PLATEAU-004 — implementation progress per snapshot', () => {
+  test('As-Is snapshot has zero progress fields', () => {
+    const elements = [makeElement({ id: 'e1' })];
+    const waves = [makeWave({ waveNumber: 1, elements: [makeWaveElement({ elementId: 'e1' })] })];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+
+    expect(snapshots[0].label).toBe('As-Is');
+    expect(snapshots[0].implementedCount).toBe(0);
+    expect(snapshots[0].totalChangedCount).toBe(0);
+    expect(snapshots[0].implementationProgress).toBe(0);
+  });
+
+  test('0% — no element implemented yet → progress=0, red band', () => {
+    const elements = [makeElement({ id: 'e1' }), makeElement({ id: 'e2' })];
+    const waves = [makeWave({
+      waveNumber: 1,
+      elements: [
+        makeWaveElement({ elementId: 'e1' }),
+        makeWaveElement({ elementId: 'e2' }),
+      ],
+    })];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+    const wave1 = snapshots[1];
+
+    expect(wave1.totalChangedCount).toBe(2);
+    expect(wave1.implementedCount).toBe(0);
+    expect(wave1.implementationProgress).toBe(0);
+    expect(progressBand(wave1.implementationProgress)).toBe('red');
+  });
+
+  test('50% — half implemented → amber band', () => {
+    const elements = [makeElement({ id: 'e1' }), makeElement({ id: 'e2' })];
+    const waves = [makeWave({
+      waveNumber: 1,
+      elements: [
+        makeWaveElement({ elementId: 'e1', implementedAt: '2026-05-13T10:00:00Z' }),
+        makeWaveElement({ elementId: 'e2' }), // implementedAt undefined
+      ],
+    })];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+    const wave1 = snapshots[1];
+
+    expect(wave1.implementedCount).toBe(1);
+    expect(wave1.totalChangedCount).toBe(2);
+    expect(wave1.implementationProgress).toBe(0.5);
+    expect(progressBand(wave1.implementationProgress)).toBe('amber');
+  });
+
+  test('100% — all implemented → green band', () => {
+    const elements = [makeElement({ id: 'e1' }), makeElement({ id: 'e2' }), makeElement({ id: 'e3' })];
+    const waves = [makeWave({
+      waveNumber: 1,
+      elements: [
+        makeWaveElement({ elementId: 'e1', implementedAt: '2026-05-13T10:00:00Z' }),
+        makeWaveElement({ elementId: 'e2', implementedAt: '2026-05-13T11:00:00Z' }),
+        makeWaveElement({ elementId: 'e3', implementedAt: '2026-05-13T12:00:00Z' }),
+      ],
+    })];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+    const wave1 = snapshots[1];
+
+    expect(wave1.implementedCount).toBe(3);
+    expect(wave1.implementationProgress).toBe(1);
+    expect(progressBand(wave1.implementationProgress)).toBe('green');
+  });
+
+  test('implementedAt=null is NOT counted as implemented (unticked toggle case)', () => {
+    const elements = [makeElement({ id: 'e1' })];
+    const waves = [makeWave({
+      waveNumber: 1,
+      elements: [makeWaveElement({ elementId: 'e1', implementedAt: null })],
+    })];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+
+    expect(snapshots[1].implementedCount).toBe(0);
+    expect(snapshots[1].implementationProgress).toBe(0);
+  });
+
+  test('progress is per-wave, not cumulative across waves', () => {
+    const elements = [makeElement({ id: 'e1' }), makeElement({ id: 'e2' })];
+    const waves = [
+      makeWave({
+        waveNumber: 1,
+        elements: [makeWaveElement({ elementId: 'e1', implementedAt: '2026-05-13T10:00:00Z' })],
+      }),
+      makeWave({
+        waveNumber: 2,
+        elements: [makeWaveElement({ elementId: 'e2' })], // not implemented
+      }),
+    ];
+    const snapshots = computePlateauSnapshots(elements, makeRoadmap(waves));
+
+    // Wave 1: 1/1 implemented = 100%
+    expect(snapshots[1].implementationProgress).toBe(1);
+    // Wave 2: 0/1 implemented = 0%
+    expect(snapshots[2].implementationProgress).toBe(0);
+  });
+});
+
+describe('REQ-PLATEAU-004 — progressBand + progressColor', () => {
+  test('exact threshold values: 0.33 = amber, 0.67 = green', () => {
+    expect(progressBand(0)).toBe('red');
+    expect(progressBand(0.32)).toBe('red');
+    expect(progressBand(0.33)).toBe('amber');
+    expect(progressBand(0.5)).toBe('amber');
+    expect(progressBand(0.66)).toBe('amber');
+    expect(progressBand(0.67)).toBe('green');
+    expect(progressBand(1)).toBe('green');
+  });
+
+  test('progressColor returns hex strings for each band', () => {
+    expect(progressColor(0)).toBe(PROGRESS_BAND_COLORS.red);
+    expect(progressColor(0.5)).toBe(PROGRESS_BAND_COLORS.amber);
+    expect(progressColor(1)).toBe(PROGRESS_BAND_COLORS.green);
+    // Sanity: actual hex values match Tailwind 500s
+    expect(PROGRESS_BAND_COLORS.red).toBe('#ef4444');
+    expect(PROGRESS_BAND_COLORS.amber).toBe('#f59e0b');
+    expect(PROGRESS_BAND_COLORS.green).toBe('#22c55e');
   });
 });

@@ -39,13 +39,21 @@ export function computePlateauSnapshots(
 
   // Build wave element lookup: which wave changes each element, and to what
   // waveChanges[waveIndex] = Map<elementId, WaveElement>
+  // Includes implementedAt so REQ-PLATEAU-004 can count implementation
+  // progress without re-walking the wave array.
   const waveChanges = waves.map((w) => {
-    const map = new Map<string, { targetStatus: ElementStatus; riskScore: number; estimatedCost: number }>();
+    const map = new Map<string, {
+      targetStatus: ElementStatus;
+      riskScore: number;
+      estimatedCost: number;
+      implementedAt: string | null | undefined;
+    }>();
     for (const we of w.elements) {
       map.set(we.elementId, {
         targetStatus: we.targetStatus,
         riskScore: we.riskScore,
         estimatedCost: we.estimatedCost,
+        implementedAt: we.implementedAt,
       });
     }
     return map;
@@ -80,6 +88,11 @@ export function computePlateauSnapshots(
     cumulativeCost: 0,
     cumulativeRiskDelta: 0,
     metrics: null,
+    // As-Is has nothing to implement — fixed zeros so consumers don't
+    // need to special-case null.
+    implementedCount: 0,
+    totalChangedCount: 0,
+    implementationProgress: 0,
   });
 
   // ─── Snapshot 1..N: After each wave ───
@@ -123,6 +136,16 @@ export function computePlateauSnapshots(
     cumulativeCost += wave.metrics.totalCost;
     cumulativeRiskDelta += wave.metrics.riskDelta;
 
+    // REQ-PLATEAU-004 — count how many of THIS wave's elements are
+    // already marked implemented (truthy implementedAt timestamp).
+    const totalChangedCount = changedIds.length;
+    let implementedCount = 0;
+    for (const id of changedIds) {
+      if (changes.get(id)?.implementedAt) implementedCount++;
+    }
+    const implementationProgress =
+      totalChangedCount === 0 ? 0 : implementedCount / totalChangedCount;
+
     snapshots.push({
       plateauIndex: i + 1,
       label: `Wave ${wave.waveNumber}: ${wave.name}`,
@@ -132,10 +155,39 @@ export function computePlateauSnapshots(
       cumulativeCost,
       cumulativeRiskDelta,
       metrics: wave.metrics,
+      implementedCount,
+      totalChangedCount,
+      implementationProgress,
     });
   }
 
   return snapshots;
+}
+
+// ─── REQ-PLATEAU-004 — Progress-Bar color-band helper ──────────────────────
+//
+// Shared between the WaveCard mini-readout, the new PlateauBar progress bar,
+// and unit tests. Same threshold scheme as the existing implColor:
+//   < 33% → red    (initial / stalled)
+//   < 67% → amber  (in flight)
+//   ≥ 67% → green  (mostly done)
+
+export type ProgressBand = 'red' | 'amber' | 'green';
+
+export const PROGRESS_BAND_COLORS: Record<ProgressBand, string> = {
+  red: '#ef4444',
+  amber: '#f59e0b',
+  green: '#22c55e',
+};
+
+export function progressBand(progress: number): ProgressBand {
+  if (progress >= 0.67) return 'green';
+  if (progress >= 0.33) return 'amber';
+  return 'red';
+}
+
+export function progressColor(progress: number): string {
+  return PROGRESS_BAND_COLORS[progressBand(progress)];
 }
 
 // ─── Cross-Plateau Dependency Computation ───

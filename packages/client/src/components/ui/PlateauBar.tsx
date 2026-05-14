@@ -1,7 +1,8 @@
 import { useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Home, Layers, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Eye, EyeOff } from 'lucide-react';
 import { useRoadmapStore } from '../../stores/roadmapStore';
 import { flyToWorkspace, fitAllWorkspaces } from '../3d/ViewModeCamera';
+import { progressColor } from '../../utils/plateauComputation';
 
 const WORKSPACE_GAP = 40;
 
@@ -81,6 +82,11 @@ export default function PlateauBar() {
         {plateauSnapshots.map((snapshot, i) => {
           const isActive = selectedPlateauIndex === i;
           const isAsIs = snapshot.waveNumber === null;
+          // REQ-PLATEAU-004: animated progress bar per wave-tab.
+          // As-Is has no implementation tracking → bar is hidden.
+          const showProgress = !isAsIs && snapshot.totalChangedCount > 0;
+          const pct = Math.round(snapshot.implementationProgress * 100);
+          const barColor = progressColor(snapshot.implementationProgress);
           return (
             <button
               key={i}
@@ -91,6 +97,11 @@ export default function PlateauBar() {
                   : 'text-[var(--text-secondary)] hover:text-white hover:bg-[#1a2a1a]/50 border border-transparent'
               }`}
               style={isActive ? { boxShadow: '0 0 8px rgba(0,255,65,0.15)' } : undefined}
+              title={
+                showProgress
+                  ? `Wave ${snapshot.waveNumber}: ${snapshot.implementedCount}/${snapshot.totalChangedCount} implemented (${pct}%)`
+                  : undefined
+              }
             >
               <span className={`text-[10px] font-semibold tracking-wider ${
                 isActive ? 'text-[#00ff41]' : ''
@@ -108,6 +119,24 @@ export default function PlateauBar() {
                     <span className="ml-1">€{formatCost(snapshot.cumulativeCost)}</span>
                   )}
                 </span>
+              )}
+
+              {/* REQ-PLATEAU-004: full animated progress bar.
+                  Track is a subtle rail; fill animates width 0..100% with
+                  ease-out, color shifts red → amber → green via thresholds
+                  in progressColor(). Hidden on As-Is plateau. */}
+              {showProgress && (
+                <div className="mt-1 h-[3px] w-12 rounded-sm bg-[#1a2a1a] overflow-hidden">
+                  <div
+                    className="h-full rounded-sm"
+                    style={{
+                      width: `${pct}%`,
+                      backgroundColor: barColor,
+                      boxShadow: `0 0 4px ${barColor}66`,
+                      transition: 'width 0.4s ease-out, background-color 0.4s ease-out',
+                    }}
+                  />
+                </div>
               )}
 
               {/* Active indicator dot */}
