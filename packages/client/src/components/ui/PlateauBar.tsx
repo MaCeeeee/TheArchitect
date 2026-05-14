@@ -122,17 +122,19 @@ export default function PlateauBar() {
               )}
 
               {/* REQ-PLATEAU-004: full animated progress bar.
-                  Track is a subtle rail; fill animates width 0..100% with
-                  ease-out, color shifts red → amber → green via thresholds
-                  in progressColor(). Hidden on As-Is plateau. */}
+                  Track is a visible subtle rail (so 0% state still shows
+                  *something* to communicate "tracked but not started"),
+                  fill animates width 0..100% with ease-out, color shifts
+                  red → amber → green via thresholds in progressColor().
+                  Hidden on As-Is plateau. */}
               {showProgress && (
-                <div className="mt-1 h-[3px] w-12 rounded-sm bg-[#1a2a1a] overflow-hidden">
+                <div className="mt-1 h-[3px] w-12 rounded-sm bg-[#2a3a2a] border border-[#3a4a3a]/60 overflow-hidden">
                   <div
                     className="h-full rounded-sm"
                     style={{
                       width: `${pct}%`,
                       backgroundColor: barColor,
-                      boxShadow: `0 0 4px ${barColor}66`,
+                      boxShadow: `0 0 4px ${barColor}99`,
                       transition: 'width 0.4s ease-out, background-color 0.4s ease-out',
                     }}
                   />
