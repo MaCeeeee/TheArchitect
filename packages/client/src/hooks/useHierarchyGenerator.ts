@@ -3,6 +3,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { authFetch } from '../services/authFetch';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -124,8 +125,7 @@ export function useHierarchyGenerator(projectId: string | null) {
         setState((s) => ({ ...s, status: 'error', error: 'No project loaded' }));
         return;
       }
-      const token = useAuthStore.getState().token;
-      if (!token) {
+      if (!useAuthStore.getState().token) {
         setState((s) => ({ ...s, status: 'error', error: 'Not authenticated' }));
         return;
       }
@@ -139,9 +139,8 @@ export function useHierarchyGenerator(projectId: string | null) {
         formData.append('document', file);
 
         const url = `${API_BASE}/projects/${projectId}/architecture/generate-from-document`;
-        const response = await fetch(url, {
+        const response = await authFetch(url, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
           body: formData,
           signal: abortRef.current.signal,
         });
@@ -189,18 +188,14 @@ export function useHierarchyGenerator(projectId: string | null) {
       accept: AcceptState,
     ): Promise<{ success: boolean; counts?: Record<string, number>; error?: string }> => {
       if (!projectId) return { success: false, error: 'No project loaded' };
-      const token = useAuthStore.getState().token;
-      if (!token) return { success: false, error: 'Not authenticated' };
+      if (!useAuthStore.getState().token) return { success: false, error: 'Not authenticated' };
 
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${API_BASE}/projects/${projectId}/architecture/apply-hierarchy`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               hierarchy: {
                 ...hierarchy,

@@ -4,6 +4,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { authFetch } from '../services/authFetch';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -54,8 +55,7 @@ export function useDataObjectGenerator(projectId: string | null) {
         setState((s) => ({ ...s, status: 'error', error: 'No project loaded' }));
         return;
       }
-      const token = useAuthStore.getState().token;
-      if (!token) {
+      if (!useAuthStore.getState().token) {
         setState((s) => ({ ...s, status: 'error', error: 'Not authenticated' }));
         return;
       }
@@ -66,12 +66,9 @@ export function useDataObjectGenerator(projectId: string | null) {
 
       try {
         const url = `${API_BASE}/projects/${projectId}/processes/${processId}/generate-data-objects`;
-        const response = await fetch(url, {
+        const response = await authFetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           signal: abortRef.current.signal,
         });
 
@@ -140,18 +137,14 @@ export function useDataObjectGenerator(projectId: string | null) {
       error?: string;
     }> => {
       if (!projectId) return { success: false, error: 'No project loaded' };
-      const token = useAuthStore.getState().token;
-      if (!token) return { success: false, error: 'Not authenticated' };
+      if (!useAuthStore.getState().token) return { success: false, error: 'Not authenticated' };
 
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${API_BASE}/projects/${projectId}/processes/${processId}/apply-data-objects`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               dataObjects: dataObjectsToApply,
               parentX: parentPos?.x ?? 0,
@@ -199,18 +192,14 @@ export function useDataObjectGenerator(projectId: string | null) {
       error?: string;
     }> => {
       if (!projectId) return { success: false, error: 'No project loaded' };
-      const token = useAuthStore.getState().token;
-      if (!token) return { success: false, error: 'Not authenticated' };
+      if (!useAuthStore.getState().token) return { success: false, error: 'Not authenticated' };
 
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${API_BASE}/projects/${projectId}/processes/${processId}/apply-data-object-decisions`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               decisions,
               parentX: parentPos?.x ?? 0,

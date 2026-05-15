@@ -4,6 +4,7 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { authFetch } from '../services/authFetch';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -42,8 +43,7 @@ export function useProcessGenerator(projectId: string | null) {
         setState((s) => ({ ...s, status: 'error', error: 'No project loaded' }));
         return;
       }
-      const token = useAuthStore.getState().token;
-      if (!token) {
+      if (!useAuthStore.getState().token) {
         setState((s) => ({ ...s, status: 'error', error: 'Not authenticated' }));
         return;
       }
@@ -54,12 +54,9 @@ export function useProcessGenerator(projectId: string | null) {
 
       try {
         const url = `${API_BASE}/projects/${projectId}/capabilities/${capabilityId}/generate-processes`;
-        const response = await fetch(url, {
+        const response = await authFetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           signal: abortRef.current.signal,
         });
 
@@ -108,18 +105,14 @@ export function useProcessGenerator(projectId: string | null) {
       parentPos?: { x: number; z: number },
     ): Promise<{ success: boolean; processIds?: string[]; error?: string }> => {
       if (!projectId) return { success: false, error: 'No project loaded' };
-      const token = useAuthStore.getState().token;
-      if (!token) return { success: false, error: 'Not authenticated' };
+      if (!useAuthStore.getState().token) return { success: false, error: 'Not authenticated' };
 
       try {
-        const res = await fetch(
+        const res = await authFetch(
           `${API_BASE}/projects/${projectId}/capabilities/${capabilityId}/apply-processes`,
           {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               processes: processesToApply,
               parentX: parentPos?.x ?? 0,
