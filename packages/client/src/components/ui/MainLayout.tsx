@@ -10,6 +10,7 @@ import ImportMappingDialog from '../import/ImportMappingDialog';
 import Walkthrough from './Walkthrough';
 import TeamChat from '../collaboration/TeamChat';
 import MFASetup from '../security/MFASetup';
+import RedundancyPanel from '../copilot/RedundancyPanel';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -24,6 +25,7 @@ export default function MainLayout() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const projectId = useArchitectureStore((s) => s.projectId);
   const [showMFASetup, setShowMFASetup] = useState(false);
+  const [showRedundancyPanel, setShowRedundancyPanel] = useState(false);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
@@ -38,6 +40,7 @@ export default function MainLayout() {
           onOpenCSVImport={() => setShowCSVImport(true)}
           onOpenImportMapping={projectId ? () => setShowImportMapping(true) : undefined}
           onOpenWalkthrough={() => setShowWalkthrough(true)}
+          onOpenRedundancyPanel={projectId ? () => setShowRedundancyPanel(true) : undefined}
         />
         <BreadcrumbBar />
         <main className="flex-1 relative overflow-hidden">
@@ -61,6 +64,11 @@ export default function MainLayout() {
       )}
       <Walkthrough isOpen={showWalkthrough} onClose={() => setShowWalkthrough(false)} />
       <MFASetup isOpen={showMFASetup} onClose={() => setShowMFASetup(false)} />
+      <RedundancyPanel
+        isOpen={showRedundancyPanel}
+        onClose={() => setShowRedundancyPanel(false)}
+        projectId={projectId}
+      />
     </div>
   );
 }

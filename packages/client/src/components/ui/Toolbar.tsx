@@ -30,6 +30,7 @@ import {
   Eye,
   ChevronDown,
   Sparkles,
+  GitMerge,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -53,9 +54,10 @@ interface ToolbarProps {
   onOpenCSVImport: () => void;
   onOpenImportMapping?: () => void;
   onOpenWalkthrough: () => void;
+  onOpenRedundancyPanel?: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -392,6 +394,16 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
                 className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
               >
                 <Sparkles size={14} />
+              </button>
+            )}
+            {/* REQ-RED-003 — Redundancy Detector trigger */}
+            {projectId && onOpenRedundancyPanel && (
+              <button
+                onClick={onOpenRedundancyPanel}
+                title="Redundancy Detector — find semantically duplicate elements (REQ-RED-001)"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
+              >
+                <GitMerge size={14} />
               </button>
             )}
             <ToolbarButton

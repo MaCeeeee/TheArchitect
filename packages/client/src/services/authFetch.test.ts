@@ -22,14 +22,14 @@ vi.mock('../stores/authStore', () => ({
 const { authFetch } = await import('./authFetch');
 
 // Stub fetch — each test arranges its own sequence of responses
-const originalFetch = global.fetch;
+const originalFetch = globalThis.fetch;
 let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   setTokens.mockClear();
   logout.mockClear();
   fetchMock = vi.fn();
-  global.fetch = fetchMock as unknown as typeof fetch;
+  globalThis.fetch = fetchMock as unknown as typeof fetch;
   // Prevent jsdom location.href navigation crashes in failHard()
   if (typeof window !== 'undefined') {
     Object.defineProperty(window, 'location', {
@@ -40,7 +40,7 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  global.fetch = originalFetch;
+  globalThis.fetch = originalFetch;
 });
 
 function jsonResponse(body: unknown, status = 200): Response {
