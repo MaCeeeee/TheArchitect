@@ -92,5 +92,42 @@ export function useRedundancies(projectId: string | null) {
 
   const reset = useCallback(() => setState(initialState), []);
 
-  return { state, fetch, reset };
+  // REQ-RED-004 — apply per-pair decisions (merge / keep / skip).
+  // Returns the backend's count breakdown so the caller can toast it.
+  const applyDecisions = useCallback(
+    async (
+      decisions: Array<{
+        aId: string;
+        bId: string;
+        action: 'merge-into-a' | 'merge-into-b' | 'keep-both' | 'skip';
+      }>,
+    ): Promise<{
+      success: boolean;
+      result?: { resolved: number; merged: number; kept: number; skipped: number; errors: Array<{ aId: string; bId: string; reason: string }> };
+      error?: string;
+    }> => {
+      if (!projectId) return { success: false, error: 'No project loaded' };
+      if (!useAuthStore.getState().token) return { success: false, error: 'Not authenticated' };
+      if (decisions.length === 0) return { success: false, error: 'No decisions to apply' };
+
+      try {
+        const res = await authFetch(`${API_BASE}/projects/${projectId}/redundancies/resolve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decisions }),
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(() => '');
+          return { success: false, error: txt || `HTTP ${res.status}` };
+        }
+        const body = await res.json();
+        return { success: true, result: body.data };
+      } catch (err) {
+        return { success: false, error: (err as Error).message };
+      }
+    },
+    [projectId],
+  );
+
+  return { state, fetch, reset, applyDecisions };
 }

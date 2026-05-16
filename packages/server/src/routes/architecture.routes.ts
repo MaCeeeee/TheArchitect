@@ -19,6 +19,7 @@ import {
   findSimilarElements,
   findRedundancies,
 } from '../services/elementSimilarity.service';
+import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { log } from '../config/logger';
 
@@ -415,6 +416,70 @@ router.get(
         '[redundancy] detect endpoint failed',
       );
       res.status(500).json({ success: false, error: 'Failed to detect redundancies' });
+    }
+  },
+);
+
+// ─── REQ-RED-004: Apply redundancy decisions (Bulk-Merge) ──────────────────
+//
+// POST /:projectId/redundancies/resolve
+// body: { decisions: [{aId, bId, action}] }
+//   action: 'merge-into-a' | 'merge-into-b' | 'keep-both' | 'skip'
+//
+// Each decision is independent — one failure doesn't block the rest.
+// Response includes counts + per-pair errors.
+//
+// Destructive (the merge-* actions delete the source element + its embedding)
+// → audit risk = 'high' and requires ELEMENT_DELETE permission.
+
+const RedundancyDecisionSchema = z.object({
+  aId: z.string().min(1),
+  bId: z.string().min(1),
+  action: z.enum(['merge-into-a', 'merge-into-b', 'keep-both', 'skip']),
+});
+
+const ResolveBodySchema = z.object({
+  decisions: z.array(RedundancyDecisionSchema).min(1).max(50),
+});
+
+router.post(
+  '/:projectId/redundancies/resolve',
+  rateLimit({ windowMs: 60_000, max: 10, name: 'redundancy-resolve' }),
+  requirePermission(PERMISSIONS.ELEMENT_DELETE),
+  audit({ action: 'redundancy_resolve', entityType: 'project', riskLevel: 'high' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const parsed = ResolveBodySchema.parse(req.body);
+
+      const result = await applyRedundancyDecisions(String(projectId), parsed.decisions);
+
+      log.info(
+        {
+          projectId,
+          decisions: parsed.decisions.length,
+          merged: result.merged,
+          kept: result.kept,
+          skipped: result.skipped,
+          errorCount: result.errors.length,
+        },
+        '[redundancy] resolve endpoint completed',
+      );
+
+      res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: err.errors,
+        });
+      }
+      log.error(
+        { err: (err as Error).message, projectId: req.params.projectId },
+        '[redundancy] resolve endpoint failed',
+      );
+      res.status(500).json({ success: false, error: 'Failed to resolve redundancies' });
     }
   },
 );
