@@ -82,6 +82,39 @@ export interface ElementForEmbedding {
   projectId: string;
 }
 
+// ─── REQ-RED-001 — Redundancy-Pair Detection ────────────────────────────────
+
+/** Minimal element shape needed to drive findRedundancies — id + type, so
+ *  callers can pre-filter by layer/type before paying the Qdrant cost. */
+export interface ElementForRedundancyScan {
+  id: string;
+  type: string;
+}
+
+export interface RedundancyPair {
+  aId: string;
+  aName: string;
+  aType: string;
+  aLayer: string;
+  bId: string;
+  bName: string;
+  bType: string;
+  bLayer: string;
+  score: number;
+  tier: SimilarityTier;
+}
+
+export interface FindRedundanciesOpts {
+  /** Score cutoff — default = SCORE_SIMILAR (0.65). Pairs below are dropped. */
+  scoreThreshold?: number;
+  /** Neighbours per element to inspect — default 5. */
+  topK?: number;
+  /** When true, only pairs where aType === bType are returned. Default true. */
+  sameTypeOnly?: boolean;
+  /** Cap on final list size — default 50. */
+  limit?: number;
+}
+
 export interface FindSimilarOpts {
   text?: string;
   elementId?: string;
@@ -385,4 +418,110 @@ export async function similarityHealthCheck(): Promise<{
     result.qdrant = 'ok';
   } catch { /* leave as fail */ }
   return result;
+}
+
+/**
+ * REQ-RED-001 — Find similarity-pair candidates inside a project.
+ *
+ * For each input element we run `findSimilarElements(elementId)` against
+ * the workspace's Qdrant collection and collect every neighbour above the
+ * score threshold. Pairs are deduplicated (the unordered pair {A, B} only
+ * appears once) and returned sorted by score descending.
+ *
+ * The caller is responsible for pre-filtering the input set
+ * (e.g. only data-* elements for the same-type narrow case). Type-aware
+ * filtering also happens inside this function when `sameTypeOnly=true`
+ * to drop cross-type neighbours from Qdrant.
+ *
+ * Performance note: this issues one Qdrant `search` per input element
+ * (i.e. O(n) round-trips). For projects with > ~500 elements consider
+ * paging or moving to a single getCollection scroll. We're well below
+ * that for BSH/typical-enterprise workloads today.
+ */
+export async function findRedundancies(
+  workspaceId: string,
+  elements: ElementForRedundancyScan[],
+  opts: FindRedundanciesOpts = {},
+  // DI hook — defaults to the module's findSimilarElements. Tests inject
+  // a stub so the dedup/filter/sort logic can be exercised without
+  // building a workspace-aware Qdrant mock.
+  findSimilarImpl: typeof findSimilarElements = findSimilarElements,
+): Promise<RedundancyPair[]> {
+  const scoreThreshold = opts.scoreThreshold ?? SCORE_SIMILAR;
+  const topK = Math.min(Math.max(opts.topK ?? 5, 1), 20);
+  const sameTypeOnly = opts.sameTypeOnly ?? true;
+  const limit = Math.min(Math.max(opts.limit ?? 50, 1), 500);
+
+  // Map elementId → type so we can same-type-filter neighbours without
+  // another lookup. Also gives us a presence-check to skip neighbours
+  // that aren't in the input set (e.g. they exist in Qdrant but were
+  // type-filtered out by the caller).
+  const typeById = new Map<string, string>();
+  for (const el of elements) typeById.set(el.id, el.type);
+
+  // Pair-key uses sorted ids so {A,B} === {B,A}
+  const pairKey = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+  const pairs = new Map<string, RedundancyPair>();
+
+  for (const el of elements) {
+    let result: SimilarityResult;
+    try {
+      result = await findSimilarImpl(workspaceId, {
+        elementId: el.id,
+        topK,
+        scoreThreshold,
+      });
+    } catch (e) {
+      // Element not yet indexed → skip silently. Reindex would fix it.
+      log.debug(
+        { err: (e as Error).message, workspaceId, elementId: el.id },
+        '[redundancy] skip element (not in index)',
+      );
+      continue;
+    }
+
+    for (const neighbour of result.results) {
+      // Drop self (already excluded by findSimilarElements but defensive)
+      if (neighbour.elementId === el.id) continue;
+      // Drop neighbours that aren't in our input set (filtered out by caller)
+      if (!typeById.has(neighbour.elementId)) continue;
+      // Same-type filter
+      if (sameTypeOnly && neighbour.type !== el.type) continue;
+
+      const key = pairKey(el.id, neighbour.elementId);
+      // Keep the higher score if we hit the same pair from both directions
+      const existing = pairs.get(key);
+      if (existing && existing.score >= neighbour.score) continue;
+
+      // Sort the pair by id so the output is deterministic regardless of
+      // iteration direction (helps tests + dedup of repeated runs)
+      const [aId, aType] = el.id < neighbour.elementId
+        ? [el.id, el.type]
+        : [neighbour.elementId, neighbour.type];
+      const [aName, aLayer] = el.id < neighbour.elementId
+        ? ['', ''] // self-name unknown without separate lookup; fill in route
+        : [neighbour.name, neighbour.layer];
+      const [bId, bName, bType, bLayer] = el.id < neighbour.elementId
+        ? [neighbour.elementId, neighbour.name, neighbour.type, neighbour.layer]
+        : [el.id, '', el.type, ''];
+
+      pairs.set(key, {
+        aId,
+        aName,
+        aType,
+        aLayer,
+        bId,
+        bName,
+        bType,
+        bLayer,
+        score: neighbour.score,
+        tier: neighbour.tier,
+      });
+    }
+  }
+
+  // Sort by score descending, cap to limit
+  return Array.from(pairs.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }

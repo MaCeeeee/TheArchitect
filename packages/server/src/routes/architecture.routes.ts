@@ -17,6 +17,7 @@ import {
   upsertEmbedding,
   deleteEmbedding,
   findSimilarElements,
+  findRedundancies,
 } from '../services/elementSimilarity.service';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { log } from '../config/logger';
@@ -300,6 +301,120 @@ router.post(
         '[similarity] search endpoint failed',
       );
       res.status(500).json({ success: false, error: 'Failed to search similar elements' });
+    }
+  },
+);
+
+// ─── REQ-RED-001: Redundancy-pair detection ─────────────────────────────────
+//
+// GET /:projectId/redundancies — find similarity-pair candidates in a project.
+// Optional query params:
+//   - type:           single ArchiMate type (e.g. data_object). Default: all data-* types.
+//   - scoreThreshold: 0.0..1.0, default 0.65
+//   - topK:           neighbours per element, default 5, capped at 20
+//   - limit:          max pairs returned, default 50, capped at 500
+//   - sameTypeOnly:   "true" (default) | "false"
+//
+// Algorithm reads the project's element list from Neo4j, then drives
+// findRedundancies() in the service layer. Names + layers from the
+// stored elements are merged in here so the client can render a list
+// without separate per-element fetches.
+
+const DATA_TYPES = new Set(['data_object', 'data_entity', 'data_model']);
+
+const RedundancyQuerySchema = z.object({
+  type: z.string().min(1).optional(),
+  scoreThreshold: z.coerce.number().min(0).max(1).optional(),
+  topK: z.coerce.number().int().min(1).max(20).optional(),
+  limit: z.coerce.number().int().min(1).max(500).optional(),
+  sameTypeOnly: z.enum(['true', 'false']).optional(),
+});
+
+router.get(
+  '/:projectId/redundancies',
+  rateLimit({ windowMs: 60_000, max: 30, name: 'redundancy-detect' }),
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  audit({ action: 'redundancy_detect', entityType: 'project', riskLevel: 'low' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const parsed = RedundancyQuerySchema.parse(req.query);
+
+      // Pull project elements from Neo4j once. We need id + type + name +
+      // layer so the response can be self-contained (no extra fetch on the
+      // client to resolve element labels).
+      const records = await runCypher(
+        'MATCH (e:ArchitectureElement {projectId: $projectId}) RETURN e.id AS id, e.name AS name, e.type AS type, e.layer AS layer',
+        { projectId },
+      );
+      const elements = records.map((r) => ({
+        id: r.get('id') as string,
+        name: r.get('name') as string,
+        type: r.get('type') as string,
+        layer: r.get('layer') as string,
+      }));
+
+      // Type filter: explicit type wins, otherwise default to data-* set
+      const typeFilter = parsed.type
+        ? new Set([parsed.type])
+        : DATA_TYPES;
+      const filtered = elements.filter((el) => typeFilter.has(el.type));
+
+      const sameTypeOnly = parsed.sameTypeOnly !== 'false';
+      const pairs = await findRedundancies(
+        String(projectId),
+        filtered.map((el) => ({ id: el.id, type: el.type })),
+        {
+          scoreThreshold: parsed.scoreThreshold,
+          topK: parsed.topK,
+          sameTypeOnly,
+          limit: parsed.limit,
+        },
+      );
+
+      // The service returns pair ids only; merge in name/layer from the
+      // Neo4j fetch above so the client has everything to render.
+      const byId = new Map(elements.map((el) => [el.id, el]));
+      const enriched = pairs.map((p) => {
+        const a = byId.get(p.aId);
+        const b = byId.get(p.bId);
+        return {
+          aId: p.aId,
+          aName: a?.name ?? p.aName ?? '(unknown)',
+          aType: a?.type ?? p.aType,
+          aLayer: a?.layer ?? p.aLayer,
+          bId: p.bId,
+          bName: b?.name ?? p.bName ?? '(unknown)',
+          bType: b?.type ?? p.bType,
+          bLayer: b?.layer ?? p.bLayer,
+          score: p.score,
+          tier: p.tier,
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          pairs: enriched,
+          scanned: filtered.length,
+          totalElements: elements.length,
+          scoreThreshold: parsed.scoreThreshold ?? 0.65,
+          sameTypeOnly,
+        },
+      });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: err.errors,
+        });
+      }
+      log.error(
+        { err: (err as Error).message, projectId: req.params.projectId },
+        '[redundancy] detect endpoint failed',
+      );
+      res.status(500).json({ success: false, error: 'Failed to detect redundancies' });
     }
   },
 );
