@@ -41,6 +41,15 @@ jest.mock('../config/neo4j', () => ({
   serializeNeo4jProperties: (p: Record<string, unknown>) => p,
 }));
 
+const mockCountDocuments = jest.fn();
+const mockFindOne = jest.fn();
+jest.mock('../models/AuditLog', () => ({
+  AuditLog: {
+    countDocuments: (...args: unknown[]) => mockCountDocuments(...args),
+    findOne: (...args: unknown[]) => mockFindOne(...args),
+  },
+}));
+
 jest.mock('../services/elementSimilarity.service', () => ({
   findRedundancies: jest.fn(),
   findSimilarElements: jest.fn(),
@@ -91,9 +100,13 @@ describe('POST /:projectId/redundancies/resolve (REQ-RED-004)', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.merged).toBe(1);
-    expect(mockApplyDecisions).toHaveBeenCalledWith(PROJECT_ID, [
-      { aId: 'a1', bId: 'b1', action: 'merge-into-a' },
-    ]);
+    // 3rd arg is auditContext (undefined here because the auth middleware
+    // is mocked without setting req.user — REQ-RED-005)
+    expect(mockApplyDecisions).toHaveBeenCalledWith(
+      PROJECT_ID,
+      [{ aId: 'a1', bId: 'b1', action: 'merge-into-a' }],
+      undefined,
+    );
   });
 
   it('2. merge-into-b also passes through', async () => {
@@ -207,5 +220,77 @@ describe('POST /:projectId/redundancies/resolve (REQ-RED-004)', () => {
     }));
     const res = await request(app).post(URL).send({ decisions: tooMany });
     expect(res.status).toBe(400);
+  });
+});
+
+// ─── REQ-RED-005 — Stats endpoint ──────────────────────────────────────────
+
+describe('GET /:projectId/stats/redundancies (REQ-RED-005)', () => {
+  const STATS_URL = `/api/projects/${PROJECT_ID}/stats/redundancies`;
+
+  beforeEach(() => {
+    mockCountDocuments.mockReset();
+    mockFindOne.mockReset();
+  });
+
+  it('aggregates resolved + kept counters from the audit log', async () => {
+    mockCountDocuments
+      .mockResolvedValueOnce(7) // resolved
+      .mockResolvedValueOnce(3); // kept
+    // findOne().sort().select().lean() chain
+    const chain = {
+      sort: () => chain,
+      select: () => chain,
+      lean: () => Promise.resolve({
+        timestamp: new Date('2026-05-16T15:00:00Z'),
+        userId: 'user-1',
+        after: { aId: 'a1', bId: 'b1' },
+      }),
+    };
+    mockFindOne.mockReturnValue(chain);
+
+    const res = await request(app).get(STATS_URL);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toMatchObject({
+      totalResolved: 7,
+      totalKept: 3,
+      lastResolvedBy: 'user-1',
+    });
+    expect(res.body.data.lastResolvedPair).toEqual({ aId: 'a1', bId: 'b1' });
+    expect(res.body.data.lastResolvedAt).toBeTruthy();
+  });
+
+  it('returns nulls when no resolved redundancies yet', async () => {
+    mockCountDocuments.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
+    const chain = {
+      sort: () => chain,
+      select: () => chain,
+      lean: () => Promise.resolve(null),
+    };
+    mockFindOne.mockReturnValue(chain);
+
+    const res = await request(app).get(STATS_URL);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.totalResolved).toBe(0);
+    expect(res.body.data.lastResolvedAt).toBeNull();
+    expect(res.body.data.lastResolvedPair).toBeNull();
+  });
+
+  it('500 on DB failure', async () => {
+    mockCountDocuments.mockRejectedValue(new Error('mongo dead'));
+    // findOne must also be set so Promise.all doesn't hang on undefined
+    const chain = {
+      sort: () => chain,
+      select: () => chain,
+      lean: () => Promise.resolve(null),
+    };
+    mockFindOne.mockReturnValue(chain);
+
+    const res = await request(app).get(STATS_URL);
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 });

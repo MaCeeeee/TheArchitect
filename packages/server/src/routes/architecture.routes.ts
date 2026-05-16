@@ -20,6 +20,7 @@ import {
   findRedundancies,
 } from '../services/elementSimilarity.service';
 import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
+import { AuditLog } from '../models/AuditLog';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { log } from '../config/logger';
 
@@ -469,7 +470,17 @@ router.post(
       const { projectId } = req.params;
       const parsed = ResolveBodySchema.parse(req.body);
 
-      const result = await applyRedundancyDecisions(String(projectId), parsed.decisions);
+      // REQ-RED-005 — pass audit context so each merge writes an audit row
+      const userId = (req as Request & { user?: { _id?: { toString(): string } } }).user?._id?.toString();
+      const auditContext = userId
+        ? {
+            userId,
+            ip: req.ip || req.socket.remoteAddress || '',
+            userAgent: req.get('user-agent') || '',
+          }
+        : undefined;
+
+      const result = await applyRedundancyDecisions(String(projectId), parsed.decisions, auditContext);
 
       log.info(
         {
@@ -497,6 +508,51 @@ router.post(
         '[redundancy] resolve endpoint failed',
       );
       res.status(500).json({ success: false, error: 'Failed to resolve redundancies' });
+    }
+  },
+);
+
+// ─── REQ-RED-005: Redundancy resolution stats ──────────────────────────────
+//
+// GET /:projectId/stats/redundancies
+//
+// Aggregates the audit log (action=redundancy_resolved) so the project
+// dashboard can show "X redundancies resolved · last on ...". Cheap
+// MongoDB count + max(timestamp) query; no auth-side rate-limiting beyond
+// the standard project-access guard.
+
+router.get(
+  '/:projectId/stats/redundancies',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+
+      const [totalResolved, totalKept, latest] = await Promise.all([
+        AuditLog.countDocuments({ projectId, action: 'redundancy_resolved' }),
+        AuditLog.countDocuments({ projectId, action: 'redundancy_kept' }),
+        AuditLog.findOne({ projectId, action: 'redundancy_resolved' })
+          .sort({ timestamp: -1 })
+          .select({ timestamp: 1, after: 1, userId: 1 })
+          .lean(),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          totalResolved,
+          totalKept,
+          lastResolvedAt: latest?.timestamp ?? null,
+          lastResolvedBy: latest?.userId ?? null,
+          lastResolvedPair: latest?.after ?? null,
+        },
+      });
+    } catch (err) {
+      log.error(
+        { err: (err as Error).message, projectId: req.params.projectId },
+        '[redundancy] stats endpoint failed',
+      );
+      res.status(500).json({ success: false, error: 'Failed to load redundancy stats' });
     }
   },
 );

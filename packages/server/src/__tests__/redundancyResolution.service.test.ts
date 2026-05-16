@@ -31,6 +31,11 @@ jest.mock('../services/elementSimilarity.service', () => ({
   deleteEmbedding: (...args: unknown[]) => mockDeleteEmbedding(...args),
 }));
 
+const mockCreateAuditEntry = jest.fn().mockResolvedValue(undefined);
+jest.mock('../middleware/audit.middleware', () => ({
+  createAuditEntry: (...args: unknown[]) => mockCreateAuditEntry(...args),
+}));
+
 import {
   mergeElements,
   applyRedundancyDecisions,
@@ -41,6 +46,7 @@ const flushMicrotasks = () => new Promise<void>((r) => setImmediate(r));
 beforeEach(() => {
   cypherCalls.length = 0;
   mockDeleteEmbedding.mockClear();
+  mockCreateAuditEntry.mockClear();
 });
 
 // ─── mergeElements ──────────────────────────────────────────────────────────
@@ -182,5 +188,78 @@ describe('applyRedundancyDecisions', () => {
     expect(result.skipped).toBe(1);
     expect(result.resolved).toBe(3); // merge + keep, not skip
     expect(result.errors).toHaveLength(0);
+  });
+});
+
+// ─── REQ-RED-005 — Audit writes ─────────────────────────────────────────────
+
+describe('applyRedundancyDecisions — audit (REQ-RED-005)', () => {
+  const auditCtx = { userId: 'user-1', ip: '127.0.0.1', userAgent: 'jest' };
+
+  it('writes redundancy_resolved audit per successful merge', async () => {
+    await applyRedundancyDecisions(
+      'p1',
+      [{ aId: 'a1', bId: 'b1', action: 'merge-into-a' }],
+      auditCtx,
+    );
+
+    expect(mockCreateAuditEntry).toHaveBeenCalledTimes(1);
+    const call = mockCreateAuditEntry.mock.calls[0][0];
+    expect(call.action).toBe('redundancy_resolved');
+    expect(call.entityType).toBe('redundancy_pair');
+    expect(call.entityId).toBe('a1|b1');
+    expect(call.projectId).toBe('p1');
+    expect(call.userId).toBe('user-1');
+    expect(call.riskLevel).toBe('medium');
+    expect(call.after).toMatchObject({
+      aId: 'a1', bId: 'b1', action: 'merge-into-a', sourceId: 'b1', targetId: 'a1',
+    });
+  });
+
+  it('writes redundancy_kept audit for keep-both decisions', async () => {
+    await applyRedundancyDecisions(
+      'p1',
+      [{ aId: 'a1', bId: 'b1', action: 'keep-both' }],
+      auditCtx,
+    );
+
+    expect(mockCreateAuditEntry).toHaveBeenCalledTimes(1);
+    const call = mockCreateAuditEntry.mock.calls[0][0];
+    expect(call.action).toBe('redundancy_kept');
+    expect(call.riskLevel).toBe('low');
+  });
+
+  it('writes NO audit for skip decisions (pure metadata, no state change)', async () => {
+    await applyRedundancyDecisions(
+      'p1',
+      [{ aId: 'a1', bId: 'b1', action: 'skip' }],
+      auditCtx,
+    );
+    expect(mockCreateAuditEntry).not.toHaveBeenCalled();
+  });
+
+  it('writes NO audit when auditContext is omitted (backwards-compat)', async () => {
+    await applyRedundancyDecisions('p1', [
+      { aId: 'a1', bId: 'b1', action: 'merge-into-a' },
+    ]);
+    expect(mockCreateAuditEntry).not.toHaveBeenCalled();
+  });
+
+  it('audit failure does not abort the merge or block other decisions', async () => {
+    mockCreateAuditEntry.mockRejectedValueOnce(new Error('mongo down'));
+
+    const result = await applyRedundancyDecisions(
+      'p1',
+      [
+        { aId: 'a1', bId: 'b1', action: 'merge-into-a' },
+        { aId: 'a2', bId: 'b2', action: 'keep-both' },
+      ],
+      auditCtx,
+    );
+
+    // First merge still counted as merged despite audit failure
+    expect(result.merged).toBe(1);
+    expect(result.kept).toBe(1);
+    expect(result.errors).toHaveLength(0); // audit failure isn't a user-facing error
   });
 });

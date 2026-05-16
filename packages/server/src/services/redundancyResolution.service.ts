@@ -11,6 +11,7 @@
 import { v4 as uuid } from 'uuid';
 import { runCypher } from '../config/neo4j';
 import { deleteEmbedding } from './elementSimilarity.service';
+import { createAuditEntry } from '../middleware/audit.middleware';
 import { log } from '../config/logger';
 
 export type RedundancyDecisionAction =
@@ -131,10 +132,18 @@ export async function mergeElements(
  * Apply a batch of redundancy decisions. Each decision is independent —
  * one failure doesn't block the rest. Returns counts + collected errors
  * so the caller can show a summary.
+ *
+ * REQ-RED-005: writes an audit entry per non-skip decision so the
+ * resolved redundancies can be queried later (stat endpoint + general
+ * audit log filter). Audit failures are swallowed (fire-and-forget)
+ * so the user-visible result still reflects the actual merge state.
  */
 export async function applyRedundancyDecisions(
   projectId: string,
   decisions: RedundancyDecision[],
+  // Audit context — optional so unit tests can call without ceremony,
+  // but the route always passes it through.
+  auditContext?: { userId: string; ip?: string; userAgent?: string },
 ): Promise<RedundancyResolutionResult> {
   const result: RedundancyResolutionResult = {
     resolved: 0,
@@ -153,6 +162,11 @@ export async function applyRedundancyDecisions(
       if (d.action === 'keep-both') {
         result.kept++;
         result.resolved++;
+        if (auditContext) {
+          await writeAudit(auditContext, projectId, 'redundancy_kept', {
+            aId: d.aId, bId: d.bId, action: 'keep-both',
+          }).catch((e) => log.warn({ err: (e as Error).message }, '[redundancy] audit keep-both failed'));
+        }
         continue;
       }
 
@@ -162,6 +176,16 @@ export async function applyRedundancyDecisions(
 
       result.merged++;
       result.resolved++;
+
+      if (auditContext) {
+        await writeAudit(auditContext, projectId, 'redundancy_resolved', {
+          aId: d.aId,
+          bId: d.bId,
+          action: d.action,
+          sourceId,
+          targetId,
+        }).catch((e) => log.warn({ err: (e as Error).message }, '[redundancy] audit merge failed'));
+      }
     } catch (e) {
       result.errors.push({
         aId: d.aId,
@@ -172,4 +196,23 @@ export async function applyRedundancyDecisions(
   }
 
   return result;
+}
+
+async function writeAudit(
+  ctx: { userId: string; ip?: string; userAgent?: string },
+  projectId: string,
+  action: 'redundancy_resolved' | 'redundancy_kept',
+  details: Record<string, unknown>,
+): Promise<void> {
+  await createAuditEntry({
+    userId: ctx.userId,
+    projectId,
+    action,
+    entityType: 'redundancy_pair',
+    entityId: `${details.aId}|${details.bId}`,
+    after: details,
+    ip: ctx.ip,
+    userAgent: ctx.userAgent,
+    riskLevel: action === 'redundancy_resolved' ? 'medium' : 'low',
+  });
 }
