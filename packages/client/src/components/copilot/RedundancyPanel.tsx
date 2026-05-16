@@ -39,15 +39,27 @@ export default function RedundancyPanel({ isOpen, onClose, projectId }: Props) {
   // Pairs without an entry have no decision yet and won't be submitted.
   const [decisions, setDecisions] = useState<Record<string, DecisionAction>>({});
   const [submitting, setSubmitting] = useState(false);
+  // REQ-RED-002 — cross-type toggle. False = same-type only (default,
+  // strict). True = include cross-type matches via semantic-type-groups
+  // (broader, slightly noisier, higher default threshold backend-side).
+  const [crossType, setCrossType] = useState(false);
 
   // Trigger an initial fetch when the modal opens. Subsequent opens
   // re-fetch on demand via the refresh button so the user sees fresh
   // results after they make changes elsewhere.
   useEffect(() => {
     if (isOpen && projectId && state.status === 'idle') {
-      void fetch();
+      void fetch({ sameTypeOnly: !crossType });
     }
-  }, [isOpen, projectId, state.status, fetch]);
+  }, [isOpen, projectId, state.status, fetch, crossType]);
+
+  // Re-fetch when the user flips the cross-type toggle (without leaving
+  // the modal). Keep current decisions — switching mode is a query
+  // change, not a reset.
+  const handleToggleCrossType = (next: boolean) => {
+    setCrossType(next);
+    void fetch({ sameTypeOnly: !next });
+  };
 
   const filteredPairs = useMemo(() => {
     const all = state.data?.pairs ?? [];
@@ -141,7 +153,7 @@ export default function RedundancyPanel({ isOpen, onClose, projectId }: Props) {
         }
       }
       setDecisions({});
-      await fetch(); // re-scan with the new graph
+      await fetch({ sameTypeOnly: !crossType }); // re-scan with the new graph
     } finally {
       setSubmitting(false);
     }
@@ -151,6 +163,7 @@ export default function RedundancyPanel({ isOpen, onClose, projectId }: Props) {
     reset();
     setTypeFilter('all');
     setDecisions({});
+    setCrossType(false);
     onClose();
   };
 
@@ -180,14 +193,30 @@ export default function RedundancyPanel({ isOpen, onClose, projectId }: Props) {
               </span>
             )}
           </div>
-          <button
-            onClick={() => void fetch()}
-            disabled={state.status === 'loading'}
-            className="flex items-center gap-1 px-2 py-1 rounded border border-[var(--border-subtle)] hover:bg-[var(--surface-base)] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw size={11} className={state.status === 'loading' ? 'animate-spin' : ''} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            {/* REQ-RED-002 — Cross-Type toggle */}
+            <label
+              className="flex items-center gap-1.5 cursor-pointer select-none px-2 py-1 rounded border border-[var(--border-subtle)] hover:bg-[var(--surface-base)]"
+              title="Include matches across related types (capability ↔ service, etc.). Uses higher score threshold to keep precision."
+            >
+              <input
+                type="checkbox"
+                checked={crossType}
+                onChange={(e) => handleToggleCrossType(e.target.checked)}
+                disabled={state.status === 'loading'}
+                className="accent-[#00ff41]"
+              />
+              <span className="text-[10px]">Cross-type</span>
+            </label>
+            <button
+              onClick={() => void fetch({ sameTypeOnly: !crossType })}
+              disabled={state.status === 'loading'}
+              className="flex items-center gap-1 px-2 py-1 rounded border border-[var(--border-subtle)] hover:bg-[var(--surface-base)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={11} className={state.status === 'loading' ? 'animate-spin' : ''} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Type filter chips */}

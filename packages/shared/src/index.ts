@@ -6,6 +6,7 @@ export * from './types/settings.types';
 export * from './constants/togaf.constants';
 export * from './constants/archimate-icons';
 export * from './constants/archimate-rules';
+export * from './constants/semantic-type-groups.constants';
 export * from './constants/archimate-categories';
 export * from './constants/permissions.constants';
 export * from './constants/password.constants';

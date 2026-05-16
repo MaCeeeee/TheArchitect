@@ -24,6 +24,7 @@
 
 import { QdrantClient } from '@qdrant/js-client-rest';
 import * as crypto from 'node:crypto';
+import { areTypesCrossComparable } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 /**
@@ -485,8 +486,14 @@ export async function findRedundancies(
       if (neighbour.elementId === el.id) continue;
       // Drop neighbours that aren't in our input set (filtered out by caller)
       if (!typeById.has(neighbour.elementId)) continue;
-      // Same-type filter
+      // Same-type filter — strict mode: identical type only
       if (sameTypeOnly && neighbour.type !== el.type) continue;
+      // Cross-type filter — when sameTypeOnly=false, still reject pairs
+      // whose types aren't semantically comparable (REQ-RED-002). Prevents
+      // false-positives like Stakeholder ↔ Application that share textual
+      // tokens but aren't redundancy candidates.
+      if (!sameTypeOnly && neighbour.type !== el.type
+          && !areTypesCrossComparable(el.type, neighbour.type)) continue;
 
       const key = pairKey(el.id, neighbour.elementId);
       // Keep the higher score if we hit the same pair from both directions

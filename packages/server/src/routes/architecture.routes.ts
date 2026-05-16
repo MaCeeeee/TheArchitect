@@ -355,18 +355,35 @@ router.get(
         layer: r.get('layer') as string,
       }));
 
-      // Type filter: explicit type wins, otherwise default to data-* set
-      const typeFilter = parsed.type
-        ? new Set([parsed.type])
-        : DATA_TYPES;
-      const filtered = elements.filter((el) => typeFilter.has(el.type));
-
       const sameTypeOnly = parsed.sameTypeOnly !== 'false';
+
+      // Type filter for the INPUT set sent to the service:
+      //   - sameTypeOnly + no explicit type → only data-* (existing default)
+      //   - sameTypeOnly + explicit type   → only that type
+      //   - cross-type (sameTypeOnly=false) → ALL types in the project;
+      //     the service-level semantic-group filter (REQ-RED-002) drops
+      //     unrelated cross-type pairs from the candidate set
+      let filtered: typeof elements;
+      if (parsed.type) {
+        const typeFilter = new Set([parsed.type]);
+        filtered = elements.filter((el) => typeFilter.has(el.type));
+      } else if (sameTypeOnly) {
+        filtered = elements.filter((el) => DATA_TYPES.has(el.type));
+      } else {
+        // Cross-type mode → scan everything; semantic-group filter narrows it
+        filtered = elements;
+      }
+
+      // Cross-type matches are noisier, so the default threshold steps up
+      // from 0.65 to 0.7 to keep precision high. Explicit query overrides.
+      const effectiveThreshold =
+        parsed.scoreThreshold ?? (sameTypeOnly ? undefined : 0.7);
+
       const pairs = await findRedundancies(
         String(projectId),
         filtered.map((el) => ({ id: el.id, type: el.type })),
         {
-          scoreThreshold: parsed.scoreThreshold,
+          scoreThreshold: effectiveThreshold,
           topK: parsed.topK,
           sameTypeOnly,
           limit: parsed.limit,

@@ -203,4 +203,50 @@ describe('GET /:projectId/redundancies (REQ-RED-001)', () => {
     expect(res.body.data.totalElements).toBe(4); // 4 elements in project
     expect(res.body.data.scanned).toBe(3); // 3 passed data-* filter
   });
+
+  // ─── REQ-RED-002 — Cross-Type Mode ─────────────────────────────────────
+
+  describe('cross-type mode (sameTypeOnly=false)', () => {
+    it('cross-type scans the full element set, not just data-*', async () => {
+      await request(app)
+        .get(`/api/projects/${PROJECT_ID}/redundancies`)
+        .query({ sameTypeOnly: 'false' });
+
+      const [, scannedElements] = mockFindRedundancies.mock.calls[0];
+      // ALL 4 elements (3 data-* + 1 capability)
+      expect(scannedElements).toHaveLength(4);
+      expect(scannedElements.map((e: { id: string }) => e.id).sort()).toEqual(
+        ['cap1', 'e1', 'e2', 'e3'],
+      );
+    });
+
+    it('cross-type bumps default threshold to 0.7 (precision over recall)', async () => {
+      await request(app)
+        .get(`/api/projects/${PROJECT_ID}/redundancies`)
+        .query({ sameTypeOnly: 'false' });
+
+      const [, , opts] = mockFindRedundancies.mock.calls[0];
+      expect(opts.scoreThreshold).toBe(0.7);
+      expect(opts.sameTypeOnly).toBe(false);
+    });
+
+    it('cross-type respects explicit scoreThreshold over the 0.7 default', async () => {
+      await request(app)
+        .get(`/api/projects/${PROJECT_ID}/redundancies`)
+        .query({ sameTypeOnly: 'false', scoreThreshold: '0.5' });
+
+      const [, , opts] = mockFindRedundancies.mock.calls[0];
+      expect(opts.scoreThreshold).toBe(0.5);
+    });
+
+    it('explicit type filter still wins in cross-type mode (advanced query)', async () => {
+      await request(app)
+        .get(`/api/projects/${PROJECT_ID}/redundancies`)
+        .query({ sameTypeOnly: 'false', type: 'business_capability' });
+
+      const [, scannedElements] = mockFindRedundancies.mock.calls[0];
+      // Only the explicit type, even in cross-type mode
+      expect(scannedElements).toEqual([{ id: 'cap1', type: 'business_capability' }]);
+    });
+  });
 });
