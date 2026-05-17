@@ -40,6 +40,8 @@ import waitlistRoutes from './routes/waitlist.routes';
 import envisionAIRoutes from './routes/envision-ai.routes';
 import ragRoutes from './routes/rag.routes';
 import aiGeneratorRoutes from './routes/aiGenerator.routes';
+import decisionPatternsRoutes from './routes/decisionPatterns.routes';
+import { seedDecisionPatterns } from './seeds/decision-patterns.seed';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 import { startSyncScheduler } from './services/sync-scheduler.service';
@@ -167,6 +169,7 @@ async function main() {
   app.use('/api', ragRoutes);          // Health: /api/rag/health
   app.use('/api/projects', ragRoutes); // Scoped: /api/projects/:projectId/rag/*
   app.use('/api', aiGeneratorRoutes);  // /api/projects/:projectId/processes/:processId/generate-activities (SSE)
+  app.use('/api/decision-patterns', decisionPatternsRoutes);
 
   // Serve static client in production
   if (process.env.NODE_ENV === 'production') {
@@ -188,6 +191,14 @@ async function main() {
   // Connect databases
   await connectMongoDB();
   await connectNeo4j();
+
+  // Seed reference data (idempotent)
+  try {
+    const seedResult = await seedDecisionPatterns();
+    log.info({ ...seedResult }, '[seed] decision-patterns');
+  } catch (err) {
+    log.error({ err }, '[seed] decision-patterns failed');
+  }
 
   // Initialize WebSocket
   initSocketServer(server);
