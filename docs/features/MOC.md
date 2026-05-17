@@ -27,11 +27,18 @@ owner: Matze Ganzmann
 | [[UC-RED-001 Redundancy Detector]] | Sprint 3 | ✅ Live seit 2026-05-16 | "LeanIX/BiZZdesign/Mega haben das nicht" |
 | **UC-DATA-001 V2** Generator-D Reuse | Sprint 2 | ✅ Live | Keine Duplikate mehr durch AI-Generator |
 
+## 🛠 Code-Ready (Deploy ausstehend)
+
+| Use Case | Sprint | Status | Baseline für |
+|---|---|---|---|
+| [[uc-choice-001-pattern-library]] | Sprint 3 | 🛠 Code ready 2026-05-17 | UC-CHOICE-002/003/004/006/007 |
+
 ## 📅 Geplant
 
 | Use Case | Sprint | Status | Notes |
 |---|---|---|---|
 | [[UC-HARM-001 Cross-Project Harmonisierung]] | Sprint 4 | 📅 Geplant | Spike vorab nötig — Cross-Workspace ohne DSGVO-Bruch |
+| **UC-CHOICE-007** Voting & Badges | Sprint 4 | 📅 Geplant | nutzt Adoption-Telemetrie aus UC-CHOICE-001 |
 
 ## 🧪 Demo-Projekte
 
