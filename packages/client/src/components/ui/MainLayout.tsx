@@ -11,6 +11,7 @@ import Walkthrough from './Walkthrough';
 import TeamChat from '../collaboration/TeamChat';
 import MFASetup from '../security/MFASetup';
 import RedundancyPanel from '../copilot/RedundancyPanel';
+import DecisionPatternLibrary from '../patterns/DecisionPatternLibrary';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -26,6 +27,7 @@ export default function MainLayout() {
   const projectId = useArchitectureStore((s) => s.projectId);
   const [showMFASetup, setShowMFASetup] = useState(false);
   const [showRedundancyPanel, setShowRedundancyPanel] = useState(false);
+  const [showPatternLibrary, setShowPatternLibrary] = useState(false);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
@@ -41,6 +43,7 @@ export default function MainLayout() {
           onOpenImportMapping={projectId ? () => setShowImportMapping(true) : undefined}
           onOpenWalkthrough={() => setShowWalkthrough(true)}
           onOpenRedundancyPanel={projectId ? () => setShowRedundancyPanel(true) : undefined}
+          onOpenPatternLibrary={() => setShowPatternLibrary(true)}
         />
         <BreadcrumbBar />
         <main className="flex-1 relative overflow-hidden">
@@ -67,6 +70,11 @@ export default function MainLayout() {
       <RedundancyPanel
         isOpen={showRedundancyPanel}
         onClose={() => setShowRedundancyPanel(false)}
+        projectId={projectId}
+      />
+      <DecisionPatternLibrary
+        isOpen={showPatternLibrary}
+        onClose={() => setShowPatternLibrary(false)}
         projectId={projectId}
       />
     </div>

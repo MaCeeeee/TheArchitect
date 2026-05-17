@@ -31,6 +31,7 @@ import {
   ChevronDown,
   Sparkles,
   GitMerge,
+  BookOpen,
 } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -55,9 +56,10 @@ interface ToolbarProps {
   onOpenImportMapping?: () => void;
   onOpenWalkthrough: () => void;
   onOpenRedundancyPanel?: () => void;
+  onOpenPatternLibrary?: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -404,6 +406,16 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
                 className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
               >
                 <GitMerge size={14} />
+              </button>
+            )}
+            {/* REQ-CHOICE-001 — Pattern Library trigger */}
+            {onOpenPatternLibrary && (
+              <button
+                onClick={onOpenPatternLibrary}
+                title="Pre-Validated Pattern Library — compliance-scored architecture patterns (REQ-CHOICE-001)"
+                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
+              >
+                <BookOpen size={14} />
               </button>
             )}
             <ToolbarButton
