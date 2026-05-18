@@ -20,9 +20,13 @@ vi.mock('../stores/authStore', () => ({
 
 const {
   fetchDecisionPatterns,
+  fetchEnrichedPatterns,
   fetchDecisionPattern,
   adoptPattern,
   fetchPatternStats,
+  endorsePattern,
+  unendorsePattern,
+  updateLifecycle,
 } = await import('./decisionPatterns.api');
 
 let fetchMock: ReturnType<typeof vi.fn>;
@@ -125,5 +129,107 @@ describe('fetchPatternStats', () => {
     );
     const stats = await fetchPatternStats('managed-message-queue');
     expect(stats).toEqual({ totalUses: 42, last30Days: 7, uniqueProjects: 3 });
+  });
+});
+
+describe('fetchEnrichedPatterns', () => {
+  test('hits /stats-all endpoint without filter', async () => {
+    fetchMock.mockResolvedValue(okJson({ patterns: [] }));
+    await fetchEnrichedPatterns();
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toBe('/api/decision-patterns/stats-all');
+  });
+
+  test('passes category filter as query param', async () => {
+    fetchMock.mockResolvedValue(okJson({ patterns: [] }));
+    await fetchEnrichedPatterns({ category: 'security' });
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toBe('/api/decision-patterns/stats-all?category=security');
+  });
+
+  test('returns enriched patterns array', async () => {
+    fetchMock.mockResolvedValue(
+      okJson({
+        patterns: [
+          {
+            slug: 'a',
+            name: 'A',
+            stats: { totalUses: 5, last30Days: 1, uniqueProjects: 1, badges: [] },
+          },
+        ],
+      }),
+    );
+    const result = await fetchEnrichedPatterns();
+    expect(result).toHaveLength(1);
+    expect(result[0].stats.totalUses).toBe(5);
+  });
+});
+
+describe('endorsePattern', () => {
+  test('POSTs reason to /endorse', async () => {
+    fetchMock.mockResolvedValue(okJson({ ok: true }));
+    await endorsePattern('managed-oauth-provider', 'Compliant with NIS2 out of the box');
+    const call = fetchMock.mock.calls[0];
+    expect(call[0]).toBe('/api/decision-patterns/managed-oauth-provider/endorse');
+    expect(call[1].method).toBe('POST');
+    expect(JSON.parse(call[1].body)).toEqual({
+      reason: 'Compliant with NIS2 out of the box',
+    });
+  });
+
+  test('throws with server error on 400', async () => {
+    fetchMock.mockResolvedValue(
+      errJson(400, { error: 'Endorsement reason required (min. 30 characters)' }),
+    );
+    await expect(endorsePattern('x', 'short')).rejects.toThrow(
+      /min\. 30 characters/,
+    );
+  });
+
+  test('throws on duplicate (409)', async () => {
+    fetchMock.mockResolvedValue(
+      errJson(409, { error: 'You have already endorsed this pattern' }),
+    );
+    await expect(endorsePattern('x', 'a-reason-with-enough-characters-here')).rejects.toThrow(
+      /already endorsed/,
+    );
+  });
+});
+
+describe('unendorsePattern', () => {
+  test('DELETEs /endorse', async () => {
+    fetchMock.mockResolvedValue(okJson({ ok: true }));
+    await unendorsePattern('managed-oauth-provider');
+    const call = fetchMock.mock.calls[0];
+    expect(call[0]).toBe('/api/decision-patterns/managed-oauth-provider/endorse');
+    expect(call[1].method).toBe('DELETE');
+  });
+});
+
+describe('updateLifecycle', () => {
+  test('PATCHes /lifecycle with body', async () => {
+    fetchMock.mockResolvedValue(okJson({ ok: true }));
+    await updateLifecycle('managed-oauth-provider', {
+      lifecycleStatus: 'retiring',
+      successorSlug: 'managed-oauth-provider-v2',
+      reason: 'NIS2 hardening',
+    });
+    const call = fetchMock.mock.calls[0];
+    expect(call[0]).toBe('/api/decision-patterns/managed-oauth-provider/lifecycle');
+    expect(call[1].method).toBe('PATCH');
+    expect(JSON.parse(call[1].body)).toEqual({
+      lifecycleStatus: 'retiring',
+      successorSlug: 'managed-oauth-provider-v2',
+      reason: 'NIS2 hardening',
+    });
+  });
+
+  test('throws on server error', async () => {
+    fetchMock.mockResolvedValue(
+      errJson(400, { error: 'Successor pattern not found' }),
+    );
+    await expect(
+      updateLifecycle('x', { successorSlug: 'nope' }),
+    ).rejects.toThrow(/Successor pattern not found/);
   });
 });
