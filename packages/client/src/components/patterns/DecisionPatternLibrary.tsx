@@ -5,7 +5,7 @@ import Modal from '../../design-system/patterns/Modal';
 import type { PatternCategory } from '@thearchitect/shared';
 import { useDecisionPatterns } from '../../hooks/useDecisionPatterns';
 import { useAuthStore } from '../../stores/authStore';
-import { PatternCard } from './PatternCard';
+import { PatternRow } from './PatternRow';
 import { EndorsementDialog } from './EndorsementDialog';
 
 interface Props {
@@ -122,9 +122,9 @@ export function DecisionPatternLibrary({ isOpen, onClose, projectId }: Props) {
         isOpen={isOpen}
         onClose={onClose}
         title="📚 Pre-Validated Pattern Library"
-        size="lg"
+        size="4xl"
       >
-        <div className="flex flex-col gap-4 max-h-[75vh] overflow-y-auto">
+        <div className="flex flex-col gap-4 max-h-[80vh] overflow-y-auto">
           <p className="text-sm text-slate-400">
             Compliance-scored, lifecycle-tracked patterns for common architecture decisions.
             Apply with one click — adoption is audited.
@@ -186,9 +186,9 @@ export function DecisionPatternLibrary({ isOpen, onClose, projectId }: Props) {
 
           {!loading && !error && filtered.length > 0 && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-2">
                 {visible.map((p) => (
-                  <PatternCard
+                  <PatternRow
                     key={p.slug}
                     pattern={p}
                     onAdopt={handleAdopt}

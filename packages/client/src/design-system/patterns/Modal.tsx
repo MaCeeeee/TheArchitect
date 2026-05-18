@@ -8,13 +8,16 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
 }
 
 const SIZE_CLASSES = {
   sm: 'max-w-sm',
   md: 'max-w-md',
   lg: 'max-w-lg',
+  xl: 'max-w-2xl',
+  '2xl': 'max-w-4xl',
+  '4xl': 'max-w-6xl',
 };
 
 export default function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
