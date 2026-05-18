@@ -58,3 +58,43 @@ export interface PatternAdoptionStats {
   last30Days: number;
   uniqueProjects: number;
 }
+
+export type PatternBadgeKind = 'most-used' | 'trending' | 'architects-choice' | 'new';
+
+export interface PatternBadge {
+  kind: PatternBadgeKind;
+  label: string;
+}
+
+export interface PatternEndorsementEntry {
+  userId: string;
+  userName?: string;
+  reason: string;
+  timestamp: string;
+}
+
+export interface PatternEndorsementSummary {
+  count: number;
+  topReasons: PatternEndorsementEntry[];
+  hasMyEndorsement: boolean;
+}
+
+export interface EnrichedPatternStats extends PatternAdoptionStats {
+  badges: PatternBadge[];
+  endorsements: PatternEndorsementSummary;
+  isNew: boolean;
+  isDeprecated: boolean;
+  successorSlug?: string | null;
+  successorName?: string | null;
+}
+
+export interface EnrichedDecisionPattern extends DecisionPattern {
+  stats: EnrichedPatternStats;
+}
+
+export interface PatternLifecycleUpdate {
+  lifecycleStatus?: PatternLifecycleStatus;
+  deprecatedAt?: string | null;
+  successorSlug?: string | null;
+  reason?: string;
+}
