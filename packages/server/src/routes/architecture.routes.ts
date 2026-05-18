@@ -19,6 +19,17 @@ import {
   findSimilarElements,
   findRedundancies,
 } from '../services/elementSimilarity.service';
+import { computeCriticality } from '../services/criticality.service';
+import type {
+  CriticalityElement,
+  CriticalityConnection,
+  StandardMappingInput,
+  RoadmapWaveInput,
+} from '../services/criticality.service';
+import { StandardMapping } from '../models/StandardMapping';
+import { TransformationRoadmap } from '../models/TransformationRoadmap';
+import { DEFAULT_FACTOR_WEIGHTS } from '@thearchitect/shared';
+import type { CriticalityResponse } from '@thearchitect/shared';
 import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
 import { AuditLog } from '../models/AuditLog';
 import { rateLimit } from '../middleware/rateLimit.middleware';
@@ -1430,6 +1441,141 @@ router.post(
     } catch (err) {
       console.error('CSV import error:', err);
       res.status(500).json({ success: false, error: 'Failed to import CSV data' });
+    }
+  }
+);
+
+// ─── REQ-CRIT-001/002: Criticality Score Endpoint ──────────────────────────
+//
+// GET /:projectId/criticality?topN=10
+//
+// Composes the 7-factor criticality score for the project's elements and
+// returns Top-N sorted by totalScore DESC. Loads elements + connections
+// from Neo4j, standardMappings + roadmap-waves from MongoDB, runs
+// cycle-detection via Cypher with a bounded depth, and feeds everything
+// into the pure compute function.
+
+router.get(
+  '/:projectId/criticality',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const topNRaw = Number(req.query.topN ?? 10);
+      const topN = Math.max(1, Math.min(50, Number.isFinite(topNRaw) ? topNRaw : 10));
+
+      // Fetch elements + connections from Neo4j in parallel with Mongo reads
+      const [elementRecords, connectionRecords, cycleRecords, mappingDocs, roadmap] = await Promise.all([
+        runCypher(
+          'MATCH (e:ArchitectureElement {projectId: $projectId}) RETURN e',
+          { projectId }
+        ),
+        runCypher(
+          'MATCH (s:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(t:ArchitectureElement {projectId: $projectId}) RETURN s.id AS sid, t.id AS tid',
+          { projectId }
+        ),
+        runCypher(
+          'MATCH p=(n:ArchitectureElement {projectId: $projectId})-[:CONNECTS_TO*1..5]->(n) RETURN DISTINCT n.id AS nid',
+          { projectId }
+        ).catch((err) => {
+          log.warn({ err: err.message }, '[criticality] cycle detection failed, continuing without');
+          return [];
+        }),
+        StandardMapping.find({ projectId }).lean(),
+        TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
+      ]);
+
+      const elements: CriticalityElement[] = elementRecords.map((r) => {
+        const props = serializeNeo4jProperties(r.get('e').properties);
+        return {
+          id: String(props.id),
+          name: String(props.name ?? ''),
+          type: String(props.type ?? ''),
+          layer: String(props.layer ?? ''),
+          riskLevel: (props.riskLevel as CriticalityElement['riskLevel']) ?? null,
+          maturityLevel: typeof props.maturityLevel === 'number' ? props.maturityLevel : null,
+        };
+      });
+
+      if (elements.length === 0) {
+        const response: CriticalityResponse = {
+          scores: [],
+          computedAt: new Date().toISOString(),
+          weights: DEFAULT_FACTOR_WEIGHTS,
+          fromCache: false,
+          topN,
+        };
+        return res.json(response);
+      }
+
+      const connections: CriticalityConnection[] = connectionRecords.map((r) => ({
+        sourceId: String(r.get('sid')),
+        targetId: String(r.get('tid')),
+      }));
+
+      const cycleMembers = new Set<string>(
+        cycleRecords.map((r) => String(r.get('nid')))
+      );
+
+      const standardMappings: StandardMappingInput[] = mappingDocs.map((m) => ({
+        elementId: String(m.elementId),
+        hasRealizer: m.status === 'compliant' || m.status === 'partial',
+      }));
+
+      const roadmapWaves: RoadmapWaveInput[] = [];
+      if (roadmap && Array.isArray(roadmap.waves)) {
+        for (const w of roadmap.waves as Array<Record<string, unknown>>) {
+          const elementCostsRaw = (w.elements ?? w.elementCosts ?? []) as Array<Record<string, unknown>>;
+          if (!Array.isArray(elementCostsRaw)) continue;
+          const elementCosts = elementCostsRaw
+            .map((ec) => ({
+              elementId: String(ec.elementId ?? ec.id ?? ''),
+              cost: Number(ec.cost ?? ec.estimatedCost ?? 0),
+            }))
+            .filter((ec) => ec.elementId && Number.isFinite(ec.cost));
+          const totalCost =
+            Number(w.totalCost ?? w.cost ?? elementCosts.reduce((s, e) => s + e.cost, 0)) || 0;
+          if (totalCost > 0) roadmapWaves.push({ totalCost, elementCosts });
+        }
+      }
+
+      const breakdownMap = computeCriticality({
+        elements,
+        connections,
+        standardMappings,
+        roadmapWaves,
+        cycleMembers,
+      });
+
+      const elementById = new Map(elements.map((e) => [e.id, e]));
+      const allScores = Array.from(breakdownMap.entries())
+        .map(([elementId, breakdown]) => {
+          const el = elementById.get(elementId)!;
+          return {
+            elementId,
+            name: el.name,
+            type: el.type,
+            layer: el.layer,
+            totalScore: breakdown.totalScore,
+            factors: breakdown.factors,
+            dominantFactor: breakdown.dominantFactor,
+          };
+        })
+        .sort((a, b) => b.totalScore - a.totalScore);
+
+      const scores = allScores.slice(0, topN);
+
+      const response: CriticalityResponse = {
+        scores,
+        computedAt: new Date().toISOString(),
+        weights: DEFAULT_FACTOR_WEIGHTS,
+        fromCache: false,
+        topN,
+      };
+      res.json(response);
+    } catch (err) {
+      log.error({ err }, '[criticality] failed to compute');
+      res.status(500).json({ success: false, error: 'Failed to compute criticality' });
     }
   }
 );

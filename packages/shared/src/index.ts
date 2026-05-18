@@ -26,3 +26,4 @@ export * from './types/oracle.types';
 export * from './types/scenario-generator.types';
 export * from './types/envision-ai.types';
 export * from './types/decision-pattern.types';
+export * from './types/criticality.types';
