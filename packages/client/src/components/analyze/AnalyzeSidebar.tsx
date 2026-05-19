@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   LayoutDashboard, Shield, Zap, DollarSign, Dice5, GitCompare, Server, Map,
-  Briefcase, Cable, Eye, Fish,
+  Briefcase, Cable, Eye, Fish, Flame,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -14,6 +14,7 @@ interface Section {
 
 const SECTIONS: Section[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'overview' },
+  { id: 'hotspots', label: 'Hotspots', icon: Flame, group: 'assess' },
   { id: 'risk', label: 'Risk', icon: Shield, group: 'assess' },
   { id: 'impact', label: 'Impact', icon: Zap, group: 'assess' },
   { id: 'cost', label: 'Cost', icon: DollarSign, group: 'assess' },

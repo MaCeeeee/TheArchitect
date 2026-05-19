@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { Check, LayoutDashboard, Shield, DollarSign, Dice5, Map } from 'lucide-react';
+import { Check, LayoutDashboard, Flame, Shield, DollarSign, Dice5, Map } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useScenarioStore } from '../../stores/scenarioStore';
@@ -7,6 +7,7 @@ import { useRoadmapStore } from '../../stores/roadmapStore';
 
 const ANALYSIS_STAGES = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard, sections: ['dashboard'] },
+  { id: 'hotspots', label: 'Hotspots', icon: Flame, sections: ['hotspots'] },
   { id: 'risk', label: 'Risk', icon: Shield, sections: ['risk', 'impact'] },
   { id: 'cost', label: 'Cost', icon: DollarSign, sections: ['cost'] },
   { id: 'simulate', label: 'Simulate', icon: Dice5, sections: ['monte-carlo', 'scenarios', 'capacity'] },
@@ -24,6 +25,7 @@ export default function AnalyzeStepper() {
   // Completion heuristics (no backend state needed)
   const isComplete: Record<string, boolean> = {
     overview: true,
+    hotspots: elements.length > 0,
     risk: elements.length > 0,
     cost: graphCostProfiles.length > 0,
     simulate: scenarios.length > 0,

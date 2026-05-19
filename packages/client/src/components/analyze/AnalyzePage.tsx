@@ -3,6 +3,7 @@ import { ArrowLeft, Briefcase, Users, Bot } from 'lucide-react';
 import AnalyzeSidebar from './AnalyzeSidebar';
 import AnalyzeStepper from './AnalyzeStepper';
 import AnalyzeDashboard from './AnalyzeDashboard';
+import HotspotsView from './HotspotsView';
 // Existing analytics components
 import RiskDashboard from '../analytics/RiskDashboard';
 import ImpactAnalysis from '../analytics/ImpactAnalysis';
@@ -44,6 +45,8 @@ export default function AnalyzePage() {
           <AnalyzeStepper />
 
           {activeSection === 'dashboard' && <AnalyzeDashboard />}
+
+          {activeSection === 'hotspots' && <HotspotsView />}
 
           {activeSection === 'risk' && <RiskDashboard />}
 
