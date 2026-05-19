@@ -243,10 +243,14 @@ export default function HotspotsView() {
         <div className="space-y-2">
           {visible.map((entry, idx) => {
             const colors = scoreColor(entry.totalScore);
-            const factorRows = (Object.keys(entry.factors) as CriticalityFactor[])
+            const factors = entry.factors ?? ({} as Record<CriticalityFactor, { raw: number; normalized: number; weighted: number }>);
+            const factorRows = (Object.keys(factors) as CriticalityFactor[])
+              .filter((k) => factors[k] !== undefined && factors[k] !== null)
               .map((k) => ({
                 key: k,
-                ...entry.factors[k],
+                raw: factors[k]?.raw ?? 0,
+                normalized: factors[k]?.normalized ?? 0,
+                weighted: factors[k]?.weighted ?? 0,
               }))
               .sort((a, b) => b.weighted - a.weighted)
               .slice(0, 3)

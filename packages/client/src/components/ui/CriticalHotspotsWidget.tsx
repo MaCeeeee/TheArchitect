@@ -115,9 +115,10 @@ export function CriticalHotspotsWidget({ projectId }: Props) {
           {visible.map((entry, idx) => {
             const colors = scoreColor(entry.totalScore);
             const isSelected = selectedHotspotId === entry.elementId;
-            const dominantLabel = entry.dominantFactor
-              ? FACTOR_LABELS[entry.dominantFactor]
-              : '—';
+            const dominantLabel =
+              entry.dominantFactor && FACTOR_LABELS[entry.dominantFactor]
+                ? FACTOR_LABELS[entry.dominantFactor]
+                : '—';
             return (
               <li key={entry.elementId}>
                 <button
