@@ -4,34 +4,144 @@ import { FACTOR_LABELS } from '@thearchitect/shared';
 import type { CriticalityFactor, CriticalityScoreEntry } from '@thearchitect/shared';
 import { useCriticalityStore } from '../../stores/criticalityStore';
 
-const FACTOR_ACTION: Record<CriticalityFactor, { label: string; hint: string }> = {
+type ActionLayer = 'motivation' | 'strategy' | 'business' | 'tech';
+
+const layerBucket = (layer: string): ActionLayer => {
+  if (layer === 'motivation') return 'motivation';
+  if (layer === 'strategy') return 'strategy';
+  if (layer === 'business') return 'business';
+  return 'tech'; // information / application / technology / physical / implementation_migration
+};
+
+const FACTOR_ACTION_MAP: Record<
+  CriticalityFactor,
+  Record<ActionLayer, { label: string; hint: string }>
+> = {
   spof: {
-    label: 'Apply Redundancy-Pattern',
-    hint: 'Use the Pattern Library to add redundancy for this single-point-of-failure.',
+    motivation: {
+      label: 'Reduce downstream coupling',
+      hint: 'This driver/goal is referenced by many elements. Add anti-corruption-layers in the realizing capabilities so future changes do not cascade.',
+    },
+    strategy: {
+      label: 'Decompose Capability',
+      hint: 'Split this capability into smaller, independently-owned sub-capabilities to reduce blast radius.',
+    },
+    business: {
+      label: 'Add Process Redundancy',
+      hint: 'Define a backup process or fallback workflow for this critical business step.',
+    },
+    tech: {
+      label: 'Apply Redundancy-Pattern',
+      hint: 'Use the Pattern Library to add redundancy for this single-point-of-failure (managed queue, multi-region, etc.).',
+    },
   },
   riskConnectivity: {
-    label: 'Reduce Risk-Exposure',
-    hint: 'Either lower riskLevel or split this hub into smaller services.',
+    motivation: {
+      label: 'Map driver to specific capabilities',
+      hint: 'High-risk driver is connected too broadly. Map it to a narrower set of capabilities to reduce the change blast-radius.',
+    },
+    strategy: {
+      label: 'Tighten Capability Boundaries',
+      hint: 'Split this hub-capability and lower the riskLevel via explicit ownership.',
+    },
+    business: {
+      label: 'Reduce Process Coupling',
+      hint: 'Decouple this process via async events and clear handoffs.',
+    },
+    tech: {
+      label: 'Reduce Risk-Exposure',
+      hint: 'Either lower riskLevel through hardening, or split this hub into smaller services.',
+    },
   },
   maturityFloor: {
-    label: 'Increase Maturity',
-    hint: 'Adopt a Most-Used Pattern to harden this immature component.',
+    motivation: {
+      label: 'Define acceptance criteria',
+      hint: 'This driver is immature and has dependents. Write explicit, testable acceptance criteria.',
+    },
+    strategy: {
+      label: 'Capability Maturity Workshop',
+      hint: 'Run a maturity assessment workshop with the capability owner.',
+    },
+    business: {
+      label: 'Process Standardization',
+      hint: 'Document and standardize this process before more dependents form.',
+    },
+    tech: {
+      label: 'Increase Maturity',
+      hint: 'Adopt a Most-Used Pattern to harden this immature component.',
+    },
   },
   complianceGap: {
-    label: 'Open Gap-Analysis',
-    hint: 'Map this element to the missing standard sections (UC-GAP).',
+    motivation: {
+      label: 'Trace Driver → Realizer',
+      hint: 'This regulatory driver has unrealized standard sections. Identify which elements should fulfill them.',
+    },
+    strategy: {
+      label: 'Map Capability to Standard',
+      hint: 'Open Gap-Analysis: which standard sections require this capability?',
+    },
+    business: {
+      label: 'Compliance Process Audit',
+      hint: 'Audit this process against the unrealized standard mappings.',
+    },
+    tech: {
+      label: 'Open Gap-Analysis',
+      hint: 'Map this element to the missing standard sections (UC-GAP).',
+    },
   },
   costBurden: {
-    label: 'Cost-Optimization',
-    hint: 'Element dominates a wave’s cost — review the 7Rs strategy.',
+    motivation: {
+      label: 'Driver Cost Justification',
+      hint: 'A driver/goal dominates the wave cost — document the business case explicitly.',
+    },
+    strategy: {
+      label: 'Capability Investment Review',
+      hint: 'Is the capability investment proportional to its strategic value?',
+    },
+    business: {
+      label: 'Process Cost-Optimization',
+      hint: 'Review process efficiency; consider automation or outsourcing.',
+    },
+    tech: {
+      label: 'Cost-Optimization (7Rs)',
+      hint: 'Element dominates a wave’s cost — review the 7Rs strategy (Retire/Replace/Re-host/etc.).',
+    },
   },
   stakeholderBottleneck: {
-    label: 'Stakeholder-Alignment',
-    hint: 'Stakeholders disagree on this element — run a MiroFish session.',
+    motivation: {
+      label: 'Driver-Sponsor Alignment',
+      hint: 'Stakeholders disagree on this driver/goal — run an alignment workshop with the sponsor.',
+    },
+    strategy: {
+      label: 'Capability Ownership Clarification',
+      hint: 'Define a single capability owner to resolve stakeholder conflicts.',
+    },
+    business: {
+      label: 'Process RACI Workshop',
+      hint: 'Run a RACI workshop with all stakeholders for this process.',
+    },
+    tech: {
+      label: 'Stakeholder-Alignment',
+      hint: 'Stakeholders disagree on this element — run a MiroFish session.',
+    },
   },
   cycleTangle: {
-    label: 'Refactor Dependency-Cycle',
-    hint: 'Break the cycle by introducing an event or message bus.',
+    motivation: {
+      label: 'Add Explicit Realizers',
+      hint: 'A driver/goal cannot truly cycle — the cycle is a modeling artifact. Insert explicit Realizer relationships to break the implicit loop.',
+    },
+    strategy: {
+      label: 'Capability Hierarchy Refactor',
+      hint: 'Re-model the capability hierarchy as a tree, not a graph. Cycles in strategy usually indicate a missing level of abstraction.',
+    },
+    business: {
+      label: 'Process Decoupling',
+      hint: 'Break the process cycle by introducing an event or hand-off step.',
+    },
+    tech: {
+      label: 'Refactor Dependency-Cycle',
+      hint: 'Break the cycle by introducing an event or message bus.',
+    },
   },
 };
 
@@ -97,7 +207,9 @@ export function CriticalityBreakdownPopover({ projectId }: Props) {
     .sort((a, b) => b.weighted - a.weighted);
 
   const dominant = entry.dominantFactor;
-  const dominantAction = dominant ? FACTOR_ACTION[dominant] : null;
+  const dominantAction = dominant
+    ? FACTOR_ACTION_MAP[dominant][layerBucket(entry.layer)]
+    : null;
 
   return (
     <div

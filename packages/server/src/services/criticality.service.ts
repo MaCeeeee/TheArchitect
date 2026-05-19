@@ -34,6 +34,54 @@ export interface CriticalityElement {
   maturityLevel?: number | null;
 }
 
+/**
+ * Layer-specific multipliers applied on top of the base weights.
+ *
+ * Motivation-layer elements (drivers, goals, requirements, stakeholders,
+ * constraints) cannot be SPOFs in the technical sense and "cycles" with
+ * regulations are modeling artifacts, not refactor signals. We dampen
+ * those factors (×0.3) and boost the factors that genuinely matter for
+ * drivers — compliance-gap (×2.0) and stakeholder-bottleneck (×1.5).
+ *
+ * Strategy / business layers get small adjustments; technology layer
+ * uses base weights unchanged.
+ */
+const LAYER_FACTOR_MULTIPLIERS: Record<string, Partial<Record<keyof FactorWeights, number>>> = {
+  motivation: {
+    spof: 0.3,
+    cycleTangle: 0.3,
+    complianceGap: 2.0,
+    stakeholderBottleneck: 1.5,
+  },
+  strategy: {
+    spof: 0.6,
+    cycleTangle: 0.7,
+    complianceGap: 1.3,
+  },
+  business: {
+    cycleTangle: 0.8,
+  },
+};
+
+function applyLayerMultipliers(
+  baseWeights: FactorWeights,
+  layer: string,
+): FactorWeights {
+  const overrides = LAYER_FACTOR_MULTIPLIERS[layer] ?? {};
+  return {
+    spof: baseWeights.spof * (overrides.spof ?? 1),
+    riskConnectivity: baseWeights.riskConnectivity * (overrides.riskConnectivity ?? 1),
+    maturityFloor: baseWeights.maturityFloor * (overrides.maturityFloor ?? 1),
+    complianceGap: baseWeights.complianceGap * (overrides.complianceGap ?? 1),
+    costBurden: baseWeights.costBurden * (overrides.costBurden ?? 1),
+    stakeholderBottleneck:
+      baseWeights.stakeholderBottleneck * (overrides.stakeholderBottleneck ?? 1),
+    cycleTangle: baseWeights.cycleTangle * (overrides.cycleTangle ?? 1),
+  };
+}
+
+export { applyLayerMultipliers };
+
 export interface CriticalityConnection {
   sourceId: string;
   targetId: string;
@@ -267,8 +315,7 @@ export function computeCriticality(
 
   elements.forEach((e) => out.set(e.id, emptyBreakdown()));
 
-  const weights: FactorWeights = { ...DEFAULT_FACTOR_WEIGHTS, ...(input.weights ?? {}) };
-  const totalWeight = ALL_FACTORS.reduce((s, f) => s + Math.max(0, weights[f]), 0) || 1;
+  const baseWeights: FactorWeights = { ...DEFAULT_FACTOR_WEIGHTS, ...(input.weights ?? {}) };
 
   const degrees = computeDegrees(elements, connections);
   const redundancyMap = detectSimpleRedundancy(elements);
@@ -298,13 +345,17 @@ export function computeCriticality(
 
   elements.forEach((e) => {
     const breakdown = out.get(e.id)!;
+    const effectiveWeights = applyLayerMultipliers(baseWeights, e.layer);
+    const totalWeight =
+      ALL_FACTORS.reduce((s, f) => s + Math.max(0, effectiveWeights[f]), 0) || 1;
+
     let dominantFactor: CriticalityFactor | null = null;
     let dominantWeighted = -Infinity;
 
     ALL_FACTORS.forEach((f) => {
       const raw = rawByFactor[f].get(e.id) ?? 0;
       const normalized = normalizedByFactor[f].get(e.id) ?? 0;
-      const weight = Math.max(0, weights[f]);
+      const weight = Math.max(0, effectiveWeights[f]);
       const weighted = normalized * weight;
       breakdown.factors[f] = { raw, normalized, weighted };
       if (weighted > dominantWeighted && weighted > 0) {

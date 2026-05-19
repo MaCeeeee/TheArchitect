@@ -13,6 +13,7 @@ import {
   computeCostBurdenRaw,
   computeStakeholderBottleneckRaw,
   computeCycleTangleRaw,
+  applyLayerMultipliers,
   type CriticalityElement,
   type CriticalityConnection,
 } from '../services/criticality.service';
@@ -222,5 +223,110 @@ describe('F7 Cycle / Tangle', () => {
     const raw = computeCycleTangleRaw(elements, new Set(['inCycle']));
     expect(raw.get('inCycle')).toBe(1);
     expect(raw.get('clean')).toBe(0);
+  });
+});
+
+describe('Layer-Weighting (Option B)', () => {
+  test('17. motivation-layer element with cycle scores LOWER than tech-layer element with same raw signals', () => {
+    const motivationEl: CriticalityElement = {
+      id: 'driver',
+      name: 'EU CSRD',
+      type: 'driver',
+      layer: 'motivation',
+      riskLevel: 'critical',
+      maturityLevel: 1,
+    };
+    const techEl: CriticalityElement = {
+      id: 'app',
+      name: 'SAP S/4HANA',
+      type: 'application_component',
+      layer: 'application',
+      riskLevel: 'critical',
+      maturityLevel: 1,
+    };
+    // Add filler elements with same type-buckets to suppress redundancy halving
+    const fillers: CriticalityElement[] = [
+      { id: 'f1', name: 'F1', type: 'unique-a', layer: 'business', riskLevel: 'low', maturityLevel: 3 },
+      { id: 'f2', name: 'F2', type: 'unique-b', layer: 'business', riskLevel: 'low', maturityLevel: 3 },
+    ];
+    const connections: CriticalityConnection[] = [
+      { sourceId: 'f1', targetId: 'driver' },
+      { sourceId: 'f2', targetId: 'driver' },
+      { sourceId: 'f1', targetId: 'app' },
+      { sourceId: 'f2', targetId: 'app' },
+    ];
+    const cycleMembers = new Set(['driver', 'app']);
+
+    const result = computeCriticality({
+      elements: [motivationEl, techEl, ...fillers],
+      connections,
+      cycleMembers,
+    });
+
+    const motivationScore = result.get('driver')?.totalScore ?? 0;
+    const techScore = result.get('app')?.totalScore ?? 0;
+    expect(motivationScore).toBeLessThan(techScore);
+  });
+
+  test('18. motivation-layer dominantFactor for cycleTangle-heavy element is NOT cycleTangle (dampened)', () => {
+    const motivationEl: CriticalityElement = {
+      id: 'driver',
+      name: 'Goal',
+      type: 'goal',
+      layer: 'motivation',
+      riskLevel: 'medium',
+      maturityLevel: 3,
+    };
+    const filler1: CriticalityElement = {
+      id: 'cap1',
+      name: 'C1',
+      type: 'capability',
+      layer: 'strategy',
+      riskLevel: 'low',
+      maturityLevel: 3,
+    };
+    // Driver participates in cycle; with motivation layer it should NOT dominate
+    const result = computeCriticality({
+      elements: [motivationEl, filler1],
+      connections: [{ sourceId: 'cap1', targetId: 'driver' }],
+      cycleMembers: new Set(['driver']),
+      // boost compliance signal to make sure SOMETHING else can dominate
+      standardMappings: [{ elementId: 'driver', hasRealizer: false }],
+    });
+    const dominant = result.get('driver')?.dominantFactor;
+    // cycleTangle is dampened to 0.3 weight for motivation, complianceGap doubled to 3.0
+    expect(dominant).toBe('complianceGap');
+  });
+
+  test('19. applyLayerMultipliers keeps tech-layer weights unchanged', () => {
+    const base = {
+      spof: 1.0,
+      riskConnectivity: 1.0,
+      maturityFloor: 1.0,
+      complianceGap: 1.5,
+      costBurden: 1.0,
+      stakeholderBottleneck: 0.5,
+      cycleTangle: 1.5,
+    };
+    const result = applyLayerMultipliers(base, 'technology');
+    expect(result).toEqual(base);
+  });
+
+  test('20. applyLayerMultipliers dampens motivation spof + cycleTangle', () => {
+    const base = {
+      spof: 1.0,
+      riskConnectivity: 1.0,
+      maturityFloor: 1.0,
+      complianceGap: 1.5,
+      costBurden: 1.0,
+      stakeholderBottleneck: 0.5,
+      cycleTangle: 1.5,
+    };
+    const result = applyLayerMultipliers(base, 'motivation');
+    expect(result.spof).toBeCloseTo(0.3, 5);
+    expect(result.cycleTangle).toBeCloseTo(0.45, 5); // 1.5 * 0.3
+    expect(result.complianceGap).toBeCloseTo(3.0, 5); // 1.5 * 2.0
+    expect(result.stakeholderBottleneck).toBeCloseTo(0.75, 5); // 0.5 * 1.5
+    expect(result.riskConnectivity).toBe(1.0);
   });
 });

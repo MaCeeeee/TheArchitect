@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Flame, RefreshCw, AlertCircle, ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { FACTOR_LABELS } from '@thearchitect/shared';
@@ -57,21 +57,56 @@ const barColor = (factor: CriticalityFactor): string => {
   }
 };
 
+type LayerFilter = 'all' | 'tech' | 'business' | 'strategy' | 'motivation';
+
+const LAYER_FILTERS: { id: LayerFilter; label: string; layers: string[] }[] = [
+  { id: 'all', label: 'All Layers', layers: [] },
+  {
+    id: 'tech',
+    label: 'Tech',
+    layers: ['information', 'application', 'technology', 'physical', 'implementation_migration'],
+  },
+  { id: 'business', label: 'Business', layers: ['business'] },
+  { id: 'strategy', label: 'Strategy', layers: ['strategy'] },
+  { id: 'motivation', label: 'Motivation', layers: ['motivation'] },
+];
+
 export default function HotspotsView() {
   const { projectId } = useParams<{ projectId: string }>();
   const { scores, loading, error, computedAt, reload } = useCriticality(projectId ?? null, {
-    topN: 10,
+    topN: 50, // fetch more so we can filter client-side without re-querying
   });
+  const [layerFilter, setLayerFilter] = useState<LayerFilter>('all');
   const showGlow = useCriticalityStore((s) => s.showGlow);
   const toggleGlow = useCriticalityStore((s) => s.toggleGlow);
   const setSelectedHotspot = useCriticalityStore((s) => s.setSelectedHotspot);
   const openBreakdownPopover = useCriticalityStore((s) => s.openBreakdownPopover);
   const elements = useArchitectureStore((s) => s.elements);
 
-  const visible = useMemo(
-    () => scores.filter((s: CriticalityScoreEntry) => s.totalScore >= 50),
-    [scores],
-  );
+  const activeFilter = LAYER_FILTERS.find((f) => f.id === layerFilter) ?? LAYER_FILTERS[0];
+  const visible = useMemo(() => {
+    const filtered = scores.filter((s: CriticalityScoreEntry) => s.totalScore >= 50);
+    if (activeFilter.layers.length === 0) return filtered.slice(0, 10);
+    return filtered.filter((s) => activeFilter.layers.includes(s.layer)).slice(0, 10);
+  }, [scores, activeFilter]);
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<LayerFilter, number> = {
+      all: 0,
+      tech: 0,
+      business: 0,
+      strategy: 0,
+      motivation: 0,
+    };
+    scores.forEach((s) => {
+      if (s.totalScore < 50) return;
+      counts.all += 1;
+      for (const f of LAYER_FILTERS) {
+        if (f.id !== 'all' && f.layers.includes(s.layer)) counts[f.id] += 1;
+      }
+    });
+    return counts;
+  }, [scores]);
 
   const tierCounts = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0 };
@@ -126,6 +161,35 @@ export default function HotspotsView() {
             Recompute
           </button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5">
+        {LAYER_FILTERS.map((f) => {
+          const isActive = f.id === layerFilter;
+          const count = filterCounts[f.id];
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setLayerFilter(f.id)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                isActive
+                  ? 'bg-[#7c3aed] text-white'
+                  : 'bg-[#1e293b] text-slate-300 hover:bg-[#334155]'
+              }`}
+              data-testid={`layer-filter-${f.id}`}
+            >
+              {f.label}
+              <span
+                className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                  isActive ? 'bg-white/20' : 'bg-slate-700/50'
+                }`}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
