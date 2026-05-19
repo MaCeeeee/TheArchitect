@@ -12,6 +12,7 @@ import TeamChat from '../collaboration/TeamChat';
 import MFASetup from '../security/MFASetup';
 import RedundancyPanel from '../copilot/RedundancyPanel';
 import DecisionPatternLibrary from '../patterns/DecisionPatternLibrary';
+import CriticalityBreakdownPopover from './CriticalityBreakdownPopover';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -77,6 +78,7 @@ export default function MainLayout() {
         onClose={() => setShowPatternLibrary(false)}
         projectId={projectId}
       />
+      <CriticalityBreakdownPopover projectId={projectId} />
     </div>
   );
 }

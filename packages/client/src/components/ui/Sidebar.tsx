@@ -30,6 +30,7 @@ import SimulationPanel from '../simulation/SimulationPanel';
 import OraclePanel from '../oracle/OraclePanel';
 import AICopilot from '../copilot/AICopilot';
 import RoadmapPanel from '../analytics/RoadmapPanel';
+import CriticalHotspotsWidget from './CriticalHotspotsWidget';
 import PhaseBar from './PhaseBar';
 import PhaseTransition from './PhaseTransition';
 import { getVisibleTabs } from '../../utils/phaseVisibility';
@@ -920,6 +921,7 @@ const ANALYTICS_GROUPS = [
     key: 'assess',
     label: 'Assess',
     items: [
+      { id: 'hotspots', label: 'Hotspots' },
       { id: 'risk', label: 'Risk' },
       { id: 'impact', label: 'Impact' },
       { id: 'cost', label: 'Cost' },
@@ -953,7 +955,7 @@ const ANALYTICS_GROUPS = [
   },
 ] as const;
 
-type AnalyticsTab = 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'mirofish' | 'oracle' | 'roadmap' | 'portfolio' | 'integrations';
+type AnalyticsTab = 'hotspots' | 'risk' | 'impact' | 'cost' | 'monte' | 'scenario' | 'capacity' | 'mirofish' | 'oracle' | 'roadmap' | 'portfolio' | 'integrations';
 
 const ANALYTICS_ROUTE_MAP: Record<string, string> = {
   monte: 'monte-carlo',
@@ -1031,7 +1033,12 @@ function AnalyticsPanel() {
           </div>
         ))}
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        {tab === 'hotspots' && (
+          <div className="p-3">
+            <CriticalHotspotsWidget projectId={projectId} />
+          </div>
+        )}
         {tab === 'risk' && <RiskDashboard />}
         {tab === 'impact' && <ImpactAnalysis />}
         {tab === 'cost' && (

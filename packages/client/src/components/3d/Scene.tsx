@@ -13,6 +13,7 @@ import AgentAvatars3D from './AgentAvatars3D';
 import DiscussionBubbles3D from './DiscussionBubbles3D';
 import PolicyBoard from './PolicyBoard';
 import ConnectionPreview from './ConnectionPreview';
+import CriticalityGlow from './CriticalityGlow';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
 import WorkspaceBar from '../ui/WorkspaceBar';
@@ -120,6 +121,7 @@ export default function Scene() {
               <ArchitectureElements />
               <ConnectionLines />
               <ConnectionPreview />
+              <CriticalityGlow />
               {!isXRayActive && <CursorOverlay />}
 
               {/* TransformationXRay renders its own lights, sub-views, and HUD */}
