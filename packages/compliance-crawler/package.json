@@ -1,0 +1,37 @@
+{
+  "name": "@thearchitect/compliance-crawler",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Industrial Compliance Mapping Crawler — fetches regulations from EUR-Lex and gesetze-im-internet, writes to MongoDB, syncs embeddings to Qdrant. Deployed on Server B (Coolify).",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/",
+    "test": "jest",
+    "crawl:nis2:live": "ts-node-dev --transpile-only src/cli/crawl-live.ts nis2"
+  },
+  "dependencies": {
+    "@fastify/sensible": "^6.0.1",
+    "@qdrant/js-client-rest": "^1.18.0",
+    "@thearchitect/shared": "*",
+    "axios": "^1.13.6",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.2.0",
+    "mongoose": "^8.9.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@thearchitect/shared": "*",
+    "@types/jest": "^29.5.0",
+    "@types/node": "^22.0.0",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^11.0.1",
+    "ts-jest": "^29.2.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.0"
+  }
+}
