@@ -33,6 +33,18 @@ export interface IProject extends Document {
   settings: {
     defaultLayer: string;
     gridSize: number;
+    criticality?: {
+      topN: number;
+      weights: {
+        spof: number;
+        riskConnectivity: number;
+        maturityFloor: number;
+        complianceGap: number;
+        costBurden: number;
+        stakeholderBottleneck: number;
+        cycleTangle: number;
+      };
+    };
   };
   versions: Array<{
     versionId: string;
@@ -94,6 +106,18 @@ const projectSchema = new Schema<IProject>(
     settings: {
       defaultLayer: { type: String, default: 'business' },
       gridSize: { type: Number, default: 1 },
+      criticality: {
+        topN: { type: Number, default: 10 },
+        weights: {
+          spof: { type: Number, default: 1.0 },
+          riskConnectivity: { type: Number, default: 1.0 },
+          maturityFloor: { type: Number, default: 1.0 },
+          complianceGap: { type: Number, default: 1.5 },
+          costBurden: { type: Number, default: 1.0 },
+          stakeholderBottleneck: { type: Number, default: 0.5 },
+          cycleTangle: { type: Number, default: 1.5 },
+        },
+      },
     },
     versions: [
       {

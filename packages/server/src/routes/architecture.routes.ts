@@ -28,8 +28,14 @@ import type {
 } from '../services/criticality.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
+import { Project } from '../models/Project';
 import { DEFAULT_FACTOR_WEIGHTS } from '@thearchitect/shared';
-import type { CriticalityResponse } from '@thearchitect/shared';
+import type { CriticalityResponse, FactorWeights } from '@thearchitect/shared';
+import {
+  computeInputHash,
+  getCachedScores,
+  saveCachedScores,
+} from '../services/criticalityCache.service';
 import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
 import { AuditLog } from '../models/AuditLog';
 import { rateLimit } from '../middleware/rateLimit.middleware';
@@ -1461,8 +1467,19 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const { projectId } = req.params;
-      const topNRaw = Number(req.query.topN ?? 10);
-      const topN = Math.max(1, Math.min(50, Number.isFinite(topNRaw) ? topNRaw : 10));
+      const forceRefresh = req.query.refresh === 'true';
+
+      // Load per-project settings (Top-N + weights). Defaults if missing.
+      const projectDoc = await Project.findById(projectId).lean().catch(() => null);
+      const projectSettings = (projectDoc as { settings?: { criticality?: { topN?: number; weights?: FactorWeights } } } | null)?.settings?.criticality;
+      const settingsTopN = projectSettings?.topN ?? 10;
+      const settingsWeights: FactorWeights = projectSettings?.weights
+        ? { ...DEFAULT_FACTOR_WEIGHTS, ...projectSettings.weights }
+        : { ...DEFAULT_FACTOR_WEIGHTS };
+
+      // Allow query-string override for ad-hoc requests
+      const topNRaw = Number(req.query.topN ?? settingsTopN);
+      const topN = Math.max(1, Math.min(50, Number.isFinite(topNRaw) ? topNRaw : settingsTopN));
 
       // Fetch elements + connections from Neo4j in parallel with Mongo reads
       const [elementRecords, connectionRecords, cycleRecords, mappingDocs, roadmap] = await Promise.all([
@@ -1501,7 +1518,7 @@ router.get(
         const response: CriticalityResponse = {
           scores: [],
           computedAt: new Date().toISOString(),
-          weights: DEFAULT_FACTOR_WEIGHTS,
+          weights: settingsWeights,
           fromCache: false,
           topN,
         };
@@ -1512,6 +1529,29 @@ router.get(
         sourceId: String(r.get('sid')),
         targetId: String(r.get('tid')),
       }));
+
+      // Cache lookup — hash includes elements + connections + mappings + waves + weights
+      const inputHash = computeInputHash({
+        elementIds: elements.map((e) => e.id),
+        connectionEdges: connections.map((c) => [c.sourceId, c.targetId] as [string, string]),
+        mappingKeys: mappingDocs.map((m) => `${m.elementId}:${m.status}`),
+        waveCount: roadmap && Array.isArray(roadmap.waves) ? roadmap.waves.length : 0,
+        weights: settingsWeights,
+      });
+
+      if (!forceRefresh) {
+        const cached = await getCachedScores(String(projectId), inputHash);
+        if (cached) {
+          const response: CriticalityResponse = {
+            scores: cached.scores.slice(0, topN),
+            computedAt: cached.computedAt.toISOString(),
+            weights: cached.weights,
+            fromCache: true,
+            topN,
+          };
+          return res.json(response);
+        }
+      }
 
       const cycleMembers = new Set<string>(
         cycleRecords.map((r) => String(r.get('nid')))
@@ -1545,6 +1585,7 @@ router.get(
         standardMappings,
         roadmapWaves,
         cycleMembers,
+        weights: settingsWeights,
       });
 
       const elementById = new Map(elements.map((e) => [e.id, e]));
@@ -1565,10 +1606,15 @@ router.get(
 
       const scores = allScores.slice(0, topN);
 
+      // Persist full set (not just topN) so smaller topN requests still hit cache
+      saveCachedScores(String(projectId), allScores, settingsWeights, inputHash).catch((err) => {
+        log.warn({ err: err.message }, '[criticality] cache save failed');
+      });
+
       const response: CriticalityResponse = {
         scores,
         computedAt: new Date().toISOString(),
-        weights: DEFAULT_FACTOR_WEIGHTS,
+        weights: settingsWeights,
         fromCache: false,
         topN,
       };
@@ -1578,6 +1624,93 @@ router.get(
       res.status(500).json({ success: false, error: 'Failed to compute criticality' });
     }
   }
+);
+
+// ─── REQ-CRIT-007: Criticality Settings (per-project) ───────────────────────
+//
+// GET /:projectId/criticality/settings  — read user-configured Top-N + weights
+// PATCH /:projectId/criticality/settings — update + invalidate cache
+//
+// Only chief_architect can change settings. Cache is auto-invalidated because
+// weights are part of the input-hash.
+
+router.get(
+  '/:projectId/criticality/settings',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const projectDoc = await Project.findById(projectId).lean();
+      const settings = (projectDoc as { settings?: { criticality?: { topN: number; weights: FactorWeights } } } | null)?.settings?.criticality;
+      res.json({
+        topN: settings?.topN ?? 10,
+        weights: settings?.weights ?? DEFAULT_FACTOR_WEIGHTS,
+      });
+    } catch (err) {
+      log.error({ err }, '[criticality-settings] read failed');
+      res.status(500).json({ error: 'Failed to read settings' });
+    }
+  },
+);
+
+router.patch(
+  '/:projectId/criticality/settings',
+  requirePermission(PERMISSIONS.ELEMENT_UPDATE),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const { topN, weights } = req.body ?? {};
+
+      const update: Record<string, unknown> = {};
+      if (Number.isFinite(topN)) {
+        const n = Math.max(1, Math.min(50, Number(topN)));
+        update['settings.criticality.topN'] = n;
+      }
+      if (weights && typeof weights === 'object') {
+        const cleanedWeights: Partial<FactorWeights> = {};
+        const factorKeys: (keyof FactorWeights)[] = [
+          'spof',
+          'riskConnectivity',
+          'maturityFloor',
+          'complianceGap',
+          'costBurden',
+          'stakeholderBottleneck',
+          'cycleTangle',
+        ];
+        let hasAtLeastOnePositive = false;
+        for (const k of factorKeys) {
+          const v = Number((weights as Record<string, unknown>)[k]);
+          if (Number.isFinite(v)) {
+            const clamped = Math.max(0, Math.min(2.0, v));
+            cleanedWeights[k] = clamped;
+            if (clamped > 0) hasAtLeastOnePositive = true;
+          }
+        }
+        if (!hasAtLeastOnePositive) {
+          return res
+            .status(400)
+            .json({ error: 'At least one factor weight must be > 0' });
+        }
+        update['settings.criticality.weights'] = cleanedWeights;
+      }
+
+      if (Object.keys(update).length === 0) {
+        return res.status(400).json({ error: 'Nothing to update' });
+      }
+
+      await Project.updateOne({ _id: projectId }, { $set: update });
+
+      const updated = await Project.findById(projectId).lean();
+      const settings = (updated as { settings?: { criticality?: { topN: number; weights: FactorWeights } } } | null)?.settings?.criticality;
+      res.json({
+        topN: settings?.topN ?? 10,
+        weights: settings?.weights ?? DEFAULT_FACTOR_WEIGHTS,
+      });
+    } catch (err) {
+      log.error({ err }, '[criticality-settings] update failed');
+      res.status(500).json({ error: 'Failed to update settings' });
+    }
+  },
 );
 
 export default router;

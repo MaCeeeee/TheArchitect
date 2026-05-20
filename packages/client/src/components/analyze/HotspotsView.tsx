@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Flame, RefreshCw, AlertCircle, ChevronRight, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Flame, RefreshCw, AlertCircle, ChevronRight, Loader2, Eye, EyeOff, Settings as SettingsIcon } from 'lucide-react';
 import { FACTOR_LABELS } from '@thearchitect/shared';
 import type { CriticalityFactor, CriticalityScoreEntry } from '@thearchitect/shared';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useCriticalityStore } from '../../stores/criticalityStore';
 import { useCriticality } from '../../hooks/useCriticality';
 import { fitToScreen } from '../3d/ViewModeCamera';
+import CriticalitySettingsDialog from './CriticalitySettingsDialog';
 
 const scoreColor = (score: number): { bg: string; text: string; ring: string; pill: string } => {
   if (score >= 90)
@@ -77,6 +78,7 @@ export default function HotspotsView() {
     topN: 50, // fetch more so we can filter client-side without re-querying
   });
   const [layerFilter, setLayerFilter] = useState<LayerFilter>('all');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const showGlow = useCriticalityStore((s) => s.showGlow);
   const toggleGlow = useCriticalityStore((s) => s.toggleGlow);
   const setSelectedHotspot = useCriticalityStore((s) => s.setSelectedHotspot);
@@ -160,8 +162,24 @@ export default function HotspotsView() {
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Recompute
           </button>
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            className="px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 bg-slate-700/40 text-slate-300 hover:text-white"
+            data-testid="open-settings"
+          >
+            <SettingsIcon className="w-3.5 h-3.5" />
+            Settings
+          </button>
         </div>
       </div>
+
+      <CriticalitySettingsDialog
+        isOpen={settingsOpen}
+        projectId={projectId ?? null}
+        onClose={() => setSettingsOpen(false)}
+        onSaved={() => reload()}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {LAYER_FILTERS.map((f) => {
