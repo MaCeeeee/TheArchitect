@@ -10,8 +10,10 @@ const ConfigSchema = z.object({
 
   MONGODB_URI: z.string().url().or(z.string().startsWith('mongodb://')).or(z.string().startsWith('mongodb+srv://')),
 
-  EMBEDDING_SERVICE_URL: z.string().url().optional(),
-  QDRANT_URL: z.string().url().optional(),
+  // Coolify passes empty strings for unset vars (not undefined). Treat "" as not-set
+  // so deploys with EMBEDDING_SERVICE_URL= or QDRANT_URL= don't crash on Zod URL validation.
+  EMBEDDING_SERVICE_URL: z.string().url().optional().or(z.literal('')),
+  QDRANT_URL: z.string().url().optional().or(z.literal('')),
   QDRANT_API_KEY: z.string().optional(),
 
   CRAWLER_USER_AGENT: z.string().default('TheArchitect-Compliance-Crawler/1.0'),
