@@ -11,15 +11,21 @@ interface Props {
   projectId: string | null;
 }
 
+// Thresholds match the max-blend score model (see HotspotsView).
+const TIER_CRITICAL = 60;
+const TIER_HIGH = 40;
+const TIER_MEDIUM = 25;
+
 const scoreColor = (score: number): { bg: string; text: string; ring: string } => {
-  if (score >= 90) return { bg: 'bg-red-500/20', text: 'text-red-200', ring: 'ring-red-400/40' };
-  if (score >= 70)
+  if (score >= TIER_CRITICAL)
+    return { bg: 'bg-red-500/20', text: 'text-red-200', ring: 'ring-red-400/40' };
+  if (score >= TIER_HIGH)
     return {
       bg: 'bg-orange-500/20',
       text: 'text-orange-200',
       ring: 'ring-orange-400/40',
     };
-  if (score >= 50)
+  if (score >= TIER_MEDIUM)
     return {
       bg: 'bg-yellow-500/20',
       text: 'text-yellow-200',
@@ -38,7 +44,7 @@ export function CriticalHotspotsWidget({ projectId }: Props) {
   const elements = useArchitectureStore((s) => s.elements);
 
   const visible = useMemo(
-    () => scores.filter((s: CriticalityScoreEntry) => s.totalScore >= 50).slice(0, 10),
+    () => scores.filter((s: CriticalityScoreEntry) => s.totalScore >= TIER_MEDIUM).slice(0, 10),
     [scores],
   );
 

@@ -312,6 +312,36 @@ describe('Layer-Weighting (Option B)', () => {
     expect(result).toEqual(base);
   });
 
+  test('20b. Max-Blend: single dominant factor scores significantly higher than pure-mean would give', () => {
+    // 4 elements: one is an extreme SPOF, others have nothing.
+    const hubElement: CriticalityElement = {
+      id: 'hub',
+      name: 'Hub',
+      type: 'application_component',
+      layer: 'application',
+      riskLevel: 'low',
+      maturityLevel: 5,
+    };
+    const leaves: CriticalityElement[] = ['a', 'b', 'c', 'd', 'e'].map((id) => ({
+      id,
+      name: id,
+      type: 'application_service',
+      layer: 'application',
+      riskLevel: 'low',
+      maturityLevel: 5,
+    }));
+    const result = computeCriticality({
+      elements: [hubElement, ...leaves],
+      connections: leaves.map((l) => ({ sourceId: l.id, targetId: 'hub' })),
+    });
+    const hubScore = result.get('hub')?.totalScore ?? 0;
+    // With pure-mean formula this would be: 1 active factor (SPOF) × 1.0 weighted = 1.0,
+    // totalWeight = 7.5 → score 13.3.
+    // With max-blend: maxComponent = 1.0 × 0.6 + meanComponent ≈ 0.13 × 0.4 → ~65
+    expect(hubScore).toBeGreaterThan(50);
+    expect(result.get('hub')?.dominantFactor).toBe('spof');
+  });
+
   test('20. applyLayerMultipliers dampens motivation spof + cycleTangle', () => {
     const base = {
       spof: 1.0,

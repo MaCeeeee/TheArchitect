@@ -9,22 +9,30 @@ import { useCriticality } from '../../hooks/useCriticality';
 import { fitToScreen } from '../3d/ViewModeCamera';
 import CriticalitySettingsDialog from './CriticalitySettingsDialog';
 
+// Thresholds calibrated to the max-blend score model:
+// Critical ≥ 60 (multiple high factors or one extreme single factor)
+// High     ≥ 40 (one dominant + 1-2 contributing factors)
+// Medium   ≥ 25 (single moderate factor)
+const TIER_CRITICAL = 60;
+const TIER_HIGH = 40;
+const TIER_MEDIUM = 25;
+
 const scoreColor = (score: number): { bg: string; text: string; ring: string; pill: string } => {
-  if (score >= 90)
+  if (score >= TIER_CRITICAL)
     return {
       bg: 'bg-red-500/15',
       text: 'text-red-200',
       ring: 'ring-red-400/40',
       pill: 'bg-red-500/25 text-red-200',
     };
-  if (score >= 70)
+  if (score >= TIER_HIGH)
     return {
       bg: 'bg-orange-500/15',
       text: 'text-orange-200',
       ring: 'ring-orange-400/40',
       pill: 'bg-orange-500/25 text-orange-200',
     };
-  if (score >= 50)
+  if (score >= TIER_MEDIUM)
     return {
       bg: 'bg-yellow-500/15',
       text: 'text-yellow-200',
@@ -87,7 +95,7 @@ export default function HotspotsView() {
 
   const activeFilter = LAYER_FILTERS.find((f) => f.id === layerFilter) ?? LAYER_FILTERS[0];
   const visible = useMemo(() => {
-    const filtered = scores.filter((s: CriticalityScoreEntry) => s.totalScore >= 50);
+    const filtered = scores.filter((s: CriticalityScoreEntry) => s.totalScore >= TIER_MEDIUM);
     if (activeFilter.layers.length === 0) return filtered.slice(0, 10);
     return filtered.filter((s) => activeFilter.layers.includes(s.layer)).slice(0, 10);
   }, [scores, activeFilter]);
@@ -101,7 +109,7 @@ export default function HotspotsView() {
       motivation: 0,
     };
     scores.forEach((s) => {
-      if (s.totalScore < 50) return;
+      if (s.totalScore < TIER_MEDIUM) return;
       counts.all += 1;
       for (const f of LAYER_FILTERS) {
         if (f.id !== 'all' && f.layers.includes(s.layer)) counts[f.id] += 1;
@@ -113,9 +121,9 @@ export default function HotspotsView() {
   const tierCounts = useMemo(() => {
     const counts = { critical: 0, high: 0, medium: 0 };
     visible.forEach((s) => {
-      if (s.totalScore >= 90) counts.critical += 1;
-      else if (s.totalScore >= 70) counts.high += 1;
-      else counts.medium += 1;
+      if (s.totalScore >= TIER_CRITICAL) counts.critical += 1;
+      else if (s.totalScore >= TIER_HIGH) counts.high += 1;
+      else if (s.totalScore >= TIER_MEDIUM) counts.medium += 1;
     });
     return counts;
   }, [visible]);
@@ -213,19 +221,19 @@ export default function HotspotsView() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
           <div className="text-[10px] uppercase tracking-wide text-red-300 font-semibold">
-            Critical (≥90)
+            Critical (≥{TIER_CRITICAL})
           </div>
           <div className="text-2xl font-bold text-red-200 mt-1">{tierCounts.critical}</div>
         </div>
         <div className="rounded-lg border border-orange-500/30 bg-orange-500/5 p-4">
           <div className="text-[10px] uppercase tracking-wide text-orange-300 font-semibold">
-            High (70-89)
+            High ({TIER_HIGH}-{TIER_CRITICAL - 1})
           </div>
           <div className="text-2xl font-bold text-orange-200 mt-1">{tierCounts.high}</div>
         </div>
         <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-4">
           <div className="text-[10px] uppercase tracking-wide text-yellow-300 font-semibold">
-            Medium (50-69)
+            Medium ({TIER_MEDIUM}-{TIER_HIGH - 1})
           </div>
           <div className="text-2xl font-bold text-yellow-200 mt-1">{tierCounts.medium}</div>
         </div>
