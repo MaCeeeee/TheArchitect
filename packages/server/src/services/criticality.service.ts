@@ -47,9 +47,15 @@ export interface CriticalityElement {
  * uses base weights unchanged.
  */
 const LAYER_FACTOR_MULTIPLIERS: Record<string, Partial<Record<keyof FactorWeights, number>>> = {
+  // Motivation-layer elements (drivers, goals, requirements, stakeholders,
+  // constraints) are external concerns — not architecturally fixable.
+  // Heavily dampen the "fix this" factors (SPOF, cycle, risk-connectivity,
+  // maturity-floor) and only let true compliance-relevant signals through.
   motivation: {
-    spof: 0.3,
-    cycleTangle: 0.3,
+    spof: 0.1,
+    cycleTangle: 0.1,
+    riskConnectivity: 0.5,
+    maturityFloor: 0.5,
     complianceGap: 2.0,
     stakeholderBottleneck: 1.5,
   },

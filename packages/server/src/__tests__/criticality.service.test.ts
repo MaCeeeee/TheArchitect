@@ -342,7 +342,7 @@ describe('Layer-Weighting (Option B)', () => {
     expect(result.get('hub')?.dominantFactor).toBe('spof');
   });
 
-  test('20. applyLayerMultipliers dampens motivation spof + cycleTangle', () => {
+  test('20. applyLayerMultipliers aggressively dampens motivation fix-signals', () => {
     const base = {
       spof: 1.0,
       riskConnectivity: 1.0,
@@ -353,10 +353,12 @@ describe('Layer-Weighting (Option B)', () => {
       cycleTangle: 1.5,
     };
     const result = applyLayerMultipliers(base, 'motivation');
-    expect(result.spof).toBeCloseTo(0.3, 5);
-    expect(result.cycleTangle).toBeCloseTo(0.45, 5); // 1.5 * 0.3
-    expect(result.complianceGap).toBeCloseTo(3.0, 5); // 1.5 * 2.0
-    expect(result.stakeholderBottleneck).toBeCloseTo(0.75, 5); // 0.5 * 1.5
-    expect(result.riskConnectivity).toBe(1.0);
+    expect(result.spof).toBeCloseTo(0.1, 5); // ×0.1
+    expect(result.cycleTangle).toBeCloseTo(0.15, 5); // 1.5 × 0.1
+    expect(result.riskConnectivity).toBeCloseTo(0.5, 5); // 1.0 × 0.5
+    expect(result.maturityFloor).toBeCloseTo(0.5, 5); // 1.0 × 0.5
+    expect(result.complianceGap).toBeCloseTo(3.0, 5); // 1.5 × 2.0
+    expect(result.stakeholderBottleneck).toBeCloseTo(0.75, 5); // 0.5 × 1.5
+    expect(result.costBurden).toBe(1.0); // unchanged
   });
 });

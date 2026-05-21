@@ -52,3 +52,41 @@ export interface PolicyDraft {
   sourceSectionTitle: string;
   confidence: number;
 }
+
+// ─── Regulation (UC-ICM-001) ───
+//
+// Strukturierte Gesetzes-Paragraphen mit Volltext, Quelle, Stand-Datum und Embedding.
+// Foundation für UC-ICM-002 (LLM-Mapping) und UC-ICM-003 (Reverse-Lookup, Heat-Map, Live-Mapping).
+// Linear: THE-275
+
+export type RegulationSource =
+  | 'nis2'      // EU Directive 2022/2555 (Network and Information Security 2)
+  | 'lksg'      // Lieferkettensorgfaltspflichtengesetz (DE)
+  | 'dsgvo'     // Datenschutz-Grundverordnung (EU GDPR + DE BDSG)
+  | 'dora'      // EU Regulation 2022/2554 (Digital Operational Resilience Act)
+  | 'iso27001'  // ISO/IEC 27001 Information Security
+  | 'custom';   // User-curated regulations
+
+export type RegulationJurisdiction = 'EU' | 'DE' | 'AT' | 'CH';
+
+export type RegulationLanguage = 'de' | 'en';
+
+export interface RegulationDTO {
+  _id: string;
+  projectId: string;
+  source: RegulationSource;
+  jurisdiction: RegulationJurisdiction;
+  paragraphNumber: string;     // "Art. 21" or "§ 6 Abs. 1"
+  title: string;
+  fullText: string;            // max 20 000 chars
+  summary?: string;            // max 500 chars (LLM-Kurzfassung)
+  sourceUrl: string;
+  effectiveFrom: string;       // ISO 8601 date
+  effectiveUntil?: string;     // ISO 8601 date
+  language: RegulationLanguage;
+  embedding?: number[];        // 768-dim, all-mpnet-base-v2
+  crawledAt: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
