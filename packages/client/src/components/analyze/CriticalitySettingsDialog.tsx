@@ -29,10 +29,22 @@ const FACTOR_ORDER: CriticalityFactor[] = [
 
 const DEFAULT_TOP_N = 10;
 
+// Fallback for stale HMR-bundles where the shared-package import might not
+// yet expose DEFAULT_FACTOR_WEIGHTS. Production builds always carry it.
+const SAFE_DEFAULT_WEIGHTS: FactorWeights = DEFAULT_FACTOR_WEIGHTS ?? {
+  spof: 1.0,
+  riskConnectivity: 1.0,
+  maturityFloor: 1.0,
+  complianceGap: 1.5,
+  costBurden: 1.0,
+  stakeholderBottleneck: 0.5,
+  cycleTangle: 1.5,
+};
+
 export default function CriticalitySettingsDialog({ isOpen, projectId, onClose, onSaved }: Props) {
   const [topN, setTopN] = useState<number>(DEFAULT_TOP_N);
   const [customTopN, setCustomTopN] = useState<string>('');
-  const [weights, setWeights] = useState<FactorWeights>(DEFAULT_FACTOR_WEIGHTS);
+  const [weights, setWeights] = useState<FactorWeights>(SAFE_DEFAULT_WEIGHTS);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,15 +74,15 @@ export default function CriticalitySettingsDialog({ isOpen, projectId, onClose, 
 
   if (!isOpen || !projectId) return null;
 
-  const hasAtLeastOnePositive = FACTOR_ORDER.some((f) => weights[f] > 0);
+  const hasAtLeastOnePositive = FACTOR_ORDER.some((f) => (weights?.[f] ?? 0) > 0);
 
   const handleWeight = (f: CriticalityFactor, value: number) => {
-    setWeights((w) => ({ ...w, [f]: Math.max(0, Math.min(2.0, value)) }));
+    setWeights((w) => ({ ...(w ?? SAFE_DEFAULT_WEIGHTS), [f]: Math.max(0, Math.min(2.0, value)) }));
   };
 
   const handleReset = () => {
     setTopN(DEFAULT_TOP_N);
-    setWeights({ ...DEFAULT_FACTOR_WEIGHTS });
+    setWeights({ ...SAFE_DEFAULT_WEIGHTS });
     setCustomTopN('');
   };
 
@@ -182,13 +194,13 @@ export default function CriticalitySettingsDialog({ isOpen, projectId, onClose, 
                       min={0}
                       max={2}
                       step={0.1}
-                      value={weights[f]}
+                      value={weights?.[f] ?? 0}
                       onChange={(e) => handleWeight(f, Number(e.target.value))}
                       className="flex-1 accent-[#7c3aed]"
                       data-testid={`weight-${f}`}
                     />
                     <span className="w-10 text-right font-mono text-slate-300">
-                      {weights[f].toFixed(1)}
+                      {(weights?.[f] ?? 0).toFixed(1)}
                     </span>
                   </div>
                 ))}
