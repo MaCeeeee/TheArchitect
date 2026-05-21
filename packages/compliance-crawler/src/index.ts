@@ -13,6 +13,7 @@ import { config } from './config';
 import { connectMongo, disconnectMongo } from './db/mongo';
 import { healthRoutes } from './routes/health';
 import { crawlRoutes } from './routes/crawl';
+import { embedAllRoutes } from './routes/embed-all';
 
 async function buildApp() {
   const app = Fastify({
@@ -23,6 +24,7 @@ async function buildApp() {
   await app.register(sensible);
   await app.register(healthRoutes);
   await app.register(crawlRoutes);
+  await app.register(embedAllRoutes);
 
   return app;
 }
