@@ -361,7 +361,7 @@ export default function HotspotsView() {
                             style={{ width: `${Math.min(100, f.normalized * 100)}%` }}
                           />
                         </div>
-                        <span className="text-slate-400">{FACTOR_LABELS[f.key]}</span>
+                        <span className="text-slate-400">{FACTOR_LABELS?.[f.key] ?? f.key}</span>
                       </div>
                     ))}
                   </div>

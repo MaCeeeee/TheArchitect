@@ -122,7 +122,7 @@ export function CriticalHotspotsWidget({ projectId }: Props) {
             const colors = scoreColor(entry.totalScore);
             const isSelected = selectedHotspotId === entry.elementId;
             const dominantLabel =
-              entry.dominantFactor && FACTOR_LABELS[entry.dominantFactor]
+              entry.dominantFactor && FACTOR_LABELS?.[entry.dominantFactor]
                 ? FACTOR_LABELS[entry.dominantFactor]
                 : '—';
             return (

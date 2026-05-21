@@ -174,8 +174,8 @@ export default function CriticalitySettingsDialog({ isOpen, projectId, onClose, 
               <div className="space-y-2">
                 {FACTOR_ORDER.map((f) => (
                   <div key={f} className="flex items-center gap-2 text-xs">
-                    <span className="w-40 text-slate-300 truncate" title={FACTOR_LABELS[f]}>
-                      {FACTOR_LABELS[f]}
+                    <span className="w-40 text-slate-300 truncate" title={FACTOR_LABELS?.[f] ?? f}>
+                      {FACTOR_LABELS?.[f] ?? f}
                     </span>
                     <input
                       type="range"

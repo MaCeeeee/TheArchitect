@@ -199,13 +199,13 @@ export function CriticalityBreakdownPopover({ projectId }: Props) {
 
   const factors = entry.factors ?? ({} as Record<CriticalityFactor, { raw: number; normalized: number; weighted: number }>);
   const factorEntries = (Object.keys(factors) as CriticalityFactor[])
-    .filter((k) => factors[k] !== undefined && factors[k] !== null && FACTOR_LABELS[k])
+    .filter((k) => factors[k] !== undefined && factors[k] !== null && FACTOR_LABELS?.[k])
     .map((k) => {
       const f = factors[k];
       const weighted = f?.weighted ?? 0;
       return {
         key: k,
-        label: FACTOR_LABELS[k],
+        label: FACTOR_LABELS?.[k] ?? k,
         raw: f?.raw ?? 0,
         normalized: f?.normalized ?? 0,
         weighted,
