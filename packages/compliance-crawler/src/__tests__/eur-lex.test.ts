@@ -1,7 +1,7 @@
 /**
- * EUR-Lex NIS2 Parser Tests — REQ-ICM-001.2 / THE-276
+ * EUR-Lex Parser Tests — REQ-ICM-001.2 / THE-276
  *
- * Tests the EurLexNis2Source.parseHtml() against a curated fixture.
+ * Tests EurLexSource.parseHtml() against curated NIS2 + DSGVO fixtures.
  * Live API calls are NOT exercised in CI — those run via `npm run crawl:nis2:live`.
  *
  * Run: cd packages/compliance-crawler && npx jest src/__tests__/eur-lex.test.ts --verbose
@@ -9,12 +9,15 @@
 
 import fs from 'fs';
 import path from 'path';
-import { EurLexNis2Source } from '../sources/eur-lex';
+import {
+  EurLexNis2Source,
+  nis2EurLexSource,
+  dsgvoEurLexSource,
+} from '../sources/eur-lex';
 
-const fixtureHtml = fs.readFileSync(
-  path.join(__dirname, 'fixtures/nis2-sample.html'),
-  'utf-8'
-);
+const fixturesDir = path.join(__dirname, 'fixtures');
+const fixtureHtml = fs.readFileSync(path.join(fixturesDir, 'nis2-sample.html'), 'utf-8');
+const dsgvoHtml = fs.readFileSync(path.join(fixturesDir, 'dsgvo-sample.html'), 'utf-8');
 
 describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
   it('extracts all NIS2 articles from fixture', () => {
@@ -86,5 +89,47 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
     expect(reg).toBeDefined();
     expect(reg.paragraphNumber).toBe('Art. 7');
     expect(reg.title).toBe('Fallback class test');
+  });
+
+  it('nis2EurLexSource() factory matches legacy class behaviour', () => {
+    const factory = nis2EurLexSource({ articleNumbers: [21] });
+    const [reg] = factory.parseHtml(fixtureHtml);
+    expect(reg.paragraphNumber).toBe('Art. 21');
+    expect(reg.source).toBe('nis2');
+    expect(reg.language).toBe('en');
+  });
+});
+
+describe('EurLexSource — DSGVO (German) (REQ-ICM-001.2)', () => {
+  it('extracts German "Artikel" articles from DSGVO fixture', () => {
+    const source = dsgvoEurLexSource({ articleNumbers: [5, 32] });
+    const results = source.parseHtml(dsgvoHtml);
+    expect(results.map(r => r.paragraphNumber)).toEqual(['Art. 5', 'Art. 32']);
+  });
+
+  it('AC-2: DSGVO Art. 32 — extracts full metadata in German', () => {
+    const source = dsgvoEurLexSource({ articleNumbers: [32] });
+    const [art32] = source.parseHtml(dsgvoHtml);
+    expect(art32.paragraphNumber).toBe('Art. 32');
+    expect(art32.title).toBe('Sicherheit der Verarbeitung');
+    expect(art32.fullText).toContain('Stands der Technik'); // Genitiv im Fixture
+    expect(art32.fullText).toContain('Schutzniveau');
+    expect(art32.source).toBe('dsgvo');
+    expect(art32.jurisdiction).toBe('EU');
+    expect(art32.language).toBe('de');
+    expect(art32.effectiveFrom).toEqual(new Date('2018-05-25'));
+  });
+
+  it('filters out Art. 100 (not in demo set 5/6/9/32)', () => {
+    const source = dsgvoEurLexSource();
+    const results = source.parseHtml(dsgvoHtml);
+    expect(results.find(r => r.paragraphNumber === 'Art. 100')).toBeUndefined();
+  });
+
+  it('default DSGVO factory uses demo set [5, 6, 9, 32]', () => {
+    const source = dsgvoEurLexSource();
+    const results = source.parseHtml(dsgvoHtml);
+    // Fixture only has 5, 32 (not 6, 9), so we get 2 results
+    expect(results.map(r => r.paragraphNumber).sort()).toEqual(['Art. 32', 'Art. 5']);
   });
 });

@@ -1,52 +1,67 @@
 /**
- * EUR-Lex Source — fetches NIS2 (Directive (EU) 2022/2555) from the EU's official portal.
+ * EUR-Lex Source — fetches EU legal acts (Directives, Regulations) from the official portal.
  *
- * URL format: https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555
+ * Examples (CELEX numbers):
+ *   - NIS2 Directive: 32022L2555
+ *   - GDPR (DSGVO):   32016R0679
+ *   - DORA:           32022R2554
+ *
+ * URL pattern: https://eur-lex.europa.eu/legal-content/{LANG}/TXT/HTML/?uri=CELEX:{CELEX}
  *
  * Strategy: HTML scraping via cheerio. EUR-Lex publishes Formex-derived HTML where each
- * article header carries class `oj-ti-art` (e.g., "Article 21"), followed by an optional
- * subtitle (`oj-sti-art`) and body paragraphs (`oj-normal`).
+ * article header carries class `oj-ti-art` (e.g., "Article 21" in EN or "Artikel 21" in DE),
+ * followed by an optional subtitle (`oj-sti-art`) and body paragraphs (`oj-normal`).
  *
  * Linear: THE-276 (REQ-ICM-001.2)
  */
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 import { ParsedRegulation, SourceParser, SourceParseError } from './types';
+import type {
+  RegulationSource,
+  RegulationJurisdiction,
+  RegulationLanguage,
+} from '@thearchitect/shared';
 
 const DEFAULT_USER_AGENT = 'TheArchitect-Compliance-Crawler/1.0';
 
-export interface EurLexNis2Options {
-  /** Limit which article numbers to keep (e.g., [20, 21, 22, 23, 24] for NIS2 demo set) */
+export interface EurLexSourceConfig {
+  source: RegulationSource;
+  jurisdiction: RegulationJurisdiction;
+  language: RegulationLanguage;
+  effectiveFrom: Date;
+  effectiveUntil?: Date;
+  /** CELEX number, e.g., '32022L2555' for NIS2 or '32016R0679' for GDPR */
+  celex: string;
+  /** Filter to specific article numbers (optional) */
   articleNumbers?: number[];
-  /** Override URL — useful for tests with fixture HTML */
+  /** Override URL (for tests with fixture HTML) */
   url?: string;
-  /** Override axios instance — useful for tests */
   httpClient?: AxiosInstance;
-  /** Custom User-Agent (defaults to TheArchitect-Compliance-Crawler/1.0) */
   userAgent?: string;
 }
 
-const DEFAULT_URL =
-  'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555';
-
-const NIS2_EFFECTIVE_FROM = new Date('2024-10-17'); // NIS2 transposition deadline
-
-export class EurLexNis2Source implements SourceParser {
-  readonly source = 'nis2' as const;
-  readonly description = 'EU Directive 2022/2555 (NIS2) via EUR-Lex';
+export class EurLexSource implements SourceParser {
+  readonly source: RegulationSource;
+  readonly description: string;
 
   private readonly url: string;
-  private readonly articleNumbers: number[] | undefined;
+  private readonly config: EurLexSourceConfig;
   private readonly http: AxiosInstance;
 
-  constructor(opts: EurLexNis2Options = {}) {
-    this.url = opts.url ?? DEFAULT_URL;
-    this.articleNumbers = opts.articleNumbers;
+  constructor(config: EurLexSourceConfig) {
+    this.config = config;
+    this.source = config.source;
+    this.description = `EUR-Lex CELEX:${config.celex} (${config.source.toUpperCase()} / ${config.language.toUpperCase()})`;
+    const langCode = config.language.toUpperCase();
+    this.url =
+      config.url ??
+      `https://eur-lex.europa.eu/legal-content/${langCode}/TXT/HTML/?uri=CELEX:${config.celex}`;
     this.http =
-      opts.httpClient ??
+      config.httpClient ??
       axios.create({
         timeout: 30_000,
-        headers: { 'User-Agent': opts.userAgent ?? DEFAULT_USER_AGENT },
+        headers: { 'User-Agent': config.userAgent ?? DEFAULT_USER_AGENT },
       });
   }
 
@@ -58,36 +73,38 @@ export class EurLexNis2Source implements SourceParser {
     } catch (err) {
       throw new SourceParseError(this.source, `Failed to fetch ${this.url}`, err);
     }
-
     return this.parseHtml(html);
   }
 
   /**
-   * Public for unit-testing. Accepts raw HTML string, returns parsed articles.
+   * Public for unit tests. Accepts raw HTML, returns ParsedRegulation candidates.
+   * Tolerates language differences (Article vs. Artikel) and missing oj- class prefixes.
    */
   parseHtml(html: string): ParsedRegulation[] {
     const $ = cheerio.load(html);
     const results: ParsedRegulation[] = [];
 
-    // Find all "Article XX" headers. EUR-Lex uses <p class="oj-ti-art">Article 21</p>
-    // We also tolerate <p class="ti-art"> as a fallback.
+    // Article header selector — EUR-Lex Formex HTML
     const titleSelector = 'p.oj-ti-art, p.ti-art';
+
+    // Language-sensitive article-number extraction: EN "Article 21", DE "Artikel 21"
+    const articleRegex =
+      this.config.language === 'de' ? /Artikel\s+(\d+[a-z]?)/i : /Article\s+(\d+[a-z]?)/i;
 
     $(titleSelector).each((_idx, el) => {
       const titleEl = $(el);
       const titleText = titleEl.text().trim();
-      const articleMatch = titleText.match(/Article\s+(\d+[a-z]?)/i);
+      const articleMatch = titleText.match(articleRegex);
       if (!articleMatch) return;
 
       const articleNum = articleMatch[1];
       const articleNumInt = parseInt(articleNum, 10);
 
-      // Apply filter if provided
-      if (this.articleNumbers && !this.articleNumbers.includes(articleNumInt)) {
+      if (this.config.articleNumbers && !this.config.articleNumbers.includes(articleNumInt)) {
         return;
       }
 
-      // Subtitle: next sibling with oj-sti-art (article title)
+      // Subtitle on next sibling with oj-sti-art
       let subtitle = '';
       let currentEl: cheerio.Cheerio<any> = titleEl.next();
       while (currentEl.length > 0 && !currentEl.is(titleSelector)) {
@@ -100,7 +117,7 @@ export class EurLexNis2Source implements SourceParser {
         currentEl = currentEl.next();
       }
 
-      // Collect body paragraphs until next article title
+      // Body: collect siblings until next article header
       const bodyParts: string[] = [];
       let walker: cheerio.Cheerio<any> = subtitle ? currentEl : titleEl.next();
       while (walker.length > 0 && !walker.is(titleSelector)) {
@@ -110,22 +127,77 @@ export class EurLexNis2Source implements SourceParser {
       }
 
       const fullText = bodyParts.join('\n\n').replace(/\s+/g, ' ').trim();
-
-      // Skip if too short — likely a parse miss
-      if (fullText.length < 50) return;
+      if (fullText.length < 50) return; // skip parse-misses
 
       results.push({
-        source: this.source,
-        jurisdiction: 'EU',
+        source: this.config.source,
+        jurisdiction: this.config.jurisdiction,
         paragraphNumber: `Art. ${articleNum}`,
         title: subtitle || titleText,
-        fullText: fullText.substring(0, 19_990), // safety: stay under model maxlength 20000
+        fullText: fullText.substring(0, 19_990),
         sourceUrl: this.url,
-        effectiveFrom: NIS2_EFFECTIVE_FROM,
-        language: 'en',
+        effectiveFrom: this.config.effectiveFrom,
+        effectiveUntil: this.config.effectiveUntil,
+        language: this.config.language,
       });
     });
 
     return results;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────
+// Convenience factories per known regulation
+// ──────────────────────────────────────────────────────────────────
+
+export interface FactoryOptions {
+  articleNumbers?: number[];
+  url?: string;
+  httpClient?: AxiosInstance;
+}
+
+/** NIS2 Directive (EU 2022/2555) — English by default. Demo set: Art. 20–24. */
+export function nis2EurLexSource(opts: FactoryOptions = {}): EurLexSource {
+  return new EurLexSource({
+    source: 'nis2',
+    jurisdiction: 'EU',
+    language: 'en',
+    effectiveFrom: new Date('2024-10-17'),
+    celex: '32022L2555',
+    articleNumbers: opts.articleNumbers,
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
+/** GDPR / DSGVO (EU 2016/679) — German. Demo set: Art. 5, 6, 9, 32. */
+export function dsgvoEurLexSource(opts: FactoryOptions = {}): EurLexSource {
+  return new EurLexSource({
+    source: 'dsgvo',
+    jurisdiction: 'EU',
+    language: 'de',
+    effectiveFrom: new Date('2018-05-25'),
+    celex: '32016R0679',
+    articleNumbers: opts.articleNumbers ?? [5, 6, 9, 32],
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
+/**
+ * @deprecated Use `nis2EurLexSource()` factory instead. Kept for backwards compatibility.
+ */
+export class EurLexNis2Source extends EurLexSource {
+  constructor(opts: FactoryOptions = {}) {
+    super({
+      source: 'nis2',
+      jurisdiction: 'EU',
+      language: 'en',
+      effectiveFrom: new Date('2024-10-17'),
+      celex: '32022L2555',
+      articleNumbers: opts.articleNumbers,
+      url: opts.url,
+      httpClient: opts.httpClient,
+    });
   }
 }

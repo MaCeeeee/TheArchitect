@@ -2,7 +2,8 @@ import type { FastifyInstance } from 'fastify';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
-import { EurLexNis2Source } from '../sources/eur-lex';
+import { nis2EurLexSource, dsgvoEurLexSource } from '../sources/eur-lex';
+import { lksgSource } from '../sources/gesetze-im-internet';
 import type { SourceParser } from '../sources/types';
 import type { RegulationSource } from '@thearchitect/shared';
 
@@ -13,9 +14,14 @@ const CrawlBodySchema = z.object({
     .min(1),
 });
 
+/**
+ * Source factory registry. Each entry returns a fresh `SourceParser` instance.
+ * Add new sources here when adding new parsers (no further wiring needed).
+ */
 const SOURCE_REGISTRY: Partial<Record<RegulationSource, () => SourceParser>> = {
-  nis2: () => new EurLexNis2Source({ articleNumbers: [20, 21, 22, 23, 24] }),
-  // D3: lksg + dsgvo will be added here
+  nis2: () => nis2EurLexSource({ articleNumbers: [20, 21, 22, 23, 24] }),
+  dsgvo: () => dsgvoEurLexSource({ articleNumbers: [5, 6, 9, 32] }),
+  lksg: () => lksgSource({ paragraphNumbers: [3, 4, 5, 6, 7, 8, 9] }),
 };
 
 export async function crawlRoutes(app: FastifyInstance): Promise<void> {
@@ -33,7 +39,7 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
     for (const sourceKey of sources) {
       const factory = SOURCE_REGISTRY[sourceKey];
       if (!factory) {
-        errors.push({ source: sourceKey, message: 'source not yet implemented (coming in D3)' });
+        errors.push({ source: sourceKey, message: 'source not yet implemented' });
         continue;
       }
 
