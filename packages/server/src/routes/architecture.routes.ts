@@ -25,6 +25,7 @@ import { Project } from '../models/Project';
 import { DEFAULT_FACTOR_WEIGHTS } from '@thearchitect/shared';
 import type { CriticalityResponse, FactorWeights } from '@thearchitect/shared';
 import { runCriticalityForProject } from '../services/criticalityRunner.service';
+import { buildExecutiveSummary } from '../services/executiveSummary.service';
 import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
 import { AuditLog } from '../models/AuditLog';
 import { rateLimit } from '../middleware/rateLimit.middleware';
@@ -1486,6 +1487,37 @@ router.get(
     } catch (err) {
       log.error({ err }, '[criticality] failed to compute');
       res.status(500).json({ success: false, error: 'Failed to compute criticality' });
+    }
+  }
+);
+
+// ─── REQ-EXEC-001: C-Level Executive Dashboard ──────────────────────────────
+//
+// GET /:projectId/executive-summary?fresh=true
+//
+// Aggregated read endpoint for the Persona-Tabbed Analyze Dashboard (CEO / CIO / CFO).
+// Fans out internally to criticality, cost-engine graph centrality, regulations,
+// standard-mappings, transformation-roadmap and scenarios. 60s in-memory cache.
+
+router.get(
+  '/:projectId/executive-summary',
+  requirePermission(PERMISSIONS.ELEMENT_READ),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      const forceRefresh = req.query.fresh === 'true';
+
+      const projectDoc = await Project.findById(projectId).lean().catch(() => null);
+      const projectSettings = (projectDoc as { settings?: { criticality?: { weights?: FactorWeights } } } | null)?.settings?.criticality;
+      const weights: FactorWeights | undefined = projectSettings?.weights
+        ? { ...DEFAULT_FACTOR_WEIGHTS, ...projectSettings.weights }
+        : undefined;
+
+      const summary = await buildExecutiveSummary(String(projectId), { forceRefresh, weights });
+      res.json(summary);
+    } catch (err) {
+      log.error({ err }, '[executive-summary] failed');
+      res.status(500).json({ success: false, error: 'Failed to build executive summary' });
     }
   }
 );
