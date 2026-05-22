@@ -10,9 +10,16 @@ const ConfigSchema = z.object({
 
   MONGODB_URI: z.string().url().or(z.string().startsWith('mongodb://')).or(z.string().startsWith('mongodb+srv://')),
 
-  EMBEDDING_SERVICE_URL: z.string().url().optional(),
-  QDRANT_URL: z.string().url().optional(),
+  // Coolify passes empty strings for unset vars (not undefined). Treat "" as not-set
+  // so deploys with EMBEDDING_SERVICE_URL= or QDRANT_URL= don't crash on Zod URL validation.
+  EMBEDDING_SERVICE_URL: z.string().url().optional().or(z.literal('')),
+  QDRANT_URL: z.string().url().optional().or(z.literal('')),
   QDRANT_API_KEY: z.string().optional(),
+
+  // Firecrawl — JS-render scraper used for WAF-protected sources (EUR-Lex).
+  // Linear: THE-285. If empty, nis2/dsgvo factories fall back to direct cheerio.
+  FIRECRAWL_API_KEY: z.string().optional(),
+  FIRECRAWL_API_URL: z.string().url().optional().or(z.literal('')),
 
   CRAWLER_USER_AGENT: z.string().default('TheArchitect-Compliance-Crawler/1.0'),
   CRAWLER_REQUEST_DELAY_MS: z.coerce.number().int().nonnegative().default(200),

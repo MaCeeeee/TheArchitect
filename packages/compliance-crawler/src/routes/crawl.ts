@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { nis2EurLexSource, dsgvoEurLexSource } from '../sources/eur-lex';
+import { nis2FirecrawlSource, dsgvoFirecrawlSource } from '../sources/firecrawl';
 import { lksgSource } from '../sources/gesetze-im-internet';
 import type { SourceParser } from '../sources/types';
 import type { RegulationSource } from '@thearchitect/shared';
@@ -21,12 +22,36 @@ const CrawlBodySchema = z.object({
 /**
  * Source factory registry. Each entry returns a fresh `SourceParser` instance.
  * Add new sources here when adding new parsers (no further wiring needed).
+ *
+ * nis2 + dsgvo prefer Firecrawl (handles AWS WAF on EUR-Lex). Falls back to
+ * direct cheerio if no FIRECRAWL_API_KEY (will fail in production due to WAF,
+ * but tests using EurLexSource against fixtures still work).
  */
-const SOURCE_REGISTRY: Partial<Record<RegulationSource, () => SourceParser>> = {
-  nis2: () => nis2EurLexSource({ articleNumbers: [20, 21, 22, 23, 24] }),
-  dsgvo: () => dsgvoEurLexSource({ articleNumbers: [5, 6, 9, 32] }),
-  lksg: () => lksgSource({ paragraphNumbers: [3, 4, 5, 6, 7, 8, 9] }),
-};
+function buildSourceRegistry(): Partial<Record<RegulationSource, () => SourceParser>> {
+  const firecrawlKey = config.FIRECRAWL_API_KEY;
+  const firecrawlUrl = config.FIRECRAWL_API_URL || undefined;
+  return {
+    nis2: () =>
+      firecrawlKey
+        ? nis2FirecrawlSource({
+            apiKey: firecrawlKey,
+            apiUrl: firecrawlUrl,
+            articleNumbers: [20, 21, 22, 23, 24],
+          })
+        : nis2EurLexSource({ articleNumbers: [20, 21, 22, 23, 24] }),
+    dsgvo: () =>
+      firecrawlKey
+        ? dsgvoFirecrawlSource({
+            apiKey: firecrawlKey,
+            apiUrl: firecrawlUrl,
+            articleNumbers: [5, 6, 9, 32],
+          })
+        : dsgvoEurLexSource({ articleNumbers: [5, 6, 9, 32] }),
+    lksg: () => lksgSource({ paragraphNumbers: [3, 4, 5, 6, 7, 8, 9] }),
+  };
+}
+
+const SOURCE_REGISTRY = buildSourceRegistry();
 
 export async function crawlRoutes(app: FastifyInstance): Promise<void> {
   app.post('/crawl', async (request, reply) => {
