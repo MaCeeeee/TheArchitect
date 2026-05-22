@@ -16,6 +16,11 @@ const ConfigSchema = z.object({
   QDRANT_URL: z.string().url().optional().or(z.literal('')),
   QDRANT_API_KEY: z.string().optional(),
 
+  // Firecrawl — JS-render scraper used for WAF-protected sources (EUR-Lex).
+  // Linear: THE-285. If empty, nis2/dsgvo factories fall back to direct cheerio.
+  FIRECRAWL_API_KEY: z.string().optional(),
+  FIRECRAWL_API_URL: z.string().url().optional().or(z.literal('')),
+
   CRAWLER_USER_AGENT: z.string().default('TheArchitect-Compliance-Crawler/1.0'),
   CRAWLER_REQUEST_DELAY_MS: z.coerce.number().int().nonnegative().default(200),
 });
