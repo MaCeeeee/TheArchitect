@@ -49,7 +49,7 @@ jest.mock('../services/complianceElements.service', () => ({
   normalizeElementType: (t: string) => t,
 }));
 
-const mapRegulationToElementsMock = jest.fn();
+const mapRegulationsBatchMock = jest.fn();
 const mapTextToElementsMock = jest.fn();
 const ComplianceMappingErrorReal = class extends Error {
   constructor(message: string) {
@@ -58,7 +58,7 @@ const ComplianceMappingErrorReal = class extends Error {
   }
 };
 jest.mock('../services/complianceMapping.service', () => ({
-  mapRegulationToElements: (...args: unknown[]) => mapRegulationToElementsMock(...args),
+  mapRegulationsBatch: (...args: unknown[]) => mapRegulationsBatchMock(...args),
   mapTextToElements: (...args: unknown[]) => mapTextToElementsMock(...args),
   ComplianceMappingError: ComplianceMappingErrorReal,
 }));
@@ -97,7 +97,7 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
     await Regulation.deleteMany({});
     await ComplianceMapping.deleteMany({});
     loadCandidatesMock.mockReset();
-    mapRegulationToElementsMock.mockReset();
+    mapRegulationsBatchMock.mockReset();
     mapTextToElementsMock.mockReset();
     auditEntrySpy.mockClear();
   });
@@ -121,7 +121,7 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(0);
       expect(res.body.data.note).toMatch(/no architecture elements/);
-      expect(mapRegulationToElementsMock).not.toHaveBeenCalled();
+      expect(mapRegulationsBatchMock).not.toHaveBeenCalled();
     });
 
     it('returns 0 when no regulations in project', async () => {
@@ -155,8 +155,12 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       loadCandidatesMock.mockResolvedValue([
         { id: 'cap-1', name: 'Lieferantenmanagement', type: 'capability' },
       ]);
-      // Each call returns 1 mapping
-      mapRegulationToElementsMock.mockResolvedValue([{ _id: new mongoose.Types.ObjectId() }]);
+      mapRegulationsBatchMock.mockResolvedValue({
+        totalRegulations: 2,
+        totalMapped: 2,
+        errors: [],
+        durationMs: 42,
+      });
 
       const res = await request(app)
         .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
@@ -165,12 +169,50 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(2);
       expect(res.body.data.mapped).toBe(2);
-      expect(mapRegulationToElementsMock).toHaveBeenCalledTimes(2);
+      expect(res.body.data.durationMs).toBe(42);
+      // Batch called once with all regs (NOT once per reg)
+      expect(mapRegulationsBatchMock).toHaveBeenCalledTimes(1);
+      expect(mapRegulationsBatchMock.mock.calls[0][0].regulations).toHaveLength(2);
       expect(auditEntrySpy).toHaveBeenCalledTimes(1);
       expect(auditEntrySpy.mock.calls[0][0]).toMatchObject({
         action: 'compliance.mapping.auto',
         riskLevel: 'medium',
       });
+      expect(auditEntrySpy.mock.calls[0][0].after.durationMs).toBe(42);
+    });
+
+    it('passes custom concurrency to batch service', async () => {
+      await Regulation.create({
+        projectId: new mongoose.Types.ObjectId(PROJECT_ID),
+        title: 'T',
+        fullText: 'a'.repeat(60),
+        sourceUrl: 'https://example.org',
+        effectiveFrom: new Date('2024-01-01'),
+        language: 'en',
+        jurisdiction: 'EU',
+        source: 'nis2',
+        paragraphNumber: 'Art. 21',
+      });
+      loadCandidatesMock.mockResolvedValue([{ id: 'cap-1', name: 'X', type: 'capability' }]);
+      mapRegulationsBatchMock.mockResolvedValue({
+        totalRegulations: 1,
+        totalMapped: 1,
+        errors: [],
+        durationMs: 1,
+      });
+
+      await request(app)
+        .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
+        .send({ concurrency: 7 });
+
+      expect(mapRegulationsBatchMock.mock.calls[0][0].concurrency).toBe(7);
+    });
+
+    it('rejects concurrency > 10', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
+        .send({ concurrency: 99 });
+      expect(res.status).toBe(400);
     });
 
     it('filters by regulationIds when provided', async () => {
@@ -199,7 +241,12 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       });
 
       loadCandidatesMock.mockResolvedValue([{ id: 'cap-1', name: 'X', type: 'capability' }]);
-      mapRegulationToElementsMock.mockResolvedValue([]);
+      mapRegulationsBatchMock.mockResolvedValue({
+        totalRegulations: 1,
+        totalMapped: 0,
+        errors: [],
+        durationMs: 1,
+      });
 
       const res = await request(app)
         .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
@@ -207,7 +254,8 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(1);
-      expect(mapRegulationToElementsMock).toHaveBeenCalledTimes(1);
+      // Batch invoked with the single filtered regulation only
+      expect(mapRegulationsBatchMock.mock.calls[0][0].regulations).toHaveLength(1);
     });
 
     it('rejects invalid regulationIds', async () => {
@@ -244,9 +292,12 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
         },
       ]);
       loadCandidatesMock.mockResolvedValue([{ id: 'cap-1', name: 'X', type: 'capability' }]);
-      mapRegulationToElementsMock
-        .mockResolvedValueOnce([{ _id: new mongoose.Types.ObjectId() }])
-        .mockRejectedValueOnce(new Error('LLM timeout'));
+      mapRegulationsBatchMock.mockResolvedValue({
+        totalRegulations: 2,
+        totalMapped: 1,
+        errors: [{ regulationId: 'reg-2', error: 'LLM timeout' }],
+        durationMs: 50,
+      });
 
       const res = await request(app)
         .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)

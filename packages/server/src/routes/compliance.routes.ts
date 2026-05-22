@@ -24,7 +24,7 @@ import { rateLimit } from '../middleware/rateLimit.middleware';
 import { Regulation } from '../models/Regulation';
 import { ComplianceMapping } from '../models/ComplianceMapping';
 import {
-  mapRegulationToElements,
+  mapRegulationsBatch,
   mapTextToElements,
   ComplianceMappingError,
 } from '../services/complianceMapping.service';
@@ -38,6 +38,7 @@ router.use(authenticate);
 
 const AutoMappingBodySchema = z.object({
   regulationIds: z.array(z.string()).max(100).optional(),
+  concurrency: z.number().int().min(1).max(10).optional(),
 });
 
 const PreviewBodySchema = z.object({
@@ -132,24 +133,13 @@ router.post(
       });
     }
 
-    // 3) Sequenzielles Mapping (Concurrency-Pattern könnte später per p-limit)
-    const errors: Array<{ regulationId: string; error: string }> = [];
-    let totalMapped = 0;
-
-    for (const reg of regulations) {
-      try {
-        const persisted = await mapRegulationToElements({
-          regulation: reg,
-          candidateElements,
-          projectId,
-        });
-        totalMapped += persisted.length;
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        log.warn({ regulationId: reg._id, err: msg }, '[compliance.auto] regulation failed');
-        errors.push({ regulationId: reg._id?.toString() ?? '', error: msg });
-      }
-    }
+    // 3) Concurrent Batch-Mapping (D4 — p-limit-style, default concurrency=5)
+    const batch = await mapRegulationsBatch({
+      regulations,
+      candidateElements,
+      projectId,
+      concurrency: parsed.data.concurrency,
+    });
 
     // 4) Audit (AC-3)
     if (req.user) {
@@ -162,10 +152,12 @@ router.post(
         userAgent: req.get('user-agent') ?? undefined,
         riskLevel: 'medium',
         after: {
-          regulations: regulations.length,
+          regulations: batch.totalRegulations,
           candidateElements: candidateElements.length,
-          mapped: totalMapped,
-          errors: errors.length,
+          mapped: batch.totalMapped,
+          errors: batch.errors.length,
+          durationMs: batch.durationMs,
+          concurrency: parsed.data.concurrency ?? 5,
         },
       });
     }
@@ -173,9 +165,10 @@ router.post(
     res.json({
       success: true,
       data: {
-        total: regulations.length,
-        mapped: totalMapped,
-        errors,
+        total: batch.totalRegulations,
+        mapped: batch.totalMapped,
+        errors: batch.errors,
+        durationMs: batch.durationMs,
       },
     });
   },

@@ -19,15 +19,25 @@ import { ComplianceMapping } from '../models/ComplianceMapping';
 import { Regulation, IRegulation } from '../models/Regulation';
 import {
   mapRegulationToElements,
+  mapRegulationsBatch,
   mapTextToElements,
   ComplianceMappingError,
   __testExports,
-  type CandidateElement,
-  type ComplianceMappingCandidate,
+} from '../services/complianceMapping.service';
+import type {
+  CandidateElement,
+  ComplianceMappingCandidate,
 } from '../services/complianceMapping.service';
 
-const { extractJson, parseAndFilter, CONFIDENCE_THRESHOLD, MAX_MAPPINGS_PER_REGULATION } =
-  __testExports;
+const {
+  extractJson,
+  parseAndFilter,
+  runWithConcurrency,
+  CONFIDENCE_THRESHOLD,
+  MAX_MAPPINGS_PER_REGULATION,
+  DEFAULT_BATCH_CONCURRENCY,
+  BATCH_CONCURRENCY_MAX,
+} = __testExports;
 
 // ─── Mock Anthropic SDK ──────────────────────────────────────────
 
@@ -412,5 +422,250 @@ describe('Prompt-Format sanity', () => {
       await mongoose.disconnect();
       await mongoServer2.stop();
     }
+  });
+});
+
+// ──────────────────────────────────────────────────────────
+// D4 — Concurrency Helper + mapRegulationsBatch
+// ──────────────────────────────────────────────────────────
+describe('runWithConcurrency()', () => {
+  it('respects concurrency limit (peak active never exceeds limit)', async () => {
+    const items = Array.from({ length: 20 }, (_, i) => i);
+    let active = 0;
+    let peakActive = 0;
+
+    await runWithConcurrency(items, 5, async (i) => {
+      active++;
+      if (active > peakActive) peakActive = active;
+      await new Promise((r) => setTimeout(r, 20));
+      active--;
+      return i * 2;
+    });
+
+    expect(peakActive).toBeLessThanOrEqual(5);
+    expect(peakActive).toBeGreaterThan(1); // proves it was parallel
+  });
+
+  it('preserves input order in results', async () => {
+    const items = [10, 20, 30, 40, 50];
+    const results = await runWithConcurrency(items, 3, async (n) => {
+      // Add jitter so faster items finish first — order test relies on
+      // index-based assignment, not completion-order
+      await new Promise((r) => setTimeout(r, Math.random() * 10));
+      return n * 100;
+    });
+    expect(results).toEqual([1000, 2000, 3000, 4000, 5000]);
+  });
+
+  it('runs all items even with limit > items.length', async () => {
+    const results = await runWithConcurrency([1, 2, 3], 99, async (n) => n + 1);
+    expect(results).toEqual([2, 3, 4]);
+  });
+
+  it('handles empty input', async () => {
+    const results = await runWithConcurrency([], 5, async () => 1);
+    expect(results).toEqual([]);
+  });
+
+  it('parallelism shortens total time vs sequential', async () => {
+    const items = Array.from({ length: 10 }, (_, i) => i);
+    const start = Date.now();
+    await runWithConcurrency(items, 5, async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    const elapsed = Date.now() - start;
+    // Sequential would be 300ms+; concurrency=5 should give ~60ms (2 batches)
+    expect(elapsed).toBeLessThan(200);
+  });
+});
+
+describe('mapRegulationsBatch()', () => {
+  let mongoServer3: MongoMemoryServer;
+
+  beforeAll(async () => {
+    mongoServer3 = await MongoMemoryServer.create();
+    await mongoose.connect(mongoServer3.getUri());
+    await ComplianceMapping.ensureIndexes();
+    await Regulation.ensureIndexes();
+  });
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer3.stop();
+  });
+
+  afterEach(async () => {
+    await ComplianceMapping.deleteMany({});
+    await Regulation.deleteMany({});
+  });
+
+  function makeMockReg(source: string, paragraphNumber: string): IRegulation {
+    return {
+      _id: new mongoose.Types.ObjectId(),
+      source,
+      paragraphNumber,
+      title: `${source} ${paragraphNumber}`,
+      fullText:
+        'Long enough fullText to pass the fifty-character validation requirement.',
+      language: 'en',
+      jurisdiction: 'EU',
+      effectiveFrom: new Date(),
+    } as unknown as IRegulation;
+  }
+
+  const SUCCESS_LLM_RESPONSE = JSON.stringify({
+    mappings: [
+      { elementId: 'cap-1', elementType: 'capability', confidence: 0.9, reasoning: 'r' },
+    ],
+  });
+
+  it('empty regulations array → 0 mapped, fast return', async () => {
+    const result = await mapRegulationsBatch({
+      regulations: [],
+      candidateElements: [{ id: 'cap-1', name: 'X', type: 'capability' }],
+      projectId: new mongoose.Types.ObjectId().toString(),
+    });
+    expect(result.totalRegulations).toBe(0);
+    expect(result.totalMapped).toBe(0);
+  });
+
+  it('empty candidates array → 0 mapped, fast return', async () => {
+    const result = await mapRegulationsBatch({
+      regulations: [makeMockReg('nis2', 'Art. 21')],
+      candidateElements: [],
+      projectId: new mongoose.Types.ObjectId().toString(),
+    });
+    expect(result.totalRegulations).toBe(1);
+    expect(result.totalMapped).toBe(0);
+  });
+
+  it('maps 3 regulations concurrently, returns durationMs', async () => {
+    const projectId = new mongoose.Types.ObjectId().toString();
+    const candidates: CandidateElement[] = [
+      { id: 'cap-1', name: 'X', type: 'capability' },
+    ];
+    const regs = [
+      makeMockReg('nis2', 'Art. 1'),
+      makeMockReg('nis2', 'Art. 2'),
+      makeMockReg('nis2', 'Art. 3'),
+    ];
+
+    const result = await mapRegulationsBatch({
+      regulations: regs,
+      candidateElements: candidates,
+      projectId,
+      anthropicClient: makeMockAnthropic(SUCCESS_LLM_RESPONSE),
+    });
+
+    expect(result.totalRegulations).toBe(3);
+    expect(result.totalMapped).toBe(3);
+    expect(result.errors).toEqual([]);
+    expect(typeof result.durationMs).toBe('number');
+  });
+
+  it('per-regulation error does NOT abort the batch', async () => {
+    const projectId = new mongoose.Types.ObjectId().toString();
+    const candidates: CandidateElement[] = [
+      { id: 'cap-1', name: 'X', type: 'capability' },
+    ];
+    // Anthropic mock: first 2 OK, 3rd fails
+    let call = 0;
+    const flakyClient = {
+      messages: {
+        create: jest.fn().mockImplementation(async () => {
+          call++;
+          if (call === 3) throw new Error('429 rate limited');
+          return {
+            content: [{ type: 'text', text: SUCCESS_LLM_RESPONSE }],
+          };
+        }),
+      },
+    } as any;
+
+    const result = await mapRegulationsBatch({
+      regulations: [
+        makeMockReg('nis2', 'Art. 1'),
+        makeMockReg('nis2', 'Art. 2'),
+        makeMockReg('nis2', 'Art. 3'),
+      ],
+      candidateElements: candidates,
+      projectId,
+      concurrency: 1, // serialize so call counter is deterministic
+      anthropicClient: flakyClient,
+    });
+
+    expect(result.totalRegulations).toBe(3);
+    expect(result.totalMapped).toBe(2);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0].error).toMatch(/429/);
+  });
+
+  it('clamps concurrency to [1, MAX]', async () => {
+    const projectId = new mongoose.Types.ObjectId().toString();
+    const candidates: CandidateElement[] = [
+      { id: 'cap-1', name: 'X', type: 'capability' },
+    ];
+    // concurrency=0 should still work (clamped up to 1)
+    const r1 = await mapRegulationsBatch({
+      regulations: [makeMockReg('nis2', 'Art. 1')],
+      candidateElements: candidates,
+      projectId,
+      concurrency: 0,
+      anthropicClient: makeMockAnthropic(SUCCESS_LLM_RESPONSE),
+    });
+    expect(r1.totalMapped).toBe(1);
+
+    // concurrency=999 should still work (clamped down to BATCH_CONCURRENCY_MAX)
+    const r2 = await mapRegulationsBatch({
+      regulations: [makeMockReg('nis2', 'Art. 2')],
+      candidateElements: candidates,
+      projectId,
+      concurrency: 999,
+      anthropicClient: makeMockAnthropic(SUCCESS_LLM_RESPONSE),
+    });
+    expect(r2.totalMapped).toBe(1);
+  });
+
+  it('exports DEFAULT_BATCH_CONCURRENCY=5 and BATCH_CONCURRENCY_MAX=10', () => {
+    expect(DEFAULT_BATCH_CONCURRENCY).toBe(5);
+    expect(BATCH_CONCURRENCY_MAX).toBe(10);
+  });
+
+  it('parallel mode is measurably faster than serial for slow LLM calls', async () => {
+    const projectId = new mongoose.Types.ObjectId().toString();
+    const candidates: CandidateElement[] = [
+      { id: 'cap-1', name: 'X', type: 'capability' },
+    ];
+    const slowClient = {
+      messages: {
+        create: jest.fn().mockImplementation(async () => {
+          await new Promise((r) => setTimeout(r, 50));
+          return { content: [{ type: 'text', text: SUCCESS_LLM_RESPONSE }] };
+        }),
+      },
+    } as any;
+
+    const regs = Array.from({ length: 10 }, (_, i) => makeMockReg('nis2', `Art. ${i}`));
+
+    const serial = await mapRegulationsBatch({
+      regulations: regs,
+      candidateElements: candidates,
+      projectId,
+      concurrency: 1,
+      anthropicClient: slowClient,
+    });
+
+    await ComplianceMapping.deleteMany({});
+
+    const parallel = await mapRegulationsBatch({
+      regulations: regs,
+      candidateElements: candidates,
+      projectId,
+      concurrency: 5,
+      anthropicClient: slowClient,
+    });
+
+    // Parallel should be at LEAST 2× faster (10×50ms serial = 500ms, parallel 2 batches × 50ms = 100ms)
+    expect(parallel.durationMs).toBeLessThan(serial.durationMs / 2);
   });
 });
