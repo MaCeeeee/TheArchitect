@@ -1,115 +1,33 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import {
-  DollarSign, Shield, TrendingDown, GitCompare, Activity, Map, Boxes,
-} from 'lucide-react';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Boxes, Loader2, AlertCircle } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
-import { useXRayStore } from '../../stores/xrayStore';
-import { useScenarioStore } from '../../stores/scenarioStore';
-import { useRoadmapStore } from '../../stores/roadmapStore';
-
-const formatCost = (n: number) => {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
-};
+import { useExecutiveSummary } from '../../hooks/useExecutiveSummary';
+import ExecTabStrip, { type Persona } from './exec/ExecTabStrip';
+import CeoView from './exec/CeoView';
+import CioView from './exec/CioView';
+import CfoView from './exec/CfoView';
 
 export default function AnalyzeDashboard() {
-  const navigate = useNavigate();
   const { projectId } = useParams<{ projectId: string }>();
   const elements = useArchitectureStore((s) => s.elements);
-  const metrics = useXRayStore((s) => s.metrics);
-  const graphCostProfiles = useXRayStore((s) => s.graphCostProfiles);
-  const scenarios = useScenarioStore((s) => s.scenarios);
-  const activeRoadmap = useRoadmapStore((s) => s.activeRoadmap);
+  const [tab, setTab] = useState<Persona>('cio');
 
-  // Tier badge
-  let dominantTier = 0;
-  if (graphCostProfiles.length > 0) {
-    const tierCounts = [0, 0, 0, 0];
-    for (const p of graphCostProfiles) tierCounts[p.tier]++;
-    for (let t = 3; t >= 0; t--) {
-      if (tierCounts[t] > 0) { dominantTier = t; break; }
-    }
-  }
+  const { data, loading, error, reload } = useExecutiveSummary(projectId ?? null);
 
-  // Risk level counts
-  const riskCounts = { critical: 0, high: 0, medium: 0, low: 0 };
-  for (const el of elements) {
-    const level = el.riskLevel as keyof typeof riskCounts;
-    if (level in riskCounts) riskCounts[level]++;
-  }
-
-  const topScenario = scenarios[0];
-  const waveCount = activeRoadmap?.waves?.length ?? 0;
-
-  const cards = [
-    {
-      label: 'Total TCO',
-      icon: DollarSign,
-      iconColor: '#3b82f6',
-      value: formatCost(metrics.totalCost),
-      sub: metrics.costP10 > 0
-        ? `P10 ${formatCost(metrics.costP10)} \u2013 P90 ${formatCost(metrics.costP90)}`
-        : 'Activate X-Ray for data',
-      badge: dominantTier > 0 ? `T${dominantTier}` : undefined,
-      target: 'cost',
-    },
-    {
-      label: 'Risk Exposure',
-      icon: Shield,
-      iconColor: '#ef4444',
-      value: formatCost(metrics.totalRiskExposure),
-      sub: `${riskCounts.critical} critical \u00b7 ${riskCounts.high} high \u00b7 ${riskCounts.medium} med`,
-      target: 'risk',
-    },
-    {
-      label: 'Optimization',
-      icon: TrendingDown,
-      iconColor: '#22c55e',
-      value: formatCost(metrics.optimizationTotal),
-      sub: metrics.totalCost > 0
-        ? `${Math.round((metrics.optimizationTotal / metrics.totalCost) * 100)}% of TCO`
-        : 'No cost data yet',
-      target: 'cost',
-    },
-    {
-      label: 'Scenarios',
-      icon: GitCompare,
-      iconColor: '#a78bfa',
-      value: `${scenarios.length}`,
-      sub: topScenario ? `Top: ${topScenario.name}` : 'No scenarios yet',
-      target: 'scenarios',
-    },
-    {
-      label: 'Progress',
-      icon: Activity,
-      iconColor: '#06b6d4',
-      value: `${metrics.transformationProgress}%`,
-      sub: `${elements.filter((e) => e.status === 'target').length} of ${elements.length} at target`,
-      target: 'impact',
-    },
-    {
-      label: 'Roadmap',
-      icon: Map,
-      iconColor: '#f59e0b',
-      value: activeRoadmap ? activeRoadmap.status || 'Active' : 'Not generated',
-      sub: activeRoadmap ? `${waveCount} wave${waveCount !== 1 ? 's' : ''}` : 'Generate a roadmap first',
-      target: 'roadmap',
-    },
-  ];
-
-  return (
-    <div>
-      <h2 className="text-lg font-semibold text-white mb-1">Analysis Dashboard</h2>
-      <p className="text-sm text-[var(--text-tertiary)] mb-6">
-        Overview of your architecture's cost, risk, and transformation metrics.
-      </p>
-
-      {elements.length === 0 ? (
+  if (elements.length === 0) {
+    return (
+      <div>
+        <h2 className="text-lg font-semibold text-white mb-1">Executive Dashboard</h2>
+        <p className="text-sm text-[var(--text-tertiary)] mb-6">
+          Persona-driven overview of cost, risk, compliance and transformation.
+        </p>
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Boxes size={32} className="text-[var(--border-strong)] mb-3" />
-          <p className="text-sm font-medium text-[var(--text-secondary)]">No architecture elements yet</p>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">
+            No architecture elements yet
+          </p>
           <p className="text-xs text-[var(--text-tertiary)] mt-1 max-w-xs">
             Start by modeling your architecture — add elements and connections in the 3D canvas.
           </p>
@@ -123,36 +41,45 @@ export default function AnalyzeDashboard() {
             Open Explorer →
           </button>
         </div>
-      ) : (
-        <div className="grid grid-cols-3 gap-4">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <button
-                key={card.label}
-                onClick={() => navigate(`/project/${projectId}/analyze/${card.target}`)}
-                className="bg-[var(--surface-raised)] border border-[var(--border-subtle)] rounded-lg p-4 text-left hover:border-[#7c3aed]/50 transition group"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon size={16} style={{ color: card.iconColor }} />
-                    <span className="text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                      {card.label}
-                    </span>
-                  </div>
-                  {card.badge && (
-                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#3b82f6]/20 text-[#3b82f6] border border-[#3b82f6]/40">
-                      {card.badge}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xl font-bold text-white mb-1">{card.value}</div>
-                <p className="text-[11px] text-[var(--text-tertiary)] truncate">{card.sub}</p>
-              </button>
-            );
-          })}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-white mb-1">Executive Dashboard</h2>
+      <p className="text-sm text-[var(--text-tertiary)] mb-4">
+        Persona-driven overview of cost, risk, compliance and transformation.
+      </p>
+
+      <ExecTabStrip active={tab} onChange={setTab} onReload={reload} loading={loading} />
+
+      {loading && !data && (
+        <div className="flex items-center justify-center py-16 gap-2 text-[var(--text-tertiary)]">
+          <Loader2 size={16} className="animate-spin" />
+          <span className="text-sm">Computing executive summary…</span>
         </div>
       )}
+
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-red-300 bg-red-500/10 border border-red-500/30 rounded p-3 mb-4">
+          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">{error}</p>
+            <button
+              type="button"
+              onClick={reload}
+              className="text-xs underline mt-1 hover:text-red-200"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
+      {data && tab === 'ceo' && <CeoView data={data.ceo} />}
+      {data && tab === 'cio' && <CioView data={data.cio} />}
+      {data && tab === 'cfo' && <CfoView data={data.cfo} />}
     </div>
   );
 }
