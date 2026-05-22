@@ -47,9 +47,15 @@ export interface CriticalityElement {
  * uses base weights unchanged.
  */
 const LAYER_FACTOR_MULTIPLIERS: Record<string, Partial<Record<keyof FactorWeights, number>>> = {
+  // Motivation-layer elements (drivers, goals, requirements, stakeholders,
+  // constraints) are external concerns — not architecturally fixable.
+  // Heavily dampen the "fix this" factors (SPOF, cycle, risk-connectivity,
+  // maturity-floor) and only let true compliance-relevant signals through.
   motivation: {
-    spof: 0.3,
-    cycleTangle: 0.3,
+    spof: 0.1,
+    cycleTangle: 0.1,
+    riskConnectivity: 0.5,
+    maturityFloor: 0.5,
     complianceGap: 2.0,
     stakeholderBottleneck: 1.5,
   },
@@ -364,12 +370,26 @@ export function computeCriticality(
       }
     });
 
+    // Max-Blend score: 60% from the dominant factor, 40% from the mean.
+    // Pure-mean dilutes single-factor risks (a SPOF with 50 dependents IS
+    // critical even if the other 6 factors are zero). Pure-max ignores
+    // co-occurring signals. The blend captures both intuitions.
     const summedWeighted = ALL_FACTORS.reduce(
       (sum, f) => sum + breakdown.factors[f].weighted,
       0
     );
-    const normalizedScore = (summedWeighted / totalWeight) * SCORE_CAP;
-    breakdown.totalScore = Math.min(SCORE_CAP, Math.round(normalizedScore * 10) / 10);
+    const maxWeighted = ALL_FACTORS.reduce(
+      (m, f) => Math.max(m, breakdown.factors[f].weighted),
+      0
+    );
+    const maxPossibleWeight = ALL_FACTORS.reduce(
+      (m, f) => Math.max(m, Math.max(0, effectiveWeights[f])),
+      0
+    );
+    const maxComponent = maxPossibleWeight > 0 ? maxWeighted / maxPossibleWeight : 0;
+    const meanComponent = totalWeight > 0 ? summedWeighted / totalWeight : 0;
+    const blendedScore = (maxComponent * 0.6 + meanComponent * 0.4) * SCORE_CAP;
+    breakdown.totalScore = Math.min(SCORE_CAP, Math.round(blendedScore * 10) / 10);
     breakdown.dominantFactor = dominantFactor;
   });
 

@@ -197,19 +197,28 @@ export function CriticalityBreakdownPopover({ projectId }: Props) {
 
   if (!breakdownId || !entry || !projectId) return null;
 
-  const factorEntries = (Object.keys(entry.factors) as CriticalityFactor[])
-    .map((k) => ({
-      key: k,
-      label: FACTOR_LABELS[k],
-      ...entry.factors[k],
-      points: Math.round(entry.factors[k].weighted * 1000) / 10,
-    }))
+  const factors = entry.factors ?? ({} as Record<CriticalityFactor, { raw: number; normalized: number; weighted: number }>);
+  const factorEntries = (Object.keys(factors) as CriticalityFactor[])
+    .filter((k) => factors[k] !== undefined && factors[k] !== null && FACTOR_LABELS?.[k])
+    .map((k) => {
+      const f = factors[k];
+      const weighted = f?.weighted ?? 0;
+      return {
+        key: k,
+        label: FACTOR_LABELS?.[k] ?? k,
+        raw: f?.raw ?? 0,
+        normalized: f?.normalized ?? 0,
+        weighted,
+        points: Math.round(weighted * 1000) / 10,
+      };
+    })
     .sort((a, b) => b.weighted - a.weighted);
 
   const dominant = entry.dominantFactor;
-  const dominantAction = dominant
-    ? FACTOR_ACTION_MAP[dominant][layerBucket(entry.layer)]
-    : null;
+  const dominantAction =
+    dominant && FACTOR_ACTION_MAP[dominant]
+      ? FACTOR_ACTION_MAP[dominant][layerBucket(entry.layer ?? '')]
+      : null;
 
   return (
     <div

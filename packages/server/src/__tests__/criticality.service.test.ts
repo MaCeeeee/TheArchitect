@@ -312,7 +312,37 @@ describe('Layer-Weighting (Option B)', () => {
     expect(result).toEqual(base);
   });
 
-  test('20. applyLayerMultipliers dampens motivation spof + cycleTangle', () => {
+  test('20b. Max-Blend: single dominant factor scores significantly higher than pure-mean would give', () => {
+    // 4 elements: one is an extreme SPOF, others have nothing.
+    const hubElement: CriticalityElement = {
+      id: 'hub',
+      name: 'Hub',
+      type: 'application_component',
+      layer: 'application',
+      riskLevel: 'low',
+      maturityLevel: 5,
+    };
+    const leaves: CriticalityElement[] = ['a', 'b', 'c', 'd', 'e'].map((id) => ({
+      id,
+      name: id,
+      type: 'application_service',
+      layer: 'application',
+      riskLevel: 'low',
+      maturityLevel: 5,
+    }));
+    const result = computeCriticality({
+      elements: [hubElement, ...leaves],
+      connections: leaves.map((l) => ({ sourceId: l.id, targetId: 'hub' })),
+    });
+    const hubScore = result.get('hub')?.totalScore ?? 0;
+    // With pure-mean formula this would be: 1 active factor (SPOF) × 1.0 weighted = 1.0,
+    // totalWeight = 7.5 → score 13.3.
+    // With max-blend: maxComponent = 1.0 × 0.6 + meanComponent ≈ 0.13 × 0.4 → ~65
+    expect(hubScore).toBeGreaterThan(50);
+    expect(result.get('hub')?.dominantFactor).toBe('spof');
+  });
+
+  test('20. applyLayerMultipliers aggressively dampens motivation fix-signals', () => {
     const base = {
       spof: 1.0,
       riskConnectivity: 1.0,
@@ -323,10 +353,12 @@ describe('Layer-Weighting (Option B)', () => {
       cycleTangle: 1.5,
     };
     const result = applyLayerMultipliers(base, 'motivation');
-    expect(result.spof).toBeCloseTo(0.3, 5);
-    expect(result.cycleTangle).toBeCloseTo(0.45, 5); // 1.5 * 0.3
-    expect(result.complianceGap).toBeCloseTo(3.0, 5); // 1.5 * 2.0
-    expect(result.stakeholderBottleneck).toBeCloseTo(0.75, 5); // 0.5 * 1.5
-    expect(result.riskConnectivity).toBe(1.0);
+    expect(result.spof).toBeCloseTo(0.1, 5); // ×0.1
+    expect(result.cycleTangle).toBeCloseTo(0.15, 5); // 1.5 × 0.1
+    expect(result.riskConnectivity).toBeCloseTo(0.5, 5); // 1.0 × 0.5
+    expect(result.maturityFloor).toBeCloseTo(0.5, 5); // 1.0 × 0.5
+    expect(result.complianceGap).toBeCloseTo(3.0, 5); // 1.5 × 2.0
+    expect(result.stakeholderBottleneck).toBeCloseTo(0.75, 5); // 0.5 × 1.5
+    expect(result.costBurden).toBe(1.0); // unchanged
   });
 });
