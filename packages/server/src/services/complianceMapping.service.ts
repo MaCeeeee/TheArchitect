@@ -1,0 +1,335 @@
+/**
+ * UC-ICM-002 — LLM-driven Compliance Mapping Service
+ *
+ * Pipeline (Option C — no Qdrant Stage 1, suitable for ~10-50 element projects
+ * like BSH-Demo). The service is pure: caller provides regulation + candidate
+ * elements, service calls LLM, returns ComplianceMappingCandidate[].
+ *
+ * For larger projects (>~50 elements), the caller should pre-filter via Qdrant
+ * semantic-recall (UC-SIM-001 pattern) and pass only top-N candidates here.
+ *
+ * Linear: THE-279 (REQ-ICM-002.2)
+ */
+import Anthropic from '@anthropic-ai/sdk';
+import { z } from 'zod';
+import mongoose from 'mongoose';
+import { ComplianceMapping, IComplianceMapping } from '../models/ComplianceMapping';
+import { IRegulation } from '../models/Regulation';
+import type {
+  ComplianceMappingElementType,
+  ComplianceMappingDTO,
+} from '@thearchitect/shared';
+import { log } from '../config/logger';
+import {
+  SYSTEM_PROMPT,
+  buildUserPrompt,
+  type PromptCandidateElement,
+} from '../prompts/complianceMapping.prompt';
+
+// ─── Configuration ──────────────────────────────────────────────
+
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+const MAX_TOKENS = 2048;
+const CONFIDENCE_THRESHOLD = 0.5;
+const MAX_MAPPINGS_PER_REGULATION = 5;
+
+// ─── Zod Schema (validates LLM output) ──────────────────────────
+
+const ELEMENT_TYPE_VALUES = [
+  'capability',
+  'application',
+  'data_object',
+  'business_process',
+  'business_actor',
+  'business_service',
+  'application_service',
+  'business_function',
+  'business_object',
+  'business_role',
+  'technology_service',
+  'node',
+  'custom',
+] as const;
+
+export const ComplianceMappingResponseSchema = z.object({
+  mappings: z
+    .array(
+      z.object({
+        elementId: z.string().min(1),
+        elementType: z.enum(ELEMENT_TYPE_VALUES),
+        confidence: z.number().min(0).max(1),
+        reasoning: z.string().max(500),
+      })
+    )
+    .max(MAX_MAPPINGS_PER_REGULATION + 5), // tolerate slight LLM overrun, we cap below
+});
+
+export type ComplianceMappingResponse = z.infer<typeof ComplianceMappingResponseSchema>;
+
+// ─── Public types ───────────────────────────────────────────────
+
+/** Minimal element-info needed for the LLM prompt. */
+export interface CandidateElement {
+  id: string;
+  name: string;
+  type: ComplianceMappingElementType;
+  layer?: string;
+  description?: string;
+}
+
+/** A single LLM-derived mapping candidate (pre-persistence). */
+export interface ComplianceMappingCandidate {
+  elementId: string;
+  elementType: ComplianceMappingElementType;
+  confidence: number;
+  reasoning: string;
+}
+
+export class ComplianceMappingError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'ComplianceMappingError';
+  }
+}
+
+// ─── Public API ─────────────────────────────────────────────────
+
+/**
+ * Map a stored Regulation to candidate ArchiMate elements via LLM.
+ * Persists results to MongoDB (upsert via compound index).
+ *
+ * AC-3 (idempotent), AC-2 (confidence + reasoning), AC-4 (threshold), AC-6 (upsert).
+ */
+export async function mapRegulationToElements(args: {
+  regulation: IRegulation;
+  candidateElements: CandidateElement[];
+  projectId: string;
+  anthropicClient?: Anthropic;
+}): Promise<IComplianceMapping[]> {
+  if (args.candidateElements.length === 0) {
+    log.warn({ regulationId: args.regulation._id }, '[mapping] no candidate elements — skip');
+    return [];
+  }
+
+  const candidates = await callLLM({
+    regulation: args.regulation,
+    candidateElements: args.candidateElements,
+    anthropicClient: args.anthropicClient,
+  });
+
+  // Post-Validation: drop hallucinated elementIds (not in candidate list)
+  const validIds = new Set(args.candidateElements.map(c => c.id));
+  const sanitized = candidates.filter(c => {
+    if (!validIds.has(c.elementId)) {
+      log.warn(
+        { regulationId: args.regulation._id, hallucinated: c.elementId },
+        '[mapping] LLM hallucinated elementId — dropped'
+      );
+      return false;
+    }
+    return true;
+  });
+
+  const persisted = await persistMappings({
+    candidates: sanitized,
+    regulationId: args.regulation._id?.toString() ?? '',
+    projectId: args.projectId,
+  });
+
+  return persisted;
+}
+
+/**
+ * Live-Mapping variant for UC-ICM-003.3 "Paste & See":
+ * caller pastes arbitrary text, gets candidate mappings WITHOUT persisting.
+ * The downstream /confirm endpoint persists if user accepts.
+ */
+export async function mapTextToElements(args: {
+  text: string;
+  source: string;
+  paragraphNumber: string;
+  language: 'de' | 'en';
+  jurisdiction: string;
+  candidateElements: CandidateElement[];
+  anthropicClient?: Anthropic;
+}): Promise<{ candidates: ComplianceMappingCandidate[] }> {
+  if (args.candidateElements.length === 0) {
+    return { candidates: [] };
+  }
+
+  // Build a synthetic Regulation context for the prompt
+  const syntheticReg = {
+    _id: new mongoose.Types.ObjectId(),
+    source: args.source,
+    paragraphNumber: args.paragraphNumber,
+    title: `${args.source} ${args.paragraphNumber}`,
+    fullText: args.text,
+    language: args.language,
+    jurisdiction: args.jurisdiction,
+    effectiveFrom: new Date(),
+  } as unknown as IRegulation;
+
+  const candidates = await callLLM({
+    regulation: syntheticReg,
+    candidateElements: args.candidateElements,
+    anthropicClient: args.anthropicClient,
+  });
+
+  const validIds = new Set(args.candidateElements.map(c => c.id));
+  const sanitized = candidates.filter(c => validIds.has(c.elementId));
+
+  return { candidates: sanitized };
+}
+
+// ─── Internal helpers ───────────────────────────────────────────
+
+async function callLLM(args: {
+  regulation: IRegulation;
+  candidateElements: CandidateElement[];
+  anthropicClient?: Anthropic;
+}): Promise<ComplianceMappingCandidate[]> {
+  const client = args.anthropicClient ?? getAnthropicClient();
+
+  const promptCandidates: PromptCandidateElement[] = args.candidateElements.map(c => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    layer: c.layer,
+    description: c.description,
+  }));
+
+  const userMessage = buildUserPrompt(
+    {
+      source: args.regulation.source,
+      paragraphNumber: args.regulation.paragraphNumber,
+      title: args.regulation.title,
+      fullText: args.regulation.fullText,
+      language: args.regulation.language,
+      jurisdiction: args.regulation.jurisdiction,
+      effectiveFrom: args.regulation.effectiveFrom?.toISOString().slice(0, 10),
+    },
+    promptCandidates
+  );
+
+  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+
+  let response;
+  try {
+    response = await client.messages.create({
+      model,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+      max_tokens: MAX_TOKENS,
+    });
+  } catch (err) {
+    throw new ComplianceMappingError(
+      `Anthropic request failed: ${(err as Error).message}`,
+      err
+    );
+  }
+
+  const textBlock = response.content.find(b => b.type === 'text');
+  const text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  if (!text) {
+    throw new ComplianceMappingError('Anthropic returned empty text response');
+  }
+
+  return parseAndFilter(text);
+}
+
+function getAnthropicClient(): Anthropic {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new ComplianceMappingError('ANTHROPIC_API_KEY is not configured');
+  }
+  return new Anthropic({ apiKey });
+}
+
+/**
+ * Parse LLM text → JSON → Zod-validate → filter by confidence threshold
+ * → cap at MAX_MAPPINGS_PER_REGULATION (top-N by confidence).
+ *
+ * Exported for tests.
+ */
+export function parseAndFilter(rawText: string): ComplianceMappingCandidate[] {
+  // Tolerate accidental markdown fences (```json ... ```)
+  const jsonText = extractJson(rawText);
+
+  let parsed: ComplianceMappingResponse;
+  try {
+    const json = JSON.parse(jsonText);
+    parsed = ComplianceMappingResponseSchema.parse(json);
+  } catch (err) {
+    throw new ComplianceMappingError(
+      `LLM output failed schema validation: ${(err as Error).message}`,
+      err
+    );
+  }
+
+  return parsed.mappings
+    .filter(m => m.confidence >= CONFIDENCE_THRESHOLD)
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, MAX_MAPPINGS_PER_REGULATION);
+}
+
+function extractJson(text: string): string {
+  // Strip markdown fences if any
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced) return fenced[1].trim();
+  // Otherwise: find first { and last }
+  const first = text.indexOf('{');
+  const last = text.lastIndexOf('}');
+  if (first === -1 || last === -1 || last < first) return text;
+  return text.slice(first, last + 1);
+}
+
+async function persistMappings(args: {
+  candidates: ComplianceMappingCandidate[];
+  regulationId: string;
+  projectId: string;
+}): Promise<IComplianceMapping[]> {
+  if (args.candidates.length === 0) return [];
+
+  const projectObjectId = new mongoose.Types.ObjectId(args.projectId);
+  const regulationObjectId = new mongoose.Types.ObjectId(args.regulationId);
+
+  const operations = args.candidates.map(c => ({
+    updateOne: {
+      filter: {
+        projectId: projectObjectId,
+        regulationId: regulationObjectId,
+        elementId: c.elementId,
+      },
+      update: {
+        $set: {
+          projectId: projectObjectId,
+          regulationId: regulationObjectId,
+          elementId: c.elementId,
+          elementType: c.elementType,
+          confidence: c.confidence,
+          reasoning: c.reasoning,
+          status: 'auto' as const,
+          createdBy: 'llm' as const,
+        },
+      },
+      upsert: true,
+    },
+  }));
+
+  await ComplianceMapping.bulkWrite(operations, { ordered: false });
+
+  // Return the persisted docs (re-query so we have full Mongoose objects with timestamps)
+  return ComplianceMapping.find({
+    projectId: projectObjectId,
+    regulationId: regulationObjectId,
+    elementId: { $in: args.candidates.map(c => c.elementId) },
+  });
+}
+
+// Exported for testing internals
+export const __testExports = {
+  extractJson,
+  parseAndFilter,
+  CONFIDENCE_THRESHOLD,
+  MAX_MAPPINGS_PER_REGULATION,
+};
