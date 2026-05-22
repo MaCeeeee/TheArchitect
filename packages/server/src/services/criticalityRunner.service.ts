@@ -14,6 +14,7 @@ import {
   getCachedScores,
   saveCachedScores,
 } from './criticalityCache.service';
+import { invalidateExecutiveSummary } from './executiveSummary.service';
 import {
   DEFAULT_FACTOR_WEIGHTS,
   type CriticalityScoreEntry,
@@ -158,6 +159,7 @@ export async function runCriticalityForProject(
   saveCachedScores(projectId, allScores, effectiveWeights, inputHash).catch((err: Error) => {
     log.warn({ err: err.message }, '[criticality] cache save failed');
   });
+  invalidateExecutiveSummary(projectId);
 
   return {
     scores: allScores,
