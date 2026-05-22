@@ -19,23 +19,12 @@ import {
   findSimilarElements,
   findRedundancies,
 } from '../services/elementSimilarity.service';
-import { computeCriticality } from '../services/criticality.service';
-import type {
-  CriticalityElement,
-  CriticalityConnection,
-  StandardMappingInput,
-  RoadmapWaveInput,
-} from '../services/criticality.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
 import { Project } from '../models/Project';
 import { DEFAULT_FACTOR_WEIGHTS } from '@thearchitect/shared';
 import type { CriticalityResponse, FactorWeights } from '@thearchitect/shared';
-import {
-  computeInputHash,
-  getCachedScores,
-  saveCachedScores,
-} from '../services/criticalityCache.service';
+import { runCriticalityForProject } from '../services/criticalityRunner.service';
 import { applyRedundancyDecisions } from '../services/redundancyResolution.service';
 import { AuditLog } from '../models/AuditLog';
 import { rateLimit } from '../middleware/rateLimit.middleware';
@@ -1481,141 +1470,16 @@ router.get(
       const topNRaw = Number(req.query.topN ?? settingsTopN);
       const topN = Math.max(1, Math.min(50, Number.isFinite(topNRaw) ? topNRaw : settingsTopN));
 
-      // Fetch elements + connections from Neo4j in parallel with Mongo reads
-      const [elementRecords, connectionRecords, cycleRecords, mappingDocs, roadmap] = await Promise.all([
-        runCypher(
-          'MATCH (e:ArchitectureElement {projectId: $projectId}) RETURN e',
-          { projectId }
-        ),
-        runCypher(
-          'MATCH (s:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(t:ArchitectureElement {projectId: $projectId}) RETURN s.id AS sid, t.id AS tid',
-          { projectId }
-        ),
-        runCypher(
-          'MATCH p=(n:ArchitectureElement {projectId: $projectId})-[:CONNECTS_TO*1..5]->(n) RETURN DISTINCT n.id AS nid',
-          { projectId }
-        ).catch((err) => {
-          log.warn({ err: err.message }, '[criticality] cycle detection failed, continuing without');
-          return [];
-        }),
-        StandardMapping.find({ projectId }).lean(),
-        TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
-      ]);
-
-      const elements: CriticalityElement[] = elementRecords.map((r) => {
-        const props = serializeNeo4jProperties(r.get('e').properties);
-        return {
-          id: String(props.id),
-          name: String(props.name ?? ''),
-          type: String(props.type ?? ''),
-          layer: String(props.layer ?? ''),
-          riskLevel: (props.riskLevel as CriticalityElement['riskLevel']) ?? null,
-          maturityLevel: typeof props.maturityLevel === 'number' ? props.maturityLevel : null,
-        };
-      });
-
-      if (elements.length === 0) {
-        const response: CriticalityResponse = {
-          scores: [],
-          computedAt: new Date().toISOString(),
-          weights: settingsWeights,
-          fromCache: false,
-          topN,
-        };
-        return res.json(response);
-      }
-
-      const connections: CriticalityConnection[] = connectionRecords.map((r) => ({
-        sourceId: String(r.get('sid')),
-        targetId: String(r.get('tid')),
-      }));
-
-      // Cache lookup — hash includes elements + connections + mappings + waves + weights
-      const inputHash = computeInputHash({
-        elementIds: elements.map((e) => e.id),
-        connectionEdges: connections.map((c) => [c.sourceId, c.targetId] as [string, string]),
-        mappingKeys: mappingDocs.map((m) => `${m.elementId}:${m.status}`),
-        waveCount: roadmap && Array.isArray(roadmap.waves) ? roadmap.waves.length : 0,
+      const result = await runCriticalityForProject(String(projectId), {
         weights: settingsWeights,
-      });
-
-      if (!forceRefresh) {
-        const cached = await getCachedScores(String(projectId), inputHash);
-        if (cached) {
-          const response: CriticalityResponse = {
-            scores: cached.scores.slice(0, topN),
-            computedAt: cached.computedAt.toISOString(),
-            weights: cached.weights,
-            fromCache: true,
-            topN,
-          };
-          return res.json(response);
-        }
-      }
-
-      const cycleMembers = new Set<string>(
-        cycleRecords.map((r) => String(r.get('nid')))
-      );
-
-      const standardMappings: StandardMappingInput[] = mappingDocs.map((m) => ({
-        elementId: String(m.elementId),
-        hasRealizer: m.status === 'compliant' || m.status === 'partial',
-      }));
-
-      const roadmapWaves: RoadmapWaveInput[] = [];
-      if (roadmap && Array.isArray(roadmap.waves)) {
-        for (const w of roadmap.waves as Array<Record<string, unknown>>) {
-          const elementCostsRaw = (w.elements ?? w.elementCosts ?? []) as Array<Record<string, unknown>>;
-          if (!Array.isArray(elementCostsRaw)) continue;
-          const elementCosts = elementCostsRaw
-            .map((ec) => ({
-              elementId: String(ec.elementId ?? ec.id ?? ''),
-              cost: Number(ec.cost ?? ec.estimatedCost ?? 0),
-            }))
-            .filter((ec) => ec.elementId && Number.isFinite(ec.cost));
-          const totalCost =
-            Number(w.totalCost ?? w.cost ?? elementCosts.reduce((s, e) => s + e.cost, 0)) || 0;
-          if (totalCost > 0) roadmapWaves.push({ totalCost, elementCosts });
-        }
-      }
-
-      const breakdownMap = computeCriticality({
-        elements,
-        connections,
-        standardMappings,
-        roadmapWaves,
-        cycleMembers,
-        weights: settingsWeights,
-      });
-
-      const elementById = new Map(elements.map((e) => [e.id, e]));
-      const allScores = Array.from(breakdownMap.entries())
-        .map(([elementId, breakdown]) => {
-          const el = elementById.get(elementId)!;
-          return {
-            elementId,
-            name: el.name,
-            type: el.type,
-            layer: el.layer,
-            totalScore: breakdown.totalScore,
-            factors: breakdown.factors,
-            dominantFactor: breakdown.dominantFactor,
-          };
-        })
-        .sort((a, b) => b.totalScore - a.totalScore);
-
-      const scores = allScores.slice(0, topN);
-
-      // Persist full set (not just topN) so smaller topN requests still hit cache
-      saveCachedScores(String(projectId), allScores, settingsWeights, inputHash).catch((err) => {
-        log.warn({ err: err.message }, '[criticality] cache save failed');
+        forceRefresh,
       });
 
       const response: CriticalityResponse = {
-        scores,
-        computedAt: new Date().toISOString(),
-        weights: settingsWeights,
-        fromCache: false,
+        scores: result.scores.slice(0, topN),
+        computedAt: result.computedAt.toISOString(),
+        weights: result.weights,
+        fromCache: result.fromCache,
         topN,
       };
       res.json(response);
