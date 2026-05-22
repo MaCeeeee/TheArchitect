@@ -81,3 +81,61 @@ cd packages/server
 npx tsx scripts/verify-uc-icm-002-llm.ts
 # Requires: ANTHROPIC_API_KEY in env or /Users/mac_macee/javis/packages/server/.env
 ```
+
+---
+
+## Stufe D — Neo4j-Roundtrip (Element-Resolver)
+
+**Script:** [`packages/server/scripts/verify-uc-icm-002-neo4j.ts`](../../packages/server/scripts/verify-uc-icm-002-neo4j.ts)
+
+Seedet 6 ArchiMate-Elements direkt in Neo4j (5 valid + 1 malformed) plus 1
+Canary in einem fremden `projectId`, ruft `loadProjectCandidateElements()` und
+verifiziert die Normalisierung + Tenant-Isolation **gegen echte Neo4j-Instanz**.
+
+### Result: 10/10 checks passed @ 6ms roundtrip
+
+| # | Check | Status |
+|---|---|---|
+| 1 | count = 5 (malformed-ohne-id/name gedroppt) | ✅ |
+| 2 | Tenant-Isolation: `OTHER_PROJECT_ID`-Canary nicht sichtbar | ✅ |
+| 3 | `business_capability` → `capability` | ✅ |
+| 4 | `application_component` → `application` | ✅ |
+| 5 | `process` → `business_process` | ✅ |
+| 6 | `data_object` → `data_object` (passthrough) | ✅ |
+| 7 | `Capability` (mixed-case) → `capability` (case-insensitive) | ✅ |
+| 8 | `description` durchgereicht | ✅ |
+| 9 | `layer` durchgereicht | ✅ |
+| 10 | `name` durchgereicht | ✅ |
+
+### Loaded elements (normalized, post-roundtrip)
+```
+app-sap-erp                | type=application       | layer=application | "ERP-System SAP"
+proc-onboarding            | type=business_process  | layer=business    | "Lieferanten-Onboarding"
+data-personalakte          | type=data_object       | layer=data        | "Mitarbeiter-Personalakte"
+cap-customer-svc           | type=capability        | layer=strategy    | "Customer Service"
+cap-lieferantenmanagement  | type=capability        | layer=strategy    | "Lieferantenmanagement"
+```
+
+### Cleanup
+Script löscht beide Test-projectIds nach dem Run — non-destructive für
+andere Projekte in der lokalen Neo4j.
+
+### Reproduktion
+```bash
+cd packages/server
+npx tsx scripts/verify-uc-icm-002-neo4j.ts
+# Requires: lokale Neo4j auf bolt://localhost:7687 (docker compose up neo4j)
+```
+
+---
+
+## Gesamt-Status Stufen A+B+C+D (2026-05-22)
+
+| Stufe | Was | Ergebnis |
+|---|---|---|
+| A | `npm run build` über 4 Packages | ✅ 11.8s |
+| B+C | 5 BSH-Demo-Szenarien gegen echtes Anthropic Haiku 4.5 | ✅ 5/5 @ 0.95 |
+| D | Neo4j-Element-Roundtrip + Type-Normalisierung + Tenant-Isolation | ✅ 10/10 @ 6ms |
+
+UC-ICM-002 D1+D2+D3 sind damit **echt verifiziert** (nicht nur unit-getestet).
+85 Unit-Tests + 15 Live-Verifikations-Checks = **100 grüne Signale**.
