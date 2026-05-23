@@ -245,6 +245,10 @@ async function main() {
     const { Regulation } = require('/app/packages/server/dist/models/Regulation');
     const { mapRegulationsBatch } = require('/app/packages/server/dist/services/complianceMapping.service');
     const { loadProjectCandidateElements } = require('/app/packages/server/dist/services/complianceElements.service');
+    const { connectNeo4j } = require('/app/packages/server/dist/config/neo4j');
+
+    // Init global Neo4j driver (required by loadProjectCandidateElements → runCypher)
+    await connectNeo4j();
 
     const regulations = await Regulation.find({ projectId }).select('-embedding');
     log('•', `${regulations.length} regulations loaded`);
