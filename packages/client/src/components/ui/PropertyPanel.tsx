@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp, ChevronRight, Info, Settings as SettingsIcon } from 'lucide-react';
+import TabBar from '../../design-system/patterns/TabBar';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -53,6 +54,27 @@ export default function PropertyPanel() {
   const [suitabilityResult, setSuitabilityResult] = useState<any>(null);
   const [suitabilityLoading, setSuitabilityLoading] = useState(false);
   const [suitabilityExpanded, setSuitabilityExpanded] = useState(false);
+
+  // T1.1 — Tab-Refactor: 4 Tabs (Overview / Compliance / Cost / Advanced)
+  const TAB_STORAGE_KEY = 'propertyPanel.activeTab';
+  type PanelTab = 'overview' | 'compliance' | 'cost' | 'advanced';
+  const [activeTab, setActiveTab] = useState<PanelTab>(() => {
+    try {
+      const stored = localStorage.getItem(TAB_STORAGE_KEY);
+      if (stored === 'overview' || stored === 'compliance' || stored === 'cost' || stored === 'advanced') {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return 'overview';
+  });
+  const handleTabChange = useCallback((id: string) => {
+    const tab = id as PanelTab;
+    setActiveTab(tab);
+    try { localStorage.setItem(TAB_STORAGE_KEY, tab); } catch { /* ignore */ }
+  }, []);
+
+  // Compliance-Tab-Badge: count of mappings for this element
+  const mappingsByElement = useComplianceStore((s) => s.mappingsByElement);
 
   // Activity drill-down may hold activities that haven't been refetched into the
   // main store yet (e.g. immediately after Generator-A apply). Fall back to the
@@ -382,6 +404,30 @@ export default function PropertyPanel() {
           </div>
         )}
 
+        {/* T1.1 — Tab Navigation */}
+        <TabBar
+          variant="pill"
+          activeId={activeTab}
+          onTabChange={handleTabChange}
+          tabs={[
+            { id: 'overview',   label: 'Overview',   icon: <Info size={11} /> },
+            {
+              id: 'compliance',
+              label: `Compliance${
+                (mappingsByElement.get(element.id)?.length ?? 0) > 0
+                  ? ` (${mappingsByElement.get(element.id)?.length})`
+                  : ''
+              }`,
+              icon: <Shield size={11} />,
+            },
+            { id: 'cost',       label: 'Cost',       icon: <DollarSign size={11} /> },
+            { id: 'advanced',   label: 'Advanced',   icon: <SettingsIcon size={11} /> },
+          ]}
+        />
+
+        {/* ─── OVERVIEW TAB ─── */}
+        {activeTab === 'overview' && (<>
+
         {/* Editable name */}
         <Section title="General">
           <EditableField label="Name" value={element.name} onChange={(v) => handleFieldChange('name', v)} />
@@ -415,21 +461,40 @@ export default function PropertyPanel() {
           <SensitivityRow element={element} />
         </Section>
 
-        {/* Compliance Coverage — only for ArchiMate requirement elements */}
-        {isRequirementType && requirementCoverage && (
-          <CoverageSection
-            coverage={requirementCoverage}
-            onSelect={(id) => selectElement(id)}
-          />
-        )}
+        {/* end overview-only sections — Cost/Compliance/Advanced moved to own tabs */}
+        </>)}
 
-        {/* UC-ICM-003.2 — Reverse-Lookup: Regulations affecting this element */}
-        {projectId && element.id && (
-          <RegulationsForElementSection projectId={projectId} elementId={element.id} />
-        )}
+        {/* ─── COMPLIANCE TAB ─── */}
+        {activeTab === 'compliance' && (<>
+          {/* Compliance Coverage — only for ArchiMate requirement elements */}
+          {isRequirementType && requirementCoverage && (
+            <CoverageSection
+              coverage={requirementCoverage}
+              onSelect={(id) => selectElement(id)}
+            />
+          )}
 
-        {/* Cost Input (Tier 1) */}
-        <CostInputSection element={element} onChange={handleFieldChange} />
+          {/* UC-ICM-003.2 — Reverse-Lookup: Regulations affecting this element */}
+          {projectId && element.id && (
+            <RegulationsForElementSection projectId={projectId} elementId={element.id} />
+          )}
+
+          {/* Empty state when nothing compliance-related applies */}
+          {!isRequirementType && (!projectId || !element.id) && (
+            <div className="rounded border border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-[10px] text-[var(--text-tertiary)] text-center">
+              No compliance data for this element type.
+            </div>
+          )}
+        </>)}
+
+        {/* ─── COST TAB ─── */}
+        {activeTab === 'cost' && (<>
+          {/* Cost Input (Tier 1) */}
+          <CostInputSection element={element} onChange={handleFieldChange} />
+        </>)}
+
+        {/* ─── ADVANCED TAB ─── */}
+        {activeTab === 'advanced' && (<>
 
         {/* AI Agent fields — only for ai_agent type */}
         {element.type === 'ai_agent' && (
@@ -524,6 +589,10 @@ export default function PropertyPanel() {
             onChange={handleMetadataChange}
           />
         )}
+        </>)}{/* end advanced part-1 */}
+
+        {/* ─── OVERVIEW TAB — part 2 (Description, Connections, 3D Position) ─── */}
+        {activeTab === 'overview' && (<>
 
         {/* Description */}
         <Section title="Description">
@@ -608,6 +677,10 @@ export default function PropertyPanel() {
             <PosField label="Z" value={element.position3D.z} onChange={(v) => handleFieldChange('position3D', { ...element.position3D, z: v })} />
           </div>
         </Section>
+        </>)}{/* end overview part-2 */}
+
+        {/* ─── ADVANCED TAB — part 2 (AI Suitability) ─── */}
+        {activeTab === 'advanced' && (<>
 
         {/* AI Suitability Check */}
         {projectId && ['application', 'technology'].includes(element.layer) && (
@@ -741,6 +814,7 @@ export default function PropertyPanel() {
             )}
           </Section>
         )}
+        </>)}{/* end advanced part-2 */}
 
         {/* Actions */}
         <div className="pt-2 border-t border-[var(--border-subtle)]">
