@@ -13,6 +13,7 @@ import MFASetup from '../security/MFASetup';
 import RedundancyPanel from '../copilot/RedundancyPanel';
 import DecisionPatternLibrary from '../patterns/DecisionPatternLibrary';
 import CriticalityBreakdownPopover from './CriticalityBreakdownPopover';
+import LiveMappingModal from '../compliance/LiveMappingModal';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -29,6 +30,7 @@ export default function MainLayout() {
   const [showMFASetup, setShowMFASetup] = useState(false);
   const [showRedundancyPanel, setShowRedundancyPanel] = useState(false);
   const [showPatternLibrary, setShowPatternLibrary] = useState(false);
+  const [showLiveMapping, setShowLiveMapping] = useState(false);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
@@ -45,6 +47,7 @@ export default function MainLayout() {
           onOpenWalkthrough={() => setShowWalkthrough(true)}
           onOpenRedundancyPanel={projectId ? () => setShowRedundancyPanel(true) : undefined}
           onOpenPatternLibrary={() => setShowPatternLibrary(true)}
+          onOpenLiveMapping={projectId ? () => setShowLiveMapping(true) : undefined}
         />
         <BreadcrumbBar />
         <main className="flex-1 relative overflow-hidden">
@@ -79,6 +82,7 @@ export default function MainLayout() {
         projectId={projectId}
       />
       <CriticalityBreakdownPopover projectId={projectId} />
+      <LiveMappingModal isOpen={showLiveMapping} onClose={() => setShowLiveMapping(false)} />
     </div>
   );
 }

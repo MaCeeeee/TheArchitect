@@ -57,9 +57,10 @@ interface ToolbarProps {
   onOpenWalkthrough: () => void;
   onOpenRedundancyPanel?: () => void;
   onOpenPatternLibrary?: () => void;
+  onOpenLiveMapping?: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary, onOpenLiveMapping }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -393,6 +394,17 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
           >
             <BookOpen size={14} />
+          </button>
+        )}
+        {/* UC-ICM-003.3 — Live Compliance-Mapping "Paste & See" (Demo-Akt 3) */}
+        {onOpenLiveMapping && (
+          <button
+            onClick={onOpenLiveMapping}
+            title="Live Compliance-Mapping — Gesetzestext einfügen, Live-Vorschläge erhalten (REQ-ICM-003.3)"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border border-transparent"
+          >
+            <Sparkles size={14} className="text-[#00ff41]" />
+            <span className="hidden xl:inline">Paste & See</span>
           </button>
         )}
         {/* Phase-gated: X-Ray and Scenario visible from Phase 4+ */}
