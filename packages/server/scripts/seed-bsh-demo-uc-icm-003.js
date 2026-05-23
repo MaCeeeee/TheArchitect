@@ -28,6 +28,11 @@ const DEMO_USER_PASSWORD = process.env.DEMO_PW || 'BSH-Demo-2026!';
 const DEMO_PROJECT_NAME = 'BSH Demo (UC-ICM-003)';
 const TEST_PROJECT_ID_OLD = '507f1f77bcf86cd799439011'; // orphan test ObjectId from W1
 
+// IMPORTANT: layer + posY MUST match ARCHITECTURE_LAYERS in
+// packages/shared/src/constants/togaf.constants.ts:
+//   motivation=16, strategy=12, business=8, information=4 (UI-Label: "Data"),
+//   application=0, technology=-4, physical=-8, implementation_migration=-12
+// Setting layer='data' breaks UI grouping — internal id is 'information'.
 const BSH_ELEMENTS = [
   {
     id: 'cap-lieferantenmanagement',
@@ -36,7 +41,7 @@ const BSH_ELEMENTS = [
     layer: 'business',
     togafDomain: 'business',
     description: 'Strategische Steuerung der Tier-1- und Tier-2-Zulieferer inkl. Onboarding, Bewertung, Risikoanalyse und Audit.',
-    posX: -200, posY: 80, posZ: 0,
+    posX: -8, posY: 8, posZ: 0,
   },
   {
     id: 'cap-datenverarbeitung-b2c',
@@ -45,7 +50,16 @@ const BSH_ELEMENTS = [
     layer: 'business',
     togafDomain: 'business',
     description: 'Verarbeitung personenbezogener Daten von Endkunden im Rahmen des Hausgeräte-Vertriebs und After-Sales.',
-    posX: 200, posY: 80, posZ: 0,
+    posX: 8, posY: 8, posZ: 0,
+  },
+  {
+    id: 'data-personalakte',
+    name: 'Mitarbeiter-Personalakte',
+    type: 'data_object',
+    layer: 'information', // ← UI-internal id for Data-Layer
+    togafDomain: 'data',
+    description: 'Digitale Personalakte mit Stamm-, Vertrags-, Gesundheits- und Performance-Daten.',
+    posX: 0, posY: 4, posZ: 0,
   },
   {
     id: 'app-sap-erp',
@@ -54,7 +68,7 @@ const BSH_ELEMENTS = [
     layer: 'application',
     togafDomain: 'application',
     description: 'Zentrales SAP S/4HANA für Finanzen, Material, Produktion, Vertrieb. ~3000 User.',
-    posX: -100, posY: 0, posZ: 0,
+    posX: -4, posY: 0, posZ: 0,
   },
   {
     id: 'app-hr-plattform',
@@ -63,16 +77,7 @@ const BSH_ELEMENTS = [
     layer: 'application',
     togafDomain: 'application',
     description: 'Workday HR mit Stammdaten, Gehaltsabrechnung, Performance-Reviews. Enthält Gesundheitsdaten + Sozialversicherung.',
-    posX: 100, posY: 0, posZ: 0,
-  },
-  {
-    id: 'data-personalakte',
-    name: 'Mitarbeiter-Personalakte',
-    type: 'data_object',
-    layer: 'data',
-    togafDomain: 'data',
-    description: 'Digitale Personalakte mit Stamm-, Vertrags-, Gesundheits- und Performance-Daten.',
-    posX: 0, posY: -80, posZ: 0,
+    posX: 4, posY: 0, posZ: 0,
   },
 ];
 
