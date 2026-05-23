@@ -22,7 +22,9 @@ import {
   type ElementCostProfile,
 } from '@thearchitect/shared';
 import { runCriticalityForProject } from './criticalityRunner.service';
-import { computeGraphCentrality, getTier0CostEstimate } from './cost-engine.service';
+import { computeGraphCentrality } from './cost-engine.service';
+import { estimateSmartCost } from './smart-cost.service';
+import { STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import { StandardMapping } from '../models/StandardMapping';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
@@ -32,8 +34,6 @@ import { log } from '../config/logger';
 
 const CACHE_TTL_MS = 60 * 1000;
 const memCache = new Map<string, { data: ExecutiveSummary; expiresAt: number }>();
-
-const OPTIMIZATION_HEURISTIC_PCT = 0.15;
 
 export interface BuildExecutiveSummaryOptions {
   forceRefresh?: boolean;
@@ -49,7 +49,7 @@ export async function buildExecutiveSummary(
     return { ...cached.data, fromCache: true };
   }
 
-  const [crit, costProfiles, regulationsCrawled, mappedElementIds, roadmap, scenarioCount, elementStats] =
+  const [crit, costProfiles, regulationsCrawled, mappedElementIds, roadmap, scenarioCount, elementStats, costElements] =
     await Promise.all([
       runCriticalityForProject(projectId, { weights: opts.weights }),
       computeGraphCentrality(projectId).catch((err: Error) => {
@@ -61,6 +61,7 @@ export async function buildExecutiveSummary(
       TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
       Scenario.countDocuments({ projectId }),
       loadElementStats(projectId),
+      loadElementsForCost(projectId),
     ]);
   const mappedElementCount = mappedElementIds.length;
 
@@ -73,7 +74,7 @@ export async function buildExecutiveSummary(
     (s) => s.totalScore >= HEADLINE_THRESHOLDS.hotspot_score,
   );
 
-  const costAgg = aggregateCosts(costProfiles);
+  const costAgg = aggregateCosts(costProfiles, costElements);
 
   const techDebtScore =
     elementStats.maturityAvg > 0
@@ -198,6 +199,47 @@ export function invalidateExecutiveSummary(projectId: string): void {
   memCache.delete(projectId);
 }
 
+interface CostElement {
+  id: string;
+  name: string;
+  type: string;
+  layer: string;
+  status: string;
+  annualCost: number;
+  maturityLevel: number | null;
+}
+
+async function loadElementsForCost(projectId: string): Promise<CostElement[]> {
+  try {
+    const rows = await runCypher(
+      `MATCH (e:ArchitectureElement {projectId: $projectId})
+       RETURN e.id AS id,
+              coalesce(e.name, '') AS name,
+              coalesce(e.type, '') AS type,
+              coalesce(e.layer, '') AS layer,
+              coalesce(e.status, 'current') AS status,
+              coalesce(e.annualCost, 0) AS annualCost,
+              e.maturityLevel AS maturityLevel`,
+      { projectId },
+    );
+    return rows.map((r) => ({
+      id: String(r.get('id') ?? ''),
+      name: String(r.get('name') ?? ''),
+      type: String(r.get('type') ?? ''),
+      layer: String(r.get('layer') ?? ''),
+      status: String(r.get('status') ?? 'current'),
+      annualCost: Number(r.get('annualCost') ?? 0),
+      maturityLevel: r.get('maturityLevel') == null ? null : Number(r.get('maturityLevel')),
+    }));
+  } catch (err) {
+    log.warn(
+      { err: (err as Error).message, projectId },
+      '[executive-summary] cost-elements query failed',
+    );
+    return [];
+  }
+}
+
 async function loadElementStats(projectId: string): Promise<{
   total: number;
   atTarget: number;
@@ -240,28 +282,77 @@ interface CostAggregate {
   topElementCost: number;
 }
 
-function aggregateCosts(profiles: ElementCostProfile[]): CostAggregate {
+function aggregateCosts(
+  profiles: ElementCostProfile[],
+  costElements: CostElement[],
+): CostAggregate {
   const tierCounts: [number, number, number, number] = [0, 0, 0, 0];
   let totalTco = 0;
-  let p10 = 0;
-  let p90 = 0;
+  let optimization = 0;
   let topElementName: string | null = null;
   let topElementCost = 0;
 
-  for (const p of profiles) {
-    const tier = (p.tier ?? 0) as 0 | 1 | 2 | 3;
+  const profileById = new Map(profiles.map((p) => [p.elementId, p]));
+
+  // Iterate over the canonical element set (so we apply status multipliers + the
+  // same 3-step priority the Cost-View uses client-side: annualCost → profile.totalEstimated → smart-cost).
+  for (const el of costElements) {
+    const profile = profileById.get(el.id);
+    const tier = (profile?.tier ?? 0) as 0 | 1 | 2 | 3;
     tierCounts[tier]++;
-    // Tier 0 has no totalEstimated — fall back to BASE_COSTS heuristic so
-    // the CFO view matches what the X-Ray + Cost tab show client-side.
-    const estimated =
-      p.totalEstimated ?? getTier0CostEstimate(p.elementType, 'current', p.elementName);
+
+    const statusMul = STATUS_COST_MULTIPLIERS[el.status] ?? 1.0;
+    let estimated: number;
+    if (el.annualCost > 0) {
+      estimated = Math.round(el.annualCost * statusMul);
+    } else if (profile?.totalEstimated != null) {
+      estimated = profile.totalEstimated;
+    } else {
+      const smart = estimateSmartCost(el.name, el.type, el.layer);
+      estimated = Math.round(smart.annualCost * statusMul);
+    }
+
     totalTco += estimated;
-    p10 += p.confidenceLow ?? estimated * 0.7;
-    p90 += p.confidenceHigh ?? estimated * 1.45;
+
+    const maturity = el.maturityLevel ?? 3;
+    const elOpt =
+      el.status === 'retired'
+        ? estimated * 0.9
+        : maturity <= 2
+          ? estimated * 0.3
+          : el.status === 'transitional'
+            ? estimated * 0.4
+            : 0;
+    optimization += elOpt;
+
     if (estimated > topElementCost) {
       topElementCost = estimated;
-      topElementName = p.elementName;
+      topElementName = el.name;
     }
+  }
+
+  // Profiles without a matching element (defensive — shouldn't happen, but
+  // still count the tier so the heatmap stays consistent).
+  for (const p of profiles) {
+    if (!costElements.some((e) => e.id === p.elementId)) {
+      const tier = (p.tier ?? 0) as 0 | 1 | 2 | 3;
+      tierCounts[tier]++;
+    }
+  }
+
+  // Confidence interval — use cost-engine bands where available, otherwise ±30/45%.
+  let p10 = 0;
+  let p90 = 0;
+  for (const el of costElements) {
+    const profile = profileById.get(el.id);
+    const statusMul = STATUS_COST_MULTIPLIERS[el.status] ?? 1.0;
+    const estimated =
+      el.annualCost > 0
+        ? el.annualCost * statusMul
+        : profile?.totalEstimated ??
+          estimateSmartCost(el.name, el.type, el.layer).annualCost * statusMul;
+    p10 += profile?.confidenceLow ?? estimated * 0.7;
+    p90 += profile?.confidenceHigh ?? estimated * 1.45;
   }
 
   let dominantTier: 0 | 1 | 2 | 3 = 0;
@@ -276,7 +367,7 @@ function aggregateCosts(profiles: ElementCostProfile[]): CostAggregate {
     totalTco,
     p10,
     p90,
-    optimization: totalTco * OPTIMIZATION_HEURISTIC_PCT,
+    optimization,
     tierCounts,
     dominantTier,
     topElementName,
