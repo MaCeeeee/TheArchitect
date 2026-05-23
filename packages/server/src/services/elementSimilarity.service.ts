@@ -26,6 +26,7 @@ import { QdrantClient } from '@qdrant/js-client-rest';
 import * as crypto from 'node:crypto';
 import { areTypesCrossComparable } from '@thearchitect/shared';
 import { log } from '../config/logger';
+import { createAuditEntry } from '../middleware/audit.middleware';
 
 /**
  * Qdrant requires point IDs to be either an unsigned int or a UUID.
@@ -124,10 +125,55 @@ export interface FindSimilarOpts {
   excludeElementIds?: string[];
 }
 
+export type WorkspaceMismatchKind = 'missing' | 'invalid' | 'cross_query';
+
 export class WorkspaceMismatchError extends Error {
-  constructor(message = 'Workspace mismatch: cross-tenant queries are not allowed') {
+  constructor(
+    message = 'Workspace mismatch: cross-tenant queries are not allowed',
+    public readonly attemptedWorkspaceId?: string,
+    public readonly kind: WorkspaceMismatchKind = 'invalid',
+  ) {
     super(message);
     this.name = 'WorkspaceMismatchError';
+  }
+}
+
+/**
+ * REQ-SIM-005 AC-5: Forensic audit trail for every cross-tenant attempt.
+ *
+ * Fire-and-forget: the security event MUST be recorded but it must NOT
+ * block the request path. Failures here are logged and swallowed.
+ *
+ * Routes that catch a WorkspaceMismatchError SHOULD call this directly so
+ * the auth context (userId, IP) makes it into the audit row. Service-level
+ * calls land here without a user (entityId carries the attempted workspaceId
+ * which is enough for forensic correlation in V1).
+ */
+export async function auditWorkspaceMismatch(
+  err: WorkspaceMismatchError,
+  context: { userId?: string; ip?: string; userAgent?: string } = {},
+): Promise<void> {
+  if (err.kind === 'missing') {
+    // "missing" = programmer bug (forgot to pass workspaceId), not a security event
+    return;
+  }
+  try {
+    await createAuditEntry({
+      userId: context.userId ?? 'system',
+      action: 'security.workspace_mismatch',
+      entityType: 'workspace',
+      entityId: err.attemptedWorkspaceId ?? 'unknown',
+      before: { kind: err.kind, message: err.message },
+      after: {},
+      ip: context.ip,
+      userAgent: context.userAgent,
+      riskLevel: 'critical',
+    });
+  } catch (e) {
+    log.warn(
+      { err: (e as Error).message, attempted: err.attemptedWorkspaceId },
+      '[similarity] audit-log write failed',
+    );
   }
 }
 
@@ -180,13 +226,21 @@ async function callSidecar(text: string): Promise<number[]> {
 
 function collectionName(workspaceId: string): string {
   if (!workspaceId || typeof workspaceId !== 'string') {
-    throw new WorkspaceMismatchError('workspaceId required');
+    // "missing" — programmer bug, not a security attempt: no audit
+    throw new WorkspaceMismatchError('workspaceId required', workspaceId, 'missing');
   }
   // Qdrant accepts alphanumerics + underscores + hyphens. Mongo ObjectIds
   // are pure hex so this is safe; we still guard against accidents.
   const safe = workspaceId.replace(/[^A-Za-z0-9_-]/g, '');
   if (safe !== workspaceId) {
-    throw new WorkspaceMismatchError(`invalid workspaceId: ${workspaceId}`);
+    const err = new WorkspaceMismatchError(
+      `invalid workspaceId: ${workspaceId}`,
+      workspaceId,
+      'invalid',
+    );
+    // Fire-and-forget: forensic audit must not block the throw
+    void auditWorkspaceMismatch(err);
+    throw err;
   }
   return `elements-${safe}`;
 }

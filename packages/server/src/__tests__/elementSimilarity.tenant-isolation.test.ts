@@ -34,6 +34,12 @@
 type SimPoint = { id: string; vector: number[]; payload: Record<string, unknown> };
 type SimCollection = { name: string; points: Map<string, SimPoint> };
 
+// AuditLog mock — REQ-SIM-005 AC-5 requires forensic write on every mismatch
+const mockAuditCreate = jest.fn().mockResolvedValue(undefined);
+jest.mock('../models/AuditLog', () => ({
+  AuditLog: { create: (...args: unknown[]) => mockAuditCreate(...args) },
+}));
+
 jest.mock('@qdrant/js-client-rest', () => {
   const cols = new Map<string, SimCollection>();
   const cosine = (a: number[], b: number[]): number => {
@@ -165,6 +171,7 @@ import {
   findSimilarElements,
   deleteEmbedding,
   WorkspaceMismatchError,
+  auditWorkspaceMismatch,
 } from '../services/elementSimilarity.service';
 
 // ─── Fixtures ───────────────────────────────────────────────────────────────
@@ -315,5 +322,49 @@ describe('REQ-SIM-005 — Tenant-isolation as behavioral property', () => {
     // Each isolated to one element each
     expect(collections.get('elements-foo')!.points.size).toBe(1);
     expect(collections.get('elements-elements-foo')!.points.size).toBe(1);
+  });
+
+  // ─── AC-5: Forensic audit on every mismatch attempt ───────────────────────
+
+  it('9. AC-5: invalid workspaceId triggers a critical audit-log entry', async () => {
+    await expect(findSimilarElements('foo/bar', { text: 'q' })).rejects.toThrow(
+      WorkspaceMismatchError,
+    );
+    // Audit is fire-and-forget — flush microtasks before asserting
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockAuditCreate).toHaveBeenCalledTimes(1);
+    const entry = mockAuditCreate.mock.calls[0][0];
+    expect(entry.action).toBe('security.workspace_mismatch');
+    expect(entry.entityType).toBe('workspace');
+    expect(entry.entityId).toBe('foo/bar');
+    expect(entry.riskLevel).toBe('critical');
+    expect(entry.before).toMatchObject({ kind: 'invalid' });
+  });
+
+  it('10. AC-5: missing workspaceId does NOT audit (programmer bug, not attack)', async () => {
+    await expect(
+      findSimilarElements('', { text: 'q' }),
+    ).rejects.toThrow(WorkspaceMismatchError);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(mockAuditCreate).not.toHaveBeenCalled();
+  });
+
+  it('11. AC-5: route-layer helper propagates user-context into the audit row', async () => {
+    const err = new WorkspaceMismatchError('cross-tenant query refused', 'ws-other', 'cross_query');
+    await auditWorkspaceMismatch(err, {
+      userId: 'user-attacker',
+      ip: '198.51.100.42',
+      userAgent: 'curl/8.0',
+    });
+
+    expect(mockAuditCreate).toHaveBeenCalledTimes(1);
+    const entry = mockAuditCreate.mock.calls[0][0];
+    expect(entry.userId).toBe('user-attacker');
+    expect(entry.ip).toBe('198.51.100.42');
+    expect(entry.userAgent).toBe('curl/8.0');
+    expect(entry.entityId).toBe('ws-other');
+    expect(entry.before).toMatchObject({ kind: 'cross_query' });
   });
 });
