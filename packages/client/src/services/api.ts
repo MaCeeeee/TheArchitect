@@ -380,6 +380,14 @@ export const standardsAPI = {
 };
 
 // Compliance Pipeline API
+// UC-ICM-001 Regulations (read-only access for the UI)
+export const regulationsAPI = {
+  list: (projectId: string, opts?: { source?: string; limit?: number; page?: number }) =>
+    api.get(`/projects/${projectId}/regulations`, { params: opts ?? {} }),
+  getById: (projectId: string, regulationId: string) =>
+    api.get(`/projects/${projectId}/regulations/${regulationId}`),
+};
+
 // UC-ICM-002 Compliance Mapping (Regulation ↔ ArchiMate-Element)
 export const complianceMappingAPI = {
   // Reverse-lookup for PropertyPanel Compliance-Tab (REQ-ICM-003.2)

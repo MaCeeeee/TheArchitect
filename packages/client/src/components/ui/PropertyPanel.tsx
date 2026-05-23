@@ -5,7 +5,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
-import { governanceAPI, oracleAPI, architectureAPI } from '../../services/api';
+import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI } from '../../services/api';
 import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
@@ -1919,16 +1919,12 @@ function RegulationsForElementSection({
     const missingIds = mappings.map((m) => m.regulationId).filter((id) => !regulationsById[id]);
     if (missingIds.length === 0) return;
 
-    // Fetch each (small N, no batch needed for demo)
+    // Fetch each via authenticated axios instance (small N, no batch needed for demo)
     void Promise.all(
       missingIds.map(async (id) => {
         try {
-          const res = await fetch(`/api/projects/${projectId}/regulations/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}` },
-          });
-          if (!res.ok) return null;
-          const data = await res.json();
-          return { id, ...(data?.data ?? {}) };
+          const res = await regulationsAPI.getById(projectId, id);
+          return { id, ...(res.data?.data ?? {}) };
         } catch {
           return null;
         }
