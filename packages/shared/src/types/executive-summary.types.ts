@@ -16,6 +16,25 @@ export interface ExecutiveHeadline {
   tone: HeadlineTone;
 }
 
+export type DecisionKind = 'compliance_gap' | 'spof' | 'cost_burden';
+
+export interface ExecutiveDecision {
+  kind: DecisionKind;
+  title: string;
+  why: string;
+  suggestedAction: string;
+  estimatedImpact: string;
+  sourceElementId: string | null;
+  sourceElementName: string | null;
+}
+
+export interface StrategicRoi {
+  goalAttainmentPct: number;
+  achievedGoals: number;
+  totalGoals: number;
+  description: string;
+}
+
 export interface CeoView {
   headline: ExecutiveHeadline;
   complianceCoverage: {
@@ -36,6 +55,8 @@ export interface CeoView {
     scenarioCount: number;
     roadmapStatus: string | null;
   };
+  topDecisions: ExecutiveDecision[];
+  strategicRoi: StrategicRoi;
 }
 
 export interface CioView {

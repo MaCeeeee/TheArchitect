@@ -1,7 +1,8 @@
-import { Scale, TrendingUp, AlertTriangle, GitCompare } from 'lucide-react';
+import { Scale, TrendingUp, AlertTriangle, GitCompare, Target } from 'lucide-react';
 import type { CeoView as CeoViewData } from '@thearchitect/shared';
 import HeadlineCard from './HeadlineCard';
 import KpiCard from './KpiCard';
+import TopDecisionsCard from './TopDecisionsCard';
 
 interface Props {
   data: CeoViewData;
@@ -11,13 +12,23 @@ export default function CeoView({ data }: Props) {
   return (
     <div className="space-y-4">
       <HeadlineCard headline={data.headline} />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <TopDecisionsCard decisions={data.topDecisions} />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <KpiCard
+          icon={Target}
+          iconColor="#22c55e"
+          label="Strategic Goal Attainment"
+          value={`${data.strategicRoi.goalAttainmentPct}%`}
+          sub={data.strategicRoi.description}
+          target="impact"
+          testId="ceo-strategic-roi"
+        />
         <KpiCard
           icon={Scale}
           iconColor="#a78bfa"
           label="Compliance Coverage"
           value={`${data.complianceCoverage.mappingCoveragePct}%`}
-          sub={`${data.complianceCoverage.standardMappings} mappings · ${data.complianceCoverage.regulationsCrawled} regulations`}
+          sub={`${data.complianceCoverage.standardMappings} mapped · ${data.complianceCoverage.regulationsCrawled} regulations`}
           testId="ceo-compliance"
         />
         <KpiCard

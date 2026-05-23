@@ -30,7 +30,9 @@ jest.mock('../models/Regulation', () => ({
 
 const mockMappingDistinct = jest.fn();
 jest.mock('../models/StandardMapping', () => ({
-  StandardMapping: { distinct: (...args: unknown[]) => mockMappingDistinct(...args) },
+  StandardMapping: {
+    distinct: (...args: unknown[]) => mockMappingDistinct(...args),
+  },
 }));
 
 const mockRoadmapFindOne = jest.fn();
@@ -266,6 +268,71 @@ describe('buildExecutiveSummary', () => {
     mockRunCriticality.mockClear();
     await buildExecutiveSummary(PROJECT_ID, { forceRefresh: true });
     expect(mockRunCriticality).toHaveBeenCalledTimes(1);
+  });
+
+  // ─── CEO Expansion: Top Decisions + Strategic ROI ──────────────────────
+
+  it('9. derives a compliance-gap decision from highest complianceGap score with mapping gap', async () => {
+    mockRunCriticality.mockResolvedValue({
+      scores: [
+        { elementId: 'e1', name: 'Customer Data Lake', type: 'data_object', layer: 'information', totalScore: 75, factors: { complianceGap: { raw: 3, normalized: 1, weighted: 1.5 }, spof: { raw: 0, normalized: 0, weighted: 0 } }, dominantFactor: 'complianceGap' },
+      ],
+      computedAt: new Date(), weights: {}, fromCache: false,
+    });
+    mockMappingDistinct.mockResolvedValue(['e1']);   // both calls return ['e1']
+    setupCypher(elementStatsRow({ total: 1, atTarget: 0 }));
+
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    const compliance = summary.ceo.topDecisions.find((d) => d.kind === 'compliance_gap');
+    expect(compliance).toBeDefined();
+    expect(compliance!.title).toContain('Customer Data Lake');
+    expect(compliance!.why).toContain('3 standard');
+    expect(compliance!.sourceElementId).toBe('e1');
+  });
+
+  it('10. derives a SPOF decision from highest spof weighted score', async () => {
+    mockRunCriticality.mockResolvedValue({
+      scores: [
+        { elementId: 'e1', name: 'Payment Gateway', type: 'application_service', layer: 'application', totalScore: 80, factors: { spof: { raw: 12, normalized: 1, weighted: 1 } }, dominantFactor: 'spof' },
+      ],
+      computedAt: new Date(), weights: {}, fromCache: false,
+    });
+    setupCypher(elementStatsRow({ total: 1 }));
+
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    const spof = summary.ceo.topDecisions.find((d) => d.kind === 'spof');
+    expect(spof).toBeDefined();
+    expect(spof!.title).toContain('Payment Gateway');
+    expect(spof!.why).toContain('12 downstream');
+  });
+
+  it('11. Strategic ROI counts goals/drivers with status=target as achieved', async () => {
+    setupCypher(
+      elementStatsRow({ total: 4 }),
+      [
+        costElementRow({ id: 'g1', name: 'Goal A', type: 'goal', layer: 'motivation', status: 'target' }),
+        costElementRow({ id: 'g2', name: 'Goal B', type: 'goal', layer: 'motivation', status: 'current' }),
+        costElementRow({ id: 'd1', name: 'Driver X', type: 'driver', layer: 'motivation', status: 'current', maturityLevel: 5 }),
+        costElementRow({ id: 'd2', name: 'Driver Y', type: 'driver', layer: 'motivation', status: 'current', maturityLevel: 2 }),
+      ],
+    );
+
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    // g1 (target) + d1 (maturity 5) = 2 of 4
+    expect(summary.ceo.strategicRoi.totalGoals).toBe(4);
+    expect(summary.ceo.strategicRoi.achievedGoals).toBe(2);
+    expect(summary.ceo.strategicRoi.goalAttainmentPct).toBe(50);
+  });
+
+  it('12. Strategic ROI is 0/0 when no motivation-layer goals exist', async () => {
+    setupCypher(
+      elementStatsRow({ total: 1 }),
+      [costElementRow({ id: 'a1', name: 'SAP', type: 'application_component', layer: 'application' })],
+    );
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    expect(summary.ceo.strategicRoi.totalGoals).toBe(0);
+    expect(summary.ceo.strategicRoi.goalAttainmentPct).toBe(0);
+    expect(summary.ceo.strategicRoi.description).toContain('No goals');
   });
 
   it('8. invalidateExecutiveSummary() clears cache', async () => {

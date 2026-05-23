@@ -24,6 +24,7 @@ import {
 import { runCriticalityForProject } from './criticalityRunner.service';
 import { computeGraphCentrality } from './cost-engine.service';
 import { estimateSmartCost } from './smart-cost.service';
+import { deriveTopDecisions, computeStrategicRoi } from './topDecisions.service';
 import { STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import { StandardMapping } from '../models/StandardMapping';
@@ -49,7 +50,7 @@ export async function buildExecutiveSummary(
     return { ...cached.data, fromCache: true };
   }
 
-  const [crit, costProfiles, regulationsCrawled, mappedElementIds, roadmap, scenarioCount, elementStats, costElements] =
+  const [crit, costProfiles, regulationsCrawled, mappedElementIds, gapElementIds, roadmap, scenarioCount, elementStats, costElements] =
     await Promise.all([
       runCriticalityForProject(projectId, { weights: opts.weights }),
       computeGraphCentrality(projectId).catch((err: Error) => {
@@ -58,12 +59,14 @@ export async function buildExecutiveSummary(
       }),
       Regulation.countDocuments({}),
       StandardMapping.distinct('elementId', { projectId }) as Promise<string[]>,
+      StandardMapping.distinct('elementId', { projectId, status: 'gap' }) as Promise<string[]>,
       TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
       Scenario.countDocuments({ projectId }),
       loadElementStats(projectId),
       loadElementsForCost(projectId),
     ]);
   const mappedElementCount = mappedElementIds.length;
+  const unmappedStandardElements = new Set(gapElementIds);
 
   const archScores = crit.scores.filter((s) => s.layer !== 'motivation');
   const criticalHotspots = archScores.filter((s) => s.totalScore >= HEADLINE_THRESHOLDS.hotspot_score);
@@ -117,6 +120,8 @@ export async function buildExecutiveSummary(
       scenarioCount,
       roadmapStatus: roadmap?.status ?? null,
     },
+    topDecisions: deriveTopDecisions({ scores: crit.scores, unmappedStandardElements }),
+    strategicRoi: computeStrategicRoi(costElements),
   };
 
   const cio: CioView = {
