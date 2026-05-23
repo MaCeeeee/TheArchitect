@@ -380,6 +380,43 @@ export const standardsAPI = {
 };
 
 // Compliance Pipeline API
+// UC-ICM-002 Compliance Mapping (Regulation ↔ ArchiMate-Element)
+export const complianceMappingAPI = {
+  // Reverse-lookup for PropertyPanel Compliance-Tab (REQ-ICM-003.2)
+  getByElement: (projectId: string, elementId: string) =>
+    api.get(`/projects/${projectId}/compliance/mappings/by-element/${encodeURIComponent(elementId)}`),
+
+  // Forward-lookup for Heat-Map (REQ-ICM-003.1)
+  getByRegulation: (projectId: string, regulationId: string) =>
+    api.get(`/projects/${projectId}/compliance/mappings/by-regulation/${regulationId}`),
+
+  // Batch auto-mapping (UC-ICM-002 D3)
+  runAuto: (projectId: string, opts?: { regulationIds?: string[]; concurrency?: number }) =>
+    api.post(`/projects/${projectId}/compliance/mappings/auto`, opts ?? {}),
+
+  // Live "Paste & See" (REQ-ICM-003.3)
+  preview: (projectId: string, body: {
+    text: string;
+    source?: string;
+    paragraphNumber?: string;
+    language?: 'de' | 'en';
+    jurisdiction?: string;
+  }) =>
+    api.post(`/projects/${projectId}/compliance/mappings/preview`, body),
+
+  // Persist user-confirmed mappings (REQ-ICM-003.3 Confirm step)
+  confirm: (projectId: string, body: {
+    regulationId: string;
+    mappings: Array<{
+      elementId: string;
+      elementType: string;
+      confidence: number;
+      reasoning: string;
+    }>;
+  }) =>
+    api.post(`/projects/${projectId}/compliance/mappings/confirm`, body),
+};
+
 export const compliancePipelineAPI = {
   getPipelineStatus: (projectId: string) =>
     api.get(`/projects/${projectId}/standards/pipeline-status`),

@@ -6,7 +6,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
 import { governanceAPI, oracleAPI, architectureAPI } from '../../services/api';
-import type { PolicyViolationDTO } from '@thearchitect/shared';
+import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
 import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, type StandardConnectionType } from '@thearchitect/shared/src/constants/archimate-rules';
@@ -421,6 +421,11 @@ export default function PropertyPanel() {
             coverage={requirementCoverage}
             onSelect={(id) => selectElement(id)}
           />
+        )}
+
+        {/* UC-ICM-003.2 — Reverse-Lookup: Regulations affecting this element */}
+        {projectId && element.id && (
+          <RegulationsForElementSection projectId={projectId} elementId={element.id} />
         )}
 
         {/* Cost Input (Tier 1) */}
@@ -1854,5 +1859,146 @@ function DebouncedSingleLine({
       placeholder={placeholder}
       className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-0.5 text-[11px] text-white outline-none focus:border-[#00ff41] transition"
     />
+  );
+}
+
+// ─── UC-ICM-003.2 — Regulations for selected Element (Reverse-Lookup) ───
+function sourceUrl(m: ComplianceMappingDTO, regSource?: string, regParagraph?: string): string {
+  // Build best-effort link to the regulation source
+  const s = (regSource || '').toLowerCase();
+  if (s === 'nis2' || s === 'dsgvo' || s === 'dora') {
+    return 'https://eur-lex.europa.eu/';
+  }
+  if (s === 'lksg') {
+    const para = (regParagraph || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return `https://www.gesetze-im-internet.de/lksg/${para ? '__' + para + '.html' : ''}`;
+  }
+  return '#';
+}
+
+function ConfidenceBar({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(1, value)) * 100;
+  const color =
+    value >= 0.9 ? '#22c55e' :  // green
+    value >= 0.7 ? '#eab308' :  // yellow
+    value >= 0.5 ? '#f97316' :  // orange
+                   '#ef4444';   // red
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="h-1.5 w-16 rounded-full bg-[var(--surface-raised)] overflow-hidden">
+        <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-[10px] font-mono" style={{ color }}>{value.toFixed(2)}</span>
+    </div>
+  );
+}
+
+function RegulationsForElementSection({
+  projectId,
+  elementId,
+}: {
+  projectId: string;
+  elementId: string;
+}) {
+  const loadMappingsForElement = useComplianceStore((s) => s.loadMappingsForElement);
+  const mappingsByElement = useComplianceStore((s) => s.mappingsByElement);
+  const isLoadingMappingsForElement = useComplianceStore((s) => s.isLoadingMappingsForElement);
+  const isLoading = isLoadingMappingsForElement.has(elementId);
+  const mappings = mappingsByElement.get(elementId);
+  const [regulationsById, setRegulationsById] = useState<Record<string, { source: string; paragraphNumber: string; title: string }>>({});
+
+  // Trigger load on element-select
+  useEffect(() => {
+    if (!projectId || !elementId) return;
+    void loadMappingsForElement(projectId, elementId);
+  }, [projectId, elementId, loadMappingsForElement]);
+
+  // Fetch regulation metadata for displayed mappings (source + paragraphNumber for citation)
+  useEffect(() => {
+    if (!mappings || mappings.length === 0) return;
+    const missingIds = mappings.map((m) => m.regulationId).filter((id) => !regulationsById[id]);
+    if (missingIds.length === 0) return;
+
+    // Fetch each (small N, no batch needed for demo)
+    void Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const res = await fetch(`/api/projects/${projectId}/regulations/${id}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('access_token') ?? ''}` },
+          });
+          if (!res.ok) return null;
+          const data = await res.json();
+          return { id, ...(data?.data ?? {}) };
+        } catch {
+          return null;
+        }
+      }),
+    ).then((results) => {
+      setRegulationsById((prev) => {
+        const next = { ...prev };
+        for (const r of results) {
+          if (r && r.id) {
+            next[r.id] = { source: r.source ?? '', paragraphNumber: r.paragraphNumber ?? '', title: r.title ?? '' };
+          }
+        }
+        return next;
+      });
+    });
+  }, [mappings, projectId, regulationsById]);
+
+  return (
+    <Section title="Compliance / Regulations">
+      {isLoading && (
+        <div className="text-[10px] text-[var(--text-tertiary)] italic px-1">
+          Lade Regulation-Mappings...
+        </div>
+      )}
+
+      {!isLoading && mappings && mappings.length === 0 && (
+        <div className="rounded border border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-[10px] text-[var(--text-tertiary)]">
+          Keine Compliance-Anforderungen identifiziert für dieses Element.
+        </div>
+      )}
+
+      {!isLoading && mappings && mappings.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1">
+            {mappings.length} regulation{mappings.length === 1 ? '' : 's'} affecting this element
+          </div>
+          {mappings.map((m) => {
+            const reg = regulationsById[m.regulationId];
+            const sourceLabel = reg?.source?.toUpperCase() || '...';
+            const paraLabel = reg?.paragraphNumber || m.regulationId.slice(0, 8);
+            const url = sourceUrl(m, reg?.source, reg?.paragraphNumber);
+            return (
+              <div
+                key={m._id}
+                className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-1"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-white hover:text-[#00ff41] flex items-center gap-1 truncate"
+                    title="Open source citation"
+                  >
+                    <Shield size={10} />
+                    <span className="truncate">{sourceLabel} {paraLabel}</span>
+                  </a>
+                  <ConfidenceBar value={m.confidence} />
+                </div>
+                <p
+                  className="text-[10px] text-[var(--text-secondary)] leading-snug line-clamp-3"
+                  title={m.reasoning}
+                >
+                  {m.reasoning}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
   );
 }

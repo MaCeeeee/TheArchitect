@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { compliancePipelineAPI, governanceAPI, architectureAPI } from '../services/api';
+import { compliancePipelineAPI, complianceMappingAPI, governanceAPI, architectureAPI } from '../services/api';
 import { useArchitectureStore } from './architectureStore';
-import type { PolicyDraft, PolicyViolationDTO } from '@thearchitect/shared';
+import type { PolicyDraft, PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 
 interface PipelineState {
   standardId: string;
@@ -109,6 +109,10 @@ interface ComplianceStore {
   violationsByPolicy: Map<string, number>;
   isLoadingViolations: boolean;
 
+  // UC-ICM-003 — Compliance Mappings (Regulation ↔ Element) state
+  mappingsByElement: Map<string, ComplianceMappingDTO[]>;
+  isLoadingMappingsForElement: Set<string>;
+
   // Actions
   loadPipelineStatus: (projectId: string) => Promise<void>;
   loadPortfolio: (projectId: string) => Promise<void>;
@@ -129,6 +133,11 @@ interface ComplianceStore {
   // Violation actions
   loadViolations: (projectId: string) => Promise<void>;
   loadViolationsByElement: (projectId: string, elementId: string) => Promise<PolicyViolationDTO[]>;
+
+  // UC-ICM-003 — Compliance Mapping actions
+  loadMappingsForElement: (projectId: string, elementId: string) => Promise<ComplianceMappingDTO[]>;
+  invalidateMappingsForElement: (elementId: string) => void;
+
   clear: () => void;
 }
 
@@ -150,6 +159,8 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   violationsByElement: new Map(),
   violationsByPolicy: new Map(),
   isLoadingViolations: false,
+  mappingsByElement: new Map(),
+  isLoadingMappingsForElement: new Set(),
 
   loadPipelineStatus: async (projectId) => {
     set({ isLoading: true, error: null });
@@ -326,6 +337,53 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     }
   },
 
+  // UC-ICM-003 — Compliance Mappings
+  loadMappingsForElement: async (projectId, elementId) => {
+    // Cache hit?
+    const cached = get().mappingsByElement.get(elementId);
+    if (cached) return cached;
+
+    // Already loading?
+    if (get().isLoadingMappingsForElement.has(elementId)) {
+      return [];
+    }
+
+    set((state) => {
+      const loading = new Set(state.isLoadingMappingsForElement);
+      loading.add(elementId);
+      return { isLoadingMappingsForElement: loading };
+    });
+
+    try {
+      const res = await complianceMappingAPI.getByElement(projectId, elementId);
+      const mappings = (res.data?.data || []) as ComplianceMappingDTO[];
+      set((state) => {
+        const next = new Map(state.mappingsByElement);
+        next.set(elementId, mappings);
+        const loading = new Set(state.isLoadingMappingsForElement);
+        loading.delete(elementId);
+        return { mappingsByElement: next, isLoadingMappingsForElement: loading };
+      });
+      return mappings;
+    } catch (err) {
+      console.error('[complianceStore] loadMappingsForElement failed:', err);
+      set((state) => {
+        const loading = new Set(state.isLoadingMappingsForElement);
+        loading.delete(elementId);
+        return { isLoadingMappingsForElement: loading };
+      });
+      return [];
+    }
+  },
+
+  invalidateMappingsForElement: (elementId) => {
+    set((state) => {
+      const next = new Map(state.mappingsByElement);
+      next.delete(elementId);
+      return { mappingsByElement: next };
+    });
+  },
+
   clear: () => set({
     pipelineStates: [],
     portfolioOverview: null,
@@ -342,6 +400,8 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     violations: [],
     violationsByElement: new Map(),
     violationsByPolicy: new Map(),
+    mappingsByElement: new Map(),
+    isLoadingMappingsForElement: new Set(),
     isLoadingViolations: false,
   }),
 }));
