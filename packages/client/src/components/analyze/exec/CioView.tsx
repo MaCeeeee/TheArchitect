@@ -18,7 +18,7 @@ export default function CioView({ data }: Props) {
           label="Critical Hotspots"
           value={data.criticalHotspots.count}
           sub={data.criticalHotspots.topName ?? 'No hotspots'}
-          target="risk"
+          target="hotspots"
           testId="cio-hotspots"
         />
         <KpiCard
@@ -27,7 +27,7 @@ export default function CioView({ data }: Props) {
           label="Tech-Debt Index"
           value={`${data.techDebtIndex.score}/100`}
           sub={`${data.techDebtIndex.immatureElements} immature`}
-          target="risk"
+          target="hotspots"
           testId="cio-techdebt"
         />
         <KpiCard
@@ -36,7 +36,7 @@ export default function CioView({ data }: Props) {
           label="SPOFs"
           value={data.spofs.count}
           sub={data.spofs.topElement ?? 'None'}
-          target="risk"
+          target="hotspots"
           testId="cio-spofs"
         />
         <KpiCard

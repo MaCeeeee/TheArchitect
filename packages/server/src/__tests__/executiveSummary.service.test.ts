@@ -17,6 +17,7 @@ jest.mock('../services/criticalityRunner.service', () => ({
 const mockComputeGraphCentrality = jest.fn();
 jest.mock('../services/cost-engine.service', () => ({
   computeGraphCentrality: (...args: unknown[]) => mockComputeGraphCentrality(...args),
+  getTier0CostEstimate: (_type: string, _status: string, _name?: string) => 30_000,
 }));
 
 const mockRegulationCount = jest.fn();
@@ -24,9 +25,9 @@ jest.mock('../models/Regulation', () => ({
   Regulation: { countDocuments: (...args: unknown[]) => mockRegulationCount(...args) },
 }));
 
-const mockMappingCount = jest.fn();
+const mockMappingDistinct = jest.fn();
 jest.mock('../models/StandardMapping', () => ({
-  StandardMapping: { countDocuments: (...args: unknown[]) => mockMappingCount(...args) },
+  StandardMapping: { distinct: (...args: unknown[]) => mockMappingDistinct(...args) },
 }));
 
 const mockRoadmapFindOne = jest.fn();
@@ -72,7 +73,7 @@ beforeEach(() => {
   mockRunCriticality.mockResolvedValue({ scores: [], computedAt: new Date(), weights: {}, fromCache: false });
   mockComputeGraphCentrality.mockResolvedValue([]);
   mockRegulationCount.mockResolvedValue(0);
-  mockMappingCount.mockResolvedValue(0);
+  mockMappingDistinct.mockResolvedValue([]);
   mockRoadmapFindOne.mockReturnValue(emptyRoadmap());
   mockScenarioCount.mockResolvedValue(0);
   mockRunCypher.mockResolvedValue([elementStatsRow()]);
@@ -112,7 +113,7 @@ describe('buildExecutiveSummary', () => {
 
   it('3. regulations exist + 0 mappings → ceo.headline.tone === "critical"', async () => {
     mockRegulationCount.mockResolvedValue(16);
-    mockMappingCount.mockResolvedValue(0);
+    mockMappingDistinct.mockResolvedValue([]);
     mockRunCypher.mockResolvedValue([elementStatsRow({ total: 50, atTarget: 10, maturityAvg: 3.5 })]);
 
     const summary = await buildExecutiveSummary(PROJECT_ID);
@@ -120,6 +121,29 @@ describe('buildExecutiveSummary', () => {
     expect(summary.ceo.complianceCoverage.regulationsCrawled).toBe(16);
     expect(summary.ceo.complianceCoverage.mappingCoveragePct).toBe(0);
     expect(summary.ceo.headline.title).toContain('Compliance gap');
+  });
+
+  it('3b. mappingCoveragePct is capped at 100% when many distinct elements map', async () => {
+    // 5 elements but 12 distinct elementIds returned (e.g. cross-project bleed) → cap at 100
+    mockMappingDistinct.mockResolvedValue(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l']);
+    mockRunCypher.mockResolvedValue([elementStatsRow({ total: 5, atTarget: 1 })]);
+
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    expect(summary.ceo.complianceCoverage.mappingCoveragePct).toBe(100);
+    expect(summary.cio.complianceStatus.coveragePct).toBe(100);
+    expect(summary.ceo.complianceCoverage.standardMappings).toBe(12);
+  });
+
+  it('3c. Tier-0 cost falls back to base-cost heuristic (totalTco > 0 even without totalEstimated)', async () => {
+    mockComputeGraphCentrality.mockResolvedValue([
+      { elementId: 'e1', elementName: 'SAP S/4HANA', elementType: 'application_component', tier: 0 },
+      { elementId: 'e2', elementName: 'Custom Service', elementType: 'application_component', tier: 0 },
+    ]);
+    mockRunCypher.mockResolvedValue([elementStatsRow({ total: 2, atTarget: 0 })]);
+
+    const summary = await buildExecutiveSummary(PROJECT_ID);
+    expect(summary.cfo.totalTco.value).toBeGreaterThan(0);
+    expect(summary.cfo.investmentHeatmap.tierCounts[0]).toBe(2);
   });
 
   it('4. dominant Tier 3 → cfo.headline.tone === "critical" + dominantTier === 3', async () => {

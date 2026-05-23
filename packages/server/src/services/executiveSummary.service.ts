@@ -22,7 +22,7 @@ import {
   type ElementCostProfile,
 } from '@thearchitect/shared';
 import { runCriticalityForProject } from './criticalityRunner.service';
-import { computeGraphCentrality } from './cost-engine.service';
+import { computeGraphCentrality, getTier0CostEstimate } from './cost-engine.service';
 import { Regulation } from '../models/Regulation';
 import { StandardMapping } from '../models/StandardMapping';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
@@ -49,7 +49,7 @@ export async function buildExecutiveSummary(
     return { ...cached.data, fromCache: true };
   }
 
-  const [crit, costProfiles, regulationsCrawled, mappingsCount, roadmap, scenarioCount, elementStats] =
+  const [crit, costProfiles, regulationsCrawled, mappedElementIds, roadmap, scenarioCount, elementStats] =
     await Promise.all([
       runCriticalityForProject(projectId, { weights: opts.weights }),
       computeGraphCentrality(projectId).catch((err: Error) => {
@@ -57,11 +57,12 @@ export async function buildExecutiveSummary(
         return [] as ElementCostProfile[];
       }),
       Regulation.countDocuments({}),
-      StandardMapping.countDocuments({ projectId }),
+      StandardMapping.distinct('elementId', { projectId }) as Promise<string[]>,
       TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
       Scenario.countDocuments({ projectId }),
       loadElementStats(projectId),
     ]);
+  const mappedElementCount = mappedElementIds.length;
 
   const archScores = crit.scores.filter((s) => s.layer !== 'motivation');
   const criticalHotspots = archScores.filter((s) => s.totalScore >= HEADLINE_THRESHOLDS.hotspot_score);
@@ -86,7 +87,7 @@ export async function buildExecutiveSummary(
 
   const mappingCoveragePct =
     elementStats.total > 0
-      ? Math.round((mappingsCount / elementStats.total) * 100)
+      ? Math.min(100, Math.round((mappedElementCount / elementStats.total) * 100))
       : 0;
 
   const ceo: CeoView = {
@@ -99,7 +100,7 @@ export async function buildExecutiveSummary(
     }),
     complianceCoverage: {
       regulationsCrawled,
-      standardMappings: mappingsCount,
+      standardMappings: mappedElementCount,
       mappingCoveragePct,
     },
     transformationProgress: {
@@ -139,7 +140,7 @@ export async function buildExecutiveSummary(
     },
     complianceStatus: {
       regulationsCrawled,
-      mappedElementCount: mappingsCount,
+      mappedElementCount,
       coveragePct: mappingCoveragePct,
     },
     roadmapHealth: {
@@ -250,7 +251,10 @@ function aggregateCosts(profiles: ElementCostProfile[]): CostAggregate {
   for (const p of profiles) {
     const tier = (p.tier ?? 0) as 0 | 1 | 2 | 3;
     tierCounts[tier]++;
-    const estimated = p.totalEstimated ?? 0;
+    // Tier 0 has no totalEstimated — fall back to BASE_COSTS heuristic so
+    // the CFO view matches what the X-Ray + Cost tab show client-side.
+    const estimated =
+      p.totalEstimated ?? getTier0CostEstimate(p.elementType, 'current', p.elementName);
     totalTco += estimated;
     p10 += p.confidenceLow ?? estimated * 0.7;
     p90 += p.confidenceHigh ?? estimated * 1.45;
@@ -311,9 +315,13 @@ function deriveCeoHeadline(input: {
       tone: 'warning',
     };
   }
+  const complianceFragment =
+    input.regulationsCrawled > 0
+      ? ` · ${input.regulationsCrawled} regulations on file`
+      : '';
   return {
     title: 'Transformation on track',
-    subtitle: `${input.transformationPercent}% progress · ${input.regulationsCrawled} regulations covered`,
+    subtitle: `${input.transformationPercent}% progress${complianceFragment}`,
     tone: 'positive',
   };
 }
