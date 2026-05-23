@@ -43,6 +43,7 @@ import { fitToScreen } from '../3d/ViewModeCamera';
 import UserPresence from '../collaboration/UserPresence';
 import { useCollaborationStore } from '../../stores/collaborationStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 import ProjectCollaborators from './ProjectCollaborators';
 import HealthScoreRing from '../copilot/HealthScoreRing';
 import { HealWorkspaceModal } from '../copilot/HealWorkspaceModal';
@@ -407,6 +408,8 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
             <span className="hidden xl:inline">Paste & See</span>
           </button>
         )}
+        {/* UC-ICM-003.1 — 3D Compliance Heat-Map Toggle (Demo-Akt 1) */}
+        {projectId && <ComplianceGlowToggle />}
         {/* Phase-gated: X-Ray and Scenario visible from Phase 4+ */}
         {isToolbarActionVisible('xray', currentPhase, showAllSections) && (
           <>
@@ -625,6 +628,28 @@ function ChatButton({ onClick }: { onClick: () => void }) {
           {unreadCount > 9 ? '9+' : unreadCount}
         </span>
       )}
+    </button>
+  );
+}
+
+// UC-ICM-003.1 — 3D Compliance Heat-Map Toggle (Demo-Akt 1)
+function ComplianceGlowToggle() {
+  const showComplianceGlow = useComplianceStore((s) => s.showComplianceGlow);
+  const isLoading = useComplianceStore((s) => s.isLoadingAllMappings);
+  const toggleComplianceGlow = useComplianceStore((s) => s.toggleComplianceGlow);
+  return (
+    <button
+      onClick={toggleComplianceGlow}
+      title={showComplianceGlow ? 'Compliance Heat-Map ausblenden' : 'Compliance Heat-Map anzeigen — färbt Elements nach Coverage (Akt 1)'}
+      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition border ${
+        showComplianceGlow
+          ? 'bg-[#00ff41]/15 text-[#00ff41] border-[#00ff41]/40 hover:bg-[#00ff41]/25'
+          : 'text-[var(--text-secondary)] hover:bg-[#1a2a1a] hover:text-white border-transparent'
+      }`}
+    >
+      <Layers size={14} />
+      <span className="hidden xl:inline">Compliance Heat-Map</span>
+      {isLoading && <Loader2 size={11} className="animate-spin" />}
     </button>
   );
 }

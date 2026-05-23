@@ -390,6 +390,10 @@ export const regulationsAPI = {
 
 // UC-ICM-002 Compliance Mapping (Regulation ↔ ArchiMate-Element)
 export const complianceMappingAPI = {
+  // Bulk lookup for Heat-Map (REQ-ICM-003.1) — all mappings in project
+  getAll: (projectId: string) =>
+    api.get(`/projects/${projectId}/compliance/mappings`),
+
   // Reverse-lookup for PropertyPanel Compliance-Tab (REQ-ICM-003.2)
   getByElement: (projectId: string, elementId: string) =>
     api.get(`/projects/${projectId}/compliance/mappings/by-element/${encodeURIComponent(elementId)}`),

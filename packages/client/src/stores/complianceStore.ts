@@ -112,6 +112,9 @@ interface ComplianceStore {
   // UC-ICM-003 — Compliance Mappings (Regulation ↔ Element) state
   mappingsByElement: Map<string, ComplianceMappingDTO[]>;
   isLoadingMappingsForElement: Set<string>;
+  // UC-ICM-003.1 — 3D Heat-Map state
+  showComplianceGlow: boolean;
+  isLoadingAllMappings: boolean;
 
   // Actions
   loadPipelineStatus: (projectId: string) => Promise<void>;
@@ -137,6 +140,9 @@ interface ComplianceStore {
   // UC-ICM-003 — Compliance Mapping actions
   loadMappingsForElement: (projectId: string, elementId: string) => Promise<ComplianceMappingDTO[]>;
   invalidateMappingsForElement: (elementId: string) => void;
+  // UC-ICM-003.1 — Heat-Map: bulk-load all mappings + populate mappingsByElement
+  loadAllMappings: (projectId: string) => Promise<void>;
+  toggleComplianceGlow: () => void;
 
   clear: () => void;
 }
@@ -161,6 +167,8 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   isLoadingViolations: false,
   mappingsByElement: new Map(),
   isLoadingMappingsForElement: new Set(),
+  showComplianceGlow: false,
+  isLoadingAllMappings: false,
 
   loadPipelineStatus: async (projectId) => {
     set({ isLoading: true, error: null });
@@ -382,6 +390,34 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
       next.delete(elementId);
       return { mappingsByElement: next };
     });
+  },
+
+  loadAllMappings: async (projectId) => {
+    if (get().isLoadingAllMappings) return;
+    set({ isLoadingAllMappings: true });
+    try {
+      const res = await complianceMappingAPI.getAll(projectId);
+      const all = (res.data?.data || []) as ComplianceMappingDTO[];
+      // Group by elementId
+      const byElement = new Map<string, ComplianceMappingDTO[]>();
+      for (const m of all) {
+        const arr = byElement.get(m.elementId) ?? [];
+        arr.push(m);
+        byElement.set(m.elementId, arr);
+      }
+      // Sort each group by confidence DESC (server-side does this already, but defensive)
+      for (const [, arr] of byElement) {
+        arr.sort((a, b) => b.confidence - a.confidence);
+      }
+      set({ mappingsByElement: byElement, isLoadingAllMappings: false });
+    } catch (err) {
+      console.error('[complianceStore] loadAllMappings failed:', err);
+      set({ isLoadingAllMappings: false });
+    }
+  },
+
+  toggleComplianceGlow: () => {
+    set((state) => ({ showComplianceGlow: !state.showComplianceGlow }));
   },
 
   clear: () => set({

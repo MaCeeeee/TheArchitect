@@ -243,6 +243,30 @@ router.post(
   },
 );
 
+// ─── GET /api/projects/:projectId/compliance/mappings ───────────
+// Bulk-Lookup für UC-ICM-003.1 Heat-Map: alle Mappings im Projekt.
+// Cap auf 1000 Einträge (BSH-Demo hat ~50, große Projekte ggf. mehr).
+// ────────────────────────────────────────────────────────────────
+router.get(
+  '/:projectId/compliance/mappings',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const mappings = await ComplianceMapping.find({
+      projectId: new mongoose.Types.ObjectId(projectId),
+    })
+      .sort({ confidence: -1 })
+      .limit(1000)
+      .lean();
+
+    res.json({ success: true, data: mappings });
+  },
+);
+
 // ─── GET /api/projects/:projectId/compliance/mappings/by-element/:elementId
 // Reverse-Lookup für UC-ICM-003.2 PropertyPanel.
 // ────────────────────────────────────────────────────────────────
