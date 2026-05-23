@@ -90,3 +90,47 @@ export interface RegulationDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── ComplianceMapping (UC-ICM-002) ───
+//
+// Maps a Regulation paragraph (UC-ICM-001) to an ArchiMate element with
+// LLM-derived confidence + reasoning. Foundation for UC-ICM-003
+// Reverse-Lookup (element → regulations) and Heat-Map (regulation → elements).
+//
+// Default lifecycle: createdBy='llm' + status='auto'. Human can later
+// 'confirmed' or 'rejected' via the Live-Mapping UI (UC-ICM-003.3).
+//
+// Linear: THE-278
+
+export type ComplianceMappingElementType =
+  | 'capability'
+  | 'application'
+  | 'data_object'
+  | 'business_process'
+  | 'business_actor'
+  | 'business_service'
+  | 'application_service'
+  | 'business_function'
+  | 'business_object'
+  | 'business_role'
+  | 'technology_service'
+  | 'node'
+  | 'custom';
+
+export type ComplianceMappingStatus = 'auto' | 'confirmed' | 'rejected';
+
+export type ComplianceMappingProvenance = 'llm' | 'human' | 'live-mapping';
+
+export interface ComplianceMappingDTO {
+  _id: string;
+  projectId: string;
+  regulationId: string;
+  elementId: string;
+  elementType: ComplianceMappingElementType;
+  confidence: number;          // ∈ [0, 1] — LLM re-ranking score
+  reasoning: string;           // max 500 chars — shown in Reverse-Lookup UI
+  status: ComplianceMappingStatus;
+  createdBy: ComplianceMappingProvenance;
+  createdAt: string;
+  updatedAt: string;
+}

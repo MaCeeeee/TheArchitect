@@ -14,6 +14,7 @@ import DiscussionBubbles3D from './DiscussionBubbles3D';
 import PolicyBoard from './PolicyBoard';
 import ConnectionPreview from './ConnectionPreview';
 import CriticalityGlow from './CriticalityGlow';
+import ComplianceGlow from './ComplianceGlow';
 import XRayHUD from './XRayHUD';
 import CursorOverlay from '../collaboration/CursorOverlay';
 import WorkspaceBar from '../ui/WorkspaceBar';
@@ -122,6 +123,7 @@ export default function Scene() {
               <ConnectionLines />
               <ConnectionPreview />
               <CriticalityGlow />
+              <ComplianceGlow />
               {!isXRayActive && <CursorOverlay />}
 
               {/* TransformationXRay renders its own lights, sub-views, and HUD */}

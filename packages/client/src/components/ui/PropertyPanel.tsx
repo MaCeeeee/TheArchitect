@@ -1,12 +1,13 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { X, Link, TrendingUp, Trash2, Bot, AlertCircle, CheckCircle2, AlertTriangle as WarnIcon, Sparkles, ArrowRightLeft, DollarSign, Layers, Zap, Shield, Search, ChevronDown, ChevronUp, ChevronRight, Info, Settings as SettingsIcon } from 'lucide-react';
+import TabBar from '../../design-system/patterns/TabBar';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
-import { governanceAPI, oracleAPI, architectureAPI } from '../../services/api';
-import type { PolicyViolationDTO } from '@thearchitect/shared';
+import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI } from '../../services/api';
+import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
 import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, type StandardConnectionType } from '@thearchitect/shared/src/constants/archimate-rules';
@@ -53,6 +54,27 @@ export default function PropertyPanel() {
   const [suitabilityResult, setSuitabilityResult] = useState<any>(null);
   const [suitabilityLoading, setSuitabilityLoading] = useState(false);
   const [suitabilityExpanded, setSuitabilityExpanded] = useState(false);
+
+  // T1.1 — Tab-Refactor: 4 Tabs (Overview / Compliance / Cost / Advanced)
+  const TAB_STORAGE_KEY = 'propertyPanel.activeTab';
+  type PanelTab = 'overview' | 'compliance' | 'cost' | 'advanced';
+  const [activeTab, setActiveTab] = useState<PanelTab>(() => {
+    try {
+      const stored = localStorage.getItem(TAB_STORAGE_KEY);
+      if (stored === 'overview' || stored === 'compliance' || stored === 'cost' || stored === 'advanced') {
+        return stored;
+      }
+    } catch { /* ignore */ }
+    return 'overview';
+  });
+  const handleTabChange = useCallback((id: string) => {
+    const tab = id as PanelTab;
+    setActiveTab(tab);
+    try { localStorage.setItem(TAB_STORAGE_KEY, tab); } catch { /* ignore */ }
+  }, []);
+
+  // Compliance-Tab-Badge: count of mappings for this element
+  const mappingsByElement = useComplianceStore((s) => s.mappingsByElement);
 
   // Activity drill-down may hold activities that haven't been refetched into the
   // main store yet (e.g. immediately after Generator-A apply). Fall back to the
@@ -382,6 +404,30 @@ export default function PropertyPanel() {
           </div>
         )}
 
+        {/* T1.1 — Tab Navigation */}
+        <TabBar
+          variant="pill"
+          activeId={activeTab}
+          onTabChange={handleTabChange}
+          tabs={[
+            { id: 'overview',   label: 'Overview',   icon: <Info size={11} /> },
+            {
+              id: 'compliance',
+              label: `Compliance${
+                (mappingsByElement.get(element.id)?.length ?? 0) > 0
+                  ? ` (${mappingsByElement.get(element.id)?.length})`
+                  : ''
+              }`,
+              icon: <Shield size={11} />,
+            },
+            { id: 'cost',       label: 'Cost',       icon: <DollarSign size={11} /> },
+            { id: 'advanced',   label: 'Advanced',   icon: <SettingsIcon size={11} /> },
+          ]}
+        />
+
+        {/* ─── OVERVIEW TAB ─── */}
+        {activeTab === 'overview' && (<>
+
         {/* Editable name */}
         <Section title="General">
           <EditableField label="Name" value={element.name} onChange={(v) => handleFieldChange('name', v)} />
@@ -415,16 +461,40 @@ export default function PropertyPanel() {
           <SensitivityRow element={element} />
         </Section>
 
-        {/* Compliance Coverage — only for ArchiMate requirement elements */}
-        {isRequirementType && requirementCoverage && (
-          <CoverageSection
-            coverage={requirementCoverage}
-            onSelect={(id) => selectElement(id)}
-          />
-        )}
+        {/* end overview-only sections — Cost/Compliance/Advanced moved to own tabs */}
+        </>)}
 
-        {/* Cost Input (Tier 1) */}
-        <CostInputSection element={element} onChange={handleFieldChange} />
+        {/* ─── COMPLIANCE TAB ─── */}
+        {activeTab === 'compliance' && (<>
+          {/* Compliance Coverage — only for ArchiMate requirement elements */}
+          {isRequirementType && requirementCoverage && (
+            <CoverageSection
+              coverage={requirementCoverage}
+              onSelect={(id) => selectElement(id)}
+            />
+          )}
+
+          {/* UC-ICM-003.2 — Reverse-Lookup: Regulations affecting this element */}
+          {projectId && element.id && (
+            <RegulationsForElementSection projectId={projectId} elementId={element.id} />
+          )}
+
+          {/* Empty state when nothing compliance-related applies */}
+          {!isRequirementType && (!projectId || !element.id) && (
+            <div className="rounded border border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-[10px] text-[var(--text-tertiary)] text-center">
+              No compliance data for this element type.
+            </div>
+          )}
+        </>)}
+
+        {/* ─── COST TAB ─── */}
+        {activeTab === 'cost' && (<>
+          {/* Cost Input (Tier 1) */}
+          <CostInputSection element={element} onChange={handleFieldChange} />
+        </>)}
+
+        {/* ─── ADVANCED TAB ─── */}
+        {activeTab === 'advanced' && (<>
 
         {/* AI Agent fields — only for ai_agent type */}
         {element.type === 'ai_agent' && (
@@ -519,6 +589,10 @@ export default function PropertyPanel() {
             onChange={handleMetadataChange}
           />
         )}
+        </>)}{/* end advanced part-1 */}
+
+        {/* ─── OVERVIEW TAB — part 2 (Description, Connections, 3D Position) ─── */}
+        {activeTab === 'overview' && (<>
 
         {/* Description */}
         <Section title="Description">
@@ -603,6 +677,10 @@ export default function PropertyPanel() {
             <PosField label="Z" value={element.position3D.z} onChange={(v) => handleFieldChange('position3D', { ...element.position3D, z: v })} />
           </div>
         </Section>
+        </>)}{/* end overview part-2 */}
+
+        {/* ─── ADVANCED TAB — part 2 (AI Suitability) ─── */}
+        {activeTab === 'advanced' && (<>
 
         {/* AI Suitability Check */}
         {projectId && ['application', 'technology'].includes(element.layer) && (
@@ -736,6 +814,7 @@ export default function PropertyPanel() {
             )}
           </Section>
         )}
+        </>)}{/* end advanced part-2 */}
 
         {/* Actions */}
         <div className="pt-2 border-t border-[var(--border-subtle)]">
@@ -1854,5 +1933,142 @@ function DebouncedSingleLine({
       placeholder={placeholder}
       className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-0.5 text-[11px] text-white outline-none focus:border-[#00ff41] transition"
     />
+  );
+}
+
+// ─── UC-ICM-003.2 — Regulations for selected Element (Reverse-Lookup) ───
+function sourceUrl(m: ComplianceMappingDTO, regSource?: string, regParagraph?: string): string {
+  // Build best-effort link to the regulation source
+  const s = (regSource || '').toLowerCase();
+  if (s === 'nis2' || s === 'dsgvo' || s === 'dora') {
+    return 'https://eur-lex.europa.eu/';
+  }
+  if (s === 'lksg') {
+    const para = (regParagraph || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return `https://www.gesetze-im-internet.de/lksg/${para ? '__' + para + '.html' : ''}`;
+  }
+  return '#';
+}
+
+function ConfidenceBar({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(1, value)) * 100;
+  const color =
+    value >= 0.9 ? '#22c55e' :  // green
+    value >= 0.7 ? '#eab308' :  // yellow
+    value >= 0.5 ? '#f97316' :  // orange
+                   '#ef4444';   // red
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="h-1.5 w-16 rounded-full bg-[var(--surface-raised)] overflow-hidden">
+        <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-[10px] font-mono" style={{ color }}>{value.toFixed(2)}</span>
+    </div>
+  );
+}
+
+function RegulationsForElementSection({
+  projectId,
+  elementId,
+}: {
+  projectId: string;
+  elementId: string;
+}) {
+  const loadMappingsForElement = useComplianceStore((s) => s.loadMappingsForElement);
+  const mappingsByElement = useComplianceStore((s) => s.mappingsByElement);
+  const isLoadingMappingsForElement = useComplianceStore((s) => s.isLoadingMappingsForElement);
+  const isLoading = isLoadingMappingsForElement.has(elementId);
+  const mappings = mappingsByElement.get(elementId);
+  const [regulationsById, setRegulationsById] = useState<Record<string, { source: string; paragraphNumber: string; title: string }>>({});
+
+  // Trigger load on element-select
+  useEffect(() => {
+    if (!projectId || !elementId) return;
+    void loadMappingsForElement(projectId, elementId);
+  }, [projectId, elementId, loadMappingsForElement]);
+
+  // Fetch regulation metadata for displayed mappings (source + paragraphNumber for citation)
+  useEffect(() => {
+    if (!mappings || mappings.length === 0) return;
+    const missingIds = mappings.map((m) => m.regulationId).filter((id) => !regulationsById[id]);
+    if (missingIds.length === 0) return;
+
+    // Fetch each via authenticated axios instance (small N, no batch needed for demo)
+    void Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const res = await regulationsAPI.getById(projectId, id);
+          return { id, ...(res.data?.data ?? {}) };
+        } catch {
+          return null;
+        }
+      }),
+    ).then((results) => {
+      setRegulationsById((prev) => {
+        const next = { ...prev };
+        for (const r of results) {
+          if (r && r.id) {
+            next[r.id] = { source: r.source ?? '', paragraphNumber: r.paragraphNumber ?? '', title: r.title ?? '' };
+          }
+        }
+        return next;
+      });
+    });
+  }, [mappings, projectId, regulationsById]);
+
+  return (
+    <Section title="Compliance / Regulations">
+      {isLoading && (
+        <div className="text-[10px] text-[var(--text-tertiary)] italic px-1">
+          Lade Regulation-Mappings...
+        </div>
+      )}
+
+      {!isLoading && mappings && mappings.length === 0 && (
+        <div className="rounded border border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-[10px] text-[var(--text-tertiary)]">
+          Keine Compliance-Anforderungen identifiziert für dieses Element.
+        </div>
+      )}
+
+      {!isLoading && mappings && mappings.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1">
+            {mappings.length} regulation{mappings.length === 1 ? '' : 's'} affecting this element
+          </div>
+          {mappings.map((m) => {
+            const reg = regulationsById[m.regulationId];
+            const sourceLabel = reg?.source?.toUpperCase() || '...';
+            const paraLabel = reg?.paragraphNumber || m.regulationId.slice(0, 8);
+            const url = sourceUrl(m, reg?.source, reg?.paragraphNumber);
+            return (
+              <div
+                key={m._id}
+                className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-1"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-semibold text-white hover:text-[#00ff41] flex items-center gap-1 truncate"
+                    title="Open source citation"
+                  >
+                    <Shield size={10} />
+                    <span className="truncate">{sourceLabel} {paraLabel}</span>
+                  </a>
+                  <ConfidenceBar value={m.confidence} />
+                </div>
+                <p
+                  className="text-[10px] text-[var(--text-secondary)] leading-snug line-clamp-3"
+                  title={m.reasoning}
+                >
+                  {m.reasoning}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
   );
 }
