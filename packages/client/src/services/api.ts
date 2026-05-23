@@ -380,12 +380,23 @@ export const standardsAPI = {
 };
 
 // Compliance Pipeline API
-// UC-ICM-001 Regulations (read-only access for the UI)
+// UC-ICM-001 Regulations
 export const regulationsAPI = {
   list: (projectId: string, opts?: { source?: string; limit?: number; page?: number }) =>
     api.get(`/projects/${projectId}/regulations`, { params: opts ?? {} }),
   getById: (projectId: string, regulationId: string) =>
     api.get(`/projects/${projectId}/regulations/${regulationId}`),
+  // Manual create — used by Paste & See Confirm flow
+  create: (projectId: string, body: {
+    source: string;
+    paragraphNumber: string;
+    title?: string;
+    fullText: string;
+    language?: 'de' | 'en';
+    jurisdiction?: string;
+    sourceUrl?: string;
+  }) =>
+    api.post(`/projects/${projectId}/regulations`, body),
 };
 
 // UC-ICM-002 Compliance Mapping (Regulation ↔ ArchiMate-Element)

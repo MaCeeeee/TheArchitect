@@ -107,6 +107,78 @@ router.get(
 );
 
 // ──────────────────────────────────────────────────────────
+// POST /api/projects/:projectId/regulations
+// Body: { source, paragraphNumber, title, fullText, language, jurisdiction, sourceUrl? }
+// Manual create — used by UC-ICM-003.3 "Paste & See" Confirm flow.
+// ──────────────────────────────────────────────────────────
+router.post(
+  '/:projectId/regulations',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const body = req.body ?? {};
+    const source = typeof body.source === 'string' ? body.source.toLowerCase() : '';
+    const paragraphNumber = typeof body.paragraphNumber === 'string' ? body.paragraphNumber : '';
+    const title = typeof body.title === 'string' ? body.title : `${source.toUpperCase()} ${paragraphNumber}`.trim();
+    const fullText = typeof body.fullText === 'string' ? body.fullText : '';
+    const language = body.language === 'en' || body.language === 'de' ? body.language : 'de';
+    const jurisdiction = typeof body.jurisdiction === 'string' && body.jurisdiction.trim()
+      ? body.jurisdiction.trim()
+      : (source === 'lksg' ? 'DE' : 'EU');
+    const sourceUrl = typeof body.sourceUrl === 'string' && body.sourceUrl ? body.sourceUrl : 'user-pasted';
+
+    if (!source || !VALID_SOURCES.includes(source as RegulationSourceKey)) {
+      return res.status(400).json({ success: false, error: `source must be one of: ${VALID_SOURCES.join(', ')}` });
+    }
+    if (!paragraphNumber) {
+      return res.status(400).json({ success: false, error: 'paragraphNumber required' });
+    }
+    if (!fullText || fullText.length < 20) {
+      return res.status(400).json({ success: false, error: 'fullText required (>= 20 chars)' });
+    }
+    if (fullText.length > 50_000) {
+      return res.status(400).json({ success: false, error: 'fullText too long (max 50000)' });
+    }
+
+    try {
+      const created = await Regulation.create({
+        projectId: new mongoose.Types.ObjectId(projectId),
+        source,
+        paragraphNumber,
+        title,
+        fullText,
+        language,
+        jurisdiction,
+        sourceUrl,
+        effectiveFrom: new Date(),
+      });
+
+      if (req.user) {
+        await createAuditEntry({
+          userId: req.user._id.toString(),
+          projectId,
+          action: 'regulations.create',
+          entityType: 'Regulation',
+          ip: req.ip,
+          userAgent: req.get('user-agent') ?? undefined,
+          riskLevel: 'low',
+          after: { source, paragraphNumber, fullTextLength: fullText.length },
+        });
+      }
+
+      res.status(201).json({ success: true, data: created.toObject() });
+    } catch (err) {
+      log.error({ err, projectId }, '[regulations.create] failed');
+      res.status(500).json({ success: false, error: 'create failed' });
+    }
+  },
+);
+
+// ──────────────────────────────────────────────────────────
 // POST /api/projects/:projectId/regulations/crawl
 // Body: { sources: ['nis2','lksg','dsgvo',...], skipEmbedding?: boolean }
 // Proxies to Server B Crawler via Tailscale.

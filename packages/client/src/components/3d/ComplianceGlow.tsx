@@ -83,13 +83,15 @@ export function ComplianceGlow() {
   const elements = useArchitectureStore((s) => s.elements);
   const projectId = useArchitectureStore((s) => s.projectId);
 
-  // Auto-load mappings when toggle is enabled and we don't have data yet
+  // Auto-load mappings as soon as we have a project context — so the Heat-Map
+  // is ready to render correctly on first toggle (avoid the "all gap red"
+  // race where the user toggles before fetch completes).
   useEffect(() => {
-    if (!showComplianceGlow || !projectId) return;
+    if (!projectId) return;
     if (mappingsByElement.size === 0) {
       void loadAllMappings(projectId);
     }
-  }, [showComplianceGlow, projectId, mappingsByElement.size, loadAllMappings]);
+  }, [projectId, mappingsByElement.size, loadAllMappings]);
 
   const halos = useMemo(() => {
     if (!showComplianceGlow) return [];

@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Sparkles, Shield, ClipboardPaste, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { complianceMappingAPI } from '../../services/api';
+import { complianceMappingAPI, regulationsAPI } from '../../services/api';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -139,17 +139,58 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
     }
   }, []);
 
-  const handleAccept = useCallback(() => {
-    // MVP: kein Backend-Persist, nur UI-Feedback + Cache-Invalidierung
-    // für betroffene Elements, damit PropertyPanel beim nächsten Click frisch lädt.
-    if (preview && preview.length > 0) {
+  const loadAllMappings = useComplianceStore((s) => s.loadAllMappings);
+  const [isPersisting, setIsPersisting] = useState(false);
+
+  const handleAccept = useCallback(async () => {
+    if (!preview || preview.length === 0 || !projectId) {
+      onClose();
+      return;
+    }
+    setIsPersisting(true);
+    try {
+      // 1) Erzeuge die Regulation in DB
+      const regRes = await regulationsAPI.create(projectId, {
+        source,
+        paragraphNumber: paragraphNumber.trim() || 'live-paste',
+        title: `${source.toUpperCase()} ${paragraphNumber.trim() || 'Live'}`,
+        fullText: text.trim(),
+        language,
+        jurisdiction: jurisdiction.trim() || (source === 'lksg' ? 'DE' : 'EU'),
+        sourceUrl: 'user-pasted',
+      });
+      const regulationId = regRes.data?.data?._id;
+      if (!regulationId) {
+        throw new Error('Regulation create failed: missing _id in response');
+      }
+
+      // 2) Persistiere die User-akzeptierten Mappings
+      await complianceMappingAPI.confirm(projectId, {
+        regulationId,
+        mappings: preview.map((m) => ({
+          elementId: m.elementId,
+          elementType: m.elementType,
+          confidence: m.confidence,
+          reasoning: m.reasoning,
+        })),
+      });
+
+      // 3) Caches invalidieren — PropertyPanel + Heat-Map sollen neu laden
       for (const m of preview) {
         invalidate(m.elementId);
       }
-      toast.success(`${preview.length} Vorschläge erkannt — überprüfe im PropertyPanel`);
+      void loadAllMappings(projectId);
+
+      toast.success(`✓ ${source.toUpperCase()} ${paragraphNumber} ist jetzt persistent — ${preview.length} Mapping${preview.length === 1 ? '' : 's'} hinzugefügt`);
+      onClose();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      const msg = axiosErr.response?.data?.error || (err instanceof Error ? err.message : 'persist failed');
+      toast.error(`Persistieren fehlgeschlagen: ${msg}`);
+    } finally {
+      setIsPersisting(false);
     }
-    onClose();
-  }, [preview, invalidate, onClose]);
+  }, [preview, projectId, source, paragraphNumber, text, language, jurisdiction, invalidate, loadAllMappings, onClose]);
 
   if (!isOpen) return null;
 
@@ -357,15 +398,16 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                 </button>
                 <button
                   onClick={handleAccept}
-                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition"
+                  disabled={isPersisting}
+                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60"
                   style={{
                     background: 'linear-gradient(135deg, #00ff41 0%, #33ff66 100%)',
                     color: '#0a0a0a',
                     boxShadow: '0 0 12px rgba(0,255,65,0.25)',
                   }}
                 >
-                  <CheckCircle2 size={12} />
-                  Übernehmen
+                  {isPersisting ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                  {isPersisting ? 'Persistiere...' : 'Übernehmen & Speichern'}
                 </button>
               </>
             )}
