@@ -451,6 +451,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
         <Html
           position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center
+          zIndexRange={[50, 0]}
           style={{
             background: is2DMode ? 'transparent' : 'rgba(15, 23, 42, 0.9)',
             border: is2DMode ? 'none' : `1px solid ${color}`,

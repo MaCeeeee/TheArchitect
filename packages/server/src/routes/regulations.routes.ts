@@ -137,14 +137,31 @@ router.post(
     if (!paragraphNumber) {
       return res.status(400).json({ success: false, error: 'paragraphNumber required' });
     }
-    if (!fullText || fullText.length < 20) {
-      return res.status(400).json({ success: false, error: 'fullText required (>= 20 chars)' });
+    // Schema-validator requires >= 50 chars (Regulation.ts:56). Match it here so
+    // the user gets a clear 400 instead of a silent 500 from Mongoose validation.
+    if (!fullText || fullText.length < 50) {
+      return res.status(400).json({ success: false, error: 'fullText required (>= 50 chars)' });
     }
     if (fullText.length > 50_000) {
       return res.status(400).json({ success: false, error: 'fullText too long (max 50000)' });
     }
 
     try {
+      // Auto-bump version if (projectId, source, paragraphNumber) already exists.
+      // The unique index is on (projectId, source, paragraphNumber, version) so
+      // a fresh paste of the same paragraph creates a new version instead of
+      // a silent duplicate-key 500. UC-ICM-003.3 "Paste & See" is idempotent
+      // by intent — every paste = a new saved version.
+      const existingMax = await Regulation.findOne({
+        projectId: new mongoose.Types.ObjectId(projectId),
+        source,
+        paragraphNumber,
+      })
+        .sort({ version: -1 })
+        .select('version')
+        .lean();
+      const nextVersion = existingMax ? (existingMax.version ?? 1) + 1 : 1;
+
       const created = await Regulation.create({
         projectId: new mongoose.Types.ObjectId(projectId),
         source,
@@ -155,6 +172,7 @@ router.post(
         jurisdiction,
         sourceUrl,
         effectiveFrom: new Date(),
+        version: nextVersion,
       });
 
       if (req.user) {
@@ -166,14 +184,19 @@ router.post(
           ip: req.ip,
           userAgent: req.get('user-agent') ?? undefined,
           riskLevel: 'low',
-          after: { source, paragraphNumber, fullTextLength: fullText.length },
+          after: { source, paragraphNumber, version: nextVersion, fullTextLength: fullText.length },
         });
       }
 
       res.status(201).json({ success: true, data: created.toObject() });
     } catch (err) {
       log.error({ err, projectId }, '[regulations.create] failed');
-      res.status(500).json({ success: false, error: 'create failed' });
+      // Surface the underlying message so the UI can show something useful instead of "create failed"
+      const detail =
+        err instanceof Error && err.message
+          ? err.message.replace(/^.*?:\s*/, '').slice(0, 200)
+          : 'unknown';
+      res.status(500).json({ success: false, error: `create failed: ${detail}` });
     }
   },
 );

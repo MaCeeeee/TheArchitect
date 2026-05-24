@@ -38,7 +38,7 @@ const SOURCE_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 const LANGUAGE_OPTIONS: Array<{ value: 'de' | 'en'; label: string }> = [
-  { value: 'de', label: 'Deutsch' },
+  { value: 'de', label: 'German' },
   { value: 'en', label: 'English' },
 ];
 
@@ -92,8 +92,8 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       setError('No project context');
       return;
     }
-    if (text.trim().length < 20) {
-      setError('Mindestens 20 Zeichen Text einfügen');
+    if (text.trim().length < 50) {
+      setError('Please paste at least 50 characters of regulation text');
       return;
     }
 
@@ -181,12 +181,12 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       }
       void loadAllMappings(projectId);
 
-      toast.success(`✓ ${source.toUpperCase()} ${paragraphNumber} ist jetzt persistent — ${preview.length} Mapping${preview.length === 1 ? '' : 's'} hinzugefügt`);
+      toast.success(`✓ ${source.toUpperCase()} ${paragraphNumber} saved — ${preview.length} mapping${preview.length === 1 ? '' : 's'} added`);
       onClose();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
       const msg = axiosErr.response?.data?.error || (err instanceof Error ? err.message : 'persist failed');
-      toast.error(`Persistieren fehlgeschlagen: ${msg}`);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setIsPersisting(false);
     }
@@ -278,7 +278,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Paste the full regulation text here (min. 20, max. 12,000 characters)..."
+              placeholder="Paste the full regulation text here (min. 50, max. 12,000 characters)..."
               rows={8}
               className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] font-mono leading-relaxed"
               disabled={isLoading}
@@ -377,7 +377,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
             {!preview ? (
               <button
                 onClick={handlePreview}
-                disabled={isLoading || text.trim().length < 20 || text.length > 12000}
+                disabled={isLoading || text.trim().length < 50 || text.length > 12000}
                 className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:opacity-50"
                 style={{
                   background: 'linear-gradient(135deg, #00ff41 0%, #33ff66 100%)',
