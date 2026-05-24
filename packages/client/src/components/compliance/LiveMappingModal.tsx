@@ -195,7 +195,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md">
       <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)] shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-subtle)]">
@@ -213,7 +213,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
           {/* Source + Paragraph + Language Row */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Quelle</label>
+              <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Source</label>
               <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
@@ -237,7 +237,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
               />
             </div>
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Sprache</label>
+              <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Language</label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as 'de' | 'en')}
@@ -254,7 +254,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
           {/* Text-Paste-Area */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Regulation-Text einfügen</label>
+              <label className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Paste regulation text</label>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleClipboardPaste}
@@ -263,7 +263,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                   type="button"
                 >
                   <ClipboardPaste size={11} />
-                  Einfügen
+                  Paste
                 </button>
                 <button
                   onClick={() => setText(SAMPLE_TEXT)}
@@ -271,21 +271,21 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                   disabled={isLoading}
                   type="button"
                 >
-                  Demo-Text laden
+                  Load demo text
                 </button>
               </div>
             </div>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Paste den vollen Gesetzestext hier rein (min. 20, max. 12.000 Zeichen)..."
+              placeholder="Paste the full regulation text here (min. 20, max. 12,000 characters)..."
               rows={8}
               className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#00ff41] font-mono leading-relaxed"
               disabled={isLoading}
             />
             <div className="flex justify-between text-[10px] text-[var(--text-tertiary)] mt-1">
               <span>{text.length} chars</span>
-              {text.length > 12000 && <span className="text-red-400">zu lang — max. 12.000</span>}
+              {text.length > 12000 && <span className="text-red-400">too long — max 12,000</span>}
             </div>
           </div>
 
@@ -304,7 +304,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={14} className="text-[#00ff41]" />
                   <span className="text-xs font-semibold text-white">
-                    {preview.length} relevante {preview.length === 1 ? 'Element' : 'Elements'} identifiziert
+                    {preview.length} relevant {preview.length === 1 ? 'element' : 'elements'} identified
                   </span>
                 </div>
                 {durationMs !== null && (
@@ -314,7 +314,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
 
               {preview.length === 0 ? (
                 <div className="text-[11px] text-[var(--text-secondary)] italic py-2">
-                  Kein Element des Projekts wird wesentlich von diesem Text betroffen. Das ist ein gültiges Ergebnis — nicht jede Regulation passt zu jeder Architektur.
+                  No element in this project is materially affected by this text. That is a valid outcome — not every regulation maps to every architecture.
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -355,8 +355,8 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
           {isLoading && (
             <div className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-4 flex flex-col items-center justify-center gap-2">
               <Loader2 size={20} className="text-[#00ff41] animate-spin" />
-              <span className="text-xs text-[var(--text-secondary)]">Claude analysiert den Paragraph...</span>
-              <span className="text-[10px] text-[var(--text-tertiary)]">~3 Sekunden — vergleicht gegen {elements.length} Elements</span>
+              <span className="text-xs text-[var(--text-secondary)]">Claude is analyzing the paragraph…</span>
+              <span className="text-[10px] text-[var(--text-tertiary)]">~3 seconds — comparing against {elements.length} elements</span>
             </div>
           )}
         </div>
@@ -364,7 +364,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
         {/* Footer */}
         <div className="flex items-center justify-between p-4 border-t border-[var(--border-subtle)] bg-[var(--surface-base)]">
           <div className="text-[10px] text-[var(--text-tertiary)]">
-            Architektur-Kontext: {elements.length} Elements im Projekt
+            Architecture context: {elements.length} elements in project
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -372,7 +372,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
               className="rounded-md border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition"
               disabled={isLoading}
             >
-              Abbrechen
+              Cancel
             </button>
             {!preview ? (
               <button
@@ -386,7 +386,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                 }}
               >
                 <Sparkles size={12} />
-                {isLoading ? 'Analysiere...' : 'Live-Mapping starten'}
+                {isLoading ? 'Analyzing…' : 'Start Live Mapping'}
               </button>
             ) : (
               <>
@@ -407,7 +407,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                   }}
                 >
                   {isPersisting ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                  {isPersisting ? 'Persistiere...' : 'Übernehmen & Speichern'}
+                  {isPersisting ? 'Saving…' : 'Apply & Save'}
                 </button>
               </>
             )}

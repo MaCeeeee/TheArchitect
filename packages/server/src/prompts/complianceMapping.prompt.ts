@@ -39,7 +39,7 @@ Output format — JSON ONLY, no prose, exactly matching this schema:
       "elementId": "<EXACT id from candidate list>",
       "elementType": "<EXACT type from candidate list>",
       "confidence": <0.0 to 1.0>,
-      "reasoning": "<= 500 chars, same language as the regulation>"
+      "reasoning": "<= 500 chars, ALWAYS in English regardless of regulation language>"
     }
   ]
 }
@@ -55,7 +55,7 @@ Hard rules:
   - elementType MUST match the candidate's declared type.
   - At MOST 5 mappings, ranked by confidence DESC.
   - If NO element is reasonably affected, return {"mappings": []}.
-  - reasoning: ONE sentence, same language as the regulation text (EN if regulation is English, DE if German).
+  - reasoning: ONE sentence, ALWAYS in English (even if the regulation is in German or another language). The UI is English-only.
   - reasoning must cite the specific aspect of the regulation that affects the element.
   - NEVER include explanations outside the JSON.`;
 
