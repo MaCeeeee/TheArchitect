@@ -134,3 +134,41 @@ export interface ComplianceMappingDTO {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── ComplianceRequirement (UC-REQGEN-001) ───
+//
+// LLM-derived, actionable Anforderung extracted from a Regulation paragraph.
+// While ComplianceMapping says "this element is affected", ComplianceRequirement
+// says "this element MUST/SHOULD/MAY do X". Auditor-grade, tracking-fähig.
+//
+// Inspired by CORA's "Anforderungen generieren" Workflow (2026-05-24 analysis).
+//
+// Linear: THE-302 (REQ-REQGEN-001.1)
+
+export type ComplianceRequirementPriority = 'must' | 'should' | 'may';
+
+export type ComplianceRequirementStatus =
+  | 'open'
+  | 'in_progress'
+  | 'done'
+  | 'waived';
+
+export type ComplianceRequirementProvenance = 'llm' | 'human';
+
+export interface ComplianceRequirementDTO {
+  _id: string;
+  projectId: string;
+  regulationId: string;          // source regulation paragraph
+  sourceParagraph: string;       // original text excerpt (audit trail)
+  title: string;                 // 5-200 chars, imperative ("Risikoanalyse durchführen")
+  description: string;           // 5-2000 chars, what concretely MUST be done
+  priority: ComplianceRequirementPriority;
+  linkedElementIds: string[];    // ArchiMate elements that must implement this
+  status: ComplianceRequirementStatus;
+  assigneeId?: string;
+  dueDate?: string;              // ISO date
+  createdBy: ComplianceRequirementProvenance;
+  confidence?: number;           // ∈ [0,1] — LLM confidence, only when createdBy='llm'
+  createdAt: string;
+  updatedAt: string;
+}

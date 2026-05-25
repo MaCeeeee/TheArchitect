@@ -1,0 +1,130 @@
+import mongoose, { Schema, Document } from 'mongoose';
+import type {
+  ComplianceRequirementPriority,
+  ComplianceRequirementStatus,
+  ComplianceRequirementProvenance,
+} from '@thearchitect/shared';
+
+/**
+ * ComplianceRequirement — LLM-derived, actionable Anforderung aus einer
+ * Regulation. Während `ComplianceMapping` sagt "Element X ist betroffen",
+ * sagt `ComplianceRequirement`: "Element X MUSS folgendes tun: ...".
+ *
+ * Audit-tauglich, tracking-fähig (open → in_progress → done → waived).
+ *
+ * Inspired by CORA's "Anforderungen generieren" Workflow.
+ *
+ * Linear: THE-302 (REQ-REQGEN-001.1)
+ */
+export interface IComplianceRequirement extends Document {
+  projectId: mongoose.Types.ObjectId;
+  regulationId: mongoose.Types.ObjectId;
+  sourceParagraph: string;
+  title: string;
+  description: string;
+  priority: ComplianceRequirementPriority;
+  linkedElementIds: string[];
+  status: ComplianceRequirementStatus;
+  assigneeId?: mongoose.Types.ObjectId;
+  dueDate?: Date;
+  createdBy: ComplianceRequirementProvenance;
+  confidence?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const PRIORITY_ENUM: ComplianceRequirementPriority[] = ['must', 'should', 'may'];
+const STATUS_ENUM: ComplianceRequirementStatus[] = ['open', 'in_progress', 'done', 'waived'];
+const PROVENANCE_ENUM: ComplianceRequirementProvenance[] = ['llm', 'human'];
+
+const complianceRequirementSchema = new Schema<IComplianceRequirement>(
+  {
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    regulationId: { type: Schema.Types.ObjectId, ref: 'Regulation', required: true },
+    sourceParagraph: { type: String, default: '', maxlength: 5000 },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 5,
+      maxlength: 200,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 5,
+      maxlength: 2000,
+    },
+    priority: {
+      type: String,
+      enum: PRIORITY_ENUM,
+      required: true,
+    },
+    linkedElementIds: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (arr: string[]) => arr.every(s => typeof s === 'string' && s.length > 0),
+        message: 'linkedElementIds must be non-empty strings',
+      },
+    },
+    status: {
+      type: String,
+      enum: STATUS_ENUM,
+      default: 'open',
+    },
+    assigneeId: { type: Schema.Types.ObjectId, ref: 'User' },
+    dueDate: { type: Date },
+    createdBy: {
+      type: String,
+      enum: PROVENANCE_ENUM,
+      required: true,
+    },
+    confidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+      // AC: confidence Pflicht wenn createdBy='llm'. Function-syntax weil
+      // Mongoose `required:true` mit Funktion supportet (validator wird bei
+      // undefined-Werten nicht aufgerufen, deshalb required statt validate).
+      required: [
+        function (this: IComplianceRequirement) {
+          return this.createdBy === 'llm';
+        },
+        'confidence is required when createdBy=llm',
+      ],
+    },
+  },
+  { timestamps: true },
+);
+
+// Unique compound index: same regulation cannot have two requirements with same title
+// (Upsert-Dedup für Re-Run-Idempotenz)
+complianceRequirementSchema.index(
+  { projectId: 1, regulationId: 1, title: 1 },
+  { unique: true, name: 'unique_requirement_per_regulation' },
+);
+
+// Query indexes for Dashboard-Filter (status + priority)
+complianceRequirementSchema.index(
+  { projectId: 1, status: 1, priority: 1 },
+  { name: 'by_status_priority_for_dashboard' },
+);
+
+// Query: alle Requirements einer Regulation
+complianceRequirementSchema.index(
+  { projectId: 1, regulationId: 1 },
+  { name: 'by_regulation' },
+);
+
+// Multikey index for reverse-lookup (which requirements affect element X)
+complianceRequirementSchema.index(
+  { projectId: 1, linkedElementIds: 1 },
+  { name: 'by_element_for_reverse_lookup' },
+);
+
+export const ComplianceRequirement = mongoose.model<IComplianceRequirement>(
+  'ComplianceRequirement',
+  complianceRequirementSchema,
+);
