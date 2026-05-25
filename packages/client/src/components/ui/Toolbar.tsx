@@ -59,9 +59,10 @@ interface ToolbarProps {
   onOpenRedundancyPanel?: () => void;
   onOpenPatternLibrary?: () => void;
   onOpenLiveMapping?: () => void;
+  onOpenRequirementsGenerator?: () => void;
 }
 
-export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary, onOpenLiveMapping }: ToolbarProps) {
+export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary, onOpenLiveMapping, onOpenRequirementsGenerator }: ToolbarProps) {
   const {
     viewMode,
     setViewMode,
@@ -406,6 +407,17 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
           >
             <Sparkles size={14} className="text-[#00ff41]" />
             <span className="hidden xl:inline">Paste & See</span>
+          </button>
+        )}
+        {/* UC-REQGEN-001 — Anforderungen aus Regulation-Text generieren */}
+        {onOpenRequirementsGenerator && (
+          <button
+            onClick={onOpenRequirementsGenerator}
+            title="Anforderungen generieren — actionable ComplianceRequirements aus Regulation-Paragraph (UC-REQGEN-001)"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a1a2a] hover:text-white border border-transparent"
+          >
+            <Sparkles size={14} className="text-[#7c3aed]" />
+            <span className="hidden xl:inline">Anforderungen</span>
           </button>
         )}
         {/* UC-ICM-003.1 — 3D Compliance Heat-Map Toggle (Demo-Akt 1) */}

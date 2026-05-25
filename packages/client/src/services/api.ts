@@ -440,6 +440,83 @@ export const complianceMappingAPI = {
     api.post(`/projects/${projectId}/compliance/mappings/confirm`, body),
 };
 
+// UC-REQGEN-001 Compliance Requirements Generator (LLM extracts actionable requirements)
+export interface RequirementCandidate {
+  title: string;
+  description: string;
+  priority: 'must' | 'should' | 'may';
+  linkedElementIds: string[];
+  confidence: number;
+}
+
+export interface RequirementDoc extends RequirementCandidate {
+  _id: string;
+  projectId: string;
+  regulationId: string;
+  sourceParagraph: string;
+  status: 'open' | 'in_progress' | 'done' | 'waived';
+  createdBy: 'llm' | 'human';
+  assigneeId?: string;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const requirementsAPI = {
+  // Preview: LLM extracts requirements, no persist
+  generate: (projectId: string, body: {
+    text: string;
+    source?: string;
+    paragraphNumber?: string;
+    language?: 'de' | 'en';
+    jurisdiction?: string;
+  }) =>
+    api.post(`/projects/${projectId}/requirements/generate`, body),
+
+  // Confirm: persist user-curated requirements (createdBy=human)
+  confirm: (projectId: string, body: {
+    regulationId: string;
+    sourceParagraph: string;
+    requirements: Array<{
+      title: string;
+      description: string;
+      priority: 'must' | 'should' | 'may';
+      linkedElementIds: string[];
+    }>;
+  }) =>
+    api.post(`/projects/${projectId}/requirements`, body),
+
+  // List requirements with filters
+  list: (projectId: string, opts?: {
+    status?: 'open' | 'in_progress' | 'done' | 'waived';
+    priority?: 'must' | 'should' | 'may';
+    regulationId?: string;
+    assigneeId?: string;
+    limit?: number;
+    skip?: number;
+  }) =>
+    api.get(`/projects/${projectId}/requirements`, { params: opts ?? {} }),
+
+  // Reverse-lookup: which requirements affect this element?
+  byElement: (projectId: string, elementId: string) =>
+    api.get(`/projects/${projectId}/requirements/by-element/${encodeURIComponent(elementId)}`),
+
+  // Update status / assignee / due date / fields
+  update: (projectId: string, id: string, body: Partial<{
+    status: 'open' | 'in_progress' | 'done' | 'waived';
+    assigneeId: string;
+    dueDate: string;
+    title: string;
+    description: string;
+    priority: 'must' | 'should' | 'may';
+    linkedElementIds: string[];
+  }>) =>
+    api.patch(`/projects/${projectId}/requirements/${id}`, body),
+
+  delete: (projectId: string, id: string) =>
+    api.delete(`/projects/${projectId}/requirements/${id}`),
+};
+
 export const compliancePipelineAPI = {
   getPipelineStatus: (projectId: string) =>
     api.get(`/projects/${projectId}/standards/pipeline-status`),
