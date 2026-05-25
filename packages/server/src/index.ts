@@ -41,6 +41,7 @@ import envisionAIRoutes from './routes/envision-ai.routes';
 import ragRoutes from './routes/rag.routes';
 import regulationsRoutes from './routes/regulations.routes';
 import complianceRoutes from './routes/compliance.routes';
+import requirementsRoutes from './routes/requirements.routes';
 import aiGeneratorRoutes from './routes/aiGenerator.routes';
 import decisionPatternsRoutes from './routes/decisionPatterns.routes';
 import { seedDecisionPatterns } from './seeds/decision-patterns.seed';
@@ -173,6 +174,7 @@ async function main() {
   app.use('/api', regulationsRoutes);          // Service health: /api/regulations/crawler/health
   app.use('/api/projects', regulationsRoutes); // UC-ICM-001: /api/projects/:projectId/regulations/*
   app.use('/api/projects', complianceRoutes);  // UC-ICM-002: /api/projects/:projectId/compliance/mappings/*
+  app.use('/api/projects', requirementsRoutes); // UC-REQGEN-001: /api/projects/:projectId/requirements/*
   app.use('/api', aiGeneratorRoutes);  // /api/projects/:projectId/processes/:processId/generate-activities (SSE)
   app.use('/api/decision-patterns', decisionPatternsRoutes);
 
