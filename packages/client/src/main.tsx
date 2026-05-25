@@ -39,14 +39,15 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Toaster
           position="top-right"
           toastOptions={{
+            duration: 6000,
             style: {
               background: '#111111',
               color: '#e0e0e0',
               border: '1px solid #1a2a1a',
               fontSize: '13px',
             },
-            success: { iconTheme: { primary: '#00ff41', secondary: '#0a0a0a' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#0a0a0a' } },
+            success: { duration: 4000, iconTheme: { primary: '#00ff41', secondary: '#0a0a0a' } },
+            error: { duration: 6000, iconTheme: { primary: '#ef4444', secondary: '#0a0a0a' } },
           }}
         />
       </BrowserRouter>

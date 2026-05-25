@@ -10,7 +10,7 @@
  * Pattern: CSVImportDialog Modal (Header + Body + Footer).
  */
 import { useState, useEffect, useCallback } from 'react';
-import { X, Sparkles, Shield, ClipboardPaste, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Sparkles, Shield, ClipboardPaste, Loader2, CheckCircle2, AlertCircle, CheckSquare, Square, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { complianceMappingAPI, regulationsAPI } from '../../services/api';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -60,6 +60,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewMapping[] | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Reset on close
   useEffect(() => {
@@ -73,8 +74,25 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       setError(null);
       setPreview(null);
       setDurationMs(null);
+      setSelectedIds(new Set());
     }
   }, [isOpen]);
+
+  // Pre-select every previewed mapping by default — user can untick what shouldn't apply
+  useEffect(() => {
+    if (preview && preview.length > 0) {
+      setSelectedIds(new Set(preview.map((m) => m.elementId)));
+    }
+  }, [preview]);
+
+  const toggleSelection = useCallback((elementId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(elementId)) next.delete(elementId);
+      else next.add(elementId);
+      return next;
+    });
+  }, []);
 
   // Auto-detect source → adjust jurisdiction default
   useEffect(() => {
@@ -115,7 +133,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       setPreview(mappings);
       setDurationMs(Math.round(performance.now() - t0));
       if (mappings.length === 0) {
-        toast('Keine relevanten Elements gefunden', { icon: 'ℹ️' });
+        toast('No relevant elements found for this text', { icon: 'ℹ️' });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -132,10 +150,10 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       const clip = await navigator.clipboard.readText();
       if (clip) {
         setText(clip);
-        toast.success('Aus Zwischenablage eingefügt');
+        toast.success('Pasted from clipboard');
       }
     } catch {
-      toast.error('Clipboard-Zugriff verweigert');
+      toast.error('Clipboard access denied');
     }
   }, []);
 
@@ -147,9 +165,14 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
       onClose();
       return;
     }
+    const chosen = preview.filter((m) => selectedIds.has(m.elementId));
+    if (chosen.length === 0) {
+      toast.error('Please select at least one mapping to save');
+      return;
+    }
     setIsPersisting(true);
     try {
-      // 1) Erzeuge die Regulation in DB
+      // 1) Create the Regulation in DB
       const regRes = await regulationsAPI.create(projectId, {
         source,
         paragraphNumber: paragraphNumber.trim() || 'live-paste',
@@ -160,14 +183,15 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
         sourceUrl: 'user-pasted',
       });
       const regulationId = regRes.data?.data?._id;
+      const version = regRes.data?.data?.version ?? 1;
       if (!regulationId) {
         throw new Error('Regulation create failed: missing _id in response');
       }
 
-      // 2) Persistiere die User-akzeptierten Mappings
+      // 2) Persist only the user-confirmed mappings
       await complianceMappingAPI.confirm(projectId, {
         regulationId,
-        mappings: preview.map((m) => ({
+        mappings: chosen.map((m) => ({
           elementId: m.elementId,
           elementType: m.elementType,
           confidence: m.confidence,
@@ -175,13 +199,18 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
         })),
       });
 
-      // 3) Caches invalidieren — PropertyPanel + Heat-Map sollen neu laden
-      for (const m of preview) {
+      // 3) Invalidate caches — PropertyPanel + Heat-Map reload automatically
+      for (const m of chosen) {
         invalidate(m.elementId);
       }
       void loadAllMappings(projectId);
 
-      toast.success(`✓ ${source.toUpperCase()} ${paragraphNumber} saved — ${preview.length} mapping${preview.length === 1 ? '' : 's'} added`);
+      const versionTag = version > 1 ? ` (v${version})` : '';
+      const skipped = preview.length - chosen.length;
+      const skipNote = skipped > 0 ? ` · ${skipped} skipped` : '';
+      toast.success(
+        `✓ ${source.toUpperCase()} ${paragraphNumber || 'Live'}${versionTag} saved — ${chosen.length} mapping${chosen.length === 1 ? '' : 's'} added${skipNote}. Heat-Map updated.`,
+      );
       onClose();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
@@ -190,7 +219,7 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
     } finally {
       setIsPersisting(false);
     }
-  }, [preview, projectId, source, paragraphNumber, text, language, jurisdiction, invalidate, loadAllMappings, onClose]);
+  }, [preview, selectedIds, projectId, source, paragraphNumber, text, language, jurisdiction, invalidate, loadAllMappings, onClose]);
 
   if (!isOpen) return null;
 
@@ -300,11 +329,18 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
           {/* Preview Results */}
           {preview && (
             <div className="rounded border border-[#00ff41]/30 bg-[#00ff41]/5 p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={14} className="text-[#00ff41]" />
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 size={14} className="text-[#00ff41] shrink-0" />
                   <span className="text-xs font-semibold text-white">
-                    {preview.length} relevant {preview.length === 1 ? 'element' : 'elements'} identified
+                    Top {preview.length} {preview.length === 1 ? 'match' : 'matches'} · confidence ≥ 0.5
+                  </span>
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] text-[var(--text-tertiary)] cursor-help"
+                    title="Anthropic Haiku ranks every architecture element against this text and returns up to 5 results above the 0.5 confidence threshold. Untick anything you don't want to save."
+                  >
+                    <Info size={10} />
+                    why?
                   </span>
                 </div>
                 {durationMs !== null && (
@@ -317,36 +353,77 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                   No element in this project is materially affected by this text. That is a valid outcome — not every regulation maps to every architecture.
                 </div>
               ) : (
-                <div className="space-y-1.5">
-                  {preview.map((m, i) => {
-                    const el = elementById(m.elementId);
-                    const color =
-                      m.confidence >= 0.9 ? '#22c55e' :
-                      m.confidence >= 0.7 ? '#eab308' :
-                      m.confidence >= 0.5 ? '#f97316' :
-                                            '#ef4444';
-                    return (
-                      <div key={i} className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <Shield size={11} className="shrink-0" style={{ color }} />
-                            <span className="text-[11px] font-semibold text-white truncate">{el?.name || m.elementId}</span>
-                            <span className="text-[9px] text-[var(--text-tertiary)] capitalize ml-1">{m.elementType.replace(/_/g, ' ')}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <div className="h-1.5 w-16 rounded-full bg-[var(--surface-raised)] overflow-hidden">
-                              <div className="h-full" style={{ width: `${m.confidence * 100}%`, backgroundColor: color }} />
+                <>
+                  <div className="flex items-center justify-between text-[10px] text-[var(--text-tertiary)] pt-0.5">
+                    <span>
+                      <span className="text-[#00ff41] font-semibold">{selectedIds.size}</span> of {preview.length} selected — click a row to toggle
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedIds(new Set(preview.map((m) => m.elementId)))}
+                        className="hover:text-white transition"
+                      >
+                        All
+                      </button>
+                      <span className="opacity-30">·</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedIds(new Set())}
+                        className="hover:text-white transition"
+                      >
+                        None
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    {preview.map((m, i) => {
+                      const el = elementById(m.elementId);
+                      const isSelected = selectedIds.has(m.elementId);
+                      const color =
+                        m.confidence >= 0.9 ? '#22c55e' :
+                        m.confidence >= 0.7 ? '#eab308' :
+                        m.confidence >= 0.5 ? '#f97316' :
+                                              '#ef4444';
+                      return (
+                        <div
+                          key={i}
+                          onClick={() => toggleSelection(m.elementId)}
+                          className={`rounded border bg-[var(--surface-base)] p-2 space-y-1 cursor-pointer transition ${
+                            isSelected
+                              ? 'border-[#00ff41]/40 hover:border-[#00ff41]/70'
+                              : 'border-[var(--border-subtle)] opacity-50 hover:opacity-80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                              {isSelected ? (
+                                <CheckSquare size={12} className="shrink-0 text-[#00ff41]" />
+                              ) : (
+                                <Square size={12} className="shrink-0 text-[var(--text-tertiary)]" />
+                              )}
+                              <Shield size={11} className="shrink-0" style={{ color }} />
+                              <span className="text-[11px] font-semibold text-white truncate">{el?.name || m.elementId}</span>
+                              <span className="text-[9px] text-[var(--text-tertiary)] capitalize ml-1">{m.elementType.replace(/_/g, ' ')}</span>
                             </div>
-                            <span className="text-[10px] font-mono" style={{ color }}>{m.confidence.toFixed(2)}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="h-1.5 w-16 rounded-full bg-[var(--surface-raised)] overflow-hidden">
+                                <div className="h-full" style={{ width: `${m.confidence * 100}%`, backgroundColor: color }} />
+                              </div>
+                              <span className="text-[10px] font-mono" style={{ color }}>{m.confidence.toFixed(2)}</span>
+                            </div>
                           </div>
+                          <p className="text-[10px] text-[var(--text-secondary)] leading-snug" title={m.reasoning}>
+                            {m.reasoning}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-[var(--text-secondary)] leading-snug" title={m.reasoning}>
-                          {m.reasoning}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] text-[var(--text-tertiary)] italic pt-1 leading-snug">
+                    On <span className="text-white font-medium">Apply &amp; Save</span> the selected mappings persist as a new regulation, the 3D Compliance Heat-Map re-colours affected elements, and each element's PropertyPanel → Compliance tab shows the citation.
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -398,16 +475,21 @@ export default function LiveMappingModal({ isOpen, onClose }: Props) {
                 </button>
                 <button
                   onClick={handleAccept}
-                  disabled={isPersisting}
-                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60"
+                  disabled={isPersisting || selectedIds.size === 0}
+                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background: 'linear-gradient(135deg, #00ff41 0%, #33ff66 100%)',
                     color: '#0a0a0a',
                     boxShadow: '0 0 12px rgba(0,255,65,0.25)',
                   }}
+                  title={selectedIds.size === 0 ? 'Select at least one mapping to save' : undefined}
                 >
                   {isPersisting ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-                  {isPersisting ? 'Saving…' : 'Apply & Save'}
+                  {isPersisting
+                    ? 'Saving…'
+                    : selectedIds.size === preview!.length
+                      ? `Apply & Save (${selectedIds.size})`
+                      : `Apply ${selectedIds.size} of ${preview!.length} & Save`}
                 </button>
               </>
             )}
