@@ -34,10 +34,13 @@ Output format — JSON ONLY, no prose, exactly matching this schema:
   "requirements": [
     {
       "title": "<5-200 chars, imperative ('Risikoanalyse durchführen')>",
-      "description": "<5-2000 chars, what concretely MUST be done>",
+      "description": "<5-2000 chars, what concretely MUST be done HOW>",
       "priority": "<must | should | may>",
       "linkedElementIds": ["<exact id from candidate list>", "..."],
-      "confidence": <0.0 to 1.0>
+      "extractionConfidence": <0.0 to 1.0>,
+      "extractionRationale": "<1-2 sentences: WHY this is a genuine obligation from the text + what drives this score>",
+      "mappingConfidence": <0.0 to 1.0>,
+      "mappingRationale": "<1-2 sentences: WHY exactly these elements must implement it — name them — or why no element matches>"
     }
   ]
 }
@@ -47,16 +50,30 @@ Priority-Mapping (strict):
   "should" — Empfehlung ("SOLLTE", "should", "is recommended")
   "may"    — Kann-Bestimmung ("KANN", "may", "is permitted")
 
+The TWO scores are DIFFERENT axes — never copy one into the other:
+  - extractionConfidence = "Am I sure this is a REAL legal duty stated in THIS text?" (anti-hallucination).
+      High (≥0.9) = the obligation is explicit in the paragraph. Low (≤0.6) = inferred/derived.
+  - extractionRationale = cite WHICH part of the text imposes it (e.g. "Sentence 1 explicitly requires...").
+  - mappingConfidence = "How well do the linked elements actually implement this duty?"
+      High = the element's purpose directly matches. If linkedElementIds is [], set mappingConfidence = 0.
+  - mappingRationale = name each linked element and say WHY it fits (e.g. "Supplier Due Diligence Process —
+      because this process performs the supplier assessment required by § 6"). If [], explain why nothing fits.
+
+LANGUAGE RULES (strict — content vs. commentary are SEPARATE):
+  - title + description = SAME language as the regulation text (German law → German, English law → English).
+    These are the legal obligation as it will be filed/audited, so they must match the source.
+  - extractionRationale + mappingRationale = ALWAYS ENGLISH, regardless of the regulation language.
+    These are the AI's audit commentary in the software's language (TheArchitect UI is English).
+    Even for a German § 6 LkSG paragraph, write both rationales in English.
+
 Hard rules:
   - Extract MAXIMUM 10 requirements per paragraph (most important first).
-  - Each requirement MUST be ONE concrete action — NO "shall ensure compliance with..." Floskeln.
-  - title: imperative, 5-200 chars, kein Punkt am Ende.
+  - Each requirement MUST be ONE concrete action — NO "shall ensure compliance with..." filler.
+  - title: imperative, 5-200 chars, no trailing period.
   - description: 5-2000 chars, explains WHAT must be done HOW.
   - linkedElementIds: ONLY use exact ids from the candidate list. If no candidates provided OR no clear match, return [].
   - NEVER invent element-ids or hallucinate elements.
-  - confidence reflects YOUR certainty that this requirement is genuine (not made-up).
-  - reasoning is NOT a separate field — it's embedded in description.
-  - Same language as the regulation text (DE if German, EN if English).
+  - extractionRationale + mappingRationale are MANDATORY, each 1-2 sentences, ALWAYS in English.
   - If NO actionable requirement, return {"requirements": []}.
   - NEVER include explanations outside the JSON.`;
 

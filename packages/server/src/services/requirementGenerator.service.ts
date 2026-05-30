@@ -36,7 +36,9 @@ import {
 // ─── Configuration ──────────────────────────────────────────────
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
-const MAX_TOKENS = 4096;
+// 8192: the explainability layer (2 rationales/req) roughly doubled output size.
+// 4096 truncated the JSON mid-array for paragraphs that yield 8-10 requirements.
+const MAX_TOKENS = 8192;
 const CONFIDENCE_THRESHOLD = 0.5;
 const MAX_REQUIREMENTS_PER_PARAGRAPH = 10;
 
@@ -52,7 +54,11 @@ export const RequirementGeneratorResponseSchema = z.object({
         description: z.string().min(5).max(2000),
         priority: z.enum(PRIORITY_VALUES),
         linkedElementIds: z.array(z.string().min(1)).default([]),
-        confidence: z.number().min(0).max(1),
+        // Explainability layer: two distinct axes + their rationales.
+        extractionConfidence: z.number().min(0).max(1),
+        extractionRationale: z.string().min(1).max(1000),  // mandatory — the audit "why score"
+        mappingConfidence: z.number().min(0).max(1).default(0),
+        mappingRationale: z.string().max(1000).default(''), // may be '' when no element matched
       }),
     )
     .max(MAX_REQUIREMENTS_PER_PARAGRAPH + 5),
@@ -75,7 +81,11 @@ export interface ComplianceRequirementCandidate {
   description: string;
   priority: ComplianceRequirementPriority;
   linkedElementIds: string[];
-  confidence: number;
+  // Explainability layer (audit-grade)
+  extractionConfidence: number;   // "is this a genuine obligation?" (anti-hallucination)
+  extractionRationale: string;    // why genuine + why this score
+  mappingConfidence: number;      // "how well do the linked elements fit?" (0 if none)
+  mappingRationale: string;       // why these elements (or why none)
 }
 
 export class RequirementGeneratorError extends Error {
@@ -253,13 +263,13 @@ export function parseAndFilter(rawText: string): ComplianceRequirementCandidate[
   }
 
   return parsed.requirements
-    .filter(r => r.confidence >= CONFIDENCE_THRESHOLD)
+    .filter(r => r.extractionConfidence >= CONFIDENCE_THRESHOLD)
     .sort((a, b) => {
-      // priority order: must > should > may, then confidence desc
+      // priority order: must > should > may, then extractionConfidence desc
       const pa = priorityRank(a.priority);
       const pb = priorityRank(b.priority);
       if (pa !== pb) return pa - pb;
-      return b.confidence - a.confidence;
+      return b.extractionConfidence - a.extractionConfidence;
     })
     .slice(0, MAX_REQUIREMENTS_PER_PARAGRAPH);
 }
@@ -306,7 +316,10 @@ async function persistRequirements(args: {
           linkedElementIds: c.linkedElementIds,
           status: 'open' as const,
           createdBy: 'llm' as ComplianceRequirementProvenance,
-          confidence: c.confidence,
+          extractionConfidence: c.extractionConfidence,
+          extractionRationale: c.extractionRationale,
+          mappingConfidence: c.mappingConfidence,
+          mappingRationale: c.mappingRationale,
         },
       },
       upsert: true,

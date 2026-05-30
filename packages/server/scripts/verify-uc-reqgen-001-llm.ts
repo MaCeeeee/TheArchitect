@@ -229,12 +229,18 @@ async function runScenario(s: Scenario, client: Anthropic): Promise<ScenarioResu
     reasons.push(`✓ no hallucinated ids`);
   }
 
-  // Check 5: confidence + structural validity (already enforced by Zod, but log range)
-  const confidences = candidates.map(c => c.confidence);
+  // Check 5: extractionConfidence range + that rationales are non-empty (audit)
+  const confidences = candidates.map(c => c.extractionConfidence);
   if (confidences.length > 0) {
     const min = Math.min(...confidences);
     const max = Math.max(...confidences);
-    reasons.push(`ⓘ confidence range: ${min.toFixed(2)} – ${max.toFixed(2)}`);
+    reasons.push(`ⓘ extraction range: ${min.toFixed(2)} – ${max.toFixed(2)}`);
+  }
+  const missingRationale = candidates.filter(c => !c.extractionRationale?.trim()).length;
+  if (missingRationale > 0) {
+    reasons.push(`FAIL: ${missingRationale} requirement(s) missing extractionRationale`);
+  } else if (candidates.length > 0) {
+    reasons.push(`✓ all rationales present`);
   }
 
   const passed = !reasons.some(r => r.startsWith('FAIL'));
@@ -267,7 +273,7 @@ async function main() {
       for (const req of r.requirements) {
         const links = req.linkedElementIds.length > 0 ? ` → [${req.linkedElementIds.join(', ')}]` : '';
         console.log(
-          `        - [${req.priority.toUpperCase()}] ${req.title} (conf ${req.confidence.toFixed(2)})${links}`,
+          `        - [${req.priority.toUpperCase()}] ${req.title} (ext ${req.extractionConfidence.toFixed(2)} / map ${req.mappingConfidence.toFixed(2)})${links}`,
         );
       }
       console.log();

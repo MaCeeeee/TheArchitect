@@ -413,11 +413,11 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         {onOpenRequirementsGenerator && (
           <button
             onClick={onOpenRequirementsGenerator}
-            title="Anforderungen generieren — actionable ComplianceRequirements aus Regulation-Paragraph (UC-REQGEN-001)"
+            title="Generate Requirements — actionable ComplianceRequirements from a regulation paragraph (UC-REQGEN-001)"
             className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold transition text-[var(--text-secondary)] hover:bg-[#1a1a2a] hover:text-white border border-transparent"
           >
             <Sparkles size={14} className="text-[#7c3aed]" />
-            <span className="hidden xl:inline">Anforderungen</span>
+            <span className="hidden xl:inline">Requirements</span>
           </button>
         )}
         {/* UC-ICM-003.1 — 3D Compliance Heat-Map Toggle (Demo-Akt 1) */}

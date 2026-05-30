@@ -446,7 +446,12 @@ export interface RequirementCandidate {
   description: string;
   priority: 'must' | 'should' | 'may';
   linkedElementIds: string[];
-  confidence: number;
+  // Explainability layer (audit-grade): two distinct axes + their rationales.
+  // Optional because human-curated / legacy docs may lack them; LLM preview always sets them.
+  extractionConfidence?: number;   // "is this a genuine obligation?" (anti-hallucination)
+  extractionRationale?: string;    // why genuine + why this score
+  mappingConfidence?: number;      // "how well do the linked elements fit?" (0 if none)
+  mappingRationale?: string;       // why these elements (or why none)
 }
 
 export interface RequirementDoc extends RequirementCandidate {
@@ -471,9 +476,11 @@ export const requirementsAPI = {
     language?: 'de' | 'en';
     jurisdiction?: string;
   }) =>
-    api.post(`/projects/${projectId}/requirements/generate`, body),
+    // LLM call against the full element catalog (100+ elements) + 8k-token output
+    // can take 20-40s. Override the 30s default to avoid premature aborts.
+    api.post(`/projects/${projectId}/requirements/generate`, body, { timeout: 120_000 }),
 
-  // Confirm: persist user-curated requirements (createdBy=human)
+  // Confirm: persist user-curated requirements (createdBy=human, explainability preserved)
   confirm: (projectId: string, body: {
     regulationId: string;
     sourceParagraph: string;
@@ -482,6 +489,10 @@ export const requirementsAPI = {
       description: string;
       priority: 'must' | 'should' | 'may';
       linkedElementIds: string[];
+      extractionConfidence?: number;
+      extractionRationale?: string;
+      mappingConfidence?: number;
+      mappingRationale?: string;
     }>;
   }) =>
     api.post(`/projects/${projectId}/requirements`, body),

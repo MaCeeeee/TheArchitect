@@ -55,7 +55,11 @@ const ConfirmBodySchema = z.object({
         description: z.string().min(5).max(2000),
         priority: z.enum(['must', 'should', 'may']),
         linkedElementIds: z.array(z.string().min(1)).default([]),
-        confidence: z.number().min(0).max(1).optional(),
+        // Explainability layer — preserved from the LLM preview through human curation (audit trail)
+        extractionConfidence: z.number().min(0).max(1).optional(),
+        extractionRationale: z.string().max(1000).optional(),
+        mappingConfidence: z.number().min(0).max(1).optional(),
+        mappingRationale: z.string().max(1000).optional(),
       }),
     )
     .min(1)
@@ -191,8 +195,12 @@ router.post(
             priority: r.priority,
             linkedElementIds: r.linkedElementIds,
             status: 'open' as const,
-            // confidence omitted → createdBy='human' (no llm confidence required)
             createdBy: 'human' as const,
+            // Preserve LLM explainability through human curation (optional, audit trail)
+            ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
+            ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
+            ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
+            ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
           },
         },
         upsert: true,

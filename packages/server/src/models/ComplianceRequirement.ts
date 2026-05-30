@@ -28,7 +28,11 @@ export interface IComplianceRequirement extends Document {
   assigneeId?: mongoose.Types.ObjectId;
   dueDate?: Date;
   createdBy: ComplianceRequirementProvenance;
-  confidence?: number;
+  // Explainability layer (audit-grade, UC-REQGEN-001)
+  extractionConfidence?: number;  // "genuine obligation?" — required when createdBy='llm'
+  extractionRationale?: string;   // why genuine + why this score
+  mappingConfidence?: number;     // "how well do linked elements fit?" (0 if none)
+  mappingRationale?: string;      // why these elements (or why none)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,19 +85,42 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
       enum: PROVENANCE_ENUM,
       required: true,
     },
-    confidence: {
+    // ─── Explainability layer (audit-grade) ───
+    // extractionConfidence Pflicht wenn createdBy='llm'. Function-syntax weil
+    // Mongoose `required:true` mit Funktion supportet (validator wird bei
+    // undefined-Werten nicht aufgerufen, deshalb required statt validate).
+    extractionConfidence: {
       type: Number,
       min: 0,
       max: 1,
-      // AC: confidence Pflicht wenn createdBy='llm'. Function-syntax weil
-      // Mongoose `required:true` mit Funktion supportet (validator wird bei
-      // undefined-Werten nicht aufgerufen, deshalb required statt validate).
       required: [
         function (this: IComplianceRequirement) {
           return this.createdBy === 'llm';
         },
-        'confidence is required when createdBy=llm',
+        'extractionConfidence is required when createdBy=llm',
       ],
+    },
+    extractionRationale: {
+      type: String,
+      default: '',
+      maxlength: 1000,
+      required: [
+        function (this: IComplianceRequirement) {
+          return this.createdBy === 'llm';
+        },
+        'extractionRationale is required when createdBy=llm',
+      ],
+    },
+    mappingConfidence: {
+      type: Number,
+      min: 0,
+      max: 1,
+      default: 0,
+    },
+    mappingRationale: {
+      type: String,
+      default: '',
+      maxlength: 1000,
     },
   },
   { timestamps: true },

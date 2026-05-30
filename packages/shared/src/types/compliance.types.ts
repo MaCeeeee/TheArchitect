@@ -168,7 +168,13 @@ export interface ComplianceRequirementDTO {
   assigneeId?: string;
   dueDate?: string;              // ISO date
   createdBy: ComplianceRequirementProvenance;
-  confidence?: number;           // ∈ [0,1] — LLM confidence, only when createdBy='llm'
+  // ─── Explainability layer (audit-grade, UC-REQGEN-001 Explainability) ───
+  // Extraction = "is this a genuine obligation from the text?" (anti-hallucination)
+  extractionConfidence?: number;  // ∈ [0,1] — LLM certainty this is a real duty, only when createdBy='llm'
+  extractionRationale?: string;   // WHY this is a genuine obligation + why this score
+  // Mapping = "how well do the linked elements fit this obligation?"
+  mappingConfidence?: number;     // ∈ [0,1] — fit of linkedElementIds (0 if none), only when createdBy='llm'
+  mappingRationale?: string;      // WHY exactly these elements (or why none)
   createdAt: string;
   updatedAt: string;
 }

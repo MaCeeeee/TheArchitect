@@ -138,7 +138,10 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
             description: 'Lieferanten müssen einer Risikoanalyse unterzogen werden.',
             priority: 'must',
             linkedElementIds: ['cap-1'],
-            confidence: 0.92,
+            extractionConfidence: 0.92,
+            extractionRationale: 'explizite Pflicht aus § 6',
+            mappingConfidence: 0.85,
+            mappingRationale: 'cap-1 setzt die Analyse um',
           },
         ],
       });
@@ -359,7 +362,8 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
           linkedElementIds: ['cap-1'],
           status: 'open',
           createdBy: 'llm',
-          confidence: 0.9,
+          extractionConfidence: 0.9,
+          extractionRationale: 'audit rationale for the seed',
         },
         {
           projectId: projectObjectId,
@@ -459,7 +463,8 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
           linkedElementIds: ['cap-1', 'cap-2'],
           status: 'open',
           createdBy: 'llm',
-          confidence: 0.9,
+          extractionConfidence: 0.9,
+          extractionRationale: 'audit rationale for the seed',
         },
         {
           projectId: projectObjectId,

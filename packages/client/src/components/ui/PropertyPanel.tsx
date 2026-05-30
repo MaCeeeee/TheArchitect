@@ -6,7 +6,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
-import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI } from '../../services/api';
+import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI, requirementsAPI, type RequirementDoc } from '../../services/api';
 import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
@@ -477,6 +477,11 @@ export default function PropertyPanel() {
           {/* UC-ICM-003.2 — Reverse-Lookup: Regulations affecting this element */}
           {projectId && element.id && (
             <RegulationsForElementSection projectId={projectId} elementId={element.id} />
+          )}
+
+          {/* UC-REQGEN-001 — Reverse-Lookup: actionable Requirements linked to this element */}
+          {projectId && element.id && (
+            <RequirementsForElementSection projectId={projectId} elementId={element.id} />
           )}
 
           {/* Empty state when nothing compliance-related applies */}
@@ -2026,7 +2031,7 @@ function RegulationsForElementSection({
 
       {!isLoading && mappings && mappings.length === 0 && (
         <div className="rounded border border-dashed border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-[10px] text-[var(--text-tertiary)]">
-          Keine Compliance-Anforderungen identifiziert für dieses Element.
+          No regulations mapped to this element yet.
         </div>
       )}
 
@@ -2064,6 +2069,184 @@ function RegulationsForElementSection({
                 >
                   {m.reasoning}
                 </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ─── UC-REQGEN-001: actionable Requirements linked to this element ──────────
+
+const REQ_PRIORITY_BADGE: Record<RequirementDoc['priority'], { label: string; bg: string; fg: string }> = {
+  must:   { label: 'MUST',   bg: '#dc2626', fg: '#fff' },
+  should: { label: 'SHOULD', bg: '#eab308', fg: '#0a0a0a' },
+  may:    { label: 'MAY',    bg: '#3b82f6', fg: '#fff' },
+};
+
+const REQ_STATUS_OPTIONS: Array<{ value: RequirementDoc['status']; label: string }> = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'done', label: 'Done' },
+  { value: 'waived', label: 'Waived' },
+];
+
+const REQ_STATUS_COLOR: Record<RequirementDoc['status'], string> = {
+  open: '#94a3b8',
+  in_progress: '#3b82f6',
+  done: '#22c55e',
+  waived: '#64748b',
+};
+
+/** Labeled confidence pill for the PropertyPanel requirements (one of two axes). */
+function ReqScorePill({ label, value, tip }: { label: string; value: number; tip: string }) {
+  const color = value >= 0.9 ? '#22c55e' : value >= 0.7 ? '#eab308' : value >= 0.5 ? '#f97316' : '#ef4444';
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 bg-[rgba(255,255,255,0.04)] cursor-help"
+      title={tip}
+    >
+      <span className="text-[7px] uppercase tracking-wider text-[var(--text-tertiary)]">{label}</span>
+      <span className="text-[9px] font-mono font-semibold" style={{ color }}>{value.toFixed(2)}</span>
+    </span>
+  );
+}
+
+function RequirementsForElementSection({
+  projectId,
+  elementId,
+}: {
+  projectId: string;
+  elementId: string;
+}) {
+  const [requirements, setRequirements] = useState<RequirementDoc[] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!projectId || !elementId) return;
+    let cancelled = false;
+    setIsLoading(true);
+    void requirementsAPI
+      .byElement(projectId, elementId)
+      .then((res) => {
+        if (cancelled) return;
+        setRequirements((res.data?.data ?? []) as RequirementDoc[]);
+      })
+      .catch(() => {
+        if (!cancelled) setRequirements([]);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, elementId]);
+
+  const handleStatusChange = useCallback(
+    async (id: string, status: RequirementDoc['status']) => {
+      // Optimistic update
+      setRequirements((prev) =>
+        prev?.map((r) => (r._id === id ? { ...r, status } : r)) ?? null,
+      );
+      setSavingId(id);
+      try {
+        await requirementsAPI.update(projectId, id, { status });
+      } catch {
+        toast.error('Status update failed');
+      } finally {
+        setSavingId(null);
+      }
+    },
+    [projectId],
+  );
+
+  // Render nothing at all if there are simply no requirements (keeps panel clean)
+  if (!isLoading && requirements && requirements.length === 0) {
+    return null;
+  }
+
+  return (
+    <Section title="Generated Requirements">
+      {isLoading && (
+        <div className="text-[10px] text-[var(--text-tertiary)] italic px-1">
+          Loading requirements…
+        </div>
+      )}
+
+      {!isLoading && requirements && requirements.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1">
+            {requirements.length} requirement{requirements.length === 1 ? '' : 's'} this element must implement
+          </div>
+          {requirements.map((req) => {
+            const badge = REQ_PRIORITY_BADGE[req.priority];
+            return (
+              <div
+                key={req._id}
+                className="rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 space-y-1.5"
+              >
+                <div className="flex items-start gap-1.5">
+                  <span
+                    className="text-[8px] font-bold uppercase tracking-wider px-1 py-0.5 rounded shrink-0 mt-0.5"
+                    style={{ backgroundColor: badge.bg, color: badge.fg }}
+                  >
+                    {badge.label}
+                  </span>
+                  <span className="text-[11px] font-semibold text-white leading-snug flex-1">
+                    {req.title}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[var(--text-secondary)] leading-snug" title={req.description}>
+                  {req.description}
+                </p>
+
+                {/* Two explainability scores + their rationales (audit-grade) */}
+                {(typeof req.extractionConfidence === 'number' || typeof req.mappingConfidence === 'number') && (
+                  <div className="flex items-center gap-2">
+                    {typeof req.extractionConfidence === 'number' && (
+                      <ReqScorePill label="Extraction" value={req.extractionConfidence}
+                        tip="AI certainty this is a genuine legal obligation (anti-hallucination)." />
+                    )}
+                    {typeof req.mappingConfidence === 'number' && (
+                      <ReqScorePill label="Mapping" value={req.mappingConfidence}
+                        tip="How well this element implements the obligation." />
+                    )}
+                  </div>
+                )}
+                {req.extractionRationale && (
+                  <p className="text-[9px] text-[var(--text-tertiary)] leading-snug italic flex gap-1">
+                    <span className="uppercase tracking-wider shrink-0 not-italic">Why score:</span>
+                    <span>{req.extractionRationale}</span>
+                  </p>
+                )}
+                {req.mappingRationale && (
+                  <p className="text-[9px] text-[var(--text-tertiary)] leading-snug italic flex gap-1">
+                    <span className="uppercase tracking-wider shrink-0 not-italic">Why here:</span>
+                    <span>{req.mappingRationale}</span>
+                  </p>
+                )}
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <select
+                    value={req.status}
+                    onChange={(e) => handleStatusChange(req._id, e.target.value as RequirementDoc['status'])}
+                    disabled={savingId === req._id}
+                    className="text-[9px] rounded border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-1.5 py-0.5 outline-none cursor-pointer disabled:opacity-50"
+                    style={{ color: REQ_STATUS_COLOR[req.status] }}
+                  >
+                    {REQ_STATUS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  {req.createdBy === 'llm' && (
+                    <span className="text-[8px] uppercase tracking-wider text-[var(--text-tertiary)] flex items-center gap-0.5">
+                      <Sparkles size={8} /> AI
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}

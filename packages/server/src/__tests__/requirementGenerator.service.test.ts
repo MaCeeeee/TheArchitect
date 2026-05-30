@@ -57,24 +57,24 @@ describe('extractJson()', () => {
 });
 
 describe('parseAndFilter()', () => {
-  it('parses valid JSON + applies confidence threshold', () => {
+  it('parses valid JSON + applies extractionConfidence threshold', () => {
     const raw = JSON.stringify({
       requirements: [
-        { title: 'Risikoanalyse jährlich durchführen', description: 'Min ein Mal pro Jahr', priority: 'must', linkedElementIds: ['e1'], confidence: 0.95 },
-        { title: 'Niedrige Confidence rauswerfen', description: 'sollte raus', priority: 'should', linkedElementIds: [], confidence: 0.3 },
+        { title: 'Risikoanalyse jährlich durchführen', description: 'Min ein Mal pro Jahr', priority: 'must', linkedElementIds: ['e1'], extractionConfidence: 0.95, extractionRationale: 'explizite Pflicht in Satz 1', mappingConfidence: 0.8, mappingRationale: 'e1 führt die Analyse aus' },
+        { title: 'Niedrige Confidence rauswerfen', description: 'sollte raus', priority: 'should', linkedElementIds: [], extractionConfidence: 0.3, extractionRationale: 'nur abgeleitet' },
       ],
     });
     const result = parseAndFilter(raw);
     expect(result).toHaveLength(1);
-    expect(result[0].confidence).toBe(0.95);
+    expect(result[0].extractionConfidence).toBe(0.95);
   });
 
-  it('sorts by priority (must > should > may), then confidence DESC', () => {
+  it('sorts by priority (must > should > may), then extractionConfidence DESC', () => {
     const raw = JSON.stringify({
       requirements: [
-        { title: 'May-Item geringer prio', description: 'concrete description text here', priority: 'may', linkedElementIds: [], confidence: 0.99 },
-        { title: 'Must-Item hoher Prio', description: 'concrete description text here', priority: 'must', linkedElementIds: [], confidence: 0.6 },
-        { title: 'Should-Item mittlerer Prio', description: 'concrete description text here', priority: 'should', linkedElementIds: [], confidence: 0.95 },
+        { title: 'May-Item geringer prio', description: 'concrete description text here', priority: 'may', linkedElementIds: [], extractionConfidence: 0.99, extractionRationale: 'r' },
+        { title: 'Must-Item hoher Prio', description: 'concrete description text here', priority: 'must', linkedElementIds: [], extractionConfidence: 0.6, extractionRationale: 'r' },
+        { title: 'Should-Item mittlerer Prio', description: 'concrete description text here', priority: 'should', linkedElementIds: [], extractionConfidence: 0.95, extractionRationale: 'r' },
       ],
     });
     const result = parseAndFilter(raw);
@@ -87,7 +87,8 @@ describe('parseAndFilter()', () => {
       description: 'concrete description text here',
       priority: 'must' as const,
       linkedElementIds: [],
-      confidence: 0.9,
+      extractionConfidence: 0.9,
+      extractionRationale: 'r',
     }));
     const raw = JSON.stringify({ requirements });
     const result = parseAndFilter(raw);
@@ -96,28 +97,35 @@ describe('parseAndFilter()', () => {
 
   it('throws on missing title', () => {
     const raw = JSON.stringify({
-      requirements: [{ description: 'concrete description text here', priority: 'must', linkedElementIds: [], confidence: 0.9 }],
+      requirements: [{ description: 'concrete description text here', priority: 'must', linkedElementIds: [], extractionConfidence: 0.9, extractionRationale: 'r' }],
     });
     expect(() => parseAndFilter(raw)).toThrow(RequirementGeneratorError);
   });
 
   it('throws on unknown priority', () => {
     const raw = JSON.stringify({
-      requirements: [{ title: 'Valid Title Here', description: 'concrete description text here', priority: 'critical', linkedElementIds: [], confidence: 0.9 }],
+      requirements: [{ title: 'Valid Title Here', description: 'concrete description text here', priority: 'critical', linkedElementIds: [], extractionConfidence: 0.9, extractionRationale: 'r' }],
     });
     expect(() => parseAndFilter(raw)).toThrow(RequirementGeneratorError);
   });
 
-  it('throws on confidence > 1', () => {
+  it('throws on extractionConfidence > 1', () => {
     const raw = JSON.stringify({
-      requirements: [{ title: 'Valid Title Here', description: 'concrete description text here', priority: 'must', linkedElementIds: [], confidence: 1.5 }],
+      requirements: [{ title: 'Valid Title Here', description: 'concrete description text here', priority: 'must', linkedElementIds: [], extractionConfidence: 1.5, extractionRationale: 'r' }],
+    });
+    expect(() => parseAndFilter(raw)).toThrow(RequirementGeneratorError);
+  });
+
+  it('throws on missing extractionRationale (audit-mandatory)', () => {
+    const raw = JSON.stringify({
+      requirements: [{ title: 'Valid Title Here', description: 'concrete description text here', priority: 'must', linkedElementIds: [], extractionConfidence: 0.9 }],
     });
     expect(() => parseAndFilter(raw)).toThrow(RequirementGeneratorError);
   });
 
   it('throws on description > 2000 chars', () => {
     const raw = JSON.stringify({
-      requirements: [{ title: 'Valid', description: 'X'.repeat(2001), priority: 'must', linkedElementIds: [], confidence: 0.9 }],
+      requirements: [{ title: 'Valid', description: 'X'.repeat(2001), priority: 'must', linkedElementIds: [], extractionConfidence: 0.9, extractionRationale: 'r' }],
     });
     expect(() => parseAndFilter(raw)).toThrow(RequirementGeneratorError);
   });
@@ -131,12 +139,13 @@ describe('parseAndFilter()', () => {
     expect(parseAndFilter(raw)).toEqual([]);
   });
 
-  it('defaults linkedElementIds to []', () => {
+  it('defaults linkedElementIds to [] + mappingConfidence to 0', () => {
     const raw = JSON.stringify({
-      requirements: [{ title: 'Without explicit linkedElementIds', description: 'concrete description text here', priority: 'must', confidence: 0.9 }],
+      requirements: [{ title: 'Without explicit linkedElementIds', description: 'concrete description text here', priority: 'must', extractionConfidence: 0.9, extractionRationale: 'r' }],
     });
     const r = parseAndFilter(raw);
     expect(r[0].linkedElementIds).toEqual([]);
+    expect(r[0].mappingConfidence).toBe(0);
   });
 });
 
@@ -174,14 +183,20 @@ describe('generateRequirementsFromText()', () => {
         description: 'Das Unternehmen MUSS einmal jährlich eine Risikoanalyse für direkte Zulieferer durchführen und dokumentieren.',
         priority: 'must',
         linkedElementIds: ['cap-lieferantenmanagement'],
-        confidence: 0.95,
+        extractionConfidence: 0.95,
+        extractionRationale: 'Satz 1 verlangt explizit eine jährliche Risikoanalyse.',
+        mappingConfidence: 0.9,
+        mappingRationale: 'Lieferantenmanagement führt die Risikoanalyse durch.',
       },
       {
         title: 'Präventionsmaßnahmen verankern',
         description: 'Bei identifizierten Risiken MÜSSEN angemessene Präventionsmaßnahmen gegenüber unmittelbaren Zulieferern in vertraglichen Vereinbarungen verankert werden.',
         priority: 'must',
         linkedElementIds: ['cap-lieferantenmanagement', 'app-sap-erp'],
-        confidence: 0.92,
+        extractionConfidence: 0.92,
+        extractionRationale: 'Pflicht zur Verankerung von Präventionsmaßnahmen ist explizit.',
+        mappingConfidence: 0.8,
+        mappingRationale: 'Beide Elemente setzen die Präventionsmaßnahmen um.',
       },
     ],
   });
@@ -226,7 +241,9 @@ describe('generateRequirementsFromText()', () => {
     expect(count).toBe(2);
     const r1 = await ComplianceRequirement.findOne({ title: 'Risikoanalyse jährlich durchführen' });
     expect(r1?.priority).toBe('must');
-    expect(r1?.confidence).toBe(0.95);
+    expect(r1?.extractionConfidence).toBe(0.95);
+    expect(r1?.extractionRationale).toMatch(/Risikoanalyse/);
+    expect(r1?.mappingConfidence).toBe(0.9);
     expect(r1?.status).toBe('open');
     expect(r1?.createdBy).toBe('llm');
   });
@@ -269,7 +286,10 @@ describe('generateRequirementsFromText()', () => {
           description: 'concrete description text here',
           priority: 'must',
           linkedElementIds: ['cap-lieferantenmanagement', 'evil-hallucinated-id'],
-          confidence: 0.9,
+          extractionConfidence: 0.9,
+          extractionRationale: 'r',
+          mappingConfidence: 0.8,
+          mappingRationale: 'r',
         },
       ],
     });
@@ -333,7 +353,8 @@ describe('generateRequirementsFromText()', () => {
           description: 'concrete description text here',
           priority: 'must',
           linkedElementIds: ['any-id-from-llm'],
-          confidence: 0.9,
+          extractionConfidence: 0.9,
+          extractionRationale: 'r',
         },
       ],
     });
@@ -377,6 +398,6 @@ describe('Prompt-Format sanity', () => {
     expect(callArgs.system).toContain('Priority-Mapping');
     expect(callArgs.messages[0].content).toContain('LKSG § 6');
     expect(callArgs.messages[0].content).toContain('Lieferantenmanagement');
-    expect(callArgs.max_tokens).toBe(4096);
+    expect(callArgs.max_tokens).toBe(8192);
   });
 });

@@ -35,7 +35,10 @@ describe('ComplianceRequirement Model (REQ-REQGEN-001.1 / THE-302)', () => {
     priority: 'must' as const,
     linkedElementIds: ['cap-lieferantenmanagement', 'app-sap-erp'],
     createdBy: 'llm' as const,
-    confidence: 0.92,
+    extractionConfidence: 0.92,
+    extractionRationale: 'Satz 1 verlangt explizit eine Risikoanalyse — klare Pflicht.',
+    mappingConfidence: 0.85,
+    mappingRationale: 'Lieferantenmanagement führt die geforderte Risikoanalyse aus.',
   });
 
   // ──────────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ describe('ComplianceRequirement Model (REQ-REQGEN-001.1 / THE-302)', () => {
       );
       await ComplianceRequirement.updateOne(
         filter,
-        { $set: { ...doc, priority: 'should', confidence: 0.78 } },
+        { $set: { ...doc, priority: 'should', extractionConfidence: 0.78 } },
         { upsert: true, runValidators: true },
       );
 
@@ -98,7 +101,7 @@ describe('ComplianceRequirement Model (REQ-REQGEN-001.1 / THE-302)', () => {
       expect(count).toBe(1);
       const final = await ComplianceRequirement.findOne(filter);
       expect(final?.priority).toBe('should');
-      expect(final?.confidence).toBe(0.78);
+      expect(final?.extractionConfidence).toBe(0.78);
     });
 
     it('allows different titles for same regulation', async () => {
@@ -212,31 +215,40 @@ describe('ComplianceRequirement Model (REQ-REQGEN-001.1 / THE-302)', () => {
       ).rejects.toThrow();
     });
 
-    it('rejects confidence > 1', async () => {
+    it('rejects extractionConfidence > 1', async () => {
       await expect(
-        ComplianceRequirement.create({ ...baseDoc(), confidence: 1.5 }),
+        ComplianceRequirement.create({ ...baseDoc(), extractionConfidence: 1.5 }),
       ).rejects.toThrow();
     });
 
-    it('rejects confidence < 0', async () => {
+    it('rejects extractionConfidence < 0', async () => {
       await expect(
-        ComplianceRequirement.create({ ...baseDoc(), confidence: -0.1 }),
+        ComplianceRequirement.create({ ...baseDoc(), extractionConfidence: -0.1 }),
       ).rejects.toThrow();
     });
 
-    it('rejects llm-Provenance without confidence', async () => {
-      const { confidence, ...noConf } = baseDoc();
-      void confidence;
+    it('rejects llm-Provenance without extractionConfidence', async () => {
+      const { extractionConfidence, ...noConf } = baseDoc();
+      void extractionConfidence;
       await expect(
         ComplianceRequirement.create({ ...noConf, createdBy: 'llm' }),
-      ).rejects.toThrow(/confidence is required when createdBy=llm/);
+      ).rejects.toThrow(/extractionConfidence is required when createdBy=llm/);
     });
 
-    it('accepts human-Provenance without confidence', async () => {
-      const { confidence, ...noConf } = baseDoc();
-      void confidence;
+    it('rejects llm-Provenance without extractionRationale', async () => {
+      const { extractionRationale, ...noRat } = baseDoc();
+      void extractionRationale;
+      await expect(
+        ComplianceRequirement.create({ ...noRat, createdBy: 'llm' }),
+      ).rejects.toThrow(/extractionRationale is required when createdBy=llm/);
+    });
+
+    it('accepts human-Provenance without extractionConfidence', async () => {
+      const { extractionConfidence, extractionRationale, ...noConf } = baseDoc();
+      void extractionConfidence;
+      void extractionRationale;
       const r = await ComplianceRequirement.create({ ...noConf, createdBy: 'human' });
-      expect(r.confidence).toBeUndefined();
+      expect(r.extractionConfidence).toBeUndefined();
     });
   });
 
