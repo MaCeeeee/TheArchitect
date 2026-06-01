@@ -12,19 +12,28 @@ export const ADM_PHASES: { phase: ADMPhase; name: string; description: string }[
   { phase: 'H', name: 'Architecture Change Management', description: 'Manage changes to architecture' },
 ];
 
+// Official ArchiMate 3.2 layer hues, saturated for the dark theme + glossy material.
+// motivation=violet, strategy=amber, business=yellow, application=cyan,
+// technology/physical=green, implementation&migration=rose. (information/Data is a
+// TheArchitect extension → blue.)
 export const ARCHITECTURE_LAYERS: { id: ArchitectureLayer; label: string; color: string; yPosition: number }[] = [
-  { id: 'motivation', label: 'Motivation', color: '#ec4899', yPosition: 16 },
+  { id: 'motivation', label: 'Motivation', color: '#8b5cf6', yPosition: 16 },
   { id: 'strategy', label: 'Strategy', color: '#f59e0b', yPosition: 12 },
-  { id: 'business', label: 'Business', color: '#22c55e', yPosition: 8 },
+  { id: 'business', label: 'Business', color: '#facc15', yPosition: 8 },
   { id: 'information', label: 'Data', color: '#3b82f6', yPosition: 4 },
-  { id: 'application', label: 'Application', color: '#f97316', yPosition: 0 },
-  { id: 'technology', label: 'Technology', color: '#a855f7', yPosition: -4 },
-  { id: 'physical', label: 'Physical', color: '#14b8a6', yPosition: -8 },
-  { id: 'implementation_migration', label: 'Implementation & Migration', color: '#6366f1', yPosition: -12 },
+  { id: 'application', label: 'Application', color: '#06b6d4', yPosition: 0 },
+  { id: 'technology', label: 'Technology', color: '#22c55e', yPosition: -4 },
+  { id: 'physical', label: 'Physical', color: '#16a34a', yPosition: -8 },
+  { id: 'implementation_migration', label: 'Implementation & Migration', color: '#ec4899', yPosition: -12 },
 ];
 
 export const LAYER_Y: Record<string, number> = Object.fromEntries(
   ARCHITECTURE_LAYERS.map(l => [l.id, l.yPosition])
+);
+
+/** Layer → ArchiMate color, derived from the single source above (mirrors LAYER_Y). */
+export const LAYER_COLORS: Record<string, string> = Object.fromEntries(
+  ARCHITECTURE_LAYERS.map(l => [l.id, l.color])
 );
 
 /**
@@ -69,12 +78,12 @@ export function resolveElementY(layer: string, type: string): number {
 // ✅ FIX: 'strategy' Domain hinzugefügt
 export const TOGAF_DOMAINS: { id: TOGAFDomain; label: string; color: string }[] = [
   { id: 'strategy', label: 'Strategy', color: '#f59e0b' },
-  { id: 'business', label: 'Business Architecture', color: '#22c55e' },
+  { id: 'business', label: 'Business Architecture', color: '#facc15' },
   { id: 'data', label: 'Data Architecture', color: '#3b82f6' },
-  { id: 'application', label: 'Application Architecture', color: '#f97316' },
-  { id: 'technology', label: 'Technology Architecture', color: '#a855f7' },
-  { id: 'motivation', label: 'Motivation', color: '#ec4899' },
-  { id: 'implementation', label: 'Implementation & Migration', color: '#6366f1' },
+  { id: 'application', label: 'Application Architecture', color: '#06b6d4' },
+  { id: 'technology', label: 'Technology Architecture', color: '#22c55e' },
+  { id: 'motivation', label: 'Motivation', color: '#8b5cf6' },
+  { id: 'implementation', label: 'Implementation & Migration', color: '#ec4899' },
 ];
 
 export const ELEMENT_TYPES: { type: ElementType; label: string; domain: TOGAFDomain; geometry: string }[] = [

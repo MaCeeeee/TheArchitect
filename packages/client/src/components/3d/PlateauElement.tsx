@@ -5,19 +5,10 @@ import * as THREE from 'three';
 import type { PlateauElementState } from '@thearchitect/shared';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
+// Single source of truth — official ArchiMate layer palette (shared constants)
+import { LAYER_COLORS } from '@thearchitect/shared/src/constants/togaf.constants';
 
 // ─── Constants ───
-
-const LAYER_COLORS: Record<string, string> = {
-  motivation: '#ec4899',
-  strategy: '#ef4444',
-  business: '#22c55e',
-  information: '#3b82f6',
-  application: '#f97316',
-  technology: '#00ff41',
-  physical: '#14b8a6',
-  implementation_migration: '#6366f1',
-};
 
 const STATUS_COLORS: Record<string, string> = {
   current: '',        // uses layer color
@@ -126,12 +117,16 @@ export default function PlateauElement({
         castShadow
       >
         {renderGeometry()}
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={color}
           emissive={color}
           emissiveIntensity={emissiveIntensity}
-          metalness={0.3}
-          roughness={0.7}
+          metalness={0.15}
+          roughness={0.32}
+          clearcoat={1}
+          clearcoatRoughness={0.14}
+          envMapIntensity={1.1}
+          reflectivity={0.6}
           transparent={opacity < 1}
           opacity={opacity}
         />

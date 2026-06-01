@@ -10,20 +10,13 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
 import { getSensitivityColor } from './sensitivityColors';
+// Single source of truth — official ArchiMate layer palette (shared constants)
+import { LAYER_COLORS } from '@thearchitect/shared/src/constants/togaf.constants';
 
 const COVERAGE_BAND_COLORS: Record<'red' | 'yellow' | 'green', string> = {
   red: '#ef4444',
   yellow: '#eab308',
   green: '#22c55e',
-};
-
-const LAYER_COLORS: Record<string, string> = {
-  motivation: '#ec4899',
-  strategy: '#ef4444',
-  business: '#22c55e',
-  information: '#3b82f6',
-  application: '#f97316',
-  technology: '#00ff41',
 };
 
 const TYPE_GEOMETRY: Record<string, 'box' | 'sphere' | 'cylinder' | 'cone'> = {
@@ -358,7 +351,9 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       }
       return 0.3;
     }
-    return dragging ? 0.8 : hovered ? 0.4 : isSelected ? 0.6 : 0.1;
+    // Elements self-glow at rest so Bloom picks them up as luminous orbs;
+    // hover/select push it brighter.
+    return dragging ? 0.95 : hovered ? 0.7 : isSelected ? 0.85 : 0.5;
   }, [isXRayActive, xrayData, xraySubView, dragging, hovered, isSelected, isPolicyNode, violationCount]);
 
   const materialOpacity = useMemo(() => {
@@ -393,12 +388,18 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
         castShadow
       >
         {renderGeometry()}
-        <meshStandardMaterial
+        {/* Glossy "candy/glass-coated" look: low-metalness colored body + a clear
+            clearcoat layer for the modern sheen. HDRI + directional light reflect off it. */}
+        <meshPhysicalMaterial
           color={color}
           emissive={color}
           emissiveIntensity={emissiveIntensity}
-          metalness={isXRayActive ? 0.5 : 0.3}
-          roughness={isXRayActive ? 0.4 : 0.7}
+          metalness={0.2}
+          roughness={isXRayActive ? 0.18 : 0.2}
+          clearcoat={1}
+          clearcoatRoughness={0.08}
+          envMapIntensity={1.7}
+          reflectivity={0.85}
           transparent={materialOpacity < 1}
           opacity={materialOpacity}
         />

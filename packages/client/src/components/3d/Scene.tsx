@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { Grid, Environment } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Suspense, useEffect } from 'react';
 import LayerPlane from './LayerPlane';
 import ArchitectureElements from './ArchitectureElements';
@@ -154,6 +155,20 @@ export default function Scene() {
 
           <ViewModeCamera />
           {is3D && <Environment files="/hdri/dikhololo_night_1k.hdr" />}
+
+          {/* Bloom — luminous "glassy orb" glow on the emissive ArchiMate elements.
+              Labels are drei <Html> (DOM), so they stay crisp. Only in 3D. */}
+          {is3D && (
+            <EffectComposer>
+              <Bloom
+                intensity={isXRayActive ? 1.9 : 1.55}
+                luminanceThreshold={0.18}
+                luminanceSmoothing={0.45}
+                mipmapBlur
+                radius={0.85}
+              />
+            </EffectComposer>
+          )}
         </Suspense>
       </Canvas>
 

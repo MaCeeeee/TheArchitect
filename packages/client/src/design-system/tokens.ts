@@ -44,16 +44,16 @@ export const tokens = {
     purple:  '#a78bfa',
   },
 
-  // TOGAF layer colors
+  // Official ArchiMate 3.2 layer palette (kept in sync with shared ARCHITECTURE_LAYERS)
   layers: {
-    strategy:       '#8b5cf6',
-    business:       '#22c55e',
-    information:    '#3b82f6',
-    application:    '#f97316',
-    technology:     '#00ff41',
-    physical:       '#64748b',
-    motivation:     '#ec4899',
-    implementation: '#14b8a6',
+    motivation:     '#8b5cf6',  // violet
+    strategy:       '#f59e0b',  // amber
+    business:       '#facc15',  // yellow
+    information:    '#3b82f6',  // blue (TheArchitect extension)
+    application:    '#06b6d4',  // cyan
+    technology:     '#22c55e',  // green
+    physical:       '#16a34a',  // deep green
+    implementation: '#ec4899',  // rose
   },
 
   // Spacing scale (8px base)
