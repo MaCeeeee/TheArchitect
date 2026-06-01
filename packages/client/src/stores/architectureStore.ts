@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { architectureAPI } from '../services/api';
-import { ARCHITECTURE_LAYERS, LAYER_Y } from '@thearchitect/shared/src/constants/togaf.constants';
+import { ARCHITECTURE_LAYERS, LAYER_Y, resolveElementY } from '@thearchitect/shared/src/constants/togaf.constants';
 import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/types/architecture.types';
 
 /**
@@ -13,9 +13,11 @@ import type { ArchitectureLayer, TOGAFDomain } from '@thearchitect/shared/src/ty
  * AI generators) leaves elements rendering on the wrong layer plateau even
  * though their `layer` field is correct.
  */
-function alignYToLayer<T extends { layer: ArchitectureLayer; position3D: { x: number; y: number; z: number } }>(el: T): T {
+function alignYToLayer<T extends { layer: ArchitectureLayer; type: string; position3D: { x: number; y: number; z: number } }>(el: T): T {
   if (el.position3D.y <= -50) return el; // hidden activity — leave it
-  const expected = LAYER_Y[el.layer];
+  // Motivation elements stack by type along the ArchiMate dependency chain
+  // (resolveElementY); every other layer snaps to its flat plane.
+  const expected = resolveElementY(el.layer, el.type);
   if (expected === undefined || el.position3D.y === expected) return el;
   return { ...el, position3D: { ...el.position3D, y: expected } };
 }

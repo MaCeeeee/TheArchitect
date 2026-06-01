@@ -57,6 +57,11 @@ jest.mock('../services/requirementGenerator.service', () => ({
   RequirementGeneratorError: RequirementGeneratorErrorReal,
 }));
 
+const projectToModelMock = jest.fn();
+jest.mock('../services/requirementProjection.service', () => ({
+  projectRequirementsToModel: (...args: unknown[]) => projectToModelMock(...args),
+}));
+
 // Import AFTER mocks
 import requirementsRoutes from '../routes/requirements.routes';
 
@@ -106,6 +111,7 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
     await ComplianceRequirement.deleteMany({});
     loadCandidatesMock.mockReset();
     generateRequirementsMock.mockReset();
+    projectToModelMock.mockReset();
     auditEntrySpy.mockClear();
   });
 
@@ -340,6 +346,69 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
           requirements: [],
         });
       expect(res.status).toBe(400);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────
+  // POST /:projectId/requirements/project-to-model (UC-REQPROJ-001)
+  // ────────────────────────────────────────────────────────
+  describe('POST /:projectId/requirements/project-to-model', () => {
+    const SUMMARY = {
+      driversUpserted: 1,
+      requirementsProjected: 3,
+      constraintsProjected: 1,
+      influenceEdges: 4,
+      realizationEdges: 5,
+      floatingGaps: 1,
+      elementIds: ['e1', 'e2', 'e3', 'e4'],
+    };
+
+    it('projects all + writes audit (medium)', async () => {
+      projectToModelMock.mockResolvedValue(SUMMARY);
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements/project-to-model`)
+        .send({});
+      expect(res.status).toBe(200);
+      expect(res.body.data.requirementsProjected).toBe(3);
+      expect(res.body.data.constraintsProjected).toBe(1);
+      expect(projectToModelMock).toHaveBeenCalledTimes(1);
+      expect(projectToModelMock.mock.calls[0][0].requirementIds).toBeUndefined();
+      expect(auditEntrySpy).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'requirements.project', riskLevel: 'medium' }),
+      );
+    });
+
+    it('passes requirementIds when provided', async () => {
+      projectToModelMock.mockResolvedValue(SUMMARY);
+      const id = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements/project-to-model`)
+        .send({ requirementIds: [id] });
+      expect(res.status).toBe(200);
+      expect(projectToModelMock.mock.calls[0][0].requirementIds).toEqual([id]);
+    });
+
+    it('rejects invalid projectId', async () => {
+      const res = await request(app)
+        .post('/api/projects/not-an-id/requirements/project-to-model')
+        .send({});
+      expect(res.status).toBe(400);
+    });
+
+    it('rejects invalid requirementId in list', async () => {
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements/project-to-model`)
+        .send({ requirementIds: ['not-an-object-id'] });
+      expect(res.status).toBe(400);
+      expect(projectToModelMock).not.toHaveBeenCalled();
+    });
+
+    it('500 on projection failure', async () => {
+      projectToModelMock.mockRejectedValue(new Error('neo4j down'));
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements/project-to-model`)
+        .send({});
+      expect(res.status).toBe(500);
     });
   });
 

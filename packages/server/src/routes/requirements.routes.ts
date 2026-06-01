@@ -27,6 +27,7 @@ import {
   RequirementGeneratorError,
 } from '../services/requirementGenerator.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
+import { projectRequirementsToModel } from '../services/requirementProjection.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -232,6 +233,65 @@ router.post(
     }).lean();
 
     res.json({ success: true, data: persisted });
+  },
+);
+
+// ─── POST /project-to-model (UC-REQPROJ-001 / THE-315) ──────────
+// Projects confirmed ComplianceRequirements into the Neo4j graph as ArchiMate
+// Motivation elements (requirement/constraint) + influence/realization edges.
+
+const ProjectBodySchema = z.object({
+  requirementIds: z.array(z.string()).optional(),  // omit → project all confirmed
+});
+
+router.post(
+  '/:projectId/requirements/project-to-model',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const parsed = ProjectBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    if (parsed.data.requirementIds?.some((id) => !mongoose.isValidObjectId(id))) {
+      return res.status(400).json({ success: false, error: 'invalid requirementId in list' });
+    }
+
+    try {
+      const summary = await projectRequirementsToModel({
+        projectId,
+        requirementIds: parsed.data.requirementIds,
+      });
+
+      if (req.user) {
+        await createAuditEntry({
+          userId: req.user._id.toString(),
+          projectId,
+          action: 'requirements.project',
+          entityType: 'ComplianceRequirement',
+          ip: req.ip,
+          userAgent: req.get('user-agent') ?? undefined,
+          riskLevel: 'medium',
+          after: {
+            requirementsProjected: summary.requirementsProjected,
+            constraintsProjected: summary.constraintsProjected,
+            driversUpserted: summary.driversUpserted,
+            realizationEdges: summary.realizationEdges,
+          },
+        });
+      }
+
+      res.json({ success: true, data: summary });
+    } catch (err) {
+      log.error({ err, projectId }, '[requirements.project-to-model] failed');
+      res.status(500).json({ success: false, error: 'projection failed' });
+    }
   },
 );
 

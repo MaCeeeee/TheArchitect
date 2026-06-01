@@ -526,7 +526,26 @@ export const requirementsAPI = {
 
   delete: (projectId: string, id: string) =>
     api.delete(`/projects/${projectId}/requirements/${id}`),
+
+  // UC-REQPROJ-001: project confirmed requirements into the architecture graph
+  // as ArchiMate Motivation elements (requirement/constraint) + edges
+  projectToModel: (projectId: string, requirementIds?: string[]) =>
+    api.post(
+      `/projects/${projectId}/requirements/project-to-model`,
+      requirementIds ? { requirementIds } : {},
+      { timeout: 60_000 },
+    ),
 };
+
+export interface RequirementProjectionSummary {
+  driversUpserted: number;
+  requirementsProjected: number;
+  constraintsProjected: number;
+  influenceEdges: number;
+  realizationEdges: number;
+  floatingGaps: number;
+  elementIds: string[];
+}
 
 export const compliancePipelineAPI = {
   getPipelineStatus: (projectId: string) =>

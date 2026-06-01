@@ -24,11 +24,13 @@ import {
   Link2,
   Info,
   ScanSearch,
+  Network,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
   requirementsAPI,
   regulationsAPI,
+  architectureAPI,
   type RequirementCandidate,
 } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -159,6 +161,8 @@ function RationaleField({
 export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
   const projectId = useArchitectureStore((s) => s.projectId);
   const elements = useArchitectureStore((s) => s.elements);
+  const setElements = useArchitectureStore((s) => s.setElements);
+  const setConnections = useArchitectureStore((s) => s.setConnections);
 
   const [text, setText] = useState<string>('');
   const [source, setSource] = useState<string>('lksg');
@@ -170,6 +174,9 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
   const [preview, setPreview] = useState<EditableRequirement[] | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
   const [isPersisting, setIsPersisting] = useState(false);
+  const [savedIds, setSavedIds] = useState<string[] | null>(null);  // post-save state → enables projection
+  const [savedCount, setSavedCount] = useState(0);
+  const [isProjecting, setIsProjecting] = useState(false);
 
   // Reset on close
   useEffect(() => {
@@ -184,6 +191,9 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       setPreview(null);
       setDurationMs(null);
       setIsPersisting(false);
+      setSavedIds(null);
+      setSavedCount(0);
+      setIsProjecting(false);
     }
   }, [isOpen]);
 
@@ -318,7 +328,7 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       }
 
       // 2) Persist only the SELECTED requirements
-      await requirementsAPI.confirm(projectId, {
+      const confirmRes = await requirementsAPI.confirm(projectId, {
         regulationId,
         sourceParagraph: text.trim().slice(0, 5000),
         requirements: chosen.map((r) => ({
@@ -334,10 +344,13 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
         })),
       });
 
+      const persisted = (confirmRes.data?.data ?? []) as Array<{ _id: string }>;
       toast.success(
         `✓ ${chosen.length} requirement${chosen.length === 1 ? '' : 's'} saved to ${source.toUpperCase()} ${paragraphNumber || ''}`,
       );
-      onClose();
+      // Move to the post-save state instead of closing → offer projection into the model
+      setSavedCount(chosen.length);
+      setSavedIds(persisted.map((p) => String(p._id)));
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { error?: string } } };
       const msg = axiosErr.response?.data?.error || (err instanceof Error ? err.message : 'persist failed');
@@ -346,6 +359,44 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       setIsPersisting(false);
     }
   }, [preview, projectId, source, paragraphNumber, text, language, jurisdiction, onClose]);
+
+  const handleProjectToModel = useCallback(async () => {
+    if (!projectId || !savedIds || savedIds.length === 0) {
+      onClose();
+      return;
+    }
+    setIsProjecting(true);
+    try {
+      const res = await requirementsAPI.projectToModel(projectId, savedIds);
+      const s = res.data?.data;
+      const total = (s?.requirementsProjected ?? 0) + (s?.constraintsProjected ?? 0);
+
+      // Reload the architecture so the new motivation elements + edges appear live in the 3D graph
+      try {
+        const [elemRes, connRes] = await Promise.all([
+          architectureAPI.getElements(projectId),
+          architectureAPI.getConnections(projectId),
+        ]);
+        setElements(elemRes.data?.data ?? []);
+        setConnections(connRes.data?.data ?? []);
+      } catch {
+        // non-fatal — a page refresh will pick them up
+      }
+
+      toast.success(
+        `✓ ${total} element${total === 1 ? '' : 's'} added to the motivation layer` +
+          (s?.realizationEdges ? ` · ${s.realizationEdges} realization link${s.realizationEdges === 1 ? '' : 's'}` : '') +
+          (s?.floatingGaps ? ` · ${s.floatingGaps} open gap${s.floatingGaps === 1 ? '' : 's'}` : ''),
+      );
+      onClose();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } } };
+      const msg = axiosErr.response?.data?.error || (err instanceof Error ? err.message : 'projection failed');
+      toast.error(`Add to model failed: ${msg}`);
+    } finally {
+      setIsProjecting(false);
+    }
+  }, [projectId, savedIds, onClose, setElements, setConnections]);
 
   if (!isOpen) return null;
 
@@ -373,6 +424,27 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Post-save state — offer projection into the architecture model */}
+          {savedIds !== null ? (
+            <div className="flex flex-col items-center justify-center text-center py-6 px-4 gap-3">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#7c3aed]/15 border border-[#7c3aed]/40">
+                <CheckCircle2 size={24} className="text-[#7c3aed]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-white">
+                  {savedCount} requirement{savedCount === 1 ? '' : 's'} saved
+                </h3>
+                <p className="text-[11px] text-[var(--text-secondary)] mt-1 max-w-md leading-relaxed">
+                  They are tracked in the compliance backlog. Optionally project them into the
+                  architecture model as ArchiMate <span className="text-[#a78bfa]">requirement</span> /
+                  <span className="text-[#a78bfa]"> constraint</span> elements on the motivation layer —
+                  linked to a regulatory <span className="text-[#a78bfa]">driver</span> and realized by the
+                  affected elements. Unmatched obligations appear as visible gaps.
+                </p>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Source + Paragraph + Language Row */}
           <div className="grid grid-cols-3 gap-2">
             <div>
@@ -636,6 +708,8 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
               </span>
             </div>
           )}
+          </>
+          )}
         </div>
 
         {/* Footer */}
@@ -644,6 +718,31 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
             Architecture context: {elements.length} elements in project
           </div>
           <div className="flex items-center gap-2">
+            {savedIds !== null ? (
+              <>
+                <button
+                  onClick={onClose}
+                  disabled={isProjecting}
+                  className="rounded-md border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition disabled:opacity-50"
+                >
+                  Done
+                </button>
+                <button
+                  onClick={handleProjectToModel}
+                  disabled={isProjecting}
+                  className="flex items-center gap-1.5 rounded-md px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60"
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)',
+                    color: '#fff',
+                    boxShadow: '0 0 12px rgba(124,58,237,0.35)',
+                  }}
+                >
+                  {isProjecting ? <Loader2 size={12} className="animate-spin" /> : <Network size={12} />}
+                  {isProjecting ? 'Adding…' : 'Add to architecture model'}
+                </button>
+              </>
+            ) : (
+            <>
             <button
               onClick={onClose}
               className="rounded-md border border-[var(--border-subtle)] px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition"
@@ -690,6 +789,8 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
                     : `Save ${selectedCount} requirement${selectedCount === 1 ? '' : 's'}`}
                 </button>
               </>
+            )}
+            </>
             )}
           </div>
         </div>

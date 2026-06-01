@@ -27,6 +27,45 @@ export const LAYER_Y: Record<string, number> = Object.fromEntries(
   ARCHITECTURE_LAYERS.map(l => [l.id, l.yPosition])
 );
 
+/**
+ * Motivation sub-levels (UC-REQPROJ-001 / THE-315).
+ *
+ * The Motivation layer is the topmost "why" meta-layer. Instead of cramming all
+ * 10 ArchiMate motivation element types onto a single plane (y=16), we stack
+ * them vertically along the ArchiMate dependency chain — abstract intent rises
+ * above, concrete obligations stay grounded on the motivation plane:
+ *
+ *   Stakeholder → Driver → Assessment → Goal → Outcome → Principle → Requirement → Constraint
+ *      31         28.5       26         23.5     21        18.5         16            16
+ *
+ * Requirement + Constraint sit on the rendered plane (y=16); everything else
+ * floats above, connected downward by influence/realization edges. Other layers
+ * stay flat — only motivation (the meta-layer) is sub-stacked.
+ */
+export const MOTIVATION_SUB_Y: Record<string, number> = {
+  stakeholder: 31,
+  driver: 28.5,
+  assessment: 26,
+  meaning: 26,      // knowledge/interpretation — assessment band
+  goal: 23.5,
+  outcome: 21,
+  am_value: 21,     // worth/value — outcome band
+  principle: 18.5,
+  requirement: 16,  // grounded on the motivation plane
+  constraint: 16,   // specialization of requirement → same level
+};
+
+/**
+ * Resolve the rendered Y for an element. Motivation types use their sub-level;
+ * every other layer uses the flat layer plane.
+ */
+export function resolveElementY(layer: string, type: string): number {
+  if (layer === 'motivation' && MOTIVATION_SUB_Y[type] !== undefined) {
+    return MOTIVATION_SUB_Y[type];
+  }
+  return LAYER_Y[layer];
+}
+
 // ✅ FIX: 'strategy' Domain hinzugefügt
 export const TOGAF_DOMAINS: { id: TOGAFDomain; label: string; color: string }[] = [
   { id: 'strategy', label: 'Strategy', color: '#f59e0b' },
