@@ -314,7 +314,9 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
 
   importElements: (newElements, newConnections, workspaceId) => {
     get().pushHistory();
-    const tagged = newElements.map((el) => ({ ...el, workspaceId }));
+    // alignYToLayer so imported motivation elements get their vertical sub-Y stack
+    // (stakeholder/driver/goal/…) immediately — not only after a page reload.
+    const tagged = newElements.map((el) => alignYToLayer({ ...el, workspaceId }));
     set((state) => ({
       elements: [...state.elements, ...tagged],
       connections: [...state.connections, ...newConnections],

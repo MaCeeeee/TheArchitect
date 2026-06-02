@@ -19,7 +19,9 @@ export default function WorkspaceBar() {
   const [editName, setEditName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  if (workspaces.length <= 1) return null;
+  // Show as soon as ONE architecture is imported (so it can be managed/deleted).
+  // The base "Main Architecture" has no workspace entry, so length===0 = nothing imported.
+  if (workspaces.length === 0) return null;
 
   const activeIndex = workspaces.findIndex((ws) => ws.id === activeWorkspaceId);
 
@@ -149,9 +151,10 @@ export default function WorkspaceBar() {
                   e.stopPropagation();
                   setConfirmDeleteId(ws.id);
                 }}
-                className="hidden group-hover:flex items-center justify-center rounded p-0.5 text-[var(--text-tertiary)] hover:text-red-400 transition"
+                className="flex items-center justify-center rounded p-0.5 text-[var(--text-tertiary)]/60 hover:text-red-400 hover:bg-red-400/10 transition"
+                title="Remove this architecture from the project"
               >
-                <X size={10} />
+                <X size={12} />
               </button>
             )}
           </div>

@@ -1,0 +1,55 @@
+name,type,layer,description,status
+Operations Lead,stakeholder,motivation,Owns back-office processes that should be automated,current
+Reduce Manual Work,driver,motivation,Repetitive copy-paste work is costly and error-prone,current
+Automate Repetitive Workflows,goal,motivation,Let AI agents run business workflows end-to-end,current
+Human-in-the-Loop,principle,motivation,High-impact actions require human approval,current
+Auditable Runs,requirement,motivation,Every automated run MUST be fully traceable,current
+Bring-Your-Own-Tools,requirement,motivation,Connect any SaaS tool via integrations,current
+Workflow Automation,business_capability,strategy,The capability to design and run AI workflows,current
+Trigger to Action,value_stream,strategy,Event triggers reasoning which triggers action,current
+AI Automation Platform,business_service,business,The SaaS automation product paperclip.ai offers,current
+Workflow Execution,application_process,application,Autonomous run of a defined workflow against live data,current
+Approval Review,process,business,A human reviews and approves a pending action,current
+Workflow Definition,data_object,information,A saved automation blueprint,current
+Workflow Builder,application_component,application,Visual drag-and-drop workflow editor,current
+Agent Orchestrator,application_component,application,Coordinates LLM reasoning and tool calls,current
+LLM Gateway,application_component,application,Routes prompts to model providers with fallback,current
+Integration Hub,application_component,application,Connectors to external SaaS APIs,current
+Approval Console,application_component,application,UI where humans approve pending actions,current
+Trigger Service,application_service,application,Listens for webhooks and scheduled events,current
+Run Logger,application_service,application,Records every step of a workflow run,current
+Workflow Store,data_object,information,Persisted workflow definitions,current
+Run History,data_object,information,Immutable log of all workflow executions,current
+Credential Vault,data_object,information,Encrypted store of third-party API keys,current
+Knowledge Index,data_object,information,Vector embeddings used for retrieval,current
+Kubernetes Cluster,node,technology,Container platform running the services,current
+PostgreSQL,system_software,technology,Primary relational datastore,current
+Redis Queue,system_software,technology,Task queue for asynchronous runs,current
+Vector Database,application_component,technology,Stores and searches embeddings,current
+---CONNECTIONS---
+sourceName,targetName,type,label
+Operations Lead,Automate Repetitive Workflows,influence,wants
+Reduce Manual Work,Automate Repetitive Workflows,influence,motivates
+Human-in-the-Loop,Approval Review,realization,enforced by
+Auditable Runs,Run Logger,realization,enabled by
+Workflow Automation,Automate Repetitive Workflows,realization,realizes
+AI Automation Platform,Workflow Automation,realization,realizes
+Trigger to Action,Workflow Automation,serving,supports
+Workflow Execution,Workflow Definition,access,reads
+Approval Review,Workflow Execution,serving,gates
+Workflow Builder,Workflow Definition,access,edits
+Workflow Builder,AI Automation Platform,realization,realizes
+Agent Orchestrator,Workflow Execution,realization,executes
+Agent Orchestrator,LLM Gateway,serving,calls
+Agent Orchestrator,Integration Hub,serving,calls
+Agent Orchestrator,Knowledge Index,access,retrieves
+Integration Hub,Credential Vault,access,reads
+Trigger Service,Agent Orchestrator,triggering,starts
+Run Logger,Run History,access,writes
+Agent Orchestrator,Workflow Store,access,reads
+Approval Console,Approval Review,serving,supports
+Knowledge Index,Vector Database,realization,stored in
+Agent Orchestrator,Kubernetes Cluster,serving,runs on
+Workflow Store,PostgreSQL,realization,stored in
+Run History,PostgreSQL,realization,stored in
+Trigger Service,Redis Queue,access,enqueues
