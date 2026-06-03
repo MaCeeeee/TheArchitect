@@ -1,58 +1,60 @@
 name,type,layer,description,status
-AI Developer,stakeholder,motivation,Builds applications on top of the agent framework,current
-Autonomous Task Execution,driver,motivation,Tasks should complete without constant supervision,current
-Reliable Multi-Agent Coordination,goal,motivation,Agents collaborate predictably toward a goal,current
-Tool-Use Safety,principle,motivation,Agents may only call whitelisted sandboxed tools,current
-Deterministic Replay,requirement,motivation,Any agent run MUST be replayable from its trace,current
-Pluggable Models,requirement,motivation,Swap LLM providers without code changes,current
-Agent Orchestration,business_capability,strategy,The capability to plan and coordinate AI agents,current
-Goal to Result,value_stream,strategy,A goal is decomposed, executed and verified,current
-Agent Platform,business_service,business,The multi-agent runtime Hermes provides,current
-Task Decomposition,application_process,application,Agent autonomously breaks a goal into ordered sub-tasks,current
-Result Verification,application_process,application,Critic agent checks a result against the goal,current
-Agent Task,data_object,information,A unit of work assigned to an agent,current
-Orchestrator,application_component,application,Schedules agents and routes messages,current
-Planner Agent,ai_agent,application,Decomposes goals into a task plan,current
-Executor Agent,ai_agent,application,Carries out individual tasks using tools,current
-Critic Agent,ai_agent,application,Reviews outputs and requests retries,current
-Message Bus,application_component,application,Asynchronous channel between agents,current
-Tool Registry,application_component,application,Catalog of callable sandboxed tools,current
-Memory Store,application_component,application,Short and long term agent memory,current
-LLM Provider Adapter,application_component,application,Normalises calls across model providers,current
-Tool Invocation,application_service,application,Executes a tool call on behalf of an agent,current
-Conversation Memory,data_object,information,Per-session message and state history,current
-Tool Catalog,data_object,information,Definitions and schemas of available tools,current
-Task Queue,data_object,information,Pending and in-flight agent tasks,current
-Run Trace,data_object,information,Full ordered log enabling deterministic replay,current
-Container Host,node,technology,Runtime hosting the agent processes,current
-NATS Broker,system_software,technology,Message broker backing the message bus,current
-Tool Sandbox,system_software,technology,Isolated execution environment for tools,current
+Agent Operator,stakeholder,motivation,Person who runs and converses with the agent,current
+Self-Improving Automation,driver,motivation,Agents should get better the more they are used,current
+Agent That Learns From Experience,goal,motivation,An agent with a built-in learning loop,current
+Self-Improvement via Procedural Memory,principle,motivation,Skills are created from experience and refined during use,current
+Model Agnosticism,requirement,motivation,Support 200+ models across many providers,current
+Multi-Platform Reachability,requirement,motivation,Reachable from the channels the user already uses,current
+Autonomous Agent Operations,business_capability,strategy,The capability to run a self-improving agent,current
+Experience to Skill Loop,value_stream,strategy,Experience becomes a reusable skill,current
+Personal AI Agent,business_service,business,The agent service offered to the operator,current
+Agent Operator Role,business_actor,business,The human user role interacting with the agent,current
+Agent Runtime,application_component,application,Core agent loop (agent/),current
+Skill System,application_component,application,Procedural memory and skill store (skills/),current
+Skill Self-Improvement Loop,application_process,application,Autonomously creates and refines skills from experience,current
+Tool Suite,application_component,application,40+ integrated tools (tools/),current
+Messaging Gateway,application_component,application,Multi-platform gateway (gateway/),current
+Provider Layer,application_component,application,LLM provider integrations (providers/),current
+Terminal UI,application_component,application,Full-featured TUI (ui-tui/ tui_gateway/),current
+Cron Scheduler,application_component,application,Scheduled unattended tasks (cron/),current
+MCP Server Layer,application_component,application,Model Context Protocol servers (optional-mcps/),current
+ACP Adapter,application_component,application,Agent Communication Protocol adapter (acp_adapter/),current
+Subagent Spawner,application_service,application,Spawns subagents for parallel workstreams,current
+Datagen Pipeline,application_component,application,Batch trajectory generation for training (datagen),current
+Hermes CLI,application_component,application,Command-line entry point (hermes_cli/),current
+Procedural Memory,data_object,information,Stored skills and learned procedures,current
+Conversation Trajectory,data_object,information,Recorded runs used for training and replay,current
+Tool Catalog,data_object,information,Definitions of the available tools,current
+Execution Host,node,technology,Runs on VPS Docker SSH Modal or Daytona,current
+Python Runtime,system_software,technology,Python 3.11 via uv,current
+Model Providers,node,technology,Nous Portal OpenRouter OpenAI Anthropic endpoints,current
+Messaging Platforms,communication_network,technology,Telegram Discord Slack WhatsApp Signal channels,current
 ---CONNECTIONS---
 sourceName,targetName,type,label
-AI Developer,Reliable Multi-Agent Coordination,influence,wants
-Autonomous Task Execution,Reliable Multi-Agent Coordination,influence,motivates
-Tool-Use Safety,Tool Sandbox,realization,enforced by
-Deterministic Replay,Run Trace,realization,enabled by
-Agent Orchestration,Reliable Multi-Agent Coordination,realization,realizes
-Agent Platform,Agent Orchestration,realization,realizes
-Goal to Result,Agent Orchestration,serving,supports
-Task Decomposition,Agent Task,access,creates
-Result Verification,Agent Task,access,checks
-Orchestrator,Agent Platform,realization,realizes
-Orchestrator,Planner Agent,assignment,dispatches
-Orchestrator,Executor Agent,assignment,dispatches
-Orchestrator,Critic Agent,assignment,dispatches
-Planner Agent,Task Decomposition,realization,performs
-Executor Agent,Tool Invocation,serving,uses
-Critic Agent,Result Verification,realization,performs
-Planner Agent,Message Bus,access,publishes to
-Executor Agent,Message Bus,access,subscribes to
-Tool Invocation,Tool Registry,access,resolves
-Executor Agent,Memory Store,access,reads and writes
-Orchestrator,LLM Provider Adapter,serving,calls
-Memory Store,Conversation Memory,realization,stored in
-Tool Registry,Tool Catalog,realization,backed by
-Orchestrator,Task Queue,access,reads
-Orchestrator,Run Trace,access,writes
-Message Bus,NATS Broker,realization,backed by
-Orchestrator,Container Host,serving,runs on
+Agent Operator,Agent That Learns From Experience,influence,wants
+Self-Improving Automation,Agent That Learns From Experience,influence,motivates
+Self-Improvement via Procedural Memory,Skill Self-Improvement Loop,realization,realized by
+Autonomous Agent Operations,Agent That Learns From Experience,realization,realizes
+Personal AI Agent,Autonomous Agent Operations,realization,realizes
+Experience to Skill Loop,Autonomous Agent Operations,serving,supports
+Agent Operator Role,Personal AI Agent,serving,uses
+Agent Runtime,Personal AI Agent,realization,realizes
+Agent Runtime,Skill System,serving,uses
+Agent Runtime,Tool Suite,serving,uses
+Agent Runtime,Provider Layer,serving,calls
+Skill System,Skill Self-Improvement Loop,realization,performs
+Skill Self-Improvement Loop,Procedural Memory,access,writes
+Skill System,Procedural Memory,access,reads
+Tool Suite,Tool Catalog,realization,backed by
+Tool Suite,MCP Server Layer,serving,calls
+Agent Runtime,Subagent Spawner,serving,uses
+Messaging Gateway,Agent Runtime,serving,routes to
+Messaging Gateway,Messaging Platforms,serving,connects
+Terminal UI,Agent Runtime,serving,drives
+Hermes CLI,Agent Runtime,serving,drives
+ACP Adapter,Messaging Gateway,serving,bridges
+Cron Scheduler,Agent Runtime,triggering,wakes
+Datagen Pipeline,Conversation Trajectory,access,generates
+Provider Layer,Model Providers,serving,calls
+Agent Runtime,Execution Host,serving,runs on
+Agent Runtime,Python Runtime,serving,runs on

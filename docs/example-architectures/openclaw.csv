@@ -1,0 +1,60 @@
+name,type,layer,description,status
+Individual User,stakeholder,motivation,Person who wants a private assistant on their own devices,current
+Own Your Assistant,driver,motivation,Run a personal AI assistant locally not in someone elses cloud,current
+One Assistant Across All Channels,goal,motivation,Reach the assistant on the channels already in use,current
+Local-First,principle,motivation,The gateway runs on the users own devices,current
+Multi-Channel Reachability,requirement,motivation,Reachable from 15+ messaging channels,current
+Voice Interaction,requirement,motivation,Wake-word and talk mode on macOS iOS and Android,current
+Personal AI Assistance,business_capability,strategy,The capability to assist one person across channels,current
+Message to Response,value_stream,strategy,A message is routed to an agent and answered,current
+Personal AI Assistant,business_service,business,The assistant service offered to the user,current
+User Role,business_actor,business,The human interacting via chat or voice,current
+Local Gateway,application_component,application,Control plane for sessions channels tools and events (src/),current
+Agent Router,application_component,application,Routes messages to the right agent (multi-agent),current
+Channel Connectors,application_component,application,WhatsApp Telegram Slack Discord Signal iMessage adapters,current
+Voice Engine,application_component,application,Wake-word and talk mode,current
+Live Canvas,application_component,application,Agent-driven visual workspace,current
+Tool Ecosystem,application_component,application,Browser canvas nodes cron and session tools,current
+Session Manager,application_service,application,Manages conversation sessions and state,current
+Cron Automation,application_component,application,Scheduled recurring tasks,current
+Extension System,application_component,application,Bundled plugins (extensions/),current
+ClawHub Skill Registry,application_component,application,Skill registry (skills/),current
+Companion App macOS,application_component,application,Desktop companion (apps/),current
+Companion App Mobile,application_component,application,iOS and Android companion (apps/),current
+Web UI,application_component,application,Browser management UI (ui/),current
+Session State,data_object,information,Per-session conversation and tool state,current
+Skill Catalog,data_object,information,Installable skills from ClawHub,current
+Channel Credentials,data_object,information,Encrypted tokens for connected channels,current
+User Device,node,technology,The local machine running the gateway daemon,current
+Node Runtime,system_software,technology,Node 24 runtime,current
+Messaging Channels,communication_network,technology,External chat and voice channels,current
+LLM Providers,node,technology,External model providers such as OpenAI,current
+---CONNECTIONS---
+sourceName,targetName,type,label
+Individual User,One Assistant Across All Channels,influence,wants
+Own Your Assistant,Local-First,influence,motivates
+Local-First,Local Gateway,realization,realized by
+Personal AI Assistance,One Assistant Across All Channels,realization,realizes
+Personal AI Assistant,Personal AI Assistance,realization,realizes
+Message to Response,Personal AI Assistance,serving,supports
+User Role,Personal AI Assistant,serving,uses
+Local Gateway,Personal AI Assistant,realization,realizes
+Local Gateway,Agent Router,composition,includes
+Local Gateway,Session Manager,serving,uses
+Agent Router,Tool Ecosystem,serving,calls
+Channel Connectors,Local Gateway,serving,feed
+Channel Connectors,Messaging Channels,serving,connects
+Voice Engine,Local Gateway,serving,feeds
+Live Canvas,Agent Router,serving,driven by
+Tool Ecosystem,Cron Automation,serving,includes
+Extension System,Local Gateway,serving,extends
+Agent Router,ClawHub Skill Registry,access,loads skills
+ClawHub Skill Registry,Skill Catalog,realization,backed by
+Session Manager,Session State,access,reads and writes
+Channel Connectors,Channel Credentials,access,reads
+Companion App macOS,Local Gateway,serving,connects to
+Companion App Mobile,Local Gateway,serving,connects to
+Web UI,Local Gateway,serving,manages
+Agent Router,LLM Providers,serving,calls
+Local Gateway,User Device,realization,runs on
+Local Gateway,Node Runtime,serving,runs on

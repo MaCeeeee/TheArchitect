@@ -1,6 +1,10 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IWorkspace extends Document {
+// Document<string> → string _id. The client-generated stable id (e.g. "ws-1748-abc")
+// is used as the Mongo _id so it survives reloads and stays consistent with each
+// element's `workspaceId` — otherwise workspace deletion can't find the elements.
+export interface IWorkspace extends Document<string> {
+  _id: string;
   name: string;
   projectId: mongoose.Types.ObjectId;
   source: 'bpmn' | 'n8n' | 'manual' | 'archimate' | 'csv' | 'blueprint';
@@ -13,6 +17,7 @@ export interface IWorkspace extends Document {
 
 const workspaceSchema = new Schema<IWorkspace>(
   {
+    _id: { type: String, required: true },
     name: { type: String, required: true },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
     source: {

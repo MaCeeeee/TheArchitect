@@ -116,7 +116,7 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
 
       if (isNew) {
         addWorkspace({ id: wsId, name, projectId, source: 'csv', color, offsetX, createdAt: new Date().toISOString() });
-        await workspaceAPI.create(projectId, { name, source: 'csv', color, offsetX }).catch(() => {});
+        await workspaceAPI.create(projectId, { id: wsId, name, source: 'csv', color, offsetX }).catch(() => {});
       }
 
       importElements(offsetElements, preview.connections, wsId);

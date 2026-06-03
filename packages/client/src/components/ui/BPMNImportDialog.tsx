@@ -121,7 +121,7 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
         addWorkspace({ id: wsId, name, projectId, source: 'bpmn', color, offsetX, createdAt: new Date().toISOString() });
 
         // Persist workspace to server
-        await workspaceAPI.create(projectId, { name, source: 'bpmn', color, offsetX }).catch(() => {});
+        await workspaceAPI.create(projectId, { id: wsId, name, source: 'bpmn', color, offsetX }).catch(() => {});
       }
 
       // Import elements into local store

@@ -214,7 +214,7 @@ export default function N8nImportDialog({ isOpen, onClose }: Props) {
         addWorkspace({ id: wsId, name, projectId, source: 'n8n', color, offsetX, createdAt: new Date().toISOString() });
 
         // Persist workspace to server
-        await workspaceAPI.create(projectId, { name, source: 'n8n', color, offsetX }).catch(() => {});
+        await workspaceAPI.create(projectId, { id: wsId, name, source: 'n8n', color, offsetX }).catch(() => {});
       }
 
       // Import elements into local store

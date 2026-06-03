@@ -1,57 +1,69 @@
 name,type,layer,description,status
-Knowledge Worker,stakeholder,motivation,Individual building a personal knowledge base,current
-Data Ownership,driver,motivation,Users want full local control over their notes,current
-Frictionless Note-Taking,goal,motivation,Capture and link ideas with minimal friction,current
-Local-First Principle,principle,motivation,Data lives on the device; cloud is optional,current
+Knowledge Worker,stakeholder,motivation,Person building a personal knowledge base,current
+Data Ownership,driver,motivation,Notes are plain files the user fully controls,current
+Frictionless Knowledge Management,goal,motivation,Capture and link ideas with minimal friction,current
+Local-First and Plain-Text,principle,motivation,Data lives on the device as markdown files,current
 Offline Capability,requirement,motivation,The app MUST work fully without a network connection,current
-Plugin Extensibility,requirement,motivation,Third parties can extend the app via a plugin API,current
-Knowledge Management,business_capability,strategy,The capability to capture, link and retrieve knowledge,current
-Note to Insight,value_stream,strategy,Capture note then link then surface insight,current
-Personal Knowledge Management,business_service,business,The end-user PKM service Obsidian delivers,current
+Plugin Extensibility,requirement,motivation,Third parties extend the app via the public Plugin API,current
+Personal Knowledge Management,business_capability,strategy,The capability to capture link and retrieve knowledge,current
+Note to Insight,value_stream,strategy,Capture a note then link it then surface insight,current
+Personal Knowledge Management Service,business_service,business,The PKM experience Obsidian delivers,current
+Knowledge Worker Role,business_actor,business,The human author using the app,current
 Note Authoring,process,business,Writing and editing markdown notes,current
 Linking and Tagging,process,business,Creating wiki-links and tags between notes,current
 Markdown Note,business_object,business,A single human-readable note document,current
 Vault,business_object,business,A folder of notes forming a knowledge base,current
-Obsidian Desktop App,application_component,application,Electron desktop client,current
-Obsidian Mobile App,application_component,application,iOS and Android client,current
-Plugin Runtime,application_component,application,Sandbox that loads community and core plugins,current
-Graph View,application_component,application,Interactive node-link visualisation of the vault,current
-Canvas,application_component,application,Spatial whiteboard for arranging notes,current
-Search Service,application_service,application,Full-text and tag search across the vault,current
-Backlink Service,application_service,application,Resolves and displays note backlinks,current
-Obsidian Sync,application_component,application,Optional end-to-end encrypted vault sync,current
-Obsidian Publish,application_component,application,Optional service to publish notes as a website,current
-Markdown Vault,data_object,information,On-disk collection of .md files and attachments,current
-Plugin Registry,data_object,information,Catalog of installable community plugins,current
-Encrypted Sync Snapshot,data_object,information,Versioned encrypted copy of the vault for sync,current
+Obsidian Core App,application_component,application,Closed-source desktop and mobile client,current
+Vault API,application_component,application,Reads and writes vault files (obsidian-api Vault),current
+Workspace,application_component,application,Pane and layout management (obsidian-api Workspace),current
+MetadataCache,application_component,application,Index of links tags and backlinks (obsidian-api),current
+Editor,application_component,application,Markdown editor surface (obsidian-api Editor),current
+Graph View,application_component,application,Interactive node-link view of the vault,current
+Canvas,application_component,application,Infinite spatial canvas using JSON Canvas,current
+Bases,application_component,application,Database-style views over note properties,current
+Plugin System,application_component,application,Loads community and core plugins (Plugin API),current
+Obsidian Sync,application_component,application,End-to-end encrypted vault sync (obsidian-headless),current
+Obsidian Publish,application_component,application,Publishes notes as a website,current
+Web Clipper,application_component,application,Browser extension capturing web pages (obsidian-clipper),current
+Importer,application_component,application,Imports notes from other apps (obsidian-importer),current
+Community Plugin Registry,application_component,application,Catalog of plugins and themes (obsidian-releases),current
+Markdown Vault Files,data_object,information,On-disk .md files and attachments,current
+Metadata Index,data_object,information,Cached links tags and backlinks,current
+Canvas File,data_object,information,A .canvas JSON Canvas document,current
 Local Filesystem,node,technology,The device file system holding the vault,current
-Electron Runtime,system_software,technology,Chromium plus Node runtime for the desktop app,current
-CodeMirror Editor,system_software,technology,The text editor engine inside the app,current
+Electron Runtime,system_software,technology,Chromium and Node runtime for the desktop app,current
+CodeMirror Engine,system_software,technology,The text editor engine inside the app,current
 Community Plugin,artifact,technology,A third-party JavaScript plugin bundle,current
 ---CONNECTIONS---
 sourceName,targetName,type,label
-Knowledge Worker,Frictionless Note-Taking,influence,wants
-Data Ownership,Local-First Principle,influence,motivates
-Local-First Principle,Offline Capability,realization,leads to
-Knowledge Management,Frictionless Note-Taking,realization,realizes
-Personal Knowledge Management,Knowledge Management,realization,realizes
-Note to Insight,Knowledge Management,serving,supports
+Knowledge Worker,Frictionless Knowledge Management,influence,wants
+Data Ownership,Local-First and Plain-Text,influence,motivates
+Local-First and Plain-Text,Offline Capability,realization,leads to
+Personal Knowledge Management,Frictionless Knowledge Management,realization,realizes
+Personal Knowledge Management Service,Personal Knowledge Management,realization,realizes
+Note to Insight,Personal Knowledge Management,serving,supports
+Knowledge Worker Role,Personal Knowledge Management Service,serving,uses
 Note Authoring,Markdown Note,access,creates
 Linking and Tagging,Markdown Note,access,links
 Markdown Note,Vault,composition,part of
-Obsidian Desktop App,Personal Knowledge Management,realization,realizes
-Obsidian Mobile App,Personal Knowledge Management,realization,realizes
-Obsidian Desktop App,Plugin Runtime,composition,hosts
-Obsidian Desktop App,Graph View,composition,includes
-Obsidian Desktop App,Canvas,composition,includes
-Obsidian Desktop App,Search Service,serving,uses
-Search Service,Backlink Service,serving,supports
-Plugin Runtime,Community Plugin,access,loads
-Community Plugin,Plugin Registry,access,published in
-Obsidian Sync,Encrypted Sync Snapshot,access,reads and writes
-Obsidian Desktop App,Markdown Vault,access,reads and writes
-Markdown Vault,Local Filesystem,realization,stored on
-Obsidian Desktop App,Electron Runtime,serving,runs on
-Obsidian Desktop App,CodeMirror Editor,serving,uses
-Obsidian Publish,Markdown Vault,access,publishes from
-Offline Capability,Local Filesystem,realization,enabled by
+Obsidian Core App,Personal Knowledge Management Service,realization,realizes
+Obsidian Core App,Workspace,composition,includes
+Obsidian Core App,Editor,composition,includes
+Obsidian Core App,Vault API,composition,includes
+Obsidian Core App,Plugin System,composition,hosts
+Editor,Note Authoring,serving,supports
+Vault API,Markdown Vault Files,access,reads and writes
+MetadataCache,Metadata Index,access,maintains
+MetadataCache,Markdown Vault Files,access,indexes
+Graph View,MetadataCache,serving,reads
+Canvas,Canvas File,access,reads and writes
+Bases,MetadataCache,serving,reads
+Plugin System,Community Plugin,access,loads
+Community Plugin,Community Plugin Registry,access,published in
+Obsidian Sync,Markdown Vault Files,access,syncs
+Obsidian Publish,Markdown Vault Files,access,publishes from
+Web Clipper,Vault API,serving,sends to
+Importer,Vault API,serving,writes to
+Markdown Vault Files,Local Filesystem,realization,stored on
+Obsidian Core App,Electron Runtime,serving,runs on
+Editor,CodeMirror Engine,serving,uses

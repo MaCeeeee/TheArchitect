@@ -185,8 +185,9 @@ router.post(
         return;
       }
 
-      // Create workspace
+      // Create workspace (string _id so it stays consistent with element.workspaceId across reloads)
       const workspace = await Workspace.create({
+        _id: `ws-bp-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         name: workspaceName || `Blueprint - ${new Date().toLocaleDateString('en-US')}`,
         projectId,
         source: 'blueprint',

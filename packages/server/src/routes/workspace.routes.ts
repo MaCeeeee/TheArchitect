@@ -21,8 +21,12 @@ router.get('/:projectId', requireProjectAccess('viewer'), async (req: Request, r
 // POST /api/workspaces/:projectId — create a workspace
 router.post('/:projectId', requireProjectAccess('editor'), async (req: Request, res: Response) => {
   try {
-    const { name, source, color, offsetX } = req.body;
+    const { id, name, source, color, offsetX } = req.body;
+    // Use the client-provided stable id as _id so it matches each element's
+    // workspaceId across reloads (enables reliable workspace deletion).
+    const wsId = (typeof id === 'string' && id) ? id : `ws-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const workspace = await Workspace.create({
+      _id: wsId,
       name,
       projectId: req.params.projectId,
       source: source || 'manual',
