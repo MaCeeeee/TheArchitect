@@ -164,7 +164,7 @@ router.post(
             `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
                    (c:ArchitectureElement {id: $childId, projectId: $projectId})
              MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $childId, type: 'composition'}]->(c)
-             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp()
+             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp(), r.provenance = 'ai_generated'
              RETURN r`,
             { processId, projectId, childId: aId, connId: uuid() },
           );
@@ -226,7 +226,7 @@ router.post(
           await runCypher(
             `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
                    (c:ArchitectureElement {id: $childId, projectId: $projectId})
-             CREATE (p)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(c)
+             CREATE (p)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes', provenance: 'ai_generated'}]->(c)
              RETURN r`,
             { processId, projectId, childId: aId, connId: uuid() },
           );
@@ -243,7 +243,7 @@ router.post(
           `MATCH (a:ArchitectureElement {id: $from, projectId: $projectId}),
                  (b:ArchitectureElement {id: $to, projectId: $projectId})
            MERGE (a)-[r:CONNECTS_TO {sourceElementId: $from, targetElementId: $to, type: 'flow'}]->(b)
-           ON CREATE SET r.id = $connId, r.label = 'next', r.createdAt = timestamp()
+           ON CREATE SET r.id = $connId, r.label = 'next', r.createdAt = timestamp(), r.provenance = 'ai_generated'
            RETURN r`,
           { from: processedIds[i], to: processedIds[i + 1], projectId, connId: uuid() },
         );
@@ -522,7 +522,7 @@ router.post(
           `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
                  (d:ArchitectureElement {id: $dataId, projectId: $projectId})
            MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $dataId, type: 'access'}]->(d)
-           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp(), r.provenance = 'ai_generated'
            ON MATCH  SET r.label = coalesce($label, r.label)
            RETURN r.id AS id`,
           { processId, projectId, dataId: dataObjectId, connId: connectionId, label: accessLabel },
@@ -706,7 +706,7 @@ router.post(
           `MATCH (p:ArchitectureElement {id: $processId, projectId: $projectId}),
                  (d:ArchitectureElement {id: $dataId, projectId: $projectId})
            MERGE (p)-[r:CONNECTS_TO {sourceElementId: $processId, targetElementId: $dataId, type: 'access'}]->(d)
-           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+           ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp(), r.provenance = 'ai_generated'
            ON MATCH  SET r.label = coalesce($label, r.label)
            RETURN r.id AS id`,
           { processId, projectId, dataId: dataObjectId, connId: connectionId, label: accessLabel },
@@ -867,7 +867,7 @@ router.post(
             `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
                    (proc:ArchitectureElement {id: $procId, projectId: $projectId})
              MERGE (cap)-[r:CONNECTS_TO {sourceElementId: $capabilityId, targetElementId: $procId, type: 'composition'}]->(proc)
-             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp()
+             ON CREATE SET r.id = $connId, r.label = 'composes', r.createdAt = timestamp(), r.provenance = 'ai_generated'
              RETURN r`,
             { capabilityId, procId: pId, projectId, connId: uuid() },
           );
@@ -922,7 +922,7 @@ router.post(
           await runCypher(
             `MATCH (cap:ArchitectureElement {id: $capabilityId, projectId: $projectId}),
                    (proc:ArchitectureElement {id: $procId, projectId: $projectId})
-             CREATE (cap)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes'}]->(proc)
+             CREATE (cap)-[r:CONNECTS_TO {id: $connId, type: 'composition', label: 'composes', provenance: 'ai_generated'}]->(proc)
              RETURN r`,
             { capabilityId, procId: pId, projectId, connId: uuid() },
           );
@@ -1499,7 +1499,7 @@ async function createConnection(
     `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
            (b:ArchitectureElement {id: $targetId, projectId: $projectId})
      MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
-     ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+     ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp(), r.provenance = 'ai_generated'
      RETURN r`,
     { sourceId, targetId, projectId, connId: uuid(), type, label },
   );

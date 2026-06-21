@@ -579,7 +579,7 @@ export async function generateBlueprint(
              MATCH (a:ArchitectureElement {id: row.sourceId, projectId: $projectId}),
                    (b:ArchitectureElement {id: row.targetId, projectId: $projectId})
              MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
-             ON CREATE SET r.id = row.cid, r.label = row.label, r.source = 'blueprint-auto',
+             ON CREATE SET r.id = row.cid, r.label = row.label, r.source = 'blueprint-auto', r.provenance = 'import',
                            r.projectId = $projectId, r.createdAt = timestamp()
              RETURN count(r) AS n`,
             { rows, projectId: input.projectId },
