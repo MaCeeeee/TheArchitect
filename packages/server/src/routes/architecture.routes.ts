@@ -14,6 +14,7 @@ import {
   provenanceCypherFragment,
   provenanceCoreFragment,
   provenanceParams,
+  provenanceForActor,
 } from '../services/provenance.helper';
 import {
   suggestConnectionsForIsolatedElements,
@@ -641,7 +642,7 @@ router.post(
           agentPurpose: element.agentPurpose || null,
           autonomyLevel: element.autonomyLevel || null,
           costPerMonth: element.costPerMonth ?? null,
-          ...provenanceParams({ provenance: 'user' }),
+          ...provenanceParams(provenanceForActor(!!(req as any).apiKeyPrefix)),
         }
       );
 
@@ -974,7 +975,7 @@ router.post(
           connectionId,
           type: parsed.type,
           label: parsed.label || '',
-          ...provenanceParams({ provenance: 'user' }),
+          ...provenanceParams(provenanceForActor(!!(req as any).apiKeyPrefix)),
         }
       );
 

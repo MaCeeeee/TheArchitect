@@ -4,6 +4,7 @@ import {
   provenanceCoreFragment,
   provenanceInlineFragment,
   provenanceParams,
+  provenanceForActor,
 } from '../services/provenance.helper';
 
 describe('provenance.helper (REQ-PROV-001.1)', () => {
@@ -72,6 +73,15 @@ describe('provenance.helper (REQ-PROV-001.1)', () => {
     });
     it('nutzt den übergebenen Node-Variablennamen', () => {
       expect(provenanceCypherFragment('r')).toContain('r.provenance = $prov_provenance');
+    });
+  });
+
+  describe('provenanceForActor (API-Key vs. interaktiv)', () => {
+    it('interaktiver User (JWT) → provenance user', () => {
+      expect(provenanceForActor(false)).toEqual({ provenance: 'user' });
+    });
+    it('API-Key-Push → import / source api (zertifizierungspflichtig)', () => {
+      expect(provenanceForActor(true)).toEqual({ provenance: 'import', source: 'api' });
     });
   });
 

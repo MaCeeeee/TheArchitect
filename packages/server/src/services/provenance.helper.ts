@@ -32,6 +32,16 @@ export function deriveProvenance(source?: string | null): Provenance {
 }
 
 /**
+ * Provenance je nach Akteur eines Schreib-Requests.
+ * - Interaktiver User (JWT-Session) → `user` (gilt als vom Menschen verifiziert).
+ * - Programmatischer API-Key-Push (`ta_…`) → `import` / source `api` — maschinen-
+ *   eingespielt, also NICHT auto-vertraut, sondern zertifizierungspflichtig (UC-CERT).
+ */
+export function provenanceForActor(viaApiKey: boolean): Partial<ProvenanceFields> {
+  return viaApiKey ? { provenance: 'import', source: 'api' } : { provenance: 'user' };
+}
+
+/**
  * Cypher-`SET`-Fragment für ALLE fünf Provenance-Felder. Für Producer, die ein
  * Atom neu anlegen und ihre Herkunft vollständig kennen.
  *
