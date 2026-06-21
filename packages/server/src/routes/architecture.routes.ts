@@ -10,6 +10,13 @@ import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { evaluateElementPolicies } from '../services/policy-evaluation.service';
 import {
+  provenanceInlineFragment,
+  provenanceCypherFragment,
+  provenanceCoreFragment,
+  provenanceParams,
+  provenanceForActor,
+} from '../services/provenance.helper';
+import {
   suggestConnectionsForIsolatedElements,
   type HealReport,
 } from '../services/connectionSuggestion.service';
@@ -54,6 +61,10 @@ const AutonomyEnum = z.enum(['copilot', 'semi_autonomous', 'autonomous']);
 
 const SevenRsEnum = z.enum(['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor']);
 
+// Provenance/Konfidenz (UC-PROV-001) sind BEWUSST nicht Teil der Input-Schemas:
+// sie werden ausschliesslich serverseitig gesetzt (provenanceForActor + Producer).
+// Ein Client kann seine Herkunft so NICHT faelschen — Zod verwirft die Felder still.
+// (Trust-Sicherheit: 'user' = vom Menschen verifiziert darf nicht spoofbar sein.)
 const CreateElementSchema = z.object({
   id: z.string().optional(),
   type: z.string().min(1),
@@ -595,6 +606,7 @@ router.post(
           agentProvider: $agentProvider, agentModel: $agentModel,
           agentPurpose: $agentPurpose, autonomyLevel: $autonomyLevel,
           costPerMonth: $costPerMonth,
+          ${provenanceInlineFragment()},
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`;
 
@@ -634,6 +646,7 @@ router.post(
           agentPurpose: element.agentPurpose || null,
           autonomyLevel: element.autonomyLevel || null,
           costPerMonth: element.costPerMonth ?? null,
+          ...provenanceParams(provenanceForActor(!!(req as any).apiKeyPrefix)),
         }
       );
 
@@ -957,7 +970,7 @@ router.post(
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
          MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
-         ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp()
+         ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp(), ${provenanceCypherFragment('r')}
          ON MATCH  SET r.label = coalesce($label, r.label)
          RETURN r.id AS id`,
         {
@@ -966,6 +979,7 @@ router.post(
           connectionId,
           type: parsed.type,
           label: parsed.label || '',
+          ...provenanceParams(provenanceForActor(!!(req as any).apiKeyPrefix)),
         }
       );
 
@@ -1105,9 +1119,9 @@ router.post(
              MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
              ON CREATE SET r.id = row.cid, r.label = '', r.source = 'ai-heal',
                            r.confidence = row.confidence, r.aiReason = row.aiReason,
-                           r.projectId = $projectId, r.createdAt = timestamp()
+                           r.projectId = $projectId, r.createdAt = timestamp(), ${provenanceCoreFragment('r')}
              RETURN r.id AS id, row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type`,
-            { rows: newRows, projectId }
+            { rows: newRows, projectId, ...provenanceParams({ provenance: 'ai_generated' }) }
           );
           for (const rec of writeRecords) {
             applied.push({
@@ -1215,6 +1229,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson,
+            provenance: 'import', source: 'bpmn',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1241,7 +1256,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
@@ -1288,6 +1303,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'n8n',
+            provenance: 'import', source: 'n8n',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1314,7 +1330,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
@@ -1393,6 +1409,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'csv',
+            provenance: 'import', source: 'csv',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1419,7 +1436,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,

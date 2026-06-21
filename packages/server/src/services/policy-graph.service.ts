@@ -29,6 +29,8 @@ export async function syncPolicyToNeo4j(policy: IPolicy, projectId: string): Pro
          p.riskLevel = 'low',
          p.maturityLevel = 2,
          p.metadataJson = $metadata,
+         p.provenance = 'ai_generated',
+         p.source = 'policy',
          p.updatedAt = datetime()`,
     {
       id: `policy-${policyId}`,

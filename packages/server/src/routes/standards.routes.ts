@@ -774,6 +774,7 @@ router.post(
           id: $id, projectId: $projectId, name: $name, type: $type,
           layer: $layer, description: $description, status: 'planned',
           riskLevel: 'medium', maturityLevel: 1,
+          provenance: 'ai_generated', source: 'standards-coverage',
           createdAt: datetime(), updatedAt: datetime()
         })`,
         { id: elementId, projectId, name, type, layer, description: description || '' },

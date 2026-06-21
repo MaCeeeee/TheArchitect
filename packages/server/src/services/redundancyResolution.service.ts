@@ -84,7 +84,7 @@ export async function mergeElements(
       `MATCH (t:ArchitectureElement {id: $targetId, projectId: $projectId}),
              (other:ArchitectureElement {id: $otherId, projectId: $projectId})
        MERGE (t)-[r:CONNECTS_TO {sourceElementId: $targetId, targetElementId: $otherId, type: $type}]->(other)
-       ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+       ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp(), r.provenance = 'user'
        RETURN r.id AS id`,
       { targetId, projectId, otherId, type, label, connId: uuid() },
     );
@@ -105,7 +105,7 @@ export async function mergeElements(
       `MATCH (other:ArchitectureElement {id: $otherId, projectId: $projectId}),
              (t:ArchitectureElement {id: $targetId, projectId: $projectId})
        MERGE (other)-[r:CONNECTS_TO {sourceElementId: $otherId, targetElementId: $targetId, type: $type}]->(t)
-       ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp()
+       ON CREATE SET r.id = $connId, r.label = $label, r.createdAt = timestamp(), r.provenance = 'user'
        RETURN r.id AS id`,
       { otherId, targetId, projectId, type, label, connId: uuid() },
     );

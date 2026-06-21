@@ -69,6 +69,12 @@ export interface ArchitectureElement {
   lastActiveDate?: string;
   dataSources?: string[];
   outputTargets?: string[];
+  // Provenance & Trust (UC-PROV-001) — serverseitig gesetzt, im Client read-only (Anzeige)
+  provenance?: 'user' | 'import' | 'ai_generated' | 'mcp_discovered';
+  source?: string;
+  confidence?: number;
+  certifiedBy?: string;
+  certifiedAt?: string;
 }
 
 export interface Connection {
@@ -78,6 +84,12 @@ export interface Connection {
   type: string;
   label?: string;
   metadata?: Record<string, unknown>;
+  // Provenance & Trust (UC-PROV-001) — serverseitig gesetzt, im Client read-only
+  provenance?: 'user' | 'import' | 'ai_generated' | 'mcp_discovered';
+  source?: string;
+  confidence?: number;
+  certifiedBy?: string;
+  certifiedAt?: string;
 }
 
 interface HistoryEntry {

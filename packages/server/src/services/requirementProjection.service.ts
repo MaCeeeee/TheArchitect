@@ -140,6 +140,7 @@ export async function projectRequirementsToModel(args: {
        d.maturityLevel = 1,
        d.posX = row.posX, d.posY = row.posY, d.posZ = row.posZ,
        d.metadataJson = '{"source":"compliance-requirement","role":"driver"}',
+       d.provenance = 'ai_generated', d.source = 'compliance-requirement',
        d.createdAt = timestamp(), d.updatedAt = timestamp()
      ON MATCH SET
        d.posX = row.posX, d.posY = row.posY, d.posZ = row.posZ,
@@ -208,6 +209,7 @@ export async function projectRequirementsToModel(args: {
        r.posX = row.posX, r.posY = row.posY, r.posZ = row.posZ,
        r.compliancePriority = row.priority,
        r.metadataJson = row.metadataJson,
+       r.provenance = 'ai_generated', r.source = 'compliance-requirement',
        r.createdAt = timestamp(), r.updatedAt = timestamp()
      ON MATCH SET
        r.type = row.kind,
@@ -229,7 +231,7 @@ export async function projectRequirementsToModel(args: {
            (r:ArchitectureElement {projectId: $projectId, complianceRequirementId: row.complianceRequirementId})
      MERGE (d)-[c:CONNECTS_TO {type: 'influence', sourceElementId: d.id, targetElementId: r.id}]->(r)
      ON CREATE SET c.id = randomUUID(), c.label = '', c.source = 'compliance-requirement',
-                   c.projectId = $projectId, c.createdAt = timestamp()
+                   c.provenance = 'ai_generated', c.projectId = $projectId, c.createdAt = timestamp()
      RETURN count(c) AS n`,
     { rows: reqRows, projectId: args.projectId },
   );
@@ -252,7 +254,7 @@ export async function projectRequirementsToModel(args: {
              (r:ArchitectureElement {projectId: $projectId, complianceRequirementId: row.complianceRequirementId})
        MERGE (src)-[c:CONNECTS_TO {type: 'realization', sourceElementId: src.id, targetElementId: r.id}]->(r)
        ON CREATE SET c.id = randomUUID(), c.label = '', c.source = 'compliance-requirement',
-                     c.projectId = $projectId, c.createdAt = timestamp()
+                     c.provenance = 'ai_generated', c.projectId = $projectId, c.createdAt = timestamp()
        RETURN count(c) AS n`,
       { rows: realizationRows, projectId: args.projectId },
     );

@@ -566,6 +566,7 @@ export async function createTemporaryGraph(parsed: ParseResult): Promise<{ proje
         id: $id, projectId: $projectId, name: $name, type: $type,
         layer: $layer, description: $description, status: $status,
         riskLevel: $riskLevel, maturityLevel: $maturityLevel,
+        provenance: 'import', source: 'upload',
         createdAt: $now, updatedAt: $now
       })`,
       params: {
@@ -599,7 +600,8 @@ export async function createTemporaryGraph(parsed: ParseResult): Promise<{ proje
               MATCH (t:ArchitectureElement {id: $targetId, projectId: $projectId})
               CREATE (s)-[:CONNECTS_TO {
                 id: $connId, type: $type, label: $label,
-                projectId: $projectId, createdAt: $now
+                projectId: $projectId, createdAt: $now,
+                provenance: 'import', source: 'upload'
               }]->(t)`,
       params: {
         sourceId, targetId, projectId,

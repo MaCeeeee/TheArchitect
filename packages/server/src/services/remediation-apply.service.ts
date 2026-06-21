@@ -91,6 +91,7 @@ export async function applyProposal(
         maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
         posX: $posX, posY: $posY, posZ: $posZ,
         metadataJson: $metadataJson,
+        provenance: 'ai_generated', source: 'remediation',
         createdAt: datetime(), updatedAt: datetime()
       })`,
       params: {
@@ -136,7 +137,7 @@ export async function applyProposal(
 
     operations.push({
       query: `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-       CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+       CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'ai_generated', source: 'remediation'}]->(b)`,
       params: {
         sourceId,
         targetId,

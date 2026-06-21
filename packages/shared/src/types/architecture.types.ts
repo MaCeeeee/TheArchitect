@@ -113,7 +113,22 @@ export interface Position3D {
   z: number;
 }
 
-export interface ArchitectureElement {
+/**
+ * Trust-Spine (UC-PROV-001 / THE-320): Herkunft + Konfidenz pro Atom.
+ * Additiv & optional — Default `provenance: 'user'`. `source`/`confidence`
+ * sind adoptierte Bestandsfelder ("adopt clean") und werden nie blind überschrieben.
+ */
+export type Provenance = 'user' | 'import' | 'ai_generated' | 'mcp_discovered';
+
+export interface ProvenanceFields {
+  provenance?: Provenance;
+  source?: string;        // z.B. 'csv', 'blueprint', 'ai-heal', 'compliance-requirement'
+  confidence?: number;    // 0..1 — nur bei ai_generated / mcp_discovered relevant
+  certifiedBy?: string;   // userId — Notar-Handlung (UC-CERT-001)
+  certifiedAt?: string;   // ISO-Timestamp
+}
+
+export interface ArchitectureElement extends ProvenanceFields {
   id: string;
   type: ElementType;
   name: string;
@@ -167,7 +182,7 @@ export interface ArchitectureElement {
   updatedAt: string;
 }
 
-export interface Connection {
+export interface Connection extends ProvenanceFields {
   id: string;
   sourceId: string;
   targetId: string;
