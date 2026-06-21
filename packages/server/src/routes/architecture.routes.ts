@@ -61,6 +61,10 @@ const AutonomyEnum = z.enum(['copilot', 'semi_autonomous', 'autonomous']);
 
 const SevenRsEnum = z.enum(['retain', 'retire', 'rehost', 'relocate', 'replatform', 'repurchase', 'refactor']);
 
+// Provenance/Konfidenz (UC-PROV-001) sind BEWUSST nicht Teil der Input-Schemas:
+// sie werden ausschliesslich serverseitig gesetzt (provenanceForActor + Producer).
+// Ein Client kann seine Herkunft so NICHT faelschen — Zod verwirft die Felder still.
+// (Trust-Sicherheit: 'user' = vom Menschen verifiziert darf nicht spoofbar sein.)
 const CreateElementSchema = z.object({
   id: z.string().optional(),
   type: z.string().min(1),
