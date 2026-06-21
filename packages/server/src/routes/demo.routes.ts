@@ -75,6 +75,7 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
           costEstimatePessimistic: $costEstimatePessimistic,
           successProbability: $successProbability,
           costOfDelayPerWeek: $costOfDelayPerWeek,
+          provenance: 'user',
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`,
         {
@@ -116,7 +117,7 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
     for (const conn of DEMO_CONNECTIONS) {
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'user'}]->(b)
          RETURN r`,
         {
           sourceId: conn.sourceId,
@@ -248,6 +249,7 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
           costEstimatePessimistic: $costEstimatePessimistic,
           successProbability: $successProbability,
           costOfDelayPerWeek: $costOfDelayPerWeek,
+          provenance: 'user',
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`,
         {
@@ -288,7 +290,7 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
     for (const conn of DEMO_CONNECTIONS_BSH) {
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'user'}]->(b)
          RETURN r`,
         {
           sourceId: conn.sourceId,
@@ -311,6 +313,7 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
           maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
           posX: $posX, posY: $posY, posZ: $posZ,
           metadataJson: $metadataJson,
+          provenance: 'user',
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`,
         { ...el, projectId }
@@ -320,7 +323,7 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
                (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+         CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'user'}]->(b)
          RETURN r`,
         {
           sourceId: conn.sourceId,
@@ -429,6 +432,7 @@ router.post(
             maturityLevel: $maturityLevel, riskLevel: $riskLevel, status: $status,
             posX: $posX, posY: $posY, posZ: $posZ,
             metadataJson: $metadataJson,
+            provenance: 'user',
             createdAt: datetime(), updatedAt: datetime()
           }) RETURN e`,
           { ...el, projectId }
@@ -439,7 +443,7 @@ router.post(
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
                  (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-           CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)
+           CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'user'}]->(b)
            RETURN r`,
           {
             sourceId: conn.sourceId,

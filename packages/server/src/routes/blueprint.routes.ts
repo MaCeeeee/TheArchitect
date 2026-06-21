@@ -210,6 +210,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'blueprint',
+            provenance: 'import', source: 'blueprint',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -238,7 +239,7 @@ router.post(
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}),
                  (b:ArchitectureElement {id: $targetId, projectId: $projectId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import', source: 'blueprint'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
