@@ -44,6 +44,7 @@ import complianceRoutes from './routes/compliance.routes';
 import requirementsRoutes from './routes/requirements.routes';
 import aiGeneratorRoutes from './routes/aiGenerator.routes';
 import decisionPatternsRoutes from './routes/decisionPatterns.routes';
+import certificationRoutes from './routes/certification.routes';
 import { seedDecisionPatterns } from './seeds/decision-patterns.seed';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
@@ -141,6 +142,7 @@ async function main() {
   app.use('/api/auth', authRoutes);
   app.use('/api/projects', projectRoutes);
   app.use('/api/projects', architectureRoutes);
+  app.use('/api/projects', certificationRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/projects', analyticsRoutes);
   app.use('/api/projects', governanceRoutes);
