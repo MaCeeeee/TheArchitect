@@ -149,6 +149,7 @@ export async function projectPoliciesAsRequirements(
        r.sourceStandardName = $standardName,
        r.sourceSection = row.sourceSection,
        r.metadataJson = '{"source":"compliance-policy"}',
+       r.provenance = 'ai_generated', r.source = 'compliance-policy',
        r.createdAt = timestamp(),
        r.updatedAt = timestamp()
      ON MATCH SET
@@ -177,6 +178,7 @@ export async function projectPoliciesAsRequirements(
        ON CREATE SET c.id = randomUUID(),
                      c.label = '',
                      c.source = 'compliance-policy',
+                     c.provenance = 'ai_generated',
                      c.projectId = $projectId,
                      c.createdAt = timestamp()
        RETURN count(c) AS n`,
