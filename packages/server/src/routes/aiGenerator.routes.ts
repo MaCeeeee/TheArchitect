@@ -194,6 +194,7 @@ router.post(
               maturityLevel: 3, riskLevel: 'low', status: 'current',
               posX: $posX, posY: $posY, posZ: $posZ,
               metadataJson: $metadataJson,
+              provenance: 'ai_generated', source: 'ai-activity',
               createdAt: datetime(), updatedAt: datetime()
             }) RETURN e`,
             {
@@ -471,6 +472,7 @@ router.post(
               maturityLevel: 3, riskLevel: 'low', status: 'current',
               posX: $posX, posY: $posY, posZ: $posZ,
               metadataJson: $metadataJson,
+              provenance: 'ai_generated', source: 'ai-dataobject',
               createdAt: datetime(), updatedAt: datetime()
             }) RETURN e`,
             {
@@ -656,6 +658,7 @@ router.post(
               maturityLevel: 3, riskLevel: 'low', status: 'current',
               posX: $posX, posY: $posY, posZ: $posZ,
               metadataJson: $metadataJson,
+              provenance: 'ai_generated', source: 'ai-dataobject',
               createdAt: datetime(), updatedAt: datetime()
             }) RETURN e`,
             {
@@ -887,6 +890,7 @@ router.post(
               maturityLevel: 3, riskLevel: 'low', status: 'current',
               posX: $posX, posY: $posY, posZ: $posZ,
               metadataJson: $metadataJson,
+              provenance: 'ai_generated', source: 'ai-process',
               createdAt: datetime(), updatedAt: datetime()
             }) RETURN e`,
             {
@@ -1387,6 +1391,7 @@ async function createElement(el: ElementInsert): Promise<string> {
       maturityLevel: $maturityLevel, riskLevel: 'low', status: $status,
       posX: $posX, posY: $posY, posZ: $posZ,
       metadataJson: $metadataJson,
+      provenance: 'ai_generated', source: 'doc-extraction',
       createdAt: datetime(), updatedAt: datetime()
     }) RETURN e`,
     {
