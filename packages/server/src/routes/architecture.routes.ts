@@ -1224,6 +1224,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson,
+            provenance: 'import', source: 'bpmn',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1250,7 +1251,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
@@ -1297,6 +1298,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'n8n',
+            provenance: 'import', source: 'n8n',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1323,7 +1325,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
@@ -1402,6 +1404,7 @@ router.post(
             posX: $posX, posY: $posY, posZ: $posZ,
             workspaceId: $workspaceId,
             metadataJson: $metadataJson, sourceImport: 'csv',
+            provenance: 'import', source: 'csv',
             createdAt: datetime(), updatedAt: datetime()
           })`,
           {
@@ -1428,7 +1431,7 @@ router.post(
         const connectionId = conn.id || uuid();
         await runCypher(
           `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
-           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label}]->(b)`,
+           CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
