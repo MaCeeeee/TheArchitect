@@ -10,6 +10,12 @@ import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { evaluateElementPolicies } from '../services/policy-evaluation.service';
 import {
+  provenanceInlineFragment,
+  provenanceCypherFragment,
+  provenanceCoreFragment,
+  provenanceParams,
+} from '../services/provenance.helper';
+import {
   suggestConnectionsForIsolatedElements,
   type HealReport,
 } from '../services/connectionSuggestion.service';
@@ -595,6 +601,7 @@ router.post(
           agentProvider: $agentProvider, agentModel: $agentModel,
           agentPurpose: $agentPurpose, autonomyLevel: $autonomyLevel,
           costPerMonth: $costPerMonth,
+          ${provenanceInlineFragment()},
           createdAt: datetime(), updatedAt: datetime()
         }) RETURN e`;
 
@@ -634,6 +641,7 @@ router.post(
           agentPurpose: element.agentPurpose || null,
           autonomyLevel: element.autonomyLevel || null,
           costPerMonth: element.costPerMonth ?? null,
+          ...provenanceParams({ provenance: 'user' }),
         }
       );
 
@@ -957,7 +965,7 @@ router.post(
       await runCypher(
         `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
          MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
-         ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp()
+         ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp(), ${provenanceCypherFragment('r')}
          ON MATCH  SET r.label = coalesce($label, r.label)
          RETURN r.id AS id`,
         {
@@ -966,6 +974,7 @@ router.post(
           connectionId,
           type: parsed.type,
           label: parsed.label || '',
+          ...provenanceParams({ provenance: 'user' }),
         }
       );
 
@@ -1105,9 +1114,9 @@ router.post(
              MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
              ON CREATE SET r.id = row.cid, r.label = '', r.source = 'ai-heal',
                            r.confidence = row.confidence, r.aiReason = row.aiReason,
-                           r.projectId = $projectId, r.createdAt = timestamp()
+                           r.projectId = $projectId, r.createdAt = timestamp(), ${provenanceCoreFragment('r')}
              RETURN r.id AS id, row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type`,
-            { rows: newRows, projectId }
+            { rows: newRows, projectId, ...provenanceParams({ provenance: 'ai_generated' }) }
           );
           for (const rec of writeRecords) {
             applied.push({

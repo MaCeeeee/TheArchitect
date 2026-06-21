@@ -2,6 +2,7 @@ import {
   deriveProvenance,
   provenanceCypherFragment,
   provenanceCoreFragment,
+  provenanceInlineFragment,
   provenanceParams,
 } from '../services/provenance.helper';
 
@@ -71,6 +72,18 @@ describe('provenance.helper (REQ-PROV-001.1)', () => {
     });
     it('nutzt den übergebenen Node-Variablennamen', () => {
       expect(provenanceCypherFragment('r')).toContain('r.provenance = $prov_provenance');
+    });
+  });
+
+  describe('provenanceInlineFragment (CREATE-Map-Producer)', () => {
+    it('liefert alle 5 Felder als Inline-Map-Paare (kein "e." Prefix)', () => {
+      const f = provenanceInlineFragment();
+      expect(f).toContain('provenance: $prov_provenance');
+      expect(f).toContain('source: $prov_source');
+      expect(f).toContain('confidence: $prov_confidence');
+      expect(f).toContain('certifiedBy: $prov_certifiedBy');
+      expect(f).toContain('certifiedAt: $prov_certifiedAt');
+      expect(f).not.toContain('e.');
     });
   });
 

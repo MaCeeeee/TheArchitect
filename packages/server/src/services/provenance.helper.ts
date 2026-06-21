@@ -49,6 +49,22 @@ export function provenanceCypherFragment(nodeVar = 'e', prefix = 'prov_'): strin
 }
 
 /**
+ * Inline-Map-Fragment für `CREATE (e { ... })`-Producer, die Properties direkt
+ * im Node-Literal auflisten (statt via `SET`). Liefert `provenance: $..., source: $..., ...`.
+ *
+ * Beispiel:  `CREATE (e:ArchitectureElement { id: $id, ${provenanceInlineFragment()}, createdAt: datetime() })`
+ */
+export function provenanceInlineFragment(prefix = 'prov_'): string {
+  return [
+    `provenance: $${prefix}provenance`,
+    `source: $${prefix}source`,
+    `confidence: $${prefix}confidence`,
+    `certifiedBy: $${prefix}certifiedBy`,
+    `certifiedAt: $${prefix}certifiedAt`,
+  ].join(', ');
+}
+
+/**
  * Cypher-`SET`-Fragment NUR für die drei Neu-Felder (`provenance`, `certifiedBy`,
  * `certifiedAt`). Für Producer, die `source`/`confidence` bereits selbst setzen
  * (Auto-Heal, RequirementProjection) — verhindert das Überschreiben von Bestandswerten.
