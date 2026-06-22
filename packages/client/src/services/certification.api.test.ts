@@ -75,3 +75,11 @@ describe('certificationAPI.certify', () => {
     expect(res.data.data.connectionsCertified).toBe(3);
   });
 });
+
+describe('certificationAPI.getTrustSummary', () => {
+  test('GETs the trust-summary endpoint for the project', async () => {
+    get.mockResolvedValue({ data: { success: true, data: { total: 0, confirmed: 0, unconfirmed: 0, confirmedPct: null, byProvenance: {} } } });
+    await certificationAPI.getTrustSummary('proj-1');
+    expect(get).toHaveBeenCalledWith('/projects/proj-1/certification/trust-summary');
+  });
+});

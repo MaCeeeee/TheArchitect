@@ -343,6 +343,9 @@ export const certificationAPI = {
     projectId: string,
     body: { elementIds?: string[]; connectionIds?: string[]; all?: boolean },
   ) => api.post(`/projects/${projectId}/certification/certify`, body),
+  // Aggregated trust signal (UC-TRUST-001): % confirmed vs. AI-assumed
+  getTrustSummary: (projectId: string) =>
+    api.get(`/projects/${projectId}/certification/trust-summary`),
 };
 
 // Marketplace API
