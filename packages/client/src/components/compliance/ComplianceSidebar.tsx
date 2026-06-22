@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard,
-  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff,
+  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff, BadgeCheck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
@@ -30,6 +30,7 @@ const SECTIONS: Section[] = [
   { id: 'approvals', label: 'Approvals', icon: CheckCircle, group: 'governance' },
   { id: 'policy-mgr', label: 'Policy Manager', icon: FileText, group: 'governance' },
   { id: 'audit-trail', label: 'Audit Trail', icon: History, group: 'governance' },
+  { id: 'certify', label: 'Certify', icon: BadgeCheck, group: 'governance' },
 ];
 
 const GROUPS = [

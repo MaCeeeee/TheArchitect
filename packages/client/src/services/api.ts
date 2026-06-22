@@ -333,6 +333,18 @@ export const governanceAPI = {
     api.post(`/projects/${projectId}/policies/seed`, { templates }),
 };
 
+// Certification (Notar-Workflow) API — Trust-Spine UC-CERT-001
+export const certificationAPI = {
+  // Pending: machine-generated atoms (provenance <> 'user' & not yet certified)
+  getPending: (projectId: string) =>
+    api.get(`/projects/${projectId}/certification/pending`),
+  // Certify by IDs, or all pending atoms when { all: true }
+  certify: (
+    projectId: string,
+    body: { elementIds?: string[]; connectionIds?: string[]; all?: boolean },
+  ) => api.post(`/projects/${projectId}/certification/certify`, body),
+};
+
 // Marketplace API
 export const marketplaceAPI = {
   list: (params?: { category?: string; q?: string; sort?: string }) =>

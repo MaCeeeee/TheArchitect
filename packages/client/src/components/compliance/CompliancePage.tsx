@@ -19,6 +19,7 @@ import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
 import PolicyManager from '../governance/PolicyManager';
 import AuditTrail from '../governance/AuditTrail';
+import CertificationQueue from '../governance/CertificationQueue';
 
 // Sections that belong to the compliance pipeline (show stepper)
 const PIPELINE_SECTIONS = new Set([
@@ -137,6 +138,8 @@ export default function CompliancePage() {
           {activeSection === 'policy-mgr' && <PolicyManager />}
 
           {activeSection === 'audit-trail' && <AuditTrail />}
+
+          {activeSection === 'certify' && <CertificationQueue />}
         </div>
       </div>
     </div>

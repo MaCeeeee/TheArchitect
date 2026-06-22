@@ -17,6 +17,7 @@ const SECTION_LABELS: Record<string, string> = {
   approvals: 'Approvals',
   'policy-mgr': 'Policy Manager',
   'audit-trail': 'Audit Trail',
+  certify: 'Certification',
   // Settings
   profile: 'Profile',
   account: 'Account',
