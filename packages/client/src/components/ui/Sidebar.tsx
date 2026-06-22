@@ -7,7 +7,7 @@ import {
   FileText, Grid3X3, Wrench, FileCheck, TrendingUp, ClipboardCheck, ShieldAlert,
   Briefcase, Users, Bot, Cable,
   AlertCircle, AlertTriangle, Info, CheckCircle2, Loader2, ArrowRight,
-  Shield, History, Target, Lock, Unlock,
+  Shield, History, Target, Lock, Unlock, BadgeCheck,
 } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
@@ -355,6 +355,7 @@ const COMPLIANCE_SECTIONS = [
   { id: 'approvals', label: 'Approvals', icon: CheckCircle2, group: 'governance' },
   { id: 'policy-mgr', label: 'Policy Mgr', icon: FileText, group: 'governance' },
   { id: 'audit-trail', label: 'Audit Trail', icon: History, group: 'governance' },
+  { id: 'certify', label: 'Certify', icon: BadgeCheck, group: 'governance' },
 ] as const;
 
 const COMPLIANCE_GROUPS = [
@@ -859,7 +860,7 @@ function CompliancePanel() {
         )}
 
         {/* ── Governance sections — navigate to full view ── */}
-        {(['compliance-dashboard', 'approvals', 'policy-mgr', 'audit-trail'] as const).includes(activeSection as 'compliance-dashboard') && (
+        {(['compliance-dashboard', 'approvals', 'policy-mgr', 'audit-trail', 'certify'] as const).includes(activeSection as 'compliance-dashboard') && (
           <GovernanceInlineContent section={activeSection} projectId={projectId} navigate={navigate} />
         )}
       </div>
@@ -880,6 +881,7 @@ function GovernanceInlineContent({ section, projectId, navigate }: {
     'approvals': { title: 'Approvals', desc: 'Review and approve pending governance actions and policy changes.' },
     'policy-mgr': { title: 'Policy Manager', desc: 'Create, edit, and manage governance policies. Seed templates from DORA, NIS2, TOGAF.' },
     'audit-trail': { title: 'Audit Trail', desc: 'Chronological log of all governance actions and policy evaluations.' },
+    'certify': { title: 'Certification', desc: 'Notary queue: review machine-generated atoms and certify them as a notary (Trust-Spine).' },
   };
   const info = labels[section] || { title: section, desc: '' };
 

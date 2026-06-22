@@ -6,6 +6,7 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useUIStore } from '../../stores/uiStore';
 import { ProgressRing } from '../../design-system';
+import TrustSummaryWidget from './TrustSummaryWidget';
 import type { JourneyPhase } from '../../stores/journeyStore';
 
 const PHASE_ICONS: Record<JourneyPhase, typeof Boxes> = {
@@ -61,6 +62,11 @@ export default function MissionControl({ isOpen, onClose }: MissionControlProps)
             <Stat label="Standards" value={pipelineStates.length} />
             <Stat label="Risks" value={riskElements.length} highlight={riskElements.length > 0} />
           </div>
+        </div>
+
+        {/* Trust summary — Trust-Spine (UC-TRUST-001) */}
+        <div className="px-5 pb-3">
+          <TrustSummaryWidget projectId={projectId} onNavigate={onClose} />
         </div>
 
         {/* Blueprint Generator */}
