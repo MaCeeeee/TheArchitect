@@ -93,6 +93,69 @@ router.get(
   },
 );
 
+/**
+ * GET /:projectId/certification/trust-summary
+ * Aggregated trust signal (UC-TRUST-001): how much of the project is confirmed
+ * (human-built or certified) vs. unconfirmed (machine-generated, uncertified).
+ * `unconfirmed` uses the exact certify-queue definition for consistency.
+ */
+router.get(
+  '/:projectId/certification/trust-summary',
+  audit({ action: 'trust_summary', entityType: 'project', riskLevel: 'low' }),
+  async (req: Request, res: Response) => {
+    try {
+      const { projectId } = req.params;
+
+      // confirmed = user-authored OR certified; the four provenance buckets are
+      // mutually exclusive and sum to total.
+      const agg = (entity: 'e' | 'r') => `
+        count(${entity}) AS total,
+        count(CASE WHEN coalesce(${entity}.provenance, 'user') = 'user' OR ${entity}.certifiedBy IS NOT NULL THEN 1 END) AS confirmed,
+        count(CASE WHEN coalesce(${entity}.provenance, 'user') = 'user' THEN 1 END) AS usr,
+        count(CASE WHEN ${entity}.provenance = 'ai_generated' THEN 1 END) AS ai,
+        count(CASE WHEN ${entity}.provenance = 'import' THEN 1 END) AS imp,
+        count(CASE WHEN ${entity}.provenance = 'mcp_discovered' THEN 1 END) AS mcp`;
+
+      const elementRows = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId}) RETURN ${agg('e')}`,
+        { projectId },
+      );
+      const connectionRows = await runCypher(
+        `MATCH (:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(:ArchitectureElement {projectId: $projectId})
+         RETURN ${agg('r')}`,
+        { projectId },
+      );
+
+      const sum = (key: string) =>
+        toNum(elementRows[0]?.get(key)) + toNum(connectionRows[0]?.get(key));
+
+      const total = sum('total');
+      const confirmed = sum('confirmed');
+      const unconfirmed = total - confirmed;
+      const confirmedPct = total === 0 ? null : Math.round((confirmed / total) * 100);
+
+      res.json({
+        success: true,
+        data: {
+          total,
+          confirmed,
+          unconfirmed,
+          confirmedPct,
+          byProvenance: {
+            user: sum('usr'),
+            ai_generated: sum('ai'),
+            import: sum('imp'),
+            mcp_discovered: sum('mcp'),
+          },
+        },
+      });
+    } catch (err) {
+      console.error('[certification] trust-summary error:', err);
+      res.status(500).json({ success: false, error: 'Failed to compute trust summary' });
+    }
+  },
+);
+
 const CertifyBodySchema = z.object({
   elementIds: z.array(z.string()).optional(),
   connectionIds: z.array(z.string()).optional(),
