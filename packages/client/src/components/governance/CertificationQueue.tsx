@@ -8,7 +8,7 @@
 // certification.routes.ts (GET /pending, POST /certify).
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   BadgeCheck, Loader2, RefreshCw, AlertCircle, Sparkles, Box, Cable, Eye,
@@ -198,7 +198,11 @@ export default function CertificationQueue() {
   const total = data?.total ?? 0;
 
   // Source filter (UC-PROV-002) — chips group the queue by origin. null = all.
-  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  // Initial value can come from the trust widget's deep link (?source=github).
+  const [searchParams] = useSearchParams();
+  const [sourceFilter, setSourceFilter] = useState<string | null>(
+    () => searchParams.get('source'),
+  );
   const sourceKey = (s: string | null) => s || 'upload';
 
   // Counts per source across elements + connections, busiest first.

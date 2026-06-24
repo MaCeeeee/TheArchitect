@@ -11,6 +11,12 @@ import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Loader2 } from 'lucide-react';
 import { certificationAPI } from '../../services/api';
 
+interface SourceStat {
+  total: number;
+  confirmed: number;
+  unconfirmed: number;
+}
+
 interface TrustSummary {
   total: number;
   confirmed: number;
@@ -22,7 +28,17 @@ interface TrustSummary {
     import: number;
     mcp_discovered: number;
   };
+  bySource?: Record<string, SourceStat>;
 }
+
+// Compact source labels — mirror CertificationQueue's badge vocabulary.
+const SOURCE_LABEL: Record<string, string> = {
+  github: 'GitHub', gitlab: 'GitLab', n8n: 'n8n', sap: 'SAP',
+  servicenow: 'ServiceNow', salesforce: 'Salesforce', jira: 'Jira',
+  leanix: 'LeanIX', sparxea: 'Sparx EA', csv: 'CSV', excel: 'Excel',
+  json: 'JSON', archimate: 'ArchiMate', api: 'API', upload: 'Upload',
+};
+const sourceLabel = (s: string) => SOURCE_LABEL[s] ?? s;
 
 interface Props {
   projectId: string;
@@ -56,8 +72,10 @@ export default function TrustSummaryWidget({ projectId, onNavigate }: Props) {
     void load();
   }, [load]);
 
-  const openQueue = () => {
-    navigate(`/project/${projectId}/compliance/certify`);
+  // Open the queue, optionally pre-filtered to one source (REQ-PROV-002.3 filter).
+  const openQueue = (source?: string) => {
+    const qs = source ? `?source=${encodeURIComponent(source)}` : '';
+    navigate(`/project/${projectId}/compliance/certify${qs}`);
     onNavigate?.();
   };
 
@@ -101,35 +119,60 @@ export default function TrustSummaryWidget({ projectId, onNavigate }: Props) {
   const confirmedPct = data.confirmedPct;
   const toVerifyPct = 100 - confirmedPct;
 
+  // Top origins with atoms still to verify — most unconfirmed first, max 3.
+  const topSources = Object.entries(data.bySource ?? {})
+    .filter(([, s]) => s.unconfirmed > 0)
+    .sort((a, b) => b[1].unconfirmed - a[1].unconfirmed)
+    .slice(0, 3);
+
   return (
-    <button
-      onClick={openQueue}
-      title="Open certification queue"
-      className="group w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-3 text-left transition hover:border-[#7c3aed]/40"
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldCheck size={14} className="text-[#22c55e]" />
-          <p className="text-xs font-medium text-[var(--text-secondary)]">Trust</p>
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-3 transition focus-within:border-[#7c3aed]/40 hover:border-[#7c3aed]/40">
+      <button
+        onClick={() => openQueue()}
+        title="Open certification queue"
+        className="group block w-full text-left"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={14} className="text-[#22c55e]" />
+            <p className="text-xs font-medium text-[var(--text-secondary)]">Trust</p>
+          </div>
+          <span className="text-[10px] text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition">
+            Review →
+          </span>
         </div>
-        <span className="text-[10px] text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100 transition">
-          Review →
-        </span>
-      </div>
 
-      <p className="mt-1.5 text-lg font-bold text-[var(--text-primary)]">
-        {confirmedPct}% <span className="text-xs font-medium text-[var(--text-tertiary)]">confirmed</span>
-      </p>
+        <p className="mt-1.5 text-lg font-bold text-[var(--text-primary)]">
+          {confirmedPct}% <span className="text-xs font-medium text-[var(--text-tertiary)]">confirmed</span>
+        </p>
 
-      {/* Stacked honesty bar: confirmed (green) vs. to-verify (amber) */}
-      <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
-        <div style={{ width: `${confirmedPct}%`, backgroundColor: CONFIRMED }} />
-        <div style={{ width: `${toVerifyPct}%`, backgroundColor: TO_VERIFY }} />
-      </div>
+        {/* Stacked honesty bar: confirmed (green) vs. to-verify (amber) */}
+        <div className="mt-2 flex h-2 w-full overflow-hidden rounded-full bg-[var(--border-subtle)]">
+          <div style={{ width: `${confirmedPct}%`, backgroundColor: CONFIRMED }} />
+          <div style={{ width: `${toVerifyPct}%`, backgroundColor: TO_VERIFY }} />
+        </div>
 
-      <p className="mt-1.5 text-[11px] text-[var(--text-tertiary)]">
-        {toVerifyPct}% AI-assumed — {data.unconfirmed} atom{data.unconfirmed === 1 ? '' : 's'} to review
-      </p>
-    </button>
+        <p className="mt-1.5 text-[11px] text-[var(--text-tertiary)]">
+          {toVerifyPct}% AI-assumed — {data.unconfirmed} atom{data.unconfirmed === 1 ? '' : 's'} to review
+        </p>
+      </button>
+
+      {/* Unverified-by-source chips → jump into the queue pre-filtered. */}
+      {topSources.length > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-1 border-t border-[var(--border-subtle)] pt-2">
+          <span className="text-[10px] text-[var(--text-tertiary)]">Unverified:</span>
+          {topSources.map(([src, stat]) => (
+            <button
+              key={src}
+              onClick={() => openQueue(src)}
+              title={`Review ${stat.unconfirmed} unconfirmed from ${sourceLabel(src)}`}
+              className="rounded-full bg-[#7c3aed]/10 px-2 py-0.5 text-[10px] font-medium text-[#a78bfa] transition hover:bg-[#7c3aed]/20"
+            >
+              {sourceLabel(src)} {stat.unconfirmed}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

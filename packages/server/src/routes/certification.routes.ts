@@ -142,6 +142,43 @@ router.get(
       const unconfirmed = total - confirmed;
       const confirmedPct = total === 0 ? null : Math.round((confirmed / total) * 100);
 
+      // bySource (UC-PROV-002 / THE-337) — confirmed vs. unconfirmed grouped by
+      // origin, over elements AND connections. Only atoms carrying a source
+      // (imports / machine origins); user-authored atoms have no source and are
+      // not an "origin". Sources with no atoms are naturally absent.
+      const srcAgg = (entity: 'e' | 'r') => `
+        ${entity}.source AS src,
+        count(${entity}) AS total,
+        count(CASE WHEN coalesce(${entity}.provenance, 'user') = 'user' OR ${entity}.certifiedBy IS NOT NULL THEN 1 END) AS confirmed`;
+
+      const elementSourceRows = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId})
+         WHERE e.source IS NOT NULL
+         RETURN ${srcAgg('e')}`,
+        { projectId },
+      );
+      const connectionSourceRows = await runCypher(
+        `MATCH (:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(:ArchitectureElement {projectId: $projectId})
+         WHERE r.source IS NOT NULL
+         RETURN ${srcAgg('r')}`,
+        { projectId },
+      );
+
+      const bySource: Record<string, { total: number; confirmed: number; unconfirmed: number }> = {};
+      const mergeSourceRows = (rows: Array<{ get: (k: string) => unknown }>) => {
+        for (const row of rows) {
+          const src = row.get('src') as string | null;
+          if (!src) continue;
+          const cur = bySource[src] ?? { total: 0, confirmed: 0, unconfirmed: 0 };
+          cur.total += toNum(row.get('total'));
+          cur.confirmed += toNum(row.get('confirmed'));
+          cur.unconfirmed = cur.total - cur.confirmed;
+          bySource[src] = cur;
+        }
+      };
+      mergeSourceRows(elementSourceRows);
+      mergeSourceRows(connectionSourceRows);
+
       res.json({
         success: true,
         data: {
@@ -155,6 +192,7 @@ router.get(
             import: sum('imp'),
             mcp_discovered: sum('mcp'),
           },
+          bySource,
         },
       });
     } catch (err) {

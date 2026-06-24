@@ -18,7 +18,7 @@ import TrustSummaryWidget from './TrustSummaryWidget';
 
 function LocationDisplay() {
   const loc = useLocation();
-  return <div data-testid="loc">{loc.pathname}</div>;
+  return <div data-testid="loc">{loc.pathname + loc.search}</div>;
 }
 
 const onNavigate = vi.fn();
@@ -78,6 +78,56 @@ describe('TrustSummaryWidget', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('loc').textContent).toBe('/project/p1/compliance/certify'),
+    );
+    expect(onNavigate).toHaveBeenCalledTimes(1);
+  });
+
+  // ── UC-PROV-002 / REQ-PROV-002.4 — bySource chips + filtered deep link ──
+
+  test('REQ-4 — renders top unverified-by-source chips', async () => {
+    getTrustSummary.mockReturnValue(
+      ok({
+        total: 20,
+        confirmed: 8,
+        unconfirmed: 12,
+        confirmedPct: 40,
+        byProvenance: { user: 5, ai_generated: 4, import: 11, mcp_discovered: 0 },
+        bySource: {
+          github: { total: 9, confirmed: 0, unconfirmed: 9 },
+          csv: { total: 6, confirmed: 3, unconfirmed: 3 },
+          upload: { total: 2, confirmed: 2, unconfirmed: 0 }, // fully confirmed → no chip
+        },
+      }),
+    );
+    renderWidget();
+
+    await screen.findByText('40%');
+    expect(screen.getByText('GitHub 9')).toBeInTheDocument();
+    expect(screen.getByText('CSV 3')).toBeInTheDocument();
+    // Fully-confirmed source produces no chip.
+    expect(screen.queryByText(/Upload/)).not.toBeInTheDocument();
+  });
+
+  test('REQ-4 — clicking a source chip deep-links into the filtered queue', async () => {
+    getTrustSummary.mockReturnValue(
+      ok({
+        total: 10,
+        confirmed: 1,
+        unconfirmed: 9,
+        confirmedPct: 10,
+        byProvenance: { user: 0, ai_generated: 0, import: 10, mcp_discovered: 0 },
+        bySource: { github: { total: 9, confirmed: 0, unconfirmed: 9 } },
+      }),
+    );
+    renderWidget();
+
+    await screen.findByText('10%');
+    fireEvent.click(screen.getByText('GitHub 9'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('loc').textContent).toBe(
+        '/project/p1/compliance/certify?source=github',
+      ),
     );
     expect(onNavigate).toHaveBeenCalledTimes(1);
   });
