@@ -159,7 +159,12 @@ async function runIntegrationSync(
       format: `connector:${conn.type}`,
     };
 
-    const graph = await createTemporaryGraph(parsed);
+    const graph = await createTemporaryGraph(parsed, {
+      origin: {
+        sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
+        connectorConfigId: config.name,
+      },
+    });
     await migrateTemporaryGraph(graph.projectId, String(project._id));
 
     const durationMs = Date.now() - start;

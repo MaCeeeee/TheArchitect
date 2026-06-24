@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid';
 import * as XLSX from 'xlsx';
 import { XMLParser } from 'fast-xml-parser';
 import { runCypher, runCypherTransaction } from '../config/neo4j';
-import { ELEMENT_TYPES, ARCHIMATE_STANDARD_TYPES, LEGACY_TYPE_MAP } from '@thearchitect/shared';
+import { ELEMENT_TYPES, ARCHIMATE_STANDARD_TYPES, LEGACY_TYPE_MAP, type OriginFields } from '@thearchitect/shared';
 import { parseArchiMateExchange } from '../parsers/archimate-exchange.parser';
 import { parseLeanIXExcel, parseLeanIXJSON, isLeanIXFormat } from '../parsers/leanix.adapter';
 
@@ -550,12 +550,42 @@ export function parseArchitectureFile(buffer: Buffer, filename: string): ParseRe
   }
 }
 
+// ─── Provenance: derive origin source from parse format ───
+
+/**
+ * Maps a ParseResult.format to a canonical `source` label for provenance tracking.
+ * - Connector syncs carry `format: 'connector:<type>'` → '<type>' (e.g. 'github', 'n8n', 'sap')
+ * - ArchiMate (basic XML + Exchange) → 'archimate' (one badge for the format family)
+ * - File imports carry `format: 'csv'|'excel'|'json'|'leanix'` → unchanged
+ * - Unknown/missing → 'upload' (backward-compatible default)
+ */
+export function deriveSourceFromFormat(format?: string): string {
+  if (!format) return 'upload';
+  if (format.startsWith('connector:')) return format.slice('connector:'.length);
+  if (format === 'archimate-xml' || format === 'archimate-exchange') return 'archimate';
+  const known = ['csv', 'excel', 'json', 'leanix'];
+  return known.includes(format) ? format : 'upload';
+}
+
 // ─── Neo4j Graph Creation ───
 
-export async function createTemporaryGraph(parsed: ParseResult): Promise<{ projectId: string; uploadToken: string }> {
+export async function createTemporaryGraph(
+  parsed: ParseResult,
+  opts?: { source?: string; origin?: OriginFields },
+): Promise<{ projectId: string; uploadToken: string }> {
   const projectId = `tmp-${uuid()}`;
   const uploadToken = uuid();
   const now = new Date().toISOString();
+  const source = opts?.source ?? deriveSourceFromFormat(parsed.format);
+
+  // Build batch-level origin map — only defined fields → `SET x += {}` is a no-op for
+  // file uploads / alt-imports (no null noise, byte-identical to the legacy write path).
+  const origin: Record<string, unknown> = {};
+  if (opts?.origin) {
+    if (opts.origin.sourceRef != null) origin.sourceRef = opts.origin.sourceRef;
+    if (opts.origin.connectorConfigId != null) origin.connectorConfigId = opts.origin.connectorConfigId;
+    origin.importedAt = opts.origin.importedAt ?? now;
+  }
 
   const operations: Array<{ query: string; params: Record<string, unknown> }> = [];
 
@@ -566,13 +596,14 @@ export async function createTemporaryGraph(parsed: ParseResult): Promise<{ proje
         id: $id, projectId: $projectId, name: $name, type: $type,
         layer: $layer, description: $description, status: $status,
         riskLevel: $riskLevel, maturityLevel: $maturityLevel,
-        provenance: 'import', source: 'upload',
+        provenance: 'import', source: $source,
         createdAt: $now, updatedAt: $now
-      })`,
+      })
+      SET e += $origin`,
       params: {
         id: el.id, projectId, name: el.name, type: el.type,
         layer: el.layer, description: el.description, status: el.status,
-        riskLevel: el.riskLevel, maturityLevel: el.maturityLevel, now,
+        riskLevel: el.riskLevel, maturityLevel: el.maturityLevel, now, source, origin,
       },
     });
   }
@@ -598,14 +629,15 @@ export async function createTemporaryGraph(parsed: ParseResult): Promise<{ proje
     operations.push({
       query: `MATCH (s:ArchitectureElement {id: $sourceId, projectId: $projectId})
               MATCH (t:ArchitectureElement {id: $targetId, projectId: $projectId})
-              CREATE (s)-[:CONNECTS_TO {
+              CREATE (s)-[r:CONNECTS_TO {
                 id: $connId, type: $type, label: $label,
                 projectId: $projectId, createdAt: $now,
-                provenance: 'import', source: 'upload'
-              }]->(t)`,
+                provenance: 'import', source: $source
+              }]->(t)
+              SET r += $origin`,
       params: {
         sourceId, targetId, projectId,
-        connId: conn.id, type: conn.type, label: conn.label || '', now,
+        connId: conn.id, type: conn.type, label: conn.label || '', now, source, origin,
       },
     });
   }

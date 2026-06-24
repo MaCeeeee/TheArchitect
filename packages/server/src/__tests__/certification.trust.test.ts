@@ -81,6 +81,30 @@ describe('GET /:projectId/certification/trust-summary (REQ-TRUST-001.1)', () => 
     expect(res.body.data.confirmedPct).toBeNull();
   });
 
+  it('REQ-PROV-002.4 — bySource groups confirmed/unconfirmed by origin over elements + connections', async () => {
+    // src row: string src + numeric total/confirmed (mirrors the grouped RETURN).
+    const srcRec = (src: string, total: number, confirmed: number) => ({
+      get: (k: string) =>
+        k === 'src' ? src : { toNumber: () => (k === 'total' ? total : k === 'confirmed' ? confirmed : 0) },
+    });
+    let call = 0;
+    runCypherMock.mockImplementation(() => {
+      call += 1;
+      // 1: element agg, 2: connection agg, 3: element source rows, 4: connection source rows
+      if (call === 1) return Promise.resolve([rec({ total: 5, confirmed: 2 })]);
+      if (call === 2) return Promise.resolve([rec({ total: 1, confirmed: 0 })]);
+      if (call === 3) return Promise.resolve([srcRec('github', 3, 1), srcRec('csv', 2, 1)]);
+      return Promise.resolve([srcRec('github', 1, 0)]); // 1 github connection, unconfirmed
+    });
+
+    const res = await request(makeApp()).get('/api/projects/p1/certification/trust-summary');
+    expect(res.status).toBe(200);
+    expect(res.body.data.bySource).toEqual({
+      github: { total: 4, confirmed: 1, unconfirmed: 3 }, // 3+1 total, 1+0 confirmed
+      csv: { total: 2, confirmed: 1, unconfirmed: 1 },
+    });
+  });
+
   it('AC-4 — query scoped by projectId', async () => {
     mockAgg(
       { total: 1, confirmed: 1, usr: 1, ai: 0, imp: 0, mcp: 0 },

@@ -42,7 +42,8 @@ router.get(
         `MATCH (e:ArchitectureElement {projectId: $projectId})
          WHERE e.provenance <> 'user' AND e.certifiedBy IS NULL
          RETURN e.id AS id, e.name AS name, e.type AS type, e.layer AS layer,
-                e.provenance AS provenance, e.source AS source, e.confidence AS confidence
+                e.provenance AS provenance, e.source AS source, e.confidence AS confidence,
+                e.sourceRef AS sourceRef, e.importedAt AS importedAt, e.connectorConfigId AS connectorConfigId
          ORDER BY coalesce(e.confidence, 1.0) ASC, e.name`,
         { projectId },
       );
@@ -51,6 +52,7 @@ router.get(
          WHERE r.provenance <> 'user' AND r.certifiedBy IS NULL
          RETURN r.id AS id, r.type AS type, r.label AS label,
                 r.provenance AS provenance, r.source AS source, r.confidence AS confidence,
+                r.sourceRef AS sourceRef, r.importedAt AS importedAt, r.connectorConfigId AS connectorConfigId,
                 a.id AS sourceId, b.id AS targetId, a.name AS sourceName, b.name AS targetName
          ORDER BY coalesce(r.confidence, 1.0) ASC`,
         { projectId },
@@ -64,6 +66,9 @@ router.get(
         provenance: r.get('provenance'),
         source: r.get('source'),
         confidence: r.get('confidence'),
+        sourceRef: r.get('sourceRef'),
+        importedAt: r.get('importedAt'),
+        connectorConfigId: r.get('connectorConfigId'),
       }));
       const connections = connectionRecords.map((r) => ({
         id: r.get('id'),
@@ -72,6 +77,9 @@ router.get(
         provenance: r.get('provenance'),
         source: r.get('source'),
         confidence: r.get('confidence'),
+        sourceRef: r.get('sourceRef'),
+        importedAt: r.get('importedAt'),
+        connectorConfigId: r.get('connectorConfigId'),
         sourceId: r.get('sourceId'),
         targetId: r.get('targetId'),
         sourceName: r.get('sourceName'),
@@ -134,6 +142,43 @@ router.get(
       const unconfirmed = total - confirmed;
       const confirmedPct = total === 0 ? null : Math.round((confirmed / total) * 100);
 
+      // bySource (UC-PROV-002 / THE-337) — confirmed vs. unconfirmed grouped by
+      // origin, over elements AND connections. Only atoms carrying a source
+      // (imports / machine origins); user-authored atoms have no source and are
+      // not an "origin". Sources with no atoms are naturally absent.
+      const srcAgg = (entity: 'e' | 'r') => `
+        ${entity}.source AS src,
+        count(${entity}) AS total,
+        count(CASE WHEN coalesce(${entity}.provenance, 'user') = 'user' OR ${entity}.certifiedBy IS NOT NULL THEN 1 END) AS confirmed`;
+
+      const elementSourceRows = await runCypher(
+        `MATCH (e:ArchitectureElement {projectId: $projectId})
+         WHERE e.source IS NOT NULL
+         RETURN ${srcAgg('e')}`,
+        { projectId },
+      );
+      const connectionSourceRows = await runCypher(
+        `MATCH (:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(:ArchitectureElement {projectId: $projectId})
+         WHERE r.source IS NOT NULL
+         RETURN ${srcAgg('r')}`,
+        { projectId },
+      );
+
+      const bySource: Record<string, { total: number; confirmed: number; unconfirmed: number }> = {};
+      const mergeSourceRows = (rows: Array<{ get: (k: string) => unknown }>) => {
+        for (const row of rows) {
+          const src = row.get('src') as string | null;
+          if (!src) continue;
+          const cur = bySource[src] ?? { total: 0, confirmed: 0, unconfirmed: 0 };
+          cur.total += toNum(row.get('total'));
+          cur.confirmed += toNum(row.get('confirmed'));
+          cur.unconfirmed = cur.total - cur.confirmed;
+          bySource[src] = cur;
+        }
+      };
+      mergeSourceRows(elementSourceRows);
+      mergeSourceRows(connectionSourceRows);
+
       res.json({
         success: true,
         data: {
@@ -147,6 +192,7 @@ router.get(
             import: sum('imp'),
             mcp_discovered: sum('mcp'),
           },
+          bySource,
         },
       });
     } catch (err) {

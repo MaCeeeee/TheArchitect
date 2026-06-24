@@ -128,7 +128,18 @@ export interface ProvenanceFields {
   certifiedAt?: string;   // ISO-Timestamp
 }
 
-export interface ArchitectureElement extends ProvenanceFields {
+/**
+ * Origin metadata (UC-PROV-002 / THE-335): batch-level provenance of an import.
+ * Additiv & optional — nur bei Connector-Syncs / nachvollziehbaren Importen gesetzt,
+ * fehlt bei Alt-Importen und interaktiv erstellten Atomen ("kein null-Rauschen").
+ */
+export interface OriginFields {
+  sourceRef?: string;          // Repo/URL/Commit/Instanz — woher konkret (z.B. config.baseUrl)
+  importedAt?: string;         // ISO-Timestamp des Sync/Imports
+  connectorConfigId?: string;  // Connector-Name/-Id, sonst undefined
+}
+
+export interface ArchitectureElement extends ProvenanceFields, OriginFields {
   id: string;
   type: ElementType;
   name: string;
@@ -182,7 +193,7 @@ export interface ArchitectureElement extends ProvenanceFields {
   updatedAt: string;
 }
 
-export interface Connection extends ProvenanceFields {
+export interface Connection extends ProvenanceFields, OriginFields {
   id: string;
   sourceId: string;
   targetId: string;
