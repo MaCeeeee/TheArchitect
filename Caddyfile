@@ -9,3 +9,10 @@ thearchitect.site, www.thearchitect.site {
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
 	}
 }
+
+# Self-hosted Umami web analytics (privacy-friendly, cookie-free).
+# Requires DNS A-record: analytics.thearchitect.site -> 76.13.150.49
+# Caddy provisions the Let's Encrypt cert automatically once DNS resolves.
+analytics.thearchitect.site {
+	reverse_proxy umami:3000
+}

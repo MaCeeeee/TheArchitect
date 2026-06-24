@@ -7,6 +7,7 @@ volumes:
   caddy_data:
   caddy_config:
   qdrant_data:
+  umami_db_data:
 
 services:
   caddy:
@@ -159,3 +160,38 @@ services:
       - qdrant_data:/qdrant/storage
     # Not exposed to host — internal docker network only.
     # Main app talks to it via http://qdrant:6333
+
+  # Web analytics — privacy-friendly, cookie-free, self-hosted (DSGVO-clean).
+  # Reachable publicly via Caddy at https://analytics.thearchitect.site.
+  # Tracking snippet lives in packages/client/index.html (see UMAMI_WEBSITE_ID).
+  umami-db:
+    image: postgres:15-alpine
+    container_name: thearchitect-umami-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=umami
+      - POSTGRES_USER=umami
+      - POSTGRES_PASSWORD=${UMAMI_DB_PASSWORD}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not exposed to host — internal docker network only.
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    container_name: thearchitect-umami
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - DATABASE_TYPE=postgresql
+      - DATABASE_URL=postgresql://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      - APP_SECRET=${UMAMI_APP_SECRET}
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    # Caddy reverse-proxies analytics.thearchitect.site -> umami:3000
