@@ -135,7 +135,12 @@ router.post(
         format: `connector:${config.type}`,
       };
 
-      const graph = await createTemporaryGraph(parsed);
+      const graph = await createTemporaryGraph(parsed, {
+        origin: {
+          sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
+          connectorConfigId: connectorName,
+        },
+      });
       await migrateTemporaryGraph(graph.projectId, projectId);
 
       const syncResult = {
@@ -328,7 +333,12 @@ router.post(
         format: `connector:${conn.type}`,
       };
 
-      const graph = await createTemporaryGraph(parsed);
+      const graph = await createTemporaryGraph(parsed, {
+        origin: {
+          sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
+          connectorConfigId: config.name,
+        },
+      });
       await migrateTemporaryGraph(graph.projectId, String(project._id));
 
       integ.lastSync = {

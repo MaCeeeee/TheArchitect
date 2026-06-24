@@ -42,7 +42,8 @@ router.get(
         `MATCH (e:ArchitectureElement {projectId: $projectId})
          WHERE e.provenance <> 'user' AND e.certifiedBy IS NULL
          RETURN e.id AS id, e.name AS name, e.type AS type, e.layer AS layer,
-                e.provenance AS provenance, e.source AS source, e.confidence AS confidence
+                e.provenance AS provenance, e.source AS source, e.confidence AS confidence,
+                e.sourceRef AS sourceRef, e.importedAt AS importedAt, e.connectorConfigId AS connectorConfigId
          ORDER BY coalesce(e.confidence, 1.0) ASC, e.name`,
         { projectId },
       );
@@ -51,6 +52,7 @@ router.get(
          WHERE r.provenance <> 'user' AND r.certifiedBy IS NULL
          RETURN r.id AS id, r.type AS type, r.label AS label,
                 r.provenance AS provenance, r.source AS source, r.confidence AS confidence,
+                r.sourceRef AS sourceRef, r.importedAt AS importedAt, r.connectorConfigId AS connectorConfigId,
                 a.id AS sourceId, b.id AS targetId, a.name AS sourceName, b.name AS targetName
          ORDER BY coalesce(r.confidence, 1.0) ASC`,
         { projectId },
@@ -64,6 +66,9 @@ router.get(
         provenance: r.get('provenance'),
         source: r.get('source'),
         confidence: r.get('confidence'),
+        sourceRef: r.get('sourceRef'),
+        importedAt: r.get('importedAt'),
+        connectorConfigId: r.get('connectorConfigId'),
       }));
       const connections = connectionRecords.map((r) => ({
         id: r.get('id'),
@@ -72,6 +77,9 @@ router.get(
         provenance: r.get('provenance'),
         source: r.get('source'),
         confidence: r.get('confidence'),
+        sourceRef: r.get('sourceRef'),
+        importedAt: r.get('importedAt'),
+        connectorConfigId: r.get('connectorConfigId'),
         sourceId: r.get('sourceId'),
         targetId: r.get('targetId'),
         sourceName: r.get('sourceName'),
