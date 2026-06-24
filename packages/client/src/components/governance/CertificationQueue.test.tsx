@@ -114,4 +114,96 @@ describe('CertificationQueue', () => {
       expect(certify).toHaveBeenCalledWith('p1', { elementIds: ['e1'], connectionIds: [] }),
     );
   });
+
+  // ── UC-PROV-002 / REQ-PROV-002.3 — origin badge, origin line, source filter ──
+
+  const githubElement = {
+    id: 'g1',
+    name: 'Payment Repo',
+    type: 'application_component',
+    layer: 'application',
+    provenance: 'import',
+    source: 'github',
+    confidence: 0.7,
+    sourceRef: 'https://api.github.com/acme',
+    importedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(), // 2h ago
+    connectorConfigId: 'gh-main',
+  };
+
+  test('REQ-3 — connector import shows the real source badge, not "Import"', async () => {
+    getPending.mockReturnValue(
+      okPending({ elements: [githubElement], connections: [], total: 1 }),
+    );
+    renderQueue();
+
+    expect(await screen.findByText('Payment Repo')).toBeInTheDocument();
+    // De-anonymized: badge reads "GitHub", and the generic "Import" badge is gone.
+    expect(screen.getByText('GitHub')).toBeInTheDocument();
+    expect(screen.queryByText('Import')).not.toBeInTheDocument();
+  });
+
+  test('REQ-3 — origin line renders sourceRef + relative importedAt', async () => {
+    getPending.mockReturnValue(
+      okPending({ elements: [githubElement], connections: [], total: 1 }),
+    );
+    renderQueue();
+
+    await screen.findByText('Payment Repo');
+    expect(screen.getByText('https://api.github.com/acme')).toBeInTheDocument();
+    expect(screen.getByText('2h ago')).toBeInTheDocument();
+  });
+
+  test('REQ-3 — source filter chips narrow the queue to the chosen origin', async () => {
+    const csvElement = {
+      id: 'c1',
+      name: 'Legacy Sheet',
+      type: 'application_component',
+      layer: 'application',
+      provenance: 'import',
+      source: 'csv',
+      confidence: 0.9,
+      sourceRef: null,
+      importedAt: null,
+      connectorConfigId: null,
+    };
+    getPending.mockReturnValue(
+      okPending({ elements: [githubElement, csvElement], connections: [], total: 2 }),
+    );
+    renderQueue();
+
+    await screen.findByText('Payment Repo');
+    expect(screen.getByText('Legacy Sheet')).toBeInTheDocument();
+
+    // Chip "CSV (1)" filters to just the CSV atom.
+    fireEvent.click(screen.getByText('CSV (1)'));
+    expect(screen.queryByText('Payment Repo')).not.toBeInTheDocument();
+    expect(screen.getByText('Legacy Sheet')).toBeInTheDocument();
+  });
+
+  test('REQ-3 — backward-compat: alt-import without source falls back to provenance badge', async () => {
+    getPending.mockReturnValue(
+      okPending({
+        elements: [
+          {
+            id: 'old1',
+            name: 'Legacy Atom',
+            type: 'node',
+            layer: 'technology',
+            provenance: 'import',
+            source: null,
+            confidence: null,
+            sourceRef: null,
+            importedAt: null,
+            connectorConfigId: null,
+          },
+        ],
+        connections: [],
+        total: 1,
+      }),
+    );
+    renderQueue();
+
+    await screen.findByText('Legacy Atom');
+    expect(screen.getByText('Import')).toBeInTheDocument(); // graceful fallback
+  });
 });

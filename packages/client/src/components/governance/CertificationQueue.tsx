@@ -10,11 +10,23 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { BadgeCheck, Loader2, RefreshCw, AlertCircle, Sparkles, Box, Cable, Eye } from 'lucide-react';
+import {
+  BadgeCheck, Loader2, RefreshCw, AlertCircle, Sparkles, Box, Cable, Eye,
+  Github, FileSpreadsheet, Braces, Network, Upload, Webhook, Link2, Clock,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { certificationAPI } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
-interface PendingElement {
+// Origin metadata (UC-PROV-002 / THE-335) — present only on connector-synced
+// atoms; absent on alt-imports and interactively created atoms.
+interface OriginFields {
+  sourceRef: string | null;
+  importedAt: string | null;
+  connectorConfigId: string | null;
+}
+
+interface PendingElement extends OriginFields {
   id: string;
   name: string;
   type: string;
@@ -24,7 +36,7 @@ interface PendingElement {
   confidence: number | null;
 }
 
-interface PendingConnection {
+interface PendingConnection extends OriginFields {
   id: string;
   type: string;
   label: string | null;
@@ -59,6 +71,97 @@ const confidenceColor = (c: number | null) =>
 const confidenceLabel = (c: number | null) =>
   c == null ? '—' : `${Math.round(c * 100)}%`;
 
+// source → human label + badge color + icon, per connector / file format
+// (UC-PROV-002). De-anonymizes the import: "GitHub" / "CSV" instead of "import".
+// Sources NOT listed here (e.g. ai-heal, blueprint, compliance-requirement) fall
+// back to the provenance badge — those are AI/MCP origins, not data imports.
+const SOURCE_META: Record<string, { label: string; color: string; Icon: LucideIcon }> = {
+  github: { label: 'GitHub', color: '#e2e8f0', Icon: Github },
+  gitlab: { label: 'GitLab', color: '#fc6d26', Icon: Cable },
+  n8n: { label: 'n8n', color: '#ea4b71', Icon: Cable },
+  sap: { label: 'SAP', color: '#60a5fa', Icon: Cable },
+  servicenow: { label: 'ServiceNow', color: '#22d3ee', Icon: Cable },
+  salesforce: { label: 'Salesforce', color: '#38bdf8', Icon: Cable },
+  jira: { label: 'Jira', color: '#3b82f6', Icon: Cable },
+  leanix: { label: 'LeanIX', color: '#2dd4bf', Icon: Cable },
+  sparxea: { label: 'Sparx EA', color: '#a78bfa', Icon: Cable },
+  csv: { label: 'CSV', color: '#34d399', Icon: FileSpreadsheet },
+  excel: { label: 'Excel', color: '#22c55e', Icon: FileSpreadsheet },
+  json: { label: 'JSON', color: '#eab308', Icon: Braces },
+  archimate: { label: 'ArchiMate', color: '#f472b6', Icon: Network },
+  api: { label: 'API', color: '#94a3b8', Icon: Webhook },
+  upload: { label: 'Upload', color: '#64748b', Icon: Upload },
+};
+
+// Relative "time ago" for importedAt — null/invalid → null (origin line omits it).
+const relativeTime = (iso: string | null): string | null => {
+  if (!iso) return null;
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return null;
+  const sec = Math.round((Date.now() - then) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.round(hr / 24);
+  if (day < 30) return `${day}d ago`;
+  const mo = Math.round(day / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.round(mo / 12)}y ago`;
+};
+
+// Herkunfts-Badge: real source (icon/color) for imports, provenance for the rest.
+function OriginBadge({ source, provenance }: { source: string | null; provenance: string }) {
+  const sm = source ? SOURCE_META[source] : undefined;
+  if (sm) {
+    const { label, color, Icon } = sm;
+    return (
+      <span
+        className="shrink-0 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium"
+        style={{ backgroundColor: `${color}22`, color }}
+        title={`Source: ${label} · ${provenanceMeta(provenance).label}`}
+      >
+        <Icon size={10} /> {label}
+      </span>
+    );
+  }
+  const pm = provenanceMeta(provenance);
+  return (
+    <span
+      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+      style={{ backgroundColor: `${pm.color}22`, color: pm.color }}
+      title={source ? `Source: ${source}` : pm.label}
+    >
+      {pm.label}{source ? ` · ${source}` : ''}
+    </span>
+  );
+}
+
+// Secondary origin line: where it came from + when. Graceful when both absent.
+function OriginLine({ sourceRef, importedAt, connectorConfigId }: OriginFields) {
+  const rel = relativeTime(importedAt);
+  const ref = sourceRef || connectorConfigId;
+  if (!ref && !rel) return null;
+  return (
+    <p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-[var(--text-tertiary)]">
+      {ref && (
+        <>
+          <Link2 size={9} className="shrink-0" />
+          <span className="truncate" title={ref}>{ref}</span>
+        </>
+      )}
+      {ref && rel && <span className="opacity-40">·</span>}
+      {rel && (
+        <>
+          <Clock size={9} className="shrink-0" />
+          <span className="shrink-0">{rel}</span>
+        </>
+      )}
+    </p>
+  );
+}
+
 export default function CertificationQueue() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -90,9 +193,29 @@ export default function CertificationQueue() {
     void load();
   }, [load]);
 
-  const elements = data?.elements ?? [];
-  const connections = data?.connections ?? [];
+  const allElements = data?.elements ?? [];
+  const allConnections = data?.connections ?? [];
   const total = data?.total ?? 0;
+
+  // Source filter (UC-PROV-002) — chips group the queue by origin. null = all.
+  const [sourceFilter, setSourceFilter] = useState<string | null>(null);
+  const sourceKey = (s: string | null) => s || 'upload';
+
+  // Counts per source across elements + connections, busiest first.
+  const sourceCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    [...allElements, ...allConnections].forEach((a) => {
+      const k = sourceKey(a.source);
+      m.set(k, (m.get(k) ?? 0) + 1);
+    });
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [allElements, allConnections]);
+
+  // Drop a stale filter (e.g. its last atom was just certified) → fall back to all.
+  const activeFilter = sourceCounts.some(([s]) => s === sourceFilter) ? sourceFilter : null;
+  const matches = (s: string | null) => activeFilter === null || sourceKey(s) === activeFilter;
+  const elements = activeFilter ? allElements.filter((e) => matches(e.source)) : allElements;
+  const connections = activeFilter ? allConnections.filter((c) => matches(c.source)) : allConnections;
 
   const toggle = (key: string) =>
     setSelected((prev) => {
@@ -101,6 +224,7 @@ export default function CertificationQueue() {
       return next;
     });
 
+  const visibleTotal = elements.length + connections.length;
   const allKeys = useMemo(
     () => [...elements.map((e) => `el:${e.id}`), ...connections.map((c) => `conn:${c.id}`)],
     [elements, connections],
@@ -146,7 +270,15 @@ export default function CertificationQueue() {
     if (elementIds.length + connectionIds.length === 0) return;
     void runCertify({ elementIds, connectionIds });
   };
-  const certifyAll = () => void runCertify({ all: true });
+  // With a filter active, "All" certifies only the visible (filtered) atoms;
+  // unfiltered, it short-circuits to the backend's certify-all path.
+  const certifyAll = () => {
+    if (activeFilter) {
+      void runCertify({ elementIds: elements.map((e) => e.id), connectionIds: connections.map((c) => c.id) });
+    } else {
+      void runCertify({ all: true });
+    }
+  };
   const certifyOne = (key: string) => {
     const [kind, id] = key.split(/:(.+)/);
     void runCertify(kind === 'el' ? { elementIds: [id] } : { connectionIds: [id] });
@@ -227,6 +359,44 @@ export default function CertificationQueue() {
         </button>
       </div>
 
+      {/* Source filter chips — group the queue by origin (only when >1 source) */}
+      {sourceCounts.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            onClick={() => setSourceFilter(null)}
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+              activeFilter === null
+                ? 'bg-[#7c3aed]/20 text-[#a78bfa]'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            All ({total})
+          </button>
+          {sourceCounts.map(([src, count]) => {
+            const sm = SOURCE_META[src];
+            const active = activeFilter === src;
+            const color = sm?.color ?? '#94a3b8';
+            const Icon = sm?.Icon;
+            return (
+              <button
+                key={src}
+                onClick={() => setSourceFilter(active ? null : src)}
+                className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition"
+                style={
+                  active
+                    ? { backgroundColor: `${color}26`, color }
+                    : { color: 'var(--text-tertiary)' }
+                }
+                title={sm ? `${sm.label}: ${count}` : `${src}: ${count}`}
+              >
+                {Icon && <Icon size={11} />}
+                {sm?.label ?? src} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Batch action bar */}
       <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2">
         <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)] cursor-pointer">
@@ -236,7 +406,7 @@ export default function CertificationQueue() {
             onChange={toggleAll}
             className="accent-[#7c3aed]"
           />
-          Select all ({selectedCount}/{total})
+          Select all ({selectedCount}/{visibleTotal})
         </label>
         <div className="flex items-center gap-2">
           <button
@@ -252,7 +422,7 @@ export default function CertificationQueue() {
             onClick={certifyAll}
             className="flex items-center gap-1.5 rounded-md border border-[#7c3aed]/30 px-3 py-1.5 text-xs font-medium text-[#a78bfa] hover:bg-[#7c3aed]/10 transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            All ({total})
+            All ({activeFilter ? visibleTotal : total})
           </button>
         </div>
       </div>
@@ -265,7 +435,6 @@ export default function CertificationQueue() {
           </p>
           {elements.map((el) => {
             const key = `el:${el.id}`;
-            const pm = provenanceMeta(el.provenance);
             return (
               <div
                 key={key}
@@ -282,14 +451,13 @@ export default function CertificationQueue() {
                   <p className="truncate text-[11px] text-[var(--text-tertiary)]">
                     {el.type}{el.layer ? ` · ${el.layer}` : ''}
                   </p>
+                  <OriginLine
+                    sourceRef={el.sourceRef}
+                    importedAt={el.importedAt}
+                    connectorConfigId={el.connectorConfigId}
+                  />
                 </div>
-                <span
-                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
-                  style={{ backgroundColor: `${pm.color}22`, color: pm.color }}
-                  title={el.source ? `Source: ${el.source}` : pm.label}
-                >
-                  {pm.label}{el.source ? ` · ${el.source}` : ''}
-                </span>
+                <OriginBadge source={el.source} provenance={el.provenance} />
                 <span
                   className="shrink-0 w-10 text-right text-[11px] font-mono"
                   style={{ color: confidenceColor(el.confidence) }}
@@ -325,7 +493,6 @@ export default function CertificationQueue() {
           </p>
           {connections.map((conn) => {
             const key = `conn:${conn.id}`;
-            const pm = provenanceMeta(conn.provenance);
             return (
               <div
                 key={key}
@@ -344,14 +511,13 @@ export default function CertificationQueue() {
                   <p className="truncate text-[11px] text-[var(--text-tertiary)]">
                     {conn.label || conn.type}
                   </p>
+                  <OriginLine
+                    sourceRef={conn.sourceRef}
+                    importedAt={conn.importedAt}
+                    connectorConfigId={conn.connectorConfigId}
+                  />
                 </div>
-                <span
-                  className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
-                  style={{ backgroundColor: `${pm.color}22`, color: pm.color }}
-                  title={conn.source ? `Source: ${conn.source}` : pm.label}
-                >
-                  {pm.label}{conn.source ? ` · ${conn.source}` : ''}
-                </span>
+                <OriginBadge source={conn.source} provenance={conn.provenance} />
                 <span
                   className="shrink-0 w-10 text-right text-[11px] font-mono"
                   style={{ color: confidenceColor(conn.confidence) }}
