@@ -1,0 +1,32 @@
+{
+  "name": "Data Relay",
+  "nodes": [
+    {
+      "parameters": { "path": "intake", "httpMethod": "POST" },
+      "name": "Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "values": { "string": [{ "name": "email", "value": "" }, { "name": "payload", "value": "" }] }
+      },
+      "name": "Set Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "url": "https://api.partner.de/v1/ingest", "method": "POST" },
+      "name": "Forward",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Intake Webhook": { "main": [[{ "node": "Set Fields", "type": "main", "index": 0 }]] },
+    "Set Fields": { "main": [[{ "node": "Forward", "type": "main", "index": 0 }]] }
+  }
+}

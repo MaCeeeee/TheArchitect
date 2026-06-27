@@ -57,4 +57,16 @@ export const GROUND_TRUTH: FixtureGroundTruth[] = [
     groundTruthGaps: [],
     note: 'Verschiebt Dateien zwischen Buckets; keine personenbezogenen Felder → Art. 30 nicht einschlägig (G5).',
   },
+  {
+    fixture: 'inferrable-purpose',
+    gdprScope: true,
+    groundTruthGaps: [],
+    note: 'M2: Zweck klar inferierbar (Newsletter) → b mode confirm. Deterministisch d/e present (EU-Empfänger). Tier-B-Referenz: "Newsletter-Anmeldung verwalten".',
+  },
+  {
+    fixture: 'ambiguous-purpose',
+    gdprScope: true,
+    groundTruthGaps: [],
+    note: 'M2: generischer Daten-Relay, Zweck mehrdeutig → b mode ask (LLM abstain). Deterministisch d/e present (EU). Tier-B: korrektes Verhalten = abstain.',
+  },
 ];
