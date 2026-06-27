@@ -44,12 +44,24 @@ export interface LiftedGraph {
   edges: LiftedEdge[];
 }
 
+// ─── Inferenz (.3 / THE-354) — LLM-Vorschlag, nie Fakt ───
+export interface FieldSuggestion {
+  litera: string; // 'b' (Zweck) | 'c' (Betroffenenkategorie)
+  value: string; // knapper Vorschlag (Tier-A-Bound erzwingt Kürze)
+  confidence: number; // 0..1
+  rationale: string;
+  provenance: 'ai_generated';
+}
+
 // ─── Trace (.4 / THE-355) ───
 export type FieldStatus = 'present' | 'missing' | 'needs_attestation';
 export interface FieldResult {
   litera: string;
   criticality: Art30Criticality;
   status: FieldStatus;
+  // ─── M2 (.5 / THE-356): Ask vs. Confirm ───
+  mode?: 'ask' | 'confirm'; // nur bei needs_attestation gesetzt
+  suggestion?: FieldSuggestion; // nur bei mode:'confirm'
 }
 export interface GapReport {
   gdprScope: boolean;
