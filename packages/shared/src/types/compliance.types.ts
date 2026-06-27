@@ -185,6 +185,32 @@ export interface TraceTarget {
   steps: TraceStep[];
 }
 
+// ─── WFCOMP Verdikt-Contract (Client ↔ Server, REQ-WFCOMP-001.4/.5/.6) ───
+// present = erfüllt · missing = deterministische Lücke (rot) ·
+// needs_attestation = nicht lift-produzierbar → Mensch/LLM (nie auto-grün/rot).
+export type WfcompFieldStatus = 'present' | 'missing' | 'needs_attestation';
+
+export interface WfcompFieldSuggestion {
+  litera: string; // 'b' | 'c'
+  value: string;
+  confidence: number;
+  rationale: string;
+  provenance: 'ai_generated';
+}
+
+export interface WfcompFieldResult {
+  litera: string;
+  criticality: Art30Criticality;
+  status: WfcompFieldStatus;
+  mode?: 'ask' | 'confirm'; // nur bei needs_attestation
+  suggestion?: WfcompFieldSuggestion; // nur bei mode:'confirm'
+}
+
+export interface WfcompGapReport {
+  gdprScope: boolean;
+  fields: WfcompFieldResult[]; // leer wenn gdprScope=false
+}
+
 export interface ComplianceRequirementDTO {
   _id: string;
   projectId: string;

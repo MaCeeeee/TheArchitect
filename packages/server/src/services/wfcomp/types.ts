@@ -4,7 +4,19 @@
  * Reiner Mechanismus (DB-frei): assessWorkflow = sanitize → scope → lift → trace.
  * Neo4j-Persistenz/Cypher = Folge-Integration (REQ-WFCOMP-001.8 / THE-360).
  */
-import type { Art30Criticality } from '@thearchitect/shared';
+// Verdikt-Contract liegt in shared (Client ↔ Server) — hier re-exportiert
+// unter den lokalen Namen, damit der Pipeline-Code unverändert bleibt.
+import type {
+  WfcompFieldStatus,
+  WfcompFieldSuggestion,
+  WfcompFieldResult,
+  WfcompGapReport,
+} from '@thearchitect/shared';
+
+export type FieldStatus = WfcompFieldStatus;
+export type FieldSuggestion = WfcompFieldSuggestion;
+export type FieldResult = WfcompFieldResult;
+export type GapReport = WfcompGapReport;
 
 // ─── Sanitize (.0 / THE-358) ───
 export interface SanitizedNode {
@@ -44,26 +56,4 @@ export interface LiftedGraph {
   edges: LiftedEdge[];
 }
 
-// ─── Inferenz (.3 / THE-354) — LLM-Vorschlag, nie Fakt ───
-export interface FieldSuggestion {
-  litera: string; // 'b' (Zweck) | 'c' (Betroffenenkategorie)
-  value: string; // knapper Vorschlag (Tier-A-Bound erzwingt Kürze)
-  confidence: number; // 0..1
-  rationale: string;
-  provenance: 'ai_generated';
-}
-
-// ─── Trace (.4 / THE-355) ───
-export type FieldStatus = 'present' | 'missing' | 'needs_attestation';
-export interface FieldResult {
-  litera: string;
-  criticality: Art30Criticality;
-  status: FieldStatus;
-  // ─── M2 (.5 / THE-356): Ask vs. Confirm ───
-  mode?: 'ask' | 'confirm'; // nur bei needs_attestation gesetzt
-  suggestion?: FieldSuggestion; // nur bei mode:'confirm'
-}
-export interface GapReport {
-  gdprScope: boolean;
-  fields: FieldResult[]; // leer wenn gdprScope=false
-}
+// FieldSuggestion / FieldStatus / FieldResult / GapReport: siehe shared-Re-Exports oben.
