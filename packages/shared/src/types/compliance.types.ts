@@ -155,6 +155,36 @@ export type ComplianceRequirementStatus =
 
 export type ComplianceRequirementProvenance = 'llm' | 'human';
 
+// ─── WFCOMP (UC-WFCOMP-001 / REQ-WFCOMP-001.1, THE-352) ───
+// Art.-30-Kritikalitätsklasse: HART (lit. a–d, "sämtliche Angaben"),
+// BEDINGT (lit. e, "gegebenenfalls"), WEICH (lit. f/g, "wenn möglich").
+export type Art30Criticality = 'HART' | 'BEDINGT' | 'WEICH';
+
+export interface TraceStep {
+  rel: string;                       // ConnectionType, z.B. 'assignment' | 'realization' | 'access'
+  to: string;                        // ElementType oder '*'
+  where?: Record<string, unknown>;   // Knoten-Constraints, z.B. { kind: 'Purpose' }
+}
+
+/**
+ * Maschinenlesbarer Trace-Pfad für den Art.-30-Trace-Check (REQ-WFCOMP-001.4, THE-355).
+ * Beispiele (siehe THE-352):
+ *   a:  { from:'process', steps:[{ rel:'assignment', to:'business_role', where:{ role:'Controller' } }] }
+ *   e (BEDINGT): { from:'process', guard:{ flag:'thirdCountry', equals:true },
+ *        steps:[{ rel:'flow', to:'business_role', where:{ role:'Recipient' } },
+ *               { rel:'association', to:'*', where:{ kind:'Safeguard' } }] }
+ *   g (cross-layer): { from:'data_object', where:{ personal:true },
+ *        steps:[{ rel:'access', to:'application_component' },
+ *               { rel:'serving', to:'node' },
+ *               { rel:'association', to:'requirement', where:{ kind:'TOM', art32:true } }] }
+ */
+export interface TraceTarget {
+  from: string;
+  where?: Record<string, unknown>;
+  guard?: { flag: string; equals: unknown };  // bedingt (lit. e): Pfad greift nur, wenn flag === equals
+  steps: TraceStep[];
+}
+
 export interface ComplianceRequirementDTO {
   _id: string;
   projectId: string;
@@ -175,6 +205,9 @@ export interface ComplianceRequirementDTO {
   // Mapping = "how well do the linked elements fit this obligation?"
   mappingConfidence?: number;     // ∈ [0,1] — fit of linkedElementIds (0 if none), only when createdBy='llm'
   mappingRationale?: string;      // WHY exactly these elements (or why none)
+  // ─── WFCOMP (UC-WFCOMP-001 / REQ-WFCOMP-001.1) ───
+  criticality?: Art30Criticality; // Art.-30-Klasse (HART/BEDINGT/WEICH)
+  traceTarget?: TraceTarget;      // erwarteter Graph-Pfad für den Trace-Check
   createdAt: string;
   updatedAt: string;
 }
