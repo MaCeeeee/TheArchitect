@@ -1,0 +1,48 @@
+{
+  "name": "Lead Import (with pinned sample — PII LEAK)",
+  "nodes": [
+    {
+      "parameters": { "path": "lead", "httpMethod": "POST" },
+      "name": "Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            { "name": "email", "value": "hans.mueller@example.com" },
+            { "name": "fullName", "value": "Hans Müller" }
+          ]
+        }
+      },
+      "name": "Set Lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "operation": "insert", "table": "leads" },
+      "name": "Store Lead",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Lead Webhook": { "main": [[{ "node": "Set Lead", "type": "main", "index": 0 }]] },
+    "Set Lead": { "main": [[{ "node": "Store Lead", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {
+    "Lead Webhook": [
+      {
+        "json": {
+          "email": "erika.musterfrau@example.com",
+          "fullName": "Erika Musterfrau",
+          "iban": "DE89370400440532013000"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "CRM Sync to US (no safeguard)",
+  "nodes": [
+    {
+      "parameters": { "path": "contact", "httpMethod": "POST" },
+      "name": "Contact Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "values": { "string": [{ "name": "email", "value": "" }, { "name": "fullName", "value": "" }] }
+      },
+      "name": "Map Contact",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "url": "https://api.mailchimp.com/3.0/lists/members", "method": "POST" },
+      "name": "Mailchimp (US)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Contact Webhook": { "main": [[{ "node": "Map Contact", "type": "main", "index": 0 }]] },
+    "Map Contact": { "main": [[{ "node": "Mailchimp (US)", "type": "main", "index": 0 }]] }
+  }
+}

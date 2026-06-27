@@ -3,6 +3,8 @@ import type {
   ComplianceRequirementPriority,
   ComplianceRequirementStatus,
   ComplianceRequirementProvenance,
+  Art30Criticality,
+  TraceTarget,
 } from '@thearchitect/shared';
 
 /**
@@ -33,6 +35,9 @@ export interface IComplianceRequirement extends Document {
   extractionRationale?: string;   // why genuine + why this score
   mappingConfidence?: number;     // "how well do linked elements fit?" (0 if none)
   mappingRationale?: string;      // why these elements (or why none)
+  // ─── WFCOMP (REQ-WFCOMP-001.1 / THE-352) ───
+  criticality?: Art30Criticality; // Art.-30-Klasse (HART/BEDINGT/WEICH)
+  traceTarget?: TraceTarget;      // erwarteter Graph-Pfad für Trace-Check (THE-355)
   createdAt: Date;
   updatedAt: Date;
 }
@@ -121,6 +126,20 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
       type: String,
       default: '',
       maxlength: 1000,
+    },
+    // ─── WFCOMP (REQ-WFCOMP-001.1 / THE-352) ───
+    // criticality: Art.-30-Klasse. NICHT priority überladen — BEDINGT (lit. e)
+    // hat keine saubere must/should/may-Entsprechung.
+    criticality: {
+      type: String,
+      enum: ['HART', 'BEDINGT', 'WEICH'],
+      required: false,
+    },
+    // traceTarget: maschinenlesbarer Pfad für den Trace-Check (THE-355). Mixed,
+    // weil verschachtelt + quell-getrieben; Validierung erfolgt im Trace-Check.
+    traceTarget: {
+      type: Schema.Types.Mixed,
+      required: false,
     },
   },
   { timestamps: true },

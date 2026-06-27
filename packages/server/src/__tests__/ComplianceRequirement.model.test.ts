@@ -290,6 +290,53 @@ describe('ComplianceRequirement Model (REQ-REQGEN-001.1 / THE-302)', () => {
   });
 
   // ──────────────────────────────────────────────────────────
+  describe('WFCOMP: criticality + traceTarget (REQ-WFCOMP-001.1 / THE-352)', () => {
+    it('persists criticality + traceTarget round-trip (HART)', async () => {
+      const doc = await ComplianceRequirement.create({
+        ...baseDoc(),
+        title: 'Zweck(e) der Verarbeitung angeben',
+        createdBy: 'human' as const,
+        criticality: 'HART' as const,
+        traceTarget: {
+          from: 'process',
+          steps: [{ rel: 'realization', to: 'goal', where: { kind: 'Purpose' } }],
+        },
+      });
+      const reloaded = await ComplianceRequirement.findById(doc._id).lean();
+      expect(reloaded?.criticality).toBe('HART');
+      expect(reloaded?.traceTarget?.from).toBe('process');
+      expect(reloaded?.traceTarget?.steps[0].rel).toBe('realization');
+    });
+
+    it('persists BEDINGT guard (lit. e)', async () => {
+      const doc = await ComplianceRequirement.create({
+        ...baseDoc(),
+        title: 'Drittland-Übermittlung dokumentieren',
+        createdBy: 'human' as const,
+        criticality: 'BEDINGT' as const,
+        traceTarget: {
+          from: 'process',
+          guard: { flag: 'thirdCountry', equals: true },
+          steps: [{ rel: 'association', to: '*', where: { kind: 'Safeguard' } }],
+        },
+      });
+      const reloaded = await ComplianceRequirement.findById(doc._id).lean();
+      expect(reloaded?.criticality).toBe('BEDINGT');
+      expect(reloaded?.traceTarget?.guard?.flag).toBe('thirdCountry');
+    });
+
+    it('rejects unknown criticality value', async () => {
+      await expect(
+        ComplianceRequirement.create({
+          ...baseDoc(),
+          createdBy: 'human',
+          criticality: 'SOFT' as never,
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────
   describe('Timestamps', () => {
     it('createdAt and updatedAt are auto-set', async () => {
       const r = await ComplianceRequirement.create(baseDoc());
