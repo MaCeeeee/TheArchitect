@@ -29,6 +29,8 @@ import roadmapRoutes from './routes/roadmap.routes';
 import demoRoutes from './routes/demo.routes';
 import blueprintRoutes from './routes/blueprint.routes';
 import remediationRoutes from './routes/remediation.routes';
+import wfcompRoutes from './routes/wfcomp.routes';
+import { scrubSentryEvent } from './config/sentry';
 import portfolioRoutes from './routes/portfolio.routes';
 import importRoutes from './routes/import.routes';
 import connectorRoutes from './routes/connector.routes';
@@ -59,6 +61,9 @@ if (process.env.SENTRY_DSN) {
     dsn: process.env.SENTRY_DSN,
     environment: process.env.NODE_ENV || 'development',
     tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
+    // Strip request bodies from every event — the WFCOMP assess route ingests
+    // raw workflow JSON that may carry personal data (THE-360 landmine #1).
+    beforeSend: scrubSentryEvent,
   });
   log.info('[Sentry] Initialized');
 }
@@ -142,6 +147,7 @@ async function main() {
   app.use('/api/auth', authRoutes);
   app.use('/api/projects', projectRoutes);
   app.use('/api/projects', architectureRoutes);
+  app.use('/api/projects', wfcompRoutes);
   app.use('/api/projects', certificationRoutes);
   app.use('/api/admin', adminRoutes);
   app.use('/api/projects', analyticsRoutes);
