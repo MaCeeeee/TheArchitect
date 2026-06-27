@@ -1,0 +1,40 @@
+{
+  "name": "Newsletter Signup (compliant)",
+  "nodes": [
+    {
+      "parameters": { "path": "signup", "httpMethod": "POST" },
+      "name": "Signup Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "values": { "string": [{ "name": "email", "value": "" }, { "name": "firstName", "value": "" }] }
+      },
+      "name": "Map Subscriber Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "url": "https://api.cleverreach.de/v3/receivers", "method": "POST" },
+      "name": "CleverReach (EU)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [640, 300]
+    },
+    {
+      "parameters": { "operation": "insert", "table": "subscribers" },
+      "name": "Store Subscriber",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [860, 300]
+    }
+  ],
+  "connections": {
+    "Signup Webhook": { "main": [[{ "node": "Map Subscriber Fields", "type": "main", "index": 0 }]] },
+    "Map Subscriber Fields": { "main": [[{ "node": "CleverReach (EU)", "type": "main", "index": 0 }]] },
+    "CleverReach (EU)": { "main": [[{ "node": "Store Subscriber", "type": "main", "index": 0 }]] }
+  }
+}

@@ -1,0 +1,54 @@
+/**
+ * Ground-Truth-Labels für den WFCOMP-Eval-Datensatz (REQ-WFCOMP-001.7 / THE-359).
+ *
+ * Handgelabelt = die menschliche Wahrheit über die Art.-30-Realität eines Workflows,
+ * unabhängig davon, wie das Tool sie berechnet. Der Eval-Harness vergleicht
+ * Tool-Output gegen diese Labels (M1: deterministische Teilmenge).
+ *
+ * M1-Teilmenge (deterministisch). M2 ergänzt missing-purpose + inferrable/ambiguous.
+ */
+export type Litera = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g';
+export type Criticality = 'HART' | 'BEDINGT' | 'WEICH';
+
+export interface ExpectedGap {
+  litera: Litera;
+  criticality: Criticality;
+}
+
+export interface FixtureGroundTruth {
+  fixture: string; // Dateiname ohne .json
+  gdprScope: boolean; // Ist Art. 30 überhaupt einschlägig?
+  /** Menschlich gelabelte, deterministisch entscheidbare Lücken (HART/BEDINGT). */
+  groundTruthGaps: ExpectedGap[];
+  /** Sanitize-Gate: nach Ingestion dürfen 0 Personendaten persistiert sein. */
+  expectsNoPiiAtRest?: boolean;
+  note: string;
+}
+
+export const GROUND_TRUTH: FixtureGroundTruth[] = [
+  {
+    fixture: 'clean-compliant',
+    gdprScope: true,
+    groundTruthGaps: [],
+    note: 'Empfänger (EU) + Storage vorhanden → d deterministisch grün. a/b brauchen Attestierung (M2), kein deterministisches false-rot.',
+  },
+  {
+    fixture: 'missing-recipient',
+    gdprScope: true,
+    groundTruthGaps: [{ litera: 'd', criticality: 'HART' }],
+    note: 'Personenbezogene Daten erhoben + gespeichert, aber an keine Empfänger-Rolle offengelegt → d ROT.',
+  },
+  {
+    fixture: 'pindata-leak',
+    gdprScope: true,
+    groundTruthGaps: [],
+    expectsNoPiiAtRest: true,
+    note: 'Trägt pinData + hardcodierte PII (E-Mail/Name/IBAN). Sanitize MUSS vor Persistenz strippen (G1).',
+  },
+  {
+    fixture: 'no-personal-data',
+    gdprScope: false,
+    groundTruthGaps: [],
+    note: 'Verschiebt Dateien zwischen Buckets; keine personenbezogenen Felder → Art. 30 nicht einschlägig (G5).',
+  },
+];

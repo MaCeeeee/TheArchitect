@@ -1,0 +1,30 @@
+{
+  "name": "Nightly Backup Move",
+  "nodes": [
+    {
+      "parameters": { "triggerTimes": { "item": [{ "mode": "everyDay" }] } },
+      "name": "Nightly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": { "operation": "download", "bucketName": "backups-src" },
+      "name": "S3 Download",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": { "operation": "upload", "bucketName": "backups-archive" },
+      "name": "S3 Archive",
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 1,
+      "position": [640, 300]
+    }
+  ],
+  "connections": {
+    "Nightly Trigger": { "main": [[{ "node": "S3 Download", "type": "main", "index": 0 }]] },
+    "S3 Download": { "main": [[{ "node": "S3 Archive", "type": "main", "index": 0 }]] }
+  }
+}
