@@ -41,9 +41,15 @@ export const GROUND_TRUTH: FixtureGroundTruth[] = [
   {
     fixture: 'pindata-leak',
     gdprScope: true,
-    groundTruthGaps: [],
+    groundTruthGaps: [{ litera: 'd', criticality: 'HART' }],
     expectsNoPiiAtRest: true,
-    note: 'Trägt pinData + hardcodierte PII (E-Mail/Name/IBAN). Sanitize MUSS vor Persistenz strippen (G1).',
+    note: 'Trägt pinData + hardcodierte PII (E-Mail/Name/IBAN). Sanitize MUSS strippen (G1). Strukturell intern (kein Empfänger) → d ROT.',
+  },
+  {
+    fixture: 'thirdcountry-no-safeguard',
+    gdprScope: true,
+    groundTruthGaps: [{ litera: 'e', criticality: 'BEDINGT' }],
+    note: 'Empfänger in US (.com, Mailchimp) → Drittland-Transfer ohne dokumentierte Garantie → e ROT. d ist present (Empfänger existiert).',
   },
   {
     fixture: 'no-personal-data',
