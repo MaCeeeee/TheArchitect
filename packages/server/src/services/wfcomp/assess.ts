@@ -13,7 +13,8 @@ import { runTraceCheck } from './trace';
 import { inferLegalFields } from './inference';
 import { annotateModes } from './attestation';
 import { ART30_FIELDS } from '../../data/art30.seed-data';
-import type { GapReport } from './types';
+import { log } from '../../config/logger';
+import type { GapReport, FieldSuggestion } from './types';
 
 /** M1: rein deterministisch (kein LLM). */
 export function assessWorkflow(rawN8nJson: string | object): GapReport {
@@ -35,7 +36,18 @@ export async function assessWorkflowWithInference(
     return { gdprScope: false, fields: [] };
   }
   const lifted = liftCompliance(sanitized);
-  const suggestions = await inferLegalFields(sanitized, opts);
+
+  // Graceful degradation: if the LLM is unavailable (no key, timeout, rate-limit,
+  // backend down) we do NOT fail the assessment — we return the deterministic
+  // verdict and the legal fields simply stay 'ask'. The LLM is an enhancement,
+  // never a blocker. (THE-360 landmine #2)
+  let suggestions: FieldSuggestion[] = [];
+  try {
+    suggestions = await inferLegalFields(sanitized, opts);
+  } catch {
+    log.warn('[wfcomp] inference unavailable — degrading to the deterministic verdict');
+  }
+
   const report = runTraceCheck(lifted, ART30_FIELDS);
   return annotateModes(report, suggestions);
 }

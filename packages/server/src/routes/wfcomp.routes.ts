@@ -14,7 +14,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
-import { assessWorkflow } from '../services/wfcomp/assess';
+import { assessWorkflow, assessWorkflowWithInference } from '../services/wfcomp/assess';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -23,18 +23,23 @@ router.use(authenticate);
 router.use('/:projectId', requireProjectAccess('viewer'));
 
 /**
- * POST /api/projects/:projectId/wfcomp/assess
+ * POST /api/projects/:projectId/wfcomp/assess[?infer=true]
  * Body: a raw n8n workflow definition (JSON).
- * Returns: the deterministic Art.-30 GapReport (green/missing/needs_attestation).
+ * Returns: the Art.-30 GapReport. With ?infer=true the legal fields (purpose,
+ * data-subject category) get guarded LLM suggestions; if the LLM is unavailable
+ * the assessment degrades gracefully to the deterministic verdict.
  */
 router.post(
   '/:projectId/wfcomp/assess',
   requirePermission(PERMISSIONS.ELEMENT_READ),
   audit({ action: 'wfcomp_assess', entityType: 'project', riskLevel: 'low' }),
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
       // sanitize-first: assessWorkflow's first line is sanitizeN8nWorkflow(body).
-      const report = assessWorkflow(req.body);
+      const report =
+        req.query.infer === 'true'
+          ? await assessWorkflowWithInference(req.body)
+          : assessWorkflow(req.body);
       res.json({ success: true, data: report });
     } catch {
       // NEVER echo req.body — it may carry personal data.
