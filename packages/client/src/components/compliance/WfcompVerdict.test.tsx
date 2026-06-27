@@ -53,9 +53,32 @@ describe('WfcompVerdict', () => {
   test('Obviousness: lead states exactly what is left, as actions', () => {
     render(<WfcompVerdict report={mixed} />);
     const lead = screen.getByTestId('verdict-lead');
-    // confirm 1 (b) · provide 4 (a,c,f,g ask)
+    // confirm 1 (b) · provide 2 (a,c ask). f/g are WEICH → "Recommended", not mandatory to-do.
     expect(lead.textContent).toContain('confirm 1 suggestion');
-    expect(lead.textContent).toContain('provide 4 details');
+    expect(lead.textContent).toContain('provide 2 details');
+  });
+
+  test('WEICH open items are "Recommended" (soft), not in the red action list', () => {
+    render(<WfcompVerdict report={mixed} />);
+    expect(screen.getByTestId('list-recommended').textContent).toMatch(/erasure deadlines|technical & organisational/i);
+    expect(screen.getByTestId('list-red').textContent).not.toMatch(/erasure deadlines/i);
+  });
+
+  test('mandatory done but WEICH open → "Mandatory fields covered — N recommended", not "Complete"', () => {
+    const mandatoryDone: WfcompGapReport = {
+      gdprScope: true,
+      fields: [
+        ...(['a', 'b', 'c', 'd'] as const).map((l) => ({ litera: l, criticality: 'HART' as const, status: 'present' as const })),
+        { litera: 'e', criticality: 'BEDINGT', status: 'present' },
+        { litera: 'f', criticality: 'WEICH', status: 'needs_attestation', mode: 'ask' },
+        { litera: 'g', criticality: 'WEICH', status: 'needs_attestation', mode: 'ask' },
+      ],
+    };
+    render(<WfcompVerdict report={mandatoryDone} />);
+    expect(screen.getByText(/Mandatory fields covered — 2 recommended items still open/)).toBeInTheDocument();
+    expect(screen.queryByText(/^Complete —/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId('list-red')).not.toBeInTheDocument();
+    expect(screen.getByTestId('list-recommended')).toBeInTheDocument();
   });
 
   test('yellow item is phrased as a confirm-action with the suggestion', () => {

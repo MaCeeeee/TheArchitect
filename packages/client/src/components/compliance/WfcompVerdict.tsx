@@ -38,13 +38,16 @@ const MACHINE_LITERAE = new Set(['d', 'e']);
 
 const GREEN = '#22c55e';
 const AMBER = '#eab308'; // confirm — never alarm-red
-const RED = '#f43f5e'; // genuine open gap / required input
+const RED = '#f43f5e'; // genuine open gap / required input (HART/BEDINGT only)
+const GREY = '#94a3b8'; // recommended (WEICH "wenn möglich") — soft, never alarm
 
-type Bucket = 'green' | 'yellow' | 'red';
+type Bucket = 'green' | 'yellow' | 'red' | 'recommended';
 function bucketOf(f: WfcompFieldResult): Bucket {
   if (f.status === 'present') return 'green';
   if (f.status === 'needs_attestation' && f.mode === 'confirm') return 'yellow';
-  return 'red'; // missing OR needs_attestation + ask
+  // WEICH (lit. f/g, "wenn möglich") open → recommended, never red/alarm.
+  if (f.criticality === 'WEICH') return 'recommended';
+  return 'red'; // HART/BEDINGT: missing OR needs_attestation + ask
 }
 
 export default function WfcompVerdict({ report }: { report: WfcompGapReport }) {
@@ -65,12 +68,14 @@ export default function WfcompVerdict({ report }: { report: WfcompGapReport }) {
   const green = sorted.filter((f) => bucketOf(f) === 'green');
   const yellow = sorted.filter((f) => bucketOf(f) === 'yellow');
   const red = sorted.filter((f) => bucketOf(f) === 'red');
+  const recommended = sorted.filter((f) => bucketOf(f) === 'recommended');
 
   const confirmN = yellow.length;
   const provideN = red.filter((f) => f.status === 'needs_attestation').length;
   const gapN = red.filter((f) => f.status === 'missing').length;
+  const recommendedN = recommended.length;
 
-  // G11: complete ⟺ every HART + BEDINGT field is present (WEICH may stay open).
+  // G11: complete ⟺ every HART + BEDINGT field is present (WEICH "wenn möglich" may stay open).
   const complete = report.fields
     .filter((f) => f.criticality !== 'WEICH')
     .every((f) => f.status === 'present');
@@ -92,9 +97,15 @@ export default function WfcompVerdict({ report }: { report: WfcompGapReport }) {
         )}
         <div>
           {complete ? (
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              Complete — structure and mandatory fields covered.
-            </p>
+            recommendedN > 0 ? (
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                Mandatory fields covered — {recommendedN} recommended item{recommendedN === 1 ? '' : 's'} still open.
+              </p>
+            ) : (
+              <p className="text-sm font-semibold text-[var(--text-primary)]">
+                Complete — structure and mandatory fields covered.
+              </p>
+            )
           ) : (
             <>
               <p className="text-sm font-semibold text-[var(--text-primary)]">
@@ -123,6 +134,16 @@ export default function WfcompVerdict({ report }: { report: WfcompGapReport }) {
           {yellow.map((f) => (
             <Item key={f.litera} crit={f.criticality} color={AMBER}>
               Confirm: “{f.suggestion?.value}” — {FIELD_LABEL[f.litera]}
+            </Item>
+          ))}
+        </Section>
+      )}
+
+      {recommended.length > 0 && (
+        <Section testId="list-recommended" title="Recommended — where possible (Art. 30 f/g)" color={GREY}>
+          {recommended.map((f) => (
+            <Item key={f.litera} crit={f.criticality} color={GREY}>
+              {RED_ACTION[f.litera] ?? FIELD_LABEL[f.litera]}
             </Item>
           ))}
         </Section>

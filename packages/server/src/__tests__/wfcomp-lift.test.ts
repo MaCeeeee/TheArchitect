@@ -22,12 +22,16 @@ describe('detectGdprScope (.2 / THE-353) — G5', () => {
     expect(detectGdprScope(sani('no-personal-data'))).toBe(false);
   });
 
-  it('isPiiKey: matches personal field names, not bucketName/operation', () => {
-    expect(isPiiKey('email')).toBe(true);
-    expect(isPiiKey('firstName')).toBe(true);
-    expect(isPiiKey('iban')).toBe(true);
-    expect(isPiiKey('bucketName')).toBe(false);
-    expect(isPiiKey('operation')).toBe(false);
+  it('isPiiKey: generous on personal field names (bias to in-scope)', () => {
+    for (const k of ['email', 'firstName', 'iban', 'customerId', 'username', 'employeeName', 'contactPhone', 'recipientAddress', 'subscriberId']) {
+      expect(isPiiKey(k)).toBe(true);
+    }
+  });
+
+  it('isPiiKey: still excludes clearly non-personal keys', () => {
+    for (const k of ['bucketName', 'operation', 'triggerTimes', 'mode', 'tableName', 'limit']) {
+      expect(isPiiKey(k)).toBe(false);
+    }
   });
 });
 
