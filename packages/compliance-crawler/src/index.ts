@@ -10,7 +10,7 @@
 import Fastify from 'fastify';
 import sensible from '@fastify/sensible';
 import { config } from './config';
-import { connectMongo, disconnectMongo } from './db/mongo';
+import { connectMongo, disconnectMongo, setMongoLogger } from './db/mongo';
 import { healthRoutes } from './routes/health';
 import { crawlRoutes } from './routes/crawl';
 import { embedAllRoutes } from './routes/embed-all';
@@ -31,6 +31,9 @@ async function buildApp() {
 
 async function start() {
   const app = await buildApp();
+
+  // Route Mongo lifecycle/reconnect logs through pino.
+  setMongoLogger(app.log);
 
   try {
     await connectMongo();
