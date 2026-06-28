@@ -16,6 +16,7 @@ import { persistLiftedGraph, loadLiftedGraph } from '../services/wfcomp/persist'
 import { sanitizeN8nWorkflow } from '../services/wfcomp/sanitize';
 import { liftCompliance } from '../services/wfcomp/lift';
 import { runTraceCheck } from '../services/wfcomp/trace';
+import { applyAttestation } from '../services/wfcomp/attestation';
 import { ART30_FIELDS } from '../data/art30.seed-data';
 
 const mockTx = runCypherTransaction as jest.Mock;
@@ -88,7 +89,7 @@ describe('round-trip: persist → load preserves the trace verdict', () => {
         } else if (op.query.includes('CREATE (e:ArchitectureElement')) {
           store.elements.push({
             id: op.params.id, projectId: op.params.projectId, name: op.params.name, type: op.params.type,
-            source: 'wfcomp', wfcompId: op.params.wfcompId, provenance: 'import',
+            source: 'wfcomp', wfcompId: op.params.wfcompId, provenance: op.params.provenance,
             ...(op.params.attrs as Record<string, unknown>),
           });
         } else if (op.query.includes('CONNECTS_TO')) {
@@ -115,6 +116,23 @@ describe('round-trip: persist → load preserves the trace verdict', () => {
       expect(runTraceCheck(loaded, ART30_FIELDS)).toEqual(runTraceCheck(original, ART30_FIELDS));
     },
   );
+
+  it('preserves attested provenance:user through the round-trip (AC-6)', async () => {
+    wireFakeNeo4j();
+    // a human attests the missing recipient (lit. d) → a 'user' node is materialized
+    const attested = applyAttestation(lift('missing-recipient'), [{ litera: 'd', value: 'ACME Processing GmbH' }]);
+    expect(attested.elements.some((e) => e.provenance === 'user')).toBe(true);
+
+    await persistLiftedGraph('p1', 'wf1', attested);
+    const loaded = await loadLiftedGraph('p1', 'wf1');
+
+    // the human-signed node stays distinguishable from machine-lifted ones
+    const userNodes = loaded.elements.filter((e) => e.provenance === 'user');
+    expect(userNodes.length).toBe(attested.elements.filter((e) => e.provenance === 'user').length);
+    expect(loaded.elements.some((e) => e.provenance === 'import')).toBe(true); // lifted nodes still 'import'
+    // and the verdict reflects the attestation
+    expect(runTraceCheck(loaded, ART30_FIELDS).fields.find((f) => f.litera === 'd')?.status).toBe('present');
+  });
 
   it('re-assessment replaces (does not accumulate) the subgraph', async () => {
     const store = wireFakeNeo4j();

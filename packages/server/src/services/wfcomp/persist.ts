@@ -50,11 +50,11 @@ export async function persistLiftedGraph(
     ops.push({
       query: `CREATE (e:ArchitectureElement {
         id: $id, projectId: $projectId, name: $name, type: $type,
-        source: 'wfcomp', wfcompId: $wfcompId, provenance: 'import',
+        source: 'wfcomp', wfcompId: $wfcompId, provenance: $provenance,
         createdAt: datetime(), updatedAt: datetime()
       })
       SET e += $attrs`,
-      params: { id: el.id, projectId, name: el.name, type: el.type, wfcompId, attrs: el.attrs },
+      params: { id: el.id, projectId, name: el.name, type: el.type, wfcompId, provenance: el.provenance, attrs: el.attrs },
     });
   }
 
@@ -93,7 +93,8 @@ export async function loadLiftedGraph(projectId: string, wfcompId: string): Prom
       type: props.type as string,
       name: props.name as string,
       attrs,
-      provenance: 'import',
+      // Preserve the persisted provenance (AC-6); default to 'import' for legacy nodes.
+      provenance: props.provenance === 'user' ? 'user' : 'import',
     };
   });
 
