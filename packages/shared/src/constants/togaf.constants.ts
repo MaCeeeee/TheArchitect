@@ -65,12 +65,33 @@ export const MOTIVATION_SUB_Y: Record<string, number> = {
 };
 
 /**
- * Resolve the rendered Y for an element. Motivation types use their sub-level;
- * every other layer uses the flat layer plane.
+ * Strategy sub-levels — Value Stream View pattern (ArchiMate / Hosiaisluoma).
+ *
+ * Value streams float above the strategy plane (y=12); capabilities sit just
+ * below them but still above the plane, connected upward by `serving` relations.
+ * This yields the canonical Value Stream View for free whenever value_stream +
+ * business_capability coexist — same mechanism as the motivation sub-stack.
+ *
+ *   Value Stream → Capability (serving, pointing up)
+ *      14.5             13
+ */
+export const STRATEGY_SUB_Y: Record<string, number> = {
+  value_stream: 14.5,
+  business_capability: 13,
+  resource: 13,
+};
+
+/**
+ * Resolve the rendered Y for an element. Motivation and strategy types use their
+ * sub-level (so they float above their plane); every other layer uses the flat
+ * layer plane.
  */
 export function resolveElementY(layer: string, type: string): number {
   if (layer === 'motivation' && MOTIVATION_SUB_Y[type] !== undefined) {
     return MOTIVATION_SUB_Y[type];
+  }
+  if (layer === 'strategy' && STRATEGY_SUB_Y[type] !== undefined) {
+    return STRATEGY_SUB_Y[type];
   }
   return LAYER_Y[layer];
 }
