@@ -46,7 +46,10 @@ function materializePath(graph: LiftedGraph, target: TraceTarget, label: string)
   const edges = [...graph.edges];
   const newNode = (type: string, attrs: Record<string, unknown>): string => {
     const id = `att-${uuid().slice(0, 8)}`;
-    elements.push({ id, type: type === '*' ? 'object' : type, name: label, attrs, provenance: 'import' });
+    // These nodes exist ONLY because a human attested → provenance 'user' (AC-6).
+    // The Neo4j round-trip preserves this, so an attested fact stays distinguishable
+    // from a machine-lifted one.
+    elements.push({ id, type: type === '*' ? 'object' : type, name: label, attrs, provenance: 'user' });
     return id;
   };
 

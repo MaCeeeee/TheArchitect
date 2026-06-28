@@ -9,15 +9,15 @@
  * G7-Invariante: ein Vorschlag macht ein Feld NIE 'present' (das macht nur die
  * Attestierung). Hier wird nur vorgeschlagen.
  */
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import type { SanitizedWorkflow, FieldSuggestion } from './types';
+import { callLLM } from './llm';
 import {
   WFCOMP_INFERENCE_SYSTEM_PROMPT,
   buildWfcompInferenceUserPrompt,
 } from '../../prompts/wfcompInference.prompt';
 
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 1024;
 const CONFIDENCE_THRESHOLD = 0.5;
 const MAX_VALUE_CHARS = 140;
@@ -119,12 +119,6 @@ function extractJson(text: string): string {
   return first === -1 || last === -1 || last < first ? text : text.slice(first, last + 1);
 }
 
-function getAnthropicClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new WfcompInferenceError('ANTHROPIC_API_KEY is not configured');
-  return new Anthropic({ apiKey });
-}
-
 /** Parse + alle Tier-A-Guards anwenden. Exportiert für Tests. */
 export function parseAndGuard(rawText: string, sanitized: SanitizedWorkflow): FieldSuggestion[] {
   let parsed: z.infer<typeof InferenceResponseSchema>;
@@ -154,24 +148,13 @@ export async function inferLegalFields(
   sanitized: SanitizedWorkflow,
   opts?: { anthropicClient?: Anthropic },
 ): Promise<FieldSuggestion[]> {
-  const client = opts?.anthropicClient ?? getAnthropicClient();
-  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
-
-  let response;
-  try {
-    response = await client.messages.create({
-      model,
-      system: WFCOMP_INFERENCE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: buildWfcompInferenceUserPrompt(sanitized) }],
-      max_tokens: MAX_TOKENS,
-    });
-  } catch (err) {
-    throw new WfcompInferenceError(`Anthropic request failed: ${(err as Error).message}`);
-  }
-
-  const block = response.content.find((b) => b.type === 'text');
-  const text = block && block.type === 'text' ? block.text : '';
-  if (!text) throw new WfcompInferenceError('Anthropic returned empty text response');
+  const text = await callLLM({
+    system: WFCOMP_INFERENCE_SYSTEM_PROMPT,
+    user: buildWfcompInferenceUserPrompt(sanitized),
+    maxTokens: MAX_TOKENS,
+    anthropicClient: opts?.anthropicClient,
+  });
+  if (!text) throw new WfcompInferenceError('LLM returned an empty response');
   return parseAndGuard(text, sanitized);
 }
 

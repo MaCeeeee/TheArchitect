@@ -44,7 +44,8 @@ export interface LiftedElement {
   name: string;
   /** semantische Marker, gegen die traceTarget.where matched. */
   attrs: Record<string, unknown>; // z.B. { personal:true } | { role:'Recipient', thirdCountry:true }
-  provenance: 'import';
+  /** 'import' = maschinell aus der Struktur gelifted · 'user' = vom Menschen attestiert (AC-6). */
+  provenance: 'import' | 'user';
 }
 export interface LiftedEdge {
   from: string; // element id
