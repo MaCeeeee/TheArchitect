@@ -81,13 +81,31 @@ function autoLayout(elements) {
 
 // ── HTTP ──────────────────────────────────────────────────────────────────
 let AUTH = API_KEY ? { 'X-API-Key': API_KEY } : {};
-async function api(path, method, body) {
-  const r = await fetch(BASE + path, {
-    method, headers: { 'Content-Type': 'application/json', ...AUTH },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = t; }
-  return { ok: r.ok, status: r.status, j };
+
+// Namespace element ids per project. KNOWN PLATFORM BUG: the connection endpoint
+// matches elements by `id` WITHOUT scoping to projectId, so short generic ids
+// (sh-du, cap-…) collide with leftover nodes from other projects → 500 / ambiguous
+// match / unique-constraint violation. Prefixing by project makes ids globally
+// unique while staying STABLE across re-runs and layout-only passes (prefix derives
+// from projectId, not a per-run random). Surfaced by the skill eval, 2026-06.
+const NS = (id) => `${(PROJECT_ID || '').slice(-8)}-${id}`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// `tries` > 1 retries transient 500/401/429 (flaky Neo4j writes + auth hiccups
+// under load — also seen in the eval). Use it for every write.
+async function api(path, method, body, tries = 1) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    const r = await fetch(BASE + path, {
+      method, headers: { 'Content-Type': 'application/json', ...AUTH },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const t = await r.text(); let j; try { j = JSON.parse(t); } catch { j = t; }
+    last = { ok: r.ok, status: r.status, j };
+    if (r.ok || ![500, 401, 429].includes(r.status)) return last;
+    await sleep(250 * (i + 1));
+  }
+  return last;
 }
 
 const DEMO_MODEL = {
@@ -129,7 +147,7 @@ const DEMO_MODEL = {
     if (!PROJECT_ID) { console.error('--layout-only braucht PROJECT_ID'); process.exit(1); }
     let ok = 0;
     for (const e of model.elements) {
-      const r = await api(`/projects/${PROJECT_ID}/elements/${e.id}`, 'PUT', { position3D: e.position3D });
+      const r = await api(`/projects/${PROJECT_ID}/elements/${NS(e.id)}`, 'PUT', { position3D: e.position3D }, 4);
       if (r.ok) ok++; else console.error(`  ✗ ${e.id}: ${r.status}`);
     }
     console.log(`Layout: ${ok}/${model.elements.length} aktualisiert.`); return;
@@ -148,14 +166,14 @@ const DEMO_MODEL = {
   for (const e of model.elements) {
     const layer = e.layer || layerOf(e.type);
     const body = {
-      id: e.id, type: e.type, name: e.name, description: e.description || '',
+      id: NS(e.id), type: e.type, name: e.name, description: e.description || '',
       layer, togafDomain: e.togafDomain || domainOf(layer),
       status: e.status || (e.assumption ? 'target' : 'current'),
       riskLevel: e.riskLevel || 'low', maturityLevel: e.maturityLevel || 1,
       position3D: e.position3D,
       metadata: { assumption: !!e.assumption, ...(e.metadata || {}) },
     };
-    const r = await api(`/projects/${PROJECT_ID}/elements`, 'POST', body);
+    const r = await api(`/projects/${PROJECT_ID}/elements`, 'POST', body, 4);
     if (r.ok) okE++; else console.error(`  ✗ element ${e.id}: ${r.status} ${JSON.stringify(r.j).slice(0,160)}`);
   }
   console.log(`Elements: ${okE}/${model.elements.length}`);
@@ -163,7 +181,7 @@ const DEMO_MODEL = {
   // Connections.
   let okC = 0;
   for (const c of model.connections || []) {
-    const r = await api(`/projects/${PROJECT_ID}/connections`, 'POST', { sourceId: c.s, targetId: c.t, type: c.type, label: c.label });
+    const r = await api(`/projects/${PROJECT_ID}/connections`, 'POST', { sourceId: NS(c.s), targetId: NS(c.t), type: c.type, label: c.label }, 4);
     if (r.ok) okC++; else console.error(`  ✗ conn ${c.s}->${c.t}: ${r.status}`);
   }
   console.log(`Connections: ${okC}/${(model.connections || []).length}`);
