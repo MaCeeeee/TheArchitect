@@ -1,11 +1,12 @@
 /**
- * Qdrant wrapper for Regulation vectors.
+ * Qdrant wrapper for the canonical Regulation corpus.
  *
- * Each project gets its own collection `regulations-{projectId}` (tenant-isolation,
- * mirrors UC-SIM-001 pattern for elements). Points are upserted with UUID-shaped IDs
- * derived from the Regulation _id (Qdrant requires UUID or unsigned int).
+ * One shared collection `regulations-corpus` (embed-once, ADR-0001), replacing the
+ * former per-project `regulations-{projectId}` collections. Points are keyed by the
+ * stable `regulationKey` (project-independent), so a re-crawl overwrites the same
+ * point and the same paragraph is never embedded twice across projects.
  *
- * Linear: THE-277 (REQ-ICM-001.3)
+ * Linear: THE-277 (REQ-ICM-001.3) · THE-367 (corpus store)
  */
 import { QdrantClient } from '@qdrant/js-client-rest';
 import * as crypto from 'node:crypto';
@@ -17,6 +18,9 @@ export class QdrantConfigError extends Error {
     this.name = 'QdrantConfigError';
   }
 }
+
+/** The single shared corpus collection. */
+export const CORPUS_COLLECTION = 'regulations-corpus';
 
 let _client: QdrantClient | null = null;
 
@@ -33,47 +37,36 @@ export function resetQdrantClient(): void {
   _client = null;
 }
 
-export function regulationCollectionName(projectId: string): string {
-  const safe = projectId.replace(/[^A-Za-z0-9_-]/g, '');
-  if (!safe || safe.length === 0) {
-    throw new QdrantConfigError(`invalid projectId for Qdrant collection: "${projectId}"`);
-  }
-  return `regulations-${safe}`;
-}
-
 /**
  * Qdrant requires point IDs to be UUID or unsigned int.
- * Hash Regulation._id (an arbitrary Mongo ObjectId string) to UUID-shape.
- * Deterministic so re-upserts overwrite the same point.
+ * Hash the stable regulationKey to UUID-shape, deterministic so re-upserts of the
+ * same paragraph overwrite the same point.
  */
-export function regulationIdToPointId(regulationId: string): string {
-  const h = crypto.createHash('sha256').update(regulationId).digest('hex');
+export function regulationKeyToPointId(regulationKey: string): string {
+  const h = crypto.createHash('sha256').update(regulationKey).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
 
 /**
- * Idempotent collection ensure. Creates with the right vector config if missing.
- * Cosine distance + 768-dim (all-mpnet-base-v2), matching UC-SIM-001 conventions.
+ * Idempotent collection ensure. Creates the corpus collection with the right vector
+ * config if missing. Cosine distance + 768-dim (all-mpnet-base-v2).
  */
-export async function ensureRegulationCollection(
-  client: QdrantClient,
-  projectId: string
-): Promise<string> {
-  const name = regulationCollectionName(projectId);
+export async function ensureCorpusCollection(client: QdrantClient): Promise<string> {
   try {
-    await client.getCollection(name);
-    return name;
+    await client.getCollection(CORPUS_COLLECTION);
+    return CORPUS_COLLECTION;
   } catch {
-    await client.createCollection(name, {
+    await client.createCollection(CORPUS_COLLECTION, {
       vectors: { size: EMBEDDING_DIM, distance: 'Cosine' },
     });
-    return name;
+    return CORPUS_COLLECTION;
   }
 }
 
-/** Minimal payload stored alongside the vector — for UI-side display without Mongo roundtrip. */
+/** Minimal payload stored alongside the vector — for filtering + UI display without a Mongo roundtrip. */
 export interface RegulationPointPayload {
-  regulationId: string;
+  regulationKey: string;
+  versionHash: string;
   source: string;
   paragraphNumber: string;
   title: string;
@@ -86,8 +79,6 @@ export interface RegulationPointPayload {
 
 export async function upsertRegulationVector(args: {
   client: QdrantClient;
-  projectId: string;
-  regulationId: string;
   vector: number[];
   payload: RegulationPointPayload;
 }): Promise<void> {
@@ -96,12 +87,12 @@ export async function upsertRegulationVector(args: {
       `vector dim mismatch: ${args.vector.length}, expected ${EMBEDDING_DIM}`
     );
   }
-  const collection = await ensureRegulationCollection(args.client, args.projectId);
+  const collection = await ensureCorpusCollection(args.client);
   await args.client.upsert(collection, {
     wait: true,
     points: [
       {
-        id: regulationIdToPointId(args.regulationId),
+        id: regulationKeyToPointId(args.payload.regulationKey),
         vector: args.vector,
         payload: args.payload,
       },
@@ -111,20 +102,17 @@ export async function upsertRegulationVector(args: {
 
 export async function deleteRegulationVector(args: {
   client: QdrantClient;
-  projectId: string;
-  regulationId: string;
+  regulationKey: string;
 }): Promise<void> {
-  const collection = regulationCollectionName(args.projectId);
-  await args.client.delete(collection, {
+  await args.client.delete(CORPUS_COLLECTION, {
     wait: true,
-    points: [regulationIdToPointId(args.regulationId)],
+    points: [regulationKeyToPointId(args.regulationKey)],
   });
 }
 
-export async function countPoints(client: QdrantClient, projectId: string): Promise<number> {
-  const collection = regulationCollectionName(projectId);
+export async function countPoints(client: QdrantClient): Promise<number> {
   try {
-    const res = await client.count(collection, { exact: true });
+    const res = await client.count(CORPUS_COLLECTION, { exact: true });
     return res.count;
   } catch {
     return 0;

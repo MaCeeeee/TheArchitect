@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import mongoose from 'mongoose';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
+import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
 import { nis2EurLexSource, dsgvoEurLexSource } from '../sources/eur-lex';
 import { nis2FirecrawlSource, dsgvoFirecrawlSource } from '../sources/firecrawl';
 import { lksgSource } from '../sources/gesetze-im-internet';
@@ -11,7 +11,11 @@ import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
 
 const CrawlBodySchema = z.object({
-  projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex'),
+  /**
+   * Legacy/optional. The canonical corpus is project-independent (ADR-0001);
+   * accepted for backward compat but no longer scopes the written records.
+   */
+  projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex').optional(),
   sources: z
     .array(z.enum(['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom']))
     .min(1),
@@ -59,9 +63,8 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
     if (!parse.success) {
       return reply.code(400).send({ error: 'invalid_body', details: parse.error.flatten() });
     }
-    const { projectId, sources, skipEmbedding } = parse.data;
+    const { sources, skipEmbedding } = parse.data;
 
-    const projectObjectId = new mongoose.Types.ObjectId(projectId);
     const embeddingConfig = {
       sidecarUrl: config.EMBEDDING_SERVICE_URL ?? '',
       qdrantUrl: config.QDRANT_URL ?? '',
@@ -96,18 +99,16 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
         let embedErrors = 0;
 
         for (const p of parsed) {
-          const filter = {
-            projectId: projectObjectId,
-            source: p.source,
-            paragraphNumber: p.paragraphNumber,
-            version: 1,
-          };
+          const regulationKey = buildRegulationKey(p.source, p.paragraphNumber);
+          const versionHash = computeVersionHash(p.fullText);
+          const filter = { regulationKey, version: 1 };
           const result = await Regulation.updateOne(
             filter,
             {
               $set: {
                 ...p,
-                projectId: projectObjectId,
+                regulationKey,
+                versionHash,
                 crawledAt: new Date(),
               },
               $setOnInsert: { version: 1 },

@@ -11,13 +11,14 @@
 
 import { embedText, checkSidecarHealth, EmbeddingSidecarError, EMBEDDING_DIM } from '../embeddings/sidecar';
 import {
-  regulationCollectionName,
-  regulationIdToPointId,
+  CORPUS_COLLECTION,
+  regulationKeyToPointId,
   QdrantConfigError,
-  ensureRegulationCollection,
+  ensureCorpusCollection,
   upsertRegulationVector,
 } from '../embeddings/qdrant';
 import { regulationToEmbeddingText, isEmbeddingConfigured } from '../embeddings';
+import { buildRegulationKey, computeVersionHash, normaliseParagraph } from '../db/regulationKey';
 
 // ──────────────────────────────────────────────────────────
 // sidecar.ts
@@ -111,42 +112,50 @@ describe('sidecar.checkSidecarHealth()', () => {
 // qdrant.ts — pure functions
 // ──────────────────────────────────────────────────────────
 
-describe('regulationCollectionName()', () => {
-  it('builds canonical name from valid projectId', () => {
-    expect(regulationCollectionName('507f1f77bcf86cd799439011')).toBe(
-      'regulations-507f1f77bcf86cd799439011'
-    );
+describe('regulationKey + versionHash (ADR-0001)', () => {
+  it('builds a stable, project-independent key', () => {
+    expect(buildRegulationKey('nis2', 'Art. 23')).toBe('nis2:art-23');
+    expect(buildRegulationKey('lksg', '§ 6')).toBe('lksg:6');
+    expect(buildRegulationKey('dsgvo', 'Art. 32')).toBe('dsgvo:art-32');
   });
 
-  it('accepts hyphenated and underscored IDs', () => {
-    expect(regulationCollectionName('proj-abc_123')).toBe('regulations-proj-abc_123');
+  it('normalises paragraph labels', () => {
+    expect(normaliseParagraph('Art. 20')).toBe('art-20');
+    expect(normaliseParagraph('§ 9')).toBe('9');
   });
 
-  it('throws on empty projectId', () => {
-    expect(() => regulationCollectionName('')).toThrow(QdrantConfigError);
+  it('throws when key parts are empty', () => {
+    expect(() => buildRegulationKey('', 'Art. 1')).toThrow();
+    expect(() => buildRegulationKey('nis2', '!!!')).toThrow();
   });
 
-  it('throws on projectId with only invalid chars', () => {
-    expect(() => regulationCollectionName('!@#$%')).toThrow(QdrantConfigError);
+  it('versionHash is deterministic sha256 hex of fullText', () => {
+    const a = computeVersionHash('some legal text');
+    const b = computeVersionHash('some legal text');
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{64}$/);
+    expect(computeVersionHash('other text')).not.toBe(a);
   });
 });
 
-describe('regulationIdToPointId()', () => {
+describe('CORPUS_COLLECTION', () => {
+  it('is the single shared corpus collection', () => {
+    expect(CORPUS_COLLECTION).toBe('regulations-corpus');
+  });
+});
+
+describe('regulationKeyToPointId()', () => {
   it('produces UUID-shaped string', () => {
-    const id = regulationIdToPointId('507f1f77bcf86cd799439011');
+    const id = regulationKeyToPointId('nis2:art-21');
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  it('is deterministic — same input → same output', () => {
-    const a = regulationIdToPointId('test-id');
-    const b = regulationIdToPointId('test-id');
-    expect(a).toBe(b);
+  it('is deterministic — same key → same point id', () => {
+    expect(regulationKeyToPointId('nis2:art-21')).toBe(regulationKeyToPointId('nis2:art-21'));
   });
 
-  it('different inputs produce different outputs', () => {
-    const a = regulationIdToPointId('test-id-1');
-    const b = regulationIdToPointId('test-id-2');
-    expect(a).not.toBe(b);
+  it('different keys produce different ids', () => {
+    expect(regulationKeyToPointId('nis2:art-21')).not.toBe(regulationKeyToPointId('nis2:art-22'));
   });
 });
 
@@ -154,8 +163,17 @@ describe('regulationIdToPointId()', () => {
 // qdrant.ts — with mocked QdrantClient
 // ──────────────────────────────────────────────────────────
 
-describe('ensureRegulationCollection() + upsertRegulationVector()', () => {
-  const projectId = '507f1f77bcf86cd799439011';
+describe('ensureCorpusCollection() + upsertRegulationVector()', () => {
+  const payload = {
+    regulationKey: 'nis2:art-21',
+    versionHash: 'a'.repeat(64),
+    source: 'nis2',
+    paragraphNumber: 'Art. 21',
+    title: 'Risk management',
+    effectiveFrom: '2024-10-17',
+    jurisdiction: 'EU',
+    language: 'en',
+  };
 
   it('does not create collection when it already exists', async () => {
     const mockClient = {
@@ -163,9 +181,9 @@ describe('ensureRegulationCollection() + upsertRegulationVector()', () => {
       createCollection: jest.fn(),
     } as any;
 
-    const name = await ensureRegulationCollection(mockClient, projectId);
-    expect(name).toBe(`regulations-${projectId}`);
-    expect(mockClient.getCollection).toHaveBeenCalledWith(`regulations-${projectId}`);
+    const name = await ensureCorpusCollection(mockClient);
+    expect(name).toBe('regulations-corpus');
+    expect(mockClient.getCollection).toHaveBeenCalledWith('regulations-corpus');
     expect(mockClient.createCollection).not.toHaveBeenCalled();
   });
 
@@ -175,14 +193,14 @@ describe('ensureRegulationCollection() + upsertRegulationVector()', () => {
       createCollection: jest.fn().mockResolvedValue({ status: 'ok' }),
     } as any;
 
-    await ensureRegulationCollection(mockClient, projectId);
+    await ensureCorpusCollection(mockClient);
     expect(mockClient.createCollection).toHaveBeenCalledWith(
-      `regulations-${projectId}`,
+      'regulations-corpus',
       { vectors: { size: 768, distance: 'Cosine' } }
     );
   });
 
-  it('upsertRegulationVector calls upsert with correct point shape', async () => {
+  it('upserts into the shared corpus collection keyed by regulationKey', async () => {
     const mockClient = {
       getCollection: jest.fn().mockResolvedValue({ status: 'ok' }),
       createCollection: jest.fn(),
@@ -190,66 +208,34 @@ describe('ensureRegulationCollection() + upsertRegulationVector()', () => {
     } as any;
 
     const vector = new Array(768).fill(0.1);
-    const payload = {
-      regulationId: 'reg-1',
-      source: 'nis2',
-      paragraphNumber: 'Art. 21',
-      title: 'Risk management',
-      effectiveFrom: '2024-10-17',
-      jurisdiction: 'EU',
-      language: 'en',
-    };
-
-    await upsertRegulationVector({
-      client: mockClient,
-      projectId,
-      regulationId: 'reg-1',
-      vector,
-      payload,
-    });
+    await upsertRegulationVector({ client: mockClient, vector, payload });
 
     expect(mockClient.upsert).toHaveBeenCalledWith(
-      `regulations-${projectId}`,
+      'regulations-corpus',
       expect.objectContaining({
         wait: true,
         points: [
           expect.objectContaining({
+            id: regulationKeyToPointId('nis2:art-21'),
             vector,
-            payload: expect.objectContaining({ regulationId: 'reg-1' }),
+            payload: expect.objectContaining({
+              regulationKey: 'nis2:art-21',
+              versionHash: 'a'.repeat(64),
+            }),
           }),
         ],
       })
     );
-    // ID must be UUID-shape
-    const [, call] = mockClient.upsert.mock.calls[0];
-    expect(call.points[0].id).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-    );
   });
 
-  it('upsertRegulationVector throws on dim mismatch', async () => {
+  it('throws on dim mismatch', async () => {
     const mockClient = {
       getCollection: jest.fn().mockResolvedValue({ status: 'ok' }),
       upsert: jest.fn(),
     } as any;
 
-    const tooShort = new Array(100).fill(0.1);
     await expect(
-      upsertRegulationVector({
-        client: mockClient,
-        projectId,
-        regulationId: 'reg-1',
-        vector: tooShort,
-        payload: {
-          regulationId: 'reg-1',
-          source: 'nis2',
-          paragraphNumber: 'Art. 21',
-          title: 't',
-          effectiveFrom: '2024-10-17',
-          jurisdiction: 'EU',
-          language: 'en',
-        },
-      })
+      upsertRegulationVector({ client: mockClient, vector: new Array(100).fill(0.1), payload })
     ).rejects.toThrow(/dim mismatch/);
     expect(mockClient.upsert).not.toHaveBeenCalled();
   });
