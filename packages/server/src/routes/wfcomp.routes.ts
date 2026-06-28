@@ -1,20 +1,22 @@
 /**
  * WFCOMP routes — Workflow → GDPR Art. 30 assessment (UC-WFCOMP-001).
  *
- * Slice 1 (THE-360): the privacy-safe assess endpoint. Deterministic only —
- * no LLM inference, no persistence yet (those are later slices).
+ * Assess + persist (Slice 3, THE-360): runs the pipeline, persists the lifted
+ * graph (Neo4j, tenant-scoped) + an assessment record (Mongo, with a corpus
+ * reference — not a text copy).
  *
  * PRIVACY (Landmine #1): the raw request body may carry personal data. It is
- * sanitized as the FIRST operation (inside assessWorkflow → sanitizeN8nWorkflow)
- * and is NEVER logged, persisted, or echoed in a response.
+ * sanitized as the FIRST operation (inside the pipeline) and is NEVER logged,
+ * persisted, or echoed in a response.
  */
 import { Router, Request, Response } from 'express';
+import { v4 as uuid } from 'uuid';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
-import { assessWorkflow, assessWorkflowWithInference } from '../services/wfcomp/assess';
+import { assessAndStore } from '../services/wfcomp/store';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -23,11 +25,12 @@ router.use(authenticate);
 router.use('/:projectId', requireProjectAccess('viewer'));
 
 /**
- * POST /api/projects/:projectId/wfcomp/assess[?infer=true]
+ * POST /api/projects/:projectId/wfcomp/assess[?infer=true][&workflowId=…]
  * Body: a raw n8n workflow definition (JSON).
- * Returns: the Art.-30 GapReport. With ?infer=true the legal fields (purpose,
- * data-subject category) get guarded LLM suggestions; if the LLM is unavailable
- * the assessment degrades gracefully to the deterministic verdict.
+ * Returns: the Art.-30 GapReport (and persists it). A stable `workflowId` makes
+ * re-assessment replace the prior record; absent → a fresh assessment.
+ * With ?infer=true the legal fields get guarded LLM suggestions (graceful
+ * degradation if the LLM is unavailable).
  */
 router.post(
   '/:projectId/wfcomp/assess',
@@ -35,16 +38,19 @@ router.post(
   audit({ action: 'wfcomp_assess', entityType: 'project', riskLevel: 'low' }),
   async (req: Request, res: Response) => {
     try {
-      // sanitize-first: assessWorkflow's first line is sanitizeN8nWorkflow(body).
-      const report =
-        req.query.infer === 'true'
-          ? await assessWorkflowWithInference(req.body)
-          : assessWorkflow(req.body);
+      const workflowId = typeof req.query.workflowId === 'string' ? req.query.workflowId : uuid();
+      const report = await assessAndStore({
+        projectId: req.params.projectId as string,
+        wfcompId: workflowId,
+        raw: req.body, // sanitize-first inside the pipeline; raw is never logged/echoed
+        infer: req.query.infer === 'true',
+        assessedBy: req.jwtPayload?.userId,
+      });
       res.json({ success: true, data: report });
     } catch {
       // NEVER echo req.body — it may carry personal data.
-      log.warn('[wfcomp] assess: could not process workflow definition');
-      res.status(400).json({ success: false, error: 'Invalid workflow definition' });
+      log.warn('[wfcomp] assess: processing or persistence failed');
+      res.status(500).json({ success: false, error: 'Assessment failed' });
     }
   },
 );
