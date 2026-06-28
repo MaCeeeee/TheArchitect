@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
+import { requireCrawlerToken } from '../lib/requireToken';
 
 const EmbedAllBodySchema = z.object({
   /** Legacy/optional — the corpus is project-independent (ADR-0001); ignored if sent. */
@@ -26,7 +27,7 @@ const EmbedAllBodySchema = z.object({
 });
 
 export async function embedAllRoutes(app: FastifyInstance): Promise<void> {
-  app.post('/embed-all', async (request, reply) => {
+  app.post('/embed-all', { preHandler: requireCrawlerToken }, async (request, reply) => {
     const parse = EmbedAllBodySchema.safeParse(request.body);
     if (!parse.success) {
       return reply.code(400).send({ error: 'invalid_body', details: parse.error.flatten() });

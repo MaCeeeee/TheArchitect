@@ -77,9 +77,14 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   const start = Date.now();
 
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    // Defense-in-depth shared secret for the otherwise-unauth crawler (security review).
+    if (process.env.COMPLIANCE_CRAWLER_SECRET) {
+      headers['X-Crawler-Token'] = process.env.COMPLIANCE_CRAWLER_SECRET;
+    }
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body),
       signal: controller.signal,
     });

@@ -1,9 +1,9 @@
 /**
  * @thearchitect/compliance-crawler — Fastify entrypoint.
  *
- * Runs on Server B (Coolify), writes to Server A's MongoDB via Tailscale.
- * Triggered from the main backend's POST /api/projects/:id/regulations/crawl
- * (which proxies to this service over Tailscale).
+ * Runs on Server B (Coolify), writes the canonical corpus to the dedicated
+ * corpus MongoDB (ADR-0001), keyed by regulationKey. Triggered from the main
+ * backend's POST /api/projects/:id/regulations/crawl (proxied over Tailscale).
  *
  * Linear: THE-272 (UC-ICM-001)
  */

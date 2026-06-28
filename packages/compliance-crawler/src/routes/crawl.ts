@@ -9,6 +9,7 @@ import type { SourceParser } from '../sources/types';
 import type { RegulationSource } from '@thearchitect/shared';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
+import { requireCrawlerToken } from '../lib/requireToken';
 
 const CrawlBodySchema = z.object({
   /**
@@ -18,7 +19,8 @@ const CrawlBodySchema = z.object({
   projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex').optional(),
   sources: z
     .array(z.enum(['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom']))
-    .min(1),
+    .min(1)
+    .max(12), // bound the array — a request can't fan out into unlimited source crawls (security review)
   /** Skip the embedding step entirely (useful for fast re-crawls / debugging) */
   skipEmbedding: z.boolean().default(false),
 });
@@ -58,12 +60,14 @@ function buildSourceRegistry(): Partial<Record<RegulationSource, () => SourcePar
 const SOURCE_REGISTRY = buildSourceRegistry();
 
 export async function crawlRoutes(app: FastifyInstance): Promise<void> {
-  app.post('/crawl', async (request, reply) => {
+  app.post('/crawl', { preHandler: requireCrawlerToken }, async (request, reply) => {
     const parse = CrawlBodySchema.safeParse(request.body);
     if (!parse.success) {
       return reply.code(400).send({ error: 'invalid_body', details: parse.error.flatten() });
     }
-    const { sources, skipEmbedding } = parse.data;
+    // Dedupe — repeated sources (e.g. ["lksg","lksg",…]) must not re-crawl the same site N times.
+    const sources = [...new Set(parse.data.sources)];
+    const { skipEmbedding } = parse.data;
 
     const embeddingConfig = {
       sidecarUrl: config.EMBEDDING_SERVICE_URL ?? '',

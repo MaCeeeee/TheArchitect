@@ -198,13 +198,10 @@ router.post(
 
       res.status(201).json({ success: true, data: created.toObject() });
     } catch (err) {
+      // Log the detail server-side; return a generic message — don't leak Mongoose/driver
+      // internals (schema fields, validation rules) to the client (security review).
       log.error({ err, projectId }, '[regulations.create] failed');
-      // Surface the underlying message so the UI can show something useful instead of "create failed"
-      const detail =
-        err instanceof Error && err.message
-          ? err.message.replace(/^.*?:\s*/, '').slice(0, 200)
-          : 'unknown';
-      res.status(500).json({ success: false, error: `create failed: ${detail}` });
+      res.status(500).json({ success: false, error: 'create failed' });
     }
   },
 );
