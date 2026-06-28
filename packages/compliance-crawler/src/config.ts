@@ -23,6 +23,11 @@ const ConfigSchema = z.object({
 
   CRAWLER_USER_AGENT: z.string().default('TheArchitect-Compliance-Crawler/1.0'),
   CRAWLER_REQUEST_DELAY_MS: z.coerce.number().int().nonnegative().default(200),
+
+  // Optional shared-secret for the write endpoints (/crawl, /embed-all). Defense-in-depth
+  // for the otherwise-unauth crawler (security review): if set, callers must send a matching
+  // X-Crawler-Token header. Empty = not enforced (Tailnet isolation only).
+  CRAWLER_SHARED_SECRET: z.string().optional().or(z.literal('')),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

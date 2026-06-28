@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
+import { safeErrorMessage } from '@thearchitect/shared';
 import { config } from '../config';
 
 /**
- * MongoDB connection management for the crawler (Server B → Server A's Mongo via Tailscale).
+ * MongoDB connection management for the crawler (Server B → dedicated corpus Mongo, ADR-0001).
  *
  * Hardened against connection drops: when Server A's MongoDB is redeployed/restarted
  * (which happens on every Server A deploy), the connection goes to readyState 0. The
@@ -49,7 +50,7 @@ function scheduleReconnect(): void {
     try {
       await mongoose.connect(config.MONGODB_URI, MONGO_OPTIONS);
     } catch (err) {
-      logger.warn({ err }, 'Mongo reconnect attempt failed; will retry');
+      logger.warn({ err: safeErrorMessage(err) }, 'Mongo reconnect attempt failed; will retry');
       scheduleReconnect();
     }
   }, RECONNECT_DELAY_MS);
@@ -62,7 +63,7 @@ function bindListeners(): void {
   listenersBound = true;
   mongoose.connection.on('connected', () => logger.info({}, 'Mongo connected'));
   mongoose.connection.on('reconnected', () => logger.info({}, 'Mongo reconnected'));
-  mongoose.connection.on('error', (err) => logger.error({ err }, 'Mongo connection error'));
+  mongoose.connection.on('error', (err) => logger.error({ err: safeErrorMessage(err) }, 'Mongo connection error'));
   mongoose.connection.on('disconnected', () => {
     if (shuttingDown) return;
     logger.warn({}, 'Mongo disconnected — scheduling reconnect');

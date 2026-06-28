@@ -11,6 +11,7 @@
  * Config: CORPUS_MONGODB_URI (e.g. mongodb://...@<corpus-tailnet>:27017/regulations-corpus?authSource=admin)
  */
 import mongoose, { Schema, Connection, Model, Document } from 'mongoose';
+import { safeErrorMessage } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 export interface ICorpusRegulation extends Document {
@@ -66,7 +67,7 @@ export function getCorpusConnection(): Connection {
       serverSelectionTimeoutMS: 5000,
       maxPoolSize: 5,
     });
-    _connection.on('error', err => log.error({ err }, '[corpus] connection error'));
+    _connection.on('error', err => log.error({ err: safeErrorMessage(err) }, '[corpus] connection error'));
   }
   return _connection;
 }
@@ -125,7 +126,7 @@ export async function corpusHealth(): Promise<{ ok: boolean; count?: number }> {
     const count = await CorpusRegulation().estimatedDocumentCount();
     return { ok: true, count };
   } catch (err) {
-    log.warn({ err }, '[corpus] health check failed');
+    log.warn({ err: safeErrorMessage(err) }, '[corpus] health check failed');
     return { ok: false };
   }
 }
