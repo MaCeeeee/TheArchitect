@@ -22,6 +22,7 @@ import {
   CrawlerUnreachableError,
   type RegulationSourceKey,
 } from '../services/complianceCrawler.service';
+import { corpusHealth, isCorpusConfigured } from '../services/corpusClient.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -43,6 +44,13 @@ router.get('/regulations/crawler/health', async (_req: Request, res: Response) =
   const config = crawlerConfig();
   const h = await crawlerHealth();
   res.json({ config, health: h, ok: h?.status === 'ok' });
+});
+
+// GET /api/regulations/corpus/health — canonical corpus reachability from Server A (THE-368)
+router.get('/regulations/corpus/health', async (_req: Request, res: Response) => {
+  const configured = isCorpusConfigured();
+  const health = configured ? await corpusHealth() : { ok: false };
+  res.json({ configured, health, ok: health.ok });
 });
 
 // ──────────────────────────────────────────────────────────
