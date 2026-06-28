@@ -16,7 +16,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
-import { assessAndStore } from '../services/wfcomp/store';
+import { assessAndStore, recomputeAssessment } from '../services/wfcomp/store';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -51,6 +51,45 @@ router.post(
       // NEVER echo req.body — it may carry personal data.
       log.warn('[wfcomp] assess: processing or persistence failed');
       res.status(500).json({ success: false, error: 'Assessment failed' });
+    }
+  },
+);
+
+/**
+ * POST /api/projects/:projectId/wfcomp/recompute
+ * Body: { workflowId: string, attestations: [{ litera, value }] }
+ *
+ * A human confirms/provides the legal fields the machine could not produce.
+ * Each attestation materializes its Art.-30 trace path → the field flips to
+ * 'present' (a person makes it green, never the LLM). Persists the updated graph
+ * + verdict. Requires GOVERNANCE_APPROVE — this is a sign-off, not a read.
+ * The attestation values are the controller's own VVT content (organizational
+ * metadata), so — unlike /assess — they are legitimately persisted.
+ */
+router.post(
+  '/:projectId/wfcomp/recompute',
+  requirePermission(PERMISSIONS.GOVERNANCE_APPROVE),
+  audit({ action: 'wfcomp_attest', entityType: 'project', riskLevel: 'medium' }),
+  async (req: Request, res: Response) => {
+    const { workflowId, attestations } = req.body ?? {};
+    if (typeof workflowId !== 'string' || !Array.isArray(attestations)) {
+      res.status(400).json({ success: false, error: 'workflowId and attestations[] are required' });
+      return;
+    }
+    try {
+      const report = await recomputeAssessment({
+        projectId: req.params.projectId as string,
+        wfcompId: workflowId,
+        attestations,
+        attestedBy: req.jwtPayload?.userId,
+      });
+      res.json({ success: true, data: report });
+    } catch (err) {
+      const notFound = err instanceof Error && err.message === 'no persisted assessment to recompute';
+      log.warn(`[wfcomp] recompute: ${notFound ? 'no persisted assessment' : 'failed'}`);
+      res
+        .status(notFound ? 404 : 500)
+        .json({ success: false, error: notFound ? 'No assessment to recompute' : 'Recompute failed' });
     }
   },
 );

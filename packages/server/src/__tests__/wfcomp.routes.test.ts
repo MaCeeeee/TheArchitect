@@ -22,16 +22,19 @@ jest.mock('../middleware/audit.middleware', () => ({
 jest.mock('../services/wfcomp/llm', () => ({ callLLM: jest.fn() }));
 // route now persists → stub Neo4j + the assessment model (the real pipeline still runs)
 jest.mock('../config/neo4j', () => ({ runCypher: jest.fn(), runCypherTransaction: jest.fn() }));
-jest.mock('../models/WfcompAssessment', () => ({ WfcompAssessment: { updateOne: jest.fn() } }));
+jest.mock('../models/WfcompAssessment', () => ({
+  WfcompAssessment: { updateOne: jest.fn(), findOne: jest.fn() },
+}));
 
 import wfcompRoutes from '../routes/wfcomp.routes';
 import { scrubSentryEvent } from '../config/sentry';
 import { callLLM } from '../services/wfcomp/llm';
-import { runCypherTransaction } from '../config/neo4j';
+import { runCypher, runCypherTransaction } from '../config/neo4j';
 import { WfcompAssessment } from '../models/WfcompAssessment';
 
 const mockCallLLM = callLLM as jest.Mock;
 const mockTx = runCypherTransaction as jest.Mock;
+const mockCypher = runCypher as jest.Mock;
 const mockAssessUpdate = WfcompAssessment.updateOne as jest.Mock;
 
 const app = express();
@@ -57,6 +60,21 @@ describe('POST .../wfcomp/assess — persistence (Slice 3.4)', () => {
     expect(res.status).toBe(200);
     expect(mockTx).toHaveBeenCalled(); // lifted graph → Neo4j
     expect(mockAssessUpdate).toHaveBeenCalled(); // assessment record → Mongo
+  });
+});
+
+describe('POST .../wfcomp/recompute (attestation)', () => {
+  it('400 when the body lacks workflowId / attestations[]', async () => {
+    const res = await request(app).post('/api/projects/p1/wfcomp/recompute').send({ workflowId: 'wf1' });
+    expect(res.status).toBe(400);
+  });
+
+  it('404 when there is no persisted assessment to recompute', async () => {
+    mockCypher.mockResolvedValue([]); // loadLiftedGraph → empty graph
+    const res = await request(app)
+      .post('/api/projects/p1/wfcomp/recompute')
+      .send({ workflowId: 'ghost', attestations: [{ litera: 'd', value: 'X' }] });
+    expect(res.status).toBe(404);
   });
 });
 

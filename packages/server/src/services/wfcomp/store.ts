@@ -10,10 +10,13 @@
  * genuinely-tenant data persisted.
  */
 import { runAssessment } from './assess';
-import { persistLiftedGraph } from './persist';
+import { persistLiftedGraph, loadLiftedGraph } from './persist';
+import { runTraceCheck } from './trace';
+import { annotateModes, applyAttestation, type Attestation } from './attestation';
+import { ART30_FIELDS } from '../../data/art30.seed-data';
 import { WfcompAssessment } from '../../models/WfcompAssessment';
 import { ART30_REGULATION_REF } from '../../data/art30.reference';
-import type { GapReport } from './types';
+import type { GapReport, FieldSuggestion } from './types';
 
 export interface AssessAndStoreArgs {
   projectId: string;
@@ -46,6 +49,55 @@ export async function assessAndStore(args: AssessAndStoreArgs): Promise<GapRepor
       },
     },
     { upsert: true, runValidators: true },
+  );
+
+  return report;
+}
+
+export interface RecomputeArgs {
+  projectId: string;
+  wfcompId: string;
+  /** Human-confirmed/provided field values (the VVT content itself, organizational metadata). */
+  attestations: Attestation[];
+  attestedBy?: string;
+}
+
+/**
+ * Recompute a stored assessment after human attestation (THE-356/THE-360).
+ *
+ *   load persisted graph → applyAttestation (a person materializes the path)
+ *                        → runTraceCheck (the field flips to 'present' — a human
+ *                          makes it green, never the LLM)
+ *                        → persist the updated graph + verdict.
+ *
+ * Round-trip by design: the BATTLE-TESTED pure runTraceCheck is the single source
+ * of truth — no second Cypher trace. The prior LLM suggestions are carried over so
+ * still-open fields keep their confirm/ask mode.
+ *
+ * Unlike /assess, the attestation values ARE persisted: they are the controller's
+ * own Art.-30 record (organizational metadata), not a data subject's personal data.
+ */
+export async function recomputeAssessment(args: RecomputeArgs): Promise<GapReport> {
+  const graph = await loadLiftedGraph(args.projectId, args.wfcompId);
+  if (graph.elements.length === 0) {
+    throw new Error('no persisted assessment to recompute');
+  }
+
+  const prior = await WfcompAssessment.findOne(
+    { projectId: args.projectId, wfcompId: args.wfcompId },
+    { gapReport: 1 },
+  ).lean();
+  const priorSuggestions: FieldSuggestion[] = (prior?.gapReport?.fields ?? [])
+    .map((f) => f.suggestion)
+    .filter((s): s is FieldSuggestion => !!s);
+
+  const updated = applyAttestation(graph, args.attestations);
+  const report = annotateModes(runTraceCheck(updated, ART30_FIELDS), priorSuggestions);
+
+  await persistLiftedGraph(args.projectId, args.wfcompId, updated);
+  await WfcompAssessment.updateOne(
+    { projectId: args.projectId, wfcompId: args.wfcompId },
+    { $set: { gapReport: report, ...(args.attestedBy ? { assessedBy: args.attestedBy } : {}) } },
   );
 
   return report;
