@@ -1,0 +1,82 @@
+<svg viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg" role="img" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <title>Three conformance gates, one model</title>
+  <desc>Three compliance-checking paths compared by Subject, Norm, and the question each answers. Gates 1 and 2 judge the EA model; gate 3 judges an imported workflow.</desc>
+
+  <rect x="0" y="0" width="1000" height="660" fill="#0f172a"/>
+
+  <text x="34" y="40" fill="#f1f5f9" font-size="23" font-weight="700">Three conformance gates — one model</text>
+  <text x="34" y="68" fill="#94a3b8" font-size="13.5">Every gate asks the same thing: does a <tspan fill="#cbd5e1" font-weight="600">SUBJECT</tspan> satisfy a <tspan fill="#cbd5e1" font-weight="600">NORM</tspan>? They differ only on which subject, which norm, and the question.</text>
+
+  <!-- Card 1: COVER -->
+  <g>
+    <rect x="34" y="96" width="296" height="430" rx="10" fill="#1e293b" stroke="#334155"/>
+    <rect x="34" y="96" width="296" height="6" rx="3" fill="#22c55e"/>
+    <text x="56" y="132" fill="#22c55e" font-size="16" font-weight="700">COVER</text>
+    <text x="56" y="152" fill="#94a3b8" font-size="12">Requirements → Architecture</text>
+    <text x="56" y="190" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">SUBJECT</text>
+    <text x="56" y="208" fill="#cbd5e1" font-size="12.5">Your EA model</text>
+    <text x="56" y="240" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">NORM</text>
+    <text x="56" y="258" fill="#cbd5e1" font-size="12.5">An external standard</text>
+    <text x="56" y="275" fill="#cbd5e1" font-size="12.5">(TOGAF / ISO / regulation)</text>
+    <text x="56" y="307" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">ASKS</text>
+    <text x="56" y="325" fill="#f1f5f9" font-size="12.5" font-style="italic">“What does my</text>
+    <text x="56" y="342" fill="#f1f5f9" font-size="12.5" font-style="italic">architecture cover?”</text>
+    <text x="56" y="374" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">OUTPUT</text>
+    <text x="56" y="392" fill="#cbd5e1" font-size="12.5">Coverage matrix</text>
+    <text x="56" y="409" fill="#cbd5e1" font-size="12.5">→ remediation</text>
+    <text x="56" y="441" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">LIVES</text>
+    <text x="56" y="459" fill="#cbd5e1" font-size="12.5">Comply › Standards · Matrix</text>
+    <text x="56" y="498" fill="#22c55e" font-size="11.5" font-weight="600">positive: what's satisfied</text>
+  </g>
+
+  <!-- Card 2: ENFORCE -->
+  <g>
+    <rect x="352" y="96" width="296" height="430" rx="10" fill="#1e293b" stroke="#334155"/>
+    <rect x="352" y="96" width="296" height="6" rx="3" fill="#eab308"/>
+    <text x="374" y="132" fill="#eab308" font-size="16" font-weight="700">ENFORCE</text>
+    <text x="374" y="152" fill="#94a3b8" font-size="12">Architecture → Policy</text>
+    <text x="374" y="190" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">SUBJECT</text>
+    <text x="374" y="208" fill="#cbd5e1" font-size="12.5">Your EA graph (Neo4j)</text>
+    <text x="374" y="240" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">NORM</text>
+    <text x="374" y="258" fill="#cbd5e1" font-size="12.5">Internal policies</text>
+    <text x="374" y="275" fill="#cbd5e1" font-size="12.5">(rules-as-data)</text>
+    <text x="374" y="307" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">ASKS</text>
+    <text x="374" y="325" fill="#f1f5f9" font-size="12.5" font-style="italic">“Where does it</text>
+    <text x="374" y="342" fill="#f1f5f9" font-size="12.5" font-style="italic">break my rules?”</text>
+    <text x="374" y="374" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">OUTPUT</text>
+    <text x="374" y="392" fill="#cbd5e1" font-size="12.5">Violation heatmap</text>
+    <text x="374" y="409" fill="#cbd5e1" font-size="12.5">(PolicyBoard)</text>
+    <text x="374" y="441" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">LIVES</text>
+    <text x="374" y="459" fill="#cbd5e1" font-size="12.5">Comply › Governance · Policy</text>
+    <text x="374" y="498" fill="#eab308" font-size="11.5" font-weight="600">negative: what's broken</text>
+  </g>
+
+  <!-- Card 3: ATTEST -->
+  <g>
+    <rect x="670" y="96" width="296" height="430" rx="10" fill="#1e293b" stroke="#7c3aed" stroke-opacity="0.6"/>
+    <rect x="670" y="96" width="296" height="6" rx="3" fill="#7c3aed"/>
+    <text x="692" y="132" fill="#a78bfa" font-size="16" font-weight="700">ATTEST</text>
+    <text x="692" y="152" fill="#94a3b8" font-size="12">Workflow → Regulation  ·  NEW</text>
+    <text x="692" y="190" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">SUBJECT</text>
+    <text x="692" y="208" fill="#a78bfa" font-size="12.5" font-weight="600">An imported workflow (n8n)</text>
+    <text x="692" y="225" fill="#94a3b8" font-size="11">— not your EA model</text>
+    <text x="692" y="252" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">NORM</text>
+    <text x="692" y="270" fill="#cbd5e1" font-size="12.5">A law's record fields</text>
+    <text x="692" y="287" fill="#cbd5e1" font-size="12.5">(GDPR Art. 30)</text>
+    <text x="692" y="315" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">ASKS</text>
+    <text x="692" y="333" fill="#f1f5f9" font-size="12.5" font-style="italic">“Is the record complete?</text>
+    <text x="692" y="350" fill="#f1f5f9" font-size="12.5" font-style="italic">Who must sign?”</text>
+    <text x="692" y="380" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">OUTPUT</text>
+    <text x="692" y="398" fill="#cbd5e1" font-size="12.5">3-list verdict +</text>
+    <text x="692" y="415" fill="#cbd5e1" font-size="12.5">human sign-off</text>
+    <text x="692" y="445" fill="#94a3b8" font-size="10" font-weight="600" letter-spacing="0.5">LIVES</text>
+    <text x="692" y="463" fill="#cbd5e1" font-size="12.5">Comply › Workflow Compliance</text>
+    <text x="692" y="500" fill="#a78bfa" font-size="11.5" font-weight="600">completeness + provenance</text>
+  </g>
+
+  <!-- the real seam -->
+  <rect x="34" y="552" width="932" height="78" rx="10" fill="#0f172a" stroke="#334155"/>
+  <text x="56" y="582" fill="#94a3b8" font-size="10.5" font-weight="700" letter-spacing="0.8">THE REAL SEAM</text>
+  <text x="56" y="606" fill="#f1f5f9" font-size="14">Gates 1 &amp; 2 judge <tspan font-weight="700">your model</tspan>.  Gate 3 judges an <tspan font-weight="700" fill="#a78bfa">imported artifact</tspan> — a different kind of subject.</text>
+  <text x="56" y="624" fill="#94a3b8" font-size="12.5">That's why it feels foreign next to the others — and why it must be visibly separated, not filed as a sibling.</text>
+</svg>
