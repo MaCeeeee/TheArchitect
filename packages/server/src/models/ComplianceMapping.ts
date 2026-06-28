@@ -24,6 +24,12 @@ export interface IComplianceMapping extends Document {
    */
   regulationKey?: string;
   regulationVersionHash?: string;
+  /**
+   * Set by drift-detection (THE-368): true when the corpus' current versionHash for
+   * `regulationKey` differs from `regulationVersionHash` — i.e. the law text changed
+   * since this mapping was made and it should be reviewed / re-mapped.
+   */
+  regulationVersionMismatch?: boolean;
   elementId: string;
   elementType: ComplianceMappingElementType;
   confidence: number;
@@ -61,6 +67,7 @@ const complianceMappingSchema = new Schema<IComplianceMapping>(
     // Corpus reference (ADR-0001 / THE-306) — optional until migration backfills existing mappings.
     regulationKey: { type: String, trim: true },
     regulationVersionHash: { type: String, trim: true },
+    regulationVersionMismatch: { type: Boolean },
     elementId: { type: String, required: true, trim: true },
     elementType: {
       type: String,
