@@ -19,6 +19,8 @@ import type {
   ComplianceMappingElementType,
   ComplianceMappingDTO,
 } from '@thearchitect/shared';
+import { buildRegulationKey } from '@thearchitect/shared';
+import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
 import {
   SYSTEM_PROMPT,
@@ -136,6 +138,9 @@ export async function mapRegulationToElements(args: {
     candidates: sanitized,
     regulationId: args.regulation._id?.toString() ?? '',
     projectId: args.projectId,
+    // Corpus reference (ADR-0001 / THE-306): pin the canonical key + the exact text version.
+    regulationKey: buildRegulationKey(args.regulation.source, args.regulation.paragraphNumber),
+    regulationVersionHash: computeVersionHash(args.regulation.fullText),
   });
 
   return persisted;
@@ -369,6 +374,8 @@ async function persistMappings(args: {
   candidates: ComplianceMappingCandidate[];
   regulationId: string;
   projectId: string;
+  regulationKey?: string;
+  regulationVersionHash?: string;
 }): Promise<IComplianceMapping[]> {
   if (args.candidates.length === 0) return [];
 
@@ -386,6 +393,8 @@ async function persistMappings(args: {
         $set: {
           projectId: projectObjectId,
           regulationId: regulationObjectId,
+          regulationKey: args.regulationKey,
+          regulationVersionHash: args.regulationVersionHash,
           elementId: c.elementId,
           elementType: c.elementType,
           confidence: c.confidence,

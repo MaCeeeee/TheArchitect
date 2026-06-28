@@ -29,3 +29,4 @@ export * from './types/decision-pattern.types';
 export * from './types/criticality.types';
 export * from './types/executive-summary.types';
 export * from './constants/executive-summary.constants';
+export * from './utils/regulation-key';
