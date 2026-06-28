@@ -26,7 +26,7 @@ import { computeGraphCentrality } from './cost-engine.service';
 import { estimateSmartCost } from './smart-cost.service';
 import { deriveTopDecisions, computeStrategicRoi } from './topDecisions.service';
 import { STATUS_COST_MULTIPLIERS } from '@thearchitect/shared';
-import { Regulation } from '../models/Regulation';
+import { countRegulations } from './regulationResolver.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { TransformationRoadmap } from '../models/TransformationRoadmap';
 import { Scenario } from '../models/Scenario';
@@ -57,7 +57,7 @@ export async function buildExecutiveSummary(
         log.warn({ err: err.message, projectId }, '[executive-summary] cost-centrality failed');
         return [] as ElementCostProfile[];
       }),
-      Regulation.countDocuments({}),
+      countRegulations(),
       StandardMapping.distinct('elementId', { projectId }) as Promise<string[]>,
       StandardMapping.distinct('elementId', { projectId, status: 'gap' }) as Promise<string[]>,
       TransformationRoadmap.findOne({ projectId }).sort({ createdAt: -1 }).lean(),
