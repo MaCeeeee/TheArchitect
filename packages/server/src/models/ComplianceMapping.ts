@@ -13,7 +13,17 @@ import type {
  */
 export interface IComplianceMapping extends Document {
   projectId: mongoose.Types.ObjectId;
+  /** Local pointer (legacy / per-project). Retained until the corpus read-path (THE-368). */
   regulationId: mongoose.Types.ObjectId;
+  /**
+   * Canonical corpus reference (ADR-0001 / THE-306): the project-independent
+   * `regulationKey` (e.g. "dsgvo:art-30") + the `versionHash` of the exact text this
+   * mapping was made against. Pins the version and later lets us detect drift against
+   * the live corpus (mismatch-detection lands with THE-368). Optional until existing
+   * mappings are migrated (scripts/migrate-mapping-references.ts).
+   */
+  regulationKey?: string;
+  regulationVersionHash?: string;
   elementId: string;
   elementType: ComplianceMappingElementType;
   confidence: number;
@@ -48,6 +58,9 @@ const complianceMappingSchema = new Schema<IComplianceMapping>(
   {
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
     regulationId: { type: Schema.Types.ObjectId, ref: 'Regulation', required: true },
+    // Corpus reference (ADR-0001 / THE-306) — optional until migration backfills existing mappings.
+    regulationKey: { type: String, trim: true },
+    regulationVersionHash: { type: String, trim: true },
     elementId: { type: String, required: true, trim: true },
     elementType: {
       type: String,
@@ -108,6 +121,12 @@ complianceMappingSchema.index(
 complianceMappingSchema.index(
   { projectId: 1, regulationId: 1 },
   { name: 'by_regulation_for_heatmap' }
+);
+
+// THE-306: corpus reference lookup (regulationKey → mappings) for drift-detection / re-map (THE-368).
+complianceMappingSchema.index(
+  { regulationKey: 1, regulationVersionHash: 1 },
+  { name: 'by_corpus_reference' }
 );
 
 export const ComplianceMapping = mongoose.model<IComplianceMapping>(
