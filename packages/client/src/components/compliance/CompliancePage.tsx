@@ -3,6 +3,7 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import ComplianceSidebar from './ComplianceSidebar';
 import PipelineStepper from './PipelineStepper';
+import AssessWorkflow from './AssessWorkflow';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { CompliancePipelineWizard } from '../copilot/CompliancePipelineWizard';
 import { CompliancePortfolioView } from '../governance/CompliancePortfolioView';
@@ -69,6 +70,9 @@ export default function CompliancePage() {
 
           {/* Pipeline Stepper — visible on compliance pipeline sections */}
           {showStepper && <PipelineStepper />}
+
+          {/* UC-WFCOMP-001 — assess a single workflow against GDPR Art. 30 */}
+          {activeSection === 'assess' && <AssessWorkflow />}
 
           {/* Compliance Pipeline sections */}
           {activeSection === 'pipeline' && <CompliancePipelineWizard />}
