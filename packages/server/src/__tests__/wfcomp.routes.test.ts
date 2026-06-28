@@ -69,6 +69,23 @@ describe('POST .../wfcomp/recompute (attestation)', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400 on malformed attestations (bad litera, oversize array/value) — DoS bound', async () => {
+    const badLitera = await request(app)
+      .post('/api/projects/p1/wfcomp/recompute')
+      .send({ workflowId: 'wf1', attestations: [{ litera: 'z', value: 'x' }] });
+    expect(badLitera.status).toBe(400);
+
+    const tooMany = await request(app)
+      .post('/api/projects/p1/wfcomp/recompute')
+      .send({ workflowId: 'wf1', attestations: Array.from({ length: 9 }, () => ({ litera: 'd', value: 'x' })) });
+    expect(tooMany.status).toBe(400);
+
+    const hugeValue = await request(app)
+      .post('/api/projects/p1/wfcomp/recompute')
+      .send({ workflowId: 'wf1', attestations: [{ litera: 'd', value: 'x'.repeat(2001) }] });
+    expect(hugeValue.status).toBe(400);
+  });
+
   it('404 when there is no persisted assessment to recompute', async () => {
     mockCypher.mockResolvedValue([]); // loadLiftedGraph → empty graph
     const res = await request(app)

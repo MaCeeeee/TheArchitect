@@ -48,6 +48,10 @@ async function anthropicCall(opts: LlmCallOpts): Promise<string> {
 }
 
 async function localOpenAiCall(opts: LlmCallOpts): Promise<string> {
+  // SECURITY: `LLM_BASE_URL` is OPERATOR config, never user-supplied — this backend
+  // only engages when an operator explicitly sets LLM_BACKEND=local AND LLM_BASE_URL,
+  // so it is not a request-reachable SSRF vector. Operators must point it at a trusted
+  // internal endpoint. Failures never echo the request payload (status only).
   const base = process.env.LLM_BASE_URL;
   if (!base) throw new Error('LLM_BASE_URL is not configured for the local backend');
   const resp = await fetch(`${base.replace(/\/$/, '')}/v1/chat/completions`, {

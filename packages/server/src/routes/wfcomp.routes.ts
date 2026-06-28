@@ -14,6 +14,7 @@ import { v4 as uuid } from 'uuid';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { assessAndStore, recomputeAssessment } from '../services/wfcomp/store';
@@ -21,8 +22,31 @@ import { log } from '../config/logger';
 
 const router = Router();
 
+// Defense-in-depth bounds (a crafted body must not explode the graph). Art. 30
+// has 7 literae (a–g); values are short organizational VVT text.
+const MAX_ATTESTATIONS = 8;
+const MAX_VALUE_LEN = 2000;
+const MAX_ID_LEN = 200;
+
+/** Strict shape/​bound check — returns the typed list or null (→ 400). No value is echoed. */
+function validateAttestations(input: unknown): Array<{ litera: string; value: string }> | null {
+  if (!Array.isArray(input) || input.length === 0 || input.length > MAX_ATTESTATIONS) return null;
+  const out: Array<{ litera: string; value: string }> = [];
+  for (const a of input) {
+    if (!a || typeof a !== 'object') return null;
+    const { litera, value } = a as Record<string, unknown>;
+    if (typeof litera !== 'string' || !/^[a-g]$/.test(litera)) return null;
+    if (typeof value !== 'string' || value.length === 0 || value.length > MAX_VALUE_LEN) return null;
+    out.push({ litera, value });
+  }
+  return out;
+}
+
 router.use(authenticate);
 router.use('/:projectId', requireProjectAccess('viewer'));
+// Bound abuse — /assess?infer hits an LLM, /recompute writes the graph.
+const isDev = process.env.NODE_ENV !== 'production';
+router.use(rateLimit({ name: 'wfcomp', windowMs: 15 * 60 * 1000, max: isDev ? 100000 : 100 }));
 
 /**
  * POST /api/projects/:projectId/wfcomp/assess[?infer=true][&workflowId=…]
@@ -38,7 +62,8 @@ router.post(
   audit({ action: 'wfcomp_assess', entityType: 'project', riskLevel: 'low' }),
   async (req: Request, res: Response) => {
     try {
-      const workflowId = typeof req.query.workflowId === 'string' ? req.query.workflowId : uuid();
+      const qId = req.query.workflowId;
+      const workflowId = typeof qId === 'string' && qId.length > 0 && qId.length <= MAX_ID_LEN ? qId : uuid();
       const report = await assessAndStore({
         projectId: req.params.projectId as string,
         wfcompId: workflowId,
@@ -72,15 +97,16 @@ router.post(
   audit({ action: 'wfcomp_attest', entityType: 'project', riskLevel: 'medium' }),
   async (req: Request, res: Response) => {
     const { workflowId, attestations } = req.body ?? {};
-    if (typeof workflowId !== 'string' || !Array.isArray(attestations)) {
-      res.status(400).json({ success: false, error: 'workflowId and attestations[] are required' });
+    const validAttestations = validateAttestations(attestations);
+    if (typeof workflowId !== 'string' || workflowId.length === 0 || workflowId.length > MAX_ID_LEN || !validAttestations) {
+      res.status(400).json({ success: false, error: 'workflowId and a bounded attestations[] are required' });
       return;
     }
     try {
       const report = await recomputeAssessment({
         projectId: req.params.projectId as string,
         wfcompId: workflowId,
-        attestations,
+        attestations: validAttestations,
         attestedBy: req.jwtPayload?.userId,
       });
       res.json({ success: true, data: report });
