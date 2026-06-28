@@ -2,7 +2,7 @@
  * Embedding orchestrator — combines sidecar + Qdrant + Mongo update.
  *
  * Public API:
- *   - embedAndIndex(regulation, projectId): embed + Qdrant upsert + Mongo update
+ *   - embedAndIndex(regulation, config): embed + Qdrant upsert (shared corpus collection) + Mongo update
  *   - isEmbeddingConfigured(): true if EMBEDDING_SERVICE_URL + QDRANT_URL are set
  *
  * Fail-soft: on transport error, logs and returns null. Caller decides whether
@@ -62,9 +62,9 @@ export async function embedAndIndex(
   }
 
   const client = getQdrantClient(config.qdrantUrl, config.qdrantApiKey);
-  const projectIdStr = regulation.projectId.toString();
   const payload: RegulationPointPayload = {
-    regulationId: regulation._id?.toString() ?? '',
+    regulationKey: regulation.regulationKey,
+    versionHash: regulation.versionHash,
     source: regulation.source,
     paragraphNumber: regulation.paragraphNumber,
     title: regulation.title,
@@ -74,13 +74,7 @@ export async function embedAndIndex(
     language: regulation.language,
   };
 
-  await upsertRegulationVector({
-    client,
-    projectId: projectIdStr,
-    regulationId: payload.regulationId,
-    vector,
-    payload,
-  });
+  await upsertRegulationVector({ client, vector, payload });
 
   // Persist embedding back to Mongo (Regulation.embedding field on the model)
   await Regulation.updateOne(

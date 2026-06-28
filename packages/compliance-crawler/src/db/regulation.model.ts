@@ -17,7 +17,15 @@ import type {
 } from '@thearchitect/shared';
 
 export interface IRegulation extends Document {
-  projectId: mongoose.Types.ObjectId;
+  /** Stable, project-independent identity, e.g. "nis2:art-23" (ADR-0001). */
+  regulationKey: string;
+  /** sha256 of fullText — content version fingerprint (THE-306). */
+  versionHash: string;
+  /**
+   * Optional in the canonical corpus (one record per regulationKey, no tenant).
+   * Retained for the legacy per-project model until migration (THE-368).
+   */
+  projectId?: mongoose.Types.ObjectId;
   source: RegulationSource;
   jurisdiction: RegulationJurisdiction;
   paragraphNumber: string;
@@ -37,7 +45,9 @@ export interface IRegulation extends Document {
 
 const regulationSchema = new Schema<IRegulation>(
   {
-    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    regulationKey: { type: String, required: true, trim: true },
+    versionHash: { type: String, required: true, trim: true },
+    projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
     source: {
       type: String,
       enum: ['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom'],
@@ -80,10 +90,10 @@ const regulationSchema = new Schema<IRegulation>(
 );
 
 regulationSchema.index(
-  { projectId: 1, source: 1, paragraphNumber: 1, version: 1 },
+  { regulationKey: 1, version: 1 },
   { unique: true, name: 'unique_regulation_per_version' }
 );
-regulationSchema.index({ projectId: 1, source: 1 }, { name: 'by_project_source' });
-regulationSchema.index({ projectId: 1, effectiveFrom: 1 }, { name: 'by_project_effective' });
+regulationSchema.index({ source: 1, jurisdiction: 1 }, { name: 'by_source_jurisdiction' });
+regulationSchema.index({ effectiveFrom: 1 }, { name: 'by_effective' });
 
 export const Regulation = mongoose.model<IRegulation>('Regulation', regulationSchema);

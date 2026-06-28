@@ -1,24 +1,24 @@
 /**
- * POST /embed-all  — backfill embeddings for all regulations of a project.
+ * POST /embed-all  — backfill embeddings for the whole regulation corpus.
  *
  * Use cases:
  *   - Initial Qdrant seeding after a fresh deployment
  *   - Re-embed after model change (future: switching embedding model)
  *   - Recover from a partial-failure crawl where some embeddings were skipped
  *
- * Response: { total, embedded, failed, errors: [...] }
+ * Corpus-wide (ADR-0001): no project scoping. Response: { total, embedded, failed, errors }
  *
- * Linear: THE-277 (REQ-ICM-001.3) AC-4
+ * Linear: THE-277 (REQ-ICM-001.3) AC-4 · THE-367 (corpus store)
  */
 import type { FastifyInstance } from 'fastify';
-import mongoose from 'mongoose';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
 
 const EmbedAllBodySchema = z.object({
-  projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex'),
+  /** Legacy/optional — the corpus is project-independent (ADR-0001); ignored if sent. */
+  projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex').optional(),
   /** Re-embed even if Regulation.embedding is already set (default: false → only missing) */
   force: z.boolean().default(false),
   /** Concurrency limit for parallel sidecar calls. Default 5 to stay polite. */
@@ -31,7 +31,7 @@ export async function embedAllRoutes(app: FastifyInstance): Promise<void> {
     if (!parse.success) {
       return reply.code(400).send({ error: 'invalid_body', details: parse.error.flatten() });
     }
-    const { projectId, force, concurrency } = parse.data;
+    const { force, concurrency } = parse.data;
 
     const embeddingConfig = {
       sidecarUrl: config.EMBEDDING_SERVICE_URL ?? '',
@@ -45,8 +45,7 @@ export async function embedAllRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const projectObjectId = new mongoose.Types.ObjectId(projectId);
-    const filter: Record<string, unknown> = { projectId: projectObjectId };
+    const filter: Record<string, unknown> = {};
     if (!force) {
       filter.$or = [{ embedding: { $exists: false } }, { embedding: { $size: 0 } }];
     }
@@ -60,7 +59,7 @@ export async function embedAllRoutes(app: FastifyInstance): Promise<void> {
         embedded: 0,
         failed: 0,
         errors: [],
-        message: force ? 'no regulations in project' : 'all regulations already embedded',
+        message: force ? 'no regulations in corpus' : 'all regulations already embedded',
       });
     }
 
