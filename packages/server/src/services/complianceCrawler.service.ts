@@ -27,7 +27,8 @@ export type RegulationSourceKey =
   | 'custom';
 
 export interface CrawlRequest {
-  projectId: string;
+  /** Optional — the corpus is project-independent (ADR-0001); the crawler ignores it. */
+  projectId?: string;
   sources: RegulationSourceKey[];
   skipEmbedding?: boolean;
 }

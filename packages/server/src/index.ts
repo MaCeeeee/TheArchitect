@@ -49,6 +49,7 @@ import { seedDecisionPatterns } from './seeds/decision-patterns.seed';
 import { rateLimit } from './middleware/rateLimit.middleware';
 import { startTempGraphCleanup } from './jobs/cleanup-temp-graphs';
 import { startSyncScheduler } from './services/sync-scheduler.service';
+import { startRegulationCrawlScheduler } from './services/regulationCrawlScheduler.service';
 import { log } from './config/logger';
 
 dotenv.config();
@@ -217,6 +218,9 @@ async function main() {
 
   // Start integration sync scheduler
   startSyncScheduler();
+
+  // Start regulation corpus crawl scheduler (THE-362)
+  startRegulationCrawlScheduler();
 
   server.listen(PORT, () => {
     log.info({ port: PORT }, 'Server running');
