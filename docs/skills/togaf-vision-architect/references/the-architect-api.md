@@ -71,6 +71,18 @@ require `ELEMENT_CREATE` / `CONNECTION_CREATE` permissions (the key's user role)
 and re-create:
 `DELETE /api/projects/:projectId/connections/:connectionId`.
 
+**Gotcha — element ids must be globally unique, not just per-project.** The
+connection endpoint matches its source/target elements by `id` **without scoping
+to projectId** (a known platform bug). So generic ids like `sh-du` / `cap-…`
+collide with leftover nodes from *other* projects and the write fails with `500` /
+an ambiguous-match / unique-constraint error. **Always namespace element ids per
+project** (e.g. prefix with a slice of the projectId). `scripts/commit-model.mjs`
+does this automatically (`NS()`), keeping ids stable across re-runs.
+
+**Gotcha — transient `500`/`401` under load.** Neo4j relationship writes and the
+auth middleware get flaky when hammered (e.g. parallel commits). Retry writes a
+few times with small backoff — the reference script does this (`api(..., tries)`).
+
 ### Set the project vision + stakeholders (the Phase-A panel)
 `PUT /api/projects/:projectId`
 ```json
