@@ -1,7 +1,7 @@
 # Conformance — drei Tore, ein Modell
 
 **Datum:** 2026-06-28
-**Status:** Strategie / Team-Alignment (keine Implementierungs-Entscheidung getroffen)
+**Status:** Entschieden 2026-06-30 → siehe **ADR-0003** (`docs/adr/0003-conformance-information-architecture.md`). Diese Landkarte bleibt die Analyse-Grundlage; die getroffene IA-Entscheidung steht in der ADR.
 **Auslöser:** Mit der neuen „Assess Workflow"-Seite (UC-WFCOMP-001) existiert ein **drittes** Konformitäts-Tor. Im UI liegen alle drei unter „Comply" und heißen alle sinngemäß „assess/check compliance" → niemand (Nutzer *und* Team) kann sie noch auseinanderhalten.
 **Verwandt:** [[strategy_complexity_comprehension_ux]] (Hebel: Struktur sichtbar machen), [[strategy_trust_spine]] (ATTEST = Vertrauens-Achse), UC-WFCOMP-001, UC-GOV-001 (Policy-as-Data), Compliance-Pipeline/Matrix.
 
