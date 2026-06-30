@@ -17,11 +17,20 @@ description: >-
   The Architect.
 compatibility: >-
   Targets The Architect. The MCP server (architect.* tools) is the intended
-  long-term interface but is NOT built yet — until then, commit via the REST API
-  documented in references/the-architect-api.md. Requires a target projectId (or
-  create one) and an API key (ta_ prefix, X-API-Key header). Node 22 for the
-  reference script.
+  long-term interface but is NOT built yet — until then, commit via the REST API.
+  All API, layout, and commit details live in the shared the-architect-core skill
+  (the-architect-core/references/* and scripts/commit-model.mjs) — read those
+  before any commit. Requires a target projectId (or create one) and an API key
+  (ta_ prefix, X-API-Key header). Node 22 for the reference script.
 ---
+
+> **Shared core:** the *how to talk to The Architect* details (auth, endpoints,
+> enums, dual-store, 3D layout, verify, known bugs) live in the
+> **`the-architect-core`** skill, shared across the architect-\* family. This
+> skill owns only the *method*. When this document points at "the core," read:
+> `the-architect-core/references/the-architect-api.md`,
+> `the-architect-core/references/3d-layout.md`, and
+> `the-architect-core/scripts/commit-model.mjs`.
 
 # TOGAF Vision Architect
 
@@ -46,7 +55,7 @@ useless if missed:
 2. **A committed model that isn't laid out is a hairball.** The 3D scene has
    specific coordinate rules. Skipping them produces a sprawling star-field that
    looks broken regardless of how good the content is. See
-   `references/3d-layout.md` — read it before any commit.
+   `the-architect-core/references/3d-layout.md` — read it before any commit.
 
 ## Core principle: method here, action via the API (MCP later)
 
@@ -61,8 +70,9 @@ Keep a hard separation:
 
 The MCP server (`architect.commit_motivation_model`, etc.) is the intended
 interface, but it is **not implemented yet**. Until it exists, commit through the
-REST API in `references/the-architect-api.md`. When the MCP server ships it will
-wrap exactly these operations, so the method here does not change.
+REST API in `the-architect-core/references/the-architect-api.md`. When the MCP
+server ships it will wrap exactly these operations, so the method here does not
+change.
 
 ## Before you start
 
@@ -71,7 +81,8 @@ wrap exactly these operations, so the method here does not change.
 2. **Confirm auth.** You need an API key (`ta_…`) for the `X-API-Key` header. If
    the user doesn't have one handy, point them to Settings → API Keys → Generate
    New Token (the raw key is shown only once). Details and pitfalls (local vs.
-   prod databases, stale keys) are in `references/the-architect-api.md`.
+   prod databases, stale keys) are in
+   `the-architect-core/references/the-architect-api.md`.
 3. **Mirror the user's language.** Default to German for this audience; switch to
    whatever the user writes in. Element `name`/`description` go into the model in
    that language. (Tip from the source session: it can be useful to keep the
@@ -157,8 +168,8 @@ created — value streams and the capabilities behind them?" This produces the
   (validated) and which are gaps (assumption). Capability gaps are often the
   user's real roadmap.
 - Wire **`capability —serving→ value_stream`** (arrow points up). With the layout
-  in `references/3d-layout.md`, this renders as the canonical ArchiMate Value
-  Stream View for free.
+  in `the-architect-core/references/3d-layout.md`, this renders as the canonical
+  ArchiMate Value Stream View for free.
 
 ## Assumption vs. validated (the trust encoding)
 
@@ -171,7 +182,7 @@ it is often the user's own thesis applied to their own model:
 
 (Provenance fields like `certifiedBy` exist but are **server-set and not
 spoofable from the API** — so encode the distinction via `status` + `metadata`,
-not provenance. See the API reference.)
+not provenance. See `the-architect-core/references/the-architect-api.md`.)
 
 ## Quality guardrails (the abstract-layer trap)
 
@@ -197,18 +208,20 @@ before previewing:
 3. **Preview** compactly: element count by type, the driver→goal→outcome spine,
    the value-stream/capability map, and what's marked assumption.
 4. Get an **explicit yes**.
-5. **Commit** via the API (`references/the-architect-api.md`). Use stable local
-   ids so relationships and positions wire deterministically. Populate **both**
-   the graph elements **and** the project's vision/stakeholders fields — they are
+5. **Commit** via the API
+   (`the-architect-core/references/the-architect-api.md`). Use stable local ids
+   so relationships and positions wire deterministically. Populate **both** the
+   graph elements **and** the project's vision/stakeholders fields — they are
    separate stores and the Phase-A panel reads the latter (see "dual
    representation" in the API reference).
 6. **Lay it out** so it's readable — this is not optional. Apply the coordinate
-   rules in `references/3d-layout.md`.
+   rules in `the-architect-core/references/3d-layout.md`.
 7. **Verify with a read-back** (GET elements + connections; count by type) and
    report what was created and where to see it (3D view).
 
-The reference script `scripts/commit-model.mjs` does steps 5–7 end-to-end from a
-model definition — adapt it rather than hand-rolling fetch calls.
+The reference script `the-architect-core/scripts/commit-model.mjs` does steps
+5–7 end-to-end from a model definition — adapt it rather than hand-rolling fetch
+calls.
 
 ## Confirmation discipline
 

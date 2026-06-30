@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * commit-model.mjs — reference implementation for the togaf-vision-architect skill.
+ * commit-model.mjs — reference implementation for the the-architect-core skill
+ * (shared across the architect-* skill family; consumed e.g. by togaf-vision-architect).
  * Commits an ArchiMate Motivation (+ optional Strategy) model into The Architect
  * via the REST API, with correct 3D layout, then verifies via read-back.
  *
