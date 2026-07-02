@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   { id: 'envision', icon: Target, label: 'Vision' },
   { id: 'explorer', icon: FolderTree, label: 'Explorer' },
   { id: 'architect', icon: BookOpen, label: 'Architect' },
-  { id: 'comply', icon: ShieldCheck, label: 'Comply' },
+  { id: 'comply', icon: ShieldCheck, label: 'Conformance' },
   { id: 'analyze', icon: BarChart3, label: 'Analyze' },
   { id: 'copilot', icon: Sparkles, label: 'AI Copilot' },
 ] as const;
@@ -310,7 +310,7 @@ function NavButton({
   const handleComply = useDoubleClick(
     useCallback(() => setSidebarPanel('comply'), [setSidebarPanel]),
     useCallback(() => {
-      if (projectId) navigate(`/project/${projectId}/compliance/pipeline`);
+      if (projectId) navigate(`/project/${projectId}/compliance/hub`);
       else setSidebarPanel('comply');
     }, [projectId, navigate, setSidebarPanel]),
   );
@@ -456,7 +456,7 @@ function CompliancePanel() {
     <div className="flex flex-col flex-1 overflow-hidden">
       {/* Header with Full View link */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-subtle)]">
-        <p className="text-xs font-semibold text-[var(--text-primary)]">Comply</p>
+        <p className="text-xs font-semibold text-[var(--text-primary)]">Conformance</p>
         {projectId && (
           <button
             onClick={() => navigate(`/project/${projectId}/compliance/${activeSection}`)}

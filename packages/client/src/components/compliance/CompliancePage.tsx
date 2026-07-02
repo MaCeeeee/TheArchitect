@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import ComplianceSidebar from './ComplianceSidebar';
+import ComplianceSidebar, { SECTIONS, GROUPS, SUBJECTS } from './ComplianceSidebar';
+import ConformanceHub from './ConformanceHub';
 import PipelineStepper from './PipelineStepper';
 import AssessWorkflow from './AssessWorkflow';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -27,6 +28,37 @@ const PIPELINE_SECTIONS = new Set([
   'pipeline', 'portfolio', 'standards', 'matrix', 'remediate', 'policies', 'roadmap', 'elements', 'progress', 'audit',
 ]);
 
+// AC-5 (ADR-0003): every view states subject + norm explicitly in its header.
+const GATE_NORM: Record<'cover' | 'enforce' | 'attest', string> = {
+  cover: 'External standards & regulations',
+  enforce: 'Internal policies',
+  attest: 'Statutory record requirements (GDPR Art. 30)',
+};
+
+function SubjectNormHeader({ sectionId }: { sectionId: string }) {
+  const section = SECTIONS.find((s) => s.id === sectionId);
+  if (!section) return null;
+  const group = GROUPS.find((g) => g.key === section.group);
+  const subject = group && SUBJECTS.find((s) => s.key === group.subject);
+  if (!group || !subject) return null;
+  return (
+    <div
+      data-testid="subject-norm-header"
+      className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded border border-[var(--border-subtle)] bg-[var(--surface-raised)] px-3 py-1.5 text-[10px] text-[var(--text-tertiary)]"
+    >
+      <span className="font-semibold text-[var(--text-secondary)]">{subject.label}</span>
+      <span>
+        <span className="uppercase tracking-wider">Subject:</span>{' '}
+        <span className="text-[var(--text-secondary)]">{subject.hint.replace('Subject: ', '')}</span>
+      </span>
+      <span>
+        <span className="uppercase tracking-wider">Norm:</span>{' '}
+        <span className="text-[var(--text-secondary)]">{GATE_NORM[group.key]}</span>
+      </span>
+    </div>
+  );
+}
+
 export default function CompliancePage() {
   const { projectId, section } = useParams<{ projectId: string; section?: string }>();
   const navigate = useNavigate();
@@ -46,7 +78,8 @@ export default function CompliancePage() {
   }, [activeSection, matrixStandardId, pipelineStates]);
 
   if (!section) {
-    return <Navigate to={`/project/${projectId}/compliance/pipeline`} replace />;
+    // ADR-0003: the Conformance Hub is the entry router
+    return <Navigate to={`/project/${projectId}/compliance/hub`} replace />;
   }
 
   if (!projectId) {
@@ -68,8 +101,14 @@ export default function CompliancePage() {
             Back to Architecture
           </button>
 
+          {/* AC-5 — subject + norm stated explicitly on every gate view */}
+          <SubjectNormHeader sectionId={activeSection} />
+
           {/* Pipeline Stepper — visible on compliance pipeline sections */}
           {showStepper && <PipelineStepper />}
+
+          {/* Conformance Hub — entry router (ADR-0003) */}
+          {activeSection === 'hub' && <ConformanceHub />}
 
           {/* UC-WFCOMP-001 — assess a single workflow against GDPR Art. 30 */}
           {activeSection === 'assess' && <AssessWorkflow />}
