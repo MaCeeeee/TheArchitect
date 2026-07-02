@@ -17,7 +17,7 @@ const PHASE_TUTORIALS: Record<JourneyPhase, { intro: string; tip: string }> = {
   },
   3: {
     intro: 'Upload compliance standards and map them to your architecture to find gaps.',
-    tip: 'Open the Comply tab to upload standards (ISO 27001, SOC 2, DORA).',
+    tip: 'Open the Conformance tab to upload standards (ISO 27001, SOC 2, DORA).',
   },
   4: {
     intro: 'Run simulations and create transformation roadmaps.',

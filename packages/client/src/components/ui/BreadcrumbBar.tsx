@@ -51,7 +51,7 @@ export default function BreadcrumbBar() {
     crumbs.push({ label: projectName || 'Project', to: `/project/${projectId}` });
 
     if (path.includes('/compliance')) {
-      crumbs.push({ label: 'Comply', to: `/project/${projectId}/compliance/pipeline` });
+      crumbs.push({ label: 'Conformance', to: `/project/${projectId}/compliance/hub` });
       if (section && SECTION_LABELS[section]) {
         crumbs.push({ label: SECTION_LABELS[section] });
       }
