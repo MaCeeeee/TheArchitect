@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard,
-  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff, BadgeCheck,
+  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff, BadgeCheck, Workflow,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
@@ -10,10 +10,12 @@ interface Section {
   id: string;
   label: string;
   icon: LucideIcon;
-  group: 'pipeline' | 'governance';
+  group: 'workflow' | 'pipeline' | 'governance';
 }
 
 const SECTIONS: Section[] = [
+  // Workflow Compliance (UC-WFCOMP-001)
+  { id: 'assess', label: 'Assess Workflow', icon: Workflow, group: 'workflow' },
   // Compliance Pipeline
   { id: 'pipeline', label: 'Pipeline', icon: ShieldAlert, group: 'pipeline' },
   { id: 'portfolio', label: 'Portfolio', icon: LayoutDashboard, group: 'pipeline' },
@@ -34,6 +36,7 @@ const SECTIONS: Section[] = [
 ];
 
 const GROUPS = [
+  { key: 'workflow' as const, label: 'Workflow Compliance' },
   { key: 'pipeline' as const, label: 'Compliance Pipeline' },
   { key: 'governance' as const, label: 'Governance' },
 ];

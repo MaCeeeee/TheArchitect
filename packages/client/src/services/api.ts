@@ -836,4 +836,19 @@ export const oracleAPI = {
     api.post(`/projects/${projectId}/oracle/suitability`, { elementId }),
 };
 
+// UC-WFCOMP-001 — bring an n8n workflow, assess it against GDPR Art. 30, attest gaps.
+export const wfcompAPI = {
+  // The body IS the raw workflow JSON; the server sanitizes it (PII never persisted).
+  assess: (projectId: string, workflow: unknown, opts?: { workflowId?: string; infer?: boolean }) =>
+    api.post(`/projects/${projectId}/wfcomp/assess`, workflow, {
+      params: {
+        ...(opts?.workflowId ? { workflowId: opts.workflowId } : {}),
+        ...(opts?.infer ? { infer: 'true' } : {}),
+      },
+    }),
+  // Human sign-off: materializes the attested field(s) → the verdict is recomputed.
+  recompute: (projectId: string, workflowId: string, attestations: Array<{ litera: string; value: string }>) =>
+    api.post(`/projects/${projectId}/wfcomp/recompute`, { workflowId, attestations }),
+};
+
 export default api;

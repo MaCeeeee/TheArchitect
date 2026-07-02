@@ -24,9 +24,15 @@ const mixed: WfcompGapReport = {
 
 const complete: WfcompGapReport = {
   gdprScope: true,
-  fields: (['a', 'b', 'c', 'd'] as const).map(l => ({ litera: l, criticality: 'HART' as const, status: 'present' as const }))
-    .concat([{ litera: 'e', criticality: 'BEDINGT', status: 'present' }])
-    .concat((['f', 'g'] as const).map(l => ({ litera: l, criticality: 'WEICH' as const, status: 'present' as const }))),
+  fields: [
+    { litera: 'a', criticality: 'HART', status: 'present' },
+    { litera: 'b', criticality: 'HART', status: 'present' },
+    { litera: 'c', criticality: 'HART', status: 'present' },
+    { litera: 'd', criticality: 'HART', status: 'present' },
+    { litera: 'e', criticality: 'BEDINGT', status: 'present' },
+    { litera: 'f', criticality: 'WEICH', status: 'present' },
+    { litera: 'g', criticality: 'WEICH', status: 'present' },
+  ],
 };
 
 const missingRecipient: WfcompGapReport = {
