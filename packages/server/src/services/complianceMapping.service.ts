@@ -22,11 +22,24 @@ import type {
 import { buildRegulationKey } from '@thearchitect/shared';
 import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
+import { recordAiTrace } from './aiTrace.service';
 import {
   SYSTEM_PROMPT,
   buildUserPrompt,
   type PromptCandidateElement,
 } from '../prompts/complianceMapping.prompt';
+
+/** Content-Hash des System-Prompts — Bestandteil jedes Traces (THE-384). */
+const PROMPT_VERSION_HASH = computeVersionHash(SYSTEM_PROMPT);
+
+/** Metadaten eines LLM-Calls für Observability (nicht persistenz-relevant). */
+interface LlmCallMeta {
+  model: string;
+  latencyMs: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  rawText: string;
+}
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -115,10 +128,37 @@ export async function mapRegulationToElements(args: {
     return [];
   }
 
-  const candidates = await callLLM({
+  const { candidates, meta } = await callLLM({
     regulation: args.regulation,
     candidateElements: args.candidateElements,
     anthropicClient: args.anthropicClient,
+  });
+
+  const regulationKey = buildRegulationKey(
+    args.regulation.source,
+    args.regulation.paragraphNumber,
+  );
+  const regulationVersionHash = computeVersionHash(args.regulation.fullText);
+
+  // Observability (THE-384) — best-effort, never blocks the request.
+  await recordAiTrace({
+    operation: 'mapping',
+    model: meta.model,
+    promptVersionHash: PROMPT_VERSION_HASH,
+    projectId: args.projectId,
+    regulationId: args.regulation._id?.toString(),
+    regulationKey,
+    regulationVersionHash,
+    candidateElementIds: args.candidateElements.map(c => c.id),
+    predictions: candidates.map(c => ({
+      elementId: c.elementId,
+      elementType: c.elementType,
+      confidence: c.confidence,
+    })),
+    rawResponse: meta.rawText,
+    latencyMs: meta.latencyMs,
+    inputTokens: meta.inputTokens,
+    outputTokens: meta.outputTokens,
   });
 
   // Post-Validation: drop hallucinated elementIds (not in candidate list)
@@ -139,8 +179,8 @@ export async function mapRegulationToElements(args: {
     regulationId: args.regulation._id?.toString() ?? '',
     projectId: args.projectId,
     // Corpus reference (ADR-0001 / THE-306): pin the canonical key + the exact text version.
-    regulationKey: buildRegulationKey(args.regulation.source, args.regulation.paragraphNumber),
-    regulationVersionHash: computeVersionHash(args.regulation.fullText),
+    regulationKey,
+    regulationVersionHash,
   });
 
   return persisted;
@@ -256,10 +296,29 @@ export async function mapTextToElements(args: {
     effectiveFrom: new Date(),
   } as unknown as IRegulation;
 
-  const candidates = await callLLM({
+  const { candidates, meta } = await callLLM({
     regulation: syntheticReg,
     candidateElements: args.candidateElements,
     anthropicClient: args.anthropicClient,
+  });
+
+  // Observability (THE-384) — best-effort. Live-mapping is not persisted, so
+  // the trace is the only record of this call.
+  await recordAiTrace({
+    operation: 'mapping-live',
+    model: meta.model,
+    promptVersionHash: PROMPT_VERSION_HASH,
+    regulationKey: buildRegulationKey(args.source, args.paragraphNumber),
+    candidateElementIds: args.candidateElements.map(c => c.id),
+    predictions: candidates.map(c => ({
+      elementId: c.elementId,
+      elementType: c.elementType,
+      confidence: c.confidence,
+    })),
+    rawResponse: meta.rawText,
+    latencyMs: meta.latencyMs,
+    inputTokens: meta.inputTokens,
+    outputTokens: meta.outputTokens,
   });
 
   const validIds = new Set(args.candidateElements.map(c => c.id));
@@ -274,7 +333,7 @@ async function callLLM(args: {
   regulation: IRegulation;
   candidateElements: CandidateElement[];
   anthropicClient?: Anthropic;
-}): Promise<ComplianceMappingCandidate[]> {
+}): Promise<{ candidates: ComplianceMappingCandidate[]; meta: LlmCallMeta }> {
   const client = args.anthropicClient ?? getAnthropicClient();
 
   const promptCandidates: PromptCandidateElement[] = args.candidateElements.map(c => ({
@@ -300,6 +359,7 @@ async function callLLM(args: {
 
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
 
+  const startedAt = Date.now();
   let response;
   try {
     response = await client.messages.create({
@@ -314,6 +374,7 @@ async function callLLM(args: {
       err
     );
   }
+  const latencyMs = Date.now() - startedAt;
 
   const textBlock = response.content.find(b => b.type === 'text');
   const text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
@@ -321,7 +382,17 @@ async function callLLM(args: {
     throw new ComplianceMappingError('Anthropic returned empty text response');
   }
 
-  return parseAndFilter(text);
+  const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
+  return {
+    candidates: parseAndFilter(text),
+    meta: {
+      model,
+      latencyMs,
+      inputTokens: usage?.input_tokens,
+      outputTokens: usage?.output_tokens,
+      rawText: text,
+    },
+  };
 }
 
 function getAnthropicClient(): Anthropic {
