@@ -40,6 +40,9 @@ const DEMO = args.includes('--demo');
 const modelPath = args.find((a) => !a.startsWith('--'));
 
 // ── type → layer / togafDomain ────────────────────────────────────────────
+// Fallback arrays cover the COMMON types per layer, not the exhaustive
+// ELEMENT_TYPES list from togaf.constants.ts — callers should pass an explicit
+// `layer`; anything unknown here lands on 'business'.
 const MOTIVATION = ['stakeholder','driver','assessment','goal','outcome','principle','requirement','constraint','am_value','meaning'];
 const STRATEGY = ['business_capability','value_stream','resource','course_of_action'];
 const APPLICATION = ['application_component','application_collaboration','application_interface','application_function','application_interaction','application_process','application_event','application_service'];
@@ -85,7 +88,7 @@ function autoLayout(elements) {
   // Assign each flat-plane type-group its own Z lane so types don't overlap.
   const laneByLayer = {};                       // layer → next lane index
   const laneOfGroup = {};                        // groupKey → lane index (stable)
-  const zForLane = (n) => (n % 2 === 1 ? 1 : -1) * Math.ceil(n / 2) * 3; // 0,3,-3,6,-6…
+  const zForLane = (n) => (n % 2 === 1 ? 1 : -1) * Math.ceil(n / 2) * 3; // 0,3,-3,6,-6… (step = one scene cell)
   for (const [key, group] of Object.entries(byKey)) {
     const layer = group[0].layer || layerOf(group[0].type);
     if (!(key in laneOfGroup) && layer !== 'motivation' && layer !== 'strategy') {
