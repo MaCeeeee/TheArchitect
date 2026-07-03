@@ -1,0 +1,21 @@
+{
+  "project": { "name": "Modeler — Demo", "description": "the-architect-modeler multi-layer demo", "tags": ["demo","modeler"] },
+  "elements": [
+    { "id": "svc-order", "type": "business_service", "name": "Order Management", "layer": "business" },
+    { "id": "proc-fulfil", "type": "process", "name": "Fulfil Order", "layer": "business" },
+    { "id": "app-erp", "type": "application_component", "name": "ERP", "layer": "application" },
+    { "id": "app-shop", "type": "application_component", "name": "Web Shop", "layer": "application" },
+    { "id": "as-catalog", "type": "application_service", "name": "Catalog API", "layer": "application" },
+    { "id": "do-order", "type": "data_object", "name": "Order", "layer": "information" },
+    { "id": "node-k8s", "type": "node", "name": "Kubernetes Cluster", "layer": "technology" },
+    { "id": "ss-postgres", "type": "system_software", "name": "PostgreSQL", "layer": "technology" }
+  ],
+  "connections": [
+    { "s": "proc-fulfil", "t": "svc-order", "type": "realization", "label": "realizes" },
+    { "s": "app-erp", "t": "proc-fulfil", "type": "serving", "label": "serves" },
+    { "s": "as-catalog", "t": "app-shop", "type": "serving", "label": "serves" },
+    { "s": "app-erp", "t": "do-order", "type": "access", "label": "reads/writes" },
+    { "s": "node-k8s", "t": "app-erp", "type": "serving", "label": "hosts" },
+    { "s": "ss-postgres", "t": "node-k8s", "type": "serving", "label": "runs on" }
+  ]
+}
