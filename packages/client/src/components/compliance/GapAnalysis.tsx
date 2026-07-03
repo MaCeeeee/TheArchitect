@@ -12,6 +12,7 @@ import { Target, Download, Wrench, Sparkles, CheckCircle2, Link2Off } from 'luci
 import toast from 'react-hot-toast';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { architectureAPI } from '../../services/api';
 import type { GapItem } from '../../services/api';
 import { sortRequirementsForDisplay } from './RequirementsForElementSection';
 
@@ -74,9 +75,29 @@ export default function GapAnalysis() {
     });
   }, [projectId, regulationFilter, priorityFilter, loadGaps]);
 
+  // The architecture store is only populated inside the project 3D view. When
+  // the user lands on /compliance/gaps directly, fetch element names once so
+  // "Top Gap Elements" shows names instead of raw ids.
+  const [fetchedNames, setFetchedNames] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    if (!projectId || elements.length > 0) return;
+    let cancelled = false;
+    architectureAPI
+      .getElements(projectId)
+      .then((res) => {
+        if (cancelled) return;
+        const list: Array<{ id: string; name: string }> = res.data?.data ?? [];
+        setFetchedNames(new Map(list.map((el) => [el.id, el.name])));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, elements.length]);
+
   const elementNameById = useMemo(
-    () => new Map(elements.map((el) => [el.id, el.name])),
-    [elements],
+    () => (elements.length > 0 ? new Map(elements.map((el) => [el.id, el.name])) : fetchedNames),
+    [elements, fetchedNames],
   );
 
   const openItems = useMemo(
