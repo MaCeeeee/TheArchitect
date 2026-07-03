@@ -201,7 +201,11 @@ describe('Regulation Model (REQ-ICM-001.1)', () => {
     });
 
     it('source: accepts all valid values', async () => {
-      const sources = ['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom'] as const;
+      const sources = [
+        'nis2', 'lksg', 'dsgvo', 'dora', 'iso27001',
+        'ai-act-en', 'ai-act-de', 'data-act-en', 'data-act-de',
+        'custom',
+      ] as const;
       for (const src of sources) {
         const reg = await Regulation.create({
           ...baseDoc(),

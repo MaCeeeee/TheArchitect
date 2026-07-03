@@ -184,6 +184,46 @@ export function dsgvoEurLexSource(opts: FactoryOptions = {}): EurLexSource {
   });
 }
 
+/** Options for language-parametrised acts (AI Act, Data Act). */
+export interface LangFactoryOptions extends FactoryOptions {
+  language: RegulationLanguage;
+}
+
+/**
+ * EU AI Act (EU 2024/1689) — direct EUR-Lex (fallback / tests). Source key encodes
+ * the language so DE and EN don't collide on the `source:paragraph` regulationKey.
+ * Production uses `aiActFirecrawlSource` (EUR-Lex is behind AWS WAF).
+ */
+export function aiActEurLexSource(opts: LangFactoryOptions): EurLexSource {
+  return new EurLexSource({
+    source: opts.language === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-08-01'),
+    celex: '32024R1689',
+    articleNumbers: opts.articleNumbers,
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
+/**
+ * EU Data Act (EU 2023/2854) — direct EUR-Lex (fallback / tests). Source key encodes
+ * the language. Production uses `dataActFirecrawlSource`.
+ */
+export function dataActEurLexSource(opts: LangFactoryOptions): EurLexSource {
+  return new EurLexSource({
+    source: opts.language === 'de' ? 'data-act-de' : 'data-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-01-11'),
+    celex: '32023R2854',
+    articleNumbers: opts.articleNumbers,
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
 /**
  * @deprecated Use `nis2EurLexSource()` factory instead. Kept for backwards compatibility.
  */
