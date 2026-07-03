@@ -21,15 +21,15 @@
 | NF-001 | Helpers importierbar ohne Side-Effects (IIFE-Guard, symlink-robust) | Task 1, Task 3 | `commit-model.mjs` | Testfile-Import + `--demo` | PASS | `node --test` läuft ohne Netzwerk; `--demo` weiterhin als Skript lauffähig |
 | C-001 | Kein neuer Endpoint/Service/Schema; nur Name+Type-Dedup; THE-283 unberührt | alle | — | Diff-Review | PASS | Diff berührt nur `docs/skills/**` (+ Plan/RVTM); Spec-Review: „no scope creep … Qdrant/semantic: zero hits" |
 | C-002 | Skill-Doku Englisch (English-first) | Task 4 | SKILL.md | Review | PASS | Spec-Review: „English throughout" |
-| R-010 | Linear-AC dokumentiert, Plan+PR verlinkt, Memory nachgezogen | Task 7 | — | Linear-Issue + MEMORY.md | PENDING | — |
+| R-010 | Linear-AC dokumentiert, Plan+PR verlinkt, Memory nachgezogen | Task 7 | — | Linear-Issue + MEMORY.md | PASS | THE-342 → In Review, AC-Kommentar + PR #31 verlinkt; Memory progress_uc_mcp_001 + Index aktualisiert |
 
 ## Coverage Summary
 
 - **Total Requirements:** 13
-- **Verified (PASS):** 12
+- **Verified (PASS):** 13
 - **Failed (FAIL):** 0
-- **Pending:** 1 (R-010 — Abschluss-Task)
-- **Coverage:** 92 %
+- **Pending:** 0
+- **Coverage:** 100 %
 
 ## Abweichungen / Findings während der Ausführung
 
@@ -44,3 +44,4 @@
 | 2026-07-03 | Chunk 1 done (3 Commits + Polish), Spec+Quality-Review bestanden | R-006..R-008, NF-001 | Execution |
 | 2026-07-03 | Task 4+5 done (Skill+Fixture+Mirror), Spec+Quality-Review bestanden, Partial-Write-Korrektur | R-001..R-003, C-001..C-002 | Execution |
 | 2026-07-03 | Task 6 E2E: 8/8+6/6, Layer/Domain ✓, 0 Koordinaten-Kollisionen, Dedup 8/8 | R-002, R-004, R-005, R-008, R-009 | Execution |
+| 2026-07-03 | Task 7: Linear In Review + AC-Kommentar, PR #31, Memory — 13/13 PASS | R-010 | Execution |
