@@ -333,17 +333,23 @@ export function PolicyDraftReview() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {/* Confidence badge */}
-                      <span className={`text-xs px-2 py-0.5 rounded ${
+                      {/* Confidence badge — generation confidence, not related to severity */}
+                      <span
+                        title="AI generation confidence for this draft"
+                        className={`text-xs px-2 py-0.5 rounded ${
                         ds.draft.confidence >= 0.8 ? 'bg-green-500/10 text-green-400'
                         : ds.draft.confidence >= 0.5 ? 'bg-yellow-500/10 text-yellow-400'
                         : 'bg-red-500/10 text-red-400'
                       }`}>
-                        {Math.round(ds.draft.confidence * 100)}%
+                        {Math.round(ds.draft.confidence * 100)}% conf.
                       </span>
-                      {/* Severity badge */}
-                      <span className={`text-xs px-2 py-0.5 rounded ${sev.bg} ${sev.color}`}>
-                        {sev.label}
+                      {/* Severity badge — enforcement severity of future violations,
+                          NOT a generation error (THE-389) */}
+                      <span
+                        title={`Enforcement severity: violations of this policy will be classified as "${sev.label}". This is a property of the rule, not a generation error.`}
+                        className={`text-xs px-2 py-0.5 rounded ${sev.bg} ${sev.color}`}
+                      >
+                        Severity: {sev.label}
                       </span>
                     </div>
                   </div>

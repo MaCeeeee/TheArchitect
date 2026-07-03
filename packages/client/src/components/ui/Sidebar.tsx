@@ -532,6 +532,29 @@ function CompliancePanel() {
                   </div>
                 </div>
               </>
+            ) : totalMapping.total > 0 ? (
+              <>
+                {/* Pipeline data exists but no snapshot captured yet — show live
+                    mapping breakdown instead of falsely claiming "no data" (THE-389) */}
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5">
+                  <div className="text-[10px] text-[var(--text-tertiary)] mb-1.5">Sections</div>
+                  <div className="flex gap-1.5">
+                    {[
+                      { label: 'Compliant', count: totalMapping.compliant, color: '#22c55e' },
+                      { label: 'Partial', count: totalMapping.partial, color: '#eab308' },
+                      { label: 'Gap', count: totalMapping.gap, color: '#ef4444' },
+                    ].map((s) => (
+                      <div key={s.label} className="flex-1 text-center">
+                        <div className="text-sm font-semibold" style={{ color: s.color }}>{s.count}</div>
+                        <div className="text-[9px] text-[var(--text-tertiary)]">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <p className="text-[10px] text-[var(--text-tertiary)] text-center">
+                  No snapshot yet — capture one in the Progress tab for scores &amp; trend.
+                </p>
+              </>
             ) : (
               <div className="text-center py-6">
                 <ShieldCheck size={20} className="text-[var(--text-tertiary)] mx-auto mb-2" />
