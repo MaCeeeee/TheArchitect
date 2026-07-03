@@ -12,6 +12,7 @@
  */
 import axios, { AxiosInstance } from 'axios';
 import { ParsedRegulation, SourceParser, SourceParseError } from './types';
+import { cleanRegulationText } from './clean';
 import type {
   RegulationSource,
   RegulationJurisdiction,
@@ -150,13 +151,13 @@ export class FirecrawlSource implements SourceParser {
         break; // first non-empty line that looks like body → no title
       }
 
-      const fullText = lines
-        .slice(bodyStart, end)
-        .map(l => l.trim())
-        .filter(l => l.length > 0 && !/^[-*_=]{3,}$/.test(l))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const fullText = cleanRegulationText(
+        lines
+          .slice(bodyStart, end)
+          .map(l => l.trim())
+          .filter(l => l.length > 0 && !/^[-*_=]{3,}$/.test(l))
+          .join(' ')
+      );
 
       if (fullText.length < 50) continue;
 
