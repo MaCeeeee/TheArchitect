@@ -9,6 +9,7 @@
     "clean": "rm -rf dist",
     "lint": "eslint src/",
     "test": "jest",
+    "eval:mapping": "ts-node src/evals/runMappingEval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts"
   },
   "dependencies": {

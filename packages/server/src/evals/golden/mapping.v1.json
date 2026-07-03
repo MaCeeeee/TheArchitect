@@ -1,0 +1,118 @@
+{
+  "version": "v1-seed",
+  "frozen": false,
+  "rubricRef": "../RUBRIC.md",
+  "cases": [
+    {
+      "caseId": "dsgvo-art30-vvt",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 30",
+      "title": "Verzeichnis von Verarbeitungstätigkeiten",
+      "fullText": "Jeder Verantwortliche und gegebenenfalls sein Vertreter führen ein Verzeichnis aller Verarbeitungstätigkeiten, die ihrer Zuständigkeit unterliegen. Dieses Verzeichnis enthält sämtliche folgenden Angaben: den Namen und die Kontaktdaten des Verantwortlichen, die Zwecke der Verarbeitung, eine Beschreibung der Kategorien betroffener Personen und der Kategorien personenbezogener Daten, die Kategorien von Empfängern, gegebenenfalls Übermittlungen an ein Drittland, die vorgesehenen Fristen für die Löschung der verschiedenen Datenkategorien sowie eine allgemeine Beschreibung der technischen und organisatorischen Maßnahmen gemäß Artikel 32 Absatz 1.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-vvt-app",
+          "name": "Processing Activities Register (VVT)",
+          "type": "application",
+          "layer": "application",
+          "description": "Central register application documenting all personal-data processing activities, purposes, categories and deletion periods."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-build-pipeline",
+          "name": "CI/CD Build Pipeline",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Automated build and deployment pipeline for internal software artifacts."
+        }
+      ],
+      "goldElementIds": ["el-vvt-app", "el-crm"],
+      "ambiguous": false,
+      "notes": "SEED-BEISPIEL. el-vvt-app: expliziter Scope (Rubrik §2.1) — das Verzeichnis selbst. el-crm: Datenbezug (§2.3) — verarbeitet personenbezogene Daten und muss im VVT geführt werden. el-build-pipeline: no-match, nur thematische Nähe zu 'IT' (§3).",
+      "annotator": "seed",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "lksg-p6-praevention",
+      "source": "lksg",
+      "paragraphNumber": "§ 6",
+      "title": "Präventionsmaßnahmen",
+      "fullText": "Stellt ein Unternehmen im Rahmen einer Risikoanalyse ein Risiko fest, hat es unverzüglich angemessene Präventionsmaßnahmen zu ergreifen. Das Unternehmen muss angemessene Präventionsmaßnahmen gegenüber einem unmittelbaren Zulieferer verankern, insbesondere die Berücksichtigung der menschenrechtsbezogenen und umweltbezogenen Erwartungen bei der Auswahl eines unmittelbaren Zulieferers, vertragliche Zusicherungen eines unmittelbaren Zulieferers sowie die Durchführung von Schulungen und Weiterbildungen zur Durchsetzung der vertraglichen Zusicherungen.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "el-supplier-dd",
+          "name": "Supplier Due Diligence Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "End-to-end process for assessing, selecting and monitoring direct suppliers including human-rights risk criteria."
+        },
+        {
+          "id": "el-training-mgmt",
+          "name": "Training Management Capability",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to plan, deliver and track employee and supplier trainings."
+        },
+        {
+          "id": "el-payroll",
+          "name": "Payroll Service",
+          "type": "business_service",
+          "layer": "business",
+          "description": "Internal payroll processing for employees."
+        }
+      ],
+      "goldElementIds": ["el-supplier-dd", "el-training-mgmt"],
+      "ambiguous": false,
+      "notes": "SEED-BEISPIEL. el-supplier-dd: funktionale Pflicht (§2.2) — Auswahl/Verankerung beim Zulieferer. el-training-mgmt: funktionale Pflicht — Schulungen explizit gefordert. el-payroll: no-match (§3).",
+      "annotator": "seed",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "dsgvo-art83-bussgeld-hardneg",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 83",
+      "title": "Allgemeine Bedingungen für die Verhängung von Geldbußen",
+      "fullText": "Jede Aufsichtsbehörde stellt sicher, dass die Verhängung von Geldbußen gemäß diesem Artikel für Verstöße gegen diese Verordnung in jedem Einzelfall wirksam, verhältnismäßig und abschreckend ist. Bei der Entscheidung über die Verhängung einer Geldbuße und über deren Betrag wird in jedem Einzelfall Art, Schwere und Dauer des Verstoßes sowie die Kategorien der betroffenen personenbezogenen Daten gebührend berücksichtigt.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-vvt-app",
+          "name": "Processing Activities Register (VVT)",
+          "type": "application",
+          "layer": "application",
+          "description": "Central register application documenting all personal-data processing activities, purposes, categories and deletion periods."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-supplier-dd",
+          "name": "Supplier Due Diligence Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "End-to-end process for assessing, selecting and monitoring direct suppliers."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "SEED-BEISPIEL / HARD NEGATIVE. Art. 83 adressiert die Aufsichtsbehörde (Bußgeldbemessung) — Organisationspflicht ohne Systembezug (Rubrik §3): kein gelistetes Element muss angepasst, geprüft oder nachgewiesen werden.",
+      "annotator": "seed",
+      "labeledAt": "2026-07-03"
+    }
+  ]
+}
