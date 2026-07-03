@@ -28,8 +28,12 @@ export default function RemediateGateway() {
     (p) => p.standardId === selectedStandardId,
   );
 
-  const gapCount = selectedItem?.mappingStats.gap ?? 0;
-  const partialCount = selectedItem?.mappingStats.partial ?? 0;
+  // Single source of truth: counts and gap sections both derive from the live
+  // mappings fetch below — never from the cached portfolio mappingStats, which
+  // can lag behind writes (THE-389).
+  const [mappingCounts, setMappingCounts] = useState({ compliant: 0, partial: 0, gap: 0 });
+  const gapCount = mappingCounts.gap;
+  const partialCount = mappingCounts.partial;
   const totalIssues = gapCount + partialCount;
 
   const [gapSectionIds, setGapSectionIds] = useState<string[]>([]);
@@ -56,16 +60,21 @@ export default function RemediateGateway() {
     if (proposals.length === 0 && !isGenerating) {
       loadProposals(projectId);
     }
-    // Load gap section IDs from mappings
+    // Load mappings once — gap section IDs and the summary tiles both derive
+    // from this single fetch (THE-389: no second, cached source of truth).
     if (selectedStandardId) {
       standardsAPI.getMappings(projectId, selectedStandardId).then((res) => {
-        const mappings = res.data?.data || res.data || [];
+        const raw = res.data?.data || res.data || [];
+        const mappings: Array<{ status: string; sectionId: string }> = Array.isArray(raw) ? raw : [];
         const ids = [...new Set(
-          (Array.isArray(mappings) ? mappings : [])
-            .filter((m: { status: string }) => m.status === 'gap')
-            .map((m: { sectionId: string }) => m.sectionId),
+          mappings.filter((m) => m.status === 'gap').map((m) => m.sectionId),
         )];
         setGapSectionIds(ids);
+        setMappingCounts({
+          compliant: mappings.filter((m) => m.status === 'compliant').length,
+          partial: mappings.filter((m) => m.status === 'partial').length,
+          gap: mappings.filter((m) => m.status === 'gap').length,
+        });
       }).catch(() => {});
     }
   }, [projectId, selectedStandardId]);  // eslint-disable-line react-hooks/exhaustive-deps
@@ -130,7 +139,7 @@ export default function RemediateGateway() {
             </div>
             <div className="flex items-center gap-2 text-sm">
               <CheckCircle2 size={14} className="text-emerald-400" />
-              <span className="text-emerald-400 font-medium">{selectedItem.mappingStats.compliant}</span>
+              <span className="text-emerald-400 font-medium">{mappingCounts.compliant}</span>
               <span className="text-[var(--text-tertiary)]">Compliant</span>
             </div>
           </div>

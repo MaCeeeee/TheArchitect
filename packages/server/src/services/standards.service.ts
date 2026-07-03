@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParseModule = require('pdf-parse');
-import { getOrCreatePipelineState } from './compliance-pipeline.service';
+import { getOrCreatePipelineState, refreshMappingStats } from './compliance-pipeline.service';
 
 /**
  * Wrapper that works with both pdf-parse v1 (function) and v2 (PDFParse class).
@@ -712,6 +712,18 @@ export async function getMappingMatrix(
   };
 }
 
+/**
+ * Best-effort refresh of the cached pipeline mappingStats after a mapping
+ * write. Stats staleness must never fail the write itself (THE-389).
+ */
+async function refreshStatsAfterWrite(projectId: string, standardId: string): Promise<void> {
+  try {
+    await refreshMappingStats(projectId, standardId);
+  } catch (err) {
+    console.error('[Standards] mappingStats refresh failed:', err);
+  }
+}
+
 export async function upsertMapping(data: {
   projectId: string;
   standardId: string;
@@ -747,6 +759,7 @@ export async function upsertMapping(data: {
     },
     { upsert: true, new: true },
   );
+  await refreshStatsAfterWrite(data.projectId, data.standardId);
   return mapping;
 }
 
@@ -777,9 +790,19 @@ export async function bulkCreateMappings(
   }));
 
   const result = await StandardMapping.bulkWrite(ops as Parameters<typeof StandardMapping.bulkWrite>[0]);
+
+  const pairs = new Map(mappings.map((m) => [`${m.projectId}:${m.standardId}`, m]));
+  for (const m of pairs.values()) {
+    await refreshStatsAfterWrite(m.projectId, m.standardId);
+  }
+
   return result.upsertedCount + result.modifiedCount;
 }
 
 export async function deleteMapping(mappingId: string) {
-  return StandardMapping.findByIdAndDelete(mappingId);
+  const mapping = await StandardMapping.findByIdAndDelete(mappingId);
+  if (mapping) {
+    await refreshStatsAfterWrite(String(mapping.projectId), String(mapping.standardId));
+  }
+  return mapping;
 }

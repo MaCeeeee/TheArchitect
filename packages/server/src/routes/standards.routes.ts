@@ -793,6 +793,7 @@ router.post(
             suggestedNewElement: undefined,
           },
         );
+        await refreshMappingStats(projectId, sid(req));
       }
 
       res.status(201).json({ elementId, name, type, layer });
