@@ -1,0 +1,21 @@
+{
+  "cacheKey": "c4e293a087f124fda1652e02b279f7753e7b1695d256175d2bbd3f0bf4bb188d",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "cb8918ff9dadcf73fc8e16ae4748af3d6606cda6e50d9bb535c13e0cb1b85930",
+  "predictions": [
+    {
+      "elementId": "el-vvt-app",
+      "elementType": "application",
+      "confidence": 0.95,
+      "reasoning": "DSGVO Art. 30 explicitly mandates a register (Verzeichnis) of all processing activities with specified contents including controller details, purposes, data categories, and technical/organizational measures; this application is the direct implementation artifact."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.65,
+      "reasoning": "CRM stores personal data and marketing consents, thus constitutes a processing activity that must be documented in the Art. 30 register, though it is not the register itself but rather a subject system requiring documentation."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:56.506Z"
+}

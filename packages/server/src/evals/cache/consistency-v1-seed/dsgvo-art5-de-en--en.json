@@ -1,0 +1,27 @@
+{
+  "cacheKey": "1187a0284c3267b3d67df1167cd5a180aa17287fe40fb3a472900cfaf24f91ea",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "25d070c2bf9890d1d0350c41958c8a34b02a340c06a729d8d7f4d587261b8035",
+  "predictions": [
+    {
+      "elementId": "el-data-gov",
+      "elementType": "capability",
+      "confidence": 0.95,
+      "reasoning": "Data Governance Capability directly governs ownership, purposes, and lifecycle policies for corporate data, which are core requirements of DSGVO Art. 5's lawfulness, fairness, transparency, and purpose limitation principles."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.92,
+      "reasoning": "CRM system stores personal data (customer master data and consents) and must comply with DSGVO Art. 5 requirements for lawful, fair, transparent processing with explicit purpose specification and consent management."
+    },
+    {
+      "elementId": "el-mkt-analytics",
+      "elementType": "application",
+      "confidence": 0.88,
+      "reasoning": "Marketing Analytics Platform reuses CRM personal data for secondary purposes (campaign targeting), directly triggering DSGVO Art. 5's purpose limitation and fairness obligations regarding incompatible secondary processing."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:31.975Z"
+}

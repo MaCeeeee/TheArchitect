@@ -1,0 +1,33 @@
+{
+  "cacheKey": "6ded515afddff02bc1de04c3087dd8bd31d75c906f39bb0658f227f7fd827319",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "8298f56cd7cf440d54e57d14875155b66faee8eee5e5dedc62e9a41a17fab586",
+  "predictions": [
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.95,
+      "reasoning": "Art. 32 mandates controllers and processors implement appropriate technical and organisational measures to ensure security appropriate to risk, directly aligning with ISMS governance of security policies and risk treatment."
+    },
+    {
+      "elementId": "el-encryption",
+      "elementType": "technology_service",
+      "confidence": 0.88,
+      "reasoning": "Encryption is a core technical measure to prevent unauthorised disclosure and access to personal data, which Art. 32 explicitly identifies as a primary risk requiring mitigation."
+    },
+    {
+      "elementId": "el-backup",
+      "elementType": "technology_service",
+      "confidence": 0.82,
+      "reasoning": "Backup and restore procedures address the Art. 32 requirement to protect against accidental or unlawful destruction and loss of personal data through tested recovery mechanisms."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.76,
+      "reasoning": "CRM system processes personal data (customer master data and consents), making it subject to Art. 32's security requirements based on risk assessment of the data it handles."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:38.353Z"
+}

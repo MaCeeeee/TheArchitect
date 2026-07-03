@@ -1,0 +1,33 @@
+{
+  "cacheKey": "eee1666d550737d160c739e48e59d454520688c9b88176c1405488641b64cd8d",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "150bd9f1d1de746efd80660d4f5bb5f1219e572affa78559f72eb004ab9cad5b",
+  "predictions": [
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.95,
+      "reasoning": "DSGVO Art. 32 explicitly requires controllers and processors to implement appropriate technical and organisational measures; ISMS capability directly governs security policies and risk treatment aligned with this mandate."
+    },
+    {
+      "elementId": "el-encryption",
+      "elementType": "technology_service",
+      "confidence": 0.88,
+      "reasoning": "Encryption is a core technical measure required by Art. 32 to protect personal data against unauthorised access, disclosure, alteration and loss; this service directly implements such protection."
+    },
+    {
+      "elementId": "el-backup",
+      "elementType": "technology_service",
+      "confidence": 0.82,
+      "reasoning": "Art. 32 requires measures to protect against data destruction and loss; backup and restore procedures are essential technical controls for ensuring availability and recovery of personal data."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.75,
+      "reasoning": "CRM system processes and stores personal data (customer master data, contact history); Art. 32 requires appropriate security measures for all systems handling personal data subject to DSGVO."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:35.526Z"
+}

@@ -1,0 +1,27 @@
+{
+  "cacheKey": "ede565eb8e39854cd83553779ce488d40a071d996e72f20987ef962d464c3c3a",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "185e0b38adf550e68e4eae3b3f4c0d8758855172a2c6f225ba9eae13ebdf23dc",
+  "predictions": [
+    {
+      "elementId": "el-board-oversight",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "Article 20 explicitly requires governing bodies to approve cybersecurity risk-management measures, monitor their implementation, and be accountable for compliance breaches."
+    },
+    {
+      "elementId": "el-sec-training",
+      "elementType": "capability",
+      "confidence": 0.92,
+      "reasoning": "Article 20 mandates that management board members and all employees receive mandatory and recurring cybersecurity training."
+    },
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.75,
+      "reasoning": "Article 20 references risk-management measures under Article 21, which establishes the ISMS framework; ISMS capabilities underpin the security measures that boards must approve and oversee."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:43.923Z"
+}
