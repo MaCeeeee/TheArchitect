@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { compliancePipelineAPI, complianceMappingAPI, governanceAPI, architectureAPI } from '../services/api';
+import { compliancePipelineAPI, complianceMappingAPI, governanceAPI, architectureAPI, requirementsAPI } from '../services/api';
+import type { GapItem, GapsSummary } from '../services/api';
 import { useArchitectureStore } from './architectureStore';
 import type { PolicyDraft, PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 
@@ -109,6 +110,12 @@ interface ComplianceStore {
   violationsByPolicy: Map<string, number>;
   isLoadingViolations: boolean;
 
+  // UC-GAP-001 (THE-307) — gap analysis state. Always loaded live from the
+  // server; never derived from cached pipeline stats (THE-389 lesson).
+  gaps: GapItem[];
+  gapsSummary: GapsSummary | null;
+  isLoadingGaps: boolean;
+
   // UC-ICM-003 — Compliance Mappings (Regulation ↔ Element) state
   mappingsByElement: Map<string, ComplianceMappingDTO[]>;
   isLoadingMappingsForElement: Set<string>;
@@ -136,6 +143,10 @@ interface ComplianceStore {
   // Violation actions
   loadViolations: (projectId: string) => Promise<void>;
   loadViolationsByElement: (projectId: string, elementId: string) => Promise<PolicyViolationDTO[]>;
+
+  // UC-GAP-001 — gap analysis actions
+  loadGaps: (projectId: string, filters?: { regulationId?: string; elementId?: string; priority?: 'must' | 'should' | 'may' }) => Promise<void>;
+  updateGapStatus: (projectId: string, requirementId: string, status: GapItem['status']) => Promise<boolean>;
 
   // UC-ICM-003 — Compliance Mapping actions
   loadMappingsForElement: (projectId: string, elementId: string) => Promise<ComplianceMappingDTO[]>;
@@ -169,6 +180,9 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   isLoadingMappingsForElement: new Set(),
   showComplianceGlow: false,
   isLoadingAllMappings: false,
+  gaps: [],
+  gapsSummary: null,
+  isLoadingGaps: false,
 
   loadPipelineStatus: async (projectId) => {
     set({ isLoading: true, error: null });
@@ -420,6 +434,34 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     set((state) => ({ showComplianceGlow: !state.showComplianceGlow }));
   },
 
+  // ── UC-GAP-001 (THE-307) ──────────────────────────────────────────
+
+  loadGaps: async (projectId, filters) => {
+    set({ isLoadingGaps: true, error: null });
+    try {
+      const res = await requirementsAPI.gaps(projectId, filters);
+      const data = res.data?.data ?? { items: [], summary: null };
+      set({ gaps: data.items ?? [], gapsSummary: data.summary ?? null, isLoadingGaps: false });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load gap analysis';
+      set({ error: message, isLoadingGaps: false });
+    }
+  },
+
+  updateGapStatus: async (projectId, requirementId, status) => {
+    // Optimistic item update; the summary KPIs are only authoritative
+    // server-side (live aggregation), so callers should reload after.
+    const prev = get().gaps;
+    set({ gaps: prev.map((g) => (g._id === requirementId ? { ...g, status } : g)) });
+    try {
+      await requirementsAPI.update(projectId, requirementId, { status });
+      return true;
+    } catch {
+      set({ gaps: prev });
+      return false;
+    }
+  },
+
   clear: () => set({
     pipelineStates: [],
     portfolioOverview: null,
@@ -439,5 +481,8 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
     mappingsByElement: new Map(),
     isLoadingMappingsForElement: new Set(),
     isLoadingViolations: false,
+    gaps: [],
+    gapsSummary: null,
+    isLoadingGaps: false,
   }),
 }));

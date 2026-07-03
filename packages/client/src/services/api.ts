@@ -550,7 +550,59 @@ export const requirementsAPI = {
       requirementIds ? { requirementIds } : {},
       { timeout: 60_000 },
     ),
+
+  // UC-GAP-001 (THE-307): live gap analysis — what is still open, per
+  // regulation / element / global. Always computed fresh server-side.
+  gaps: (projectId: string, opts?: {
+    regulationId?: string;
+    elementId?: string;
+    priority?: 'must' | 'should' | 'may';
+  }) =>
+    api.get(`/projects/${projectId}/compliance/gaps`, { params: opts ?? {} }),
 };
+
+// UC-GAP-001 (THE-307) — gap analysis DTOs (mirror of compliance-gaps.service.ts)
+export interface GapItem {
+  _id: string;
+  regulationId: string;
+  regulationTitle: string;
+  title: string;
+  description: string;
+  priority: 'must' | 'should' | 'may';
+  status: 'open' | 'in_progress' | 'done' | 'waived';
+  linkedElementIds: string[];
+  ageDays: number;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface RegulationGapSummary {
+  regulationId: string;
+  regulationTitle: string;
+  total: number;
+  open: number;
+  done: number;
+  openMust: number;
+  pctOpen: number;
+}
+
+export interface ElementGapSummary {
+  elementId: string;
+  open: number;
+  openMust: number;
+}
+
+export interface GapsSummary {
+  total: number;
+  open: number;
+  inProgress: number;
+  done: number;
+  waived: number;
+  openMust: number;
+  unlinked: number;
+  byRegulation: RegulationGapSummary[];
+  topElements: ElementGapSummary[];
+}
 
 export interface RequirementProjectionSummary {
   driversUpserted: number;

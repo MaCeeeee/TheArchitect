@@ -28,6 +28,7 @@ import {
 } from '../services/requirementGenerator.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { projectRequirementsToModel } from '../services/requirementProjection.service';
+import { computeComplianceGaps } from '../services/compliance-gaps.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -75,6 +76,12 @@ const UpdateBodySchema = z.object({
   description: z.string().min(5).max(2000).optional(),
   priority: z.enum(['must', 'should', 'may']).optional(),
   linkedElementIds: z.array(z.string().min(1)).optional(),
+});
+
+const GapsQuerySchema = z.object({
+  regulationId: z.string().optional(),
+  elementId: z.string().optional(),
+  priority: z.enum(['must', 'should', 'may']).optional(),
 });
 
 const ListQuerySchema = z.object({
@@ -291,6 +298,36 @@ router.post(
     } catch (err) {
       log.error({ err, projectId }, '[requirements.project-to-model] failed');
       res.status(500).json({ success: false, error: 'projection failed' });
+    }
+  },
+);
+
+// ─── GET /compliance/gaps (UC-GAP-001 / THE-307) ────────────────
+// Live aggregation from ComplianceRequirement on every request — never
+// cached stats (design constraint from THE-389).
+
+router.get(
+  '/:projectId/compliance/gaps',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const parsed = GapsQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'invalid query', details: parsed.error.issues });
+    }
+
+    try {
+      const result = await computeComplianceGaps(projectId, parsed.data);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      log.error({ err, projectId }, '[requirements.gaps] failed');
+      res.status(500).json({ success: false, error: 'gap analysis failed' });
     }
   },
 );

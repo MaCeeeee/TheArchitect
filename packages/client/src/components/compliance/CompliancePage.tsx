@@ -16,6 +16,7 @@ import ComplianceProgressChart from '../copilot/ComplianceProgressChart';
 import AuditReadinessDashboard from '../copilot/AuditReadinessDashboard';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import RemediateGateway from './RemediateGateway';
+import GapAnalysis from './GapAnalysis';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -172,6 +173,9 @@ export default function CompliancePage() {
           {activeSection === 'audit' && (
             <AuditReadinessDashboard projectId={projectId} />
           )}
+
+          {/* UC-GAP-001 (THE-307) — gap analysis: what is still open? */}
+          {activeSection === 'gaps' && <GapAnalysis />}
 
           {/* Governance sections */}
           {activeSection === 'compliance-dashboard' && <ComplianceDashboard />}

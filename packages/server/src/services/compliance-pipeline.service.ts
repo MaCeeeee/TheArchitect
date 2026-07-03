@@ -154,7 +154,28 @@ export async function getPipelineStatus(
       await getOrCreatePipelineState(projectId, String(std._id));
     }
   }
-  return CompliancePipelineState.find({ projectId }).sort({ updatedAt: -1 });
+
+  // THE-389 heal-on-read: states written before the service-layer refresh
+  // existed can still carry all-zero cached stats even though mappings exist.
+  // total === 0 is exactly the "never refreshed" marker — after one refresh,
+  // total equals the standard's section count (> 0), so this runs only once
+  // per stale state.
+  const states = await CompliancePipelineState.find({ projectId }).sort({ updatedAt: -1 });
+  let healed = false;
+  for (const state of states) {
+    if (state.mappingStats.total === 0) {
+      try {
+        await refreshMappingStats(projectId, String(state.standardId));
+        healed = true;
+      } catch {
+        // standard may be orphaned — portfolio cleanup handles that
+      }
+    }
+  }
+  if (healed) {
+    return CompliancePipelineState.find({ projectId }).sort({ updatedAt: -1 });
+  }
+  return states;
 }
 
 /**

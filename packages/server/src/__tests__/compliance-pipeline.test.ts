@@ -105,6 +105,37 @@ describe('getPipelineStatus', () => {
     const states = await getPipelineStatus(PROJECT_ID);
     expect(states).toHaveLength(2);
   });
+
+  it('heals all-zero stats from pre-THE-389 data on read', async () => {
+    // Mapping written directly (as legacy code did) — pipeline state still zeros
+    const standard = await Standard.create({
+      projectId: PROJECT_ID,
+      name: 'Legacy Standard',
+      type: 'custom',
+      uploadedBy: USER_ID,
+      sections: [
+        { number: '1', title: 'A', content: 'a', level: 1 },
+        { number: '2', title: 'B', content: 'b', level: 1 },
+      ],
+    });
+    const standardId = String(standard._id);
+    await getOrCreatePipelineState(PROJECT_ID, standardId);
+    await StandardMapping.create({
+      projectId: PROJECT_ID,
+      standardId,
+      sectionId: standard.sections[0].id,
+      elementId: new mongoose.Types.ObjectId().toString(),
+      status: 'partial',
+      source: 'manual',
+      createdBy: USER_ID,
+    });
+
+    const states = await getPipelineStatus(PROJECT_ID);
+    const healed = states.find((s) => String(s.standardId) === standardId);
+    expect(healed?.mappingStats.total).toBe(2);
+    expect(healed?.mappingStats.partial).toBe(1);
+    expect(healed?.stage).toBe('mapped');
+  });
 });
 
 describe('getPortfolioOverview', () => {
