@@ -142,6 +142,9 @@ Before any write, reconcile the proposed model against what already lives in the
 project so you never create a second "ERP".
 
 1. **Read the project's current elements:** `GET /api/projects/:projectId/elements`.
+   For large projects this payload can be sizable (hundreds of elements, no
+   pagination) — match by normalised Name+Type in memory and never render the
+   full inventory to the user; only surface the dedup hits.
 2. **Match each proposed element** against the returned elements by
    **Name + Type, case-insensitive, trimmed** (normalise both sides: trim
    surrounding whitespace, lowercase, compare `name` and `type` together).
@@ -243,7 +246,13 @@ then report to the user:
   see the multi-layer model rendered.
 
 Never claim success unverified — if a read-back count doesn't match the preview,
-say so and investigate rather than reporting a clean commit.
+say so and investigate rather than reporting a clean commit. On a **partial
+write** (the script logs failed items as `✗` and keeps going), do **not** blindly
+re-run the full model: element creation is a plain `CREATE` with no server-side
+uniqueness on `id`, so already-created elements would be duplicated. Instead,
+diff the read-back against the preview and re-submit **only the missing items**
+(elements via `POST …/elements`, connections via `POST …/connections` — the
+connection endpoint MERGEs, so connections alone are safe to retry).
 
 ## Examples
 
