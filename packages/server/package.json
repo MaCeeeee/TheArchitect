@@ -10,6 +10,7 @@
     "lint": "eslint src/",
     "test": "jest",
     "eval:mapping": "ts-node src/evals/runMappingEval.ts",
+    "eval:consistency": "ts-node src/evals/runConsistencyEval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts"
   },
   "dependencies": {

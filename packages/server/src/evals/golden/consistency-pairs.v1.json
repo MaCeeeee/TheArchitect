@@ -1,0 +1,44 @@
+{
+  "version": "v1-seed",
+  "cases": [
+    {
+      "caseId": "dsgvo-art30-de-en",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 30",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-vvt-app",
+          "name": "Processing Activities Register (VVT)",
+          "type": "application",
+          "layer": "application",
+          "description": "Central register application documenting all personal-data processing activities, purposes, categories and deletion periods."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-build-pipeline",
+          "name": "CI/CD Build Pipeline",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Automated build and deployment pipeline for internal software artifacts."
+        }
+      ],
+      "viewA": {
+        "label": "de",
+        "language": "de",
+        "fullText": "Jeder Verantwortliche und gegebenenfalls sein Vertreter führen ein Verzeichnis aller Verarbeitungstätigkeiten, die ihrer Zuständigkeit unterliegen. Dieses Verzeichnis enthält sämtliche folgenden Angaben: den Namen und die Kontaktdaten des Verantwortlichen, die Zwecke der Verarbeitung, eine Beschreibung der Kategorien betroffener Personen und der Kategorien personenbezogener Daten, die Kategorien von Empfängern, gegebenenfalls Übermittlungen an ein Drittland, die vorgesehenen Fristen für die Löschung der verschiedenen Datenkategorien sowie eine allgemeine Beschreibung der technischen und organisatorischen Maßnahmen gemäß Artikel 32 Absatz 1."
+      },
+      "viewB": {
+        "label": "en",
+        "language": "en",
+        "fullText": "Each controller and, where applicable, the controller's representative, shall maintain a record of processing activities under its responsibility. That record shall contain all of the following information: the name and contact details of the controller, the purposes of the processing, a description of the categories of data subjects and of the categories of personal data, the categories of recipients, where applicable, transfers of personal data to a third country, where possible, the envisaged time limits for erasure of the different categories of data, and where possible, a general description of the technical and organisational security measures referred to in Article 32(1)."
+      }
+    }
+  ]
+}

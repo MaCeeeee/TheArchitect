@@ -18,13 +18,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
 import {
   mapTextToElements,
   __testExports,
   type ComplianceMappingCandidate,
 } from '../services/complianceMapping.service';
 import { SYSTEM_PROMPT } from '../prompts/complianceMapping.prompt';
+import { sha256, cacheKeyFor, readCache, writeCache } from './predictionCache';
 import {
   loadGoldenSet,
   goldenSetStats,
@@ -51,15 +51,6 @@ interface CliOptions {
   outDir: string;
 }
 
-interface CachedPrediction {
-  cacheKey: string;
-  model: string;
-  promptHash: string;
-  textHash: string;
-  predictions: ComplianceMappingCandidate[];
-  cachedAt: string;
-}
-
 function parseArgs(argv: string[]): CliOptions {
   const opts: CliOptions = {
     goldenPath: DEFAULT_GOLDEN_PATH,
@@ -74,35 +65,6 @@ function parseArgs(argv: string[]): CliOptions {
   return opts;
 }
 
-function sha256(input: string): string {
-  return createHash('sha256').update(input, 'utf8').digest('hex');
-}
-
-function cacheKeyFor(c: GoldenCase, model: string, promptHash: string): string {
-  return sha256([sha256(c.fullText), model, promptHash, c.candidates.map(el => el.id).join(',')].join('|'));
-}
-
-function cachePathFor(setVersion: string, caseId: string): string {
-  return path.join(CACHE_DIR, setVersion, `${caseId}.json`);
-}
-
-function readCache(setVersion: string, caseId: string, expectedKey: string): CachedPrediction | null {
-  const p = cachePathFor(setVersion, caseId);
-  if (!fs.existsSync(p)) return null;
-  try {
-    const cached = JSON.parse(fs.readFileSync(p, 'utf8')) as CachedPrediction;
-    return cached.cacheKey === expectedKey ? cached : null; // stale (Modell/Prompt/Text geändert)
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(setVersion: string, caseId: string, entry: CachedPrediction): void {
-  const dir = path.join(CACHE_DIR, setVersion);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(cachePathFor(setVersion, caseId), JSON.stringify(entry, null, 2));
-}
-
 async function predictCase(
   c: GoldenCase,
   set: GoldenSet,
@@ -110,8 +72,8 @@ async function predictCase(
   promptHash: string,
   offline: boolean
 ): Promise<{ predictions: ComplianceMappingCandidate[]; fromCache: boolean }> {
-  const key = cacheKeyFor(c, model, promptHash);
-  const cached = readCache(set.version, c.caseId, key);
+  const key = cacheKeyFor(c.fullText, c.candidates.map(el => el.id), model, promptHash);
+  const cached = readCache(CACHE_DIR, set.version, c.caseId, key);
   if (cached) return { predictions: cached.predictions, fromCache: true };
 
   if (offline) {
@@ -130,7 +92,7 @@ async function predictCase(
     candidateElements: toCandidateElements(c),
   });
 
-  writeCache(set.version, c.caseId, {
+  writeCache(CACHE_DIR, set.version, c.caseId, {
     cacheKey: key,
     model,
     promptHash,
