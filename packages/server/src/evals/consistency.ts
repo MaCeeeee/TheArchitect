@@ -40,6 +40,7 @@ export const ConsistencyCaseSchema = z.object({
     .min(1),
   viewA: ViewSchema,
   viewB: ViewSchema,
+  notes: z.string().optional(), // Provenance: woher stammen die Texte, was ist noch zu verifizieren
 });
 
 export const ConsistencySetSchema = z.object({

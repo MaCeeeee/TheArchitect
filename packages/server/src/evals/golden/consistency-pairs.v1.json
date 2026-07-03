@@ -38,7 +38,210 @@
         "label": "en",
         "language": "en",
         "fullText": "Each controller and, where applicable, the controller's representative, shall maintain a record of processing activities under its responsibility. That record shall contain all of the following information: the name and contact details of the controller, the purposes of the processing, a description of the categories of data subjects and of the categories of personal data, the categories of recipients, where applicable, transfers of personal data to a third country, where possible, the envisaged time limits for erasure of the different categories of data, and where possible, a general description of the technical and organisational security measures referred to in Article 32(1)."
-      }
+      },
+      "notes": "DE eng an ART30_FULLTEXT (art30.seed-data.ts, amtlich verifiziert CELEX 32016R0679); beide Views leicht gekürzt, aber inhaltsgleich."
+    },
+    {
+      "caseId": "dsgvo-art5-de-en",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-data-gov",
+          "name": "Data Governance Capability",
+          "type": "capability",
+          "layer": "business",
+          "description": "Enterprise capability defining ownership, purposes, quality rules and lifecycle policies for corporate data."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-mkt-analytics",
+          "name": "Marketing Analytics Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Platform analysing customer behaviour data for campaign targeting; reuses CRM data for secondary purposes."
+        },
+        {
+          "id": "el-build-pipeline",
+          "name": "CI/CD Build Pipeline",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Automated build and deployment pipeline for internal software artifacts."
+        }
+      ],
+      "viewA": {
+        "label": "de",
+        "language": "de",
+        "fullText": "Grundsätze für die Verarbeitung personenbezogener Daten. Personenbezogene Daten müssen auf rechtmäßige Weise, nach Treu und Glauben und in einer für die betroffene Person nachvollziehbaren Weise verarbeitet werden („Rechtmäßigkeit, Verarbeitung nach Treu und Glauben, Transparenz“). Personenbezogene Daten müssen für festgelegte, eindeutige und legitime Zwecke erhoben werden und dürfen nicht in einer mit diesen Zwecken nicht zu vereinbarenden Weise weiterverarbeitet werden („Zweckbindung“)."
+      },
+      "viewB": {
+        "label": "en",
+        "language": "en",
+        "fullText": "Principles relating to processing of personal data. Personal data shall be processed lawfully, fairly and in a transparent manner in relation to the data subject ('lawfulness, fairness and transparency'). Personal data shall be collected for specified, explicit and legitimate purposes and not further processed in a manner that is incompatible with those purposes ('purpose limitation')."
+      },
+      "notes": "DE wörtlich aus Korpus-Fixture dsgvo-sample.html (Crawler-Demo-Set Art. 5/6/9/32); EN amtlicher Wortlaut Art. 5(1)(a)+(b) CELEX 32016R0679, gleich gekürzt wie DE-View."
+    },
+    {
+      "caseId": "dsgvo-art32-de-en",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-isms",
+          "name": "Information Security Management (ISMS)",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability governing security policies, risk treatment and technical/organisational measures across the IT landscape."
+        },
+        {
+          "id": "el-encryption",
+          "name": "Encryption & Key Management Service",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Central service providing encryption at rest/in transit and cryptographic key lifecycle management."
+        },
+        {
+          "id": "el-backup",
+          "name": "Backup & Restore Service",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Scheduled backups and tested restore procedures for business-critical systems and data."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-intranet-wiki",
+          "name": "Intranet Wiki",
+          "type": "application",
+          "layer": "application",
+          "description": "Internal knowledge base for team documentation and meeting notes."
+        }
+      ],
+      "viewA": {
+        "label": "de",
+        "language": "de",
+        "fullText": "Sicherheit der Verarbeitung. Unter Berücksichtigung des Stands der Technik, der Implementierungskosten und der Art, des Umfangs, der Umstände und der Zwecke der Verarbeitung sowie der unterschiedlichen Eintrittswahrscheinlichkeit und Schwere des Risikos für die Rechte und Freiheiten natürlicher Personen treffen der Verantwortliche und der Auftragsverarbeiter geeignete technische und organisatorische Maßnahmen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten. Bei der Beurteilung des angemessenen Schutzniveaus sind insbesondere die Risiken zu berücksichtigen, die mit der Verarbeitung verbunden sind, insbesondere durch — ob unbeabsichtigt oder unrechtmäßig — Vernichtung, Verlust, Veränderung oder unbefugte Offenlegung von beziehungsweise unbefugten Zugang zu personenbezogenen Daten."
+      },
+      "viewB": {
+        "label": "en",
+        "language": "en",
+        "fullText": "Security of processing. Taking into account the state of the art, the costs of implementation and the nature, scope, context and purposes of processing as well as the risk of varying likelihood and severity for the rights and freedoms of natural persons, the controller and the processor shall implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk. In assessing the appropriate level of security account shall be taken in particular of the risks that are presented by processing, in particular from accidental or unlawful destruction, loss, alteration, unauthorised disclosure of, or access to personal data."
+      },
+      "notes": "DE wörtlich aus Korpus-Fixture dsgvo-sample.html; EN amtlicher Wortlaut Art. 32(1)+(2) CELEX 32016R0679, gleich gekürzt wie DE-View (ohne lit. a–d)."
+    },
+    {
+      "caseId": "nis2-art20-en-de",
+      "source": "nis2",
+      "paragraphNumber": "Art. 20",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-board-oversight",
+          "name": "Management Board Risk Oversight",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Board-level process approving and overseeing cybersecurity risk-management measures; carries accountability for infringements."
+        },
+        {
+          "id": "el-sec-training",
+          "name": "Security Awareness Training",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to plan and deliver recurring cybersecurity trainings for management and employees."
+        },
+        {
+          "id": "el-isms",
+          "name": "Information Security Management (ISMS)",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability governing security policies, risk treatment and technical/organisational measures across the IT landscape."
+        },
+        {
+          "id": "el-payroll",
+          "name": "Payroll Service",
+          "type": "business_service",
+          "layer": "business",
+          "description": "Internal payroll processing for employees."
+        }
+      ],
+      "viewA": {
+        "label": "en",
+        "language": "en",
+        "fullText": "Governance. Member States shall ensure that the management bodies of essential and important entities approve the cybersecurity risk-management measures taken by those entities in order to comply with Article 21, oversee its implementation and can be held liable for infringements by the entities of that Article. Member States shall ensure that members of the management bodies of essential and important entities are required to follow training, and shall encourage essential and important entities to offer similar training to their employees on a regular basis."
+      },
+      "viewB": {
+        "label": "de",
+        "language": "de",
+        "fullText": "Governance. Die Mitgliedstaaten stellen sicher, dass die Leitungsorgane wesentlicher und wichtiger Einrichtungen die von diesen Einrichtungen zur Einhaltung des Artikels 21 ergriffenen Risikomanagementmaßnahmen im Bereich der Cybersicherheit billigen, ihre Umsetzung überwachen und für Verstöße der Einrichtungen gegen diesen Artikel verantwortlich gemacht werden können. Die Mitgliedstaaten stellen sicher, dass die Mitglieder der Leitungsorgane wesentlicher und wichtiger Einrichtungen an Schulungen teilnehmen müssen, und fordern wesentliche und wichtige Einrichtungen auf, allen Mitarbeitern regelmäßig entsprechende Schulungen anzubieten."
+      },
+      "notes": "EN wörtlich aus Korpus-Fixture nis2-sample.html (Demo-Set Art. 20–24); DE nach amtlichem Wortlaut CELEX 32022L2555 aus Modellwissen — VOR Golden-Freeze gegen EUR-Lex verifizieren (WAF blockt Direktabruf, Firecrawl nutzen). Für den Konsistenz-Check unkritisch: Views müssen inhaltsgleich sein, nicht zitierfähig."
+    },
+    {
+      "caseId": "nis2-art21-en-de",
+      "source": "nis2",
+      "paragraphNumber": "Art. 21",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-isms",
+          "name": "Information Security Management (ISMS)",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability governing security policies, risk treatment and technical/organisational measures across the IT landscape."
+        },
+        {
+          "id": "el-cyber-risk",
+          "name": "Cyber Risk Management Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process identifying, assessing and treating risks to network and information systems on an all-hazards basis."
+        },
+        {
+          "id": "el-encryption",
+          "name": "Encryption & Key Management Service",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Central service providing encryption at rest/in transit and cryptographic key lifecycle management."
+        },
+        {
+          "id": "el-supplier-dd",
+          "name": "Supplier Due Diligence Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "End-to-end process for assessing, selecting and monitoring direct suppliers including security practices."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        }
+      ],
+      "viewA": {
+        "label": "en",
+        "language": "en",
+        "fullText": "Cybersecurity risk-management measures. Member States shall ensure that essential and important entities take appropriate and proportionate technical, operational and organisational measures to manage the risks posed to the security of network and information systems which those entities use for their operations or for the provision of their services. The measures referred to in paragraph 1 shall be based on an all-hazards approach that aims to protect network and information systems and the physical environment of those systems from incidents."
+      },
+      "viewB": {
+        "label": "de",
+        "language": "de",
+        "fullText": "Risikomanagementmaßnahmen im Bereich der Cybersicherheit. Die Mitgliedstaaten stellen sicher, dass wesentliche und wichtige Einrichtungen geeignete und verhältnismäßige technische, operative und organisatorische Maßnahmen ergreifen, um die Risiken für die Sicherheit der Netz- und Informationssysteme, die diese Einrichtungen für ihren Betrieb oder für die Erbringung ihrer Dienste nutzen, zu beherrschen. Die in Absatz 1 genannten Maßnahmen müssen auf einem gefahrenübergreifenden Ansatz beruhen, der darauf abzielt, die Netz- und Informationssysteme und die physische Umwelt dieser Systeme vor Sicherheitsvorfällen zu schützen."
+      },
+      "notes": "EN wörtlich aus Korpus-Fixture nis2-sample.html, Abs. 1+2 (Abs. 3 in beiden Views weggelassen); DE nach amtlichem Wortlaut CELEX 32022L2555 aus Modellwissen — VOR Golden-Freeze gegen EUR-Lex verifizieren (Firecrawl). Für den Konsistenz-Check unkritisch."
     }
   ]
 }
