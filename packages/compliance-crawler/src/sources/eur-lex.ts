@@ -17,6 +17,7 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 import { ParsedRegulation, SourceParser, SourceParseError } from './types';
+import { cleanRegulationText } from './clean';
 import type {
   RegulationSource,
   RegulationJurisdiction,
@@ -126,7 +127,7 @@ export class EurLexSource implements SourceParser {
         walker = walker.next();
       }
 
-      const fullText = bodyParts.join('\n\n').replace(/\s+/g, ' ').trim();
+      const fullText = cleanRegulationText(bodyParts.join('\n\n'));
       if (fullText.length < 50) return; // skip parse-misses
 
       results.push({
