@@ -43,7 +43,17 @@ const modelPath = args.find((a) => !a.startsWith('--'));
 const MOTIVATION = ['stakeholder','driver','assessment','goal','outcome','principle','requirement','constraint','am_value','meaning'];
 const STRATEGY = ['business_capability','value_stream','resource','course_of_action'];
 const layerOf = (t) => MOTIVATION.includes(t) ? 'motivation' : STRATEGY.includes(t) ? 'strategy' : 'business';
-const domainOf = (l) => l === 'motivation' ? 'motivation' : l === 'strategy' ? 'strategy' : 'business';
+const LAYER_TO_DOMAIN = {
+  motivation: 'motivation',
+  strategy: 'strategy',
+  business: 'business',
+  information: 'data',
+  application: 'application',
+  technology: 'technology',
+  physical: 'technology',                 // no 'physical' domain — rolls up to technology
+  implementation_migration: 'implementation',
+};
+const domainOf = (l) => LAYER_TO_DOMAIN[l] ?? 'business';
 
 // ── Y bands (mirror togaf.constants resolveElementY; Y is auto-resolved on load,
 //    we set it anyway so stored data is clean) ──────────────────────────────
@@ -131,7 +141,7 @@ const DEMO_MODEL = {
   stakeholders: [{ id: 'sh1', name: 'CIO', role: 'IT lead', stakeholderType: 'c_level', interests: ['cost'], influence: 'high', attitude: 'champion' }],
 };
 
-(async () => {
+async function main() {
   if (!API_KEY && !(LOGIN.email && LOGIN.password)) { console.error('FEHLT: API_KEY (ta_…) oder EMAIL+PASSWORD'); process.exit(1); }
   const model = DEMO ? DEMO_MODEL : JSON.parse(readFileSync(modelPath, 'utf8'));
 
@@ -202,4 +212,15 @@ const DEMO_MODEL = {
   console.log(`\nVERIFY — ${els.length} elements (${assumed} assumption), ${cons.length} connections`);
   console.log('  by type:', JSON.stringify(byType));
   console.log(`Project ${PROJECT_ID} — open the 3D view on the client (:3000).`);
-})();
+}
+
+// ── exported pure helpers (testable without touching the network) ──────────
+export { layerOf, domainOf, yOf, autoLayout };
+
+// Only run the committer when executed as a script, not when imported by tests.
+// pathToFileURL(argv[1]) survives symlinked invocation paths (e.g. /tmp → /private/tmp
+// on macOS), where a raw fileURLToPath string comparison would silently skip main().
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}
