@@ -136,9 +136,12 @@ export async function applyProposal(
     createdConnectionIds.push(connectionId);
 
     operations.push({
-      query: `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+      // THE-370: scope both endpoints to projectId — element ids are not
+      // globally unique, so an unscoped match could link into a foreign project.
+      query: `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
        CREATE (a)-[r:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'ai_generated', source: 'remediation'}]->(b)`,
       params: {
+        projectId,
         sourceId,
         targetId,
         connectionId,
