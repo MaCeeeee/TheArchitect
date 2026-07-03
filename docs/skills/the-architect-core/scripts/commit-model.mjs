@@ -40,10 +40,32 @@ const DEMO = args.includes('--demo');
 const modelPath = args.find((a) => !a.startsWith('--'));
 
 // ── type → layer / togafDomain ────────────────────────────────────────────
+// Fallback arrays cover the COMMON types per layer, not the exhaustive
+// ELEMENT_TYPES list from togaf.constants.ts — callers should pass an explicit
+// `layer`; anything unknown here lands on 'business'.
 const MOTIVATION = ['stakeholder','driver','assessment','goal','outcome','principle','requirement','constraint','am_value','meaning'];
 const STRATEGY = ['business_capability','value_stream','resource','course_of_action'];
-const layerOf = (t) => MOTIVATION.includes(t) ? 'motivation' : STRATEGY.includes(t) ? 'strategy' : 'business';
-const domainOf = (l) => l === 'motivation' ? 'motivation' : l === 'strategy' ? 'strategy' : 'business';
+const APPLICATION = ['application_component','application_collaboration','application_interface','application_function','application_interaction','application_process','application_event','application_service'];
+const TECHNOLOGY = ['node','device','system_software','technology_collaboration','technology_interface','path','communication_network','technology_function','technology_process','technology_interaction','technology_event','technology_service','artifact'];
+const INFORMATION = ['data_object','data_entity','data_model'];
+const layerOf = (t) =>
+  MOTIVATION.includes(t) ? 'motivation'
+  : STRATEGY.includes(t) ? 'strategy'
+  : APPLICATION.includes(t) ? 'application'
+  : TECHNOLOGY.includes(t) ? 'technology'
+  : INFORMATION.includes(t) ? 'information'
+  : 'business';
+const LAYER_TO_DOMAIN = {
+  motivation: 'motivation',
+  strategy: 'strategy',
+  business: 'business',
+  information: 'data',
+  application: 'application',
+  technology: 'technology',
+  physical: 'technology',                 // no 'physical' domain — rolls up to technology
+  implementation_migration: 'implementation',
+};
+const domainOf = (l) => LAYER_TO_DOMAIN[l] ?? 'business';
 
 // ── Y bands (mirror togaf.constants resolveElementY; Y is auto-resolved on load,
 //    we set it anyway so stored data is clean) ──────────────────────────────
@@ -63,17 +85,25 @@ function autoLayout(elements) {
       : `${layer}:${e.type}`;
     (byKey[key] ||= []).push(e);
   }
+  // Assign each flat-plane type-group its own Z lane so types don't overlap.
+  const laneByLayer = {};                       // layer → next lane index
+  const laneOfGroup = {};                        // groupKey → lane index (stable)
+  const zForLane = (n) => (n % 2 === 1 ? 1 : -1) * Math.ceil(n / 2) * 3; // 0,3,-3,6,-6… (step = one scene cell)
   for (const [key, group] of Object.entries(byKey)) {
+    const layer = group[0].layer || layerOf(group[0].type);
+    if (!(key in laneOfGroup) && layer !== 'motivation' && layer !== 'strategy') {
+      laneOfGroup[key] = (laneByLayer[layer] ??= 0);
+      laneByLayer[layer]++;
+    }
     group.forEach((e, i) => {
-      if (e.position3D) return;                                   // respect explicit positions
-      const layer = e.layer || layerOf(e.type);
+      if (e.position3D) return;
       const y = yOf(layer, e.type);
       let x, z;
       if (key === 'vs') { x = spread(group.length, i, 10); z = 0; }
       else if (key === 'cap-have') { x = spread(group.length, i, 6); z = 4; }
       else if (key === 'cap-gap') { x = spread(group.length, i, 6); z = 9; }
       else if (layer === 'motivation') { x = spread(group.length, i, 5); z = 0; }
-      else { x = spread(group.length, i, 6); z = 0; }             // other flat layers
+      else { x = spread(group.length, i, 6); z = zForLane(laneOfGroup[key]); }
       e.position3D = { x: Math.round(x * 10) / 10, y, z };
     });
   }
@@ -131,7 +161,7 @@ const DEMO_MODEL = {
   stakeholders: [{ id: 'sh1', name: 'CIO', role: 'IT lead', stakeholderType: 'c_level', interests: ['cost'], influence: 'high', attitude: 'champion' }],
 };
 
-(async () => {
+async function main() {
   if (!API_KEY && !(LOGIN.email && LOGIN.password)) { console.error('FEHLT: API_KEY (ta_…) oder EMAIL+PASSWORD'); process.exit(1); }
   const model = DEMO ? DEMO_MODEL : JSON.parse(readFileSync(modelPath, 'utf8'));
 
@@ -202,4 +232,15 @@ const DEMO_MODEL = {
   console.log(`\nVERIFY — ${els.length} elements (${assumed} assumption), ${cons.length} connections`);
   console.log('  by type:', JSON.stringify(byType));
   console.log(`Project ${PROJECT_ID} — open the 3D view on the client (:3000).`);
-})();
+}
+
+// ── exported pure helpers (testable without touching the network) ──────────
+export { layerOf, domainOf, yOf, autoLayout };
+
+// Only run the committer when executed as a script, not when imported by tests.
+// pathToFileURL(argv[1]) survives symlinked invocation paths (e.g. /tmp → /private/tmp
+// on macOS), where a raw fileURLToPath string comparison would silently skip main().
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

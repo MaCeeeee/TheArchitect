@@ -60,12 +60,20 @@ export interface PolicyDraft {
 // Linear: THE-275
 
 export type RegulationSource =
-  | 'nis2'      // EU Directive 2022/2555 (Network and Information Security 2)
-  | 'lksg'      // Lieferkettensorgfaltspflichtengesetz (DE)
-  | 'dsgvo'     // Datenschutz-Grundverordnung (EU GDPR + DE BDSG)
-  | 'dora'      // EU Regulation 2022/2554 (Digital Operational Resilience Act)
-  | 'iso27001'  // ISO/IEC 27001 Information Security
-  | 'custom';   // User-curated regulations
+  | 'nis2'        // EU Directive 2022/2555 (Network and Information Security 2)
+  | 'lksg'        // Lieferkettensorgfaltspflichtengesetz (DE)
+  | 'dsgvo'       // Datenschutz-Grundverordnung (EU GDPR + DE BDSG)
+  | 'dora'        // EU Regulation 2022/2554 (Digital Operational Resilience Act)
+  | 'iso27001'    // ISO/IEC 27001 Information Security
+  // EU AI Act (Regulation (EU) 2024/1689) — split per language because the
+  // canonical regulationKey is `source:paragraph`; a shared key would let the
+  // DE crawl overwrite the EN one on upsert (mirrors dsgvo=de / nis2=en pattern).
+  | 'ai-act-en'   // EU Regulation 2024/1689 (Artificial Intelligence Act), English
+  | 'ai-act-de'   // EU Regulation 2024/1689 (KI-Verordnung), German
+  // EU Data Act (Regulation (EU) 2023/2854) — same per-language split.
+  | 'data-act-en' // EU Regulation 2023/2854 (Data Act), English
+  | 'data-act-de' // EU Regulation 2023/2854 (Datenverordnung), German
+  | 'custom';     // User-curated regulations
 
 export type RegulationJurisdiction = 'EU' | 'DE' | 'AT' | 'CH';
 

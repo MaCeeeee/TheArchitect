@@ -24,6 +24,10 @@ const SOURCE_LABELS: Record<string, string> = {
   custom: 'Custom',
   archimate: 'ArchiMate',
   iso27001: 'ISO 27001',
+  'ai-act-en': 'AI Act (EN)',
+  'ai-act-de': 'AI Act (DE)',
+  'data-act-en': 'Data Act (EN)',
+  'data-act-de': 'Data Act (DE)',
 };
 
 const CELL_SIZE = 1.2;
