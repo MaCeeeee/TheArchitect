@@ -82,17 +82,25 @@ function autoLayout(elements) {
       : `${layer}:${e.type}`;
     (byKey[key] ||= []).push(e);
   }
+  // Assign each flat-plane type-group its own Z lane so types don't overlap.
+  const laneByLayer = {};                       // layer → next lane index
+  const laneOfGroup = {};                        // groupKey → lane index (stable)
+  const zForLane = (n) => (n % 2 === 1 ? 1 : -1) * Math.ceil(n / 2) * 3; // 0,3,-3,6,-6…
   for (const [key, group] of Object.entries(byKey)) {
+    const layer = group[0].layer || layerOf(group[0].type);
+    if (!(key in laneOfGroup) && layer !== 'motivation' && layer !== 'strategy') {
+      laneOfGroup[key] = (laneByLayer[layer] ??= 0);
+      laneByLayer[layer]++;
+    }
     group.forEach((e, i) => {
-      if (e.position3D) return;                                   // respect explicit positions
-      const layer = e.layer || layerOf(e.type);
+      if (e.position3D) return;
       const y = yOf(layer, e.type);
       let x, z;
       if (key === 'vs') { x = spread(group.length, i, 10); z = 0; }
       else if (key === 'cap-have') { x = spread(group.length, i, 6); z = 4; }
       else if (key === 'cap-gap') { x = spread(group.length, i, 6); z = 9; }
       else if (layer === 'motivation') { x = spread(group.length, i, 5); z = 0; }
-      else { x = spread(group.length, i, 6); z = 0; }             // other flat layers
+      else { x = spread(group.length, i, 6); z = zForLane(laneOfGroup[key]); }
       e.position3D = { x: Math.round(x * 10) / 10, y, z };
     });
   }
