@@ -1,0 +1,21 @@
+{
+  "cacheKey": "7d876663e26f52377e8eefd1dd928f3c84225a6f98168500bc02765b25079458",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "cb8918ff9dadcf73fc8e16ae4748af3d6606cda6e50d9bb535c13e0cb1b85930",
+  "predictions": [
+    {
+      "elementId": "el-vvt-app",
+      "elementType": "application",
+      "confidence": 0.95,
+      "reasoning": "Article 30 mandates a processing activities register documenting all data processing with specific fields (controller details, purposes, data categories, recipients, third-country transfers, deletion periods, technical/organizational measures), which directly aligns with this application's purpose."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.65,
+      "reasoning": "CRM systems process personal data (customer master data, contact history, consents) that must be documented in the processing register required by Article 30, making the CRM a subject of this regulation's inventory requirement."
+    }
+  ],
+  "cachedAt": "2026-07-03T17:00:07.905Z"
+}

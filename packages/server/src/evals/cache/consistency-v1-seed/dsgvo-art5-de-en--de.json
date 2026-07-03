@@ -1,0 +1,27 @@
+{
+  "cacheKey": "e1817936ea02d5e6527122e50abbceac322fe16062882ef104320ad827f6c533",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "59bd8f956d8f929a293098d1a7340edfcc2e4c29df8746a732c96dd0bc19a281",
+  "predictions": [
+    {
+      "elementId": "el-data-gov",
+      "elementType": "capability",
+      "confidence": 0.95,
+      "reasoning": "Data Governance Capability directly addresses lawfulness, transparency, purpose binding and processing principles mandated by DSGVO Art. 5."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.88,
+      "reasoning": "CRM system stores personal data and must ensure lawful processing, transparency, and documented consent for purposes as required by DSGVO Art. 5 principles."
+    },
+    {
+      "elementId": "el-mkt-analytics",
+      "elementType": "application",
+      "confidence": 0.82,
+      "reasoning": "Marketing Analytics Platform reuses CRM data for secondary purposes; DSGVO Art. 5 Zweckbindung explicitly restricts reprocessing beyond original purposes unless compatible."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:29.487Z"
+}

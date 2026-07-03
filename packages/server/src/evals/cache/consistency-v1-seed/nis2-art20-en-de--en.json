@@ -1,0 +1,27 @@
+{
+  "cacheKey": "31a79c85ba5483b4d08a0a93249be7929058af19e765464ea7cf078c327714a3",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "d97491942d4deea656515baa7b0d7393b374f32e77051222641ec6656a8894f1",
+  "predictions": [
+    {
+      "elementId": "el-board-oversight",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "Art. 20 explicitly requires management bodies to approve cybersecurity risk-management measures, oversee implementation, and be held liable for infringements—directly matching this board-level oversight process."
+    },
+    {
+      "elementId": "el-sec-training",
+      "elementType": "capability",
+      "confidence": 0.92,
+      "reasoning": "Art. 20 mandates that management body members follow training and encourages entities to offer regular cybersecurity training to employees—directly aligned with this training capability."
+    },
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.78,
+      "reasoning": "Art. 20 references cybersecurity risk-management measures under Article 21; ISMS capability governs the policies and organisational measures needed to establish and maintain such risk-management frameworks."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:41.773Z"
+}

@@ -1,0 +1,21 @@
+{
+  "cacheKey": "cedaef00787b6817d02ab2b132cdbdb9b903f2b56fa9436417e54dc1db9a90fb",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "fadb54c5689395697cf16f5c8307df758e7d87feb7103a0f13a1e04e6531c330",
+  "predictions": [
+    {
+      "elementId": "el-supplier-dd",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "Regulation § 6 explicitly requires companies to establish prevention measures with direct suppliers, including human-rights and environmental criteria in supplier selection and contractual assurances—core functions of supplier due diligence."
+    },
+    {
+      "elementId": "el-training-mgmt",
+      "elementType": "capability",
+      "confidence": 0.88,
+      "reasoning": "Regulation § 6 mandates training and further education (Schulungen und Weiterbildungen) to enforce contractual assurances with suppliers, directly aligning with training management capability scope."
+    }
+  ],
+  "cachedAt": "2026-07-03T17:00:00.765Z"
+}

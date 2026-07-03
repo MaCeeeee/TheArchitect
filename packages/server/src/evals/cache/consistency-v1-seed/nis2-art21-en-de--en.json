@@ -1,0 +1,27 @@
+{
+  "cacheKey": "d8b40beeaede6e32091bbbac7efb08500cc5831440c7db154e98f3e5b23dadd7",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "31e4a8477820c518cd0b2eb6ce13234a301715c816e14c486a7f6ca08b3e464f",
+  "predictions": [
+    {
+      "elementId": "el-cyber-risk",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "Regulation explicitly mandates risk management measures based on all-hazards approach to manage risks to network and information systems; directly aligns with cyber risk identification and treatment process."
+    },
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.92,
+      "reasoning": "Regulation requires appropriate technical, operational and organisational measures for security of network and information systems; ISMS capability governs these security policies and risk treatment measures."
+    },
+    {
+      "elementId": "el-encryption",
+      "elementType": "technology_service",
+      "confidence": 0.72,
+      "reasoning": "Encryption and key management constitutes a technical measure for protecting network and information systems and data security, supporting the all-hazards cybersecurity risk management mandate."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:46.183Z"
+}

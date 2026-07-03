@@ -1,0 +1,21 @@
+{
+  "cacheKey": "62fff259e0f65f670633582c4c06ccd1f74a10324a638faa7cb38f230a537b02",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "fadb54c5689395697cf16f5c8307df758e7d87feb7103a0f13a1e04e6531c330",
+  "predictions": [
+    {
+      "elementId": "el-supplier-dd",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "Regulation § 6 explicitly requires enterprises to implement preventive measures anchored with direct suppliers, including consideration of human-rights and environmental expectations in supplier selection, contractual assurances, and monitoring—directly matching the scope of supplier due diligence."
+    },
+    {
+      "elementId": "el-training-mgmt",
+      "elementType": "capability",
+      "confidence": 0.88,
+      "reasoning": "Regulation § 6 mandates implementation of trainings and further education (Schulungen und Weiterbildungen) for suppliers to enforce contractual commitments, requiring a training management capability to plan and deliver these programs."
+    }
+  ],
+  "cachedAt": "2026-07-03T17:00:09.998Z"
+}

@@ -1,0 +1,15 @@
+{
+  "cacheKey": "1654a9bafd998b5ba5855967901cc3aa73f3955a90fc648dc647589917cd45a6",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "064c69789c194d12cf788b14ff03a3deadb090f640f516df23071245c8121f1b",
+  "predictions": [
+    {
+      "elementId": "el-vvt-app",
+      "elementType": "application",
+      "confidence": 0.72,
+      "reasoning": "DSGVO Art. 83 requires supervisory authorities to impose fines for violations; the VVT application documents processing activities and data categories that form the basis for determining violation severity and affected-data categories in enforcement decisions."
+    }
+  ],
+  "cachedAt": "2026-07-03T17:00:11.714Z"
+}

@@ -1,0 +1,21 @@
+{
+  "cacheKey": "5908bdf829ba76950dfca041f57bef5c6ccce32372043bcd4a70a551a4ce3166",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "93c8a8133c3ea2220b5c2db2212a42af98b14eb16e9e94d434a5019ffeeca238",
+  "predictions": [
+    {
+      "elementId": "el-vvt-app",
+      "elementType": "application",
+      "confidence": 0.95,
+      "reasoning": "DSGVO Art. 30 mandates a record of processing activities with specified content (controller details, purposes, data categories, recipients, transfers, retention periods, security measures); this application is explicitly designed to maintain and document such records."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.65,
+      "reasoning": "CRM stores personal data (customer contacts, marketing consents) and constitutes a processing activity subject to Art. 30 documentation requirements, including purposes, data categories, and consent management as recipient categories."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:27.080Z"
+}

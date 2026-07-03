@@ -1,0 +1,27 @@
+{
+  "cacheKey": "b6633e4cccffdaecb57e8b6817849aa5600af6af1798e5c6d16aeff36bf472bb",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "2390c32b117c910e06952a7d3e20be18ae2f10c9b2092e6d8a5cfff25a37bdad",
+  "predictions": [
+    {
+      "elementId": "el-cyber-risk",
+      "elementType": "business_process",
+      "confidence": 0.95,
+      "reasoning": "NIS2 Art. 21 explicitly requires risk management measures based on an all-hazards approach to control risks to network and information systems; this directly aligns with the Cyber Risk Management Process identifying, assessing and treating such risks."
+    },
+    {
+      "elementId": "el-isms",
+      "elementType": "capability",
+      "confidence": 0.92,
+      "reasoning": "The regulation mandates appropriate technical, operative and organisational measures for cybersecurity risk management; ISMS governs security policies and measures across the IT landscape, directly supporting this requirement."
+    },
+    {
+      "elementId": "el-encryption",
+      "elementType": "technology_service",
+      "confidence": 0.68,
+      "reasoning": "NIS2 Art. 21 requires technical measures to protect network and information systems from security incidents; encryption is a fundamental technical control supporting system security and incident prevention."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:48.937Z"
+}

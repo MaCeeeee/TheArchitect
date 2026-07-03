@@ -1,0 +1,21 @@
+{
+  "cacheKey": "7d876663e26f52377e8eefd1dd928f3c84225a6f98168500bc02765b25079458",
+  "model": "claude-haiku-4-5-20251001",
+  "promptHash": "3b22a058963c4c9324e03b86bd627b30481a97dc1e986f5c64d722474ae4e43f",
+  "textHash": "cb8918ff9dadcf73fc8e16ae4748af3d6606cda6e50d9bb535c13e0cb1b85930",
+  "predictions": [
+    {
+      "elementId": "el-vvt-app",
+      "elementType": "application",
+      "confidence": 0.95,
+      "reasoning": "Article 30 GDPR explicitly requires maintaining a register of all processing activities with detailed specifications (purposes, data categories, recipients, deletion periods, technical/organizational measures), which directly matches the Processing Activities Register application's core purpose."
+    },
+    {
+      "elementId": "el-crm",
+      "elementType": "application",
+      "confidence": 0.65,
+      "reasoning": "CRM systems process personal data of data subjects and marketing consents; Article 30 requires documentation of all processing activities including categories of data subjects and recipients, making the CRM a relevant processing activity that must be documented in the register."
+    }
+  ],
+  "cachedAt": "2026-07-03T16:59:24.765Z"
+}
