@@ -12,3 +12,14 @@ test('domainOf maps every ArchiMate layer to its canonical TOGAF domain', () => 
   assert.equal(domainOf('physical'), 'technology');       // physical → technology domain
   assert.equal(domainOf('implementation_migration'), 'implementation');
 });
+
+test('layerOf infers the layer for common non-motivation/strategy types', () => {
+  assert.equal(layerOf('application_component'), 'application');
+  assert.equal(layerOf('application_service'), 'application');
+  assert.equal(layerOf('node'), 'technology');
+  assert.equal(layerOf('system_software'), 'technology');
+  assert.equal(layerOf('data_object'), 'information');
+  assert.equal(layerOf('process'), 'business');            // explicit business behavioral
+  assert.equal(layerOf('stakeholder'), 'motivation');      // unchanged
+  assert.equal(layerOf('business_capability'), 'strategy'); // unchanged
+});

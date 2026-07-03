@@ -42,7 +42,16 @@ const modelPath = args.find((a) => !a.startsWith('--'));
 // ── type → layer / togafDomain ────────────────────────────────────────────
 const MOTIVATION = ['stakeholder','driver','assessment','goal','outcome','principle','requirement','constraint','am_value','meaning'];
 const STRATEGY = ['business_capability','value_stream','resource','course_of_action'];
-const layerOf = (t) => MOTIVATION.includes(t) ? 'motivation' : STRATEGY.includes(t) ? 'strategy' : 'business';
+const APPLICATION = ['application_component','application_collaboration','application_interface','application_function','application_interaction','application_process','application_event','application_service'];
+const TECHNOLOGY = ['node','device','system_software','technology_collaboration','technology_interface','path','communication_network','technology_function','technology_process','technology_interaction','technology_event','technology_service','artifact'];
+const INFORMATION = ['data_object','data_entity','data_model'];
+const layerOf = (t) =>
+  MOTIVATION.includes(t) ? 'motivation'
+  : STRATEGY.includes(t) ? 'strategy'
+  : APPLICATION.includes(t) ? 'application'
+  : TECHNOLOGY.includes(t) ? 'technology'
+  : INFORMATION.includes(t) ? 'information'
+  : 'business';
 const LAYER_TO_DOMAIN = {
   motivation: 'motivation',
   strategy: 'strategy',
