@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ShieldAlert, FileText, Grid3X3, FileCheck, Sparkles, TrendingUp, ClipboardCheck, LayoutDashboard,
-  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff, BadgeCheck, Workflow, Compass,
+  Shield, CheckCircle, History, Map, Wrench, Eye, EyeOff, BadgeCheck, Workflow, Compass, Target,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useUIStore } from '../../stores/uiStore';
@@ -31,6 +31,8 @@ export const SECTIONS: Section[] = [
   { id: 'roadmap', label: 'Roadmap', icon: Map, group: 'cover' },
   { id: 'elements', label: 'Elements', icon: Sparkles, group: 'cover' },
   { id: 'progress', label: 'Progress', icon: TrendingUp, group: 'cover' },
+  // UC-GAP-001 (THE-307): the Track view — which requirements are still open
+  { id: 'gaps', label: 'Gap Analysis', icon: Target, group: 'cover' },
   { id: 'audit', label: 'Audit', icon: ClipboardCheck, group: 'cover' },
   // ENFORCE — architecture → internal policies (where does it break my rules?)
   { id: 'compliance-dashboard', label: 'Dashboard', icon: Shield, group: 'enforce' },

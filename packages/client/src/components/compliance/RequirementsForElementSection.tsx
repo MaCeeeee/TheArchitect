@@ -43,7 +43,9 @@ const REQ_STATUS_COLOR: Record<RequirementDoc['status'], string> = {
 const REQ_PRIORITY_RANK: Record<RequirementDoc['priority'], number> = { must: 0, should: 1, may: 2 };
 const REQ_STATUS_RANK: Record<RequirementDoc['status'], number> = { open: 0, in_progress: 1, done: 2, waived: 3 };
 
-export function sortRequirementsForDisplay(reqs: RequirementDoc[]): RequirementDoc[] {
+export function sortRequirementsForDisplay<
+  T extends { priority: RequirementDoc['priority']; status: RequirementDoc['status'] },
+>(reqs: T[]): T[] {
   return [...reqs].sort(
     (a, b) =>
       REQ_PRIORITY_RANK[a.priority] - REQ_PRIORITY_RANK[b.priority] ||
@@ -134,10 +136,20 @@ export function RequirementsForElementSection({
         </div>
       )}
 
-      {!isLoading && sorted && sorted.length > 0 && (
+      {!isLoading && sorted && sorted.length > 0 && (() => {
+        // UC-GAP-001 (THE-307) AC-3: per-element gap KPI — open work at a glance
+        const openReqs = sorted.filter((r) => r.status === 'open' || r.status === 'in_progress');
+        const openMust = openReqs.filter((r) => r.priority === 'must').length;
+        return (
         <div className="space-y-1.5">
-          <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1">
-            {sorted.length} requirement{sorted.length === 1 ? '' : 's'} this element must implement
+          <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1" data-testid="req-element-kpi">
+            {sorted.length} requirement{sorted.length === 1 ? '' : 's'} ·{' '}
+            <span style={{ color: openReqs.length > 0 ? '#ef4444' : '#22c55e' }}>
+              {openReqs.length} open
+            </span>
+            {openMust > 0 && (
+              <span className="font-bold" style={{ color: '#dc2626' }}> ({openMust} MUST)</span>
+            )}
           </div>
           {sorted.map((req) => {
             const badge = REQ_PRIORITY_BADGE[req.priority];
@@ -209,7 +221,8 @@ export function RequirementsForElementSection({
             );
           })}
         </div>
-      )}
+        );
+      })()}
     </Section>
   );
 }
