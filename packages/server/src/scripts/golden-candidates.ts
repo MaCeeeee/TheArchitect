@@ -2,13 +2,14 @@
  * golden-candidates — Vorprüfung des Kandidatenpools VOR dem Self-Baseline-
  * Labeling (SELF_BASELINE_GUIDE.md, Schritt 1).
  *
- * Listet alle Architektur-Elemente eines Projekts aus Neo4j und prüft die
- * Labeling-Tauglichkeit nach RUBRIC.md v2: Der Zwei-Stufen-Test (§ 2.3)
- * verlangt, dass regulierte Datenkategorien in der Element-Beschreibung
- * EXPLIZIT dokumentiert sind — ein Element ohne Beschreibung kann bei
- * Stufe-1-Pflichten (Löschung, Sicherheit) nie match werden, obwohl es
- * vielleicht sollte. Solche Lücken müssen VOR dem Labeling im Modell
- * geschlossen werden, sonst sind sie unsichtbare False Negatives.
+ * Listet alle Architektur-Elemente eines Projekts und prüft die Labeling-
+ * Tauglichkeit nach RUBRIC.md v2: Der Zwei-Stufen-Test (§ 2.3) verlangt, dass
+ * regulierte Datenkategorien am Element EXPLIZIT dokumentiert sind. Primärer
+ * Mechanismus dafür ist das Compliance-Facts-Profil (metadata.compliance,
+ * COMPLIANCE_FACTS.md); die Freitext-Beschreibung ist nur noch Übergangs-
+ * Fallback. Elemente ohne beides sind für Stufe-1-Pflichten (Löschung,
+ * Sicherheit) blind → unsichtbare False Negatives, VOR dem Labeling schließen
+ * (npm run facts:apply).
  *
  *   npm run golden:candidates -- <projectId>            # liest Neo4j direkt (.env nötig)
  *   npm run golden:candidates -- --from-json <file>     # liest die API-Antwort von
@@ -18,27 +19,48 @@
  * Read-only. Linear: THE-379 (REQ-EVAL-001.1) · Epic THE-378
  */
 import type { CandidateElement } from '../services/complianceMapping.service';
+import {
+  ComplianceFactsV1Schema,
+  parseHoldsEntry,
+  serializeFacts,
+  type ComplianceFactsV1,
+} from '../compliance/factsV1';
 
 // ─── Reine Auswertung (ohne DB — testbar) ───────────────────────
+
+export interface ProfiledCandidate extends CandidateElement {
+  /** Geparstes Compliance-Facts-Profil (metadata.compliance), falls vorhanden+gültig. */
+  facts?: ComplianceFactsV1 | null;
+  /** true = metadata.compliance existiert, ist aber schema-ungültig. */
+  factsInvalid?: boolean;
+}
 
 export interface CandidateReport {
   total: number;
   byType: Record<string, number>;
-  withoutDescription: CandidateElement[];
-  shortDescription: CandidateElement[]; // < 30 Zeichen: kaum je "explizit dokumentiert"
-  /** Elemente, deren Beschreibung eine Datenkategorie erwähnt (Heuristik). */
-  dataBearing: CandidateElement[];
+  withoutDescription: ProfiledCandidate[];
+  shortDescription: ProfiledCandidate[]; // < 30 Zeichen: kaum je "explizit dokumentiert"
+  /** Elemente, deren Beschreibung eine Datenkategorie erwähnt (Heuristik, Fallback). */
+  dataBearing: ProfiledCandidate[];
   distinctTypes: number;
+  /** Compliance-Facts-Abdeckung (der eigentliche §2.3-Mechanismus). */
+  profiled: ProfiledCandidate[];
+  invalidProfiles: ProfiledCandidate[];
+  /** Profilierte Elemente mit mind. einer doc-Kategorie → Stufe-1-Kandidaten. */
+  docHolders: ProfiledCandidate[];
 }
 
 const DATA_HINTS =
   /personal data|personenbezogen|customer data|contact person|kontaktdaten|user data|nutzerdaten|pii|credentials|session|stores|speichert|verarbeitet/i;
 
-export function analyzeCandidates(candidates: CandidateElement[]): CandidateReport {
+export function analyzeCandidates(candidates: ProfiledCandidate[]): CandidateReport {
   const byType: Record<string, number> = {};
-  const withoutDescription: CandidateElement[] = [];
-  const shortDescription: CandidateElement[] = [];
-  const dataBearing: CandidateElement[] = [];
+  const withoutDescription: ProfiledCandidate[] = [];
+  const shortDescription: ProfiledCandidate[] = [];
+  const dataBearing: ProfiledCandidate[] = [];
+  const profiled: ProfiledCandidate[] = [];
+  const invalidProfiles: ProfiledCandidate[] = [];
+  const docHolders: ProfiledCandidate[] = [];
 
   for (const c of candidates) {
     byType[c.type] = (byType[c.type] ?? 0) + 1;
@@ -46,6 +68,11 @@ export function analyzeCandidates(candidates: CandidateElement[]): CandidateRepo
     if (desc.length === 0) withoutDescription.push(c);
     else if (desc.length < 30) shortDescription.push(c);
     if (desc && DATA_HINTS.test(desc)) dataBearing.push(c);
+    if (c.factsInvalid) invalidProfiles.push(c);
+    if (c.facts) {
+      profiled.push(c);
+      if (c.facts.holds.some(h => parseHoldsEntry(h).presence === 'doc')) docHolders.push(c);
+    }
   }
 
   return {
@@ -55,6 +82,9 @@ export function analyzeCandidates(candidates: CandidateElement[]): CandidateRepo
     shortDescription,
     dataBearing,
     distinctTypes: Object.keys(byType).length,
+    profiled,
+    invalidProfiles,
+    docHolders,
   };
 }
 
@@ -70,30 +100,51 @@ export function renderCandidateReport(report: CandidateReport): string {
   );
   lines.push('');
 
-  if (report.withoutDescription.length > 0) {
+  lines.push(
+    `Compliance-Facts-Profile (§2.3-Mechanismus): ${report.profiled.length}/${report.total} Elemente` +
+      ` · doc-Halter (Stufe-1-Kandidaten): ${report.docHolders.length}` +
+      (report.invalidProfiles.length ? ` · ⚠️ UNGÜLTIG: ${report.invalidProfiles.length}` : ''),
+  );
+  for (const c of report.docHolders) {
+    lines.push(`   ● ${c.id} · ${c.name} → ${serializeFacts(c.facts as ComplianceFactsV1)}`);
+  }
+  for (const c of report.invalidProfiles) {
+    lines.push(`   ✗ ${c.id} · ${c.name} — metadata.compliance schema-ungültig, fixen!`);
+  }
+  if (report.profiled.length === 0) {
+    lines.push('   (noch keine Profile — mit `npm run facts:apply` aus dem Katalog einspielen)');
+  }
+  lines.push('');
+
+  // Blockierend ist nur, was WEDER Profil NOCH Beschreibung hat.
+  const blind = report.withoutDescription.filter(c => !c.facts);
+  if (blind.length > 0) {
     lines.push(
-      `⚠️  OHNE Beschreibung (${report.withoutDescription.length}) — können bei Stufe-1-` +
-        `Pflichten (Löschung/Sicherheit) NIE match werden (Rubrik §2.3 Zusatzbedingung):`,
+      `⚠️  Weder Profil noch Beschreibung (${blind.length}) — für Stufe-1-Pflichten blind` +
+        ` (Rubrik §2.3 Zusatzbedingung):`,
     );
-    for (const c of report.withoutDescription) lines.push(`   - ${c.id} · ${c.name} (${c.type})`);
+    for (const c of blind) lines.push(`   - ${c.id} · ${c.name} (${c.type})`);
     lines.push('');
   }
   if (report.shortDescription.length > 0) {
-    lines.push(`⚠️  Sehr kurze Beschreibung (${report.shortDescription.length}) — prüfen, ob Datenkategorien fehlen:`);
-    for (const c of report.shortDescription) lines.push(`   - ${c.id} · ${c.name}: "${c.description}"`);
-    lines.push('');
+    const unprofiled = report.shortDescription.filter(c => !c.facts);
+    if (unprofiled.length > 0) {
+      lines.push(`⚠️  Sehr kurze Beschreibung ohne Profil (${unprofiled.length}) — prüfen:`);
+      for (const c of unprofiled) lines.push(`   - ${c.id} · ${c.name}: "${c.description}"`);
+      lines.push('');
+    }
   }
   lines.push(
-    `Daten-tragend laut Beschreibung (${report.dataBearing.length}) — Kernkandidaten für DSGVO-Stufe-1-Fälle:`,
+    `Daten-tragend laut Beschreibung (${report.dataBearing.length}) — Fallback-Heuristik für unprofilierte Elemente:`,
   );
   for (const c of report.dataBearing) lines.push(`   - ${c.id} · ${c.name} (${c.type})`);
 
   lines.push('');
-  const ok = report.withoutDescription.length === 0 && report.distinctTypes >= 4;
+  const ok = blind.length === 0 && report.distinctTypes >= 4 && report.invalidProfiles.length === 0;
   lines.push(
     ok
       ? '✅ Pool ist labeling-tauglich. Weiter mit SELF_BASELINE_GUIDE.md Schritt 2.'
-      : '❌ Erst Modell nachpflegen (Beschreibungen mit Datenkategorien!), dann erneut prüfen.',
+      : '❌ Erst nachpflegen (Facts-Profile via `npm run facts:apply` bzw. ungültige Profile fixen), dann erneut prüfen.',
   );
   return lines.join('\n');
 }
@@ -103,7 +154,7 @@ export function renderCandidateReport(report: CandidateReport): string {
  * das Kandidaten-Schema. Reine Funktion — testbar. Akzeptiert sowohl das
  * `{ success, data: [...] }`-Envelope als auch ein rohes Array.
  */
-export function candidatesFromApiJson(raw: unknown): CandidateElement[] {
+export function candidatesFromApiJson(raw: unknown): ProfiledCandidate[] {
   const arr = Array.isArray(raw)
     ? raw
     : Array.isArray((raw as { data?: unknown })?.data)
@@ -112,15 +163,22 @@ export function candidatesFromApiJson(raw: unknown): CandidateElement[] {
   if (!arr) {
     throw new Error('Unerwartetes JSON: erwarte ein Array oder { data: [...] } (API-Antwort)');
   }
-  return arr.map((e): CandidateElement => {
+  return arr.map((e): ProfiledCandidate => {
     const el = e as Record<string, unknown>;
-    return {
+    const out: ProfiledCandidate = {
       id: el.id != null ? String(el.id) : '',
       name: el.name != null ? String(el.name) : '',
       type: (el.type != null ? String(el.type) : 'custom') as CandidateElement['type'],
       layer: el.layer != null ? String(el.layer) : undefined,
       description: el.description != null ? String(el.description) : undefined,
     };
+    const meta = el.metadata as Record<string, unknown> | undefined;
+    if (meta && typeof meta === 'object' && meta.compliance != null) {
+      const parsed = ComplianceFactsV1Schema.safeParse(meta.compliance);
+      if (parsed.success) out.facts = parsed.data;
+      else out.factsInvalid = true;
+    }
+    return out;
   });
 }
 

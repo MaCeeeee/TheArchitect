@@ -111,7 +111,13 @@ async function predictCase(
   promptHash: string,
   offline: boolean
 ): Promise<{ predictions: ComplianceMappingCandidate[]; fromCache: boolean }> {
-  const key = cacheKeyFor(c.fullText, c.candidates.map(el => el.id), model, promptHash);
+  const key = cacheKeyFor(
+    c.fullText,
+    c.candidates.map(el => el.id),
+    model,
+    promptHash,
+    sha256(JSON.stringify(c.candidates))
+  );
   const bucket = cacheBucketFor(set.version, model);
   const cached = readCache(CACHE_DIR, bucket, c.caseId, key);
   if (cached) return { predictions: cached.predictions, fromCache: true };

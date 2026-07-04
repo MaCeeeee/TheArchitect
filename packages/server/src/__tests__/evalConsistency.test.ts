@@ -110,16 +110,25 @@ describe('seededShuffle() / seedFromString()', () => {
 
 describe('cacheKeyFor()', () => {
   it('changes when candidate ORDER changes (shuffle views must not collide)', () => {
-    const a = cacheKeyFor('text', ['e1', 'e2'], 'model', 'hash');
-    const b = cacheKeyFor('text', ['e2', 'e1'], 'model', 'hash');
+    const a = cacheKeyFor('text', ['e1', 'e2'], 'model', 'hash', 'ch');
+    const b = cacheKeyFor('text', ['e2', 'e1'], 'model', 'hash', 'ch');
     expect(a).not.toBe(b);
   });
 
   it('changes when text/model/prompt change', () => {
-    const base = cacheKeyFor('text', ['e1'], 'model', 'hash');
-    expect(cacheKeyFor('other', ['e1'], 'model', 'hash')).not.toBe(base);
-    expect(cacheKeyFor('text', ['e1'], 'model2', 'hash')).not.toBe(base);
-    expect(cacheKeyFor('text', ['e1'], 'model', 'hash2')).not.toBe(base);
+    const base = cacheKeyFor('text', ['e1'], 'model', 'hash', 'ch');
+    expect(cacheKeyFor('other', ['e1'], 'model', 'hash', 'ch')).not.toBe(base);
+    expect(cacheKeyFor('text', ['e1'], 'model2', 'hash', 'ch')).not.toBe(base);
+    expect(cacheKeyFor('text', ['e1'], 'model', 'hash2', 'ch')).not.toBe(base);
+  });
+
+  it('changes when candidate CONTENTS change (Dealbreaker-Fix: Facts/Description im Key)', () => {
+    // Gleiche IDs, gleicher Text — aber geänderter Kandidaten-Inhalt (z.B. neues
+    // Compliance-Profil) MUSS den Cache invalidieren, sonst vergleicht jede
+    // Vorher/Nachher-Eval still alte Predictions gegen neue Eingaben.
+    const before = cacheKeyFor('text', ['e1'], 'model', 'hash', 'contents-v1');
+    const after = cacheKeyFor('text', ['e1'], 'model', 'hash', 'contents-v2');
+    expect(before).not.toBe(after);
   });
 });
 

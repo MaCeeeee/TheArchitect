@@ -1,0 +1,44 @@
+{
+  "$comment": "ENTWURF (claude-draft) — Compliance-Facts v1 für das Self-Model (Projekt 6a3ff887…). Vor dem Einspielen reviewen: jedes Profil ist eine FAKTEN-BEHAUPTUNG des Betreibers. Einspielen: npm run facts:apply (GET→merge→PUT, zerstört keine fremden metadata-Keys). Motivations-/Business-Layer-Elemente (stakeholder, driver, goal, biz-*) sind bewusst NICHT enthalten: kein Profil → 'facts: n/a'. Referenz: COMPLIANCE_FACTS.md",
+  "version": 1,
+  "profiles": {
+    "4193802f-data-mongo": { "v": 1, "kind": "store", "holds": ["account:doc", "credentials:doc"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "Nutzerkonten (Name, E-Mail, Passwort-Hash, MFA-Secret), OAuth-Verknüpfungen" },
+    "4193802f-data-redis": { "v": 1, "kind": "store", "holds": ["telemetry:doc", "credentials:doc"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "Session-Token je Nutzer (session:{userId}:{sessionId})" },
+    "4193802f-data-audit": { "v": 1, "kind": "store", "holds": ["telemetry:doc"], "does": ["audit_log"], "ops": { "loc": "eu", "op": "self", "tier": "support" }, "note": "IP + User-Agent + userId je sicherheitsrelevanter Aktion; Aufbewahrung als Nachweis (Art. 17(3)-Abwägung gehört in Golden-Case-notes)" },
+    "4193802f-data-minio": { "v": 1, "kind": "store", "holds": ["content:maybe"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "Uploads/Exporte können pbD enthalten — nicht inventarisiert (maybe = To-do Daten-Inventur)" },
+    "4193802f-data-graph": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "Architektur-Elemente/-Relationen — keine pbD dokumentiert" },
+    "4193802f-data-corpus": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" }, "note": "Gesetzestexte (EUR-Lex u.a.) — keine pbD" },
+    "4193802f-data-emb-sim": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-data-emb-rag": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+
+    "4193802f-tech-mongodb": { "v": 1, "kind": "store", "holds": ["account:doc", "credentials:doc"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "DBMS, das data-mongo physisch hält" },
+    "4193802f-tech-neo4j": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-redis": { "v": 1, "kind": "store", "holds": ["telemetry:doc", "credentials:doc"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-minio": { "v": 1, "kind": "store", "holds": ["content:maybe"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-qdrant-sim": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-tech-qdrant-rag": { "v": 1, "kind": "store", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-tech-n8n": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-tech-docker": { "v": 1, "kind": "infra", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-caddy": { "v": 1, "kind": "control", "holds": [], "does": ["tls"], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "TLS-Terminierung = TOM (Art. 32)" },
+    "4193802f-tech-node": { "v": 1, "kind": "infra", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-react": { "v": 1, "kind": "infra", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-tech-umami": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" }, "note": "cookie-frei, anonymisiert — bewusst keine pbD (Privacy-by-Design-Beleg für Art. 25)" },
+    "4193802f-tech-resend": { "v": 1, "kind": "external", "holds": ["account:doc"], "does": [], "ops": { "loc": "us", "op": "vendor_processor", "tier": "support" }, "note": "Transaktions-Mail: erhält Empfänger-E-Mail (Transit); AVV + Transfer-Check nötig — loc verifizieren" },
+    "4193802f-tech-anthropic": { "v": 1, "kind": "external", "holds": ["content:maybe"], "does": [], "ops": { "loc": "us", "op": "vendor_processor", "tier": "support" }, "note": "erhält Prompts; können pbD enthalten" },
+    "4193802f-tech-openai": { "v": 1, "kind": "external", "holds": ["content:maybe"], "does": [], "ops": { "loc": "us", "op": "vendor_processor", "tier": "support" }, "note": "erhält Prompts/Embedding-Inputs; können pbD enthalten" },
+
+    "4193802f-tech-vps": { "v": 1, "kind": "infra", "holds": [], "does": [], "ops": { "loc": "eu", "op": "vendor_processor", "tier": "core" }, "note": "Hostinger hostet unsere Daten → AVV (Art. 28) trifft den Hoster, obwohl er für Art. 17 transitiv ist" },
+    "4193802f-tech-dataserver": { "v": 1, "kind": "infra", "holds": [], "does": [], "ops": { "loc": "eu", "op": "vendor_processor", "tier": "support" } },
+
+    "4193802f-app-server": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "verarbeitet transient alle Kategorien; Persistenz liegt in den Stores" },
+    "4193802f-app-client": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "core" } },
+    "4193802f-app-crawler": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-app-sidecar": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-app-n8n": { "v": 1, "kind": "service", "holds": [], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+
+    "4193802f-svc-auth": { "v": 1, "kind": "service", "holds": ["credentials:doc", "telemetry:doc"], "does": ["auth", "audit_log"], "ops": { "loc": "eu", "op": "self", "tier": "core" }, "note": "JWT/OAuth/MFA, Sessions, API-Keys; schreibt Audit-Einträge" },
+    "4193802f-svc-rag": { "v": 1, "kind": "service", "holds": ["content:maybe"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-svc-aigen": { "v": 1, "kind": "service", "holds": ["content:maybe"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" } },
+    "4193802f-svc-connectors": { "v": 1, "kind": "service", "holds": ["content:maybe"], "does": [], "ops": { "loc": "eu", "op": "self", "tier": "support" }, "note": "Importe aus SAP/ServiceNow/Jira können pbD enthalten" }
+  }
+}

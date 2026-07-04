@@ -39,12 +39,15 @@ gehört in `notes`, nicht ins Label).
    Merksatz: *„Muss an DIESEM Element etwas gebaut, geändert oder nachgewiesen
    werden — oder steht es nur in einer Liste, die woanders geführt wird?"*
 
-   **Zusatzbedingung für Stufe 1:** Die regulierte Datenkategorie muss in der
-   Element-Beschreibung **explizit dokumentiert** sein („stores customer personal
-   data", „stores supplier contact persons"). Keine Spekulation über mögliche
-   Inhalte — ein System, das Personendaten enthalten *könnte*, ist no-match
-   (konservativ, § 4). Reine Hosting-Infrastruktur (Cloud-Plattform, auf der
-   andere Systeme laufen) ist für *Daten*-Pflichten transitiv — die Fähigkeit
+   **Zusatzbedingung für Stufe 1:** Die regulierte Datenkategorie muss am
+   Element **explizit dokumentiert** sein. Primärer Mechanismus ist das
+   **Compliance-Facts-Profil** (`metadata.compliance.holds` mit presence `doc`
+   — Taxonomie: `../compliance/COMPLIANCE_FACTS.md`); die Freitext-Beschreibung
+   („stores customer personal data") gilt als Übergangs-Fallback und für
+   profilfreie Sets (BSH-Transfer-Slice). Keine Spekulation über mögliche
+   Inhalte — `maybe`-Einträge und Systeme, die Personendaten enthalten
+   *könnten*, sind no-match (konservativ, § 4). Reine Hosting-Infrastruktur
+   (`kind: infra`) ist für *Daten*-Pflichten transitiv — die Fähigkeit
    (löschen, verschlüsseln) liegt in der App-/DB-Schicht, nicht im Hoster.
 4. **Nachweispflicht:** E erzeugt oder hält die Evidenz, die R fordert
    (Audit-Logs, Berichte, Dokumentation).
@@ -148,6 +151,11 @@ editiert — Korrekturen erzeugen die nächste Versionsdatei.
 
 ## 9. Changelog
 
+- **v2.2 (2026-07-04):** Zusatzbedingung § 2.3 konkretisiert: „explizit
+  dokumentiert" = Compliance-Facts-Profil (`metadata.compliance`, Taxonomie in
+  `../compliance/COMPLIANCE_FACTS.md`); Beschreibung nur noch Übergangs-Fallback.
+  Verhindert, dass jedes neue Gesetz Freitext-Beschreibungen aufbläht
+  (Ousterhout-Entscheidung, Design-Review mit Judge-Panel).
 - **v2.1 (2026-07-04):** Scope-Pivot: Baseline-Set = Self-Baseline (TheArchitect-
   Gesetze × eigenes Modell, Projekt `…3802f`), BSH-Set zum Transfer-Slice
   herabgestuft (§ 6). Ablauf: `SELF_BASELINE_GUIDE.md`.

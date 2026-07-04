@@ -54,12 +54,23 @@ Das Skript prüft drei Dinge:
    Fehlt eines → im Produkt nachpflegen. **Ein fehlendes Element ist ein
    unsichtbares False Negative** — das Modell kann es nie vorschlagen, und
    die Eval kann den Fehler nie sehen.
-2. **Beschreibungen:** Rubrik v2 §2.3 (Zwei-Stufen-Test) macht Labels von der
-   Element-Beschreibung abhängig: Ein Datenhalter ist bei Stufe-1-Pflichten
-   (Löschung Art. 17, Sicherheit Art. 32) nur match, wenn die Datenkategorie
-   **explizit dokumentiert** ist („stores user accounts and session data").
-   Elemente ohne/mit dünner Beschreibung werden vom Skript gelistet → im
-   Produkt Beschreibung ergänzen, v. a. *welche Daten* das Element hält.
+2. **Compliance-Facts-Profile:** Rubrik v2.2 §2.3 (Zwei-Stufen-Test) macht
+   Stufe-1-Labels vom **Facts-Profil** abhängig (`metadata.compliance` — NICHT
+   mehr von der Freitext-Beschreibung; Taxonomie:
+   `../compliance/COMPLIANCE_FACTS.md`). Die Profile für die operativen
+   Self-Model-Elemente liegen als Entwurf im Katalog und werden so eingespielt:
+
+   ```bash
+   export TA_API=http://localhost:3000/api TA_KEY=$KEY TA_PROJECT=$PROJECT
+   npm run facts:apply              # Dry-Run: zeigt je Element den Plan
+   # Katalog reviewen (src/compliance/facts-catalog.self.v1.json) — jedes
+   # Profil ist DEINE Betreiber-Behauptung! — dann:
+   npm run facts:apply -- --apply
+   ```
+
+   Das Skript macht GET→merge→PUT und lässt fremde metadata-Keys unangetastet.
+   Danach `golden:candidates` erneut — der Report zeigt die Profil-Abdeckung
+   und die doc-Halter (= deine Stufe-1-Kandidaten).
 3. **Typen-Vielfalt:** ≥ 4 Element-Typen (Rubrik §6).
 
 Erst wenn das Skript ✅ zeigt, weiter zu Schritt 2.
@@ -161,6 +172,10 @@ Meetup (31.07.)**, mit Correctness × Conciseness pro Modell (S1-Runner).
   24 Hex-Zeichen) und ob die Elemente in Neo4j `projectId` gesetzt haben.
 - **`--offline`-Eval schlägt fehl** → erwartungsgemäß: neues Set = leerer
   Prediction-Cache. Einmal live laufen lassen (braucht `ANTHROPIC_API_KEY`).
+  Zusätzlich sind ALLE Cache-Einträge von vor dem 2026-07-04 stale: Der
+  Cache-Key enthält jetzt auch die Kandidaten-INHALTE (Dealbreaker-Fix aus dem
+  Facts-Design — sonst hätte eine Profil-Änderung still alte Predictions
+  geliefert). Einmalige Live-Neubefüllung, Kosten im Cent-Bereich.
 - **Crawler unreachable (502)** → Tailscale/Server B prüfen
   (`COMPLIANCE_CRAWLER_URL`, Default `http://100.106.223.83:3100`).
 - **Element nachgepflegt, nachdem schon gemappt wurde** → Auto-Mapping für die

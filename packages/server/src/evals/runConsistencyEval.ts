@@ -91,7 +91,13 @@ async function predict(args: {
   promptHash: string;
   offline: boolean;
 }): Promise<{ ids: string[]; fromCache: boolean }> {
-  const key = cacheKeyFor(args.fullText, args.candidates.map(c => c.id), args.model, args.promptHash);
+  const key = cacheKeyFor(
+    args.fullText,
+    args.candidates.map(c => c.id),
+    args.model,
+    args.promptHash,
+    sha256(JSON.stringify(args.candidates))
+  );
   const cached = readCache(CACHE_DIR, args.bucket, args.cacheId, key);
   if (cached) return { ids: cached.predictions.map(p => p.elementId), fromCache: true };
 

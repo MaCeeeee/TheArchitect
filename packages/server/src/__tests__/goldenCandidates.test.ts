@@ -77,12 +77,28 @@ describe('candidatesFromApiJson()', () => {
 });
 
 describe('renderCandidateReport()', () => {
-  it('shows ❌ while descriptions are missing and ✅ when the pool qualifies', () => {
+  it('shows ❌ while elements are blind (no profile, no description) and ✅ when the pool qualifies', () => {
     const bad = renderCandidateReport(
       analyzeCandidates([el('a', 'application'), el('b', 'capability', 'x'.repeat(40))])
     );
     expect(bad).toContain('❌');
-    expect(bad).toContain('OHNE Beschreibung');
+    expect(bad).toContain('Weder Profil noch Beschreibung');
+
+    // Ein Facts-Profil hebt die Blindheit auf, auch ohne Beschreibung
+    const facts = {
+      v: 1 as const, kind: 'store' as const, holds: ['account:doc'], does: [],
+      ops: { loc: 'eu' as const, op: 'self' as const, tier: 'core' as const },
+    };
+    const healed = renderCandidateReport(
+      analyzeCandidates([
+        { ...el('a', 'application'), facts },
+        el('b', 'capability', 'x'.repeat(40)),
+        el('c', 'business_process', 'y'.repeat(40)),
+        el('d', 'technology_service', 'z'.repeat(40)),
+      ])
+    );
+    expect(healed).toContain('✅');
+    expect(healed).toContain('doc-Halter (Stufe-1-Kandidaten): 1');
 
     const good = renderCandidateReport(
       analyzeCandidates([
