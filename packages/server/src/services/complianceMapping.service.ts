@@ -279,6 +279,8 @@ export async function mapTextToElements(args: {
   jurisdiction: string;
   candidateElements: CandidateElement[];
   anthropicClient?: Anthropic;
+  /** Überschreibt ANTHROPIC_MODEL/Default — für Eval-Modellvergleiche (E1) und die Kaskade (S2/S3). */
+  model?: string;
 }): Promise<{ candidates: ComplianceMappingCandidate[] }> {
   if (args.candidateElements.length === 0) {
     return { candidates: [] };
@@ -300,6 +302,7 @@ export async function mapTextToElements(args: {
     regulation: syntheticReg,
     candidateElements: args.candidateElements,
     anthropicClient: args.anthropicClient,
+    model: args.model,
   });
 
   // Observability (THE-384) — best-effort. Live-mapping is not persisted, so
@@ -333,6 +336,7 @@ async function callLLM(args: {
   regulation: IRegulation;
   candidateElements: CandidateElement[];
   anthropicClient?: Anthropic;
+  model?: string;
 }): Promise<{ candidates: ComplianceMappingCandidate[]; meta: LlmCallMeta }> {
   const client = args.anthropicClient ?? getAnthropicClient();
 

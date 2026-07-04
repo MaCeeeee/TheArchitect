@@ -197,6 +197,63 @@ export function bootstrapCI(
   return { lo: samples[loIdx], hi: samples[hiIdx] };
 }
 
+// ─── Conciseness (REQ-EVAL-001.10 / CASCADE_DESIGN.md §4) ───────
+//
+// Zweite Bewertungsachse neben Correctness: matcht das Modell sparsam oder
+// wirft es zur Sicherheit alles rein (Alarm-Müdigkeit)? WICHTIG: weiches
+// Gate — nie allein optimieren (Anti-Goodhart-Kopplung: Conciseness-Gewinne
+// zählen nur bei Recall-Nicht-Unterlegenheit).
+
+export interface ConcisenessMetrics {
+  /**
+   * Over-Match-Ratio: Σ|predicted| / Σ max(1,|gold|). 1.0 = exakt so viele
+   * Mappings wie das Gold verlangt; >1 = Über-Matchen. Hard Negatives zählen
+   * mit Nenner 1, damit Vorhersagen auf ihnen die Ratio treiben (gewollt).
+   */
+  overMatchRatio: number;
+  meanPredictionsPerCase: number;
+  /** Histogramm der Mapping-Anzahl pro Fall: "0", "1", ..., "<cap>+". */
+  predictionCountDistribution: Record<string, number>;
+  /**
+   * Anteil Fälle, die den Top-N-Cap voll ausschöpfen — Kandidaten für STILLE
+   * Trunkierung (der Service kappt bei MAX_MAPPINGS_PER_REGULATION; fällt die
+   * Breiten-Entscheidung "breit" aus, wird der Cap zum Recall-Bug).
+   */
+  capHitRate: number;
+}
+
+export function concisenessMetrics(outcomes: CaseOutcome[], cap: number): ConcisenessMetrics {
+  if (outcomes.length === 0) {
+    return {
+      overMatchRatio: 0,
+      meanPredictionsPerCase: 0,
+      predictionCountDistribution: {},
+      capHitRate: 0,
+    };
+  }
+
+  let predicted = 0;
+  let goldDenominator = 0;
+  let capHits = 0;
+  const distribution: Record<string, number> = {};
+
+  for (const o of outcomes) {
+    const n = o.predicted.length;
+    predicted += n;
+    goldDenominator += Math.max(1, o.goldElementIds.length);
+    if (n >= cap) capHits++;
+    const bucket = n >= cap ? `${cap}+` : String(n);
+    distribution[bucket] = (distribution[bucket] ?? 0) + 1;
+  }
+
+  return {
+    overMatchRatio: predicted / goldDenominator,
+    meanPredictionsPerCase: predicted / outcomes.length,
+    predictionCountDistribution: distribution,
+    capHitRate: capHits / outcomes.length,
+  };
+}
+
 // ─── Cohen's Kappa (Inter-Annotator-Agreement) ──────────────────
 
 export type PairLabel = 'match' | 'no-match';
