@@ -215,6 +215,9 @@ async function collectGroups(projectId?: string): Promise<RegulationGroupInput[]
 
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
+  const dotenv = await import('dotenv');
+  dotenv.config(); // .env aus packages/server lesen (MONGODB_URI, NEO4J_*)
+
   const { connectMongoDB } = await import('../config/database');
   const { connectNeo4j, getNeo4jDriver } = await import('../config/neo4j');
 

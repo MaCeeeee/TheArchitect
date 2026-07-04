@@ -104,6 +104,9 @@ async function main(): Promise<void> {
     process.exitCode = 2;
     return;
   }
+  const dotenv = await import('dotenv');
+  dotenv.config(); // .env aus packages/server lesen (NEO4J_URI/USER/PASSWORD)
+
   const { connectNeo4j, getNeo4jDriver } = await import('../config/neo4j');
   const { loadProjectCandidateElements } = await import('../services/complianceElements.service');
 
