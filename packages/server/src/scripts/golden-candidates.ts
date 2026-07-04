@@ -10,9 +10,12 @@
  * vielleicht sollte. Solche Lücken müssen VOR dem Labeling im Modell
  * geschlossen werden, sonst sind sie unsichtbare False Negatives.
  *
- *   npm run golden:candidates -- <projectId>
+ *   npm run golden:candidates -- <projectId>            # liest Neo4j direkt (.env nötig)
+ *   npm run golden:candidates -- --from-json <file>     # liest die API-Antwort von
+ *                                                       # GET /api/projects/:id/elements
+ *                                                       # (kein DB-Zugang nötig, nur API-Key)
  *
- * Read-only auf Neo4j. Linear: THE-379 (REQ-EVAL-001.1) · Epic THE-378
+ * Read-only. Linear: THE-379 (REQ-EVAL-001.1) · Epic THE-378
  */
 import type { CandidateElement } from '../services/complianceMapping.service';
 
@@ -95,12 +98,59 @@ export function renderCandidateReport(report: CandidateReport): string {
   return lines.join('\n');
 }
 
+/**
+ * Normalisiert die Element-API-Antwort (GET /api/projects/:id/elements) auf
+ * das Kandidaten-Schema. Reine Funktion — testbar. Akzeptiert sowohl das
+ * `{ success, data: [...] }`-Envelope als auch ein rohes Array.
+ */
+export function candidatesFromApiJson(raw: unknown): CandidateElement[] {
+  const arr = Array.isArray(raw)
+    ? raw
+    : Array.isArray((raw as { data?: unknown })?.data)
+      ? ((raw as { data: unknown[] }).data)
+      : null;
+  if (!arr) {
+    throw new Error('Unerwartetes JSON: erwarte ein Array oder { data: [...] } (API-Antwort)');
+  }
+  return arr.map((e): CandidateElement => {
+    const el = e as Record<string, unknown>;
+    return {
+      id: el.id != null ? String(el.id) : '',
+      name: el.name != null ? String(el.name) : '',
+      type: (el.type != null ? String(el.type) : 'custom') as CandidateElement['type'],
+      layer: el.layer != null ? String(el.layer) : undefined,
+      description: el.description != null ? String(el.description) : undefined,
+    };
+  });
+}
+
 // ─── DB-Glue ────────────────────────────────────────────────────
 
 async function main(): Promise<void> {
-  const projectId = process.argv[2];
+  const argv = process.argv.slice(2);
+  const jsonFlagIdx = argv.indexOf('--from-json');
+
+  // Weg B: API-Antwort aus Datei (kein DB-Zugang nötig, nur der API-Key beim curl).
+  if (jsonFlagIdx !== -1) {
+    const file = argv[jsonFlagIdx + 1];
+    if (!file) {
+      console.error('Usage: golden-candidates --from-json <file.json>');
+      process.exitCode = 2;
+      return;
+    }
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const raw = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+    const candidates = candidatesFromApiJson(raw);
+    console.log(`[candidates] aus ${file} (${candidates.length} Elemente)\n`);
+    console.log(renderCandidateReport(analyzeCandidates(candidates)));
+    return;
+  }
+
+  // Weg A: direkt aus Neo4j.
+  const projectId = argv[0];
   if (!projectId) {
-    console.error('Usage: golden-candidates <projectId>');
+    console.error('Usage: golden-candidates <projectId>  |  golden-candidates --from-json <file>');
     process.exitCode = 2;
     return;
   }

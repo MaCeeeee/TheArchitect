@@ -4,7 +4,11 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/goldenCandidates.test.ts
  */
-import { analyzeCandidates, renderCandidateReport } from '../scripts/golden-candidates';
+import {
+  analyzeCandidates,
+  renderCandidateReport,
+  candidatesFromApiJson,
+} from '../scripts/golden-candidates';
 import type { CandidateElement } from '../services/complianceMapping.service';
 
 function el(
@@ -44,6 +48,31 @@ describe('analyzeCandidates()', () => {
     const report = analyzeCandidates([]);
     expect(report.total).toBe(0);
     expect(report.distinctTypes).toBe(0);
+  });
+});
+
+describe('candidatesFromApiJson()', () => {
+  it('unwraps the { success, data: [...] } API envelope and keeps label-relevant fields', () => {
+    const cands = candidatesFromApiJson({
+      success: true,
+      data: [
+        { id: 'e1', name: 'Mongo', type: 'technology_service', layer: 'technology',
+          description: 'Stores user accounts.', position3D: { x: 1 }, metadata: {} },
+        { id: 'e2', name: 'Client', type: 'application' },
+      ],
+    });
+    expect(cands).toEqual([
+      { id: 'e1', name: 'Mongo', type: 'technology_service', layer: 'technology', description: 'Stores user accounts.' },
+      { id: 'e2', name: 'Client', type: 'application', layer: undefined, description: undefined },
+    ]);
+  });
+
+  it('also accepts a bare array', () => {
+    expect(candidatesFromApiJson([{ id: 'x', name: 'X', type: 'capability' }])).toHaveLength(1);
+  });
+
+  it('throws on a shape that is neither array nor { data: [] }', () => {
+    expect(() => candidatesFromApiJson({ error: 'nope' })).toThrow(/Unerwartetes JSON/);
   });
 });
 

@@ -14,18 +14,34 @@ gegen deine laufende App auf `localhost:3000` / API `localhost:5000`), nicht in
 der Cloud-Session — die Datenbanken und der Crawler (Server B via Tailscale)
 sind nur von dort erreichbar.
 
-Konvention unten: `PROJECT=6a3ff887e50cc39a4193802f`, API-Basis `http://localhost:5000/api`,
-`TOKEN` = dein JWT (aus dem Browser: DevTools → Application → Local Storage → accessToken).
+Konvention unten: `PROJECT=6a3ff887e50cc39a4193802f`, API-Basis `http://localhost:5000/api`.
+Auth: Der API-Key (`ta_…`) geht als Header `X-API-Key`; die Middleware akzeptiert
+ihn auf allen Projekt-Routen (der Key-Nutzer braucht ≥ viewer-Zugriff aufs Projekt).
+Einmal setzen:
+
+```bash
+export PROJECT=6a3ff887e50cc39a4193802f
+export KEY=ta_xxxxx   # dein API-Key; nach der Baseline rotieren (Settings → API Keys)
+export API=http://localhost:5000/api
+```
 
 ---
 
 ## Schritt 1 — Kandidatenpool prüfen (5 min, read-only)
 
 Das Modell wurde aus GitHub/Obsidian/Linear gespeist — prüfe, ob es fürs
-Labeling taugt, BEVOR du Zeit investierst:
+Labeling taugt, BEVOR du Zeit investierst. **Weg B (empfohlen, nur API-Key)** —
+Elemente per API ziehen, lokal auswerten (kein Neo4j-Zugang nötig):
 
 ```bash
 cd packages/server
+curl -s "$API/projects/$PROJECT/elements" -H "X-API-Key: $KEY" > /tmp/elements.json
+npm run golden:candidates -- --from-json /tmp/elements.json
+```
+
+Weg A (direkt aus Neo4j, braucht `NEO4J_*` in der `.env`):
+
+```bash
 npm run golden:candidates -- 6a3ff887e50cc39a4193802f
 ```
 
@@ -56,7 +72,7 @@ curl -s http://localhost:5000/api/regulations/crawler/health
 
 # DSGVO (Kern) + NIS2 (Grenzfall-Slice) crawlen:
 curl -s -X POST http://localhost:5000/api/projects/$PROJECT/regulations/crawl \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -H "X-API-Key: $KEY" -H "Content-Type: application/json" \
   -d '{"sources": ["dsgvo", "nis2"]}'
 ```
 
@@ -64,7 +80,7 @@ Danach verifizieren, dass das Projekt die Paragraphen sieht:
 
 ```bash
 curl -s "http://localhost:5000/api/projects/$PROJECT/regulations?source=dsgvo&limit=5" \
-  -H "Authorization: Bearer $TOKEN"
+  -H "X-API-Key: $KEY"
 ```
 
 **Falls die Liste leer ist:** Der Crawler schreibt in den kanonischen Korpus
@@ -83,7 +99,7 @@ Negative). Nicht jeden Artikel, den der Crawler liefert — bewusst stratifizier
 
 ```bash
 curl -s -X POST http://localhost:5000/api/projects/$PROJECT/compliance/mappings/auto \
-  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{}'
+  -H "X-API-Key: $KEY" -H "Content-Type: application/json" -d '{}'
 ```
 
 (Optional `{"regulationIds": [...]}`, um nur die ausgewählten Fälle zu mappen.)
