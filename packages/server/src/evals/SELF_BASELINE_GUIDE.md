@@ -94,12 +94,21 @@ curl -s "http://localhost:5000/api/projects/$PROJECT/regulations?source=dsgvo&li
   -H "X-API-Key: $KEY"
 ```
 
-**Falls die Liste leer ist:** Der Crawler schreibt in den kanonischen Korpus
-(Server B, ADR-0001), nicht zwingend in den Projekt-Bestand. Dann die
-benötigten Paragraphen über die Produkt-UI (Regulations-Seite des Projekts)
-bzw. `POST /api/projects/$PROJECT/regulations` anlegen — der Resolver zieht
-Texte bevorzugt aus dem Korpus. Melde dich, wenn das der Fall ist: dann baue
-ich einen `--from-corpus`-Import.
+**Falls die Liste leer ist (`total: 0`):** Der Crawler schreibt in den
+kanonischen Korpus (Server B, ADR-0001), nicht in den Projekt-Bestand — das
+Auto-Mapping liest aber `Regulation.find({projectId})`. Importiere die
+Paragraphen einmalig ins Projekt:
+
+```bash
+# CORPUS_MONGODB_URI muss in packages/server/.env stehen (siehe .env.example)
+npm run regs:import -- --project $PROJECT --sources dsgvo,nis2            # Dry-Run: zeigt Plan
+npm run regs:import -- --project $PROJECT --sources dsgvo,nis2 --apply    # schreibt
+```
+
+Idempotent (dedupe über source+paragraphNumber), read-only auf dem Korpus.
+Danach `GET /regulations` erneut — jetzt sollte `total` > 0 sein. Falls
+`CORPUS_MONGODB_URI` fehlt/nicht erreichbar ist, meldet das Skript das klar —
+dann klären wir den Zugang (der Korpus-Mongo läuft auf Server B via Tailnet).
 
 **Fallauswahl (15–25 Fälle, Rubrik §6):** DSGVO Art. 5, 6, 15, 17, 20, 25,
 28, 30, 32, 33, 34 · als Hard Negatives Art. 51, 57, 68, 83 (Behörden-Adressat,
