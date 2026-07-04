@@ -90,6 +90,7 @@ change.
    consistent.)
 4. **Never commit before a preview and an explicit yes.** Writes are
    confirmation-gated (see "Confirmation discipline").
+5. **Ask what to seed from — don't start cold.** See "Seed from sources" below.
 
 ## The elicitation flow
 
@@ -98,6 +99,34 @@ questions at once — that produces fatigue and shallow answers. Ask, listen,
 reflect back in ArchiMate terms, then move on. Keep your own questions short; the
 user is describing, not filling a form. If the conversation already contains rich
 context, extract answers from it first and only ask about genuine gaps.
+
+### Seed from sources (ask before pure Q&A)
+
+A vision is faster and truer when seeded from what already exists than when
+extracted cold, question by question. So **before** launching into the questions,
+ask whether there is material to pull from — and do not assume the user will
+type everything by hand (different users keep strategy in different places):
+
+- **Existing model in the target project** — always check first: `GET
+  /api/projects/:id/elements`. If drivers/goals/stakeholders already exist,
+  build *on* them, don't re-elicit or duplicate them.
+- **Strategy & business docs** — a pitch/board deck, a business plan, an
+  Obsidian/Confluence vault, a one-pager. These carry drivers, goals and the
+  business-model forks below far better than cold questions do.
+- **A work tracker** — Jira/Linear (via an available MCP tool): initiatives and
+  epics reveal the real goals and stakeholders.
+- **Regulatory obligations** — a compliance tool, a corpus, or named regulations
+  (NIS2/DORA/GDPR) → `Driver` and `Constraint` elements.
+- **A prior architecture** — an export from another EA tool, or an existing
+  As-Is, to ground the vision in reality.
+
+Read what you can (local files directly; connected systems via MCP; otherwise ask
+for an export or paste), extract candidate motivation elements, then use the
+elicitation flow to **confirm and fill the gaps** rather than starting from a
+blank page. This mirrors the `the-architect-modeler` skill's "Step 0 — source
+discovery", and it is the manual precursor to agent-driven discovery (NemoClaw,
+THE-409). Whatever you seed from, still run Strategic discovery below — a seed is
+raw material, not a finished vision.
 
 ### Strategic discovery (do this first when modeling a company/business)
 
