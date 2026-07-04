@@ -12,9 +12,15 @@ description: >-
   user gives you existing prose about systems that already exist or are being
   described; when the user instead describes intent/vision for something NEW
   ("we want to…", "kick off an initiative", drivers/goals/stakeholders), use
-  `togaf-vision-architect`. Do NOT use this for structured inputs — CSV, BPMN,
-  n8n workflows, or ArchiMate XML each have their own dedicated importer; this
-  skill is for unstructured natural-language text only.
+  `togaf-vision-architect`. The input does not have to be a single paste: if the
+  user asks to "model our architecture" / "build our landscape" WITHOUT handing
+  over text, do not assume — ASK which sources to pull from (repo/GitHub, notes/
+  Obsidian, Jira/Linear, an export from LeanIX/Bizzdesign/ServiceNow, n8n, a CMDB,
+  cloud APIs) and gather the raw material yourself, then model it. Structured
+  live-tool inputs with their own dedicated importer (CSV, BPMN, n8n workflow
+  JSON, ArchiMate XML) should go through that importer; this skill turns
+  unstructured content — pasted OR gathered from the user's own sources — into a
+  model.
 compatibility: >-
   Requires a target projectId and a valid API key (ta_ prefix). Executes through
   the `the-architect-core` skill's `scripts/commit-model.mjs` (REST action layer).
@@ -56,6 +62,47 @@ Keep a hard separation, exactly as the sibling `togaf-vision-architect` skill do
    (Your own preview commentary can be in the user's chat language.)
 3. **Never write before a confirmed preview.** Every commit is confirmation-gated
    (see "Confirmation discipline"). A paste is an input, not an instruction to write.
+
+## Step 0 — Where does the input come from? (source discovery)
+
+**Do not assume the user will paste text.** When someone says "model our
+architecture", "map our landscape", or "build our EA" and hands over *nothing*,
+your first move is to **ask where to pull from** — never invent a model, and
+never silently limit yourself to what happens to be in the chat. Different
+organisations keep their architecture in very different places; offer the
+categories and let the user pick one or several:
+
+- **Pasted text** — a concept paper, e-mail, meeting notes, an As-Is write-up.
+  The classic path; skip straight to extraction.
+- **Local files / a code repository** — a repo you can read (routes, services,
+  models, `docker-compose`, `.env.example`, READMEs reveal application +
+  technology + data layers), design docs, a data dictionary.
+- **A knowledge base** — an Obsidian vault, Confluence, a docs folder: strategy,
+  decisions, product notes → often the motivation/strategy layers.
+- **A work tracker** — Jira, Linear, Azure DevOps (via an available MCP tool):
+  epics/feature families map to business services and capabilities.
+- **An EA / CMDB / portfolio tool** — LeanIX, Bizzdesign, MEGA, ServiceNow,
+  Sparx EA, an Abacus/Aris export. If you can read it live (MCP/connector),
+  gather it; otherwise **ask the user for an export** (CSV/XLSX/XML) and treat
+  that export as the source. *(Note: a clean ArchiMate-XML or CSV export is
+  better served by the dedicated importer — route the user there when the source
+  IS already a structured model rather than material to be interpreted.)*
+- **Automation / integration** — n8n or an iPaaS: workflow definitions become
+  application/technology elements (this overlaps the n8n importer — prefer it for
+  raw workflow JSON; use this skill when reasoning across several of them).
+- **Live infrastructure** — cloud provider APIs, Kubernetes, a CMDB dump.
+
+**How to gather:** read local sources directly; use MCP tools for connected
+systems (Jira/Linear/GitHub/Confluence); for everything else ask for an export
+or a paste. When a source is large, mine it with focused sub-passes and return
+only the distilled elements — do not dump raw source content into the model.
+Whatever the source, everything funnels into the **same** extraction → dedup →
+preview → confirm → commit flow below. When you pull from several sources, say
+in the preview which element came from which source (provenance matters).
+
+> This step is the manual precursor to agent-driven discovery (the "NemoClaw"
+> capability): today you elicit and gather; later a discovery agent will crawl
+> these sources on a schedule. The elicitation contract stays the same.
 
 ## Extraction method — reading prose into a multi-layer model
 
