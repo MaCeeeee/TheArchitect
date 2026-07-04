@@ -15,6 +15,7 @@
  *   npx ts-node src/scripts/seed-golden-from-db.ts
  *   npx ts-node src/scripts/seed-golden-from-db.ts --out src/evals/golden/mapping.from-db.json
  *   npx ts-node src/scripts/seed-golden-from-db.ts --include-rejection-only
+ *   npx ts-node src/scripts/seed-golden-from-db.ts --project 6a3ff887e50cc39a4193802f  # Self-Baseline
  *
  * Linear: THE-379 (REQ-EVAL-001.1) · Epic THE-378 (UC-EVAL-001)
  */
@@ -135,6 +136,8 @@ export function buildGoldenCasesFromGroups(
 interface CliOptions {
   outPath: string;
   includeRejectionOnly: boolean;
+  /** Nur Mappings dieses Projekts (Self-Baseline: das TheArchitect-Modell). */
+  projectId?: string;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -145,15 +148,18 @@ function parseArgs(argv: string[]): CliOptions {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out' && argv[i + 1]) opts.outPath = path.resolve(argv[++i]);
     else if (argv[i] === '--include-rejection-only') opts.includeRejectionOnly = true;
+    else if (argv[i] === '--project' && argv[i + 1]) opts.projectId = argv[++i];
   }
   return opts;
 }
 
-async function collectGroups(): Promise<RegulationGroupInput[]> {
-  // Alle menschlich berührten Mappings holen.
-  const mappings = await ComplianceMapping.find({
+async function collectGroups(projectId?: string): Promise<RegulationGroupInput[]> {
+  // Alle menschlich berührten Mappings holen (optional auf ein Projekt begrenzt).
+  const filter: Record<string, unknown> = {
     $or: [{ status: { $in: ['confirmed', 'rejected'] } }, { createdBy: 'human' }],
-  }).lean();
+  };
+  if (projectId) filter.projectId = new mongoose.Types.ObjectId(projectId);
+  const mappings = await ComplianceMapping.find(filter).lean();
 
   // Gruppieren nach (projectId, regulationId).
   const byKey = new Map<
@@ -216,7 +222,7 @@ async function main(): Promise<void> {
   await connectNeo4j();
 
   try {
-    const groups = await collectGroups();
+    const groups = await collectGroups(opts.projectId);
     // eslint-disable-next-line no-console
     console.log(`[seed] ${groups.length} (project, regulation) groups with human verdicts`);
 

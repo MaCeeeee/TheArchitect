@@ -12,6 +12,7 @@
     "eval:mapping": "ts-node src/evals/runMappingEval.ts",
     "eval:consistency": "ts-node src/evals/runConsistencyEval.ts",
     "seed:golden-from-db": "ts-node src/scripts/seed-golden-from-db.ts",
+    "golden:candidates": "ts-node src/scripts/golden-candidates.ts",
     "golden:worksheet": "ts-node src/scripts/golden-worksheet.ts",
     "golden:blind": "ts-node src/scripts/golden-kappa.ts blind",
     "golden:kappa": "ts-node src/scripts/golden-kappa.ts compare",

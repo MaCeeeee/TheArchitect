@@ -105,14 +105,28 @@ Wenn zwei kompetente Architekten unterschiedlich entscheiden könnten:
 zurückgibt, statt zwanghaft zu matchen. Gute Quellen: Paragraphen zu Behörden-
 zuständigkeiten, Bußgeldrahmen, Definitionen.
 
-## 6. Stratifizierung (Soll-Verteilung v1, 50–100 Fälle)
+## 6. Stratifizierung & Set-Rollen (v2-Scope, entschieden 2026-07-04)
+
+**Grundsatz-Entscheidung:** Das Baseline-Set wird auf **Gesetze, die auf
+TheArchitect selbst zutreffen × das eigene Architektur-Modell** umgestellt
+(Self-Baseline). Begründung: Ground Truth erfordert einen Annotator, der
+Gegenstand UND Recht sicher beurteilen kann — das erste Doppel-Labeling hat
+gezeigt, dass fremde Domänen (LkSG/Fertigung) diese Sicherheit nicht hergeben.
+
+| Set | Rolle | Gate-relevant? |
+|---|---|---|
+| **Self-Baseline** (TheArchitect-Modell, echte Crawl-Texte) | Kappa-Gate, Freeze, E1-Baseline (THE-381) | **ja** |
+| `mapping.v2.json` (BSH-Demo, LkSG/NIS2-Fertigung) | Transfer-Slice: wird mitgemessen, zeigt Generalisierung | nein — bis ein Domänenexperte die LkSG-Fälle gelabelt hat |
+
+Soll-Verteilung Self-Baseline (Start: 15–25 Fälle, Ziel: 50+):
 
 | Dimension | Vorgabe |
 |---|---|
-| Quellen | dsgvo, nis2, lksg mindestens je 20 %; dora/iso27001 optional |
-| Hard Negatives | ≥ 15 % |
-| Sprache | de und en vertreten |
-| Element-Typen | mind. 4 verschiedene (`application`, `business_process`, `data_object`, `capability`, …) |
+| Quellen | **dsgvo als Kern** (Betreiber-Pflichten: Art. 5/6/15/17/20/25/28/30/32/33/34); **nis2 als Grenzfall-Slice** (Zulieferer-Perspektive Art. 21 Abs. 3); iso27001 optional (Nachweispflicht 2.4) |
+| Hard Negatives | ≥ 15 % — Paragraphen INNERHALB anwendbarer Gesetze mit Behörden-Adressat (Art. 51, 83; Adressaten-Test § 3), NICHT „ganzes Gesetz gilt nicht" |
+| Sprache | de und en vertreten (EUR-Lex liefert beides — speist auch die Konsistenz-Eval) |
+| Element-Typen | mind. 4 verschiedene (`application`, `business_process`, `capability`, `technology_service`, …) |
+| Texte | **nur gecrawlte Originaltexte** (EUR-Lex / gesetze-im-internet), keine Modellwissen-Zitate |
 
 ## 7. Doppel-Labeling & Cohen's Kappa (Freeze-Kriterium)
 
@@ -134,6 +148,9 @@ editiert — Korrekturen erzeugen die nächste Versionsdatei.
 
 ## 9. Changelog
 
+- **v2.1 (2026-07-04):** Scope-Pivot: Baseline-Set = Self-Baseline (TheArchitect-
+  Gesetze × eigenes Modell, Projekt `…3802f`), BSH-Set zum Transfer-Slice
+  herabgestuft (§ 6). Ablauf: `SELF_BASELINE_GUIDE.md`.
 - **v2 (2026-07-04):** Theme-②-Entscheidung nach erstem Doppel-Labeling
   (Kappa 0,365): § 2.3 durch Zwei-Stufen-Test (Regel C) ersetzt, Beispielkatalog
   § 2a ergänzt, Adressaten-Test + Regime-Grenze in § 3, Capability-Regel § 2.5.
