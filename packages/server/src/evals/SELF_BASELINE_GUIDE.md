@@ -106,9 +106,26 @@ npm run regs:import -- --project $PROJECT --sources dsgvo,nis2 --apply    # schr
 ```
 
 Idempotent (dedupe über source+paragraphNumber), read-only auf dem Korpus.
-Danach `GET /regulations` erneut — jetzt sollte `total` > 0 sein. Falls
-`CORPUS_MONGODB_URI` fehlt/nicht erreichbar ist, meldet das Skript das klar —
-dann klären wir den Zugang (der Korpus-Mongo läuft auf Server B via Tailnet).
+Danach `GET /regulations` erneut — jetzt sollte `total` > 0 sein.
+
+**Wenn `CORPUS_MONGODB_URI` fehlt** (Korpus nur über den Crawler-HTTP-Dienst
+erreichbar, kein direkter Mongo-Zugang) — der reale Fall auf dieser Instanz —
+dann hol die authentischen Texte direkt von einer öffentlichen Quelle. Läuft
+auf deinem Rechner (offenes Netz; der Agent-Proxy blockt Rechtsquellen):
+
+```bash
+export TA_API=http://localhost:3000/api TA_KEY=$KEY TA_PROJECT=$PROJECT
+npm run regs:seed-web              # Dry-Run: holt 11 DSGVO-Artikel, zeigt Vorschau
+# Vorschau prüfen (Länge + erste Zeile je Artikel plausibel?), dann:
+npm run regs:seed-web -- --apply   # schreibt via Create-API ins Projekt
+```
+
+Holt DSGVO Art. 5/6/15/17/28/30/32/33/44 + Hard Negatives 51/83 von
+gdpr-info.eu (englischer Wortlaut, passt zu den englisch beschriebenen
+Elementen). `sourceUrl` zeigt auf die echte Quelle. **⚠️ Vor dem Freeze den
+Wortlaut stichprobenartig gegen eur-lex.europa.eu prüfen** (RUBRIC.md §6).
+NIS2 folgt separat, sobald eine saubere Quelle steht — 11 DSGVO-Fälle mit
+3 Achsen (Stufe 1/2 + Hard Negatives) sind eine belastbare erste Baseline.
 
 **Fallauswahl (15–25 Fälle, Rubrik §6):** DSGVO Art. 5, 6, 15, 17, 20, 25,
 28, 30, 32, 33, 34 · als Hard Negatives Art. 51, 57, 68, 83 (Behörden-Adressat,
