@@ -62,7 +62,7 @@ export const GoldenSetSchema = z.object({
 export type GoldenCase = z.infer<typeof GoldenCaseSchema>;
 export type GoldenSet = z.infer<typeof GoldenSetSchema>;
 
-export const DEFAULT_GOLDEN_PATH = path.join(__dirname, 'golden', 'mapping.v1.json');
+export const DEFAULT_GOLDEN_PATH = path.join(__dirname, 'golden', 'mapping.v2.json');
 
 export class GoldenSetError extends Error {
   constructor(message: string, public readonly cause?: unknown) {

@@ -1,0 +1,1295 @@
+{
+  "version": "v2-draft",
+  "frozen": false,
+  "rubricRef": "../RUBRIC.md",
+  "cases": [
+    {
+      "caseId": "dsgvo-art30-vvt",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 30",
+      "title": "Verzeichnis von Verarbeitungstätigkeiten",
+      "fullText": "Jeder Verantwortliche und gegebenenfalls sein Vertreter führen ein Verzeichnis aller Verarbeitungstätigkeiten, die ihrer Zuständigkeit unterliegen. Dieses Verzeichnis enthält sämtliche folgenden Angaben: den Namen und die Kontaktdaten des Verantwortlichen, die Zwecke der Verarbeitung, eine Beschreibung der Kategorien betroffener Personen und der Kategorien personenbezogener Daten, die Kategorien von Empfängern, gegebenenfalls Übermittlungen an ein Drittland, die vorgesehenen Fristen für die Löschung der verschiedenen Datenkategorien sowie eine allgemeine Beschreibung der technischen und organisatorischen Maßnahmen gemäß Artikel 32 Absatz 1.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-vvt-app",
+          "name": "Processing Activities Register (VVT)",
+          "type": "application",
+          "layer": "application",
+          "description": "Central register application documenting all personal-data processing activities, purposes, categories and deletion periods."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-build-pipeline",
+          "name": "CI/CD Build Pipeline",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Automated build and deployment pipeline for internal software artifacts."
+        }
+      ],
+      "goldElementIds": [
+        "el-vvt-app"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2: Verzeichnis FÜHREN ist ein Akt der VVT-App. el-crm steht nur IM Verzeichnis → transitiv, no-match (§3). Vorher (v1) war el-crm match — mit Regel C revidiert.",
+      "annotator": "seed",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "lksg-p6-praevention",
+      "source": "lksg",
+      "paragraphNumber": "§ 6",
+      "title": "Präventionsmaßnahmen",
+      "fullText": "Stellt ein Unternehmen im Rahmen einer Risikoanalyse ein Risiko fest, hat es unverzüglich angemessene Präventionsmaßnahmen zu ergreifen. Das Unternehmen muss angemessene Präventionsmaßnahmen gegenüber einem unmittelbaren Zulieferer verankern, insbesondere die Berücksichtigung der menschenrechtsbezogenen und umweltbezogenen Erwartungen bei der Auswahl eines unmittelbaren Zulieferers, vertragliche Zusicherungen eines unmittelbaren Zulieferers sowie die Durchführung von Schulungen und Weiterbildungen zur Durchsetzung der vertraglichen Zusicherungen.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "el-supplier-dd",
+          "name": "Supplier Due Diligence Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "End-to-end process for assessing, selecting and monitoring direct suppliers including human-rights risk criteria."
+        },
+        {
+          "id": "el-training-mgmt",
+          "name": "Training Management Capability",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to plan, deliver and track employee and supplier trainings."
+        },
+        {
+          "id": "el-payroll",
+          "name": "Payroll Service",
+          "type": "business_service",
+          "layer": "business",
+          "description": "Internal payroll processing for employees."
+        }
+      ],
+      "goldElementIds": [
+        "el-supplier-dd",
+        "el-training-mgmt"
+      ],
+      "ambiguous": false,
+      "notes": "SEED-BEISPIEL. el-supplier-dd: funktionale Pflicht (§2.2) — Auswahl/Verankerung beim Zulieferer. el-training-mgmt: funktionale Pflicht — Schulungen explizit gefordert. el-payroll: no-match (§3).",
+      "annotator": "seed",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "dsgvo-art83-bussgeld-hardneg",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 83",
+      "title": "Allgemeine Bedingungen für die Verhängung von Geldbußen",
+      "fullText": "Jede Aufsichtsbehörde stellt sicher, dass die Verhängung von Geldbußen gemäß diesem Artikel für Verstöße gegen diese Verordnung in jedem Einzelfall wirksam, verhältnismäßig und abschreckend ist. Bei der Entscheidung über die Verhängung einer Geldbuße und über deren Betrag wird in jedem Einzelfall Art, Schwere und Dauer des Verstoßes sowie die Kategorien der betroffenen personenbezogenen Daten gebührend berücksichtigt.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-vvt-app",
+          "name": "Processing Activities Register (VVT)",
+          "type": "application",
+          "layer": "application",
+          "description": "Central register application documenting all personal-data processing activities, purposes, categories and deletion periods."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-supplier-dd",
+          "name": "Supplier Due Diligence Process",
+          "type": "business_process",
+          "layer": "business",
+          "description": "End-to-end process for assessing, selecting and monitoring direct suppliers."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). HARD NEGATIVE bestätigt per Adressaten-Test (§3): Subjekt des Satzes ist die Aufsichtsbehörde, keine Handlungspflicht des Unternehmens. el-vvt-app ist thematisch nah (Compliance-Nachweis), aber Art. 83 verlangt daran nichts.",
+      "annotator": "seed",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "dsgvo-art33-breach-bsh",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 33",
+      "title": "Meldung von Verletzungen des Schutzes personenbezogener Daten",
+      "fullText": "Im Falle einer Verletzung des Schutzes personenbezogener Daten meldet der Verantwortliche unverzüglich und möglichst binnen 72 Stunden, nachdem ihm die Verletzung bekannt wurde, diese der gemäß Artikel 55 zuständigen Aufsichtsbehörde, es sei denn, dass die Verletzung des Schutzes personenbezogener Daten voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Erfolgt die Meldung an die Aufsichtsbehörde nicht binnen 72 Stunden, so ist ihr eine Begründung für die Verzögerung beizufügen.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-proc-gdpr-incident"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2: MELDEN ist ein Prozessakt → nur gdpr-incident. Systeme, in denen ein Breach passieren KÖNNTE (portal, grievance, snowflake), sind transitiv → no-match. grievance zusätzlich Regime-Grenze (LkSG-Kanal, nicht DSGVO). TEXT-QUELLE: vor Freeze gegen EUR-Lex verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "dsgvo-art32-security",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Sicherheit der Verarbeitung",
+      "fullText": "Sicherheit der Verarbeitung. Unter Berücksichtigung des Stands der Technik, der Implementierungskosten und der Art, des Umfangs, der Umstände und der Zwecke der Verarbeitung sowie der unterschiedlichen Eintrittswahrscheinlichkeit und Schwere des Risikos für die Rechte und Freiheiten natürlicher Personen treffen der Verantwortliche und der Auftragsverarbeiter geeignete technische und organisatorische Maßnahmen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten. Bei der Beurteilung des angemessenen Schutzniveaus sind insbesondere die Risiken zu berücksichtigen, die mit der Verarbeitung verbunden sind, insbesondere durch - ob unbeabsichtigt oder unrechtmäßig - Vernichtung, Verlust, Veränderung oder unbefugte Offenlegung von beziehungsweise unbefugten Zugang zu personenbezogenen Daten.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "el-isms",
+          "name": "Information Security Management (ISMS)",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability governing security policies, risk treatment and technical/organisational measures across the IT landscape."
+        },
+        {
+          "id": "el-encryption",
+          "name": "Encryption & Key Management Service",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Central service providing encryption at rest/in transit and cryptographic key lifecycle management."
+        },
+        {
+          "id": "el-backup",
+          "name": "Backup & Restore Service",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Scheduled backups and tested restore procedures for business-critical systems and data."
+        },
+        {
+          "id": "el-crm",
+          "name": "Customer Relationship Management",
+          "type": "application",
+          "layer": "application",
+          "description": "CRM system storing customer master data, contact history and marketing consents."
+        },
+        {
+          "id": "el-intranet-wiki",
+          "name": "Intranet Wiki",
+          "type": "application",
+          "layer": "application",
+          "description": "Internal knowledge base for team documentation and meeting notes."
+        }
+      ],
+      "goldElementIds": [
+        "el-isms",
+        "el-encryption",
+        "el-backup"
+      ],
+      "ambiguous": true,
+      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. isms/encryption/backup: implementieren die geforderten TOMs (Rubrik 2.2/2.4). GRENZFALL el-crm: verarbeitet personenbezogene Daten und muss abgesichert werden - konservativ no-match (Rubrik 4), im Review entscheiden. wiki: no-match. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "dsgvo-art17-erasure-bsh",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 17",
+      "title": "Recht auf Löschung",
+      "fullText": "Die betroffene Person hat das Recht, von dem Verantwortlichen zu verlangen, dass sie betreffende personenbezogene Daten unverzüglich gelöscht werden, und der Verantwortliche ist verpflichtet, personenbezogene Daten unverzüglich zu löschen, sofern einer der folgenden Gründe zutrifft: Die personenbezogenen Daten sind für die Zwecke, für die sie erhoben oder auf sonstige Weise verarbeitet wurden, nicht mehr notwendig. Die betroffene Person widerruft ihre Einwilligung, auf die sich die Verarbeitung stützte, und es fehlt an einer anderweitigen Rechtsgrundlage für die Verarbeitung.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-app-salesforce",
+        "bsh-tech-snowflake",
+        "bsh-app-supplier-portal"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 1: LÖSCHEN KÖNNEN ist Systemfähigkeit → jeder dokumentierte pbD-Halter: salesforce (customer personal data), snowflake (personal data from CRM/portals), supplier-portal (supplier contact persons — NEU gegenüber v1). grievance: pbD nicht in Beschreibung dokumentiert → no-match (Zusatzbedingung §2.3). azure: Hosting-Infrastruktur → transitiv. TEXT-QUELLE: vor Freeze gegen EUR-Lex verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "dsgvo-art51-authority-hardneg",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 51",
+      "title": "Aufsichtsbehörde",
+      "fullText": "Jeder Mitgliedstaat sieht vor, dass eine oder mehrere unabhängige Behörden für die Überwachung der Anwendung dieser Verordnung zuständig sind, damit die Grundrechte und Grundfreiheiten natürlicher Personen bei der Verarbeitung geschützt werden und der freie Verkehr personenbezogener Daten in der Union erleichtert wird. Jede Aufsichtsbehörde leistet einen Beitrag zur einheitlichen Anwendung dieser Verordnung in der gesamten Union.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. HARD NEGATIVE: adressiert Mitgliedstaaten/Behörden (Rubrik 3 - Organisationspflicht ohne Systembezug). Kein Element betroffen. TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "nis2-art20-governance-bsh",
+      "source": "nis2",
+      "paragraphNumber": "Art. 20",
+      "title": "Governance",
+      "fullText": "Governance. Member States shall ensure that the management bodies of essential and important entities approve the cybersecurity risk-management measures taken by those entities in order to comply with Article 21, oversee its implementation and can be held liable for infringements by the entities of that Article. Member States shall ensure that members of the management bodies of essential and important entities are required to follow training, and shall encourage essential and important entities to offer similar training to their employees on a regular basis.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. HARD NEGATIVE gegen realistischen Pool: Pflicht trifft Leitungsorgane (Billigung, Aufsicht, Schulung) - kein Element im Pool implementiert Board-Governance (Rubrik 3). TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "nis2-art21-riskmgmt-bsh",
+      "source": "nis2",
+      "paragraphNumber": "Art. 21",
+      "title": "Cybersecurity risk-management measures",
+      "fullText": "Cybersecurity risk-management measures. Member States shall ensure that essential and important entities take appropriate and proportionate technical, operational and organisational measures to manage the risks posed to the security of network and information systems which those entities use for their operations or for the provision of their services. The measures referred to in paragraph 1 shall be based on an all-hazards approach that aims to protect network and information systems and the physical environment of those systems from incidents. Member States shall ensure that, when considering which measures referred to in paragraph 2, point (d), of this Article are appropriate, entities take into account the vulnerabilities specific to each direct supplier and service provider and the overall quality of products and cybersecurity practices of their suppliers and service providers, including their secure development procedures.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-tech-mes",
+        "bsh-tech-azure",
+        "bsh-proc-supplier-risk"
+      ],
+      "ambiguous": true,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 1: Maßnahmen werden AN Netz-/Informationssystemen umgesetzt → mes (OT-Kern), azure (Plattform für Betrieb/Dienste); supplier-risk über Abs. 3 Lieferkettensicherheit. GRENZFALL bleibt snowflake (Informationssystem, aber primär Analytics) → ambiguous, in Adjudikation nach Re-Label entscheiden. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "nis2-art22-supplychain-hardneg",
+      "source": "nis2",
+      "paragraphNumber": "Art. 22",
+      "title": "Union level coordinated security risk assessments of critical supply chains",
+      "fullText": "The Cooperation Group, in cooperation with the Commission and ENISA, may carry out coordinated security risk assessments of specific critical ICT services, ICT systems or ICT products supply chains, taking into account technical and, where relevant, non-technical risk factors.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). HARD NEGATIVE bestätigt per Adressaten-Test (§3): Subjekt sind Cooperation Group/Kommission/ENISA (EU-Gremien). supplier-portal/supplier-risk sind thematisch nah, aber Art. 22 erzeugt keine Unternehmens-Pflicht.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "nis2-art23-reporting-bsh",
+      "source": "nis2",
+      "paragraphNumber": "Art. 23",
+      "title": "Reporting obligations",
+      "fullText": "Member States shall ensure that essential and important entities notify, without undue delay, their CSIRT or, where applicable, their competent authority of any incident that has a significant impact on the provision of their services. For the purposes of the notification, the entities concerned shall submit to the CSIRT or, where applicable, the competent authority an early warning without undue delay and in any event within 24 hours of becoming aware of the significant incident.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": true,
+      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. KNIFFLIG (bewusst): Pool hat KEINEN Cyber-Incident-Prozess. gdpr-incident ist Near-Miss (Datenschutz-Regime, nicht NIS2-Sicherheitsvorfall) - nach Rubrik 3 no-match. REVIEW: entweder bestätigen oder Element im Modell ergänzen. TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-03"
+    },
+    {
+      "caseId": "lksg-p3-sorgfalt-bsh",
+      "source": "lksg",
+      "paragraphNumber": "§ 3",
+      "title": "Sorgfaltspflichten",
+      "fullText": "Die Unternehmen sind verpflichtet, in ihren Lieferketten die in Absatz 2 genannten menschenrechtlichen und umweltbezogenen Sorgfaltspflichten in angemessener Weise zu beachten mit dem Ziel, menschenrechtlichen oder umweltbezogenen Risiken vorzubeugen oder sie zu minimieren oder die Verletzung menschenrechtsbezogener oder umweltbezogener Pflichten zu beenden. Die Sorgfaltspflichten enthalten: die Einrichtung eines Risikomanagements, die Festlegung einer betriebsinternen Zuständigkeit, die Durchführung regelmäßiger Risikoanalysen, die Abgabe einer Grundsatzerklärung. Die Sorgfaltspflichten beziehen sich auf den eigenen Geschäftsbereich, das Handeln eines unmittelbaren Zulieferers und das Handeln eines mittelbaren Zulieferers.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-cap-supplier-dd",
+        "bsh-proc-supplier-risk"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Capability-Regel (§2.5): supplier-dd (Capability) trägt das GESAMTE Sorgfaltspflichten-Bündel → match; supplier-risk implementiert die namentlich geforderte Risikoanalyse → zusätzlich match. esg-platform: sammelt Reporting-Daten, führt keine Sorgfaltspflicht aus → Stufe 2 / thematische Nähe, no-match.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "lksg-p6-praevention-bsh",
+      "source": "lksg",
+      "paragraphNumber": "§ 6",
+      "title": "Präventionsmaßnahmen",
+      "fullText": "Stellt ein Unternehmen im Rahmen einer Risikoanalyse nach Paragraf 5 ein Risiko in seinem eigenen Geschäftsbereich oder bei einem unmittelbaren Zulieferer fest, hat es unverzüglich angemessene Präventionsmaßnahmen zu verankern. Das Unternehmen muss in seinem eigenen Geschäftsbereich eine Grundsatzerklärung über seine Menschenrechtsstrategie abgeben. Die Unternehmensleitung muss diese abgeben. Das Unternehmen hat angemessene Präventionsmaßnahmen in seinem eigenen Geschäftsbereich zu verankern, insbesondere die Umsetzung der in der Grundsatzerklärung dargelegten Menschenrechtsstrategie in den relevanten Geschäftsabläufen.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-cap-supplier-dd"
+      ],
+      "ambiguous": true,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). supplier-dd verankert Präventionsmaßnahmen beim Zulieferer (funktionale Pflicht 2.2). gdpr-incident: anderes Regime (§3 Regime-Grenze) → no-match. GRENZFALL bleibt supplier-portal (Self-Assessments als Präventionsinstrument) → ambiguous.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "lksg-p8-beschwerde-bsh",
+      "source": "lksg",
+      "paragraphNumber": "§ 8",
+      "title": "Beschwerdeverfahren",
+      "fullText": "Das Unternehmen hat dafür zu sorgen, dass ein angemessenes unternehmensinternes Beschwerdeverfahren eingerichtet ist. Das Beschwerdeverfahren ermöglicht es Personen, auf menschenrechtliche und umweltbezogene Risiken sowie auf Verletzungen menschenrechtsbezogener oder umweltbezogener Pflichten hinzuweisen, die durch das wirtschaftliche Handeln eines Unternehmens im eigenen Geschäftsbereich oder eines unmittelbaren Zulieferers entstanden sind.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [
+        "bsh-app-grievance"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). grievance IST der geforderte Beschwerdekanal (funktionale Pflicht 2.2, Beispielkatalog §2a) → match. supplier-risk/csrd-cycle/supplier-portal: nur thematische Nähe → no-match. TEXT-QUELLE: vor Freeze gegen gesetze-im-internet verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    },
+    {
+      "caseId": "lksg-p10-bericht-bsh",
+      "source": "lksg",
+      "paragraphNumber": "§ 10",
+      "title": "Dokumentations- und Berichtspflicht",
+      "fullText": "Das Unternehmen hat über die Erfüllung seiner Sorgfaltspflichten im vergangenen Geschäftsjahr jährlich einen Bericht zu erstellen und spätestens vier Monate nach dem Schluss des Geschäftsjahres auf seiner Internetseite für einen Zeitraum von sieben Jahren kostenfrei öffentlich zugänglich zu machen.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "candidates": [
+        {
+          "id": "bsh-cap-supplier-dd",
+          "name": "Supplier Due Diligence",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability covering human-rights and environmental due diligence across the supply chain: supplier screening, contractual assurances, audits."
+        },
+        {
+          "id": "bsh-cap-ghg",
+          "name": "GHG Accounting",
+          "type": "capability",
+          "layer": "business",
+          "description": "Capability to measure and account greenhouse-gas emissions (Scope 1-3) for sustainability reporting."
+        },
+        {
+          "id": "bsh-proc-supplier-risk",
+          "name": "Supplier Risk Assessment",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Recurring process performing risk analyses of direct and indirect suppliers (human rights, environment, security)."
+        },
+        {
+          "id": "bsh-proc-gdpr-incident",
+          "name": "GDPR Incident Response",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Process detecting, assessing and reporting personal-data breaches, including notification to the supervisory authority."
+        },
+        {
+          "id": "bsh-proc-csrd-cycle",
+          "name": "CSRD Reporting Cycle",
+          "type": "business_process",
+          "layer": "business",
+          "description": "Annual sustainability reporting process compiling ESG disclosures under CSRD."
+        },
+        {
+          "id": "bsh-app-esg",
+          "name": "ESG Data Platform",
+          "type": "application",
+          "layer": "application",
+          "description": "Central platform collecting and consolidating ESG data for reporting."
+        },
+        {
+          "id": "bsh-app-supplier-portal",
+          "name": "Supplier Self-Service Portal",
+          "type": "application",
+          "layer": "application",
+          "description": "Portal where suppliers maintain master data and complete self-assessments; stores supplier contact persons."
+        },
+        {
+          "id": "bsh-app-grievance",
+          "name": "Human Rights Grievance Mgmt",
+          "type": "application",
+          "layer": "application",
+          "description": "Complaints channel for human-rights and environmental concerns from employees and supply-chain workers."
+        },
+        {
+          "id": "bsh-app-salesforce",
+          "name": "Salesforce Service Cloud",
+          "type": "application",
+          "layer": "application",
+          "description": "Customer service platform storing customer personal data and case history."
+        },
+        {
+          "id": "bsh-tech-azure",
+          "name": "Azure EU-Central",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Cloud platform hosting business applications and data workloads in the EU."
+        },
+        {
+          "id": "bsh-tech-snowflake",
+          "name": "Snowflake (EU)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Data warehouse consolidating business data, including personal data from CRM and portals."
+        },
+        {
+          "id": "bsh-tech-mes",
+          "name": "Factory MES Systems",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Operational manufacturing execution systems controlling factory production lines."
+        }
+      ],
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2 + Regime-Grenze (§3): LkSG-Bericht ist ein eigener Akt; csrd-cycle erfüllt die CSRD-Pflicht, nicht die LkSG-Pflicht → no-match. esg-platform sammelt ESG-Daten, hält aber laut Beschreibung keine LkSG-Sorgfaltsnachweise → no-match. Bleibt Hard Negative. TEXT-QUELLE: vor Freeze gegen gesetze-im-internet verifizieren.",
+      "annotator": "claude-draft",
+      "labeledAt": "2026-07-04"
+    }
+  ]
+}

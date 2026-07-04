@@ -6,10 +6,10 @@
  * hakt die betroffenen Elemente an und klickt „Export" — heraus fällt ein
  * schema-gültiges Golden-JSON, das direkt in `golden:kappa` / `eval:mapping`
  * geht. Vorhandene goldElementIds/Notizen werden NICHT angezeigt (kein Bias),
- * daher kann man die Datei direkt aus `mapping.v1.json` erzeugen — ein
+ * daher kann man die Datei direkt aus `mapping.v2.json` erzeugen — ein
  * separater Blind-Schritt ist nicht nötig.
  *
- *   npm run golden:worksheet -- src/evals/golden/mapping.v1.json /tmp/labeling.html
+ *   npm run golden:worksheet -- src/evals/golden/mapping.v2.json /tmp/labeling.html
  *
  * Linear: THE-379 (REQ-EVAL-001.1) · Epic THE-378 (UC-EVAL-001)
  */
@@ -135,10 +135,15 @@ export function renderLabelingForm(set: GoldenSet): string {
 </header>
 <div class="wrap">
   <details class="rubric">
-    <summary>Kurz-Rubrik — wann ist ein Element „betroffen"? (Details: RUBRIC.md)</summary>
+    <summary>Kurz-Rubrik v2 — wann ist ein Element „betroffen"? (Details: RUBRIC.md)</summary>
     <ul>
-      <li><b>match</b>, wenn der Paragraph das Element konkret <b>anpassen/prüfen/nachweisen</b> lässt: expliziter Scope, funktionale Pflicht, Datenbezug, oder Nachweispflicht.</li>
-      <li><b>no-match</b> bei bloßer thematischer Nähe, transitiver Betroffenheit, oder reiner Organisationspflicht ohne System.</li>
+      <li><b>match</b>, wenn der Paragraph das Element konkret <b>anpassen/prüfen/nachweisen</b> lässt: expliziter Scope, funktionale Pflicht, Datenbezug (s. Zwei-Stufen-Test), oder Nachweispflicht.</li>
+      <li><b>Zwei-Stufen-Test für datenhaltende Systeme:</b> Verlangt der Paragraph eine <b>Fähigkeit im System selbst</b> (löschen können, absichern) → jeder Halter der Datenkategorie ist match, sofern die Daten in der Element-Beschreibung <b>explizit dokumentiert</b> sind. Verlangt er nur einen <b>Akt, den ein anderes Element ausführt</b> (Meldung, Verzeichnis, Bericht) → Datenhalter NICHT ankreuzen, nur den Ausführer.</li>
+      <li><b>Merksatz:</b> „Muss an DIESEM Element etwas gebaut/geändert/nachgewiesen werden — oder steht es nur in einer Liste, die woanders geführt wird?"</li>
+      <li><b>Adressaten-Test:</b> Richtet sich der Paragraph an Behörden/Mitgliedstaaten/EU-Gremien (nicht ans Unternehmen) → NICHTS ankreuzen, auch wenn ein Element thematisch passt.</li>
+      <li><b>Regime-Grenze:</b> Ein Element, das die ähnliche Pflicht eines ANDEREN Gesetzes erfüllt (z. B. CSRD-Zyklus beim LkSG-Bericht, DSGVO-Meldeprozess bei LkSG-Prävention) → no-match.</li>
+      <li><b>Capability + Prozess</b> schließen sich nicht aus: Capability ankreuzen, wenn das ganze Pflichtenbündel gemeint ist; den Prozess zusätzlich, wenn er eine namentlich geforderte Einzelpflicht implementiert.</li>
+      <li><b>no-match</b> bei bloßer thematischer Nähe oder transitiver Betroffenheit (Hosting-Plattform, verbundene Systeme).</li>
       <li>Leitfrage: „Würde ein Auditor verlangen, dieses Element im Compliance-Nachweis für den Paragraphen aufzuführen?"</li>
       <li>Trifft <b>kein</b> Element zu → nichts ankreuzen (das ist ein gültiges „Hard Negative").</li>
       <li>50/50 → nicht ankreuzen <b>und</b> „mehrdeutig" markieren.</li>
