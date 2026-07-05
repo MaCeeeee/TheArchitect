@@ -174,22 +174,38 @@ export function sanitizeJudgeResponse(
   return { verdicts, missed, emptyJustified: parsed.emptyJustified };
 }
 
+export interface JudgePolicy {
+  /**
+   * `superfluous` = Conciseness-Achse ("vertretbar, aber unnötig"). Default
+   * `false`: raus (maximale Präzision/Sparsamkeit). `true`: behalten — denn ein
+   * fälschlich als superfluous geflaggtes Gold-Element ist ein TP-Verlust; die
+   * Anti-Goodhart-Regel verlangt Recall-Nicht-Unterlegenheit, bevor ein
+   * Conciseness-Schnitt zählt.
+   */
+  keepSuperfluous?: boolean;
+}
+
 /**
  * Die EINE Filter-Stelle: gefilterte Element-Menge nach Judge-Sicht.
- * Policy: required + uncertain bleiben (uncertain killt man nicht automatisch —
- * das geht in die Human-Queue), incorrect + superfluous fallen raus,
- * missed kommt dazu. Reine Funktion.
+ * Policy: required + uncertain bleiben immer (uncertain → Human-Queue, nicht
+ * auto-killen); incorrect fällt raus; superfluous je nach Policy; missed kommt
+ * dazu. Reine Funktion.
  */
 export function applyJudgeVerdicts(
   proposalIds: string[],
-  judge: JudgeResponse
+  judge: JudgeResponse,
+  policy: JudgePolicy = {}
 ): { kept: string[]; added: string[]; removed: string[] } {
   const byId = new Map(judge.verdicts.map(v => [v.elementId, v.verdict]));
   const kept: string[] = [];
   const removed: string[] = [];
   for (const id of proposalIds) {
     const verdict = byId.get(id) ?? 'uncertain';
-    if (verdict === 'required' || verdict === 'uncertain') kept.push(id);
+    const keep =
+      verdict === 'required' ||
+      verdict === 'uncertain' ||
+      (verdict === 'superfluous' && policy.keepSuperfluous === true);
+    if (keep) kept.push(id);
     else removed.push(id);
   }
   const added = judge.missed.map(m => m.elementId);

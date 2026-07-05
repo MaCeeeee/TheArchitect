@@ -201,7 +201,8 @@ async function main(): Promise<void> {
   );
 
   const pre: CaseOutcome[] = [];
-  const post: CaseOutcome[] = [];
+  const post: CaseOutcome[] = []; // strict: superfluous raus
+  const postLenient: CaseOutcome[] = []; // superfluous behalten (Anti-Goodhart)
   const quality: Array<JudgeQuality & { caseId: string; emptyJustified: boolean }> = [];
   const details: string[] = [];
   const judgeFailed: string[] = [];
@@ -261,13 +262,20 @@ async function main(): Promise<void> {
           caseId: c.caseId, source: c.source, goldElementIds: c.goldElementIds,
           predicted: predictions.map(p => ({ elementId: p.elementId, confidence: p.confidence })),
         });
+        postLenient.push({
+          caseId: c.caseId, source: c.source, goldElementIds: c.goldElementIds,
+          predicted: predictions.map(p => ({ elementId: p.elementId, confidence: p.confidence })),
+        });
         details.push(`- \`${c.caseId}\` — JUDGE FAILED (Generator-Sicht unverändert, ${proposalIds.length} Mappings)`);
         continue;
       }
     }
 
-    const { kept, added, removed } = applyJudgeVerdicts(proposalIds, judge);
-    const postIds = [...kept, ...added];
+    const strict = applyJudgeVerdicts(proposalIds, judge);
+    const lenient = applyJudgeVerdicts(proposalIds, judge, { keepSuperfluous: true });
+    const postIds = [...strict.kept, ...strict.added];
+    const postLenientIds = [...lenient.kept, ...lenient.added];
+    const { added, removed } = strict;
 
     pre.push({
       caseId: c.caseId,
@@ -280,6 +288,12 @@ async function main(): Promise<void> {
       source: c.source,
       goldElementIds: c.goldElementIds,
       predicted: postIds.map(id => ({ elementId: id, confidence: 1 })),
+    });
+    postLenient.push({
+      caseId: c.caseId,
+      source: c.source,
+      goldElementIds: c.goldElementIds,
+      predicted: postLenientIds.map(id => ({ elementId: id, confidence: 1 })),
     });
     const q = judgeQualityForCase(c.goldElementIds, proposalIds, judge);
     quality.push({ ...q, caseId: c.caseId, emptyJustified: judge.emptyJustified });
@@ -294,10 +308,13 @@ async function main(): Promise<void> {
 
   const mPre = aggregateMetrics(pre);
   const mPost = aggregateMetrics(post);
+  const mPostLen = aggregateMetrics(postLenient);
   const ePre = emptySetAccuracy(pre);
   const ePost = emptySetAccuracy(post);
+  const ePostLen = emptySetAccuracy(postLenient);
   const cPre = concisenessMetrics(pre, cap);
   const cPost = concisenessMetrics(post, cap);
+  const cPostLen = concisenessMetrics(postLenient, cap);
 
   const sum = quality.reduce(
     (a, q) => ({
@@ -329,9 +346,15 @@ async function main(): Promise<void> {
     `| Generator (vor Judge) | ${pct(mPre.precision)} | ${pct(mPre.recall)} | ${pct(mPre.f2)} | ${pct(ePre)} | ${cPre.overMatchRatio.toFixed(2)} | ${cPre.meanPredictionsPerCase.toFixed(2)} |`
   );
   lines.push(
-    `| **Kaskade (nach Judge)** | **${pct(mPost.precision)}** | **${pct(mPost.recall)}** | **${pct(mPost.f2)}** | **${pct(ePost)}** | ${cPost.overMatchRatio.toFixed(2)} | ${cPost.meanPredictionsPerCase.toFixed(2)} |`
+    `| Kaskade — strikt (superfluous raus) | ${pct(mPost.precision)} | ${pct(mPost.recall)} | ${pct(mPost.f2)} | ${pct(ePost)} | ${cPost.overMatchRatio.toFixed(2)} | ${cPost.meanPredictionsPerCase.toFixed(2)} |`
+  );
+  lines.push(
+    `| **Kaskade — recall-schonend (superfluous bleibt)** | **${pct(mPostLen.precision)}** | **${pct(mPostLen.recall)}** | **${pct(mPostLen.f2)}** | **${pct(ePostLen)}** | ${cPostLen.overMatchRatio.toFixed(2)} | ${cPostLen.meanPredictionsPerCase.toFixed(2)} |`
   );
   lines.push('');
+  lines.push('_Strikt vs. recall-schonend zeigt die Anti-Goodhart-Kopplung: `superfluous`_');
+  lines.push('_ist die Conciseness-Achse — behält man es, sinkt der TP-Verlust (Recall ↑),_');
+  lines.push('_die Präzision ↓. Leitmetrik F2 entscheidet, welche Policy netto gewinnt._');
   lines.push('## Judge-Qualität (Paar-Ebene über alle Cases)');
   lines.push('');
   lines.push('| Metrik | Wert | Bedeutung |');

@@ -101,6 +101,20 @@ describe('applyJudgeVerdicts() — die Filter-Policy', () => {
     const r = applyJudgeVerdicts(['x'], resp());
     expect(r.kept).toEqual(['x']);
   });
+
+  it('keepSuperfluous policy retains superfluous (Anti-Goodhart: Recall schonen)', () => {
+    const judge = resp({
+      verdicts: [
+        { elementId: 'a', verdict: 'required', reason: '' },
+        { elementId: 'b', verdict: 'superfluous', reason: '' },
+        { elementId: 'c', verdict: 'incorrect', reason: '' },
+      ],
+    });
+    // strikt: b raus
+    expect(applyJudgeVerdicts(['a', 'b', 'c'], judge).kept).toEqual(['a']);
+    // recall-schonend: b bleibt, c (incorrect) fällt weiterhin raus
+    expect(applyJudgeVerdicts(['a', 'b', 'c'], judge, { keepSuperfluous: true }).kept).toEqual(['a', 'b']);
+  });
 });
 
 describe('judgeQualityForCase()', () => {
