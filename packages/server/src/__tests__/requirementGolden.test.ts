@@ -49,11 +49,14 @@ const tmp = (obj: unknown): string => {
 };
 
 describe('loadRequirementGolden()', () => {
-  it('loads the committed self requirement set', () => {
+  it('loads the committed self requirement set (frozen baseline)', () => {
     const s = loadRequirementGolden(DEFAULT_REQUIREMENTS_PATH);
     expect(s.requirements.length).toBeGreaterThanOrEqual(10);
     expect(s.candidates.length).toBeGreaterThanOrEqual(30);
-    expect(s.frozen).toBe(false);
+    expect(s.frozen).toBe(true); // adjudiziert + eingefroren (Kappa 0,709 Mensch-vs-Regel)
+    expect(s.version).toBe('req-self-v1');
+    // Gap-Befunde (leer): a6-lawbasis, a30-ropa, a33-breach
+    expect(s.requirements.filter(r => r.goldElementIds.length === 0)).toHaveLength(3);
   });
 
   it('rejects an unknown predicate', () => {

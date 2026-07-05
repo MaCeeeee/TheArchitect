@@ -1,6 +1,6 @@
 {
-  "version": "req-self-v1-draft",
-  "frozen": false,
+  "version": "req-self-v1",
+  "frozen": true,
   "rubricRef": "../RUBRIC.md",
   "candidates": [
     {
@@ -686,7 +686,21 @@
       "description": "Every system that stores personal data must be able to delete or anonymise it once the defined retention period ends (storage limitation).",
       "priority": "must",
       "predicate": "gdpr.art17",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Alle dokumentierten pbD-Halter.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a5-security",
@@ -696,7 +710,22 @@
       "description": "Personal data must be processed with technical and organisational measures ensuring integrity and confidentiality.",
       "priority": "must",
       "predicate": "gdpr.art32",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit",
+        "4193802f-tech-caddy"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Entscheidung a: Halter + Maßnahme (Caddy/TLS).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a6-lawbasis",
@@ -705,7 +734,11 @@
       "title": "Capture and manage a lawful basis (e.g. consent) for each processing activity",
       "description": "The system that manages user identity must record and enforce a lawful basis (consent, contract) for processing personal data.",
       "priority": "must",
-      "goldElementIds": []
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Kein Consent-Management-System modelliert → Gap (leer).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a15-access",
@@ -715,7 +748,21 @@
       "description": "Each system holding personal data must be able to retrieve and export that data for a subject-access request.",
       "priority": "must",
       "predicate": "gdpr.art17",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Alle pbD-Halter müssen Auskunft liefern können.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a17-erase",
@@ -725,7 +772,21 @@
       "description": "Each system holding personal data must support deletion of an individual’s data without undue delay.",
       "priority": "must",
       "predicate": "gdpr.art17",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Alle pbD-Halter müssen löschen können.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a17-propagate",
@@ -734,8 +795,18 @@
       "title": "Propagate erasure to downstream and replicated stores",
       "description": "An erasure request must reach all replicated / downstream stores that hold copies of the personal data.",
       "priority": "should",
-      "predicate": "gdpr.art17",
-      "goldElementIds": []
+      "predicate": "gdpr.art28",
+      "goldElementIds": [
+        "4193802f-tech-vps",
+        "4193802f-tech-dataserver",
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Downstream/Weitergabe-Ziele (externe Verarbeiter/Hosting), NICHT Primärhalter — Prädikat auf gdpr.art28 korrigiert.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a28-dpa",
@@ -745,7 +816,17 @@
       "description": "Every third party that processes personal data on our behalf must be governed by a data-processing agreement.",
       "priority": "must",
       "predicate": "gdpr.art28",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-tech-vps",
+        "4193802f-tech-dataserver",
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Externe Auftragsverarbeiter.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a30-ropa",
@@ -755,7 +836,11 @@
       "description": "A system or register must maintain the record of processing activities required by Art. 30.",
       "priority": "must",
       "predicate": "gdpr.art30",
-      "goldElementIds": []
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Kein VVT-System modelliert → Gap (leer).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a32-encrypt",
@@ -765,7 +850,22 @@
       "description": "Personal data must be encrypted in transit (TLS) and at rest; systems holding it must be covered by these measures.",
       "priority": "must",
       "predicate": "gdpr.art32",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit",
+        "4193802f-tech-caddy"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Entscheidung a: alle pbD-Halter + Verschlüsselungs-/TLS-Maßnahme (Caddy).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a32-access",
@@ -775,7 +875,21 @@
       "description": "Access to personal-data systems must be authenticated and authorised; security-relevant actions must be logged.",
       "priority": "must",
       "predicate": "gdpr.art32",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Entscheidung a: alle pbD-Halter (Auth-Maßnahme svc-auth bereits enthalten; Caddy=Transport, kein Access-Control).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a33-breach",
@@ -785,7 +899,11 @@
       "description": "A process/system must detect a personal-data breach and notify the supervisory authority within 72 hours.",
       "priority": "must",
       "predicate": "gdpr.art33",
-      "goldElementIds": []
+      "goldElementIds": [],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Kein Incident-Response-System modelliert → Gap (leer).",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     },
     {
       "reqId": "dsgvo-a44-transfer",
@@ -795,7 +913,15 @@
       "description": "Personal data sent to processors outside the EU/adequacy area must be covered by a valid transfer mechanism.",
       "priority": "must",
       "predicate": "gdpr.art44",
-      "goldElementIds": []
+      "goldElementIds": [
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ],
+      "ambiguous": false,
+      "notes": "Adjudiziert 2026-07-05 (Kappa 0,709 Mensch-vs-Regel). Nur US-Verarbeiter (Drittland); EU-VPS korrekt ausgeschlossen.",
+      "annotator": "adjudicated",
+      "labeledAt": "2026-07-05"
     }
   ]
 }
