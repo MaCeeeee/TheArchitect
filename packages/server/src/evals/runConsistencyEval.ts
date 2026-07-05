@@ -18,6 +18,7 @@
  *
  * Linear: THE-380 (REQ-EVAL-001.2) · Ergänzung aus SSL-Review (UC-EVAL-001)
  */
+import 'dotenv/config'; // .env laden (ANTHROPIC_API_KEY/MODEL), bevor der Service sie liest
 import fs from 'node:fs';
 import path from 'node:path';
 import { mapTextToElements } from '../services/complianceMapping.service';

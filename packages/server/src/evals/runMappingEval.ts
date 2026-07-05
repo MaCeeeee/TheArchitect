@@ -19,6 +19,7 @@
  *
  * Linear: THE-380 (REQ-EVAL-001.2) · Epic THE-378 (UC-EVAL-001)
  */
+import 'dotenv/config'; // .env laden (ANTHROPIC_API_KEY/MODEL), bevor der Service sie liest
 import fs from 'node:fs';
 import path from 'node:path';
 import {
