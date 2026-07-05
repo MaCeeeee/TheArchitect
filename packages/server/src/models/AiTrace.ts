@@ -15,7 +15,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 export type AiTraceOperation =
   | 'mapping' // Regulation → element, persisted
   | 'mapping-live' // Paste-&-see, not persisted
-  | 'requirement-generation';
+  | 'requirement-generation'
+  | 'judge'; // Kaskaden-Validator (THE-401 S2): bewertet Generator-Mappings, löscht nie
 
 export interface AiTracePrediction {
   elementId: string;
@@ -66,7 +67,7 @@ const aiTraceSchema = new Schema<IAiTrace>(
     requestId: { type: String, required: true, index: true },
     operation: {
       type: String,
-      enum: ['mapping', 'mapping-live', 'requirement-generation'],
+      enum: ['mapping', 'mapping-live', 'requirement-generation', 'judge'],
       required: true,
     },
     modelId: { type: String, required: true },
