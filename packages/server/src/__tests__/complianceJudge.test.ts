@@ -171,12 +171,22 @@ describe('judgeMappings() — Roundtrip mit Fake-Client', () => {
     expect(res.meta.inputTokens).toBe(100);
   });
 
-  it('rejects schema-invalid judge output with a clear error', async () => {
+  it('rejects schema-invalid judge output after retries with a clear error', async () => {
     await expect(
       judgeMappings({
         ...baseArgs,
         anthropicClient: fakeClient('{"verdicts":[{"elementId":"db","verdict":"maybe","reason":"x"}]}'),
       })
-    ).rejects.toThrow(/schema validation/);
+    ).rejects.toThrow(/invalid after 2 attempts/);
+  });
+
+  it('recovers malformed JSON with literal newlines in a reason string', async () => {
+    const res = await judgeMappings({
+      ...baseArgs,
+      anthropicClient: fakeClient(
+        '{"verdicts":[{"elementId":"db","verdict":"required","reason":"line one\nline two"}],"missed":[],"emptyJustified":false}'
+      ),
+    });
+    expect(res.verdicts[0].verdict).toBe('required');
   });
 });

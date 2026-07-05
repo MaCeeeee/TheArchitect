@@ -204,6 +204,7 @@ async function main(): Promise<void> {
   const post: CaseOutcome[] = [];
   const quality: Array<JudgeQuality & { caseId: string; emptyJustified: boolean }> = [];
   const details: string[] = [];
+  const judgeFailed: string[] = [];
 
   for (const c of set.cases) {
     const predictions = await generatorPredict(c, set, opts.genModel, genPromptHash, opts.offline);
@@ -224,26 +225,45 @@ async function main(): Promise<void> {
     if (!judge) {
       if (opts.offline) throw new Error(`--offline: kein Judge-Cache für "${c.caseId}"`);
       fromCache = false;
-      const res = await judgeMappings({
-        requirementTitle: c.title ?? `${c.source} ${c.paragraphNumber}`,
-        requirementText: c.fullText,
-        source: c.source,
-        paragraphNumber: c.paragraphNumber,
-        candidates: c.candidates.map(el => ({
-          id: el.id,
-          name: el.name,
-          type: el.type,
-          description: el.description,
-        })),
-        proposals: predictions.map(p => ({
-          elementId: p.elementId,
-          confidence: p.confidence,
-          reasoning: p.reasoning,
-        })),
-        model: opts.judgeModel,
-      });
-      judge = { verdicts: res.verdicts, missed: res.missed, emptyJustified: res.emptyJustified };
-      writeJudgeCache(judgeBucket, c.caseId, { cacheKey: judgeKey, judge, cachedAt: startedAt });
+      try {
+        const res = await judgeMappings({
+          requirementTitle: c.title ?? `${c.source} ${c.paragraphNumber}`,
+          requirementText: c.fullText,
+          source: c.source,
+          paragraphNumber: c.paragraphNumber,
+          candidates: c.candidates.map(el => ({
+            id: el.id,
+            name: el.name,
+            type: el.type,
+            description: el.description,
+          })),
+          proposals: predictions.map(p => ({
+            elementId: p.elementId,
+            confidence: p.confidence,
+            reasoning: p.reasoning,
+          })),
+          model: opts.judgeModel,
+        });
+        judge = { verdicts: res.verdicts, missed: res.missed, emptyJustified: res.emptyJustified };
+        writeJudgeCache(judgeBucket, c.caseId, { cacheKey: judgeKey, judge, cachedAt: startedAt });
+      } catch (err) {
+        // Pro-Case-Resilienz: ein Judge-Fehler kippt nicht den ganzen Lauf.
+        // Ohne Verdikt bleibt die Generator-Sicht unverändert (kein Wegschneiden),
+        // der Fall wird als judge-failed markiert und NICHT in die Judge-Qualität
+        // gezählt (sonst verzerrt eine Nicht-Bewertung die Kill-Raten).
+        judgeFailed.push(c.caseId);
+        console.log(`[judge-eval] ⚠️  JUDGE FAILED ${c.caseId}: ${err instanceof Error ? err.message : err} — Generator-Sicht unverändert`);
+        pre.push({
+          caseId: c.caseId, source: c.source, goldElementIds: c.goldElementIds,
+          predicted: predictions.map(p => ({ elementId: p.elementId, confidence: p.confidence })),
+        });
+        post.push({
+          caseId: c.caseId, source: c.source, goldElementIds: c.goldElementIds,
+          predicted: predictions.map(p => ({ elementId: p.elementId, confidence: p.confidence })),
+        });
+        details.push(`- \`${c.caseId}\` — JUDGE FAILED (Generator-Sicht unverändert, ${proposalIds.length} Mappings)`);
+        continue;
+      }
     }
 
     const { kept, added, removed } = applyJudgeVerdicts(proposalIds, judge);
@@ -297,6 +317,9 @@ async function main(): Promise<void> {
   lines.push('');
   lines.push(`- Datum: ${startedAt} · Generator: \`${opts.genModel}\` (Cap ${cap}) · Judge: \`${opts.judgeModel}\``);
   lines.push(`- Judge-Prompt-Hash: \`${JUDGE_PROMPT_VERSION_HASH.slice(0, 12)}\` · Cases: ${set.cases.length}`);
+  if (judgeFailed.length) {
+    lines.push(`- ⚠️ Judge fehlgeschlagen (Generator-Sicht unverändert, nicht in Judge-Qualität): ${judgeFailed.join(', ')}`);
+  }
   lines.push('');
   lines.push('## Vorher/Nachher (die Kaskaden-Frage)');
   lines.push('');

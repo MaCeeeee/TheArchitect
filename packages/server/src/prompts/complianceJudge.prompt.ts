@@ -62,7 +62,8 @@ Output — JSON ONLY, exactly this schema:
 Hard rules:
   - EVERY proposed elementId gets EXACTLY ONE verdict. No extras, no omissions.
   - "missed" may ONLY contain candidate ids that were NOT proposed. NEVER invent ids.
-  - Reasons ALWAYS in English. NEVER output anything outside the JSON.`;
+  - Reasons ALWAYS in English. NEVER output anything outside the JSON.
+  - CRITICAL JSON SAFETY: inside "reason" strings use SINGLE quotes only — never double quotes (they break the JSON). No literal newlines inside strings. Keep each reason on one line.`;
 
 export function buildJudgeUserPrompt(args: {
   requirementTitle: string;

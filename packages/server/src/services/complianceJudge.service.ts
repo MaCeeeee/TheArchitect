@@ -71,7 +71,12 @@ export class ComplianceJudgeError extends Error {
 
 // ─── Reine Helfer (testbar) ─────────────────────────────────────
 
-/** JSON aus der LLM-Antwort ziehen (tolerant gegen ```json-Fences). */
+/**
+ * JSON aus der LLM-Antwort ziehen (tolerant gegen ```json-Fences). Glättet
+ * zusätzlich literale Steuerzeichen (Zeilenumbrüche/Tabs), die in string-Werten
+ * strenges JSON.parse brechen — häufigster Judge-Fehlerfall neben unescapten
+ * Quotes (die fängt der Prompt + Retry ab).
+ */
 export function extractJudgeJson(rawText: string): unknown {
   const fenced = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
   const body = fenced ? fenced[1] : rawText;
@@ -80,7 +85,13 @@ export function extractJudgeJson(rawText: string): unknown {
   if (start === -1 || end === -1 || end <= start) {
     throw new ComplianceJudgeError('judge returned no JSON object');
   }
-  return JSON.parse(body.slice(start, end + 1));
+  const slice = body.slice(start, end + 1);
+  try {
+    return JSON.parse(slice);
+  } catch {
+    // literale CR/LF/Tab in String-Werten → Leerzeichen (best effort)
+    return JSON.parse(slice.replace(/[\n\r\t]+/g, ' '));
+  }
 }
 
 /**
@@ -171,30 +182,42 @@ export async function judgeMappings(args: {
 
   const userMessage = buildJudgeUserPrompt(args);
   const startedAt = Date.now();
-  let response;
-  try {
-    response = await client.messages.create({
-      model,
-      system: JUDGE_SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: userMessage }],
-      max_tokens: MAX_TOKENS,
-    });
-  } catch (err) {
-    throw new ComplianceJudgeError(`Anthropic judge request failed: ${(err as Error).message}`, err);
+
+  // Retry: LLM ist stochastisch — malformiertes JSON / Schema-Miss ist beim
+  // zweiten Anlauf meist weg. Netzwerkfehler werden NICHT wiederholt (throw).
+  const MAX_ATTEMPTS = 2;
+  let rawText = '';
+  let response: Awaited<ReturnType<typeof client.messages.create>> | undefined;
+  let parsed: ReturnType<typeof JudgeResponseSchema.safeParse> | undefined;
+  let lastErr = '';
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      response = await client.messages.create({
+        model,
+        system: JUDGE_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userMessage }],
+        max_tokens: MAX_TOKENS,
+      });
+    } catch (err) {
+      throw new ComplianceJudgeError(`Anthropic judge request failed: ${(err as Error).message}`, err);
+    }
+    const textBlock = response.content.find(b => b.type === 'text');
+    rawText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+    try {
+      const candidate = JudgeResponseSchema.safeParse(extractJudgeJson(rawText));
+      if (candidate.success) {
+        parsed = candidate;
+        break;
+      }
+      lastErr = candidate.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+    } catch (err) {
+      lastErr = err instanceof Error ? err.message : String(err);
+    }
   }
   const latencyMs = Date.now() - startedAt;
 
-  const textBlock = response.content.find(b => b.type === 'text');
-  const rawText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
-  if (!rawText) throw new ComplianceJudgeError('judge returned empty response');
-
-  const parsed = JudgeResponseSchema.safeParse(extractJudgeJson(rawText));
-  if (!parsed.success) {
-    throw new ComplianceJudgeError(
-      `judge output failed schema validation: ${parsed.error.issues
-        .map(i => `${i.path.join('.')}: ${i.message}`)
-        .join('; ')}`
-    );
+  if (!parsed || !parsed.success) {
+    throw new ComplianceJudgeError(`judge output invalid after ${MAX_ATTEMPTS} attempts: ${lastErr}`);
   }
 
   const sanitized = sanitizeJudgeResponse(
