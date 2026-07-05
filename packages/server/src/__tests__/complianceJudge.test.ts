@@ -4,7 +4,7 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/complianceJudge.test.ts
  */
-import type Anthropic from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import {
   extractJudgeJson,
   sanitizeJudgeResponse,
@@ -131,11 +131,23 @@ describe('judgeQualityForCase()', () => {
 });
 
 describe('judgeMappings() — Roundtrip mit Fake-Client', () => {
+  // Text-Fallback-Client (kein tool_use — testet den Freitext-Parse-Pfad).
   const fakeClient = (text: string): Anthropic =>
     ({
       messages: {
         create: async () => ({
           content: [{ type: 'text', text }],
+          usage: { input_tokens: 100, output_tokens: 50 },
+        }),
+      },
+    }) as unknown as Anthropic;
+
+  // Tool-Use-Client (Primärpfad: API liefert garantiert valides input-Objekt).
+  const fakeToolClient = (input: unknown): Anthropic =>
+    ({
+      messages: {
+        create: async () => ({
+          content: [{ type: 'tool_use', name: 'submit_verdicts', input }],
           usage: { input_tokens: 100, output_tokens: 50 },
         }),
       },
@@ -178,6 +190,19 @@ describe('judgeMappings() — Roundtrip mit Fake-Client', () => {
         anthropicClient: fakeClient('{"verdicts":[{"elementId":"db","verdict":"maybe","reason":"x"}]}'),
       })
     ).rejects.toThrow(/invalid after 2 attempts/);
+  });
+
+  it('parses a tool_use input object (the primary structured-output path)', async () => {
+    const res = await judgeMappings({
+      ...baseArgs,
+      anthropicClient: fakeToolClient({
+        verdicts: [{ elementId: 'db', verdict: 'required', reason: 'holds account' }],
+        missed: [{ elementId: 'wiki', reason: 'sweep' }],
+        emptyJustified: false,
+      }),
+    });
+    expect(res.verdicts[0].verdict).toBe('required');
+    expect(res.missed.map(m => m.elementId)).toEqual(['wiki']);
   });
 
   it('recovers malformed JSON with literal newlines in a reason string', async () => {

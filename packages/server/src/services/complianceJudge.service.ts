@@ -30,7 +30,7 @@ import {
 export const JUDGE_PROMPT_VERSION_HASH = computeVersionHash(JUDGE_SYSTEM_PROMPT);
 
 const DEFAULT_JUDGE_MODEL = process.env.COMPLIANCE_JUDGE_MODEL || 'claude-sonnet-5';
-const MAX_TOKENS = 4096;
+const MAX_TOKENS = 8192; // 4096 trunkierte lange Verdikt-Listen (→ "no JSON object")
 
 // ─── Schema ─────────────────────────────────────────────────────
 
@@ -52,6 +52,43 @@ const JudgeResponseSchema = z.object({
 });
 
 export type JudgeResponse = z.infer<typeof JudgeResponseSchema>;
+
+/**
+ * Tool-Schema erzwingt valides JSON: statt Freitext-JSON zu parsen (33 % Fehlrate
+ * bei langen Begründungen mit Quotes/Newlines) gibt das Modell ein tool_use-Objekt
+ * zurück, das die API garantiert schema-konform serialisiert.
+ */
+const JUDGE_TOOL: Anthropic.Tool = {
+  name: 'submit_verdicts',
+  description: 'Submit the compliance-mapping verdicts, missed-sweep results and the empty-justified flag.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      verdicts: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            elementId: { type: 'string' },
+            verdict: { type: 'string', enum: [...JUDGE_VERDICTS] },
+            reason: { type: 'string' },
+          },
+          required: ['elementId', 'verdict', 'reason'],
+        },
+      },
+      missed: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: { elementId: { type: 'string' }, reason: { type: 'string' } },
+          required: ['elementId', 'reason'],
+        },
+      },
+      emptyJustified: { type: 'boolean' },
+    },
+    required: ['verdicts', 'missed', 'emptyJustified'],
+  },
+};
 
 export interface JudgeResult extends JudgeResponse {
   meta: {
@@ -183,8 +220,9 @@ export async function judgeMappings(args: {
   const userMessage = buildJudgeUserPrompt(args);
   const startedAt = Date.now();
 
-  // Retry: LLM ist stochastisch — malformiertes JSON / Schema-Miss ist beim
-  // zweiten Anlauf meist weg. Netzwerkfehler werden NICHT wiederholt (throw).
+  // Retry: auch mit erzwungenem Tool-Use kann das input-Objekt selten schema-
+  // fremde Werte tragen (z. B. verdict außerhalb des Enums) — zweiter Anlauf
+  // meist sauber. Netzwerkfehler werden NICHT wiederholt (throw).
   const MAX_ATTEMPTS = 2;
   let rawText = '';
   let response: Awaited<ReturnType<typeof client.messages.create>> | undefined;
@@ -197,21 +235,35 @@ export async function judgeMappings(args: {
         system: JUDGE_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: userMessage }],
         max_tokens: MAX_TOKENS,
+        tools: [JUDGE_TOOL],
+        tool_choice: { type: 'tool', name: JUDGE_TOOL.name },
       });
     } catch (err) {
       throw new ComplianceJudgeError(`Anthropic judge request failed: ${(err as Error).message}`, err);
     }
-    const textBlock = response.content.find(b => b.type === 'text');
-    rawText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
-    try {
-      const candidate = JudgeResponseSchema.safeParse(extractJudgeJson(rawText));
+    const toolBlock = response.content.find(b => b.type === 'tool_use');
+    if (toolBlock && toolBlock.type === 'tool_use') {
+      rawText = JSON.stringify(toolBlock.input);
+      const candidate = JudgeResponseSchema.safeParse(toolBlock.input);
       if (candidate.success) {
         parsed = candidate;
         break;
       }
       lastErr = candidate.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-    } catch (err) {
-      lastErr = err instanceof Error ? err.message : String(err);
+    } else {
+      // Fallback: manche Modelle antworten trotz tool_choice mit Text-JSON.
+      const textBlock = response.content.find(b => b.type === 'text');
+      rawText = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+      try {
+        const candidate = JudgeResponseSchema.safeParse(extractJudgeJson(rawText));
+        if (candidate.success) {
+          parsed = candidate;
+          break;
+        }
+        lastErr = candidate.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      } catch (err) {
+        lastErr = err instanceof Error ? err.message : String(err);
+      }
     }
   }
   const latencyMs = Date.now() - startedAt;
