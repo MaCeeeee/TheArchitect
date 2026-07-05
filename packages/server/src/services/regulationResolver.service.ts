@@ -18,6 +18,47 @@ import {
   corpusHealth,
   type ICorpusRegulation,
 } from './corpusClient.service';
+import { log } from '../config/logger';
+
+/**
+ * THE-419 (b) — Fallback-Telemetrie + Kill-Switch (THE-368 AC-4).
+ *
+ * Jeder App-DB-Fallback wird gezählt und geloggt, damit messbar ist, ob der
+ * Legacy-Pfad noch gebraucht wird. Sobald der Zähler über einen Beobachtungs-
+ * zeitraum bei 0 bleibt, kann der Fallback per CORPUS_STRICT_READS=true
+ * abgeschaltet werden — ohne Code-Änderung, ohne Redeploy-Risiko.
+ */
+interface FallbackStats {
+  /** App-DB reads because the corpus is not configured at all. */
+  corpusUnconfigured: number;
+  /** App-DB reads because the corpus yielded nothing for the request. */
+  corpusMiss: number;
+}
+
+const fallbackStats: FallbackStats = { corpusUnconfigured: 0, corpusMiss: 0 };
+
+export function getFallbackStats(): Readonly<FallbackStats> {
+  return { ...fallbackStats };
+}
+
+/** Test-Seam — Zähler zurücksetzen (nur Tests). */
+export function resetFallbackStats(): void {
+  fallbackStats.corpusUnconfigured = 0;
+  fallbackStats.corpusMiss = 0;
+}
+
+/** Kill-Switch: true = kein App-DB-Fallback mehr (Strangler-Cutover abgeschlossen). */
+export function isStrictCorpusReads(): boolean {
+  return process.env.CORPUS_STRICT_READS === 'true';
+}
+
+function recordFallback(reason: keyof FallbackStats, context: Record<string, unknown>): void {
+  fallbackStats[reason] += 1;
+  log.warn(
+    { ...context, reason, fallbackStats: { ...fallbackStats } },
+    '[regulationResolver] app-DB fallback used (THE-419 telemetry)'
+  );
+}
 
 export interface RegulationView {
   regulationKey?: string;
@@ -71,6 +112,10 @@ export async function countRegulations(): Promise<number> {
     const h = await corpusHealth();
     if (h.ok && typeof h.count === 'number') return h.count;
   }
+  if (isStrictCorpusReads()) return 0;
+  recordFallback(isCorpusConfigured() ? 'corpusMiss' : 'corpusUnconfigured', {
+    fn: 'countRegulations',
+  });
   return Regulation.countDocuments({});
 }
 
@@ -90,6 +135,12 @@ export async function getRegulationsForProject(projectId: string): Promise<Regul
       if (regs.length > 0) return regs.map(corpusToView);
     }
   }
+  // THE-419: Strangler-Cutover — im Strict-Modus gibt es keinen Legacy-Pfad mehr.
+  if (isStrictCorpusReads()) return [];
+  recordFallback(isCorpusConfigured() ? 'corpusMiss' : 'corpusUnconfigured', {
+    fn: 'getRegulationsForProject',
+    projectId,
+  });
   const docs = await Regulation.find({ projectId });
   return docs.map(appToView);
 }

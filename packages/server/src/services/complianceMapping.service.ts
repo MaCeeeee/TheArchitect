@@ -14,12 +14,11 @@ import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import { ComplianceMapping, IComplianceMapping } from '../models/ComplianceMapping';
-import { IRegulation } from '../models/Regulation';
 import type {
   ComplianceMappingElementType,
   ComplianceMappingDTO,
 } from '@thearchitect/shared';
-import { buildRegulationKey } from '@thearchitect/shared';
+import { buildRegulationKey, type RegulationLanguage } from '@thearchitect/shared';
 import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
 import {
@@ -27,6 +26,26 @@ import {
   buildUserPrompt,
   type PromptCandidateElement,
 } from '../prompts/complianceMapping.prompt';
+
+/**
+ * THE-419 (c) — Minimal-View der Regulation, die dieser Service braucht (THE-368 AC-1).
+ *
+ * Bewusst vom legacy App-DB-Modell `IRegulation` entkoppelt: jede Quelle erfüllt
+ * diesen Typ strukturell — legacy App-DB-Docs, Korpus-Reads (ICorpusRegulation via
+ * regulationResolver) oder synthetische Live-Mapping-Kontexte. `_id` bleibt nötig,
+ * solange der unique-Index auf legacy `regulationId` läuft (flippt in THE-390 P0
+ * per ADR-0004 E4 auf normId — bewusst NICHT hier).
+ */
+export interface MappingRegulationInput {
+  _id?: { toString(): string };
+  source: string;
+  paragraphNumber: string;
+  title: string;
+  fullText: string;
+  language: RegulationLanguage;
+  jurisdiction: string;
+  effectiveFrom?: Date;
+}
 
 // ─── Configuration ──────────────────────────────────────────────
 
@@ -105,7 +124,7 @@ export class ComplianceMappingError extends Error {
  * AC-3 (idempotent), AC-2 (confidence + reasoning), AC-4 (threshold), AC-6 (upsert).
  */
 export async function mapRegulationToElements(args: {
-  regulation: IRegulation;
+  regulation: MappingRegulationInput;
   candidateElements: CandidateElement[];
   projectId: string;
   anthropicClient?: Anthropic;
@@ -160,7 +179,7 @@ export async function mapRegulationToElements(args: {
  * 3.2s/Call ≈ 95 RPM, weit unter Limit.
  */
 export async function mapRegulationsBatch(args: {
-  regulations: IRegulation[];
+  regulations: MappingRegulationInput[];
   candidateElements: CandidateElement[];
   projectId: string;
   concurrency?: number;
@@ -244,8 +263,9 @@ export async function mapTextToElements(args: {
     return { candidates: [] };
   }
 
-  // Build a synthetic Regulation context for the prompt
-  const syntheticReg = {
+  // Build a synthetic Regulation context for the prompt.
+  // THE-419 (c): strukturell typisiert statt `as unknown as IRegulation`.
+  const syntheticReg: MappingRegulationInput = {
     _id: new mongoose.Types.ObjectId(),
     source: args.source,
     paragraphNumber: args.paragraphNumber,
@@ -254,7 +274,7 @@ export async function mapTextToElements(args: {
     language: args.language,
     jurisdiction: args.jurisdiction,
     effectiveFrom: new Date(),
-  } as unknown as IRegulation;
+  };
 
   const candidates = await callLLM({
     regulation: syntheticReg,
@@ -271,7 +291,7 @@ export async function mapTextToElements(args: {
 // ─── Internal helpers ───────────────────────────────────────────
 
 async function callLLM(args: {
-  regulation: IRegulation;
+  regulation: MappingRegulationInput;
   candidateElements: CandidateElement[];
   anthropicClient?: Anthropic;
 }): Promise<ComplianceMappingCandidate[]> {
