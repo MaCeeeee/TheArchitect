@@ -76,6 +76,28 @@ Gap-Requirements (Empty-Set) diszipliniert. Weder Knopf allein gewinnt.
 **Modellklasse bleibt irrelevant:** Haiku ≈ Sonnet ≈ Opus auf jedem Cap-Level.
 Die Hebel sind Facts, Cap und Judge — nicht das Modell.
 
+## Kaskade Generator→Judge (2026-07-05) — die gemessene Lösung
+
+Generator (Haiku, Cap 12, weit) → Judge (Sonnet, 4-Verdikt + Missed-Sweep) →
+Filter. Zwei Policies gegen dieselbe Leitmetrik F2 gemessen:
+
+| | Precision | Recall | F2 | Empty-Set | OMR |
+|---|---|---|---|---|---|
+| Generator allein (Cap 12) | 36,7 % | 73,9 % | 61,4 % | 0 % | 1,93 |
+| Kaskade — strikt (superfluous raus) | 78,2 % | 62,3 % | 65,0 % | 33,3 % | 0,76 |
+| **Kaskade — recall-schonend (superfluous bleibt)** | **70,1 %** | **68,1 %** | **68,5 %** | 33,3 % | 0,93 |
+
+**Gewählte Baseline: recall-schonend** — maximiert F2 (die Leitmetrik). Gegenüber
+dem Solo-Generator: Precision +33 Pkt, F2 +7 Pkt, **Empty-Set 0 → 33 %** (erstmals
+Disziplin auf Gap-Requirements), OMR 1,93 → 0,93 (Über-Matchen weg). Die
+Policy-Wahl folgt der Zahl, nicht dem Augenschein (Anti-Goodhart: der
+Conciseness-Schnitt `superfluous` zählt nur, wenn er F2 nicht senkt — tut er hier).
+
+**Judge-Qualität:** FP-Kill 88,6 %, False-Adds 2, Missed-Recovery 22 %.
+**Rest-Hebel:** TP-Damage (Judge flaggt echtes Gold als `incorrect` auf den
+mehrdeutigen Fällen a15-access/a17-propagate) → nächste Front ist Judge-Genauigkeit
+(besserer Prompt / Self-Consistency S3), nicht die Policy.
+
 ## Regeln
 
 1. **F2 und Recall sind die Leitmetriken** (übersehenes Gesetz = audit-kritisch).
@@ -92,3 +114,4 @@ Die Hebel sind Facts, Cap und Judge — nicht das Modell.
 | 2026-07-05 | req-self-v1 (mit Facts) | Haiku 4.5 | 50,7 % | 52,1 % | Kosten-Referenz (Haiku+Facts > Opus-ohne) |
 | 2026-07-05 | req-self-v1 (ohne Facts) | Opus 4.8 | 44,9 % | 46,3 % | Facts-Kontrast (Ontologie-Effekt) |
 | 2026-07-05 | req-self-v1 (Cap 15) | Opus 4.8 | 84,1 % | 67,3 % | Cap-Sweep: Recall cap-gebunden, Precision-Kollaps → Kaskaden-Argument |
+| 2026-07-05 | req-self-v1 Kaskade (recall-schonend) | Haiku-gen + Sonnet-judge | 68,1 % | 68,5 % | **Kaskaden-Baseline** — Precision 70 %, Empty-Set 33 %, alle Achsen > Solo-Generator |
