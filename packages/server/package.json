@@ -17,6 +17,8 @@
     "regs:import": "ts-node src/scripts/import-regulations-from-corpus.ts",
     "regs:seed-web": "ts-node src/scripts/seed-regulations-web.ts",
     "golden:build-self": "ts-node src/scripts/build-self-golden.ts",
+    "req:worksheet": "ts-node src/scripts/requirement-worksheet.ts",
+    "req:kappa": "ts-node src/scripts/requirement-kappa.ts",
     "golden:worksheet": "ts-node src/scripts/golden-worksheet.ts",
     "golden:blind": "ts-node src/scripts/golden-kappa.ts blind",
     "golden:kappa": "ts-node src/scripts/golden-kappa.ts compare",

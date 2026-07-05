@@ -1,0 +1,801 @@
+{
+  "version": "req-self-v1-draft",
+  "frozen": false,
+  "rubricRef": "../RUBRIC.md",
+  "candidates": [
+    {
+      "id": "4193802f-app-client",
+      "name": "Client SPA (3D)",
+      "type": "application_component",
+      "layer": "application",
+      "description": "React/Three.js 3D architecture visualization app · facts: service; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-app-server",
+      "name": "Server API",
+      "type": "application_component",
+      "layer": "application",
+      "description": "Express/TS monolithic REST + WebSocket backend · facts: service; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "verarbeitet transient alle Kategorien; Persistenz liegt in den Stores"
+      }
+    },
+    {
+      "id": "4193802f-app-crawler",
+      "name": "Compliance-Crawler",
+      "type": "application_component",
+      "layer": "application",
+      "description": "Standalone crawler/embedder for legal corpora · facts: service; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-app-sidecar",
+      "name": "Embedding Sidecar",
+      "type": "application_component",
+      "layer": "application",
+      "description": "Python FastAPI sentence-transformers compute service · facts: service; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-app-n8n",
+      "name": "n8n RAG Workflows",
+      "type": "application_component",
+      "layer": "application",
+      "description": "Ingest/query workflows on separate data-server · facts: service; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-svc-auth",
+      "name": "Auth & Identity",
+      "type": "application_service",
+      "layer": "application",
+      "description": "JWT/OAuth/MFA, sessions, API keys · facts: service; holds credentials,telemetry; does auth,audit_log; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [
+          "credentials:doc",
+          "telemetry:doc"
+        ],
+        "does": [
+          "auth",
+          "audit_log"
+        ],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "JWT/OAuth/MFA, Sessions, API-Keys; schreibt Audit-Einträge"
+      }
+    },
+    {
+      "id": "4193802f-svc-connectors",
+      "name": "Connectors",
+      "type": "application_service",
+      "layer": "application",
+      "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations · facts: service; holds content?; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        },
+        "note": "Importe aus SAP/ServiceNow/Jira können pbD enthalten"
+      }
+    },
+    {
+      "id": "4193802f-svc-rag",
+      "name": "RAG Integration",
+      "type": "application_service",
+      "layer": "application",
+      "description": "Bridges server to n8n data-server for retrieval · facts: service; holds content?; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-svc-aigen",
+      "name": "AI Generator",
+      "type": "application_service",
+      "layer": "application",
+      "description": "SSE-streamed activity/process generation · facts: service; holds content?; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-vps",
+      "name": "Hostinger VPS (Primary)",
+      "type": "node",
+      "layer": "technology",
+      "description": "Production host running the Docker Compose stack · facts: infra; holds -; does -; eu/vendor_processor/core",
+      "facts": {
+        "v": 1,
+        "kind": "infra",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "vendor_processor",
+          "tier": "core"
+        },
+        "note": "Hostinger hostet unsere Daten → AVV (Art. 28) trifft den Hoster, obwohl er für Art. 17 transitiv ist"
+      }
+    },
+    {
+      "id": "4193802f-tech-dataserver",
+      "name": "Data-Server VPS (Coolify)",
+      "type": "node",
+      "layer": "technology",
+      "description": "Separate host running n8n + Qdrant for RAG · facts: infra; holds -; does -; eu/vendor_processor/support",
+      "facts": {
+        "v": 1,
+        "kind": "infra",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "vendor_processor",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-mongodb",
+      "name": "MongoDB",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Document store for projects, users, templates · facts: store; holds account,credentials; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "account:doc",
+          "credentials:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "DBMS, das data-mongo physisch hält"
+      }
+    },
+    {
+      "id": "4193802f-tech-neo4j",
+      "name": "Neo4j",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Graph DB for architecture elements/relations · facts: store; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "account:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "hält den Architektur-Graphen inkl. Stakeholder-Personennamen → pbD (account)"
+      }
+    },
+    {
+      "id": "4193802f-tech-redis",
+      "name": "Redis",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Session store and cache · facts: store; holds telemetry,credentials; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "telemetry:doc",
+          "credentials:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-minio",
+      "name": "MinIO",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "S3-compatible object storage for files · facts: store; holds content?; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-qdrant-sim",
+      "name": "Qdrant (element similarity)",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Vector store for element-similarity index · facts: store; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-qdrant-rag",
+      "name": "Qdrant (regulation RAG)",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Vector store for regulation RAG corpus · facts: store; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-n8n",
+      "name": "n8n",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Workflow engine orchestrating RAG ingest/query · facts: service; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-docker",
+      "name": "Docker / Compose",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Container runtime for multi-service deployment · facts: infra; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "infra",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-caddy",
+      "name": "Caddy",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Reverse proxy and TLS termination · facts: control; holds -; does tls; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "control",
+        "holds": [],
+        "does": [
+          "tls"
+        ],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "TLS-Terminierung = TOM (Art. 32)"
+      }
+    },
+    {
+      "id": "4193802f-tech-node",
+      "name": "Node.js / Express",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Backend runtime framework · facts: infra; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "infra",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-react",
+      "name": "React + Three.js/R3F",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Frontend framework for 3D visualization · facts: infra; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "infra",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        }
+      }
+    },
+    {
+      "id": "4193802f-tech-umami",
+      "name": "Umami Analytics",
+      "type": "system_software",
+      "layer": "technology",
+      "description": "Self-hosted cookie-free web analytics · facts: service; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "service",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        },
+        "note": "cookie-frei, anonymisiert — bewusst keine pbD (Privacy-by-Design-Beleg für Art. 25)"
+      }
+    },
+    {
+      "id": "4193802f-tech-anthropic",
+      "name": "Anthropic Claude API",
+      "type": "technology_service",
+      "layer": "technology",
+      "description": "LLM provider for AI copilot/generation · facts: external; holds content?; does -; us/vendor_processor/support",
+      "facts": {
+        "v": 1,
+        "kind": "external",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "us",
+          "op": "vendor_processor",
+          "tier": "support"
+        },
+        "note": "erhält Prompts; können pbD enthalten"
+      }
+    },
+    {
+      "id": "4193802f-tech-openai",
+      "name": "OpenAI API",
+      "type": "technology_service",
+      "layer": "technology",
+      "description": "Alternate LLM and embeddings provider · facts: external; holds content?; does -; us/vendor_processor/support",
+      "facts": {
+        "v": 1,
+        "kind": "external",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "us",
+          "op": "vendor_processor",
+          "tier": "support"
+        },
+        "note": "erhält Prompts/Embedding-Inputs; können pbD enthalten"
+      }
+    },
+    {
+      "id": "4193802f-tech-resend",
+      "name": "Resend (SMTP)",
+      "type": "technology_service",
+      "layer": "technology",
+      "description": "Transactional email delivery · facts: external; holds account; does -; us/vendor_processor/support",
+      "facts": {
+        "v": 1,
+        "kind": "external",
+        "holds": [
+          "account:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "us",
+          "op": "vendor_processor",
+          "tier": "support"
+        },
+        "note": "Transaktions-Mail: erhält Empfänger-E-Mail (Transit); AVV + Transfer-Check nötig — loc verifizieren"
+      }
+    },
+    {
+      "id": "4193802f-data-graph",
+      "name": "Architecture Graph (Neo4j)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Elements, connections, dependency graph · facts: store; holds -; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "account:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "Architektur-Graph enthält Stakeholder-Elemente mit Personennamen → pbD (account)"
+      }
+    },
+    {
+      "id": "4193802f-data-mongo",
+      "name": "Projects & Users (MongoDB)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Project metadata, users, templates, policies · facts: store; holds account,credentials; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "account:doc",
+          "credentials:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "Nutzerkonten (Name, E-Mail, Passwort-Hash, MFA-Secret), OAuth-Verknüpfungen"
+      }
+    },
+    {
+      "id": "4193802f-data-corpus",
+      "name": "Regulation Corpus",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet) · facts: store; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        },
+        "note": "Gesetzestexte (EUR-Lex u.a.) — keine pbD"
+      }
+    },
+    {
+      "id": "4193802f-data-emb-sim",
+      "name": "Element Embedding Index (Qdrant)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Vectorized architecture elements for similarity · facts: store; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-data-emb-rag",
+      "name": "Regulation Embedding Index (Qdrant)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Vectorized regulation chunks for RAG query · facts: store; holds -; does -; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        }
+      }
+    },
+    {
+      "id": "4193802f-data-minio",
+      "name": "File Storage (MinIO)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Uploaded documents, generated PDFs/exports · facts: store; holds content?; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "content:maybe"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "Uploads/Exporte können pbD enthalten — nicht inventarisiert (maybe = To-do Daten-Inventur)"
+      }
+    },
+    {
+      "id": "4193802f-data-redis",
+      "name": "Session Store (Redis)",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Auth sessions, rate-limit/cache state · facts: store; holds telemetry,credentials; does -; eu/self/core",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "telemetry:doc",
+          "credentials:doc"
+        ],
+        "does": [],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "core"
+        },
+        "note": "Session-Token je Nutzer (session:{userId}:{sessionId})"
+      }
+    },
+    {
+      "id": "4193802f-data-audit",
+      "name": "Audit Log",
+      "type": "data_object",
+      "layer": "information",
+      "description": "Security/compliance action trail · facts: store; holds telemetry; does audit_log; eu/self/support",
+      "facts": {
+        "v": 1,
+        "kind": "store",
+        "holds": [
+          "telemetry:doc"
+        ],
+        "does": [
+          "audit_log"
+        ],
+        "ops": {
+          "loc": "eu",
+          "op": "self",
+          "tier": "support"
+        },
+        "note": "IP + User-Agent + userId je sicherheitsrelevanter Aktion; Aufbewahrung als Nachweis (Art. 17(3)-Abwägung gehört in Golden-Case-notes)"
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "reqId": "dsgvo-a5-retention",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "title": "Enforce retention and erasure periods for personal data",
+      "description": "Every system that stores personal data must be able to delete or anonymise it once the defined retention period ends (storage limitation).",
+      "priority": "must",
+      "predicate": "gdpr.art17",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a5-security",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "title": "Protect integrity and confidentiality of personal data",
+      "description": "Personal data must be processed with technical and organisational measures ensuring integrity and confidentiality.",
+      "priority": "must",
+      "predicate": "gdpr.art32",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a6-lawbasis",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 6",
+      "title": "Capture and manage a lawful basis (e.g. consent) for each processing activity",
+      "description": "The system that manages user identity must record and enforce a lawful basis (consent, contract) for processing personal data.",
+      "priority": "must",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a15-access",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 15",
+      "title": "Provide data subjects access to their personal data on request",
+      "description": "Each system holding personal data must be able to retrieve and export that data for a subject-access request.",
+      "priority": "must",
+      "predicate": "gdpr.art17",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a17-erase",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 17",
+      "title": "Erase a data subject’s personal data on request",
+      "description": "Each system holding personal data must support deletion of an individual’s data without undue delay.",
+      "priority": "must",
+      "predicate": "gdpr.art17",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a17-propagate",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 17",
+      "title": "Propagate erasure to downstream and replicated stores",
+      "description": "An erasure request must reach all replicated / downstream stores that hold copies of the personal data.",
+      "priority": "should",
+      "predicate": "gdpr.art17",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a28-dpa",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 28",
+      "title": "Bind external processors via a data-processing agreement (DPA)",
+      "description": "Every third party that processes personal data on our behalf must be governed by a data-processing agreement.",
+      "priority": "must",
+      "predicate": "gdpr.art28",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a30-ropa",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 30",
+      "title": "Maintain a record of processing activities (ROPA)",
+      "description": "A system or register must maintain the record of processing activities required by Art. 30.",
+      "priority": "must",
+      "predicate": "gdpr.art30",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a32-encrypt",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Encrypt personal data in transit and at rest",
+      "description": "Personal data must be encrypted in transit (TLS) and at rest; systems holding it must be covered by these measures.",
+      "priority": "must",
+      "predicate": "gdpr.art32",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a32-access",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Enforce authentication and access control on personal-data systems",
+      "description": "Access to personal-data systems must be authenticated and authorised; security-relevant actions must be logged.",
+      "priority": "must",
+      "predicate": "gdpr.art32",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a33-breach",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 33",
+      "title": "Detect and notify a personal-data breach within 72 hours",
+      "description": "A process/system must detect a personal-data breach and notify the supervisory authority within 72 hours.",
+      "priority": "must",
+      "predicate": "gdpr.art33",
+      "goldElementIds": []
+    },
+    {
+      "reqId": "dsgvo-a44-transfer",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 44",
+      "title": "Apply a transfer mechanism for third-country data transfers",
+      "description": "Personal data sent to processors outside the EU/adequacy area must be covered by a valid transfer mechanism.",
+      "priority": "must",
+      "predicate": "gdpr.art44",
+      "goldElementIds": []
+    }
+  ]
+}
