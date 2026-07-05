@@ -50,6 +50,32 @@ nahezu lösbar; die LLM-Lücke ist das Thema).
 4. **Empty-Set 0 %:** kein Modell gibt je „nichts" zurück (3 Gap-Requirements) →
    stärkstes Argument für die Kaskade mit Veto (THE-401).
 
+## Cap-Sweep (2026-07-05) — der Recall-Deckel bestätigt, aber ein Trade-off
+
+Cap 5 → 10 → 15 (mit Facts), alle drei Modelle nahezu deckungsgleich:
+
+| Cap | Recall | F2 | Precision | OMR | Empty-Set |
+|---|---|---|---|---|---|
+| 5 | 50,7 % | 52,1 % | 58,3 % | 0,83 | 0 % |
+| 10 | 69,6 % | 61,1 % | 41,0 % | 1,64 | 0 % |
+| 15 | **84,1 %** | **67,3 %** | 37,4 % | 2,15 | 0 % |
+
+*(Opus-Zeilen; Haiku/Sonnet ±1–2 Punkte identisch.)*
+
+**Befund:** Der Recall-Deckel WAR der Cap — von 50 % auf 84 % allein durch das
+Anheben. F2 +15 Punkte. **Aber:** Precision bricht 58 %→37 %, OMR 0,83→2,15
+(massives Über-Matchen), Empty-Set bleibt 0 %. Ein höherer Cap tauscht FN gegen
+FP — er löst das Problem nicht, er verschiebt es.
+
+**Konsequenz (empirisch, nicht mehr nur konzeptionell):** Bei Cap 15 steckt die
+Wahrheit im Kandidatenset (Recall 84 %) — die Aufgabe ist jetzt **Wegschneiden**,
+nicht Finden. Genau das ist die Kaskade (THE-401): weiter Generator (Cap ~12–15,
+Recall hoch) + strikter **Judge**, der die ~60 % FP zurückschneidet und die
+Gap-Requirements (Empty-Set) diszipliniert. Weder Knopf allein gewinnt.
+
+**Modellklasse bleibt irrelevant:** Haiku ≈ Sonnet ≈ Opus auf jedem Cap-Level.
+Die Hebel sind Facts, Cap und Judge — nicht das Modell.
+
 ## Regeln
 
 1. **F2 und Recall sind die Leitmetriken** (übersehenes Gesetz = audit-kritisch).
@@ -65,3 +91,4 @@ nahezu lösbar; die LLM-Lücke ist das Thema).
 | 2026-07-05 | req-self-v1 (mit Facts) | Opus 4.8 | 53,6 % | 55,1 % | Erste eingefrorene Baseline (Requirement-Ebene) |
 | 2026-07-05 | req-self-v1 (mit Facts) | Haiku 4.5 | 50,7 % | 52,1 % | Kosten-Referenz (Haiku+Facts > Opus-ohne) |
 | 2026-07-05 | req-self-v1 (ohne Facts) | Opus 4.8 | 44,9 % | 46,3 % | Facts-Kontrast (Ontologie-Effekt) |
+| 2026-07-05 | req-self-v1 (Cap 15) | Opus 4.8 | 84,1 % | 67,3 % | Cap-Sweep: Recall cap-gebunden, Precision-Kollaps → Kaskaden-Argument |
