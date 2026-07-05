@@ -13,7 +13,12 @@ import {
   upsertCorpusRegulation,
   type ICorpusRegulation,
 } from '../services/corpusClient.service';
-import { countRegulations, getRegulationsForProject } from '../services/regulationResolver.service';
+import {
+  countRegulations,
+  getRegulationsForProject,
+  getFallbackStats,
+  resetFallbackStats,
+} from '../services/regulationResolver.service';
 
 let CorpusReg: Model<ICorpusRegulation>;
 
@@ -73,6 +78,8 @@ describe('regulationResolver (THE-368 D2)', () => {
     await ComplianceMapping.deleteMany({});
     await CorpusReg.deleteMany({});
     delete process.env.CORPUS_MONGODB_URI;
+    delete process.env.CORPUS_STRICT_READS;
+    resetFallbackStats();
   });
 
   describe('countRegulations', () => {
@@ -122,6 +129,61 @@ describe('regulationResolver (THE-368 D2)', () => {
       const regs = await getRegulationsForProject(pid.toString());
       expect(regs).toHaveLength(1);
       expect(regs[0]).toMatchObject({ paragraphNumber: '§ 6', title: 'app § 6' });
+    });
+  });
+
+  describe('fallback telemetry + strict mode (THE-419)', () => {
+    it('counts a corpusUnconfigured fallback when the corpus is not configured', async () => {
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 3');
+      await getRegulationsForProject(pid.toString());
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 1, corpusMiss: 0 });
+    });
+
+    it('counts a corpusMiss fallback when the corpus is configured but yields nothing', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 6'); // no mappings → no corpus keys → fallback
+      await getRegulationsForProject(pid.toString());
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 1 });
+    });
+
+    it('does NOT count a fallback on a corpus hit', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      const pid = new mongoose.Types.ObjectId();
+      await seedCorpus('dsgvo:art-30', 'Verzeichnis');
+      await ComplianceMapping.create({
+        projectId: pid,
+        regulationId: new mongoose.Types.ObjectId(),
+        regulationKey: 'dsgvo:art-30',
+        regulationVersionHash: 'h'.repeat(64),
+        elementId: 'el-1',
+        elementType: 'application',
+        confidence: 0.9,
+        reasoning: 'r',
+        status: 'auto',
+        createdBy: 'llm',
+      });
+      await getRegulationsForProject(pid.toString());
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
+    });
+
+    it('strict mode: getRegulationsForProject returns [] instead of falling back', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      process.env.CORPUS_STRICT_READS = 'true';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 6'); // would be served by legacy fallback
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs).toEqual([]);
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
+    });
+
+    it('strict mode: countRegulations returns 0 instead of counting the app-DB', async () => {
+      process.env.CORPUS_STRICT_READS = 'true';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 3');
+      expect(await countRegulations()).toBe(0);
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
     });
   });
 });
