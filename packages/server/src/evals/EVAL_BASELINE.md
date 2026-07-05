@@ -98,6 +98,34 @@ Conciseness-Schnitt `superfluous` zählt nur, wenn er F2 nicht senkt — tut er 
 mehrdeutigen Fällen a15-access/a17-propagate) → nächste Front ist Judge-Genauigkeit
 (besserer Prompt / Self-Consistency S3), nicht die Policy.
 
+## S3 Eskalation (2026-07-05) — NEGATIVES Ergebnis, Full-Judge bleibt Baseline
+
+Hypothese: order-stabile, hoch-konfidente Generator-Vorschläge am Judge
+vorbeileiten (bypass) spart Kosten und schützt TPs. Gemessen (Generator ×3 +
+Self-Consistency-Routing, Judge nur auf Eskalierte):
+
+| | Precision | Recall | F2 | Empty-Set |
+|---|---|---|---|---|
+| Generator (Cap 12) | 36,5 % | 72,5 % | 60,5 % | 0 % |
+| Selektive Kaskade (S3) | 53,6 % | 65,2 % | 62,5 % | 0 % |
+| **Full-Judge (recall-schonend)** | **70,1 %** | **68,1 %** | **68,5 %** | **33,3 %** |
+
+**Warum S3 verliert:** Generator-Confidence ist KEIN Sicherheits-Signal. Der
+Generator ist auf den Gap-Requirements *konfident falsch* — z. B. a30-ROPA: ein
+FP ist order-stabil & hoch-konfident → wird „keep" → umgeht den Judge → Empty-Set
+kippt zurück auf 0 %. Der Bypass schützt also FPs, nicht nur TPs. Zudem: hohe
+Positions-Instabilität (Union 15 Elemente je Fall bei Cap 12) ⇒ fast alles
+eskaliert (120 escalate vs 51 keep), 12/12 Fälle brauchen weiter einen Judge-Call
+— kein Kostengewinn.
+
+**Prinzip:** Der Bypass kann den Full-Judge per Konstruktion nie schlagen (er
+lässt nur Judge-Präzision weg). Konsequenz: **den Judge auf ALLES anwenden**
+(Full-Judge recall-schonend bleibt die Baseline). S3 liefert trotzdem Wert: (a)
+die Diagnose „Generator-Confidence ≠ Korrektheit", (b) starker Positions-Bias
+belegt (→ Shuffle-Signal ist real), (c) `drop` entfernt Einzel-Lauf-Rauschen.
+Nächster echter Hebel gegen die Rest-TP-Damage: Judge-GENAUIGKEIT (Prompt/Modell),
+nicht Routing.
+
 ## Regeln
 
 1. **F2 und Recall sind die Leitmetriken** (übersehenes Gesetz = audit-kritisch).
