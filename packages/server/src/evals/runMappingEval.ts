@@ -27,7 +27,7 @@ import {
   __testExports,
   type ComplianceMappingCandidate,
 } from '../services/complianceMapping.service';
-import { SYSTEM_PROMPT } from '../prompts/complianceMapping.prompt';
+import { buildSystemPrompt } from '../prompts/complianceMapping.prompt';
 import { sha256, cacheKeyFor, readCache, writeCache } from './predictionCache';
 import {
   loadGoldenSet,
@@ -112,12 +112,19 @@ async function predictCase(
   promptHash: string,
   offline: boolean
 ): Promise<{ predictions: ComplianceMappingCandidate[]; fromCache: boolean }> {
+  // Cap + Threshold gehören in den Cache-Key: sie werden POST-LLM angewendet
+  // (Slice/Filter), ändern also das Ergebnis, ohne den LLM-Call zu ändern. Ohne
+  // sie im Key liefert der Cap-Experiment-Re-Run die alten gedeckelten Werte.
+  const inputsHash = sha256(
+    JSON.stringify(c.candidates) +
+      `|cap=${__testExports.MAX_MAPPINGS_PER_REGULATION}|thr=${__testExports.CONFIDENCE_THRESHOLD}`
+  );
   const key = cacheKeyFor(
     c.fullText,
     c.candidates.map(el => el.id),
     model,
     promptHash,
-    sha256(JSON.stringify(c.candidates))
+    inputsHash
   );
   const bucket = cacheBucketFor(set.version, model);
   const cached = readCache(CACHE_DIR, bucket, c.caseId, key);
@@ -329,7 +336,9 @@ async function main(): Promise<void> {
   const models = opts.models.length
     ? opts.models
     : [resolveModel(process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001')];
-  const promptHash = sha256(SYSTEM_PROMPT);
+  // Prompt-Hash über den AKTIVEN Prompt (Cap-abhängig), damit Report + Cache-Key
+  // die tatsächlich gesendete Obergrenze widerspiegeln.
+  const promptHash = sha256(buildSystemPrompt(__testExports.MAX_MAPPINGS_PER_REGULATION));
   const startedAt = new Date().toISOString();
   const cap = __testExports.MAX_MAPPINGS_PER_REGULATION;
 

@@ -24,13 +24,10 @@ import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
 import { recordAiTrace } from './aiTrace.service';
 import {
-  SYSTEM_PROMPT,
+  buildSystemPrompt,
   buildUserPrompt,
   type PromptCandidateElement,
 } from '../prompts/complianceMapping.prompt';
-
-/** Content-Hash des System-Prompts — Bestandteil jedes Traces (THE-384). */
-const PROMPT_VERSION_HASH = computeVersionHash(SYSTEM_PROMPT);
 
 /** Metadaten eines LLM-Calls für Observability (nicht persistenz-relevant). */
 interface LlmCallMeta {
@@ -41,14 +38,33 @@ interface LlmCallMeta {
   rawText: string;
 }
 
+/** Liest eine positive Zahl aus einer Env-Var; fällt bei fehlend/ungültig/außerhalb [min,max] auf `fallback`. */
+function envNumber(name: string, fallback: number, min: number, max: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= min && n <= max ? n : fallback;
+}
+
 // ─── Configuration ──────────────────────────────────────────────
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 2048;
-const CONFIDENCE_THRESHOLD = 0.5;
-const MAX_MAPPINGS_PER_REGULATION = 5;
+// Cap + Threshold sind per Env überschreibbar (Cap-Experiment, THE-401): die
+// Baseline zeigte, dass MAX_MAPPINGS=5 den Recall strukturell deckelt, weil
+// Requirements 9–10 Elemente brauchen. COMPLIANCE_MAX_MAPPINGS / _CONFIDENCE_THRESHOLD
+// erlauben das Durchprobieren ohne Code-Change. Ungültige Werte → Default.
+const CONFIDENCE_THRESHOLD = envNumber('COMPLIANCE_CONFIDENCE_THRESHOLD', 0.5, 0, 1);
+const MAX_MAPPINGS_PER_REGULATION = envNumber('COMPLIANCE_MAX_MAPPINGS', 5, 1, 100);
 const DEFAULT_BATCH_CONCURRENCY = 5;
 const BATCH_CONCURRENCY_MAX = 10;
+
+// Aktiver System-Prompt: die Obergrenze im Prompt MUSS dem Service-Cap
+// entsprechen, sonst begrenzt das schwächere von beiden. Bei Default (Cap 5)
+// identisch zum bisherigen SYSTEM_PROMPT.
+const SYSTEM_PROMPT = buildSystemPrompt(MAX_MAPPINGS_PER_REGULATION);
+/** Content-Hash des aktiven System-Prompts — Bestandteil jedes Traces (THE-384). */
+const PROMPT_VERSION_HASH = computeVersionHash(SYSTEM_PROMPT);
 
 // ─── Zod Schema (validates LLM output) ──────────────────────────
 
@@ -526,6 +542,7 @@ export const __testExports = {
   extractJson,
   parseAndFilter,
   runWithConcurrency,
+  envNumber,
   CONFIDENCE_THRESHOLD,
   MAX_MAPPINGS_PER_REGULATION,
   DEFAULT_BATCH_CONCURRENCY,
