@@ -19,6 +19,7 @@
     "golden:build-self": "ts-node src/scripts/build-self-golden.ts",
     "req:worksheet": "ts-node src/scripts/requirement-worksheet.ts",
     "req:kappa": "ts-node src/scripts/requirement-kappa.ts",
+    "req:to-mapping": "ts-node src/scripts/req-to-mapping-golden.ts",
     "golden:worksheet": "ts-node src/scripts/golden-worksheet.ts",
     "golden:blind": "ts-node src/scripts/golden-kappa.ts blind",
     "golden:kappa": "ts-node src/scripts/golden-kappa.ts compare",
