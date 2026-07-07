@@ -2,8 +2,18 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
-import { nis2EurLexSource, dsgvoEurLexSource } from '../sources/eur-lex';
-import { nis2FirecrawlSource, dsgvoFirecrawlSource } from '../sources/firecrawl';
+import {
+  nis2EurLexSource,
+  dsgvoEurLexSource,
+  aiActEurLexSource,
+  dataActEurLexSource,
+} from '../sources/eur-lex';
+import {
+  nis2FirecrawlSource,
+  dsgvoFirecrawlSource,
+  aiActFirecrawlSource,
+  dataActFirecrawlSource,
+} from '../sources/firecrawl';
 import { lksgSource } from '../sources/gesetze-im-internet';
 import type { SourceParser } from '../sources/types';
 import type { RegulationSource } from '@thearchitect/shared';
@@ -18,7 +28,20 @@ const CrawlBodySchema = z.object({
    */
   projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex').optional(),
   sources: z
-    .array(z.enum(['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom']))
+    .array(
+      z.enum([
+        'nis2',
+        'lksg',
+        'dsgvo',
+        'dora',
+        'iso27001',
+        'ai-act-en',
+        'ai-act-de',
+        'data-act-en',
+        'data-act-de',
+        'custom',
+      ])
+    )
     .min(1)
     .max(12), // bound the array — a request can't fan out into unlimited source crawls (security review)
   /** Skip the embedding step entirely (useful for fast re-crawls / debugging) */
@@ -54,6 +77,24 @@ function buildSourceRegistry(): Partial<Record<RegulationSource, () => SourcePar
           })
         : dsgvoEurLexSource({ articleNumbers: [5, 6, 9, 32] }),
     lksg: () => lksgSource({ paragraphNumbers: [3, 4, 5, 6, 7, 8, 9] }),
+    // AI Act (EU 2024/1689) + Data Act (EU 2023/2854): full-act crawl (no article
+    // filter), one source key per language. Firecrawl preferred (EUR-Lex WAF).
+    'ai-act-en': () =>
+      firecrawlKey
+        ? aiActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'en' })
+        : aiActEurLexSource({ language: 'en' }),
+    'ai-act-de': () =>
+      firecrawlKey
+        ? aiActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'de' })
+        : aiActEurLexSource({ language: 'de' }),
+    'data-act-en': () =>
+      firecrawlKey
+        ? dataActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'en' })
+        : dataActEurLexSource({ language: 'en' }),
+    'data-act-de': () =>
+      firecrawlKey
+        ? dataActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'de' })
+        : dataActEurLexSource({ language: 'de' }),
   };
 }
 

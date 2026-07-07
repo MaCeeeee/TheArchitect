@@ -34,6 +34,27 @@ function getFrom(): string {
   return process.env.SMTP_FROM || `${APP_NAME} <noreply@thearchitect.site>`;
 }
 
+/**
+ * Reserved / non-deliverable top-level domains per RFC 2606 & RFC 6761.
+ * Mail to these NEVER reaches a real inbox — it hard-bounces.
+ *
+ * WHY THIS EXISTS (do not remove): our integration test suites register users
+ * with synthetic `@thearchitect-test.local` addresses against a running server
+ * that has real Resend SMTP credentials. Without this guard every test run
+ * blasts real verification/invite emails that all bounce, degrading the
+ * sender reputation of thearchitect.site (Resend may throttle/suspend the
+ * domain, breaking real customer onboarding). See Linear THE-397.
+ *
+ * The guard is intentionally RECIPIENT-TLD-based (not a NODE_ENV/test-mode
+ * flag) because the tests hit a live dev/prod server, not a test-env process —
+ * only the recipient address distinguishes a bogus send from a real one.
+ */
+const UNDELIVERABLE_TLDS = /\.(local|test|example|invalid)$/i;
+
+export function isUndeliverableRecipient(to: string): boolean {
+  return UNDELIVERABLE_TLDS.test(to.trim());
+}
+
 function emailWrapper(content: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: ${BG_DARK}; color: ${TEXT_PRIMARY}; border-radius: 12px; border: 1px solid #1a2a1a;">
@@ -51,6 +72,11 @@ export async function sendVerificationEmail(
   to: string,
   token: string,
 ): Promise<boolean> {
+  if (isUndeliverableRecipient(to)) {
+    console.log(`[email] Skipping verification email to reserved/undeliverable domain: ${to}`);
+    return true;
+  }
+
   const transporter = getTransporter();
   const verifyUrl = `${getClientUrl()}/auth/verify-email?token=${token}`;
 
@@ -88,6 +114,11 @@ export async function sendPasswordResetEmail(
   to: string,
   resetToken: string,
 ): Promise<boolean> {
+  if (isUndeliverableRecipient(to)) {
+    console.log(`[email] Skipping password reset email to reserved/undeliverable domain: ${to}`);
+    return true;
+  }
+
   const transporter = getTransporter();
   const resetUrl = `${getClientUrl()}/reset-password?token=${resetToken}`;
 
@@ -168,6 +199,11 @@ export async function sendProjectInvitationEmail(
   token: string,
   expiresInDays: number,
 ): Promise<boolean> {
+  if (isUndeliverableRecipient(to)) {
+    console.log(`[email] Skipping project invitation email to reserved/undeliverable domain: ${to}`);
+    return true;
+  }
+
   const transporter = getTransporter();
   const acceptUrl = `${getClientUrl()}/invitations/${token}`;
 

@@ -691,11 +691,11 @@ router.put(
   audit({ action: 'update_element', entityType: 'element', getAfter: (req) => req.body }),
   async (req: Request, res: Response) => {
     try {
-      const { elementId } = req.params;
+      const { projectId, elementId } = req.params;
       const parsed = UpdateElementSchema.parse(req.body);
 
       const setFields: string[] = [];
-      const params: Record<string, unknown> = { elementId };
+      const params: Record<string, unknown> = { elementId, projectId };
 
       if (parsed.name !== undefined) { setFields.push('e.name = $name'); params.name = parsed.name; }
       if (parsed.description !== undefined) { setFields.push('e.description = $description'); params.description = parsed.description; }
@@ -749,7 +749,7 @@ router.put(
       setFields.push('e.updatedAt = datetime()');
 
       await runCypher(
-        `MATCH (e:ArchitectureElement {id: $elementId})
+        `MATCH (e:ArchitectureElement {id: $elementId, projectId: $projectId})
          SET ${setFields.join(', ')}
          RETURN e`,
         params
@@ -774,8 +774,8 @@ router.put(
         // fresh full-context embedding (we don't have the unchanged fields
         // in `parsed`).
         runCypher(
-          'MATCH (e:ArchitectureElement {id: $elementId}) RETURN e',
-          { elementId },
+          'MATCH (e:ArchitectureElement {id: $elementId, projectId: $projectId}) RETURN e',
+          { elementId, projectId },
         )
           .then((records) => {
             if (records.length === 0) return;
@@ -815,10 +815,10 @@ router.get(
   requirePermission(PERMISSIONS.ELEMENT_READ),
   async (req: Request, res: Response) => {
     try {
-      const { elementId } = req.params;
+      const { projectId, elementId } = req.params;
       const records = await runCypher(
-        'MATCH (e:ArchitectureElement {id: $elementId}) RETURN e',
-        { elementId }
+        'MATCH (e:ArchitectureElement {id: $elementId, projectId: $projectId}) RETURN e',
+        { elementId, projectId }
       );
       if (records.length === 0) {
         return res.status(404).json({ success: false, error: 'Element not found' });
@@ -848,15 +848,15 @@ router.delete(
   audit({ action: 'delete_element', entityType: 'element', riskLevel: 'high' }),
   async (req: Request, res: Response) => {
     try {
-      const { elementId } = req.params;
+      const { projectId, elementId } = req.params;
       // Fire-and-forget: resolve violations before deleting the element
       evaluateElementPolicies(String(req.params.projectId), String(elementId), 'delete').catch((e) =>
         console.error('[PolicyEval] delete hook error:', e),
       );
 
       await runCypher(
-        'MATCH (e:ArchitectureElement {id: $elementId}) DETACH DELETE e',
-        { elementId }
+        'MATCH (e:ArchitectureElement {id: $elementId, projectId: $projectId}) DETACH DELETE e',
+        { elementId, projectId }
       );
       res.json({ success: true, message: 'Element deleted' });
 
@@ -881,13 +881,13 @@ router.get(
   requirePermission(PERMISSIONS.ELEMENT_READ),
   async (req: Request, res: Response) => {
     try {
-      const { elementId } = req.params;
+      const { projectId, elementId } = req.params;
       const depth = parseInt(req.query.depth as string) || 3;
 
       const records = await runCypher(
-        `MATCH path = (e:ArchitectureElement {id: $elementId})-[r*1..${depth}]->(dep:ArchitectureElement)
+        `MATCH path = (e:ArchitectureElement {id: $elementId, projectId: $projectId})-[r*1..${depth}]->(dep:ArchitectureElement)
          RETURN dep, [rel in r | type(rel)] as relTypes, length(path) as distance`,
-        { elementId }
+        { elementId, projectId }
       );
       const dependencies = records.map((r) => ({
         element: serializeNeo4jProperties(r.get('dep').properties),
@@ -908,12 +908,12 @@ router.get(
   requirePermission(PERMISSIONS.ELEMENT_READ),
   async (req: Request, res: Response) => {
     try {
-      const { elementId } = req.params;
+      const { projectId, elementId } = req.params;
 
       const childRecords = await runCypher(
-        `MATCH (parent:ArchitectureElement {id: $elementId})-[r:CONNECTS_TO {type: 'composition'}]->(child:ArchitectureElement)
+        `MATCH (parent:ArchitectureElement {id: $elementId, projectId: $projectId})-[r:CONNECTS_TO {type: 'composition'}]->(child:ArchitectureElement)
          RETURN child`,
-        { elementId }
+        { elementId, projectId }
       );
       const children = childRecords.map((r) => {
         const props = serializeNeo4jProperties(r.get('child').properties);
@@ -934,8 +934,9 @@ router.get(
       const flowRecords = await runCypher(
         `MATCH (a:ArchitectureElement)-[r:CONNECTS_TO {type: 'flow'}]->(b:ArchitectureElement)
          WHERE a.id IN $childIds AND b.id IN $childIds
+           AND a.projectId = $projectId AND b.projectId = $projectId
          RETURN r.id as id, a.id as sourceId, b.id as targetId, r.label as label`,
-        { childIds }
+        { childIds, projectId }
       );
       const flows = flowRecords.map((r) => ({
         id: r.get('id'),
@@ -960,6 +961,7 @@ router.post(
   audit({ action: 'create_connection', entityType: 'connection', getAfter: (req) => req.body }),
   async (req: Request, res: Response) => {
     try {
+      const { projectId } = req.params;
       const parsed = CreateConnectionSchema.parse(req.body);
       const connectionId = parsed.id || uuid();
 
@@ -967,13 +969,18 @@ router.post(
       // (e.g. envisionSync.ts: `env-conn-${src}-${tgt}`) and accidental
       // double-clicks no longer create duplicate edges. Uniqueness on r.id is
       // enforced by the CONNECTS_TO_id_unique Neo4j constraint.
-      await runCypher(
-        `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+      // THE-370: both endpoints MUST be scoped to projectId — element ids are
+      // not globally unique (callers reuse short ids like `cap-trust` across
+      // projects), so an unscoped match could link into a foreign project or
+      // match ambiguously and blow up on the global connection-id constraint.
+      const linked = await runCypher(
+        `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
          MERGE (a)-[r:CONNECTS_TO {sourceElementId: $sourceId, targetElementId: $targetId, type: $type}]->(b)
          ON CREATE SET r.id = $connectionId, r.label = $label, r.createdAt = timestamp(), ${provenanceCypherFragment('r')}
          ON MATCH  SET r.label = coalesce($label, r.label)
          RETURN r.id AS id`,
         {
+          projectId,
           sourceId: parsed.sourceId,
           targetId: parsed.targetId,
           connectionId,
@@ -982,6 +989,16 @@ router.post(
           ...provenanceParams(provenanceForActor(!!(req as any).apiKeyPrefix)),
         }
       );
+
+      // Both endpoints must exist *in this project*; otherwise the MATCH found
+      // nothing and no edge was created. Report it instead of a misleading 201.
+      if (linked.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: 'Source or target element not found in this project',
+        });
+        return;
+      }
 
       res.status(201).json({ success: true, data: { id: connectionId, ...parsed } });
     } catch (err) {
@@ -1255,9 +1272,10 @@ router.post(
       for (const conn of connections) {
         const connectionId = conn.id || uuid();
         await runCypher(
-          `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+          `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
            CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
+            projectId,
             sourceId: conn.sourceId,
             targetId: conn.targetId,
             connectionId,
@@ -1329,7 +1347,7 @@ router.post(
       for (const conn of connections) {
         const connectionId = conn.id || uuid();
         await runCypher(
-          `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+          `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
            CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,
@@ -1435,7 +1453,7 @@ router.post(
       for (const conn of connections) {
         const connectionId = conn.id || uuid();
         await runCypher(
-          `MATCH (a:ArchitectureElement {id: $sourceId}), (b:ArchitectureElement {id: $targetId})
+          `MATCH (a:ArchitectureElement {id: $sourceId, projectId: $projectId}), (b:ArchitectureElement {id: $targetId, projectId: $projectId})
            CREATE (a)-[:CONNECTS_TO {id: $connectionId, type: $type, label: $label, provenance: 'import'}]->(b)`,
           {
             sourceId: conn.sourceId,

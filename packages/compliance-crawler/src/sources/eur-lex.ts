@@ -17,6 +17,7 @@
 import axios, { AxiosInstance } from 'axios';
 import * as cheerio from 'cheerio';
 import { ParsedRegulation, SourceParser, SourceParseError } from './types';
+import { cleanRegulationText } from './clean';
 import type {
   RegulationSource,
   RegulationJurisdiction,
@@ -126,7 +127,7 @@ export class EurLexSource implements SourceParser {
         walker = walker.next();
       }
 
-      const fullText = bodyParts.join('\n\n').replace(/\s+/g, ' ').trim();
+      const fullText = cleanRegulationText(bodyParts.join('\n\n'));
       if (fullText.length < 50) return; // skip parse-misses
 
       results.push({
@@ -179,6 +180,46 @@ export function dsgvoEurLexSource(opts: FactoryOptions = {}): EurLexSource {
     effectiveFrom: new Date('2018-05-25'),
     celex: '32016R0679',
     articleNumbers: opts.articleNumbers ?? [5, 6, 9, 32],
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
+/** Options for language-parametrised acts (AI Act, Data Act). */
+export interface LangFactoryOptions extends FactoryOptions {
+  language: RegulationLanguage;
+}
+
+/**
+ * EU AI Act (EU 2024/1689) — direct EUR-Lex (fallback / tests). Source key encodes
+ * the language so DE and EN don't collide on the `source:paragraph` regulationKey.
+ * Production uses `aiActFirecrawlSource` (EUR-Lex is behind AWS WAF).
+ */
+export function aiActEurLexSource(opts: LangFactoryOptions): EurLexSource {
+  return new EurLexSource({
+    source: opts.language === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-08-01'),
+    celex: '32024R1689',
+    articleNumbers: opts.articleNumbers,
+    url: opts.url,
+    httpClient: opts.httpClient,
+  });
+}
+
+/**
+ * EU Data Act (EU 2023/2854) — direct EUR-Lex (fallback / tests). Source key encodes
+ * the language. Production uses `dataActFirecrawlSource`.
+ */
+export function dataActEurLexSource(opts: LangFactoryOptions): EurLexSource {
+  return new EurLexSource({
+    source: opts.language === 'de' ? 'data-act-de' : 'data-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-01-11'),
+    celex: '32023R2854',
+    articleNumbers: opts.articleNumbers,
     url: opts.url,
     httpClient: opts.httpClient,
   });

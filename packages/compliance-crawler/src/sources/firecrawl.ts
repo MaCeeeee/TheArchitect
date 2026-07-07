@@ -12,6 +12,7 @@
  */
 import axios, { AxiosInstance } from 'axios';
 import { ParsedRegulation, SourceParser, SourceParseError } from './types';
+import { cleanRegulationText } from './clean';
 import type {
   RegulationSource,
   RegulationJurisdiction,
@@ -150,13 +151,13 @@ export class FirecrawlSource implements SourceParser {
         break; // first non-empty line that looks like body → no title
       }
 
-      const fullText = lines
-        .slice(bodyStart, end)
-        .map(l => l.trim())
-        .filter(l => l.length > 0 && !/^[-*_=]{3,}$/.test(l))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const fullText = cleanRegulationText(
+        lines
+          .slice(bodyStart, end)
+          .map(l => l.trim())
+          .filter(l => l.length > 0 && !/^[-*_=]{3,}$/.test(l))
+          .join(' ')
+      );
 
       if (fullText.length < 50) continue;
 
@@ -212,6 +213,50 @@ export function dsgvoFirecrawlSource(opts: FirecrawlFactoryOptions): FirecrawlSo
     effectiveFrom: new Date('2018-05-25'),
     url: 'https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32016R0679',
     articleNumbers: opts.articleNumbers ?? [5, 6, 9, 32],
+    apiKey: opts.apiKey,
+    apiUrl: opts.apiUrl,
+    httpClient: opts.httpClient,
+  });
+}
+
+/** Options for language-parametrised acts (AI Act, Data Act). */
+export interface FirecrawlLangFactoryOptions extends FirecrawlFactoryOptions {
+  language: RegulationLanguage;
+}
+
+/**
+ * EU AI Act (Regulation (EU) 2024/1689, CELEX 32024R1689) via Firecrawl → EUR-Lex.
+ * Source key encodes the language (`ai-act-en` / `ai-act-de`) so DE and EN don't
+ * collide on the `source:paragraph` regulationKey. Full-act crawl by default.
+ */
+export function aiActFirecrawlSource(opts: FirecrawlLangFactoryOptions): FirecrawlSource {
+  const lang = opts.language;
+  return new FirecrawlSource({
+    source: lang === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: lang,
+    effectiveFrom: new Date('2024-08-01'),
+    url: `https://eur-lex.europa.eu/legal-content/${lang.toUpperCase()}/TXT/HTML/?uri=CELEX:32024R1689`,
+    articleNumbers: opts.articleNumbers,
+    apiKey: opts.apiKey,
+    apiUrl: opts.apiUrl,
+    httpClient: opts.httpClient,
+  });
+}
+
+/**
+ * EU Data Act (Regulation (EU) 2023/2854, CELEX 32023R2854) via Firecrawl → EUR-Lex.
+ * Source key encodes the language (`data-act-en` / `data-act-de`). Full-act crawl by default.
+ */
+export function dataActFirecrawlSource(opts: FirecrawlLangFactoryOptions): FirecrawlSource {
+  const lang = opts.language;
+  return new FirecrawlSource({
+    source: lang === 'de' ? 'data-act-de' : 'data-act-en',
+    jurisdiction: 'EU',
+    language: lang,
+    effectiveFrom: new Date('2024-01-11'),
+    url: `https://eur-lex.europa.eu/legal-content/${lang.toUpperCase()}/TXT/HTML/?uri=CELEX:32023R2854`,
+    articleNumbers: opts.articleNumbers,
     apiKey: opts.apiKey,
     apiUrl: opts.apiUrl,
     httpClient: opts.httpClient,
