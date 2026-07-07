@@ -10,6 +10,7 @@
  * die neue Sicht aus; bestehende Endpunkte bleiben unberührt (Umstellung = P2).
  */
 import mongoose from 'mongoose';
+import { createHash } from 'crypto';
 import {
   deriveNormWorkId,
   lawSourceFromRegulationKey,
@@ -212,4 +213,137 @@ export async function getNormMappings(
 
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ─── P2: Pipeline-Sicht (THE-390 P2) ───
+//
+// Die Pipeline-Welt (compliance-pipeline, remediation, ai-match, Matrix) braucht
+// von einer Norm nur Metadaten + flache Sections. `getPipelineNorm` liefert genau
+// das — quellenagnostisch. Eine `ref` ist entweder eine legacy `standardId`
+// (ObjectId-String), ein `upload:<standardId>`- oder ein `corpus:<source>`-workId.
+
+export interface PipelineNormSection {
+  id: string;
+  title: string;
+  number: string;
+  content: string;
+  level: number;
+}
+
+export interface PipelineNormView {
+  /** Pipeline-Identität: standardId (upload) bzw. workId (corpus). */
+  id: string;
+  source: 'upload' | 'corpus';
+  name: string;
+  type: string;
+  version?: string;
+  sections: PipelineNormSection[];
+}
+
+/** Stats im Vokabular der Pipeline (conformance) — Korpus-Lifecycle wird projiziert. */
+export interface NormMappingStats {
+  total: number;
+  compliant: number;
+  partial: number;
+  gap: number;
+  unmapped: number;
+}
+
+/**
+ * P2-Brücke: `CompliancePipelineState.standardId` ist required+unique (ObjectId).
+ * Korpus-Normen haben kein Standard-Doc — sie ankern über eine DETERMINISTISCHE
+ * ObjectId aus dem workId-Hash (md5→24 hex). Ehrlich ein Platzhalter: der echte
+ * Schlüssel ist `normId`; der Anker stirbt in P4 mit dem Index-Flip (ADR-0004 E4).
+ */
+export function derivePipelineAnchorId(workId: string): mongoose.Types.ObjectId {
+  const hex = createHash('md5').update(workId).digest('hex').slice(0, 24);
+  return new mongoose.Types.ObjectId(hex);
+}
+
+function isCorpusRef(ref: string): boolean {
+  return ref.startsWith('corpus:');
+}
+
+/** Quellenagnostische Pipeline-Sicht einer Norm. */
+export async function getPipelineNorm(
+  projectId: string,
+  ref: string,
+): Promise<PipelineNormView | null> {
+  if (isCorpusRef(ref)) {
+    const norm = await getNorm(projectId, ref);
+    if (!norm) return null;
+    return {
+      id: norm.identity.workId,
+      source: 'corpus',
+      name: norm.title,
+      type: norm.kind ?? 'legislation',
+      sections: norm.sections.map(s => ({
+        id: s.eId,
+        title: s.heading,
+        number: s.number ?? '',
+        content: s.text ?? '',
+        level: s.level,
+      })),
+    };
+  }
+  const standardId = ref.startsWith('upload:') ? ref.slice('upload:'.length) : ref;
+  if (!mongoose.isValidObjectId(standardId)) return null;
+  const std = await Standard.findById(standardId);
+  if (!std || String(std.projectId) !== String(projectId)) return null;
+  return {
+    id: standardId,
+    source: 'upload',
+    name: std.name,
+    type: std.type,
+    version: std.version || undefined,
+    sections: (std.sections ?? []).map(s => ({
+      id: s.id,
+      title: s.title,
+      number: s.number || '',
+      content: s.content || '',
+      level: s.level ?? 1,
+    })),
+  };
+}
+
+/**
+ * Mapping-Stats einer Norm im Pipeline-Vokabular.
+ *
+ * Upload: direkt aus StandardMapping (conformance-Statūs, wie bisher).
+ * Corpus (P2-Projektion, echte Vokabular-Vereinigung = P3/P4):
+ *   confirmed → compliant · auto → partial (LLM-vorgeschlagen, unbestätigt) ·
+ *   rejected → zählt nicht · gap entsteht nur als `unmapped` (Section ohne aktives Mapping).
+ */
+export async function computeNormMappingStats(
+  projectId: string,
+  ref: string,
+): Promise<NormMappingStats | null> {
+  const norm = await getPipelineNorm(projectId, ref);
+  if (!norm) return null;
+
+  if (norm.source === 'upload') {
+    const mappings = await StandardMapping.find({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      standardId: new mongoose.Types.ObjectId(norm.id),
+    });
+    const mappedSectionIds = new Set(mappings.map(m => m.sectionId));
+    return {
+      total: norm.sections.length,
+      compliant: mappings.filter(m => m.status === 'compliant').length,
+      partial: mappings.filter(m => m.status === 'partial').length,
+      gap: mappings.filter(m => m.status === 'gap').length,
+      unmapped: norm.sections.filter(s => !mappedSectionIds.has(s.id)).length,
+    };
+  }
+
+  const mappings = await getNormMappings(projectId, norm.id);
+  const active = mappings.filter(m => m.status !== 'rejected');
+  const mappedSectionIds = new Set(active.map(m => m.sectionEId).filter(Boolean));
+  return {
+    total: norm.sections.length,
+    compliant: active.filter(m => m.status === 'confirmed').length,
+    partial: active.filter(m => m.status === 'auto').length,
+    gap: 0,
+    unmapped: norm.sections.filter(s => !mappedSectionIds.has(s.id)).length,
+  };
 }

@@ -5,6 +5,7 @@ import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { RemediationProposal, IRemediationProposal } from '../models/RemediationProposal';
 import { buildProjectContext, buildStandardContext } from './ai.service';
+import { getPipelineNorm } from './norm.service';
 import { runAdvisorScan } from './advisor.service';
 import { validateProposal } from './remediation-validator.service';
 import {
@@ -213,23 +214,28 @@ async function buildComplianceGapContext(
   standardId: string,
   gapSectionIds: string[],
 ): Promise<string> {
-  const standard = await Standard.findById(standardId);
-  if (!standard) return '## No standard found';
+  // THE-390 P2: quellenagnostisch über die Norm-Facade — trägt Upload-Standards
+  // (legacy standardId) UND Korpus-Normen (`corpus:<source>`-workId).
+  const norm = await getPipelineNorm(projectId, standardId);
+  if (!norm) return '## No standard found';
 
-  // Get gap mappings for specified sections
-  const gapMappings = await StandardMapping.find({
-    projectId,
-    standardId,
-    sectionId: { $in: gapSectionIds },
-    status: 'gap',
-  });
+  // Get gap mappings for specified sections (Upload-Welt; Korpus kennt kein
+  // 'gap'-Urteil — dort ist die Section selbst der Gap-Kontext).
+  const gapMappings = norm.source === 'upload'
+    ? await StandardMapping.find({
+        projectId,
+        standardId: norm.id,
+        sectionId: { $in: gapSectionIds },
+        status: 'gap',
+      })
+    : [];
 
   const lines: string[] = [];
-  lines.push(`## Compliance Gaps from: ${standard.name} (${standard.version})`);
+  lines.push(`## Compliance Gaps from: ${norm.name}${norm.version ? ` (${norm.version})` : ''}`);
   lines.push(`Total gap sections to remediate: ${gapSectionIds.length}`);
 
   for (const sectionId of gapSectionIds) {
-    const section = standard.sections.find((s) => s.id === sectionId);
+    const section = norm.sections.find((s) => s.id === sectionId);
     if (!section) continue;
 
     const sectionMappings = gapMappings.filter((m) => m.sectionId === sectionId);
