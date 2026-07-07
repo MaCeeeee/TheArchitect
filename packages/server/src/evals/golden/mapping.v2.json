@@ -1,5 +1,5 @@
 {
-  "version": "v1-draft",
+  "version": "v2-draft",
   "frozen": false,
   "rubricRef": "../RUBRIC.md",
   "cases": [
@@ -35,13 +35,12 @@
         }
       ],
       "goldElementIds": [
-        "el-vvt-app",
-        "el-crm"
+        "el-vvt-app"
       ],
       "ambiguous": false,
-      "notes": "SEED-BEISPIEL. el-vvt-app: expliziter Scope (Rubrik §2.1) — das Verzeichnis selbst. el-crm: Datenbezug (§2.3) — verarbeitet personenbezogene Daten und muss im VVT geführt werden. el-build-pipeline: no-match, nur thematische Nähe zu 'IT' (§3).",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2: Verzeichnis FÜHREN ist ein Akt der VVT-App. el-crm steht nur IM Verzeichnis → transitiv, no-match (§3). Vorher (v1) war el-crm match — mit Regel C revidiert.",
       "annotator": "seed",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "lksg-p6-praevention",
@@ -116,9 +115,9 @@
       ],
       "goldElementIds": [],
       "ambiguous": false,
-      "notes": "SEED-BEISPIEL / HARD NEGATIVE. Art. 83 adressiert die Aufsichtsbehörde (Bußgeldbemessung) — Organisationspflicht ohne Systembezug (Rubrik §3): kein gelistetes Element muss angepasst, geprüft oder nachgewiesen werden.",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). HARD NEGATIVE bestätigt per Adressaten-Test (§3): Subjekt des Satzes ist die Aufsichtsbehörde, keine Handlungspflicht des Unternehmens. el-vvt-app ist thematisch nah (Compliance-Nachweis), aber Art. 83 verlangt daran nichts.",
       "annotator": "seed",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "dsgvo-art33-breach-bsh",
@@ -218,9 +217,9 @@
         "bsh-proc-gdpr-incident"
       ],
       "ambiguous": false,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. gdpr-incident: funktionale Pflicht (Rubrik 2.2) - der Prozess implementiert die 72h-Meldung. Near-Miss: grievance (Beschwerdekanal, anderes Regime) = no-match (Rubrik 3). TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2: MELDEN ist ein Prozessakt → nur gdpr-incident. Systeme, in denen ein Breach passieren KÖNNTE (portal, grievance, snowflake), sind transitiv → no-match. grievance zusätzlich Regime-Grenze (LkSG-Kanal, nicht DSGVO). TEXT-QUELLE: vor Freeze gegen EUR-Lex verifizieren.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "dsgvo-art32-security",
@@ -373,12 +372,13 @@
       ],
       "goldElementIds": [
         "bsh-app-salesforce",
-        "bsh-tech-snowflake"
+        "bsh-tech-snowflake",
+        "bsh-app-supplier-portal"
       ],
-      "ambiguous": true,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. salesforce/snowflake: Datenbezug (Rubrik 2.3) - speichern personenbezogene Daten, müssen Löschung umsetzen können. GRENZFALL supplier-portal (Lieferanten-Kontaktpersonen = pbD) - konservativ no-match, im Review entscheiden. TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 1: LÖSCHEN KÖNNEN ist Systemfähigkeit → jeder dokumentierte pbD-Halter: salesforce (customer personal data), snowflake (personal data from CRM/portals), supplier-portal (supplier contact persons — NEU gegenüber v1). grievance: pbD nicht in Beschreibung dokumentiert → no-match (Zusatzbedingung §2.3). azure: Hosting-Infrastruktur → transitiv. TEXT-QUELLE: vor Freeze gegen EUR-Lex verifizieren.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "dsgvo-art51-authority-hardneg",
@@ -680,9 +680,9 @@
         "bsh-proc-supplier-risk"
       ],
       "ambiguous": true,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. mes/azure: Netz- und Informationssysteme für Betrieb/Dienste (Rubrik 2.2) - OT-Systeme sind NIS2-Kern. supplier-risk: Abs. 3 Lieferketten-Sicherheit (Rubrik 2.2). GRENZFALL snowflake - konservativ no-match, im Review entscheiden. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 1: Maßnahmen werden AN Netz-/Informationssystemen umgesetzt → mes (OT-Kern), azure (Plattform für Betrieb/Dienste); supplier-risk über Abs. 3 Lieferkettensicherheit. GRENZFALL bleibt snowflake (Informationssystem, aber primär Analytics) → ambiguous, in Adjudikation nach Re-Label entscheiden. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "nis2-art22-supplychain-hardneg",
@@ -780,9 +780,9 @@
       ],
       "goldElementIds": [],
       "ambiguous": false,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. HARD NEGATIVE: adressiert EU-Gremien (Cooperation Group/Kommission/ENISA), nicht das Unternehmen (Rubrik 3). Near-Miss: supplier-risk klingt verwandt, ist aber nicht Adressat. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). HARD NEGATIVE bestätigt per Adressaten-Test (§3): Subjekt sind Cooperation Group/Kommission/ENISA (EU-Gremien). supplier-portal/supplier-risk sind thematisch nah, aber Art. 22 erzeugt keine Unternehmens-Pflicht.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "nis2-art23-reporting-bsh",
@@ -983,9 +983,9 @@
         "bsh-proc-supplier-risk"
       ],
       "ambiguous": false,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. supplier-dd: Umbrella-Capability der Sorgfaltspflichten (Rubrik 2.2). supplier-risk: regelmäßige Risikoanalysen explizit gefordert (Rubrik 2.1). Grundsatzerklärung/Zuständigkeit: kein Element im Pool. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Capability-Regel (§2.5): supplier-dd (Capability) trägt das GESAMTE Sorgfaltspflichten-Bündel → match; supplier-risk implementiert die namentlich geforderte Risikoanalyse → zusätzlich match. esg-platform: sammelt Reporting-Daten, führt keine Sorgfaltspflicht aus → Stufe 2 / thematische Nähe, no-match.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "lksg-p6-praevention-bsh",
@@ -1085,9 +1085,9 @@
         "bsh-cap-supplier-dd"
       ],
       "ambiguous": true,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. supplier-dd: verankert Präventionsmaßnahmen gegenüber Zulieferern (Rubrik 2.2). GRENZFALL supplier-portal (Self-Assessments als Präventionsinstrument) - konservativ no-match, im Review entscheiden. TEXT-QUELLE: Korpus-Fixture (wörtlich).",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). supplier-dd verankert Präventionsmaßnahmen beim Zulieferer (funktionale Pflicht 2.2). gdpr-incident: anderes Regime (§3 Regime-Grenze) → no-match. GRENZFALL bleibt supplier-portal (Self-Assessments als Präventionsinstrument) → ambiguous.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "lksg-p8-beschwerde-bsh",
@@ -1187,9 +1187,9 @@
         "bsh-app-grievance"
       ],
       "ambiguous": false,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. grievance: exakte funktionale Pflicht (Rubrik 2.2) - das System IST der geforderte Beschwerdekanal. TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). grievance IST der geforderte Beschwerdekanal (funktionale Pflicht 2.2, Beispielkatalog §2a) → match. supplier-risk/csrd-cycle/supplier-portal: nur thematische Nähe → no-match. TEXT-QUELLE: vor Freeze gegen gesetze-im-internet verifizieren.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     },
     {
       "caseId": "lksg-p10-bericht-bsh",
@@ -1286,10 +1286,10 @@
         }
       ],
       "goldElementIds": [],
-      "ambiguous": true,
-      "notes": "ENTWURF (claude-draft) - PRÜFEN nach RUBRIC.md. KNIFFLIG (bewusst): LkSG-Bericht ist NICHT der CSRD-Zyklus (anderes Regime) und die ESG-Plattform sammelt ESG-Daten, nicht LkSG-Sorgfaltsnachweise - beides Near-Miss, konservativ no-match (Rubrik 3/4). REVIEW: ggf. esg-platform als match werten. TEXT-QUELLE: amtlicher Wortlaut aus Modellwissen - VOR FREEZE gegen EUR-Lex/gesetze-im-internet verifizieren.",
+      "ambiguous": false,
+      "notes": "Adjudikation 2026-07-04 (Regel C, RUBRIC.md §2.3/§2a). Stufe 2 + Regime-Grenze (§3): LkSG-Bericht ist ein eigener Akt; csrd-cycle erfüllt die CSRD-Pflicht, nicht die LkSG-Pflicht → no-match. esg-platform sammelt ESG-Daten, hält aber laut Beschreibung keine LkSG-Sorgfaltsnachweise → no-match. Bleibt Hard Negative. TEXT-QUELLE: vor Freeze gegen gesetze-im-internet verifizieren.",
       "annotator": "claude-draft",
-      "labeledAt": "2026-07-03"
+      "labeledAt": "2026-07-04"
     }
   ]
 }

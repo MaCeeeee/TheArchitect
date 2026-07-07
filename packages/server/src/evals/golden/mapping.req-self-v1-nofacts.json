@@ -1,0 +1,3085 @@
+{
+  "version": "mapping-req-self-v1-nofacts",
+  "frozen": true,
+  "rubricRef": "../RUBRIC.md",
+  "cases": [
+    {
+      "caseId": "dsgvo-a5-retention",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "title": "Enforce retention and erasure periods for personal data",
+      "fullText": "Enforce retention and erasure periods for personal data. Every system that stores personal data must be able to delete or anonymise it once the defined retention period ends (storage limitation).",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "title": "Protect integrity and confidentiality of personal data",
+      "fullText": "Protect integrity and confidentiality of personal data. Personal data must be processed with technical and organisational measures ensuring integrity and confidentiality.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit",
+        "4193802f-tech-caddy"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a6-lawbasis",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 6",
+      "title": "Capture and manage a lawful basis (e.g. consent) for each processing activity",
+      "fullText": "Capture and manage a lawful basis (e.g. consent) for each processing activity. The system that manages user identity must record and enforce a lawful basis (consent, contract) for processing personal data.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": []
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 15",
+      "title": "Provide data subjects access to their personal data on request",
+      "fullText": "Provide data subjects access to their personal data on request. Each system holding personal data must be able to retrieve and export that data for a subject-access request.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 17",
+      "title": "Erase a data subject’s personal data on request",
+      "fullText": "Erase a data subject’s personal data on request. Each system holding personal data must support deletion of an individual’s data without undue delay.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 17",
+      "title": "Propagate erasure to downstream and replicated stores",
+      "fullText": "Propagate erasure to downstream and replicated stores. An erasure request must reach all replicated / downstream stores that hold copies of the personal data.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-tech-vps",
+        "4193802f-tech-dataserver",
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 28",
+      "title": "Bind external processors via a data-processing agreement (DPA)",
+      "fullText": "Bind external processors via a data-processing agreement (DPA). Every third party that processes personal data on our behalf must be governed by a data-processing agreement.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-tech-vps",
+        "4193802f-tech-dataserver",
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a30-ropa",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 30",
+      "title": "Maintain a record of processing activities (ROPA)",
+      "fullText": "Maintain a record of processing activities (ROPA). A system or register must maintain the record of processing activities required by Art. 30.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": []
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Encrypt personal data in transit and at rest",
+      "fullText": "Encrypt personal data in transit and at rest. Personal data must be encrypted in transit (TLS) and at rest; systems holding it must be covered by these measures.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit",
+        "4193802f-tech-caddy"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Enforce authentication and access control on personal-data systems",
+      "fullText": "Enforce authentication and access control on personal-data systems. Access to personal-data systems must be authenticated and authorised; security-relevant actions must be logged.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-svc-auth",
+        "4193802f-tech-mongodb",
+        "4193802f-tech-neo4j",
+        "4193802f-tech-redis",
+        "4193802f-tech-resend",
+        "4193802f-data-graph",
+        "4193802f-data-mongo",
+        "4193802f-data-redis",
+        "4193802f-data-audit"
+      ]
+    },
+    {
+      "caseId": "dsgvo-a33-breach",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 33",
+      "title": "Detect and notify a personal-data breach within 72 hours",
+      "fullText": "Detect and notify a personal-data breach within 72 hours. A process/system must detect a personal-data breach and notify the supervisory authority within 72 hours.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": []
+    },
+    {
+      "caseId": "dsgvo-a44-transfer",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 44",
+      "title": "Apply a transfer mechanism for third-country data transfers",
+      "fullText": "Apply a transfer mechanism for third-country data transfers. Personal data sent to processors outside the EU/adequacy area must be covered by a valid transfer mechanism.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "candidates": [
+        {
+          "id": "4193802f-app-client",
+          "name": "Client SPA (3D)",
+          "type": "application_component",
+          "layer": "application",
+          "description": "React/Three.js 3D architecture visualization app"
+        },
+        {
+          "id": "4193802f-app-server",
+          "name": "Server API",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Express/TS monolithic REST + WebSocket backend"
+        },
+        {
+          "id": "4193802f-app-crawler",
+          "name": "Compliance-Crawler",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Standalone crawler/embedder for legal corpora"
+        },
+        {
+          "id": "4193802f-app-sidecar",
+          "name": "Embedding Sidecar",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Python FastAPI sentence-transformers compute service"
+        },
+        {
+          "id": "4193802f-app-n8n",
+          "name": "n8n RAG Workflows",
+          "type": "application_component",
+          "layer": "application",
+          "description": "Ingest/query workflows on separate data-server"
+        },
+        {
+          "id": "4193802f-svc-auth",
+          "name": "Auth & Identity",
+          "type": "application_service",
+          "layer": "application",
+          "description": "JWT/OAuth/MFA, sessions, API keys"
+        },
+        {
+          "id": "4193802f-svc-connectors",
+          "name": "Connectors",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SAP/ServiceNow/Jira/GitHub/LeanIX integrations"
+        },
+        {
+          "id": "4193802f-svc-rag",
+          "name": "RAG Integration",
+          "type": "application_service",
+          "layer": "application",
+          "description": "Bridges server to n8n data-server for retrieval"
+        },
+        {
+          "id": "4193802f-svc-aigen",
+          "name": "AI Generator",
+          "type": "application_service",
+          "layer": "application",
+          "description": "SSE-streamed activity/process generation"
+        },
+        {
+          "id": "4193802f-tech-vps",
+          "name": "Hostinger VPS (Primary)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Production host running the Docker Compose stack"
+        },
+        {
+          "id": "4193802f-tech-dataserver",
+          "name": "Data-Server VPS (Coolify)",
+          "type": "node",
+          "layer": "technology",
+          "description": "Separate host running n8n + Qdrant for RAG"
+        },
+        {
+          "id": "4193802f-tech-mongodb",
+          "name": "MongoDB",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Document store for projects, users, templates"
+        },
+        {
+          "id": "4193802f-tech-neo4j",
+          "name": "Neo4j",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Graph DB for architecture elements/relations"
+        },
+        {
+          "id": "4193802f-tech-redis",
+          "name": "Redis",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Session store and cache"
+        },
+        {
+          "id": "4193802f-tech-minio",
+          "name": "MinIO",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "S3-compatible object storage for files"
+        },
+        {
+          "id": "4193802f-tech-qdrant-sim",
+          "name": "Qdrant (element similarity)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for element-similarity index"
+        },
+        {
+          "id": "4193802f-tech-qdrant-rag",
+          "name": "Qdrant (regulation RAG)",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Vector store for regulation RAG corpus"
+        },
+        {
+          "id": "4193802f-tech-n8n",
+          "name": "n8n",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Workflow engine orchestrating RAG ingest/query"
+        },
+        {
+          "id": "4193802f-tech-docker",
+          "name": "Docker / Compose",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Container runtime for multi-service deployment"
+        },
+        {
+          "id": "4193802f-tech-caddy",
+          "name": "Caddy",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Reverse proxy and TLS termination"
+        },
+        {
+          "id": "4193802f-tech-node",
+          "name": "Node.js / Express",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Backend runtime framework"
+        },
+        {
+          "id": "4193802f-tech-react",
+          "name": "React + Three.js/R3F",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Frontend framework for 3D visualization"
+        },
+        {
+          "id": "4193802f-tech-umami",
+          "name": "Umami Analytics",
+          "type": "system_software",
+          "layer": "technology",
+          "description": "Self-hosted cookie-free web analytics"
+        },
+        {
+          "id": "4193802f-tech-anthropic",
+          "name": "Anthropic Claude API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "LLM provider for AI copilot/generation"
+        },
+        {
+          "id": "4193802f-tech-openai",
+          "name": "OpenAI API",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Alternate LLM and embeddings provider"
+        },
+        {
+          "id": "4193802f-tech-resend",
+          "name": "Resend (SMTP)",
+          "type": "technology_service",
+          "layer": "technology",
+          "description": "Transactional email delivery"
+        },
+        {
+          "id": "4193802f-data-graph",
+          "name": "Architecture Graph (Neo4j)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Elements, connections, dependency graph"
+        },
+        {
+          "id": "4193802f-data-mongo",
+          "name": "Projects & Users (MongoDB)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Project metadata, users, templates, policies"
+        },
+        {
+          "id": "4193802f-data-corpus",
+          "name": "Regulation Corpus",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Crawled legal texts (EUR-Lex, Gesetze-im-Internet)"
+        },
+        {
+          "id": "4193802f-data-emb-sim",
+          "name": "Element Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized architecture elements for similarity"
+        },
+        {
+          "id": "4193802f-data-emb-rag",
+          "name": "Regulation Embedding Index (Qdrant)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Vectorized regulation chunks for RAG query"
+        },
+        {
+          "id": "4193802f-data-minio",
+          "name": "File Storage (MinIO)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Uploaded documents, generated PDFs/exports"
+        },
+        {
+          "id": "4193802f-data-redis",
+          "name": "Session Store (Redis)",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Auth sessions, rate-limit/cache state"
+        },
+        {
+          "id": "4193802f-data-audit",
+          "name": "Audit Log",
+          "type": "data_object",
+          "layer": "information",
+          "description": "Security/compliance action trail"
+        }
+      ],
+      "goldElementIds": [
+        "4193802f-tech-anthropic",
+        "4193802f-tech-openai",
+        "4193802f-tech-resend"
+      ]
+    }
+  ]
+}

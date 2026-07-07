@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import type { CandidateElement } from '../services/complianceMapping.service';
+import { normalizeElementType } from '../services/complianceElements.service';
 
 // Wertebereiche gespiegelt aus Regulation.ts / compliance.types.ts —
 // bewusst als Strings validiert, damit das Golden-Set auch Quellen labeln
@@ -62,7 +63,7 @@ export const GoldenSetSchema = z.object({
 export type GoldenCase = z.infer<typeof GoldenCaseSchema>;
 export type GoldenSet = z.infer<typeof GoldenSetSchema>;
 
-export const DEFAULT_GOLDEN_PATH = path.join(__dirname, 'golden', 'mapping.v1.json');
+export const DEFAULT_GOLDEN_PATH = path.join(__dirname, 'golden', 'mapping.v2.json');
 
 export class GoldenSetError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -144,9 +145,12 @@ export function toCandidateElements(c: GoldenCase): CandidateElement[] {
   return c.candidates.map(el => ({
     id: el.id,
     name: el.name,
-    // Golden set stores free-form type strings; the service type is a union —
-    // cast is safe because the eval only round-trips ids/confidences.
-    type: el.type as CandidateElement['type'],
+    // Golden-Set speichert freie ArchiMate-Typen (z. B. system_software); der
+    // Mapping-Service kennt nur ein engeres Enum und validiert den vom LLM
+    // zurückgegebenen elementType dagegen. Wir normalisieren daher GENAU wie der
+    // Produktions-Loader (loadProjectCandidateElements) — sonst scheitert der
+    // Eval-Lauf an Typen, die es im Produktpfad nie gäbe.
+    type: normalizeElementType(el.type),
     layer: el.layer,
     description: el.description,
   }));

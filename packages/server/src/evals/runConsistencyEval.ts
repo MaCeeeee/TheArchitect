@@ -18,6 +18,7 @@
  *
  * Linear: THE-380 (REQ-EVAL-001.2) · Ergänzung aus SSL-Review (UC-EVAL-001)
  */
+import 'dotenv/config'; // .env laden (ANTHROPIC_API_KEY/MODEL), bevor der Service sie liest
 import fs from 'node:fs';
 import path from 'node:path';
 import { mapTextToElements } from '../services/complianceMapping.service';
@@ -91,7 +92,13 @@ async function predict(args: {
   promptHash: string;
   offline: boolean;
 }): Promise<{ ids: string[]; fromCache: boolean }> {
-  const key = cacheKeyFor(args.fullText, args.candidates.map(c => c.id), args.model, args.promptHash);
+  const key = cacheKeyFor(
+    args.fullText,
+    args.candidates.map(c => c.id),
+    args.model,
+    args.promptHash,
+    sha256(JSON.stringify(args.candidates))
+  );
   const cached = readCache(CACHE_DIR, args.bucket, args.cacheId, key);
   if (cached) return { ids: cached.predictions.map(p => p.elementId), fromCache: true };
 

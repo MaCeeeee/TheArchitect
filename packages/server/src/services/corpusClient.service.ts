@@ -95,6 +95,24 @@ export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegul
   return CorpusRegulation().find({ regulationKey: { $in: keys } });
 }
 
+/**
+ * Alle (aktuellsten) Korpus-Regulations zu den gegebenen Quellen. Nur die
+ * höchste Version je regulationKey (der Crawler legt bei Änderung eine neue
+ * Version an). Für den Projekt-Import (import-regulations-from-corpus.ts), weil
+ * der Crawler in den kanonischen Korpus schreibt, nicht in den Projekt-Bestand.
+ */
+export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegulation[]> {
+  if (sources.length === 0) return [];
+  const all = await CorpusRegulation()
+    .find({ source: { $in: sources } })
+    .sort({ regulationKey: 1, version: -1 });
+  const latest = new Map<string, ICorpusRegulation>();
+  for (const r of all) {
+    if (!latest.has(r.regulationKey)) latest.set(r.regulationKey, r); // erste = höchste Version
+  }
+  return [...latest.values()];
+}
+
 /** Map of regulationKey → current (latest) versionHash. For drift-detection (THE-306/368). */
 export async function getCurrentVersionHashes(keys: string[]): Promise<Map<string, string>> {
   const regs = await getRegulationsByKeys([...new Set(keys)]);

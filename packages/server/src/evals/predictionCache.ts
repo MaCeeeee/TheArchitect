@@ -25,13 +25,25 @@ export interface CachedPrediction {
   cachedAt: string;
 }
 
+/**
+ * candidatesHash schließt die verifizierte Key-Lücke: Ohne ihn waren Kandidaten-
+ * INHALTE (description, künftig Compliance-Facts) kein Key-Bestandteil — eine
+ * Profil-/Beschreibungs-Änderung hätte still alte Predictions zurückgeliefert
+ * und jeden Vorher/Nachher-Vergleich entwertet. Aufrufer übergeben
+ * sha256(JSON.stringify(candidates)). Bestehende Cache-Buckets sind dadurch
+ * stale und werden beim nächsten Live-Lauf neu befüllt (bewusst: es existiert
+ * noch keine eingefrorene Baseline).
+ */
 export function cacheKeyFor(
   fullText: string,
   candidateIds: string[],
   model: string,
-  promptHash: string
+  promptHash: string,
+  candidatesHash: string
 ): string {
-  return sha256([sha256(fullText), model, promptHash, candidateIds.join(',')].join('|'));
+  return sha256(
+    [sha256(fullText), model, promptHash, candidateIds.join(','), candidatesHash].join('|')
+  );
 }
 
 function cachePathFor(cacheDir: string, bucket: string, caseId: string): string {

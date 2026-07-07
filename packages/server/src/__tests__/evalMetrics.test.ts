@@ -19,6 +19,7 @@ import {
   bootstrapCI,
   mulberry32,
   cohenKappa,
+  concisenessMetrics,
   type CaseOutcome,
   type PairLabel,
 } from '../evals/metrics';
@@ -236,5 +237,59 @@ describe('loadGoldenSet()', () => {
     const p = path.join(dir, 'broken.json');
     fs.writeFileSync(p, '{not json');
     expect(() => loadGoldenSet(p)).toThrow(/not valid JSON/);
+  });
+});
+
+// ─── Conciseness (REQ-EVAL-001.10 / S1) ─────────────────────────
+
+describe('concisenessMetrics()', () => {
+  it('OMR = 1.0 when predictions exactly match gold counts', () => {
+    const m = concisenessMetrics(
+      [
+        outcome('c1', ['a', 'b'], [['a', 0.9], ['b', 0.8]]),
+        outcome('c2', ['x'], [['x', 0.7]]),
+      ],
+      5
+    );
+    expect(m.overMatchRatio).toBe(1);
+    expect(m.meanPredictionsPerCase).toBe(1.5);
+    expect(m.capHitRate).toBe(0);
+    expect(m.predictionCountDistribution).toEqual({ '1': 1, '2': 1 });
+  });
+
+  it('hard negatives count with denominator 1 so predictions on them raise the OMR', () => {
+    // Gold leer, 2 Vorhersagen → OMR = 2 / max(1, 0) = 2
+    const m = concisenessMetrics([outcome('neg', [], [['a', 0.6], ['b', 0.6]])], 5);
+    expect(m.overMatchRatio).toBe(2);
+    expect(m.predictionCountDistribution).toEqual({ '2': 1 });
+  });
+
+  it('a clean hard negative (no predictions) keeps OMR at 0 and lands in bucket "0"', () => {
+    const m = concisenessMetrics([outcome('neg', [], [])], 5);
+    expect(m.overMatchRatio).toBe(0);
+    expect(m.predictionCountDistribution).toEqual({ '0': 1 });
+  });
+
+  it('counts cap hits and buckets them as "<cap>+"', () => {
+    const five: Array<[string, number]> = [
+      ['a', 0.9], ['b', 0.8], ['c', 0.7], ['d', 0.6], ['e', 0.5],
+    ];
+    const m = concisenessMetrics(
+      [outcome('c1', ['a'], five), outcome('c2', ['a'], [['a', 0.9]])],
+      5
+    );
+    expect(m.capHitRate).toBe(0.5);
+    expect(m.predictionCountDistribution).toEqual({ '5+': 1, '1': 1 });
+    expect(m.overMatchRatio).toBe(3); // (5+1) / (1+1)
+  });
+
+  it('returns zeros for an empty outcome list', () => {
+    const m = concisenessMetrics([], 5);
+    expect(m).toEqual({
+      overMatchRatio: 0,
+      meanPredictionsPerCase: 0,
+      predictionCountDistribution: {},
+      capHitRate: 0,
+    });
   });
 });

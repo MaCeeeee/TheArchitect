@@ -1,4 +1,4 @@
-# Labeling-Rubrik — Compliance-Mapping Golden-Set (v1)
+# Labeling-Rubrik — Compliance-Mapping Golden-Set (v2)
 
 > Linear: THE-379 (REQ-EVAL-001.1) · Epic: THE-378 (UC-EVAL-001)
 >
@@ -23,10 +23,53 @@ gehört in `notes`, nicht ins Label).
    (z. B. DSGVO Art. 30 ↔ Element „Verzeichnis von Verarbeitungstätigkeiten").
 2. **Funktionale Pflicht:** R verlangt eine Tätigkeit, die E ausführt oder
    implementiert (z. B. LkSG § 6 Abmilderungsmaßnahmen ↔ „Supplier Due Diligence Process").
-3. **Datenbezug:** R reguliert eine Datenkategorie, die E speichert/verarbeitet
-   (z. B. DSGVO Art. 9 ↔ Datenobjekt mit Gesundheitsdaten).
+3. **Datenbezug — Zwei-Stufen-Test (Regel C, entschieden 2026-07-04):**
+   Für datenhaltende Systeme gilt NICHT pauschal match. Prüfe zweistufig:
+
+   > **Stufe 1 — Systemfähigkeit:** Verlangt R eine Fähigkeit oder Eigenschaft,
+   > die **im System selbst** implementiert sein muss (Löschfähigkeit Art. 17,
+   > TOMs/Sicherheit Art. 32, Sicherheitsmaßnahmen an Netz-/Informationssystemen
+   > NIS2 Art. 21)? → Jeder Halter der regulierten Datenkategorie ist **match**.
+   >
+   > **Stufe 2 — organisatorischer Akt:** Verlangt R nur einen Akt, den ein
+   > **anderes** Element ausführt (Meldung abgeben Art. 33, Verzeichnis führen
+   > Art. 30, Bericht veröffentlichen LkSG § 10)? → Datenhalter sind **no-match**
+   > (transitiv, § 3); match ist nur der Ausführer.
+
+   Merksatz: *„Muss an DIESEM Element etwas gebaut, geändert oder nachgewiesen
+   werden — oder steht es nur in einer Liste, die woanders geführt wird?"*
+
+   **Zusatzbedingung für Stufe 1:** Die regulierte Datenkategorie muss am
+   Element **explizit dokumentiert** sein. Primärer Mechanismus ist das
+   **Compliance-Facts-Profil** (`metadata.compliance.holds` mit presence `doc`
+   — Taxonomie: `../compliance/COMPLIANCE_FACTS.md`); die Freitext-Beschreibung
+   („stores customer personal data") gilt als Übergangs-Fallback und für
+   profilfreie Sets (BSH-Transfer-Slice). Keine Spekulation über mögliche
+   Inhalte — `maybe`-Einträge und Systeme, die Personendaten enthalten
+   *könnten*, sind no-match (konservativ, § 4). Reine Hosting-Infrastruktur
+   (`kind: infra`) ist für *Daten*-Pflichten transitiv — die Fähigkeit
+   (löschen, verschlüsseln) liegt in der App-/DB-Schicht, nicht im Hoster.
 4. **Nachweispflicht:** E erzeugt oder hält die Evidenz, die R fordert
    (Audit-Logs, Berichte, Dokumentation).
+5. **Capability-Regel (Theme ①):** Eine Capability ist match, wenn R das
+   **gesamte Tätigkeitsbündel** verlangt, das die Capability repräsentiert
+   (LkSG § 3 Sorgfaltspflichten ↔ „Supplier Due Diligence"-Capability).
+   Zusätzlich ist der konkrete Prozess match, wenn R eine namentlich
+   bestimmbare Einzelpflicht enthält, die er implementiert (§ 5 Risikoanalyse
+   ↔ „Supplier Risk Assessment"). Capability und Prozess schließen sich also
+   NICHT aus — beide können match sein.
+
+### 2a. Beispielkatalog Zwei-Stufen-Test (Adjudikation vom 2026-07-04)
+
+| Paragraph | Stufe | Entscheidung |
+|---|---|---|
+| DSGVO Art. 30 (VVT) | 2 | Nur die VVT-App führt das Verzeichnis. CRM & Co. stehen *im* Verzeichnis → no-match. |
+| DSGVO Art. 33 (Breach-Meldung) | 2 | Nur der Incident-Response-Prozess meldet. Systeme, in denen ein Breach passieren *könnte*, sind transitiv → no-match. |
+| DSGVO Art. 17 (Löschung) | 1 | *Löschen können* ist eine Systemfähigkeit → jeder dokumentierte Halter personenbezogener Daten ist match (CRM, DWH, Portal mit Kontaktpersonen). Hosting-Plattform: no-match. |
+| DSGVO Art. 32 (Sicherheit) | 1 | TOMs müssen an den Systemen umgesetzt werden → ISMS/Encryption/Backup match; dokumentierte pbD-Halter sind Grenzfall (Adjudikation, § 4). |
+| NIS2 Art. 21 (Risk-Mgmt) | 1 | Maßnahmen werden *an* Netz-/Informationssystemen umgesetzt → OT/MES, Cloud-Plattform match; plus Lieferketten-Prozess (Abs. 3). |
+| LkSG § 8 (Beschwerde) | — | Das Beschwerdesystem IST der geforderte Kanal (funktionale Pflicht 2.2) → match. Lieferanten-Risiko/CSRD/Portal: nur thematische Nähe → no-match. |
+| LkSG § 10 (Bericht) | 2 | LkSG-Bericht ist ein eigener Akt; CSRD-Zyklus ist ein **anderes Regime** → no-match (Regime-Grenze: ein Element, das Pflicht X eines anderen Gesetzes erfüllt, ist für Pflicht Y kein match). |
 
 ## 3. `no-match` — typische Fälle (Abgrenzung)
 
@@ -37,6 +80,16 @@ gehört in `notes`, nicht ins Label).
   Graph, nicht im Label.
 - **Organisationspflicht ohne Systembezug:** R verpflichtet die Organisation
   (z. B. Meldung an Behörde), aber kein gelistetes Element führt das aus.
+- **Adressaten-Test (Theme ③):** Richtet sich R an **Behörden, Mitgliedstaaten
+  oder EU-Gremien** (Aufsichtsbehörde verhängt Bußgeld Art. 83, Cooperation
+  Group koordiniert Risk-Assessments NIS2 Art. 22) und erzeugt KEINE eigene
+  Handlungspflicht für das Unternehmen, ist **kein** Element match — auch wenn
+  ein Element thematisch zu dem passt, was die Behörde tut. Leitfrage: *„Wer
+  ist Subjekt des Satzes — das Unternehmen oder eine Behörde?"* Solche
+  Paragraphen sind die besten Hard Negatives (§ 5).
+- **Regime-Grenze:** Ein Element, das eine ähnliche Pflicht eines ANDEREN
+  Gesetzes erfüllt (CSRD-Berichtszyklus ↔ LkSG-Bericht, DSGVO-Breach-Prozess ↔
+  NIS2-Incident-Meldung), ist no-match — Regime werden nicht vermischt.
 
 ## 4. Mehrdeutigkeit — die Entscheidungsregel
 
@@ -55,14 +108,28 @@ Wenn zwei kompetente Architekten unterschiedlich entscheiden könnten:
 zurückgibt, statt zwanghaft zu matchen. Gute Quellen: Paragraphen zu Behörden-
 zuständigkeiten, Bußgeldrahmen, Definitionen.
 
-## 6. Stratifizierung (Soll-Verteilung v1, 50–100 Fälle)
+## 6. Stratifizierung & Set-Rollen (v2-Scope, entschieden 2026-07-04)
+
+**Grundsatz-Entscheidung:** Das Baseline-Set wird auf **Gesetze, die auf
+TheArchitect selbst zutreffen × das eigene Architektur-Modell** umgestellt
+(Self-Baseline). Begründung: Ground Truth erfordert einen Annotator, der
+Gegenstand UND Recht sicher beurteilen kann — das erste Doppel-Labeling hat
+gezeigt, dass fremde Domänen (LkSG/Fertigung) diese Sicherheit nicht hergeben.
+
+| Set | Rolle | Gate-relevant? |
+|---|---|---|
+| **Self-Baseline** (TheArchitect-Modell, echte Crawl-Texte) | Kappa-Gate, Freeze, E1-Baseline (THE-381) | **ja** |
+| `mapping.v2.json` (BSH-Demo, LkSG/NIS2-Fertigung) | Transfer-Slice: wird mitgemessen, zeigt Generalisierung | nein — bis ein Domänenexperte die LkSG-Fälle gelabelt hat |
+
+Soll-Verteilung Self-Baseline (Start: 15–25 Fälle, Ziel: 50+):
 
 | Dimension | Vorgabe |
 |---|---|
-| Quellen | dsgvo, nis2, lksg mindestens je 20 %; dora/iso27001 optional |
-| Hard Negatives | ≥ 15 % |
-| Sprache | de und en vertreten |
-| Element-Typen | mind. 4 verschiedene (`application`, `business_process`, `data_object`, `capability`, …) |
+| Quellen | **dsgvo als Kern** (Betreiber-Pflichten: Art. 5/6/15/17/20/25/28/30/32/33/34); **nis2 als Grenzfall-Slice** (Zulieferer-Perspektive Art. 21 Abs. 3); iso27001 optional (Nachweispflicht 2.4) |
+| Hard Negatives | ≥ 15 % — Paragraphen INNERHALB anwendbarer Gesetze mit Behörden-Adressat (Art. 51, 83; Adressaten-Test § 3), NICHT „ganzes Gesetz gilt nicht" |
+| Sprache | de und en vertreten (EUR-Lex liefert beides — speist auch die Konsistenz-Eval) |
+| Element-Typen | mind. 4 verschiedene (`application`, `business_process`, `capability`, `technology_service`, …) |
+| Texte | **nur gecrawlte Originaltexte** (EUR-Lex / gesetze-im-internet), keine Modellwissen-Zitate |
 
 ## 7. Doppel-Labeling & Cohen's Kappa (Freeze-Kriterium)
 
@@ -77,7 +144,23 @@ zuständigkeiten, Bußgeldrahmen, Definitionen.
 
 ## 8. Format
 
-Golden-Set-Einträge liegen in `golden/mapping.v1.json` und werden von
+Golden-Set-Einträge liegen in `golden/mapping.v2.json` und werden von
 `goldenSet.ts` (Zod) validiert. Pro Fall: Regulierungstext + Kandidatenliste +
 `goldElementIds` (leer = Hard Negative). Ein eingefrorenes Set wird nie
-editiert — Korrekturen erzeugen `mapping.v2.json`.
+editiert — Korrekturen erzeugen die nächste Versionsdatei.
+
+## 9. Changelog
+
+- **v2.2 (2026-07-04):** Zusatzbedingung § 2.3 konkretisiert: „explizit
+  dokumentiert" = Compliance-Facts-Profil (`metadata.compliance`, Taxonomie in
+  `../compliance/COMPLIANCE_FACTS.md`); Beschreibung nur noch Übergangs-Fallback.
+  Verhindert, dass jedes neue Gesetz Freitext-Beschreibungen aufbläht
+  (Ousterhout-Entscheidung, Design-Review mit Judge-Panel).
+- **v2.1 (2026-07-04):** Scope-Pivot: Baseline-Set = Self-Baseline (TheArchitect-
+  Gesetze × eigenes Modell, Projekt `…3802f`), BSH-Set zum Transfer-Slice
+  herabgestuft (§ 6). Ablauf: `SELF_BASELINE_GUIDE.md`.
+- **v2 (2026-07-04):** Theme-②-Entscheidung nach erstem Doppel-Labeling
+  (Kappa 0,365): § 2.3 durch Zwei-Stufen-Test (Regel C) ersetzt, Beispielkatalog
+  § 2a ergänzt, Adressaten-Test + Regime-Grenze in § 3, Capability-Regel § 2.5.
+  Golden-Set `mapping.v1.json` → `mapping.v2.json` (A-Labels nach neuer Regel).
+- **v1:** Erstfassung (THE-379).

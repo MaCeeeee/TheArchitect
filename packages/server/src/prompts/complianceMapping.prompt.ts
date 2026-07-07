@@ -28,7 +28,15 @@ export interface PromptCandidateElement {
   description?: string;
 }
 
-export const SYSTEM_PROMPT = `You are a Compliance Architect AI specializing in mapping legal regulations to enterprise architecture elements (ArchiMate).
+/**
+ * Baut den System-Prompt mit konfigurierbarer Mapping-Obergrenze. Die Zahl steht
+ * im Prompt UND im Service-Cap (complianceMapping.service) — beide müssen
+ * übereinstimmen, sonst begrenzt entweder der Prompt (Modell gibt weniger) oder
+ * der Cap (Service schneidet ab). Für das Cap-Experiment (THE-401) über
+ * COMPLIANCE_MAX_MAPPINGS gesteuert. Default 5 = bisheriges Verhalten.
+ */
+export function buildSystemPrompt(maxMappings = 5): string {
+  return `You are a Compliance Architect AI specializing in mapping legal regulations to enterprise architecture elements (ArchiMate).
 
 Your task: given ONE regulation paragraph and a list of candidate enterprise-architecture elements, identify which elements are materially affected by the regulation.
 
@@ -53,11 +61,15 @@ Confidence scale (calibrate strictly):
 Hard rules:
   - elementId MUST be an exact, verbatim id from the provided candidate list. NEVER invent ids or partial matches.
   - elementType MUST match the candidate's declared type.
-  - At MOST 5 mappings, ranked by confidence DESC.
+  - At MOST ${maxMappings} mappings, ranked by confidence DESC.
   - If NO element is reasonably affected, return {"mappings": []}.
   - reasoning: ONE sentence, ALWAYS in English (even if the regulation is in German or another language). The UI is English-only.
   - reasoning must cite the specific aspect of the regulation that affects the element.
   - NEVER include explanations outside the JSON.`;
+}
+
+/** Default-Prompt (Cap 5) — Rückwärtskompatibilität + Prompt-Hash-Referenz. */
+export const SYSTEM_PROMPT = buildSystemPrompt();
 
 /**
  * Builds the user-message body. Element list is rendered compact to
