@@ -33,6 +33,8 @@ import { Standard, IStandard, IStandardSection } from '../models/Standard';
 import { StandardMapping, IStandardMapping } from '../models/StandardMapping';
 import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
+import { upsertNormDoc, standardToNormView } from './norm.service';
+import { log } from '../config/logger';
 
 // ─── PDF Parsing ───
 
@@ -611,6 +613,14 @@ export async function parseAndStore(
 
   // Create pipeline state so PhaseBar can track progress immediately
   await getOrCreatePipelineState(projectId, String(standard._id));
+
+  // THE-390 P4: Upload schreibt die kanonische Norm mit (best-effort — ein
+  // Fehler hier darf den Upload nicht brechen; Migration holt es nach).
+  try {
+    await upsertNormDoc(standardToNormView(standard));
+  } catch (err) {
+    log.warn({ err, standardId: String(standard._id) }, '[standards] norm materialization failed');
+  }
 
   return standard;
 }
