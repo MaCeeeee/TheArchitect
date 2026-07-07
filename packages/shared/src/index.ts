@@ -31,3 +31,4 @@ export * from './types/executive-summary.types';
 export * from './constants/executive-summary.constants';
 export * from './utils/regulation-key';
 export * from './utils/redact';
+export * from './ontology';
