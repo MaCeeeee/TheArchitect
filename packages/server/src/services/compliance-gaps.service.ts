@@ -19,6 +19,7 @@
 import mongoose from 'mongoose';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { Regulation } from '../models/Regulation';
+import { getPipelineNorm } from './norm.service';
 
 export interface GapFilters {
   regulationId?: string;
@@ -78,8 +79,13 @@ export async function computeComplianceGaps(
   const query: Record<string, unknown> = {
     projectId: new mongoose.Types.ObjectId(projectId),
   };
-  if (filters.regulationId && mongoose.isValidObjectId(filters.regulationId)) {
-    query.regulationId = new mongoose.Types.ObjectId(filters.regulationId);
+  if (filters.regulationId) {
+    if (mongoose.isValidObjectId(filters.regulationId)) {
+      query.regulationId = new mongoose.Types.ObjectId(filters.regulationId);
+    } else {
+      // THE-390 P3: Nicht-ObjectId = kanonischer normId (`corpus:<source>` | `upload:<id>`).
+      query.normId = filters.regulationId;
+    }
   }
   if (filters.elementId) {
     query.linkedElementIds = filters.elementId;
@@ -90,17 +96,30 @@ export async function computeComplianceGaps(
 
   const requirements = await ComplianceRequirement.find(query).lean();
 
-  const regulationIds = [...new Set(requirements.map((r) => String(r.regulationId)))];
-  const regulations = await Regulation.find({ _id: { $in: regulationIds } })
+  // Titel-Auflösung: legacy über Regulation-Docs; Norm-basierte Requirements
+  // (THE-390 P3) über die Norm-Facade — Gruppenschlüssel ist dann der normId.
+  const legacyIds = [
+    ...new Set(requirements.filter((r) => !r.normId).map((r) => String(r.regulationId))),
+  ];
+  const regulations = await Regulation.find({ _id: { $in: legacyIds } })
     .select('title')
     .lean();
   const regulationTitleById = new Map(regulations.map((r) => [String(r._id), r.title]));
 
+  const normIds = [...new Set(requirements.map((r) => r.normId).filter((n): n is string => !!n))];
+  const normTitleById = new Map<string, string>();
+  for (const normId of normIds) {
+    const norm = await getPipelineNorm(projectId, normId);
+    if (norm) normTitleById.set(normId, norm.name);
+  }
+
   const now = Date.now();
   const items: GapItem[] = requirements.map((r) => ({
     _id: String(r._id),
-    regulationId: String(r.regulationId),
-    regulationTitle: regulationTitleById.get(String(r.regulationId)) ?? 'Unknown regulation',
+    regulationId: r.normId ?? String(r.regulationId),
+    regulationTitle: r.normId
+      ? normTitleById.get(r.normId) ?? r.normId
+      : regulationTitleById.get(String(r.regulationId)) ?? 'Unknown regulation',
     title: r.title,
     description: r.description,
     priority: r.priority,
