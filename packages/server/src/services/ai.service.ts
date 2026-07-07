@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
+import { getPipelineNorm } from './norm.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { Policy } from '../models/Policy';
 import { runAdvisorScan } from './advisor.service';
@@ -294,7 +295,7 @@ export async function streamChat(
   let systemPrompt: string;
 
   if (standardId) {
-    const standardContext = await buildStandardContext(standardId, sectionIds);
+    const standardContext = await buildStandardContext(standardId, sectionIds, projectId);
     systemPrompt = buildStandardAnalysisPrompt(context, standardContext);
   } else {
     systemPrompt = buildSystemPrompt(context, advisorContext);
@@ -382,18 +383,24 @@ async function streamAnthropic(
 
 // ─── Standard Context ───
 
-export async function buildStandardContext(standardId: string, sectionIds?: string[]): Promise<string> {
-  const standard = await Standard.findById(standardId);
-  if (!standard) return '## No standard found';
+export async function buildStandardContext(
+  standardId: string,
+  sectionIds?: string[],
+  projectId?: string,
+): Promise<string> {
+  // THE-390 P2: quellenagnostisch — legacy standardId (Upload) oder `corpus:<source>`-workId.
+  // `projectId` scopet Korpus-Refs (welche Paragraphen das Projekt referenziert).
+  const norm = await getPipelineNorm(projectId ?? '', standardId);
+  if (!norm) return '## No standard found';
 
-  let sections = standard.sections;
+  let sections = norm.sections;
   if (sectionIds && sectionIds.length > 0) {
     sections = sections.filter((s) => sectionIds.includes(s.id));
   }
 
   const lines: string[] = [];
-  lines.push(`## Standard: ${standard.name} (${standard.version})`);
-  lines.push(`Type: ${standard.type} | Pages: ${standard.pageCount} | Sections: ${sections.length}`);
+  lines.push(`## Standard: ${norm.name}${norm.version ? ` (${norm.version})` : ''}`);
+  lines.push(`Type: ${norm.type} | Sections: ${sections.length}`);
 
   let charCount = 0;
   const maxChars = 8000;

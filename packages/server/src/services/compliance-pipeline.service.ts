@@ -5,25 +5,45 @@ import { Standard } from '../models/Standard';
 import { Policy } from '../models/Policy';
 import { ComplianceSnapshot, IComplianceSnapshot } from '../models/ComplianceSnapshot';
 import { checkCompliance } from './compliance.service';
+import {
+  getPipelineNorm,
+  computeNormMappingStats,
+  derivePipelineAnchorId,
+} from './norm.service';
 
 /**
- * Get or create pipeline state for a standard.
+ * Get or create pipeline state for a norm (THE-390 P2).
+ *
+ * `normRef` ist entweder eine legacy `standardId` (Upload-Welt, wie bisher) oder
+ * ein `corpus:<source>`-workId. Korpus-States ankern über eine deterministische
+ * Pseudo-ObjectId (unique-Index bleibt intakt) und tragen den echten Schlüssel in
+ * `normId`; der Anker stirbt in P4 mit dem Index-Flip (ADR-0004 E4).
  */
 export async function getOrCreatePipelineState(
   projectId: string,
-  standardId: string
+  normRef: string
 ): Promise<ICompliancePipelineState> {
-  let state = await CompliancePipelineState.findOne({ projectId, standardId });
+  const isCorpus = normRef.startsWith('corpus:');
+  const query = isCorpus
+    ? { projectId, normId: normRef }
+    : { projectId, standardId: normRef };
+  let state = await CompliancePipelineState.findOne(query);
   if (!state) {
     state = await CompliancePipelineState.create({
       projectId,
-      standardId,
+      standardId: isCorpus ? derivePipelineAnchorId(normRef) : normRef,
+      ...(isCorpus ? { normId: normRef } : {}),
       stage: 'uploaded',
       mappingStats: { total: 0, compliant: 0, partial: 0, gap: 0, unmapped: 0 },
       policyStats: { generated: 0, approved: 0, rejected: 0 },
     });
   }
   return state;
+}
+
+/** Pipeline-Schlüssel eines States: kanonische normId, sonst legacy standardId. */
+function stateNormRef(state: ICompliancePipelineState): string {
+  return state.normId ?? String(state.standardId);
 }
 
 /**
@@ -33,22 +53,13 @@ export async function getOrCreatePipelineState(
  */
 export async function refreshMappingStats(
   projectId: string,
-  standardId: string
+  normRef: string
 ): Promise<ICompliancePipelineState> {
-  const state = await getOrCreatePipelineState(projectId, standardId);
-  const standard = await Standard.findById(standardId);
-  if (!standard) throw new Error('Standard not found');
-
-  const mappings = await StandardMapping.find({ projectId, standardId });
-  const mappedSectionIds = new Set(mappings.map((m) => m.sectionId));
-
-  const stats = {
-    total: standard.sections.length,
-    compliant: mappings.filter((m) => m.status === 'compliant').length,
-    partial: mappings.filter((m) => m.status === 'partial').length,
-    gap: mappings.filter((m) => m.status === 'gap').length,
-    unmapped: standard.sections.filter((s) => !mappedSectionIds.has(s.id)).length,
-  };
+  const state = await getOrCreatePipelineState(projectId, normRef);
+  // THE-390 P2: quellenagnostisch über die Norm-Facade — Upload liefert identische
+  // Zahlen wie der bisherige Direktzugriff, Korpus projiziert lifecycle→conformance.
+  const stats = await computeNormMappingStats(projectId, normRef);
+  if (!stats) throw new Error('Standard not found');
 
   state.mappingStats = stats;
   // Recompute stage based on actual data (not just sequential transitions)
@@ -62,11 +73,16 @@ export async function refreshMappingStats(
  */
 export async function refreshPolicyStats(
   projectId: string,
-  standardId: string
+  normRef: string
 ): Promise<ICompliancePipelineState> {
-  const state = await getOrCreatePipelineState(projectId, standardId);
+  const state = await getOrCreatePipelineState(projectId, normRef);
 
-  const approvedCount = await Policy.countDocuments({ projectId, standardId, enabled: true });
+  // Policies hängen (bis zum P4-FK-Flip, ADR-0004 E5) am standardId-Anker des States.
+  const approvedCount = await Policy.countDocuments({
+    projectId,
+    standardId: state.standardId,
+    enabled: true,
+  });
 
   state.policyStats = {
     generated: approvedCount,
@@ -75,17 +91,9 @@ export async function refreshPolicyStats(
   };
 
   // Also refresh mapping stats inline so stage can advance properly
-  const standard = await Standard.findById(standardId);
-  if (standard) {
-    const mappings = await StandardMapping.find({ projectId, standardId });
-    const mappedSectionIds = new Set(mappings.map((m) => m.sectionId));
-    state.mappingStats = {
-      total: standard.sections.length,
-      compliant: mappings.filter((m) => m.status === 'compliant').length,
-      partial: mappings.filter((m) => m.status === 'partial').length,
-      gap: mappings.filter((m) => m.status === 'gap').length,
-      unmapped: standard.sections.filter((s) => !mappedSectionIds.has(s.id)).length,
-    };
+  const stats = await computeNormMappingStats(projectId, normRef);
+  if (stats) {
+    state.mappingStats = stats;
   }
 
   recomputeStage(state);
@@ -165,7 +173,7 @@ export async function getPipelineStatus(
   for (const state of states) {
     if (state.mappingStats.total === 0) {
       try {
-        await refreshMappingStats(projectId, String(state.standardId));
+        await refreshMappingStats(projectId, stateNormRef(state));
         healed = true;
       } catch {
         // standard may be orphaned — portfolio cleanup handles that
@@ -188,18 +196,26 @@ export async function getPortfolioOverview(projectId: string) {
 
   const standardIds = new Set(standards.map((st) => String(st._id)));
 
-  // Filter out orphaned pipeline states (standard was deleted but state remained)
+  // Filter out orphaned pipeline states (standard was deleted but state remained).
+  // THE-390 P2: Korpus-States (normId gesetzt) haben NIE ein Standard-Doc — sie
+  // sind keine Waisen und dürfen hier nicht gelöscht werden.
   const orphanedIds = states
-    .filter((s) => !standardIds.has(String(s.standardId)))
+    .filter((s) => !s.normId && !standardIds.has(String(s.standardId)))
     .map((s) => s._id);
   if (orphanedIds.length > 0) {
     CompliancePipelineState.deleteMany({ _id: { $in: orphanedIds } }).catch(() => {});
   }
 
-  const validStates = states.filter((s) => standardIds.has(String(s.standardId)));
+  const validStates = states.filter(
+    (s) => s.normId || standardIds.has(String(s.standardId))
+  );
 
-  const portfolio = validStates.map((s) => {
-    const std = standards.find((st) => String(st._id) === String(s.standardId))!;
+  const portfolio = await Promise.all(validStates.map(async (s) => {
+    const std = s.normId
+      ? null
+      : standards.find((st) => String(st._id) === String(s.standardId))!;
+    // Korpus-Norm: Metadaten aus der Facade (Name = Gesetz, Typ = NormKind).
+    const corpusNorm = s.normId ? await getPipelineNorm(projectId, s.normId) : null;
     const coverage = s.mappingStats.total > 0
       ? Math.min(100, Math.round(
           ((s.mappingStats.compliant + s.mappingStats.partial * 0.5) /
@@ -210,10 +226,11 @@ export async function getPortfolioOverview(projectId: string) {
     const maturityLevel = coverage < 20 ? 1 : coverage < 40 ? 2 : coverage < 60 ? 3 : coverage < 80 ? 4 : 5;
 
     return {
-      standardId: String(s.standardId),
-      standardName: std.name,
-      standardType: std.type,
-      standardVersion: std.version ?? '',
+      standardId: s.normId ?? String(s.standardId),
+      normId: s.normId,
+      standardName: std?.name ?? corpusNorm?.name ?? s.normId ?? 'Unknown',
+      standardType: std?.type ?? corpusNorm?.type ?? 'regulation',
+      standardVersion: std?.version ?? '',
       stage: s.stage,
       mappingStats: s.mappingStats,
       policyStats: s.policyStats,
@@ -221,7 +238,7 @@ export async function getPortfolioOverview(projectId: string) {
       maturityLevel,
       updatedAt: s.updatedAt,
     };
-  });
+  }));
 
   return {
     totalStandards: standards.length,
