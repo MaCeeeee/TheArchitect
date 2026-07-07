@@ -20,7 +20,17 @@ import type {
  */
 export interface IComplianceRequirement extends Document {
   projectId: mongoose.Types.ObjectId;
+  /**
+   * Legacy-Anker (required + Teil des Idempotenz-Index). Für Norm-basierte
+   * Requirements (THE-390 P3) trägt es den deterministischen Anchor aus
+   * `derivePipelineAnchorId(normId)` — der echte Schlüssel ist dann `normId`.
+   * Flippt in P4 auf corpusRef (ADR-0004 E5).
+   */
   regulationId: mongoose.Types.ObjectId;
+  /** Kanonische Norm-Identität (`corpus:<source>` | `upload:<standardId>`), THE-390 P3. */
+  normId?: string;
+  /** Section-/Paragraphen-Referenz innerhalb der Norm (@eId bzw. regulationKey). */
+  sectionEId?: string;
   sourceParagraph: string;
   title: string;
   description: string;
@@ -50,6 +60,8 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
   {
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
     regulationId: { type: Schema.Types.ObjectId, ref: 'Regulation', required: true },
+    normId: { type: String, trim: true },
+    sectionEId: { type: String, trim: true },
     sourceParagraph: { type: String, default: '', maxlength: 5000 },
     title: {
       type: String,
@@ -168,6 +180,13 @@ complianceRequirementSchema.index(
 complianceRequirementSchema.index(
   { projectId: 1, linkedElementIds: 1 },
   { name: 'by_element_for_reverse_lookup' },
+);
+
+// THE-390 P3: alle Requirements einer Norm (kanonischer Zweit-Schlüssel; sparse,
+// weil Bestands-Requirements kein normId tragen).
+complianceRequirementSchema.index(
+  { projectId: 1, normId: 1 },
+  { sparse: true, name: 'by_norm' },
 );
 
 export const ComplianceRequirement = mongoose.model<IComplianceRequirement>(

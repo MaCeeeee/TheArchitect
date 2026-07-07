@@ -29,6 +29,7 @@ import {
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { projectRequirementsToModel } from '../services/requirementProjection.service';
 import { computeComplianceGaps } from '../services/compliance-gaps.service';
+import { getPipelineNorm, derivePipelineAnchorId } from '../services/norm.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -37,18 +38,26 @@ router.use(authenticate);
 // ─── Validators ─────────────────────────────────────────────────
 
 const GenerateBodySchema = z.object({
-  text: z.string().min(20).max(12_000),
+  // THE-390 P3: text ist optional, wenn eine Norm-Section referenziert wird —
+  // der Server löst den Section-Text dann selbst über die Norm-Facade auf.
+  text: z.string().min(20).max(12_000).optional(),
   source: z.string().min(1).max(50).default('custom'),
   paragraphNumber: z.string().min(1).max(100).default('preview'),
   language: z.enum(['de', 'en']).default('de'),
   jurisdiction: z.string().min(1).max(50).default('EU'),
   regulationId: z.string().optional(),  // wenn vorhanden: persist sofort
+  // THE-390 P3: kanonische Norm-Referenz (`corpus:<source>` | `upload:<standardId>`).
+  normId: z.string().optional(),
+  sectionEId: z.string().optional(),
   // if regulationId provided + persist=true → service called with persist mode
   persist: z.boolean().default(false),
 });
 
 const ConfirmBodySchema = z.object({
-  regulationId: z.string(),
+  // Entweder legacy regulationId ODER kanonischer normId (THE-390 P3).
+  regulationId: z.string().optional(),
+  normId: z.string().optional(),
+  sectionEId: z.string().optional(),
   sourceParagraph: z.string().min(20).max(5000),
   requirements: z
     .array(
@@ -119,13 +128,35 @@ router.post(
         .json({ success: false, error: 'invalid body', details: parsed.error.issues });
     }
 
+    // THE-390 P3: Norm-Section serverseitig auflösen, wenn kein Text mitkommt.
+    let text = parsed.data.text;
+    let source = parsed.data.source;
+    let paragraphNumber = parsed.data.paragraphNumber;
+    if (!text && parsed.data.normId && parsed.data.sectionEId) {
+      const norm = await getPipelineNorm(projectId, parsed.data.normId);
+      const section = norm?.sections.find(s => s.id === parsed.data.sectionEId);
+      if (!norm || !section || section.content.trim().length < 20) {
+        return res
+          .status(404)
+          .json({ success: false, error: 'norm section not found or has no text' });
+      }
+      text = section.content.slice(0, 12_000);
+      source = norm.name;
+      paragraphNumber = section.number || section.title;
+    }
+    if (!text) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'text or (normId + sectionEId) required' });
+    }
+
     const candidateElements = await loadProjectCandidateElements(projectId).catch(() => []);
 
     try {
       const result = await generateRequirementsFromText({
-        text: parsed.data.text,
-        source: parsed.data.source,
-        paragraphNumber: parsed.data.paragraphNumber,
+        text,
+        source,
+        paragraphNumber,
         language: parsed.data.language,
         jurisdiction: parsed.data.jurisdiction,
         candidateElements,
@@ -134,9 +165,11 @@ router.post(
         success: true,
         data: {
           regulation: {
-            source: parsed.data.source,
-            paragraphNumber: parsed.data.paragraphNumber,
+            source,
+            paragraphNumber,
             language: parsed.data.language,
+            normId: parsed.data.normId,
+            sectionEId: parsed.data.sectionEId,
           },
           requirements: result.candidates,
         },
@@ -170,21 +203,38 @@ router.post(
         .status(400)
         .json({ success: false, error: 'invalid body', details: parsed.error.issues });
     }
-    if (!mongoose.isValidObjectId(parsed.data.regulationId)) {
-      return res.status(400).json({ success: false, error: 'invalid regulationId' });
-    }
-
-    // Verify regulation exists + belongs to project
-    const reg = await Regulation.findOne({
-      _id: new mongoose.Types.ObjectId(parsed.data.regulationId),
-      projectId: new mongoose.Types.ObjectId(projectId),
-    });
-    if (!reg) {
-      return res.status(404).json({ success: false, error: 'regulation not found' });
+    const { regulationId, normId } = parsed.data;
+    if (!regulationId && !normId) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'regulationId or normId required' });
     }
 
     const projectObjectId = new mongoose.Types.ObjectId(projectId);
-    const regulationObjectId = new mongoose.Types.ObjectId(parsed.data.regulationId);
+    let regulationObjectId: mongoose.Types.ObjectId;
+
+    if (regulationId) {
+      if (!mongoose.isValidObjectId(regulationId)) {
+        return res.status(400).json({ success: false, error: 'invalid regulationId' });
+      }
+      // Verify regulation exists + belongs to project
+      const reg = await Regulation.findOne({
+        _id: new mongoose.Types.ObjectId(regulationId),
+        projectId: projectObjectId,
+      });
+      if (!reg) {
+        return res.status(404).json({ success: false, error: 'regulation not found' });
+      }
+      regulationObjectId = new mongoose.Types.ObjectId(regulationId);
+    } else {
+      // THE-390 P3: Norm-basiert — Existenz über die Facade prüfen; der
+      // deterministische Anchor hält den Idempotenz-Index norm-scoped intakt.
+      const norm = await getPipelineNorm(projectId, normId!);
+      if (!norm) {
+        return res.status(404).json({ success: false, error: 'norm not found' });
+      }
+      regulationObjectId = derivePipelineAnchorId(normId!);
+    }
 
     const ops = parsed.data.requirements.map(r => ({
       updateOne: {
@@ -197,6 +247,8 @@ router.post(
           $set: {
             projectId: projectObjectId,
             regulationId: regulationObjectId,
+            ...(normId ? { normId } : {}),
+            ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
             sourceParagraph: parsed.data.sourceParagraph,
             title: r.title,
             description: r.description,
@@ -227,7 +279,8 @@ router.post(
         userAgent: req.get('user-agent') ?? undefined,
         riskLevel: 'medium',
         after: {
-          regulationId: parsed.data.regulationId,
+          regulationId: parsed.data.regulationId ?? String(regulationObjectId),
+          ...(normId ? { normId } : {}),
           confirmedCount: parsed.data.requirements.length,
         },
       });

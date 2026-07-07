@@ -22,6 +22,7 @@ import {
   IComplianceRequirement,
 } from '../models/ComplianceRequirement';
 import type { IRegulation } from '../models/Regulation';
+import { derivePipelineAnchorId } from './norm.service';
 import type {
   ComplianceRequirementPriority,
   ComplianceRequirementProvenance,
@@ -118,6 +119,13 @@ export async function generateRequirementsFromText(args: {
   persist?: boolean;
   projectId?: string;
   regulationId?: string;
+  /**
+   * THE-390 P3: kanonische Norm-Referenz (`corpus:<source>` | `upload:<standardId>`).
+   * Alternative zu `regulationId` — Requirements können damit an JEDER Norm hängen
+   * (auch Upload-Standards / korpus-only Gesetze ohne legacy Regulation-Doc).
+   */
+  normId?: string;
+  sectionEId?: string;
   anthropicClient?: Anthropic;
 }): Promise<{
   candidates: ComplianceRequirementCandidate[];
@@ -162,15 +170,19 @@ export async function generateRequirementsFromText(args: {
   // Persist if requested
   let persisted: IComplianceRequirement[] | undefined;
   if (args.persist) {
-    if (!args.projectId || !args.regulationId) {
+    if (!args.projectId || (!args.regulationId && !args.normId)) {
       throw new RequirementGeneratorError(
-        'persist=true requires projectId + regulationId',
+        'persist=true requires projectId + (regulationId | normId)',
       );
     }
     persisted = await persistRequirements({
       candidates: sanitized,
       projectId: args.projectId,
-      regulationId: args.regulationId,
+      // Norm-basiert (P3): deterministischer Anchor hält den Idempotenz-Index
+      // {projectId, regulationId, title} norm-scoped intakt (stirbt in P4, ADR-0004 E5).
+      regulationId: args.regulationId ?? String(derivePipelineAnchorId(args.normId!)),
+      normId: args.normId,
+      sectionEId: args.sectionEId,
       sourceParagraph: args.text.slice(0, 5000),
     });
   }
@@ -291,6 +303,8 @@ async function persistRequirements(args: {
   candidates: ComplianceRequirementCandidate[];
   projectId: string;
   regulationId: string;
+  normId?: string;
+  sectionEId?: string;
   sourceParagraph: string;
 }): Promise<IComplianceRequirement[]> {
   if (args.candidates.length === 0) return [];
@@ -309,6 +323,8 @@ async function persistRequirements(args: {
         $set: {
           projectId: projectObjectId,
           regulationId: regulationObjectId,
+          ...(args.normId ? { normId: args.normId } : {}),
+          ...(args.sectionEId ? { sectionEId: args.sectionEId } : {}),
           sourceParagraph: args.sourceParagraph,
           title: c.title,
           description: c.description,
