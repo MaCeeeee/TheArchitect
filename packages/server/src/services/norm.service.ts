@@ -347,3 +347,54 @@ export async function computeNormMappingStats(
     unmapped: norm.sections.filter(s => !mappedSectionIds.has(s.id)).length,
   };
 }
+
+// ─── P4a: Schreibpfad — Norm-Materialisierung (THE-390 P4) ───
+//
+// Ab P4 wird die `Norm`-Collection als kanonischer Store befüllt (ADR-0004).
+// Upserts sind idempotent über {projectId, workId}. Die Lese-Facade bleibt
+// vorerst auf den Quell-Collections (Strangler) — der Read-Cutover auf die
+// Norm-Collection folgt mit der Client-Konsolidierung (P4b).
+
+import { Norm, INorm } from '../models/Norm';
+
+/** Idempotenter Upsert eines Norm-Dokuments aus einer projizierten Sicht. */
+export async function upsertNormDoc(view: NormView): Promise<INorm> {
+  const update = {
+    projectId: new mongoose.Types.ObjectId(view.projectId),
+    workId: view.identity.workId,
+    aliases: view.identity.aliases,
+    frbrLevel: view.identity.frbrLevel,
+    expressionLanguage: view.identity.expressionLanguage,
+    source: view.source,
+    title: view.title,
+    version: view.version,
+    jurisdiction: view.jurisdiction,
+    kind: view.kind,
+    corpusRef: view.corpusRef,
+    sections: view.sections.map(s => ({
+      eId: s.eId,
+      parentEId: s.parentEId,
+      path: s.path,
+      heading: s.heading,
+      number: s.number,
+      text: s.text,
+      level: s.level,
+    })),
+  };
+  return Norm.findOneAndUpdate(
+    { projectId: update.projectId, workId: update.workId },
+    { $set: update },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+}
+
+/** Materialisiert ALLE Normen eines Projekts (Upload + Korpus) in die Norm-Collection. */
+export async function materializeProjectNorms(
+  projectId: string,
+): Promise<{ upserted: number }> {
+  const views = await listNorms(projectId);
+  for (const view of views) {
+    await upsertNormDoc(view);
+  }
+  return { upserted: views.length };
+}
