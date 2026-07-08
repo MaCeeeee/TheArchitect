@@ -84,7 +84,7 @@ export function CompliancePipelineWizard() {
 
             return (
               <div
-                key={step.key}
+                key={step.section}
                 onClick={() => {
                   if (isClickable) navigate(`/project/${projectId}/compliance/${step.section}`);
                 }}
