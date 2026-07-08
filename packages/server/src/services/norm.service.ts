@@ -240,7 +240,12 @@ export async function listAvailableCorpusNorms(projectId: string): Promise<NormV
       .filter(n => n.source === 'corpus')
       .map(n => n.identity.workId),
   );
-  const sources = (await CorpusRegulation().distinct('source')) as string[];
+  let sources: string[];
+  try {
+    sources = (await CorpusRegulation().distinct('source')) as string[];
+  } catch {
+    return []; // Korpus unerreichbar → kein Browse, aber kein Fehler.
+  }
   const availableSources = sources.filter(s => !referenced.has(deriveNormWorkId('corpus', s)));
   if (availableSources.length === 0) return [];
   const regs = await listCorpusBySource(availableSources);

@@ -178,6 +178,37 @@ describe('regulationResolver (THE-368 D2)', () => {
       expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
     });
 
+    it('falls back to app-DB when the corpus read THROWS (unreachable / auth failure)', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 6');
+      await ComplianceMapping.create({
+        projectId: pid,
+        regulationId: new mongoose.Types.ObjectId(),
+        regulationKey: 'lksg:6',
+        regulationVersionHash: 'h'.repeat(64),
+        elementId: 'el-1',
+        elementType: 'application',
+        confidence: 0.9,
+        reasoning: 'r',
+        status: 'auto',
+        createdBy: 'llm',
+      });
+      // Korpus-Modell, dessen find() wirft (simuliert Auth-Fehler / Korpus down).
+      const throwing = {
+        find: () => {
+          throw new Error('Authentication failed.');
+        },
+      } as unknown as Model<ICorpusRegulation>;
+      __setCorpusForTests(throwing);
+
+      // Darf NICHT werfen — fällt auf die App-DB-Kopie zurück.
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs.some(r => r.paragraphNumber === '§ 6')).toBe(true);
+
+      __setCorpusForTests(CorpusReg); // restore
+    });
+
     it('strict mode: countRegulations returns 0 instead of counting the app-DB', async () => {
       process.env.CORPUS_STRICT_READS = 'true';
       const pid = new mongoose.Types.ObjectId();
