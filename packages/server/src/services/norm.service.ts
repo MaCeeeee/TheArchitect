@@ -22,6 +22,7 @@ import {
 import { Standard, IStandard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import {
   getRegulationsForProject,
   type RegulationView,
@@ -289,7 +290,19 @@ export async function getPipelineNorm(
   const standardId = ref.startsWith('upload:') ? ref.slice('upload:'.length) : ref;
   if (!mongoose.isValidObjectId(standardId)) return null;
   const std = await Standard.findById(standardId);
-  if (!std || String(std.projectId) !== String(projectId)) return null;
+  if (!std || String(std.projectId) !== String(projectId)) {
+    // Kein Standard-Doc: die ObjectId kann der deterministische PIPELINE-ANCHOR
+    // einer Korpus-Norm sein (CompliancePipelineState.standardId, P2). Legacy-
+    // Konsumenten, die rohe State-IDs durchreichen, werden hier auf den
+    // kanonischen normId aufgelöst — heilt alle Aufrufer am Seam.
+    const state = await CompliancePipelineState.findOne({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      standardId: new mongoose.Types.ObjectId(standardId),
+      normId: { $exists: true },
+    }).select('normId');
+    if (state?.normId) return getPipelineNorm(projectId, state.normId);
+    return null;
+  }
   return {
     id: standardId,
     source: 'upload',

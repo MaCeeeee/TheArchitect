@@ -22,7 +22,7 @@ import {
   refreshMappingStats,
   getPortfolioOverview,
 } from '../services/compliance-pipeline.service';
-import { derivePipelineAnchorId } from '../services/norm.service';
+import { derivePipelineAnchorId, getPipelineNorm } from '../services/norm.service';
 
 let CorpusReg: Model<ICorpusRegulation>;
 
@@ -164,6 +164,20 @@ describe('pipeline over norm facade (THE-390 P2)', () => {
     expect(state.mappingStats).toMatchObject({
       total: 2, compliant: 1, partial: 0, gap: 0, unmapped: 1,
     });
+  });
+
+  it('resolves a raw pipeline ANCHOR id back to the corpus norm (Strecke-A finding)', async () => {
+    await seedCorpus('lksg:3', 'Sorgfaltspflichten');
+    await corpusMapping(projectId, 'lksg:3', 'el-1');
+    await getOrCreatePipelineState(projectId.toString(), 'corpus:lksg');
+
+    // Legacy-Konsumenten (Matrix-Auto-Select) reichen die rohe State-standardId
+    // durch — das ist der Anchor, kein Standard-Doc. Muss zur Norm auflösen.
+    const anchor = String(derivePipelineAnchorId('corpus:lksg'));
+    const norm = await getPipelineNorm(projectId.toString(), anchor);
+    expect(norm).not.toBeNull();
+    expect(norm!.id).toBe('corpus:lksg');
+    expect(norm!.source).toBe('corpus');
   });
 
   it('portfolio overview keeps corpus states (no orphan-delete) and labels them', async () => {

@@ -72,10 +72,13 @@ export default function CompliancePage() {
   const [matrixAutoSuggest, setMatrixAutoSuggest] = useState(false);
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
 
-  // Auto-select first standard when navigating directly to matrix without prior selection
+  // Auto-select first standard when navigating directly to matrix without prior selection.
+  // THE-390 P4b: prefer the canonical normId — for corpus norms `standardId` is
+  // only the pipeline anchor (a pseudo ObjectId that resolves to no Standard doc).
   useEffect(() => {
     if (activeSection === 'matrix' && !matrixStandardId && pipelineStates.length > 0) {
-      setMatrixStandardId(pipelineStates[0].standardId);
+      const first = pipelineStates[0];
+      setMatrixStandardId(first.normId ?? first.standardId);
     }
   }, [activeSection, matrixStandardId, pipelineStates]);
 
