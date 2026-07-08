@@ -645,8 +645,47 @@ export async function deleteStandard(standardId: string) {
 
 // ─── Mappings ───
 
-export async function getMappings(projectId: string, standardId: string) {
-  return StandardMapping.find({ projectId, standardId }).sort({ sectionNumber: 1 });
+export async function getMappings(projectId: string, normRef: string) {
+  // THE-390 P4b: quellenagnostisch — legacy standardId, Anchor oder `corpus:<source>`.
+  const norm = await getPipelineNorm(projectId, normRef);
+  if (!norm) return [];
+  if (norm.source === 'upload') {
+    return StandardMapping.find({ projectId, standardId: norm.id }).sort({ sectionNumber: 1 });
+  }
+
+  // Korpus: NormMappings in StandardMapping-Form projizieren (die Matrix-UI
+  // konsumiert diese Shape). Name/Layer der Elemente kommen aus dem Graphen;
+  // lifecycle→conformance wie in computeNormMappingStats (P2).
+  const rows = await getNormMappings(projectId, norm.id);
+  const elementRecords = await runCypher(
+    `MATCH (e:ArchitectureElement {projectId: $projectId})
+     RETURN e.id as id, e.name as name, e.layer as layer`,
+    { projectId },
+  );
+  const elementById = new Map<string, { name: string; layer: string }>();
+  for (const r of elementRecords) {
+    const props = serializeNeo4jProperties(r.toObject());
+    elementById.set(String(props.id || ''), {
+      name: String(props.name || ''),
+      layer: String(props.layer || ''),
+    });
+  }
+  return rows
+    .filter((m) => m.status !== 'rejected')
+    .map((m) => ({
+      _id: `${m.sectionEId ?? ''}::${m.elementId}`,
+      projectId,
+      standardId: norm.id,
+      sectionId: m.sectionEId ?? '',
+      sectionNumber: m.sectionEId ?? '',
+      elementId: m.elementId,
+      elementName: elementById.get(m.elementId)?.name ?? m.elementId,
+      elementLayer: elementById.get(m.elementId)?.layer ?? '',
+      status: m.status === 'confirmed' ? 'compliant' : 'partial',
+      source: m.createdBy === 'human' ? 'manual' : 'ai',
+      confidence: m.confidence,
+      notes: m.reasoning ?? '',
+    }));
 }
 
 export interface MatrixCell {
