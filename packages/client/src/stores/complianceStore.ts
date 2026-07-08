@@ -6,6 +6,9 @@ import type { PolicyDraft, PolicyViolationDTO, ComplianceMappingDTO } from '@the
 
 interface PipelineState {
   standardId: string;
+  /** THE-390 P4b: kanonischer Norm-Ref (`corpus:<source>`) — bei Korpus-Normen
+   *  ist `standardId` nur der Pipeline-Anchor; Consumer sollen normId bevorzugen. */
+  normId?: string;
   stage: 'uploaded' | 'mapped' | 'policies_generated' | 'roadmap_ready' | 'tracking';
   mappingStats: {
     total: number;

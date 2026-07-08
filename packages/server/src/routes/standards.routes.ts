@@ -17,6 +17,9 @@ import {
   deleteMapping,
 } from '../services/standards.service';
 import { generateMappingSuggestions, validateConfidence, generatePoliciesFromStandard, suggestMissingElements } from '../services/ai.service';
+import { getPipelineNorm, getNorm, derivePipelineAnchorId } from '../services/norm.service';
+import { mapRegulationsBatch } from '../services/complianceMapping.service';
+import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { Policy } from '../models/Policy';
 import {
@@ -581,6 +584,11 @@ router.post(
       const userId = getUserId(req);
       const projectId = pid(req);
       const standardId = sid(req);
+      // THE-390 P4b: `standardId` kann ein `corpus:<source>`-workId sein. Policy.standardId
+      // ist eine ObjectId — Korpus-Policies ankern deshalb (wie der Pipeline-State) über die
+      // deterministische Pseudo-ObjectId, damit refreshPolicyStats sie wiederfindet (ADR-0004 E5).
+      const isCorpus = standardId.startsWith('corpus:');
+      const persistId = isCorpus ? String(derivePipelineAnchorId(standardId)) : standardId;
 
       const policies = await Policy.insertMany(
         approved.map((draft: Record<string, unknown>) => ({
@@ -596,7 +604,7 @@ router.post(
           severity: draft.severity || 'warning',
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
           rules: draft.rules || [],
-          standardId,
+          standardId: persistId,
           sourceSectionNumber: draft.sourceSection || '',
           enabled: true,
           createdBy: userId,
@@ -610,13 +618,15 @@ router.post(
       // Without this projection the policies live only in the Policy Manager
       // silo, not in the architecture graph — breaking traceability from
       // Driver → Requirement → Capability → Process → Activity.
-      const standardDoc = await getStandard(standardId).catch(() => null);
-      const standardName = standardDoc?.name ?? '';
+      // Name quellenagnostisch: Upload-Standard ODER Korpus-Norm (getStandard liefert
+      // für corpus:X nichts, die Facade den Gesetzesnamen).
+      const norm = await getPipelineNorm(projectId, standardId).catch(() => null);
+      const standardName = norm?.name ?? '';
       const driverMatch = await findMatchingDriver(projectId, standardName);
 
       const requirementSummary = await projectPoliciesAsRequirements({
         projectId,
-        standardId,
+        standardId: persistId,
         standardName,
         driverId: driverMatch?.id ?? null,
         policies: policies as unknown as Array<{ _id: { toString(): string }; name: string; description: string; sourceSectionNumber: string }>,
@@ -657,7 +667,49 @@ router.post(
     res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
+    // THE-390 P4b: Korpus-Normen laufen über den ICM-Auto-Mapping-Flow
+    // (mapRegulationsBatch → ComplianceMapping mit regulationKey) — NICHT über
+    // StandardMapping. Die Paragraphen sind die Sections der Norm.
     try {
+      const norm = await getPipelineNorm(pid(req), sid(req));
+      if (norm && norm.source === 'corpus') {
+        const lawSource = norm.id.slice('corpus:'.length);
+        let sections = norm.sections;
+        if (Array.isArray(sectionIds) && sectionIds.length > 0) {
+          sections = sections.filter((s) => sectionIds.includes(s.id));
+        }
+        const candidateElements = await loadProjectCandidateElements(pid(req)).catch(() => []);
+        res.write(`data: ${JSON.stringify({ text: `Mapping ${sections.length} paragraphs of ${norm.name} against ${candidateElements.length} elements…\n` })}\n\n`);
+
+        // Sprache/Jurisdiktion aus der vollen Norm-Sicht (PipelineNormView trägt sie nicht).
+        const fullNorm = await getNorm(pid(req), norm.id);
+        const language: 'de' | 'en' =
+          fullNorm?.identity.expressionLanguage === 'en' ? 'en' : 'de';
+        const jurisdiction = fullNorm?.jurisdiction ?? 'EU';
+
+        const regulations = sections
+          .filter((s) => (s.content ?? '').trim().length >= 50)
+          .map((s) => ({
+            _id: derivePipelineAnchorId(s.id),
+            source: lawSource,
+            paragraphNumber: s.number || s.id.slice(lawSource.length + 1),
+            title: s.title,
+            fullText: s.content,
+            language,
+            jurisdiction,
+          }));
+
+        const batch = await mapRegulationsBatch({
+          regulations,
+          candidateElements,
+          projectId: pid(req),
+        });
+
+        res.write(`data: ${JSON.stringify({ text: `Mapped ${batch.totalMapped} element links across ${batch.totalRegulations} paragraphs.\n` })}\n\n`);
+        res.write(`data: ${JSON.stringify({ done: true, count: batch.totalMapped })}\n\n`);
+        return res.end();
+      }
+
       await generateMappingSuggestions(
         pid(req),
         sid(req),

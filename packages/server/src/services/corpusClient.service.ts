@@ -66,10 +66,19 @@ export function getCorpusConnection(): Connection {
     _connection = mongoose.createConnection(process.env.CORPUS_MONGODB_URI as string, {
       serverSelectionTimeoutMS: 5000,
       maxPoolSize: 5,
+      // FAIL FAST: ohne buffering wirft eine Operation sofort, wenn die Verbindung
+      // nicht ready ist (Auth-Fehler / Korpus down), statt 10s zu puffern und dann
+      // Kern-Endpunkte zu 500en. Die Reads unten fangen das ab → App-DB-Fallback.
+      bufferCommands: false,
     });
     _connection.on('error', err => log.error({ err: safeErrorMessage(err) }, '[corpus] connection error'));
   }
   return _connection;
+}
+
+/** True nur, wenn die Korpus-Verbindung offen UND verbunden ist (readyState 1). */
+export function isCorpusReachable(): boolean {
+  return isCorpusConfigured() && _connection?.readyState === 1;
 }
 
 export function CorpusRegulation(): Model<ICorpusRegulation> {
@@ -92,7 +101,13 @@ export async function getRegulationByKey(key: string): Promise<ICorpusRegulation
 
 export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegulation[]> {
   if (keys.length === 0) return [];
-  return CorpusRegulation().find({ regulationKey: { $in: keys } });
+  try {
+    return await CorpusRegulation().find({ regulationKey: { $in: keys } });
+  } catch (err) {
+    // Korpus unerreichbar/Auth-Fehler → leer zurück, Aufrufer fällt auf App-DB zurück.
+    log.warn({ err: safeErrorMessage(err) }, '[corpus] getRegulationsByKeys failed — falling back');
+    return [];
+  }
 }
 
 /**
@@ -103,9 +118,15 @@ export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegul
  */
 export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegulation[]> {
   if (sources.length === 0) return [];
-  const all = await CorpusRegulation()
-    .find({ source: { $in: sources } })
-    .sort({ regulationKey: 1, version: -1 });
+  let all: ICorpusRegulation[];
+  try {
+    all = await CorpusRegulation()
+      .find({ source: { $in: sources } })
+      .sort({ regulationKey: 1, version: -1 });
+  } catch (err) {
+    log.warn({ err: safeErrorMessage(err) }, '[corpus] listCorpusBySource failed — returning empty');
+    return [];
+  }
   const latest = new Map<string, ICorpusRegulation>();
   for (const r of all) {
     if (!latest.has(r.regulationKey)) latest.set(r.regulationKey, r); // erste = höchste Version

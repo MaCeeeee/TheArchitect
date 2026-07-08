@@ -280,14 +280,13 @@ export async function captureComplianceSnapshot(
   let gapSections = 0;
 
   if (standardId) {
-    const standard = await Standard.findById(standardId);
-    if (!standard) throw new Error('Standard not found');
-
-    const mappings = await StandardMapping.find({ projectId, standardId });
-    totalSections = standard.sections.length;
-    compliantSections = mappings.filter((m) => m.status === 'compliant').length;
-    partialSections = mappings.filter((m) => m.status === 'partial').length;
-    gapSections = mappings.filter((m) => m.status === 'gap').length;
+    // THE-390 P4b: quellenagnostisch — Upload-Standard oder `corpus:<source>`-Norm.
+    const stats = await computeNormMappingStats(projectId, standardId);
+    if (!stats) throw new Error('Standard not found');
+    totalSections = stats.total;
+    compliantSections = stats.compliant;
+    partialSections = stats.partial;
+    gapSections = stats.gap;
   } else {
     // Aggregate across all standards
     const standards = await Standard.find({ projectId });
@@ -319,7 +318,12 @@ export async function captureComplianceSnapshot(
 
   const snapshot = await ComplianceSnapshot.create({
     projectId,
-    standardId: standardId || undefined,
+    // ComplianceSnapshot.standardId ist eine ObjectId; ein `corpus:<source>`-workId
+    // würde am Cast scheitern. Korpus-Normen ankern (wie State/Policy) über die
+    // deterministische Pseudo-ObjectId (ADR-0004 E4/E5).
+    standardId: standardId
+      ? (standardId.startsWith('corpus:') ? derivePipelineAnchorId(standardId) : standardId)
+      : undefined,
     type: 'actual',
     policyComplianceScore: policyScore,
     standardCoverageScore: coverageScore,
@@ -342,6 +346,11 @@ export async function getComplianceSnapshots(
   standardId?: string,
 ): Promise<IComplianceSnapshot[]> {
   const filter: Record<string, unknown> = { projectId };
-  if (standardId) filter.standardId = standardId;
+  if (standardId) {
+    // Symmetrisch zum Schreibpfad: Korpus-workId → Anker-ObjectId für den Filter.
+    filter.standardId = standardId.startsWith('corpus:')
+      ? derivePipelineAnchorId(standardId)
+      : standardId;
+  }
   return ComplianceSnapshot.find(filter).sort({ createdAt: -1 }).limit(100);
 }

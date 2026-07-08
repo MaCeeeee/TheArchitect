@@ -33,7 +33,7 @@ import { Standard, IStandard, IStandardSection } from '../models/Standard';
 import { StandardMapping, IStandardMapping } from '../models/StandardMapping';
 import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
-import { upsertNormDoc, standardToNormView } from './norm.service';
+import { upsertNormDoc, standardToNormView, getPipelineNorm, getNormMappings } from './norm.service';
 import { log } from '../config/logger';
 
 // ─── PDF Parsing ───
@@ -645,8 +645,47 @@ export async function deleteStandard(standardId: string) {
 
 // ─── Mappings ───
 
-export async function getMappings(projectId: string, standardId: string) {
-  return StandardMapping.find({ projectId, standardId }).sort({ sectionNumber: 1 });
+export async function getMappings(projectId: string, normRef: string) {
+  // THE-390 P4b: quellenagnostisch — legacy standardId, Anchor oder `corpus:<source>`.
+  const norm = await getPipelineNorm(projectId, normRef);
+  if (!norm) return [];
+  if (norm.source === 'upload') {
+    return StandardMapping.find({ projectId, standardId: norm.id }).sort({ sectionNumber: 1 });
+  }
+
+  // Korpus: NormMappings in StandardMapping-Form projizieren (die Matrix-UI
+  // konsumiert diese Shape). Name/Layer der Elemente kommen aus dem Graphen;
+  // lifecycle→conformance wie in computeNormMappingStats (P2).
+  const rows = await getNormMappings(projectId, norm.id);
+  const elementRecords = await runCypher(
+    `MATCH (e:ArchitectureElement {projectId: $projectId})
+     RETURN e.id as id, e.name as name, e.layer as layer`,
+    { projectId },
+  );
+  const elementById = new Map<string, { name: string; layer: string }>();
+  for (const r of elementRecords) {
+    const props = serializeNeo4jProperties(r.toObject());
+    elementById.set(String(props.id || ''), {
+      name: String(props.name || ''),
+      layer: String(props.layer || ''),
+    });
+  }
+  return rows
+    .filter((m) => m.status !== 'rejected')
+    .map((m) => ({
+      _id: `${m.sectionEId ?? ''}::${m.elementId}`,
+      projectId,
+      standardId: norm.id,
+      sectionId: m.sectionEId ?? '',
+      sectionNumber: m.sectionEId ?? '',
+      elementId: m.elementId,
+      elementName: elementById.get(m.elementId)?.name ?? m.elementId,
+      elementLayer: elementById.get(m.elementId)?.layer ?? '',
+      status: m.status === 'confirmed' ? 'compliant' : 'partial',
+      source: m.createdBy === 'human' ? 'manual' : 'ai',
+      confidence: m.confidence,
+      notes: m.reasoning ?? '',
+    }));
 }
 
 export interface MatrixCell {
@@ -663,26 +702,32 @@ export interface MatrixCell {
 
 export async function getMappingMatrix(
   projectId: string,
-  standardId: string,
+  normRef: string,
   sectionIds?: string[],
 ): Promise<{ cells: MatrixCell[]; layers: string[]; sections: { id: string; number: string; title: string }[] }> {
-  const standard = await Standard.findById(standardId);
-  if (!standard) throw new Error('Standard not found');
+  // THE-390 P4b: quellenagnostisch — legacy standardId ODER `corpus:<source>`-workId.
+  const norm = await getPipelineNorm(projectId, normRef);
+  if (!norm) throw new Error('Standard not found');
 
-  let sections = standard.sections;
+  let sections = norm.sections;
   if (sectionIds && sectionIds.length > 0) {
     sections = sections.filter((s) => sectionIds.includes(s.id));
   }
 
-  // Get architecture elements to determine layers
+  // Architecture elements: layers + elementId→layer map (letztere für Korpus-Mappings,
+  // die keinen elementLayer tragen — der Layer kommt aus dem Graphen).
   const elementRecords = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
-     RETURN DISTINCT e.layer as layer`,
+     RETURN e.id as id, e.layer as layer`,
     { projectId },
   );
-  const layers = elementRecords
-    .map((r) => String(serializeNeo4jProperties(r.toObject()).layer || ''))
-    .filter(Boolean);
+  const layerByElementId = new Map<string, string>();
+  for (const r of elementRecords) {
+    const props = serializeNeo4jProperties(r.toObject());
+    const layer = String(props.layer || '');
+    if (layer) layerByElementId.set(String(props.id || ''), layer);
+  }
+  const layers = [...new Set(layerByElementId.values())];
 
   const layerOrder = ['motivation', 'strategy', 'business', 'information', 'application', 'technology', 'physical', 'implementation_migration'];
   layers.sort((a, b) => {
@@ -691,15 +736,35 @@ export async function getMappingMatrix(
     return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
 
-  // Get all mappings
-  const mappings = await StandardMapping.find({ projectId, standardId });
+  // Mappings vereinheitlicht auf {sectionId, layer, status(conformance)}.
+  // Upload: direkt aus StandardMapping (wie bisher). Korpus: NormMappings mit
+  // lifecycle→conformance-Projektion (confirmed→compliant, auto→partial,
+  // rejected zählt nicht) — dieselbe Semantik wie computeNormMappingStats (P2).
+  let flat: { sectionId: string; layer: string; status: string }[];
+  if (norm.source === 'upload') {
+    const mappings = await StandardMapping.find({ projectId, standardId: norm.id });
+    flat = mappings.map((m) => ({
+      sectionId: m.sectionId,
+      layer: m.elementLayer,
+      status: m.status,
+    }));
+  } else {
+    const mappings = await getNormMappings(projectId, norm.id);
+    flat = mappings
+      .filter((m) => m.status !== 'rejected')
+      .map((m) => ({
+        sectionId: m.sectionEId ?? '',
+        layer: layerByElementId.get(m.elementId) ?? '',
+        status: m.status === 'confirmed' ? 'compliant' : 'partial',
+      }));
+  }
 
   // Build matrix
   const cells: MatrixCell[] = [];
   for (const section of sections) {
     for (const layer of layers) {
-      const sectionMappings = mappings.filter(
-        (m) => m.sectionId === section.id && m.elementLayer === layer,
+      const sectionMappings = flat.filter(
+        (m) => m.sectionId === section.id && m.layer === layer,
       );
       cells.push({
         sectionId: section.id,

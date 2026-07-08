@@ -394,6 +394,18 @@ export const standardsAPI = {
     api.delete(`/projects/${projectId}/standards/${standardId}/mappings/${mappingId}`),
 };
 
+// UC-CANON-001 / THE-390 P4b — unified Norm view (upload standards + corpus laws).
+// workId format: `upload:<standardId>` | `corpus:<source>` (e.g. `corpus:dsgvo`).
+export const normsAPI = {
+  list: (projectId: string) =>
+    api.get(`/projects/${projectId}/norms`),
+  getMappings: (projectId: string, workId: string) =>
+    api.get(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/mappings`),
+  // "Add regulation to pipeline" — creates the pipeline state + initial stats.
+  addToPipeline: (projectId: string, workId: string) =>
+    api.post(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/pipeline`),
+};
+
 // Compliance Pipeline API
 // UC-ICM-001 Regulations
 export const regulationsAPI = {

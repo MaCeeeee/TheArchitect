@@ -1,5 +1,5 @@
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
-import { Standard } from '../models/Standard';
+import { getPipelineNorm } from './norm.service';
 import {
   ARCHIMATE_STANDARD_TYPES,
   ARCHIMATE_STANDARD_CONNECTION_TYPES,
@@ -67,7 +67,7 @@ export async function validateProposal(
   // Get standard sections for §-reference validation
   let sectionNumbers: Set<string> | undefined;
   if (standardId) {
-    sectionNumbers = await getStandardSectionNumbers(standardId);
+    sectionNumbers = await getStandardSectionNumbers(standardId, projectId);
   }
 
   // Validate elements
@@ -272,8 +272,9 @@ async function getExistingElements(projectId: string): Promise<Map<string, Exist
   return map;
 }
 
-async function getStandardSectionNumbers(standardId: string): Promise<Set<string>> {
-  const standard = await Standard.findById(standardId).select('sections.number');
-  if (!standard) return new Set();
-  return new Set(standard.sections.map((s) => s.number));
+async function getStandardSectionNumbers(standardId: string, projectId: string): Promise<Set<string>> {
+  // THE-390 P4b: quellenagnostisch — Upload-Standard oder `corpus:<source>`-Norm.
+  const norm = await getPipelineNorm(projectId, standardId);
+  if (!norm) return new Set();
+  return new Set(norm.sections.map((s) => s.number));
 }

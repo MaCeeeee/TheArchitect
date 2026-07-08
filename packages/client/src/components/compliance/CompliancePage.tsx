@@ -17,6 +17,7 @@ import AuditReadinessDashboard from '../copilot/AuditReadinessDashboard';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import RemediateGateway from './RemediateGateway';
 import GapAnalysis from './GapAnalysis';
+import RegulationsPanel from './RegulationsPanel';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -71,10 +72,13 @@ export default function CompliancePage() {
   const [matrixAutoSuggest, setMatrixAutoSuggest] = useState(false);
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
 
-  // Auto-select first standard when navigating directly to matrix without prior selection
+  // Auto-select first standard when navigating directly to matrix without prior selection.
+  // THE-390 P4b: prefer the canonical normId — for corpus norms `standardId` is
+  // only the pipeline anchor (a pseudo ObjectId that resolves to no Standard doc).
   useEffect(() => {
     if (activeSection === 'matrix' && !matrixStandardId && pipelineStates.length > 0) {
-      setMatrixStandardId(pipelineStates[0].standardId);
+      const first = pipelineStates[0];
+      setMatrixStandardId(first.normId ?? first.standardId);
     }
   }, [activeSection, matrixStandardId, pipelineStates]);
 
@@ -120,20 +124,24 @@ export default function CompliancePage() {
           {activeSection === 'portfolio' && <CompliancePortfolioView />}
 
           {activeSection === 'standards' && (
-            <StandardsManager
-              onAnalyze={(stdId, secIds) => {
-                setMatrixStandardId(stdId);
-                setMatrixSectionIds(secIds);
-                setMatrixAutoSuggest(true);
-                navigate(`/project/${projectId}/compliance/matrix`);
-              }}
-              onMatrixView={(stdId, secIds) => {
-                setMatrixStandardId(stdId);
-                setMatrixSectionIds(secIds);
-                setMatrixAutoSuggest(false);
-                navigate(`/project/${projectId}/compliance/matrix`);
-              }}
-            />
+            <>
+              <StandardsManager
+                onAnalyze={(stdId, secIds) => {
+                  setMatrixStandardId(stdId);
+                  setMatrixSectionIds(secIds);
+                  setMatrixAutoSuggest(true);
+                  navigate(`/project/${projectId}/compliance/matrix`);
+                }}
+                onMatrixView={(stdId, secIds) => {
+                  setMatrixStandardId(stdId);
+                  setMatrixSectionIds(secIds);
+                  setMatrixAutoSuggest(false);
+                  navigate(`/project/${projectId}/compliance/matrix`);
+                }}
+              />
+              {/* THE-390 P4b — corpus laws enter the pipeline from here */}
+              <RegulationsPanel />
+            </>
           )}
 
           {activeSection === 'matrix' && matrixStandardId && (

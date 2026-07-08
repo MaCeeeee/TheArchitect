@@ -22,10 +22,17 @@ import {
 import { Standard, IStandard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import {
   getRegulationsForProject,
   type RegulationView,
 } from './regulationResolver.service';
+import {
+  isCorpusConfigured,
+  listCorpusBySource,
+  CorpusRegulation,
+  type ICorpusRegulation,
+} from './corpusClient.service';
 
 // ─── Projektions-Funktionen (die einzige Stelle, an der die Quelle sichtbar ist) ───
 
@@ -82,17 +89,24 @@ export function regulationsToNormView(
   source: string,
   regs: RegulationView[],
 ): NormView {
-  const sections: NormSectionView[] = regs.map(r => {
+  // Dedupe nach eId: der App-DB-Fallback kann denselben regulationKey mehrfach
+  // liefern (z. B. mehrere „Paste & See"-Docs → `lksg:live-paste`) — eine Section
+  // pro eId, die erste gewinnt (Resolver liefert korpus-first).
+  const seen = new Set<string>();
+  const sections: NormSectionView[] = [];
+  for (const r of regs) {
     const eId = r.regulationKey ?? `${source}:${r.paragraphNumber}`;
-    return {
+    if (seen.has(eId)) continue;
+    seen.add(eId);
+    sections.push({
       eId,
       path: eId,
       heading: r.title,
       number: r.paragraphNumber,
       text: r.fullText,
       level: 1,
-    };
-  });
+    });
+  }
   const aliases: NormAlias[] = [{ scheme: 'abbrev', value: source, isPrimaryDisplay: true }];
   const jurisdiction = regs[0]?.jurisdiction;
   return {
@@ -181,10 +195,69 @@ export async function listNorms(projectId: string): Promise<NormView[]> {
   return [...uploadNorms, ...corpusNorms];
 }
 
+function corpusRegToRegulationView(r: ICorpusRegulation): RegulationView {
+  return {
+    regulationKey: r.regulationKey,
+    source: r.source,
+    jurisdiction: r.jurisdiction,
+    paragraphNumber: r.paragraphNumber,
+    title: r.title,
+    fullText: r.fullText,
+    summary: r.summary,
+    sourceUrl: r.sourceUrl,
+    effectiveFrom: r.effectiveFrom,
+    language: r.language,
+  };
+}
+
 /** Eine Norm per workId (`upload:<standardId>` | `corpus:<source>`). */
 export async function getNorm(projectId: string, workId: string): Promise<NormView | null> {
   const norms = await listNorms(projectId);
-  return norms.find(n => n.identity.workId === workId) ?? null;
+  const found = norms.find(n => n.identity.workId === workId);
+  if (found) return found;
+
+  // THE-390 P4b: noch NICHT referenzierte Korpus-Gesetze (Browse → „Add to
+  // pipeline") direkt aus dem Korpus auflösen — alle Paragraphen des Gesetzes.
+  if (workId.startsWith('corpus:') && isCorpusConfigured()) {
+    const source = workId.slice('corpus:'.length);
+    const regs = await listCorpusBySource([source]);
+    if (regs.length > 0) {
+      return regulationsToNormView(projectId, source, regs.map(corpusRegToRegulationView));
+    }
+  }
+  return null;
+}
+
+/**
+ * Im Korpus verfügbare, vom Projekt noch NICHT referenzierte Gesetze (Browse,
+ * THE-390 P4b). Leer, wenn kein Korpus konfiguriert ist (App-DB-Fallback kennt
+ * nur projekt-lokale Kopien — dort gibt es nichts zu browsen).
+ */
+export async function listAvailableCorpusNorms(projectId: string): Promise<NormView[]> {
+  if (!isCorpusConfigured()) return [];
+  const referenced = new Set(
+    (await listNorms(projectId))
+      .filter(n => n.source === 'corpus')
+      .map(n => n.identity.workId),
+  );
+  let sources: string[];
+  try {
+    sources = (await CorpusRegulation().distinct('source')) as string[];
+  } catch {
+    return []; // Korpus unerreichbar → kein Browse, aber kein Fehler.
+  }
+  const availableSources = sources.filter(s => !referenced.has(deriveNormWorkId('corpus', s)));
+  if (availableSources.length === 0) return [];
+  const regs = await listCorpusBySource(availableSources);
+  const bySource = new Map<string, ICorpusRegulation[]>();
+  for (const r of regs) {
+    const bucket = bySource.get(r.source) ?? [];
+    bucket.push(r);
+    bySource.set(r.source, bucket);
+  }
+  return [...bySource.entries()].map(([source, group]) =>
+    regulationsToNormView(projectId, source, group.map(corpusRegToRegulationView)),
+  );
 }
 
 /** Alle Mappings einer Norm, als NormMappingView. */
@@ -289,7 +362,22 @@ export async function getPipelineNorm(
   const standardId = ref.startsWith('upload:') ? ref.slice('upload:'.length) : ref;
   if (!mongoose.isValidObjectId(standardId)) return null;
   const std = await Standard.findById(standardId);
-  if (!std || String(std.projectId) !== String(projectId)) return null;
+  if (!std || String(std.projectId) !== String(projectId)) {
+    // Kein Standard-Doc: die ObjectId kann der deterministische PIPELINE-ANCHOR
+    // einer Korpus-Norm sein (CompliancePipelineState.standardId, P2). Legacy-
+    // Konsumenten, die rohe State-IDs durchreichen, werden hier auf den
+    // kanonischen normId aufgelöst — heilt alle Aufrufer am Seam.
+    // Ist die projectId keine gültige ObjectId, kann es keinen Anker geben → null
+    // (statt am ObjectId-Cast zu werfen).
+    if (!mongoose.isValidObjectId(projectId)) return null;
+    const state = await CompliancePipelineState.findOne({
+      projectId: new mongoose.Types.ObjectId(projectId),
+      standardId: new mongoose.Types.ObjectId(standardId),
+      normId: { $exists: true },
+    }).select('normId');
+    if (state?.normId) return getPipelineNorm(projectId, state.normId);
+    return null;
+  }
   return {
     id: standardId,
     source: 'upload',

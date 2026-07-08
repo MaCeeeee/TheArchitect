@@ -19,6 +19,7 @@ import {
   listNorms,
   getNorm,
   getNormMappings,
+  listAvailableCorpusNorms,
   complianceMappingToNormMappingView,
 } from '../services/norm.service';
 
@@ -225,6 +226,43 @@ describe('norm.service facade (THE-390 P1)', () => {
 
     it('returns [] for an unknown workId prefix', async () => {
       expect(await getNormMappings(projectId.toString(), 'weird:xyz')).toEqual([]);
+    });
+  });
+
+  describe('P4b — dedupe, browse, unreferenced corpus norms', () => {
+    it('dedupes sections sharing a regulationKey (live-paste duplicates)', async () => {
+      // Zwei App-DB-Fallback-Regs mit demselben Key existieren nicht direkt im
+      // Korpus-Testmodell (unique key+version) — der Dedupe greift aber auch,
+      // wenn mehrere Mappings denselben Paragraphen referenzieren.
+      await seedCorpus('lksg:live-paste', 'Pasted text');
+      await corpusMapping(projectId, 'lksg:live-paste', 'el-1');
+      await corpusMapping(projectId, 'lksg:live-paste', 'el-2'); // gleicher §, zweites Element
+
+      const norms = await listNorms(projectId.toString());
+      const lksg = norms.find(n => n.identity.workId === 'corpus:lksg');
+      expect(lksg).toBeDefined();
+      expect(lksg!.sections.filter(s => s.eId === 'lksg:live-paste')).toHaveLength(1);
+    });
+
+    it('lists available (unreferenced) corpus laws for browse', async () => {
+      await seedCorpus('dsgvo:art-30', 'Verzeichnis');
+      await seedCorpus('nis2:art-21', 'Maßnahmen');
+      await corpusMapping(projectId, 'dsgvo:art-30', 'el-1'); // dsgvo referenziert, nis2 nicht
+
+      const available = await listAvailableCorpusNorms(projectId.toString());
+      const ids = available.map(n => n.identity.workId);
+      expect(ids).toContain('corpus:nis2');
+      expect(ids).not.toContain('corpus:dsgvo');
+    });
+
+    it('getNorm resolves an UNreferenced corpus law directly from the corpus', async () => {
+      await seedCorpus('nis2:art-21', 'Maßnahmen');
+      await seedCorpus('nis2:art-23', 'Meldung');
+
+      const norm = await getNorm(projectId.toString(), 'corpus:nis2');
+      expect(norm).not.toBeNull();
+      expect(norm!.sections).toHaveLength(2);
+      expect(norm!.source).toBe('corpus');
     });
   });
 
