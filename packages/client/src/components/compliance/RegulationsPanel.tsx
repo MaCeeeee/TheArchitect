@@ -27,6 +27,8 @@ export default function RegulationsPanel() {
   const loadPipelineStatus = useComplianceStore((s) => s.loadPipelineStatus);
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
   const [norms, setNorms] = useState<NormListItem[]>([]);
+  const [available, setAvailable] = useState<NormListItem[]>([]);
+  const [corpusConfigured, setCorpusConfigured] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingId, setAddingId] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export default function RegulationsPanel() {
         (n: NormListItem) => n.source === 'corpus',
       );
       setNorms(items);
+      setAvailable(data?.available ?? []);
+      setCorpusConfigured(data?.corpusConfigured ?? false);
     } catch {
       setError('Failed to load regulations');
     } finally {
@@ -64,12 +68,45 @@ export default function RegulationsPanel() {
     try {
       await normsAPI.addToPipeline(projectId, workId);
       toast.success(`${title} added to pipeline`);
-      await loadPipelineStatus(projectId);
+      await Promise.all([loadPipelineStatus(projectId), load()]);
     } catch {
       toast.error(`Failed to add ${title} to pipeline`);
     } finally {
       setAddingId(null);
     }
+  };
+
+  const renderRow = (n: NormListItem) => {
+    const added = inPipeline(n.identity.workId);
+    return (
+      <li key={n.identity.workId} className="flex items-center justify-between gap-3 py-2.5">
+        <div className="min-w-0">
+          <div className="truncate text-sm text-[var(--text-primary)]">{n.title}</div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
+            {n.kind ?? 'legislation'}
+            {n.jurisdiction ? ` · ${n.jurisdiction}` : ''} · {n.sectionCount} sections
+          </div>
+        </div>
+        {added ? (
+          <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-400">
+            <CheckCircle2 size={14} /> In pipeline
+          </span>
+        ) : (
+          <button
+            onClick={() => void addToPipeline(n.identity.workId, n.title)}
+            disabled={addingId === n.identity.workId}
+            className="flex shrink-0 items-center gap-1.5 rounded border border-[#7c3aed] px-2.5 py-1 text-xs text-[#7c3aed] transition hover:bg-[#7c3aed] hover:text-white disabled:opacity-50"
+          >
+            {addingId === n.identity.workId ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <PlusCircle size={13} />
+            )}
+            Add to pipeline
+          </button>
+        )}
+      </li>
+    );
   };
 
   return (
@@ -106,40 +143,24 @@ export default function RegulationsPanel() {
       )}
 
       {!loading && !error && norms.length > 0 && (
-        <ul className="divide-y divide-[var(--border-subtle)]">
-          {norms.map((n) => {
-            const added = inPipeline(n.identity.workId);
-            return (
-              <li key={n.identity.workId} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="min-w-0">
-                  <div className="truncate text-sm text-[var(--text-primary)]">{n.title}</div>
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {n.kind ?? 'legislation'}
-                    {n.jurisdiction ? ` · ${n.jurisdiction}` : ''} · {n.sectionCount} sections
-                  </div>
-                </div>
-                {added ? (
-                  <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-400">
-                    <CheckCircle2 size={14} /> In pipeline
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => void addToPipeline(n.identity.workId, n.title)}
-                    disabled={addingId === n.identity.workId}
-                    className="flex shrink-0 items-center gap-1.5 rounded border border-[#7c3aed] px-2.5 py-1 text-xs text-[#7c3aed] transition hover:bg-[#7c3aed] hover:text-white disabled:opacity-50"
-                  >
-                    {addingId === n.identity.workId ? (
-                      <Loader2 size={13} className="animate-spin" />
-                    ) : (
-                      <PlusCircle size={13} />
-                    )}
-                    Add to pipeline
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <ul className="divide-y divide-[var(--border-subtle)]">{norms.map(renderRow)}</ul>
+      )}
+
+      {/* THE-390 P4b — Korpus-Browse: verfügbare, noch nicht referenzierte Gesetze */}
+      {!loading && !error && available.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+            Available in corpus
+          </div>
+          <ul className="divide-y divide-[var(--border-subtle)]">{available.map(renderRow)}</ul>
+        </div>
+      )}
+
+      {!loading && !error && !corpusConfigured && (
+        <p className="mt-3 text-[10px] text-[var(--text-tertiary)]">
+          Corpus not connected (CORPUS_MONGODB_URI) — showing only laws this
+          project already references.
+        </p>
       )}
     </div>
   );

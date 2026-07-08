@@ -9,7 +9,13 @@
  */
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
-import { listNorms, getNorm, getNormMappings } from '../services/norm.service';
+import {
+  listNorms,
+  getNorm,
+  getNormMappings,
+  listAvailableCorpusNorms,
+} from '../services/norm.service';
+import { isCorpusConfigured } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
 import { log } from '../config/logger';
 
@@ -18,14 +24,24 @@ router.use(authenticate);
 
 router.get('/:projectId/norms', async (req, res) => {
   try {
-    const norms = await listNorms(req.params.projectId);
+    const [norms, available] = await Promise.all([
+      listNorms(req.params.projectId),
+      listAvailableCorpusNorms(req.params.projectId).catch(() => []),
+    ]);
     // Volltexte nicht in der Liste ausliefern (Payload) — Sections ohne `text`.
-    const slim = norms.map(n => ({
-      ...n,
-      sections: n.sections.map(({ text: _text, ...rest }) => rest),
-      sectionCount: n.sections.length,
-    }));
-    return res.json({ success: true, data: slim });
+    const slim = (list: typeof norms) =>
+      list.map(n => ({
+        ...n,
+        sections: n.sections.map(({ text: _text, ...rest }) => rest),
+        sectionCount: n.sections.length,
+      }));
+    return res.json({
+      success: true,
+      data: slim(norms),
+      // THE-390 P4b: Korpus-Browse — Gesetze, die das Projekt noch nicht referenziert.
+      available: slim(available),
+      corpusConfigured: isCorpusConfigured(),
+    });
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.list] failed');
     return res.status(500).json({ success: false, error: 'failed to list norms' });
