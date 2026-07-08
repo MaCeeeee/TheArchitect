@@ -17,6 +17,7 @@ import AuditReadinessDashboard from '../copilot/AuditReadinessDashboard';
 import RoadmapPanel from '../analytics/RoadmapPanel';
 import RemediateGateway from './RemediateGateway';
 import GapAnalysis from './GapAnalysis';
+import RegulationsPanel from './RegulationsPanel';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -120,20 +121,24 @@ export default function CompliancePage() {
           {activeSection === 'portfolio' && <CompliancePortfolioView />}
 
           {activeSection === 'standards' && (
-            <StandardsManager
-              onAnalyze={(stdId, secIds) => {
-                setMatrixStandardId(stdId);
-                setMatrixSectionIds(secIds);
-                setMatrixAutoSuggest(true);
-                navigate(`/project/${projectId}/compliance/matrix`);
-              }}
-              onMatrixView={(stdId, secIds) => {
-                setMatrixStandardId(stdId);
-                setMatrixSectionIds(secIds);
-                setMatrixAutoSuggest(false);
-                navigate(`/project/${projectId}/compliance/matrix`);
-              }}
-            />
+            <>
+              <StandardsManager
+                onAnalyze={(stdId, secIds) => {
+                  setMatrixStandardId(stdId);
+                  setMatrixSectionIds(secIds);
+                  setMatrixAutoSuggest(true);
+                  navigate(`/project/${projectId}/compliance/matrix`);
+                }}
+                onMatrixView={(stdId, secIds) => {
+                  setMatrixStandardId(stdId);
+                  setMatrixSectionIds(secIds);
+                  setMatrixAutoSuggest(false);
+                  navigate(`/project/${projectId}/compliance/matrix`);
+                }}
+              />
+              {/* THE-390 P4b — corpus laws enter the pipeline from here */}
+              <RegulationsPanel />
+            </>
           )}
 
           {activeSection === 'matrix' && matrixStandardId && (
