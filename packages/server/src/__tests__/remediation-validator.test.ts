@@ -35,6 +35,14 @@ jest.mock('../config/neo4j', () => ({
 import { validateProposal } from '../services/remediation-validator.service';
 import { runCypher } from '../config/neo4j';
 import { Standard } from '../models/Standard';
+import {
+  corpusRegulationSchema,
+  __setCorpusForTests,
+  upsertCorpusRegulation,
+  type ICorpusRegulation,
+} from '../services/corpusClient.service';
+import { getPipelineNorm } from '../services/norm.service';
+import type { Model } from 'mongoose';
 
 const mockedRunCypher = runCypher as jest.MockedFunction<typeof runCypher>;
 
@@ -360,12 +368,14 @@ describe('5. Confidence Thresholds', () => {
 
 describe('6. §-Reference Validation', () => {
   test('6.1 Valid §-reference produces no warning', async () => {
-    // Create a standard with sections in MongoDB
+    // Create a standard with sections in MongoDB. Der Section-Lookup ist jetzt
+    // projekt-gescoped (getPipelineNorm), also muss die projectId zum Aufruf passen.
+    const projectId = new mongoose.Types.ObjectId();
     const standard = await Standard.create({
       name: 'Test Standard',
       version: '1.0',
       body: 'TOGAF',
-      projectId: new mongoose.Types.ObjectId(),
+      projectId,
       uploadedBy: new mongoose.Types.ObjectId(),
       sections: [
         { number: '5.1', title: 'Section 5.1', content: 'Content', requirements: [] },
@@ -378,7 +388,7 @@ describe('6. §-Reference Validation', () => {
       sectionReference: '§5.1',
     });
 
-    const result = await validateProposal('proj-1', { elements: [el], connections: [] }, standard._id.toString());
+    const result = await validateProposal(projectId.toString(), { elements: [el], connections: [] }, standard._id.toString());
 
     const refWarnings = result.elementResults[0].warnings.filter((w) => w.includes('Section reference'));
     expect(refWarnings).toHaveLength(0);
@@ -387,11 +397,12 @@ describe('6. §-Reference Validation', () => {
   });
 
   test('6.2 Invalid §-reference produces warning', async () => {
+    const projectId = new mongoose.Types.ObjectId();
     const standard = await Standard.create({
       name: 'Test Standard 2',
       version: '1.0',
       body: 'TOGAF',
-      projectId: new mongoose.Types.ObjectId(),
+      projectId,
       uploadedBy: new mongoose.Types.ObjectId(),
       sections: [
         { number: '5.1', title: 'Section 5.1', content: 'Content', requirements: [] },
@@ -403,7 +414,7 @@ describe('6. §-Reference Validation', () => {
       sectionReference: '§99.9', // doesn't exist
     });
 
-    const result = await validateProposal('proj-1', { elements: [el], connections: [] }, standard._id.toString());
+    const result = await validateProposal(projectId.toString(), { elements: [el], connections: [] }, standard._id.toString());
 
     expect(result.elementResults[0].warnings).toEqual(
       expect.arrayContaining([expect.stringContaining('not found in the standard')]),
@@ -828,5 +839,94 @@ describe('13. Combined Scenarios', () => {
     expect(result.elementResults[1].errors.length).toBeGreaterThanOrEqual(2);
     // conn-broken should have errors (bad type + unresolvable endpoints + low confidence)
     expect(result.connectionResults[0].errors.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 10. §-REFERENCE VALIDATION AGAINST A CORPUS NORM (THE-390 P4b)
+// ═════════════════════════════════════════════════════════════════════════════
+//
+// Vor P4b löste getStandardSectionNumbers über Standard.findById auf → für eine
+// `corpus:<source>`-Norm gab es kein Standard-Doc, also stets ein leeres Section-
+// Set (jede §-Referenz „not found"). Jetzt läuft es quellenagnostisch über
+// getPipelineNorm, sodass Korpus-Paragraphen als gültige Sektionen zählen.
+
+describe('10. §-Reference Validation (corpus norm)', () => {
+  let CorpusReg: Model<ICorpusRegulation>;
+
+  beforeAll(() => {
+    CorpusReg = mongoose.model<ICorpusRegulation>(
+      'RemediationCorpusReg',
+      corpusRegulationSchema,
+      'remediation_corpus_test',
+    );
+    __setCorpusForTests(CorpusReg);
+  });
+
+  afterAll(async () => {
+    __setCorpusForTests(null);
+    delete process.env.CORPUS_MONGODB_URI;
+    await CorpusReg.deleteMany({});
+  });
+
+  afterEach(async () => {
+    await CorpusReg.deleteMany({});
+    delete process.env.CORPUS_MONGODB_URI;
+  });
+
+  async function seedCorpus(source: string, paragraphNumber: string, title: string) {
+    await upsertCorpusRegulation({
+      regulationKey: `${source}:${paragraphNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+      versionHash: 'h'.repeat(64),
+      source,
+      jurisdiction: 'EU',
+      paragraphNumber,
+      title,
+      fullText: 'x'.repeat(60),
+      sourceUrl: 'https://example',
+      effectiveFrom: new Date('2018-05-25'),
+      language: 'de',
+      version: 1,
+      crawledAt: new Date(),
+    } as Parameters<typeof upsertCorpusRegulation>[0]);
+  }
+
+  test('10.1 Valid corpus §-reference produces no warning', async () => {
+    process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+    const projectId = new mongoose.Types.ObjectId().toString();
+    await seedCorpus('dsgvo', 'Art. 30', 'Verzeichnis von Verarbeitungstätigkeiten');
+
+    // Die tatsächliche Section-Nummer aus der Facade holen (robust ggü. Formatierung).
+    const norm = await getPipelineNorm(projectId, 'corpus:dsgvo');
+    expect(norm).not.toBeNull();
+    const number = norm!.sections[0].number;
+    expect(number).toBeTruthy();
+
+    const el = makeElement({ tempId: 'el-corpus-ref', sectionReference: `§${number}` });
+    const result = await validateProposal(
+      projectId,
+      { elements: [el], connections: [] },
+      'corpus:dsgvo',
+    );
+
+    const refWarnings = result.elementResults[0].warnings.filter((w) => w.includes('Section reference'));
+    expect(refWarnings).toHaveLength(0);
+  });
+
+  test('10.2 Unknown corpus §-reference produces warning', async () => {
+    process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+    const projectId = new mongoose.Types.ObjectId().toString();
+    await seedCorpus('dsgvo', 'Art. 30', 'Verzeichnis von Verarbeitungstätigkeiten');
+
+    const el = makeElement({ tempId: 'el-corpus-badref', sectionReference: '§Art. 999' });
+    const result = await validateProposal(
+      projectId,
+      { elements: [el], connections: [] },
+      'corpus:dsgvo',
+    );
+
+    expect(result.elementResults[0].warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('not found in the standard')]),
+    );
   });
 });

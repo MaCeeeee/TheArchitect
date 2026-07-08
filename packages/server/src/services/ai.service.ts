@@ -2,7 +2,7 @@ import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
-import { getPipelineNorm } from './norm.service';
+import { getPipelineNorm, getNormMappings, derivePipelineAnchorId } from './norm.service';
 import { StandardMapping } from '../models/StandardMapping';
 import { Policy } from '../models/Policy';
 import { runAdvisorScan } from './advisor.service';
@@ -706,13 +706,14 @@ export async function generatePoliciesFromStandard(
   }
 
   const architectureContext = await buildProjectContext(projectId);
-  const standard = await Standard.findById(standardId);
-  if (!standard) {
+  // THE-390 P4b: quellenagnostisch — Upload-Standard oder `corpus:<source>`-Norm.
+  const norm = await getPipelineNorm(projectId, standardId);
+  if (!norm) {
     onError(new Error('Standard not found'));
     return;
   }
 
-  if (!standard.sections || standard.sections.length === 0) {
+  if (!norm.sections || norm.sections.length === 0) {
     onError(new Error('Standard has no parsed sections — the PDF may not have been processed correctly. Try re-uploading.'));
     return;
   }
@@ -721,7 +722,7 @@ export async function generatePoliciesFromStandard(
   let charCount = 0;
   const maxChars = 80000;
   const sectionLines: string[] = [];
-  for (const section of standard.sections) {
+  for (const section of norm.sections) {
     if (charCount >= maxChars) break;
     const content = section.content.slice(0, Math.min(section.content.length, maxChars - charCount));
     sectionLines.push(`### §${section.number} ${section.title}\n${content}`);
@@ -744,7 +745,7 @@ Available operators: equals, not_equals, contains, gt, lt, gte, lte, exists, reg
 ${architectureContext}
 --- END ARCHITECTURE ---
 
---- STANDARD: ${standard.name} (${standard.version}) ---
+--- STANDARD: ${norm.name}${norm.version ? ` (${norm.version})` : ''} ---
 ${sectionLines.join('\n\n')}
 --- END STANDARD ---
 
@@ -880,40 +881,59 @@ export async function suggestMissingElements(
   const provider = detectProvider();
   if (provider === 'none') return [];
 
-  // Get coverage gap mappings
-  const gapMappings = await StandardMapping.find({
-    projectId,
-    standardId,
-    elementId: '__COVERAGE_GAP__',
-  });
+  // THE-390 P4b: quellenagnostisch. `standardId` kann ein `corpus:<source>`-workId
+  // sein — dann gibt es weder StandardMapping-Coverage-Gaps noch ein Standard-Doc,
+  // und Policies hängen an der Anker-ObjectId (nicht am rohen workId).
+  const norm = await getPipelineNorm(projectId, standardId);
+  if (!norm) return [];
+  const isCorpus = norm.source === 'corpus';
+  const policyStandardId = isCorpus ? derivePipelineAnchorId(standardId) : standardId;
 
-  // Also get non-compliant mappings (gap status with real elements) + approved policies
-  const nonCompliantMappings = await StandardMapping.find({
-    projectId,
-    standardId,
-    status: 'gap',
-    elementId: { $ne: '__COVERAGE_GAP__' },
-  });
+  let gapLines: string[] = [];
+  let nonCompliantLines: string[] = [];
 
-  const policies = await Policy.find({ projectId, standardId, enabled: true });
+  if (isCorpus) {
+    // Korpus kennt kein `gap`-Urteil: „Coverage-Gap" = Paragraph ohne aktives
+    // ComplianceMapping (unmapped Section). Das sind die fehlenden Abdeckungen.
+    const mappings = await getNormMappings(projectId, norm.id);
+    const activeSectionIds = new Set(
+      mappings.filter((m) => m.status !== 'rejected').map((m) => m.sectionEId).filter(Boolean),
+    );
+    const unmapped = norm.sections.filter((s) => !activeSectionIds.has(s.id));
+    gapLines = unmapped.map(
+      (s) => `- §${s.number || s.title} "${s.title}": no architecture element mapped yet — needs coverage`,
+    );
+  } else {
+    // Get coverage gap mappings
+    const gapMappings = await StandardMapping.find({
+      projectId,
+      standardId,
+      elementId: '__COVERAGE_GAP__',
+    });
 
-  if (gapMappings.length === 0 && nonCompliantMappings.length === 0 && policies.length === 0) return [];
+    // Also get non-compliant mappings (gap status with real elements)
+    const nonCompliantMappings = await StandardMapping.find({
+      projectId,
+      standardId,
+      status: 'gap',
+      elementId: { $ne: '__COVERAGE_GAP__' },
+    });
 
-  const standard = await Standard.findById(standardId);
-  if (!standard) return [];
+    gapLines = gapMappings.map((m) => {
+      const section = norm.sections.find((s) => s.id === m.sectionId);
+      const suggested = m.suggestedNewElement;
+      return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": suggested "${suggested?.name || 'Unknown'}" (${suggested?.type || 'unknown'}, ${suggested?.layer || 'unknown'})`;
+    });
 
-  // Build gap context
-  const gapLines = gapMappings.map((m) => {
-    const section = standard.sections.find((s) => s.id === m.sectionId);
-    const suggested = m.suggestedNewElement;
-    return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": suggested "${suggested?.name || 'Unknown'}" (${suggested?.type || 'unknown'}, ${suggested?.layer || 'unknown'})`;
-  });
+    nonCompliantLines = nonCompliantMappings.map((m) => {
+      const section = norm.sections.find((s) => s.id === m.sectionId);
+      return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": element "${m.elementName}" (${m.elementLayer}) has GAP status — needs modification or replacement`;
+    });
+  }
 
-  // Build non-compliant element context
-  const nonCompliantLines = nonCompliantMappings.map((m) => {
-    const section = standard.sections.find((s) => s.id === m.sectionId);
-    return `- §${m.sectionNumber} "${section?.title || 'Unknown'}": element "${m.elementName}" (${m.elementLayer}) has GAP status — needs modification or replacement`;
-  });
+  const policies = await Policy.find({ projectId, standardId: policyStandardId, enabled: true });
+
+  if (gapLines.length === 0 && nonCompliantLines.length === 0 && policies.length === 0) return [];
 
   // Build policy context
   const policyLines = policies.map((p) => {
@@ -928,7 +948,7 @@ export async function suggestMissingElements(
 ${architectureContext}
 --- END ARCHITECTURE ---
 
---- STANDARD: ${standard.name} ---
+--- STANDARD: ${norm.name} ---
 ${gapLines.length > 0 ? `COVERAGE GAPS (missing elements):\n${gapLines.join('\n')}` : ''}
 ${nonCompliantLines.length > 0 ? `\nNON-COMPLIANT ELEMENTS (need changes):\n${nonCompliantLines.join('\n')}` : ''}
 ${policyLines.length > 0 ? `\nACTIVE POLICIES (must be fulfilled):\n${policyLines.join('\n')}` : ''}

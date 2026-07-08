@@ -367,6 +367,9 @@ export async function getPipelineNorm(
     // einer Korpus-Norm sein (CompliancePipelineState.standardId, P2). Legacy-
     // Konsumenten, die rohe State-IDs durchreichen, werden hier auf den
     // kanonischen normId aufgelöst — heilt alle Aufrufer am Seam.
+    // Ist die projectId keine gültige ObjectId, kann es keinen Anker geben → null
+    // (statt am ObjectId-Cast zu werfen).
+    if (!mongoose.isValidObjectId(projectId)) return null;
     const state = await CompliancePipelineState.findOne({
       projectId: new mongoose.Types.ObjectId(projectId),
       standardId: new mongoose.Types.ObjectId(standardId),

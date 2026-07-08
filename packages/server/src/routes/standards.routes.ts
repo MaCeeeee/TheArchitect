@@ -584,6 +584,11 @@ router.post(
       const userId = getUserId(req);
       const projectId = pid(req);
       const standardId = sid(req);
+      // THE-390 P4b: `standardId` kann ein `corpus:<source>`-workId sein. Policy.standardId
+      // ist eine ObjectId — Korpus-Policies ankern deshalb (wie der Pipeline-State) über die
+      // deterministische Pseudo-ObjectId, damit refreshPolicyStats sie wiederfindet (ADR-0004 E5).
+      const isCorpus = standardId.startsWith('corpus:');
+      const persistId = isCorpus ? String(derivePipelineAnchorId(standardId)) : standardId;
 
       const policies = await Policy.insertMany(
         approved.map((draft: Record<string, unknown>) => ({
@@ -599,7 +604,7 @@ router.post(
           severity: draft.severity || 'warning',
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
           rules: draft.rules || [],
-          standardId,
+          standardId: persistId,
           sourceSectionNumber: draft.sourceSection || '',
           enabled: true,
           createdBy: userId,
@@ -613,13 +618,15 @@ router.post(
       // Without this projection the policies live only in the Policy Manager
       // silo, not in the architecture graph — breaking traceability from
       // Driver → Requirement → Capability → Process → Activity.
-      const standardDoc = await getStandard(standardId).catch(() => null);
-      const standardName = standardDoc?.name ?? '';
+      // Name quellenagnostisch: Upload-Standard ODER Korpus-Norm (getStandard liefert
+      // für corpus:X nichts, die Facade den Gesetzesnamen).
+      const norm = await getPipelineNorm(projectId, standardId).catch(() => null);
+      const standardName = norm?.name ?? '';
       const driverMatch = await findMatchingDriver(projectId, standardName);
 
       const requirementSummary = await projectPoliciesAsRequirements({
         projectId,
-        standardId,
+        standardId: persistId,
         standardName,
         driverId: driverMatch?.id ?? null,
         policies: policies as unknown as Array<{ _id: { toString(): string }; name: string; description: string; sourceSectionNumber: string }>,

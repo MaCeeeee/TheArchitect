@@ -10,6 +10,8 @@ import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { ComplianceMapping } from '../models/ComplianceMapping';
 import { CompliancePipelineState } from '../models/CompliancePipelineState';
+import { Policy } from '../models/Policy';
+import { ComplianceSnapshot } from '../models/ComplianceSnapshot';
 import {
   corpusRegulationSchema,
   __setCorpusForTests,
@@ -20,9 +22,12 @@ import { resetFallbackStats } from '../services/regulationResolver.service';
 import {
   getOrCreatePipelineState,
   refreshMappingStats,
+  refreshPolicyStats,
   getPortfolioOverview,
+  captureComplianceSnapshot,
 } from '../services/compliance-pipeline.service';
 import { derivePipelineAnchorId, getPipelineNorm } from '../services/norm.service';
+import { suggestMissingElements } from '../services/ai.service';
 
 let CorpusReg: Model<ICorpusRegulation>;
 
@@ -98,6 +103,8 @@ describe('pipeline over norm facade (THE-390 P2)', () => {
     await StandardMapping.deleteMany({});
     await ComplianceMapping.deleteMany({});
     await CompliancePipelineState.deleteMany({});
+    await Policy.deleteMany({});
+    await ComplianceSnapshot.deleteMany({});
     await CorpusReg.deleteMany({});
     delete process.env.CORPUS_MONGODB_URI;
     resetFallbackStats();
@@ -199,5 +206,78 @@ describe('pipeline over norm facade (THE-390 P2)', () => {
       normId: 'corpus:nis2',
     });
     expect(stillThere).not.toBeNull();
+  });
+
+  // ─── P4b: die tieferen Pipeline-Schritte quellenagnostisch (Whack-a-Mole-Stop) ───
+
+  it('captures a compliance snapshot for a corpus norm (no Standard-doc → must not throw)', async () => {
+    // Vor P4b lief captureComplianceSnapshot über Standard.findById → für eine
+    // Korpus-Norm „Standard not found"/500. Jetzt via computeNormMappingStats.
+    await seedCorpus('dsgvo:art-5', 'Grundsätze');
+    await seedCorpus('dsgvo:art-30', 'Verzeichnis');
+    await seedCorpus('dsgvo:art-32', 'Sicherheit');
+    await corpusMapping(projectId, 'dsgvo:art-5', 'el-1', 'confirmed');
+    await corpusMapping(projectId, 'dsgvo:art-30', 'el-2', 'auto');
+    await corpusMapping(projectId, 'dsgvo:art-32', 'el-3', 'rejected');
+
+    const snap = await captureComplianceSnapshot(projectId.toString(), 'corpus:dsgvo');
+
+    // Persistiert unter dem Anker (ObjectId), nicht dem rohen workId.
+    expect(String(snap.standardId)).toBe(String(derivePipelineAnchorId('corpus:dsgvo')));
+    expect(snap.totalSections).toBe(3);
+    expect(snap.compliantSections).toBe(1); // confirmed
+    expect(snap.partialSections).toBe(1);   // auto
+    expect(snap.gapSections).toBe(0);
+    // coverage = (1 + 1*0.5) / 3 = 50 %
+    expect(snap.standardCoverageScore).toBe(50);
+  });
+
+  it('finds corpus policies persisted under the pipeline anchor (approve-policies contract)', async () => {
+    // Die approve-policies-Route persistiert Policy.standardId (ObjectId) für eine
+    // Korpus-Norm über derivePipelineAnchorId(workId). refreshPolicyStats zählt über
+    // denselben Anker — dieser Roundtrip ist der ganze Grund für den Anker.
+    await seedCorpus('dsgvo:art-30', 'Verzeichnis');
+    await corpusMapping(projectId, 'dsgvo:art-30', 'el-1', 'confirmed');
+    await getOrCreatePipelineState(projectId.toString(), 'corpus:dsgvo');
+
+    const anchor = derivePipelineAnchorId('corpus:dsgvo');
+    await Policy.create({
+      projectId,
+      name: 'Verzeichnis von Verarbeitungstätigkeiten führen',
+      description: 'Art. 30 DSGVO',
+      category: 'compliance',
+      framework: 'custom',
+      severity: 'warning',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [],
+      standardId: anchor,
+      sourceSectionNumber: 'Art. 30',
+      enabled: true,
+      createdBy: userId,
+    });
+
+    const state = await refreshPolicyStats(projectId.toString(), 'corpus:dsgvo');
+    expect(state.policyStats.approved).toBe(1);
+    // Policy vorhanden → Stage rückt mindestens auf 'policies_generated'.
+    expect(['policies_generated', 'roadmap_ready', 'tracking', 'audit_ready']).toContain(state.stage);
+  });
+
+  it('suggestMissingElements does not 500 on a corpus workId (no StandardMapping/Policy cast error)', async () => {
+    // Vor P4b: StandardMapping.find({standardId:'corpus:dsgvo'}) + Policy.find(…) hätten
+    // am ObjectId-Cast geworfen → 500. Jetzt quellenagnostisch. Ein Dummy-Key hebt nur
+    // die provider==='none'-Frühschranke; der eigentliche AI-Call wird nie erreicht,
+    // weil alle Paragraphen gemappt sind und es keine Policy gibt → sauberes [].
+    const prevKey = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'sk-test-dummy';
+    try {
+      await seedCorpus('dsgvo:art-30', 'Verzeichnis');
+      await corpusMapping(projectId, 'dsgvo:art-30', 'el-1', 'confirmed'); // → 0 unmapped
+
+      const suggestions = await suggestMissingElements(projectId.toString(), 'corpus:dsgvo');
+      expect(suggestions).toEqual([]);
+    } finally {
+      if (prevKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+      else process.env.ANTHROPIC_API_KEY = prevKey;
+    }
   });
 });
