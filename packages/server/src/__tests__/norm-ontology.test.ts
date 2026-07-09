@@ -12,6 +12,8 @@ import {
   RelationTypeSchema,
   isInferredRelation,
   exportForOntoLearner,
+  isNormSource,
+  isJurisdiction,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -84,5 +86,18 @@ describe('source registry (THE-413)', () => {
 
   it('bumped ontologyVersion for the additive rows', () => {
     expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.1.0');
+  });
+
+  it('isNormSource accepts ontology rows, rejects everything else', () => {
+    expect(isNormSource('nis2')).toBe(true);
+    expect(isNormSource('togaf')).toBe(true);
+    expect(isNormSource('not-a-source')).toBe(false);
+    expect(isNormSource('')).toBe(false);
+  });
+
+  it('isJurisdiction accepts ontology jurisdictions, rejects everything else', () => {
+    expect(isJurisdiction('EU')).toBe(true);
+    expect(isJurisdiction('CH')).toBe(true);
+    expect(isJurisdiction('XX')).toBe(false);
   });
 });
