@@ -59,6 +59,18 @@ describe('buildJobRegistry (env parsing)', () => {
     process.env.REGULATION_CRAWL_SOURCES = 'nonsense';
     expect(buildJobRegistry()).toEqual([]);
   });
+
+  it('registers ontology sources beyond the legacy six (THE-413 / THE-396 fix)', () => {
+    process.env.REGULATION_CRAWL_SOURCES = 'ai-act-en,data-act-de';
+    const jobs = buildJobRegistry();
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0].sources).toEqual(['ai-act-en', 'data-act-de']);
+  });
+
+  it('still filters garbage sources', () => {
+    process.env.REGULATION_CRAWL_SOURCES = 'ai-act-en,definitely-not-a-law';
+    expect(buildJobRegistry()[0].sources).toEqual(['ai-act-en']);
+  });
 });
 
 describe('isJobDue + runCrawlJob (DB)', () => {

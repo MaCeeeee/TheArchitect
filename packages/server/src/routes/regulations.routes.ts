@@ -20,22 +20,13 @@ import {
   crawlerHealth,
   crawlerConfig,
   CrawlerUnreachableError,
-  type RegulationSourceKey,
 } from '../services/complianceCrawler.service';
 import { corpusHealth, isCorpusConfigured } from '../services/corpusClient.service';
+import { isNormSource, NORM_SOURCE_IDS } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 const router = Router();
 router.use(authenticate);
-
-const VALID_SOURCES: RegulationSourceKey[] = [
-  'nis2',
-  'lksg',
-  'dsgvo',
-  'dora',
-  'iso27001',
-  'custom',
-];
 
 // ──────────────────────────────────────────────────────────
 // GET /api/regulations/crawler/health — service-level health (not project-scoped)
@@ -71,7 +62,7 @@ router.get(
     const page = Math.max(Number(req.query.page ?? 1), 1);
 
     const filter: Record<string, unknown> = { projectId: new mongoose.Types.ObjectId(projectId) };
-    if (source && VALID_SOURCES.includes(source as RegulationSourceKey)) {
+    if (source && isNormSource(source)) {
       filter.source = source;
     }
 
@@ -139,8 +130,8 @@ router.post(
       : (source === 'lksg' ? 'DE' : 'EU');
     const sourceUrl = typeof body.sourceUrl === 'string' && body.sourceUrl ? body.sourceUrl : 'user-pasted';
 
-    if (!source || !VALID_SOURCES.includes(source as RegulationSourceKey)) {
-      return res.status(400).json({ success: false, error: `source must be one of: ${VALID_SOURCES.join(', ')}` });
+    if (!source || !isNormSource(source)) {
+      return res.status(400).json({ success: false, error: `source must be one of: ${NORM_SOURCE_IDS.join(', ')}` });
     }
     if (!paragraphNumber) {
       return res.status(400).json({ success: false, error: 'paragraphNumber required' });
@@ -226,7 +217,7 @@ router.post(
     if (sources.length === 0) {
       return res.status(400).json({ success: false, error: 'sources array required' });
     }
-    const invalid = sources.filter((s: unknown) => !VALID_SOURCES.includes(s as RegulationSourceKey));
+    const invalid = sources.filter((s: unknown) => typeof s !== 'string' || !isNormSource(s));
     if (invalid.length > 0) {
       return res
         .status(400)

@@ -15,7 +15,8 @@
  *   REGULATION_CRAWL_ENABLED          "false" to disable entirely
  */
 import mongoose, { Schema, Document } from 'mongoose';
-import { triggerCrawl, CrawlerUnreachableError, type RegulationSourceKey } from './complianceCrawler.service';
+import { triggerCrawl, CrawlerUnreachableError } from './complianceCrawler.service';
+import { isNormSource } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 // ─── CrawlLog Model (analog SyncLog) ───
@@ -59,11 +60,9 @@ export const CrawlLog = mongoose.model<ICrawlLog>('CrawlLog', crawlLogSchema);
 
 export interface CrawlJob {
   id: string;
-  sources: RegulationSourceKey[];
+  sources: string[];
   intervalMinutes: number;
 }
-
-const VALID_SOURCES: RegulationSourceKey[] = ['nis2', 'lksg', 'dsgvo', 'dora', 'iso27001', 'custom'];
 
 /** Build the crawl-job registry from env. Returns [] when disabled / no valid sources. */
 export function buildJobRegistry(): CrawlJob[] {
@@ -72,7 +71,7 @@ export function buildJobRegistry(): CrawlJob[] {
   const sources = (process.env.REGULATION_CRAWL_SOURCES ?? 'nis2,lksg,dsgvo')
     .split(',')
     .map(s => s.trim().toLowerCase())
-    .filter((s): s is RegulationSourceKey => (VALID_SOURCES as string[]).includes(s));
+    .filter(isNormSource);
 
   if (sources.length === 0) return [];
 
