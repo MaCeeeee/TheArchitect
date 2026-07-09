@@ -1,0 +1,44 @@
+/**
+ * THE-413 proof: the crawler's Regulation (corpus) schema accepts EVERY
+ * ontology source without an enum edit — the test iterates NORM_SOURCE_IDS
+ * instead of a hardcoded list. togaf/archimate entered ONLY as data rows; if
+ * they validate here, "new source = data" holds at the corpus write boundary
+ * (Server B), matching the server-side Regulation model (THE-413).
+ */
+import { Regulation } from '../db/regulation.model';
+import { NORM_SOURCE_IDS } from '@thearchitect/shared';
+
+const base = {
+  regulationKey: 'dsgvo:art-1',
+  versionHash: 'a'.repeat(64),
+  jurisdiction: 'EU',
+  paragraphNumber: 'Art. 1',
+  title: 'Test title',
+  fullText: 'x'.repeat(60),
+  sourceUrl: 'https://example.org/law',
+  effectiveFrom: new Date('2024-01-01'),
+  language: 'en',
+};
+
+describe('crawler Regulation.source is ontology-driven (THE-413)', () => {
+  it.each(NORM_SOURCE_IDS)('accepts ontology source "%s" without any enum edit', (source) => {
+    const err = new Regulation({ ...base, source }).validateSync();
+    expect(err?.errors?.source).toBeUndefined();
+  });
+
+  it('rejects a source missing from the ontology, pointing at the registry', () => {
+    const err = new Regulation({ ...base, source: 'not-in-ontology' }).validateSync();
+    expect(err?.errors?.source).toBeDefined();
+    expect(String(err?.errors?.source?.message)).toContain('ontology');
+  });
+
+  it('rejects a jurisdiction missing from the ontology', () => {
+    const err = new Regulation({ ...base, source: 'dsgvo', jurisdiction: 'XX' }).validateSync();
+    expect(err?.errors?.jurisdiction).toBeDefined();
+  });
+
+  it('null source is still rejected — by required, not by the ontology validator (crawler: source is required)', () => {
+    const err = new Regulation({ ...base, source: null }).validateSync();
+    expect(err?.errors?.source).toBeDefined();
+  });
+});

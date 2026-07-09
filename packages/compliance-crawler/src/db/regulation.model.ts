@@ -15,6 +15,7 @@ import type {
   RegulationJurisdiction,
   RegulationLanguage,
 } from '@thearchitect/shared';
+import { isNormSource, isJurisdiction } from '@thearchitect/shared';
 
 export interface IRegulation extends Document {
   /** Stable, project-independent identity, e.g. "nis2:art-23" (ADR-0001). */
@@ -48,26 +49,26 @@ const regulationSchema = new Schema<IRegulation>(
     regulationKey: { type: String, required: true, trim: true },
     versionHash: { type: String, required: true, trim: true },
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: false },
+    // THE-413 (ADR-0004 E6): allowed sources are ontology DATA, not an enum.
+    // A new law = a row in norm-ontology.v1.ts normSources — no edit here.
+    // Validators pass null through (built-in enum parity); presence is required()'s job.
     source: {
       type: String,
-      enum: [
-        'nis2',
-        'lksg',
-        'dsgvo',
-        'dora',
-        'iso27001',
-        'ai-act-en',
-        'ai-act-de',
-        'data-act-en',
-        'data-act-de',
-        'custom',
-      ],
       required: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isNormSource(v),
+        message: (props: { value: string }) =>
+          `source '${props.value}' is not in the norm ontology (add a normSources row in norm-ontology.v1.ts — THE-413)`,
+      },
     },
     jurisdiction: {
       type: String,
-      enum: ['EU', 'DE', 'AT', 'CH'],
       required: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isJurisdiction(v),
+        message: (props: { value: string }) =>
+          `jurisdiction '${props.value}' is not in the norm ontology`,
+      },
     },
     paragraphNumber: { type: String, required: true, trim: true },
     title: { type: String, required: true, trim: true },
