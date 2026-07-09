@@ -210,6 +210,7 @@ describe('norm.service facade (THE-390 P1)', () => {
     });
 
     it('projects ComplianceMappings with lifecycle statusKind + corpusRef', async () => {
+      await seedCorpus('dsgvo:art-30', 'Verzeichnis');
       await corpusMapping(projectId, 'dsgvo:art-30', 'el-2');
       const rows = await getNormMappings(projectId.toString(), 'corpus:dsgvo');
       expect(rows).toHaveLength(1);
@@ -222,6 +223,13 @@ describe('norm.service facade (THE-390 P1)', () => {
         sectionEId: 'dsgvo:art-30',
       });
       expect(rows[0].corpusRef?.regulationKey).toBe('dsgvo:art-30');
+
+      // THE-413 AC-4: the regulationKey captured on the stored mapping is the
+      // SAME key the facade resolves the corpus-backed NormView section by —
+      // no drift between "which identity got persisted" and "which section it
+      // addresses" across the wfcomp key-utility collapse (Task 9).
+      const norm = await getNorm(projectId.toString(), 'corpus:dsgvo');
+      expect(norm!.sections.map(s => s.eId)).toContain(rows[0].corpusRef?.regulationKey);
     });
 
     it('returns [] for an unknown workId prefix', async () => {
