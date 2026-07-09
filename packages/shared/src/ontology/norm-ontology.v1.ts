@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.0.0',
-  updatedAt: '2026-07-07',
+  ontologyVersion: '1.1.0',
+  updatedAt: '2026-07-09',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -133,6 +133,10 @@ export const NORM_ONTOLOGY = {
     { id: 'data-act-en', label: 'Data Act (EU) 2023/2854 — English', jurisdiction: 'EU' },
     { id: 'data-act-de', label: 'Datenverordnung (EU) 2023/2854 — Deutsch', jurisdiction: 'EU' },
     { id: 'iso27001', label: 'ISO/IEC 27001' },
+    // THE-413: PolicySource collapse — modeling-framework sources become data
+    // rows so Policy.source validates against the same registry as regulations.
+    { id: 'togaf', label: 'TOGAF Standard (The Open Group)' },
+    { id: 'archimate', label: 'ArchiMate Specification (The Open Group)' },
     { id: 'custom', label: 'User-curated' },
   ],
 } as const;

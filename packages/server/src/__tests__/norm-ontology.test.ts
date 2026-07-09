@@ -6,6 +6,7 @@ import {
   NORM_ONTOLOGY,
   NORM_KIND_IDS,
   RELATION_TYPE_IDS,
+  NORM_SOURCE_IDS,
   assertOntologyValid,
   NormKindSchema,
   RelationTypeSchema,
@@ -66,5 +67,22 @@ describe('E6 Norm-Ontology (THE-429)', () => {
       normKinds: [{ id: 'x', label: 'X', bindingnessDefault: 'no-such-bindingness' }],
     };
     expect(() => assertOntologyValid(broken)).toThrow();
+  });
+});
+
+describe('source registry (THE-413)', () => {
+  it('covers every legacy RegulationSource and PolicySource value as data', () => {
+    const legacyRegulationSources = [
+      'nis2', 'lksg', 'dsgvo', 'dora', 'iso27001',
+      'ai-act-en', 'ai-act-de', 'data-act-en', 'data-act-de', 'custom',
+    ];
+    const legacyPolicySources = ['custom', 'dora', 'nis2', 'togaf', 'archimate', 'iso27001'];
+    for (const s of [...legacyRegulationSources, ...legacyPolicySources]) {
+      expect(NORM_SOURCE_IDS).toContain(s);
+    }
+  });
+
+  it('bumped ontologyVersion for the additive rows', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.1.0');
   });
 });

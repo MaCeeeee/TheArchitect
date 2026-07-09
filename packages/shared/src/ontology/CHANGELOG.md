@@ -25,3 +25,6 @@ Initial ontology. Seeds the E6/E7/E8-R5 vocabularies from ADR-0004:
 - **assuranceSchemes** (3, E8-R5): eIDAS (LoA), NIST SP 800-63 (IAL/AAL/FAL), UK GPG 45.
 - **normSources** (10): collapse target for the triplicated `RegulationSource` enum;
   AI Act / Data Act (THE-396) present as data rows, proving "new law = data, not code".
+
+## 1.1.0 — 2026-07-09 (THE-413)
+- normSources: + `togaf`, + `archimate` (PolicySource enum collapse; The Open Group framework sources become registry data). Additive — no id changed or removed.
