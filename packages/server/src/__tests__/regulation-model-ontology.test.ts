@@ -6,6 +6,7 @@
  */
 import mongoose from 'mongoose';
 import { Regulation } from '../models/Regulation';
+import { Policy } from '../models/Policy';
 import { NORM_SOURCE_IDS } from '@thearchitect/shared';
 
 const base = {
@@ -39,5 +40,25 @@ describe('Regulation.source is ontology-driven (THE-413)', () => {
   it('jurisdiction matching is exact-case (lowercase rejected — intentional)', () => {
     const err = new Regulation({ ...base, source: 'dsgvo', jurisdiction: 'eu' }).validateSync();
     expect(err?.errors?.jurisdiction).toBeDefined();
+  });
+});
+
+describe('Policy.source is ontology-driven (THE-413)', () => {
+  // Policy.ts required fields: projectId, name, category, createdBy (rest have defaults).
+  const policyBase = {
+    projectId: new mongoose.Types.ObjectId(),
+    name: 'Test Policy',
+    category: 'compliance' as const,
+    createdBy: new mongoose.Types.ObjectId(),
+  };
+
+  it.each(['togaf', 'archimate', 'nis2', 'custom'])('accepts ontology source "%s"', (source) => {
+    const err = new Policy({ ...policyBase, source }).validateSync();
+    expect(err?.errors?.source).toBeUndefined();
+  });
+
+  it('rejects a non-ontology source', () => {
+    const err = new Policy({ ...policyBase, source: 'foo' }).validateSync();
+    expect(err?.errors?.source).toBeDefined();
   });
 });

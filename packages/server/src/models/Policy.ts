@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { isNormSource } from '@thearchitect/shared';
 
 export interface IPolicyRule {
   field: string;
@@ -8,7 +9,8 @@ export interface IPolicyRule {
 }
 
 export type PolicyStatus = 'active' | 'draft' | 'deprecated' | 'archived';
-export type PolicySource = 'custom' | 'dora' | 'nis2' | 'togaf' | 'archimate' | 'iso27001';
+/** @deprecated THE-413 (ADR-0004 E6): policy sources validate against NORM_ONTOLOGY.normSources. */
+export type PolicySource = string;
 
 export interface IPolicy extends Document {
   projectId: mongoose.Types.ObjectId;
@@ -66,10 +68,15 @@ const policySchema = new Schema<IPolicy>(
       enum: ['active', 'draft', 'deprecated', 'archived'],
       default: 'active',
     },
+    // THE-413 (ADR-0004 E6): allowed sources are ontology DATA, not an enum.
     source: {
       type: String,
-      enum: ['custom', 'dora', 'nis2', 'togaf', 'archimate', 'iso27001'],
       default: 'custom',
+      validate: {
+        validator: isNormSource,
+        message: (props: { value: string }) =>
+          `source '${props.value}' is not in the norm ontology (add a normSources row in norm-ontology.v1.ts — THE-413)`,
+      },
     },
     scope: {
       domains: [{ type: String }],
