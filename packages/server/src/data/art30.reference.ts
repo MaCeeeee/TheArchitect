@@ -9,7 +9,8 @@
  *   construction once the ingest path (THE-368) exists.
  */
 import { ART30_FULLTEXT } from './art30.seed-data';
-import { buildRegulationKey, computeVersionHash } from '../services/wfcomp/regulationKey';
+import { buildRegulationKey } from '@thearchitect/shared';
+import { computeVersionHash } from '../utils/regulationVersion';
 
 export const ART30_REGULATION_REF = {
   regulationKey: buildRegulationKey('dsgvo', 'Art. 30'),
