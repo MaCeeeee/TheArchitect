@@ -1,7 +1,8 @@
 // ─── Policy Status & Source ───
 
 export type PolicyStatus = 'active' | 'draft' | 'deprecated' | 'archived';
-export type PolicySource = 'custom' | 'dora' | 'nis2' | 'togaf' | 'archimate' | 'iso27001';
+/** @deprecated THE-413 (ADR-0004 E6): policy sources are ontology data; validate writes with `isNormSource()`. */
+export type PolicySource = string;
 
 // ─── Policy Violation ───
 
@@ -59,23 +60,19 @@ export interface PolicyDraft {
 // Foundation für UC-ICM-002 (LLM-Mapping) und UC-ICM-003 (Reverse-Lookup, Heat-Map, Live-Mapping).
 // Linear: THE-275
 
-export type RegulationSource =
-  | 'nis2'        // EU Directive 2022/2555 (Network and Information Security 2)
-  | 'lksg'        // Lieferkettensorgfaltspflichtengesetz (DE)
-  | 'dsgvo'       // Datenschutz-Grundverordnung (EU GDPR + DE BDSG)
-  | 'dora'        // EU Regulation 2022/2554 (Digital Operational Resilience Act)
-  | 'iso27001'    // ISO/IEC 27001 Information Security
-  // EU AI Act (Regulation (EU) 2024/1689) — split per language because the
-  // canonical regulationKey is `source:paragraph`; a shared key would let the
-  // DE crawl overwrite the EN one on upsert (mirrors dsgvo=de / nis2=en pattern).
-  | 'ai-act-en'   // EU Regulation 2024/1689 (Artificial Intelligence Act), English
-  | 'ai-act-de'   // EU Regulation 2024/1689 (KI-Verordnung), German
-  // EU Data Act (Regulation (EU) 2023/2854) — same per-language split.
-  | 'data-act-en' // EU Regulation 2023/2854 (Data Act), English
-  | 'data-act-de' // EU Regulation 2023/2854 (Datenverordnung), German
-  | 'custom';     // User-curated regulations
+/**
+ * @deprecated THE-413 (ADR-0004 E6): sources are ontology data
+ * (`NORM_ONTOLOGY.normSources`), not a closed TS union. Core fields stay
+ * `string`; validate writes with `isNormSource()`; use `NormSourceId` from
+ * the ontology module for authoring/UI autocomplete only.
+ */
+export type RegulationSource = string;
 
-export type RegulationJurisdiction = 'EU' | 'DE' | 'AT' | 'CH';
+/**
+ * @deprecated THE-413 (ADR-0004 E6): jurisdictions are ontology data
+ * (`NORM_ONTOLOGY.jurisdictions`); validate writes with `isJurisdiction()`.
+ */
+export type RegulationJurisdiction = string;
 
 export type RegulationLanguage = 'de' | 'en';
 

@@ -128,6 +128,9 @@ export const NORM_ONTOLOGY = {
     { id: 'dora', label: 'DORA (EU) 2022/2554', jurisdiction: 'EU' },
     { id: 'dsgvo', label: 'GDPR / DSGVO', jurisdiction: 'EU' },
     { id: 'lksg', label: 'Lieferkettensorgfaltspflichtengesetz', jurisdiction: 'DE' },
+    // AI Act / Data Act are split per language (en/de rows) because the canonical
+    // regulationKey is `source:paragraph`; a shared key would let the DE crawl
+    // overwrite the EN one on upsert (mirrors the dsgvo=de / nis2=en pattern).
     { id: 'ai-act-en', label: 'AI Act (EU) 2024/1689 — English', jurisdiction: 'EU' },
     { id: 'ai-act-de', label: 'KI-Verordnung (EU) 2024/1689 — Deutsch', jurisdiction: 'EU' },
     { id: 'data-act-en', label: 'Data Act (EU) 2023/2854 — English', jurisdiction: 'EU' },
