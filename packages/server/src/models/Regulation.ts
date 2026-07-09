@@ -39,11 +39,12 @@ const regulationSchema = new Schema<IRegulation>(
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
     // THE-413 (ADR-0004 E6): allowed sources are ontology DATA, not an enum.
     // A new law = a row in norm-ontology.v1.ts normSources — no edit here.
+    // Validators pass null through (built-in enum parity); presence is required()'s job.
     source: {
       type: String,
       required: true,
       validate: {
-        validator: isNormSource,
+        validator: (v: string | null | undefined) => v == null || isNormSource(v),
         message: (props: { value: string }) =>
           `source '${props.value}' is not in the norm ontology (add a normSources row in norm-ontology.v1.ts — THE-413)`,
       },
@@ -52,7 +53,7 @@ const regulationSchema = new Schema<IRegulation>(
       type: String,
       required: true,
       validate: {
-        validator: isJurisdiction,
+        validator: (v: string | null | undefined) => v == null || isJurisdiction(v),
         message: (props: { value: string }) =>
           `jurisdiction '${props.value}' is not in the norm ontology`,
       },

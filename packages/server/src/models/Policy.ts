@@ -69,11 +69,12 @@ const policySchema = new Schema<IPolicy>(
       default: 'active',
     },
     // THE-413 (ADR-0004 E6): allowed sources are ontology DATA, not an enum.
+    // Validator passes null through (built-in enum parity); presence is required()'s job.
     source: {
       type: String,
       default: 'custom',
       validate: {
-        validator: isNormSource,
+        validator: (v: string | null | undefined) => v == null || isNormSource(v),
         message: (props: { value: string }) =>
           `source '${props.value}' is not in the norm ontology (add a normSources row in norm-ontology.v1.ts — THE-413)`,
       },

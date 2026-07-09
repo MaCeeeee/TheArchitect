@@ -596,8 +596,8 @@ router.post(
           name: draft.name,
           description: draft.description || '',
           category: 'compliance' as const,
-          // Policy schema enum is ['custom', 'dora', 'nis2', 'togaf', 'archimate', 'iso27001'].
-          // Standards uploaded by users (e.g. ESRS-1) are not in the enum, so we
+          // Policy.source validates against NORM_ONTOLOGY.normSources (THE-413); default 'custom'.
+          // Standards uploaded by users (e.g. ESRS-1) are not in the ontology, so we
           // store them as 'custom' and keep the actual standard id on standardId
           // + sourceSectionNumber for traceability.
           framework: 'custom' as const,

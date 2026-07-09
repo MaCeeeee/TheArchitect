@@ -41,6 +41,11 @@ describe('Regulation.source is ontology-driven (THE-413)', () => {
     const err = new Regulation({ ...base, source: 'dsgvo', jurisdiction: 'eu' }).validateSync();
     expect(err?.errors?.jurisdiction).toBeDefined();
   });
+
+  it('null source is still rejected — by required, not by the ontology validator', () => {
+    const err = new Regulation({ ...base, source: null }).validateSync();
+    expect(err?.errors?.source).toBeDefined();
+  });
 });
 
 describe('Policy.source is ontology-driven (THE-413)', () => {
@@ -60,5 +65,10 @@ describe('Policy.source is ontology-driven (THE-413)', () => {
   it('rejects a non-ontology source', () => {
     const err = new Policy({ ...policyBase, source: 'foo' }).validateSync();
     expect(err?.errors?.source).toBeDefined();
+  });
+
+  it("null source passes the validator (enum parity) — presence is required()'s job", () => {
+    const err = new Policy({ ...policyBase, source: null }).validateSync();
+    expect(err?.errors?.source).toBeUndefined();
   });
 });
