@@ -33,8 +33,14 @@ export default function ComplianceProgressChart({ projectId, standardId }: Compl
     setCapturing(false);
   };
 
-  const actual = snapshots.filter((s) => s.type === 'actual').slice().reverse();
-  const projected = snapshots.filter((s) => s.type === 'projected').sort((a, b) => (a.waveNumber ?? 0) - (b.waveNumber ?? 0));
+  // THE-437: clamp coverage to 100 for legacy snapshots stored before the
+  // source-side cap (mapping-count numerator over section-count denominator could
+  // exceed 100). New snapshots are already capped; this heals historical data so
+  // the line/points/labels never overflow the plot.
+  const clampCoverage = <T extends { standardCoverageScore: number }>(s: T): T =>
+    ({ ...s, standardCoverageScore: Math.min(100, s.standardCoverageScore) });
+  const actual = snapshots.filter((s) => s.type === 'actual').slice().reverse().map(clampCoverage);
+  const projected = snapshots.filter((s) => s.type === 'projected').sort((a, b) => (a.waveNumber ?? 0) - (b.waveNumber ?? 0)).map(clampCoverage);
 
   // Chart dimensions
   const W = 480;

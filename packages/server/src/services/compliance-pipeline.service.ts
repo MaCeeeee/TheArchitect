@@ -299,8 +299,13 @@ export async function captureComplianceSnapshot(
     }
   }
 
+  // THE-437: cap at 100. `total` counts sections while compliant/partial count
+  // mappings; a section mapped to N elements yields N mappings, so the raw ratio
+  // can exceed 1 (observed 629%). Every display site already caps (CoverageRing,
+  // getPortfolioOverview) — cap at the source too so stored snapshots and the
+  // progress chart (which divides by 100) never overflow.
   const coverageScore = totalSections > 0
-    ? Math.round(((compliantSections + partialSections * 0.5) / totalSections) * 100)
+    ? Math.min(100, Math.round(((compliantSections + partialSections * 0.5) / totalSections) * 100))
     : 0;
 
   // Get policy compliance score

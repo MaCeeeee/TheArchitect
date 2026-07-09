@@ -232,6 +232,24 @@ describe('pipeline over norm facade (THE-390 P2)', () => {
     expect(snap.standardCoverageScore).toBe(50);
   });
 
+  it('caps standardCoverageScore at 100 when a section carries multiple mappings (THE-437)', async () => {
+    // Der Zähler zählt Mappings (compliant/partial), der Nenner zählt Sections.
+    // Eine Section, die auf N Elemente gemappt ist, erzeugt N confirmed Mappings →
+    // Roh-Ratio > 1. Vor dem Fix speicherte der Snapshot 300 % (beobachtet: 629 %),
+    // die Sidebar-/Progress-Anzeige lief über den Plot hinaus.
+    await seedCorpus('dsgvo:art-5', 'Grundsätze');
+    await corpusMapping(projectId, 'dsgvo:art-5', 'el-1', 'confirmed');
+    await corpusMapping(projectId, 'dsgvo:art-5', 'el-2', 'confirmed');
+    await corpusMapping(projectId, 'dsgvo:art-5', 'el-3', 'confirmed');
+
+    const snap = await captureComplianceSnapshot(projectId.toString(), 'corpus:dsgvo');
+
+    expect(snap.totalSections).toBe(1);
+    expect(snap.compliantSections).toBe(3); // Mapping-Count, nicht Section-Count
+    // Roh wäre round(3 / 1 * 100) = 300 %; gecappt auf 100.
+    expect(snap.standardCoverageScore).toBe(100);
+  });
+
   it('finds corpus policies persisted under the pipeline anchor (approve-policies contract)', async () => {
     // Die approve-policies-Route persistiert Policy.standardId (ObjectId) für eine
     // Korpus-Norm über derivePipelineAnchorId(workId). refreshPolicyStats zählt über

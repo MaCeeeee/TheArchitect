@@ -499,7 +499,7 @@ function CompliancePanel() {
               <>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
-                    <div className="text-lg font-bold text-[#7c3aed]">{latestSnapshot.standardCoverageScore}%</div>
+                    <div className="text-lg font-bold text-[#7c3aed]">{Math.min(100, latestSnapshot.standardCoverageScore)}%</div>
                     <div className="text-[10px] text-[var(--text-tertiary)]">Coverage</div>
                   </div>
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
@@ -792,7 +792,7 @@ function CompliancePanel() {
               <>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
-                    <div className="text-lg font-bold text-[#7c3aed]">{latestSnapshot.standardCoverageScore}%</div>
+                    <div className="text-lg font-bold text-[#7c3aed]">{Math.min(100, latestSnapshot.standardCoverageScore)}%</div>
                     <div className="text-[10px] text-[var(--text-tertiary)]">Coverage</div>
                   </div>
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2.5 text-center">
