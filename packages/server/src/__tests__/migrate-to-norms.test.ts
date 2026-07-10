@@ -17,7 +17,7 @@ import {
   type ICorpusRegulation,
 } from '../services/corpusClient.service';
 import { resetFallbackStats } from '../services/regulationResolver.service';
-import { runNormMigration } from '../scripts/migrate-to-norms';
+import { runNormMigration, findOffOntologyValues } from '../scripts/migrate-to-norms';
 
 let CorpusReg: Model<ICorpusRegulation>;
 
@@ -156,5 +156,77 @@ describe('migrate-to-norms (THE-390 P4a)', () => {
     expect(second.requirementsTotal).toBe(0);
     expect(second.requirementsBackfilled).toBe(0);
     expect(await Norm.countDocuments({ projectId })).toBe(2); // Upserts, keine Duplikate
+  });
+
+  it('continues past a validation failure and reports it (THE-417 review)', async () => {
+    // Korpus-Schema validiert jurisdiction NICHT — ein off-ontology Wert fließt
+    // durch die Facade in upsertNormDoc, wo runValidators ihn jetzt ablehnt.
+    // Der Lauf darf daran nicht sterben: Fehler sammeln, Rest materialisieren.
+    await upsertCorpusRegulation({
+      regulationKey: 'nis2:art-21',
+      versionHash: 'g'.repeat(64),
+      source: 'nis2',
+      jurisdiction: 'Germany', // pre-THE-413 user-typed legacy value
+      paragraphNumber: 'art-21',
+      title: 'Maßnahmen',
+      fullText: 'z'.repeat(60),
+      sourceUrl: 'https://example',
+      effectiveFrom: new Date('2023-01-16'),
+      language: 'en',
+      version: 1,
+      crawledAt: new Date(),
+    } as Parameters<typeof upsertCorpusRegulation>[0]);
+    await ComplianceMapping.create({
+      projectId,
+      regulationId: new mongoose.Types.ObjectId(),
+      regulationKey: 'nis2:art-21',
+      regulationVersionHash: 'g'.repeat(64),
+      elementId: 'el-2',
+      elementType: 'application',
+      confidence: 0.9,
+      reasoning: 'r',
+      status: 'auto',
+      createdBy: 'llm',
+    });
+
+    const report = await runNormMigration({ apply: true });
+
+    // Die kaputte Norm ist gemeldet, nicht fatal …
+    expect(report.normFailures).toHaveLength(1);
+    expect(report.normFailures[0]).toMatchObject({
+      projectId: projectId.toString(),
+      workId: 'corpus:nis2',
+    });
+    expect(report.normFailures[0].error).toMatch(/ontology/);
+    // … und der Rest des Projekts wurde trotzdem materialisiert + backfilled.
+    expect(report.normsMaterialized).toBe(2); // Standard + dsgvo
+    expect(await Norm.countDocuments({ projectId })).toBe(2);
+    expect(await Norm.countDocuments({ projectId, workId: 'corpus:nis2' })).toBe(0);
+    expect(report.requirementsBackfilled).toBe(1);
+  });
+
+  it('pre-check finds off-ontology jurisdiction/language values in the app-DB (THE-417 review)', async () => {
+    // Fixture-Bestand (DE/de) ist sauber.
+    expect(await findOffOntologyValues()).toEqual({ jurisdictions: [], languages: [] });
+
+    // Pre-THE-413 Legacy-Doc: raw insert am Mongoose-Validator vorbei —
+    // exakt so liegen alte Prod-Docs in der Collection.
+    await Regulation.collection.insertOne({
+      projectId,
+      source: 'dsgvo',
+      jurisdiction: 'European Union', // user-typed, nicht 'EU'
+      paragraphNumber: 'Art. 99',
+      title: 'Legacy',
+      fullText: 'w'.repeat(60),
+      sourceUrl: 'https://example',
+      effectiveFrom: new Date('2018-05-25'),
+      language: 'fr', // nicht in der languages-Facette
+      version: 1,
+    });
+
+    expect(await findOffOntologyValues()).toEqual({
+      jurisdictions: ['European Union'],
+      languages: ['fr'],
+    });
   });
 });

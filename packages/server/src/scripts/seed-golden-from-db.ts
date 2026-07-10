@@ -202,7 +202,10 @@ async function collectGroups(projectId?: string): Promise<RegulationGroupInput[]
       paragraphNumber: reg.paragraphNumber,
       title: reg.title,
       fullText: reg.fullText,
-      language: reg.language,
+      // THE-417: Regulation.language widened to ontology `string`; this eval-seeding
+      // script stays scoped to the eval harness's de/en world (untouched by design —
+      // see plan reconciliation on evals/goldenSet.ts z.enum).
+      language: reg.language as 'de' | 'en',
       jurisdiction: reg.jurisdiction,
       candidates,
       confirmedElementIds: entry.confirmed,

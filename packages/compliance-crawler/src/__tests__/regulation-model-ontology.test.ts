@@ -6,7 +6,7 @@
  * (Server B), matching the server-side Regulation model (THE-413).
  */
 import { Regulation } from '../db/regulation.model';
-import { NORM_SOURCE_IDS } from '@thearchitect/shared';
+import { NORM_SOURCE_IDS, LANGUAGE_IDS, NORM_ONTOLOGY } from '@thearchitect/shared';
 
 const base = {
   regulationKey: 'dsgvo:art-1',
@@ -41,4 +41,29 @@ describe('crawler Regulation.source is ontology-driven (THE-413)', () => {
     const err = new Regulation({ ...base, source: null }).validateSync();
     expect(err?.errors?.source).toBeDefined();
   });
+});
+
+describe('Regulation.language is ontology-driven (THE-417)', () => {
+  it.each(LANGUAGE_IDS)('accepts ontology language "%s"', (language) => {
+    const err = new Regulation({ ...base, source: 'dsgvo', language }).validateSync();
+    expect(err?.errors?.language).toBeUndefined();
+  });
+  it('rejects a language missing from the ontology', () => {
+    const err = new Regulation({ ...base, source: 'dsgvo', language: 'fr' }).validateSync();
+    expect(err?.errors?.language).toBeDefined();
+  });
+  it('null language still rejected — by required, not the validator', () => {
+    const err = new Regulation({ ...base, source: 'dsgvo', language: null }).validateSync();
+    expect(err?.errors?.language).toBeDefined();
+  });
+});
+
+it('Regulation accepts + keeps the ontologyVersion stamp (THE-417 AC-2)', () => {
+  const doc = new Regulation({
+    ...base,
+    source: 'dsgvo',
+    ontologyVersion: NORM_ONTOLOGY.ontologyVersion,
+  });
+  expect(doc.validateSync()?.errors?.ontologyVersion).toBeUndefined();
+  expect(doc.ontologyVersion).toBe('1.2.0');
 });

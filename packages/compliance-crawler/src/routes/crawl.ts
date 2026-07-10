@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
 import { getSourceEntry } from '../sources/source-registry';
-import { isNormSource } from '@thearchitect/shared';
+import { isNormSource, NORM_ONTOLOGY } from '@thearchitect/shared';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
 import { requireCrawlerToken } from '../lib/requireToken';
@@ -82,6 +82,7 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
                 versionHash,
                 crawledAt: new Date(),
                 provenance: { adapter: entry.adapter, format: entry.format, fetchedAt, sourceUri: p.sourceUrl },
+                ontologyVersion: NORM_ONTOLOGY.ontologyVersion,
               },
               $setOnInsert: { version: 1 },
             },

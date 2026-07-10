@@ -4,7 +4,7 @@ import type {
   RegulationJurisdiction,
   RegulationLanguage,
 } from '@thearchitect/shared';
-import { isNormSource, isJurisdiction } from '@thearchitect/shared';
+import { isNormSource, isJurisdiction, isLanguage } from '@thearchitect/shared';
 
 /**
  * Regulation — strukturierte Gesetzes-Paragraphen für Industrial Compliance Mapping.
@@ -31,6 +31,8 @@ export interface IRegulation extends Document {
   crawledAt: Date;
   version: number;
   provenance?: IRegulationProvenance;
+  /** THE-417 AC-2: the NORM_ONTOLOGY version that validated this write. Optional — existing docs predate the stamp. */
+  ontologyVersion?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -86,7 +88,15 @@ const regulationSchema = new Schema<IRegulation>(
     sourceUrl: { type: String, required: true, trim: true },
     effectiveFrom: { type: Date, required: true },
     effectiveUntil: { type: Date },
-    language: { type: String, enum: ['de', 'en'], required: true },
+    language: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isLanguage(v),
+        message: (props: { value: string }) =>
+          `language '${props.value}' is not in the norm ontology (add a languages row in norm-ontology.v1.ts — THE-417)`,
+      },
+    },
     embedding: {
       type: [Number],
       default: undefined,
@@ -107,6 +117,7 @@ const regulationSchema = new Schema<IRegulation>(
       }, { _id: false }),
       required: false,
     },
+    ontologyVersion: { type: String, trim: true },
   },
   { timestamps: true }
 );

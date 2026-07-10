@@ -14,6 +14,9 @@ import {
   exportForOntoLearner,
   isNormSource,
   isJurisdiction,
+  LANGUAGE_IDS,
+  isLanguage,
+  isNormKind,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -85,7 +88,7 @@ describe('source registry (THE-413)', () => {
   });
 
   it('bumped ontologyVersion for the additive rows', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.1.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.2.0');
   });
 
   it('isNormSource accepts ontology rows, rejects everything else', () => {
@@ -99,5 +102,29 @@ describe('source registry (THE-413)', () => {
     expect(isJurisdiction('EU')).toBe(true);
     expect(isJurisdiction('CH')).toBe(true);
     expect(isJurisdiction('XX')).toBe(false);
+  });
+});
+
+describe('languages facet + kind coverage (THE-417)', () => {
+  it('languages facet covers the legacy RegulationLanguage values', () => {
+    expect(LANGUAGE_IDS).toEqual(expect.arrayContaining(['de', 'en']));
+  });
+  it('isLanguage: membership + exact-case', () => {
+    expect(isLanguage('de')).toBe(true);
+    expect(isLanguage('en')).toBe(true);
+    expect(isLanguage('fr')).toBe(false);
+    expect(isLanguage('DE')).toBe(false);
+    expect(isLanguage('')).toBe(false);
+  });
+  it('every kind the norm facade produces is an ontology normKind', () => {
+    // kindFromStandardType produces: technical_standard/framework/custom/…;
+    // kindFromCorpusSource produces: technical_standard/legislation.
+    for (const k of ['legislation', 'technical_standard', 'framework', 'custom']) {
+      expect(NORM_KIND_IDS).toContain(k);
+      expect(isNormKind(k)).toBe(true);
+    }
+  });
+  it('bumped to 1.2.0', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.2.0');
   });
 });

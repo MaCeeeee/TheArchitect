@@ -51,6 +51,7 @@ export const NormOntologySchema = z.object({
   partyRoles: z.array(PartyRoleEntry).min(1),
   maturityScales: z.array(MaturityScaleEntry).min(1),
   jurisdictions: z.array(JurisdictionEntry).min(1),
+  languages: z.array(IdLabel).min(1),
   assuranceSchemes: z.array(AssuranceSchemeEntry).min(1),
   normSources: z.array(NormSourceEntry).min(1),
 });
@@ -75,6 +76,7 @@ export function assertOntologyValid(ontology: unknown = NORM_ONTOLOGY): void {
     ['relationTypes', o.relationTypes.map((x) => x.id)],
     ['partyRoles', o.partyRoles.map((x) => x.id)],
     ['jurisdictions', o.jurisdictions.map((x) => x.id)],
+    ['languages', o.languages.map((x) => x.id)],
     ['assuranceSchemes', o.assuranceSchemes.map((x) => x.id)],
     ['normSources', o.normSources.map((x) => x.id)],
   ];
@@ -112,12 +114,14 @@ const bindingIds = NORM_ONTOLOGY.bindingness.map((b) => b.id);
 const relationIds = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 const partyRoleIds = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
 const sourceIds = NORM_ONTOLOGY.normSources.map((s) => s.id);
+const languageIds = NORM_ONTOLOGY.languages.map((l) => l.id);
 
 export const NormKindSchema = makeMemberSchema(kindIds, 'normKinds');
 export const BindingnessSchema = makeMemberSchema(bindingIds, 'bindingness');
 export const RelationTypeSchema = makeMemberSchema(relationIds, 'relationTypes');
 export const PartyRoleSchema = makeMemberSchema(partyRoleIds, 'partyRoles');
 export const NormSourceSchema = makeMemberSchema(sourceIds, 'normSources');
+export const LanguageSchema = makeMemberSchema(languageIds, 'languages');
 
 /**
  * Only relation types the LLM path may PROPOSE (derivation === 'inferred').

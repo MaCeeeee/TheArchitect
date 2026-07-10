@@ -22,6 +22,7 @@ export {
   RelationTypeSchema,
   PartyRoleSchema,
   NormSourceSchema,
+  LanguageSchema,
   isInferredRelation,
 } from './norm-ontology.schema';
 
@@ -32,14 +33,19 @@ export const RELATION_TYPE_IDS = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 export const PARTY_ROLE_IDS = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
 export const NORM_SOURCE_IDS = NORM_ONTOLOGY.normSources.map((s) => s.id);
 export const JURISDICTION_IDS = NORM_ONTOLOGY.jurisdictions.map((j) => j.id);
+export const LANGUAGE_IDS = NORM_ONTOLOGY.languages.map((l) => l.id);
 
 // ─── O(1) write-boundary membership checks (THE-413) ─────────────────
 // Mongoose validators + route gates call these instead of hand-maintained
 // enum arrays. New source/jurisdiction = ontology data row, nothing else.
 const NORM_SOURCE_ID_SET = new Set<string>(NORM_SOURCE_IDS);
 const JURISDICTION_ID_SET = new Set<string>(JURISDICTION_IDS);
+const LANGUAGE_ID_SET = new Set<string>(LANGUAGE_IDS);
+const NORM_KIND_ID_SET = new Set<string>(NORM_KIND_IDS);
 export const isNormSource = (v: string): boolean => NORM_SOURCE_ID_SET.has(v);
 export const isJurisdiction = (v: string): boolean => JURISDICTION_ID_SET.has(v);
+export const isLanguage = (v: string): boolean => LANGUAGE_ID_SET.has(v);
+export const isNormKind = (v: string): boolean => NORM_KIND_ID_SET.has(v);
 
 // ─── Derived convenience literal unions (authoring/UI only) ──────────
 export type NormKindId = (typeof NORM_ONTOLOGY.normKinds)[number]['id'];
@@ -48,6 +54,7 @@ export type RelationTypeId = (typeof NORM_ONTOLOGY.relationTypes)[number]['id'];
 export type PartyRoleId = (typeof NORM_ONTOLOGY.partyRoles)[number]['id'];
 export type NormSourceId = (typeof NORM_ONTOLOGY.normSources)[number]['id'];
 export type JurisdictionId = (typeof NORM_ONTOLOGY.jurisdictions)[number]['id'];
+export type LanguageId = (typeof NORM_ONTOLOGY.languages)[number]['id'];
 
 // ─── OntoLearner export (THE-429 AC-3) ──────────────────────────────
 

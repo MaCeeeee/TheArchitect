@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import type { AliasScheme, FrbrLevel, NormSource } from '@thearchitect/shared';
+import { isNormKind, isJurisdiction } from '@thearchitect/shared';
 
 /**
  * Norm — kanonische, quellenagnostische Entität für eine externe Vorgabe
@@ -105,8 +106,24 @@ const normSchema = new Schema<INorm>(
     source: { type: String, enum: ['upload', 'corpus'], required: true },
     title: { type: String, required: true, trim: true },
     version: { type: String, trim: true },
-    jurisdiction: { type: String, trim: true },
-    kind: { type: String, trim: true },
+    jurisdiction: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isJurisdiction(v),
+        message: (props: { value: string }) =>
+          `jurisdiction '${props.value}' is not in the norm ontology`,
+      },
+    },
+    kind: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isNormKind(v),
+        message: (props: { value: string }) =>
+          `kind '${props.value}' is not in the norm ontology (add a normKinds row in norm-ontology.v1.ts — THE-417)`,
+      },
+    },
     corpusRef: {
       type: new Schema(
         {
