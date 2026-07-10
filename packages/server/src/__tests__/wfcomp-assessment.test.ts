@@ -4,7 +4,8 @@
 import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { buildRegulationKey, computeVersionHash, normaliseParagraph } from '../services/wfcomp/regulationKey';
+import { buildRegulationKey, normaliseParagraph } from '@thearchitect/shared';
+import { computeVersionHash } from '../utils/regulationVersion';
 import { ART30_REGULATION_REF } from '../data/art30.reference';
 import { ART30_FULLTEXT } from '../data/art30.seed-data';
 import { WfcompAssessment } from '../models/WfcompAssessment';

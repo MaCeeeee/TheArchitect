@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.0.0',
-  updatedAt: '2026-07-07',
+  ontologyVersion: '1.1.0',
+  updatedAt: '2026-07-09',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -128,11 +128,18 @@ export const NORM_ONTOLOGY = {
     { id: 'dora', label: 'DORA (EU) 2022/2554', jurisdiction: 'EU' },
     { id: 'dsgvo', label: 'GDPR / DSGVO', jurisdiction: 'EU' },
     { id: 'lksg', label: 'Lieferkettensorgfaltspflichtengesetz', jurisdiction: 'DE' },
+    // AI Act / Data Act are split per language (en/de rows) because the canonical
+    // regulationKey is `source:paragraph`; a shared key would let the DE crawl
+    // overwrite the EN one on upsert (mirrors the dsgvo=de / nis2=en pattern).
     { id: 'ai-act-en', label: 'AI Act (EU) 2024/1689 — English', jurisdiction: 'EU' },
     { id: 'ai-act-de', label: 'KI-Verordnung (EU) 2024/1689 — Deutsch', jurisdiction: 'EU' },
     { id: 'data-act-en', label: 'Data Act (EU) 2023/2854 — English', jurisdiction: 'EU' },
     { id: 'data-act-de', label: 'Datenverordnung (EU) 2023/2854 — Deutsch', jurisdiction: 'EU' },
     { id: 'iso27001', label: 'ISO/IEC 27001' },
+    // THE-413: PolicySource collapse — modeling-framework sources become data
+    // rows so Policy.source validates against the same registry as regulations.
+    { id: 'togaf', label: 'TOGAF Standard (The Open Group)' },
+    { id: 'archimate', label: 'ArchiMate Specification (The Open Group)' },
     { id: 'custom', label: 'User-curated' },
   ],
 } as const;

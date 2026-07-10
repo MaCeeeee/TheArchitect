@@ -224,6 +224,27 @@ describe('Regulations Routes (UC-ICM-001 / THE-272)', () => {
       expect(res.status).toBe(400);
     });
 
+    it('accepts an ontology source beyond the legacy six (THE-413 / THE-396 fix)', async () => {
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            results: [{ source: 'ai-act-en', inserted: 3, updated: 0, embedded: 3, embedErrors: 0, skipped: 0 }],
+            errors: [],
+            embeddingEnabled: true,
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/regulations/crawl`)
+        .send({ sources: ['ai-act-en'] });
+
+      // Must clear the source gate — not the 400 the legacy six-value list used to return.
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+    });
+
     it('rejects empty sources array', async () => {
       const res = await request(app)
         .post(`/api/projects/${PROJECT_ID}/regulations/crawl`)

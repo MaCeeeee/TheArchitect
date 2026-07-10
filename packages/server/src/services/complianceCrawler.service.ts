@@ -18,18 +18,11 @@ export class CrawlerUnreachableError extends Error {
   }
 }
 
-export type RegulationSourceKey =
-  | 'nis2'
-  | 'lksg'
-  | 'dsgvo'
-  | 'dora'
-  | 'iso27001'
-  | 'custom';
-
 export interface CrawlRequest {
   /** Optional — the corpus is project-independent (ADR-0001); the crawler ignores it. */
   projectId?: string;
-  sources: RegulationSourceKey[];
+  /** Ontology-validated at the route/scheduler gate (THE-413). */
+  sources: string[];
   skipEmbedding?: boolean;
 }
 
