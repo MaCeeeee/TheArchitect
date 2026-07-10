@@ -74,7 +74,13 @@ export type RegulationSource = string;
  */
 export type RegulationJurisdiction = string;
 
-export type RegulationLanguage = 'de' | 'en';
+/**
+ * @deprecated THE-417 (ADR-0004 E6): languages are ontology data
+ * (`NORM_ONTOLOGY.languages`), not a closed TS union. Core fields stay
+ * `string`; validate writes with `isLanguage()`; use `LanguageId` from
+ * the ontology module for authoring/UI autocomplete only.
+ */
+export type RegulationLanguage = string;
 
 export interface RegulationDTO {
   _id: string;

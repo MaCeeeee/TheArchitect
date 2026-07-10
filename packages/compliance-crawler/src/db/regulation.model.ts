@@ -15,7 +15,7 @@ import type {
   RegulationJurisdiction,
   RegulationLanguage,
 } from '@thearchitect/shared';
-import { isNormSource, isJurisdiction } from '@thearchitect/shared';
+import { isNormSource, isJurisdiction, isLanguage } from '@thearchitect/shared';
 import type { Provenance } from '../sources/types';
 
 export interface IRegulation extends Document {
@@ -87,7 +87,15 @@ const regulationSchema = new Schema<IRegulation>(
     sourceUrl: { type: String, required: true, trim: true },
     effectiveFrom: { type: Date, required: true },
     effectiveUntil: { type: Date },
-    language: { type: String, enum: ['de', 'en'], required: true },
+    language: {
+      type: String,
+      required: true,
+      validate: {
+        validator: (v: string | null | undefined) => v == null || isLanguage(v),
+        message: (props: { value: string }) =>
+          `language '${props.value}' is not in the norm ontology (add a languages row in norm-ontology.v1.ts — THE-417)`,
+      },
+    },
     embedding: {
       type: [Number],
       default: undefined,

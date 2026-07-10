@@ -103,8 +103,8 @@ export const NORM_ONTOLOGY = {
 
   /**
    * THE-417 (DELTA-4): expression languages as data — collapse target for the
-   * closed RegulationLanguage TS union + the `enum: ['de','en']` model fields.
-   * A new corpus language = a row here, no code edit.
+   * closed RegulationLanguage TS union + the Mongoose `enum:` de/en model
+   * fields. A new corpus language = a row here, no code edit.
    */
   languages: [
     { id: 'de', label: 'Deutsch' },
