@@ -42,6 +42,8 @@ export interface IRegulation extends Document {
   crawledAt: Date;
   version: number;
   provenance?: Provenance;
+  /** THE-417 AC-2: the NORM_ONTOLOGY version that validated this write. Optional — existing docs predate the stamp. */
+  ontologyVersion?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -116,6 +118,7 @@ const regulationSchema = new Schema<IRegulation>(
       }, { _id: false }),
       required: false,
     },
+    ontologyVersion: { type: String, trim: true },
   },
   { timestamps: true }
 );
