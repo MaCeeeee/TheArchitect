@@ -28,3 +28,7 @@ Initial ontology. Seeds the E6/E7/E8-R5 vocabularies from ADR-0004:
 
 ## 1.1.0 — 2026-07-09 (THE-413)
 - normSources: + `togaf`, + `archimate` (PolicySource enum collapse; The Open Group framework sources become registry data). Additive — no id changed or removed.
+
+## 1.2.0 — 2026-07-10 (THE-417)
+- **languages** (2, new facet): `de`, `en` — collapse target for the closed `RegulationLanguage` TS union + the `enum: ['de','en']` model fields (Regulation, crawler Regulation).
+- normKinds: + `framework`, + `custom` — the two kinds `kindFromStandardType` (norm.service.ts) already produces for upload-world norms that were missing from the ontology. Additive — no id changed or removed.

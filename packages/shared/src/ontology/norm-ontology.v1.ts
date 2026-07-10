@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.1.0',
-  updatedAt: '2026-07-09',
+  ontologyVersion: '1.2.0',
+  updatedAt: '2026-07-10',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -28,6 +28,10 @@ export const NORM_ONTOLOGY = {
     { id: 'trust_framework', label: 'Trust Framework', bindingnessDefault: 'voluntary-de-facto' },
     { id: 'court_decision', label: 'Court Decision', bindingnessDefault: 'binding' },
     { id: 'executive_order', label: 'Executive Order', bindingnessDefault: 'binding-for-agencies' },
+    // THE-417: kinds the norm facade already produces for upload-world norms
+    // (kindFromStandardType) — data rows, not code special-cases.
+    { id: 'framework', label: 'Architecture/Management Framework', bindingnessDefault: 'voluntary-de-facto' },
+    { id: 'custom', label: 'User-curated / Custom', bindingnessDefault: 'voluntary-de-facto' },
   ],
 
   /** E6 — how binding a norm is (orthogonal to kind). */
@@ -95,6 +99,16 @@ export const NORM_ONTOLOGY = {
     { id: 'DE', label: 'Germany', lifecycle: ['referentenentwurf', 'regierungsentwurf', 'verkuendet', 'in_force', 'aufgehoben'] },
     { id: 'AT', label: 'Austria', lifecycle: ['entwurf', 'beschlossen', 'in_force', 'aufgehoben'] },
     { id: 'CH', label: 'Switzerland', lifecycle: ['consultation', 'adopted', 'referendum_passed', 'validated', 'in_force', 'repealed'] },
+  ],
+
+  /**
+   * THE-417 (DELTA-4): expression languages as data — collapse target for the
+   * closed RegulationLanguage TS union + the `enum: ['de','en']` model fields.
+   * A new corpus language = a row here, no code edit.
+   */
+  languages: [
+    { id: 'de', label: 'Deutsch' },
+    { id: 'en', label: 'English' },
   ],
 
   /**
