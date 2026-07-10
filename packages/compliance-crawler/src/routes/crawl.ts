@@ -2,103 +2,25 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
-import {
-  nis2EurLexSource,
-  dsgvoEurLexSource,
-  aiActEurLexSource,
-  dataActEurLexSource,
-} from '../sources/eur-lex';
-import {
-  nis2FirecrawlSource,
-  dsgvoFirecrawlSource,
-  aiActFirecrawlSource,
-  dataActFirecrawlSource,
-} from '../sources/firecrawl';
-import { lksgSource } from '../sources/gesetze-im-internet';
-import type { SourceParser } from '../sources/types';
-import type { RegulationSource } from '@thearchitect/shared';
+import { resolveSourceParser, getSourceEntry } from '../sources/source-registry';
+import { isNormSource } from '@thearchitect/shared';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
 import { requireCrawlerToken } from '../lib/requireToken';
 
-const CrawlBodySchema = z.object({
+export const CrawlBodySchema = z.object({
   /**
    * Legacy/optional. The canonical corpus is project-independent (ADR-0001);
    * accepted for backward compat but no longer scopes the written records.
    */
   projectId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'projectId must be a valid ObjectId hex').optional(),
   sources: z
-    .array(
-      z.enum([
-        'nis2',
-        'lksg',
-        'dsgvo',
-        'dora',
-        'iso27001',
-        'ai-act-en',
-        'ai-act-de',
-        'data-act-en',
-        'data-act-de',
-        'custom',
-      ])
-    )
+    .array(z.string().refine(isNormSource, { message: 'source not in norm ontology' }))
     .min(1)
     .max(12), // bound the array — a request can't fan out into unlimited source crawls (security review)
   /** Skip the embedding step entirely (useful for fast re-crawls / debugging) */
   skipEmbedding: z.boolean().default(false),
 });
-
-/**
- * Source factory registry. Each entry returns a fresh `SourceParser` instance.
- * Add new sources here when adding new parsers (no further wiring needed).
- *
- * nis2 + dsgvo prefer Firecrawl (handles AWS WAF on EUR-Lex). Falls back to
- * direct cheerio if no FIRECRAWL_API_KEY (will fail in production due to WAF,
- * but tests using EurLexSource against fixtures still work).
- */
-function buildSourceRegistry(): Partial<Record<RegulationSource, () => SourceParser>> {
-  const firecrawlKey = config.FIRECRAWL_API_KEY;
-  const firecrawlUrl = config.FIRECRAWL_API_URL || undefined;
-  return {
-    nis2: () =>
-      firecrawlKey
-        ? nis2FirecrawlSource({
-            apiKey: firecrawlKey,
-            apiUrl: firecrawlUrl,
-            articleNumbers: [20, 21, 22, 23, 24],
-          })
-        : nis2EurLexSource({ articleNumbers: [20, 21, 22, 23, 24] }),
-    dsgvo: () =>
-      firecrawlKey
-        ? dsgvoFirecrawlSource({
-            apiKey: firecrawlKey,
-            apiUrl: firecrawlUrl,
-            articleNumbers: [5, 6, 9, 32],
-          })
-        : dsgvoEurLexSource({ articleNumbers: [5, 6, 9, 32] }),
-    lksg: () => lksgSource({ paragraphNumbers: [3, 4, 5, 6, 7, 8, 9] }),
-    // AI Act (EU 2024/1689) + Data Act (EU 2023/2854): full-act crawl (no article
-    // filter), one source key per language. Firecrawl preferred (EUR-Lex WAF).
-    'ai-act-en': () =>
-      firecrawlKey
-        ? aiActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'en' })
-        : aiActEurLexSource({ language: 'en' }),
-    'ai-act-de': () =>
-      firecrawlKey
-        ? aiActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'de' })
-        : aiActEurLexSource({ language: 'de' }),
-    'data-act-en': () =>
-      firecrawlKey
-        ? dataActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'en' })
-        : dataActEurLexSource({ language: 'en' }),
-    'data-act-de': () =>
-      firecrawlKey
-        ? dataActFirecrawlSource({ apiKey: firecrawlKey, apiUrl: firecrawlUrl, language: 'de' })
-        : dataActEurLexSource({ language: 'de' }),
-  };
-}
-
-const SOURCE_REGISTRY = buildSourceRegistry();
 
 export async function crawlRoutes(app: FastifyInstance): Promise<void> {
   app.post('/crawl', { preHandler: requireCrawlerToken }, async (request, reply) => {
@@ -128,14 +50,16 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
     const errors: Array<{ source: string; message: string }> = [];
 
     for (const sourceKey of sources) {
-      const factory = SOURCE_REGISTRY[sourceKey];
-      if (!factory) {
+      const parser = resolveSourceParser(sourceKey, {
+        firecrawlKey: config.FIRECRAWL_API_KEY,
+        firecrawlUrl: config.FIRECRAWL_API_URL || undefined,
+      });
+      if (!parser) {
         errors.push({ source: sourceKey, message: 'source not yet implemented' });
         continue;
       }
 
       try {
-        const parser = factory();
         const parsed = await parser.crawl();
 
         let inserted = 0;
