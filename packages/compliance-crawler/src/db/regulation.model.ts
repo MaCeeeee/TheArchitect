@@ -16,6 +16,7 @@ import type {
   RegulationLanguage,
 } from '@thearchitect/shared';
 import { isNormSource, isJurisdiction } from '@thearchitect/shared';
+import type { Provenance } from '../sources/types';
 
 export interface IRegulation extends Document {
   /** Stable, project-independent identity, e.g. "nis2:art-23" (ADR-0001). */
@@ -40,6 +41,7 @@ export interface IRegulation extends Document {
   embedding?: number[];
   crawledAt: Date;
   version: number;
+  provenance?: Provenance;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -97,6 +99,15 @@ const regulationSchema = new Schema<IRegulation>(
     },
     crawledAt: { type: Date, default: Date.now },
     version: { type: Number, default: 1 },
+    provenance: {
+      type: new Schema({
+        adapter: { type: String, required: true },
+        format: { type: String, required: true },
+        fetchedAt: { type: Date },
+        sourceUri: { type: String },
+      }, { _id: false }),
+      required: false,
+    },
   },
   { timestamps: true }
 );
