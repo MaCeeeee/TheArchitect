@@ -5,9 +5,11 @@
  */
 import mongoose, { Model } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { NORM_ONTOLOGY } from '@thearchitect/shared';
 import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { Norm } from '../models/Norm';
 import {
   corpusRegulationSchema,
   __setCorpusForTests,
@@ -21,6 +23,9 @@ import {
   getNormMappings,
   listAvailableCorpusNorms,
   complianceMappingToNormMappingView,
+  standardToNormView,
+  upsertNormDoc,
+  materializeProjectNorms,
 } from '../services/norm.service';
 
 let CorpusReg: Model<ICorpusRegulation>;
@@ -92,6 +97,7 @@ describe('norm.service facade (THE-390 P1)', () => {
     await Standard.ensureIndexes();
     await StandardMapping.ensureIndexes();
     await ComplianceMapping.ensureIndexes();
+    await Norm.ensureIndexes();
   });
 
   afterAll(async () => {
@@ -112,6 +118,7 @@ describe('norm.service facade (THE-390 P1)', () => {
     await StandardMapping.deleteMany({});
     await ComplianceMapping.deleteMany({});
     await CorpusReg.deleteMany({});
+    await Norm.deleteMany({});
     delete process.env.CORPUS_MONGODB_URI;
     resetFallbackStats();
   });
@@ -282,6 +289,62 @@ describe('norm.service facade (THE-390 P1)', () => {
         confidence: 0.5,
       });
       expect(v).toBeNull();
+    });
+  });
+
+  describe('upsertNormDoc — ontology enforcement + version stamp (THE-417)', () => {
+    it('stamps the ontologyVersion that validated the write', async () => {
+      const std = await seedStandard(projectId, userId);
+      const view = standardToNormView(std);
+
+      const doc = await upsertNormDoc(view);
+
+      expect(doc.ontologyVersion).toBe(NORM_ONTOLOGY.ontologyVersion);
+    });
+
+    it('rejects a NormView carrying an off-ontology kind', async () => {
+      const std = await seedStandard(projectId, userId);
+      const view = { ...standardToNormView(std), kind: 'not-a-kind' };
+
+      await expect(upsertNormDoc(view)).rejects.toThrow(/ontology/);
+    });
+
+    it('materializes a framework-kind norm end-to-end through upsertNormDoc with runValidators on (regression)', async () => {
+      // THE-417 regression guard: seedStandard hardcodes type 'iso' → kind
+      // technical_standard, which was already a valid ontology row BEFORE this
+      // change and would not exercise the new framework/custom rows. Inline a
+      // togaf-typed Standard so kindFromStandardType produces 'framework' and
+      // the materialization sweep actually proves the new rows validate.
+      await Standard.create({
+        projectId,
+        name: 'TOGAF ADM',
+        version: '10',
+        type: 'togaf',
+        sections: [{ id: 't1', title: 'Preliminary Phase', number: '1', content: 'scope text', level: 1 }],
+        uploadedBy: userId,
+      });
+
+      const result = await materializeProjectNorms(projectId.toString());
+      expect(result.upserted).toBe(1);
+
+      const frameworkNorm = await Norm.findOne({ projectId, kind: 'framework' });
+      expect(frameworkNorm).not.toBeNull();
+      expect(frameworkNorm!.ontologyVersion).toBe(NORM_ONTOLOGY.ontologyVersion);
+    });
+
+    it('materializes every facade-produced norm of a mixed project without error (THE-390 facade sweep)', async () => {
+      await seedStandard(projectId, userId); // upload, type 'iso' → technical_standard
+      await seedCorpus('dsgvo:art-5', 'Grundsätze');
+      await corpusMapping(projectId, 'dsgvo:art-5', 'el-1');
+
+      const result = await materializeProjectNorms(projectId.toString());
+      expect(result.upserted).toBe(2);
+
+      const stored = await Norm.find({ projectId });
+      expect(stored).toHaveLength(2);
+      for (const doc of stored) {
+        expect(doc.ontologyVersion).toBe(NORM_ONTOLOGY.ontologyVersion);
+      }
     });
   });
 });

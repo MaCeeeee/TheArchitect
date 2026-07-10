@@ -14,6 +14,7 @@ import { createHash } from 'crypto';
 import {
   deriveNormWorkId,
   lawSourceFromRegulationKey,
+  NORM_ONTOLOGY,
   type NormView,
   type NormSectionView,
   type NormMappingView,
@@ -468,11 +469,12 @@ export async function upsertNormDoc(view: NormView): Promise<INorm> {
       text: s.text,
       level: s.level,
     })),
+    ontologyVersion: NORM_ONTOLOGY.ontologyVersion,
   };
   return Norm.findOneAndUpdate(
     { projectId: update.projectId, workId: update.workId },
     { $set: update },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, new: true, setDefaultsOnInsert: true, runValidators: true },
   );
 }
 
