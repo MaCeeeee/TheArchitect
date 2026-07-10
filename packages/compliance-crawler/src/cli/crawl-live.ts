@@ -8,15 +8,17 @@
  *
  * Does NOT write to Mongo — only fetches + parses and prints summary.
  * Used during development to verify selectors still match real-world output.
+ * Always uses the direct (cheerio) path, even if FIRECRAWL_API_KEY is set.
  */
 import { resolveSourceParser, SOURCE_ENTRIES } from '../sources/source-registry';
 
 async function main(): Promise<void> {
   const sourceKey = process.argv[2] ?? 'nis2';
-  const parser = resolveSourceParser(sourceKey, {
-    firecrawlKey: process.env.FIRECRAWL_API_KEY,
-    firecrawlUrl: process.env.FIRECRAWL_API_URL || undefined,
-  });
+  // Deliberately direct (no Firecrawl): this CLI's purpose is verifying the
+  // cheerio selectors against real-world output, and a dev shell with
+  // FIRECRAWL_API_KEY exported must not silently burn the shared credit
+  // budget (THE-403). Production uses the Firecrawl path via POST /crawl.
+  const parser = resolveSourceParser(sourceKey, { firecrawlKey: undefined, firecrawlUrl: undefined });
   if (!parser) {
     console.error(`Unsupported source: ${sourceKey}. Available: ${SOURCE_ENTRIES.map((e) => e.id).join(', ')}`);
     process.exit(1);

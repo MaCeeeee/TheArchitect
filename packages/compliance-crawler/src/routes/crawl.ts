@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Regulation } from '../db/regulation.model';
 import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
-import { resolveSourceParser, getSourceEntry } from '../sources/source-registry';
+import { getSourceEntry } from '../sources/source-registry';
 import { isNormSource } from '@thearchitect/shared';
 import { config } from '../config';
 import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
@@ -50,18 +50,18 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
     const errors: Array<{ source: string; message: string }> = [];
 
     for (const sourceKey of sources) {
-      const parser = resolveSourceParser(sourceKey, {
-        firecrawlKey: config.FIRECRAWL_API_KEY,
-        firecrawlUrl: config.FIRECRAWL_API_URL || undefined,
-      });
-      if (!parser) {
+      const entry = getSourceEntry(sourceKey);
+      if (!entry) {
         errors.push({ source: sourceKey, message: 'source not yet implemented' });
         continue;
       }
+      const parser = entry.make({
+        firecrawlKey: config.FIRECRAWL_API_KEY,
+        firecrawlUrl: config.FIRECRAWL_API_URL || undefined,
+      });
 
       try {
         const parsed = await parser.crawl();
-        const entry = getSourceEntry(sourceKey);
         const fetchedAt = new Date();
 
         let inserted = 0;
@@ -81,7 +81,7 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
                 regulationKey,
                 versionHash,
                 crawledAt: new Date(),
-                provenance: entry ? { adapter: entry.adapter, format: entry.format, fetchedAt, sourceUri: p.sourceUrl } : undefined,
+                provenance: { adapter: entry.adapter, format: entry.format, fetchedAt, sourceUri: p.sourceUrl },
               },
               $setOnInsert: { version: 1 },
             },
