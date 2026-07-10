@@ -21,6 +21,14 @@ export interface ParsedRegulation {
   language: RegulationLanguage;
 }
 
+/** Provenance for every ingested fact (THE-414 AC-3, UC-PROV hook). Set at the write site from the registry entry. */
+export interface Provenance {
+  adapter: string;            // ingest adapter id, e.g. 'eur-lex'
+  format: string;             // source format, e.g. 'html'
+  fetchedAt?: Date;           // set at ingest
+  sourceUri?: string;         // resolvable origin (per-paragraph URL)
+}
+
 export interface SourceParser {
   readonly source: RegulationSource;
   readonly description: string;

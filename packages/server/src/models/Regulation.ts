@@ -15,6 +15,18 @@ import { isNormSource, isJurisdiction } from '@thearchitect/shared';
  *
  * Linear: THE-275 (REQ-ICM-001.1)
  */
+/**
+ * Provenance for every ingested fact (THE-414 AC-3, UC-PROV hook). Mirrors the
+ * crawler's `Provenance` shape (sources/types.ts) — inlined here so the server
+ * package does not depend on the crawler package.
+ */
+export interface IRegulationProvenance {
+  adapter: string;            // ingest adapter id, e.g. 'eur-lex'
+  format: string;             // source format, e.g. 'html'
+  fetchedAt?: Date;           // set at ingest
+  sourceUri?: string;         // resolvable origin (per-paragraph URL)
+}
+
 export interface IRegulation extends Document {
   projectId: mongoose.Types.ObjectId;
   source: RegulationSource;
@@ -30,6 +42,7 @@ export interface IRegulation extends Document {
   embedding?: number[];
   crawledAt: Date;
   version: number;
+  provenance?: IRegulationProvenance;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +98,15 @@ const regulationSchema = new Schema<IRegulation>(
     },
     crawledAt: { type: Date, default: Date.now },
     version: { type: Number, default: 1 },
+    provenance: {
+      type: new Schema({
+        adapter: { type: String, required: true },
+        format: { type: String, required: true },
+        fetchedAt: { type: Date },
+        sourceUri: { type: String },
+      }, { _id: false }),
+      required: false,
+    },
   },
   { timestamps: true }
 );

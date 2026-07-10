@@ -5,6 +5,7 @@
  */
 import { SOURCE_ENTRIES, resolveSourceParser } from '../sources/source-registry';
 import { isNormSource } from '@thearchitect/shared';
+import { Regulation } from '../db/regulation.model';
 
 const env = { firecrawlKey: undefined, firecrawlUrl: undefined };
 
@@ -36,5 +37,17 @@ describe('source registry (THE-414)', () => {
 
   it('returns null for an unwired ontology source (dora) — caller emits "not yet implemented"', () => {
     expect(resolveSourceParser('dora', env)).toBeNull();
+  });
+
+  it('Regulation accepts a provenance sub-document (THE-414 AC-3)', () => {
+    const doc = new Regulation({
+      regulationKey: 'nis2:art-20', versionHash: 'x'.repeat(64), source: 'nis2', jurisdiction: 'EU',
+      paragraphNumber: 'Art. 20', title: 't', fullText: 'x'.repeat(60), sourceUrl: 'https://e.org',
+      effectiveFrom: new Date(), language: 'en',
+      provenance: { adapter: 'eur-lex', format: 'html', fetchedAt: new Date(), sourceUri: 'https://e.org' },
+    });
+    const err = doc.validateSync();
+    expect(err?.errors?.['provenance.adapter']).toBeUndefined();
+    expect(doc.provenance?.adapter).toBe('eur-lex');
   });
 });

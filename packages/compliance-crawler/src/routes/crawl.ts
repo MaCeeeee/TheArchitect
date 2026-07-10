@@ -61,6 +61,8 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
 
       try {
         const parsed = await parser.crawl();
+        const entry = getSourceEntry(sourceKey);
+        const fetchedAt = new Date();
 
         let inserted = 0;
         let updated = 0;
@@ -79,6 +81,7 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
                 regulationKey,
                 versionHash,
                 crawledAt: new Date(),
+                provenance: entry ? { adapter: entry.adapter, format: entry.format, fetchedAt, sourceUri: p.sourceUrl } : undefined,
               },
               $setOnInsert: { version: 1 },
             },
