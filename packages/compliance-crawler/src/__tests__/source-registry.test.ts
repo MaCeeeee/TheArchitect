@@ -44,8 +44,12 @@ describe('source registry (THE-414 / THE-418)', () => {
     }
   });
 
-  it('returns null for an unwired ontology source (dora) — caller emits "not yet implemented"', () => {
-    expect(resolveSourceParser('dora', env)).toBeNull();
+  it('returns null for an id with no crawl-config row — caller emits "not yet implemented"', () => {
+    // Decoupled from any specific ontology source id (e.g. 'dora') on purpose:
+    // THE-418 Task 4 wires dora as a pure crawl-config.ts data row, and that
+    // commit must not require touching this test file. See
+    // onboarding-is-data.test.ts for the dora-specific AC-1 proof.
+    expect(resolveSourceParser('not-a-wired-source', env)).toBeNull();
   });
 
   it('Regulation accepts a provenance sub-document (THE-414 AC-3)', () => {

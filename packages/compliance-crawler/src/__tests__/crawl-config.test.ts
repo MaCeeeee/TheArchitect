@@ -89,10 +89,11 @@ describe('crawl-config (THE-418)', () => {
     });
   });
 
-  it('covers exactly the 7 currently-wired sources (dora not yet a row)', () => {
-    expect(Object.keys(SOURCE_CRAWL_CONFIG).sort()).toEqual(
-      ['ai-act-de', 'ai-act-en', 'data-act-de', 'data-act-en', 'dsgvo', 'lksg', 'nis2'].sort(),
-    );
+  it('covers at least the 7 currently-wired sources (superset check — THE-418 Task 4 adds dora as a data-only row without touching this test)', () => {
+    const keys = Object.keys(SOURCE_CRAWL_CONFIG);
+    for (const id of ['ai-act-de', 'ai-act-en', 'data-act-de', 'data-act-en', 'dsgvo', 'lksg', 'nis2']) {
+      expect(keys).toContain(id);
+    }
   });
 
   describe('deriveEurLexUrl', () => {
