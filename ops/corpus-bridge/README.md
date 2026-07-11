@@ -56,6 +56,14 @@ ssh root@100.106.223.83 'docker rm -f corpus-tailnet-bridge; \
     alpine/socat tcp-listen:27017,fork,reuseaddr tcp-connect:zcyizw0m4uvrahyp1txs1qj8:27017'
 ```
 
+## Security / Härtung (THE-441)
+
+- **Transport:** Tailscale/WireGuard (verschlüsselt, authentifiziert). Bind **nur** auf die Tailnet-IP `100.106.223.83` — nie `0.0.0.0`.
+- **Mesh-Least-Privilege (Tailscale-ACL, aktiv):** Tailnet nutzt das `grants`-Modell; nur `server-a → server-b:27017` (+ `admin-mac → *`). Kein `*→*` → jeder fremde/künftige Knoten default-deny. Verifiziert: B→A ist geblockt.
+- **Mongo-Auth:** AN (`authSource=admin`) — Primärschutz; auch bei erreichbarem Port kein Zugriff ohne Credentials.
+- **TLS:** aktuell nicht aktiv (Tailnet verschlüsselt bereits). Optionale Tiefenverteidigung → eigenes Folge-Ticket, nicht blockierend.
+- **Monitoring/Alarm:** gehört zum Cutover — siehe THE-440 (Healthcheck auf `corpus/health` + `corpusMiss`-Telemetrie, scharf sobald `CORPUS_MONGODB_URI` gesetzt ist).
+
 ## Zugehörig
 
 - **Least-Privilege (Tailscale ACL):** nur Server A darf `data-server:27017` — Policy in THE-441 (Phase 3).
