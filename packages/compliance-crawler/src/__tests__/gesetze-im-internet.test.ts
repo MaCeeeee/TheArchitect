@@ -14,7 +14,6 @@ import path from 'path';
 import {
   GesetzeImInternetSource,
   lksgSource,
-  bdsgSource,
 } from '../sources/gesetze-im-internet';
 
 const fixturesDir = path.join(__dirname, 'fixtures');
@@ -115,12 +114,6 @@ describe('Factory functions', () => {
     const s = lksgSource();
     expect(s.source).toBe('lksg');
     expect(s.description).toContain('lksg');
-  });
-
-  it('bdsgSource() default config', () => {
-    const s = bdsgSource();
-    expect(s.source).toBe('dsgvo'); // BDSG complements DSGVO
-    expect(s.description).toContain('bdsg_2018');
   });
 
   it('lksgSource() respects custom paragraphNumbers', async () => {

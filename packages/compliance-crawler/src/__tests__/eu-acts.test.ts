@@ -13,12 +13,56 @@
 
 import fs from 'fs';
 import path from 'path';
-import { aiActEurLexSource, dataActEurLexSource } from '../sources/eur-lex';
-import { aiActFirecrawlSource, dataActFirecrawlSource } from '../sources/firecrawl';
+import { EurLexSource } from '../sources/eur-lex';
+import { FirecrawlSource } from '../sources/firecrawl';
+import type { RegulationLanguage } from '@thearchitect/shared';
 
 const fixturesDir = path.join(__dirname, 'fixtures');
 const aiActHtml = fs.readFileSync(path.join(fixturesDir, 'ai-act-sample.html'), 'utf-8');
 const dataActMd = fs.readFileSync(path.join(fixturesDir, 'firecrawl-data-act-sample.md'), 'utf-8');
+
+/**
+ * THE-418 (.6-Kern): aiActEurLexSource/dataActEurLexSource/aiActFirecrawlSource/
+ * dataActFirecrawlSource factories were removed — source-registry.ts now builds
+ * these generically from crawl-config.ts. Local helpers below reconstruct the
+ * same literal config so the parsers are still exercised via fixtures.
+ */
+function aiActEurLexSource(opts: { language: RegulationLanguage; articleNumbers?: number[] }): EurLexSource {
+  return new EurLexSource({
+    source: opts.language === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-08-01'),
+    celex: '32024R1689',
+    articleNumbers: opts.articleNumbers,
+  });
+}
+
+function aiActFirecrawlSource(opts: { apiKey: string; language: RegulationLanguage; articleNumbers?: number[] }): FirecrawlSource {
+  const lang = opts.language;
+  return new FirecrawlSource({
+    source: lang === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: lang,
+    effectiveFrom: new Date('2024-08-01'),
+    url: `https://eur-lex.europa.eu/legal-content/${lang.toUpperCase()}/TXT/HTML/?uri=CELEX:32024R1689`,
+    articleNumbers: opts.articleNumbers,
+    apiKey: opts.apiKey,
+  });
+}
+
+function dataActFirecrawlSource(opts: { apiKey: string; language: RegulationLanguage; articleNumbers?: number[] }): FirecrawlSource {
+  const lang = opts.language;
+  return new FirecrawlSource({
+    source: lang === 'de' ? 'data-act-de' : 'data-act-en',
+    jurisdiction: 'EU',
+    language: lang,
+    effectiveFrom: new Date('2024-01-11'),
+    url: `https://eur-lex.europa.eu/legal-content/${lang.toUpperCase()}/TXT/HTML/?uri=CELEX:32023R2854`,
+    articleNumbers: opts.articleNumbers,
+    apiKey: opts.apiKey,
+  });
+}
 
 describe('AI Act — EurLexSource EN (THE-396)', () => {
   it('full crawl (no filter) extracts every article header', () => {

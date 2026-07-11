@@ -4,7 +4,34 @@
  * Run: cd packages/compliance-crawler && npx jest src/__tests__/clean.test.ts --verbose
  */
 import { cleanRegulationText } from '../sources/clean';
-import { nis2FirecrawlSource, aiActFirecrawlSource } from '../sources/firecrawl';
+import { FirecrawlSource } from '../sources/firecrawl';
+
+/**
+ * THE-418 (.6-Kern): nis2FirecrawlSource/aiActFirecrawlSource factories were
+ * removed — reconstruct the same literal config directly for these
+ * integration checks (still exercises the real parseMarkdown() pipeline).
+ */
+function nis2FirecrawlSource(opts: { apiKey: string }): FirecrawlSource {
+  return new FirecrawlSource({
+    source: 'nis2',
+    jurisdiction: 'EU',
+    language: 'en',
+    effectiveFrom: new Date('2024-10-17'),
+    url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555',
+    apiKey: opts.apiKey,
+  });
+}
+
+function aiActFirecrawlSource(opts: { apiKey: string; language: 'en' | 'de' }): FirecrawlSource {
+  return new FirecrawlSource({
+    source: opts.language === 'de' ? 'ai-act-de' : 'ai-act-en',
+    jurisdiction: 'EU',
+    language: opts.language,
+    effectiveFrom: new Date('2024-08-01'),
+    url: `https://eur-lex.europa.eu/legal-content/${opts.language.toUpperCase()}/TXT/HTML/?uri=CELEX:32024R1689`,
+    apiKey: opts.apiKey,
+  });
+}
 
 describe('cleanRegulationText (THE-365 AC-1)', () => {
   it('strips Markdown table scaffolding, keeps enumeration letters (real AI Act Art. 5 sample)', () => {

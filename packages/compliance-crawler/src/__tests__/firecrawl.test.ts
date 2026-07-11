@@ -12,15 +12,52 @@
 
 import fs from 'fs';
 import path from 'path';
-import {
-  FirecrawlSource,
-  nis2FirecrawlSource,
-  dsgvoFirecrawlSource,
-} from '../sources/firecrawl';
+import { FirecrawlSource } from '../sources/firecrawl';
 
 const fixturesDir = path.join(__dirname, 'fixtures');
 const nis2Md = fs.readFileSync(path.join(fixturesDir, 'firecrawl-nis2-sample.md'), 'utf-8');
 const dsgvoMd = fs.readFileSync(path.join(fixturesDir, 'firecrawl-dsgvo-sample.md'), 'utf-8');
+
+/**
+ * THE-418 (.6-Kern): nis2FirecrawlSource/dsgvoFirecrawlSource factories were
+ * removed — source-registry.ts now builds FirecrawlSource generically from
+ * crawl-config.ts. These local helpers reconstruct the same literal config the
+ * old factories used, so the parser is still exercised end-to-end via fixtures.
+ */
+interface FirecrawlTestOpts {
+  apiKey: string;
+  apiUrl?: string;
+  articleNumbers?: number[];
+  httpClient?: any;
+}
+
+function nis2FirecrawlSource(opts: FirecrawlTestOpts): FirecrawlSource {
+  return new FirecrawlSource({
+    source: 'nis2',
+    jurisdiction: 'EU',
+    language: 'en',
+    effectiveFrom: new Date('2024-10-17'),
+    url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555',
+    articleNumbers: opts.articleNumbers,
+    apiKey: opts.apiKey,
+    apiUrl: opts.apiUrl,
+    httpClient: opts.httpClient,
+  });
+}
+
+function dsgvoFirecrawlSource(opts: FirecrawlTestOpts): FirecrawlSource {
+  return new FirecrawlSource({
+    source: 'dsgvo',
+    jurisdiction: 'EU',
+    language: 'de',
+    effectiveFrom: new Date('2018-05-25'),
+    url: 'https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32016R0679',
+    articleNumbers: opts.articleNumbers ?? [5, 6, 9, 32],
+    apiKey: opts.apiKey,
+    apiUrl: opts.apiUrl,
+    httpClient: opts.httpClient,
+  });
+}
 
 describe('FirecrawlSource.parseMarkdown() — NIS2 EN (THE-285)', () => {
   it('extracts all Article-N headers from fixture', () => {
