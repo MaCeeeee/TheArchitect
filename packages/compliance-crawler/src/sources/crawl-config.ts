@@ -92,6 +92,17 @@ export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
     effectiveFrom: '2023-01-01',
     transport: 'gesetze-im-internet',
   },
+  // THE-418 AC-1 proof: DORA onboarded as a pure data row — no other file in
+  // this diff. Regulation (EU) 2022/2554 (DORA), application date 2025-01-17.
+  // Demo article set: Art. 5-10 (Chapter II, ICT risk management framework).
+  dora: {
+    celex: '32022R2554',
+    language: 'en',
+    articleNumbers: [5, 6, 7, 8, 9, 10],
+    jurisdiction: 'EU',
+    effectiveFrom: '2025-01-17',
+    transport: 'eur-lex',
+  },
 };
 
 /**
