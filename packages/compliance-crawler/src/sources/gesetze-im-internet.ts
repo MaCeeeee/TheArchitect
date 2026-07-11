@@ -216,17 +216,8 @@ export function lksgSource(opts: GesetzeFactoryOptions = {}): GesetzeImInternetS
   });
 }
 
-/** BDSG 2018 (Bundesdatenschutzgesetz) — complement to DSGVO. */
-export function bdsgSource(opts: GesetzeFactoryOptions = {}): GesetzeImInternetSource {
-  return new GesetzeImInternetSource({
-    source: 'dsgvo',
-    jurisdiction: 'DE',
-    effectiveFrom: new Date('2018-05-25'),
-    lawSlug: 'bdsg_2018',
-    paragraphNumbers: opts.paragraphNumbers ?? [1, 26, 64],
-    baseUrl: opts.baseUrl,
-    fixtureMap: opts.fixtureMap,
-    httpClient: opts.httpClient,
-    requestDelayMs: opts.requestDelayMs,
-  });
-}
+// `bdsgSource` (BDSG 2018, complement to DSGVO) was dead code — never wired into
+// source-registry.ts (only `lksgSource` was) — and was removed in THE-418
+// (.6-Kern). If BDSG is onboarded later, it's a crawl-config.ts row with
+// lawSlug 'bdsg_2018' (source id stays 'dsgvo', per the pattern this factory
+// demonstrated), not a new factory.

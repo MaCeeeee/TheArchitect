@@ -4,24 +4,48 @@
  * Tests EurLexSource.parseHtml() against curated NIS2 + DSGVO fixtures.
  * Live API calls are NOT exercised in CI — those run via `npm run crawl:nis2:live`.
  *
+ * THE-418 (.6-Kern): the per-law factories (nis2EurLexSource, dsgvoEurLexSource,
+ * EurLexNis2Source) were removed — source-registry.ts now builds EurLexSource
+ * generically from crawl-config.ts. These tests construct EurLexSource directly
+ * with the same literal config the old factories used (still exercising the
+ * generic parser against real fixtures).
+ *
  * Run: cd packages/compliance-crawler && npx jest src/__tests__/eur-lex.test.ts --verbose
  */
 
 import fs from 'fs';
 import path from 'path';
-import {
-  EurLexNis2Source,
-  nis2EurLexSource,
-  dsgvoEurLexSource,
-} from '../sources/eur-lex';
+import { EurLexSource } from '../sources/eur-lex';
 
 const fixturesDir = path.join(__dirname, 'fixtures');
 const fixtureHtml = fs.readFileSync(path.join(fixturesDir, 'nis2-sample.html'), 'utf-8');
 const dsgvoHtml = fs.readFileSync(path.join(fixturesDir, 'dsgvo-sample.html'), 'utf-8');
 
-describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
+function nis2Source(articleNumbers?: number[]): EurLexSource {
+  return new EurLexSource({
+    source: 'nis2',
+    jurisdiction: 'EU',
+    language: 'en',
+    effectiveFrom: new Date('2024-10-17'),
+    celex: '32022L2555',
+    articleNumbers,
+  });
+}
+
+function dsgvoSource(articleNumbers: number[] = [5, 6, 9, 32]): EurLexSource {
+  return new EurLexSource({
+    source: 'dsgvo',
+    jurisdiction: 'EU',
+    language: 'de',
+    effectiveFrom: new Date('2018-05-25'),
+    celex: '32016R0679',
+    articleNumbers,
+  });
+}
+
+describe('EurLexSource.parseHtml() — NIS2 (REQ-ICM-001.2)', () => {
   it('extracts all NIS2 articles from fixture', () => {
-    const source = new EurLexNis2Source();
+    const source = nis2Source();
     const results = source.parseHtml(fixtureHtml);
     // Fixture has Art. 20, 21, 22, 100 → all parsed when no filter
     expect(results.map(r => r.paragraphNumber)).toEqual(
@@ -30,7 +54,7 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
   });
 
   it('applies articleNumbers filter (NIS2 demo set 20–24)', () => {
-    const source = new EurLexNis2Source({ articleNumbers: [20, 21, 22, 23, 24] });
+    const source = nis2Source([20, 21, 22, 23, 24]);
     const results = source.parseHtml(fixtureHtml);
     expect(results.map(r => r.paragraphNumber)).toEqual([
       'Art. 20',
@@ -42,7 +66,7 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
   });
 
   it('AC-2: extracts paragraphNumber, title, fullText, sourceUrl, effectiveFrom', () => {
-    const source = new EurLexNis2Source({ articleNumbers: [21] });
+    const source = nis2Source([21]);
     const [art21] = source.parseHtml(fixtureHtml);
     expect(art21.paragraphNumber).toBe('Art. 21');
     expect(art21.title).toBe('Cybersecurity risk-management measures');
@@ -61,7 +85,7 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
       <p class="oj-sti-art">Too short</p>
       <p class="oj-normal">tiny.</p>
     `;
-    const source = new EurLexNis2Source();
+    const source = nis2Source();
     const results = source.parseHtml(minimalHtml);
     expect(results.find(r => r.paragraphNumber === 'Art. 99')).toBeUndefined();
   });
@@ -73,7 +97,7 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
       <p class="oj-sti-art">Stress test</p>
       <p class="oj-normal">${longBody}</p>
     `;
-    const source = new EurLexNis2Source();
+    const source = nis2Source();
     const [reg] = source.parseHtml(html);
     expect(reg.fullText.length).toBeLessThanOrEqual(19_990);
   });
@@ -84,31 +108,23 @@ describe('EurLexNis2Source.parseHtml() (REQ-ICM-001.2)', () => {
       <p class="sti-art">Fallback class test</p>
       <p class="oj-normal">This text must be at least fifty characters long for the parser to accept the article.</p>
     `;
-    const source = new EurLexNis2Source();
+    const source = nis2Source();
     const [reg] = source.parseHtml(html);
     expect(reg).toBeDefined();
     expect(reg.paragraphNumber).toBe('Art. 7');
     expect(reg.title).toBe('Fallback class test');
   });
-
-  it('nis2EurLexSource() factory matches legacy class behaviour', () => {
-    const factory = nis2EurLexSource({ articleNumbers: [21] });
-    const [reg] = factory.parseHtml(fixtureHtml);
-    expect(reg.paragraphNumber).toBe('Art. 21');
-    expect(reg.source).toBe('nis2');
-    expect(reg.language).toBe('en');
-  });
 });
 
 describe('EurLexSource — DSGVO (German) (REQ-ICM-001.2)', () => {
   it('extracts German "Artikel" articles from DSGVO fixture', () => {
-    const source = dsgvoEurLexSource({ articleNumbers: [5, 32] });
+    const source = dsgvoSource([5, 32]);
     const results = source.parseHtml(dsgvoHtml);
     expect(results.map(r => r.paragraphNumber)).toEqual(['Art. 5', 'Art. 32']);
   });
 
   it('AC-2: DSGVO Art. 32 — extracts full metadata in German', () => {
-    const source = dsgvoEurLexSource({ articleNumbers: [32] });
+    const source = dsgvoSource([32]);
     const [art32] = source.parseHtml(dsgvoHtml);
     expect(art32.paragraphNumber).toBe('Art. 32');
     expect(art32.title).toBe('Sicherheit der Verarbeitung');
@@ -121,13 +137,13 @@ describe('EurLexSource — DSGVO (German) (REQ-ICM-001.2)', () => {
   });
 
   it('filters out Art. 100 (not in demo set 5/6/9/32)', () => {
-    const source = dsgvoEurLexSource();
+    const source = dsgvoSource();
     const results = source.parseHtml(dsgvoHtml);
     expect(results.find(r => r.paragraphNumber === 'Art. 100')).toBeUndefined();
   });
 
-  it('default DSGVO factory uses demo set [5, 6, 9, 32]', () => {
-    const source = dsgvoEurLexSource();
+  it('demo set [5, 6, 9, 32] (crawl-config.ts) matches fixture coverage', () => {
+    const source = dsgvoSource();
     const results = source.parseHtml(dsgvoHtml);
     // Fixture only has 5, 32 (not 6, 9), so we get 2 results
     expect(results.map(r => r.paragraphNumber).sort()).toEqual(['Art. 32', 'Art. 5']);
