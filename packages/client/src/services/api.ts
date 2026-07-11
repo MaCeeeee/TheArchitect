@@ -404,6 +404,10 @@ export const normsAPI = {
   // "Add regulation to pipeline" — creates the pipeline state + initial stats.
   addToPipeline: (projectId: string, workId: string) =>
     api.post(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/pipeline`),
+  // UC-LAW-001 — which laws apply to this architecture? Deterministic signal
+  // check over elements (incl. AI-wizard provenance) + project context.
+  applicability: (projectId: string) =>
+    api.get(`/projects/${projectId}/norms/applicability`),
 };
 
 // Compliance Pipeline API
