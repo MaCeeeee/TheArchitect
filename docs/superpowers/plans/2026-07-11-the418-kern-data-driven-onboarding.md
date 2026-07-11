@@ -14,6 +14,18 @@
 
 ---
 
+## ⚠️ REVIEW-FIXES (2026-07-11) — diese ÜBERSCHREIBEN die Chunk-1/2-Details unten
+
+1. **Config-Home geändert: NICHT die Ontologie erweitern.** Statt `celex/articles/transport` in `norm-ontology.v1.ts` normSources zu legen (das schleppt der Client mit + erzwingt Ontologie-Semver-Bumps für reine Artikel-Tweaks), lebt die Crawl-Config in einer **neuen Daten-Datei im Crawler**: `packages/compliance-crawler/src/sources/crawl-config.ts` — `export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig>`, keyed by source-id. Jeder Key wird gegen `isNormSource` validiert (Test), `language` gegen `isLanguage`. Ontologie-`normSources`-Rows bleiben unverändert (id/label/jurisdiction = Vokabular). **AC-1 gilt weiter:** DORA-Onboarding = eine Row in `crawl-config.ts` (Daten), null Code.
+2. **`lawSlug?: string` in `CrawlConfig`** (für gesetze-im-internet/lksg — URL-Slug ≠ id; Beweis: bestehende `bdsgSource` nutzt `source:'dsgvo'` + `lawSlug:'bdsg_2018'`). Für lksg explizit `lawSlug:'lksg'` setzen, nicht auf id-Konvention verlassen.
+3. **Helper `deriveEurLexUrl(celex, language)`** faktorisieren: `EurLexSource` leitet die URL intern ab, `FirecrawlSourceConfig.url` ist aber **Pflicht** → die Registry muss die URL vor dem `new FirecrawlSource({...})` berechnen. Eine generische Formel (nicht per-law), von beiden Pfaden genutzt.
+4. **Byte-Identitäts-Test (Task 3.4) mit transkribierten Literalen** (celex/articles/language/effectiveFrom einmal im Test hartkodiert), NICHT aus den gelöschten Factories importiert. Die per-law-Factories werden in 3.3 wirklich entfernt.
+5. **`source-registry.test.ts`-Count-Assertion daten-getrieben** ableiten (aus `SOURCE_CRAWL_CONFIG`), keine zweite handgepflegte Liste. `bdsgSource` (dead code) beim Factory-Pruning mit-entfernen oder als deprecated markieren.
+
+Der Rest des Plans (Ziel, TDD-Flow, DORA-Beweis, E2E) gilt unverändert — nur „Ontologie-Row" gedanklich durch „`crawl-config.ts`-Row" ersetzen.
+
+---
+
 ## Verifizierter Ausgangspunkt (2026-07-11, Codebase-Scan)
 
 - `EurLexSource` (`eur-lex.ts:45-148`) **generisch**: Config nimmt `source/jurisdiction/language/celex/articleNumbers/effectiveFrom/url` als Parameter. `FirecrawlSource` (`firecrawl.ts:55`) ebenso generisch.
