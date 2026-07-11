@@ -32,4 +32,7 @@ export * from './types/executive-summary.types';
 export * from './constants/executive-summary.constants';
 export * from './utils/regulation-key';
 export * from './utils/redact';
+export * from './types/register.types';
+export * from './constants/register-scoring.constants';
+export * from './utils/register-scoring';
 export * from './ontology';
