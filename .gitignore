@@ -49,3 +49,6 @@ notebooks/predictive-poc/data/embeddings.npz
 # Pitch/demo backup material — large binaries + raw exports, kept local only
 docs/pitch-backup/
 docs/superpowers/bsh-mirofish-demo-scenarios.pdf
+
+# Superpowers skill scratch (server pids/logs, brainstorm iterations)
+.superpowers/
