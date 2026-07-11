@@ -2,6 +2,8 @@
 
 **Stand:** 2026-07-11 · **Branch:** `claude/enterprise-architecture-legal-r3tenn` · **Grundlage:** ADR-0004 E6 (Quellen als Ontologie-Daten), THE-390 P4b (Add-to-pipeline-Adapter), WFCOMP-Scope-Philosophie (THE-353)
 
+> **Einordnung zu UC-RADAR-001 (THE-309):** Dieses Feature ist die *statische Vorstufe* des specten (noch nicht gebauten) Regulatory & Technology Radars — „was gilt jetzt?" statt „was ändert sich über die Zeit?". Der hier „Radar" genannte Begriff meint die Anwendbarkeits-Momentaufnahme, NICHT das temporale Signal-System aus THE-309. Vollständige Abgrenzung + Promotion-Pfad: `docs/superpowers/2026-07-11-uc-law-001-radar-reconciliation.md`
+
 ## Ziel
 
 Die Frage „**Welche Gesetze gelten für diese Art der Unternehmensarchitektur?**" beantworten — deterministisch, aus dem, was schon da ist: den Architektur-Elementen (insb. den vom **AI Wizard/Blueprint** generierten, `source='blueprint'`) und dem Projekt-Kontext (Name, Beschreibung, Vision, Tags, Stakeholder). Jede Einschätzung trägt Evidenz (welche Elemente, welche Treffer) und mündet direkt in die bestehende Compliance-Pipeline („Add to pipeline", THE-390 P4b).
