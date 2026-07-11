@@ -45,6 +45,10 @@ services:
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
       - JWT_REFRESH_EXPIRES_IN=30d
       - MONGODB_URI=mongodb://thearchitect:${MONGO_PASSWORD}@mongodb:27017/thearchitect?authSource=admin
+      # THE-440: canonical regulation corpus (Server B via Tailnet bridge, read-only user).
+      # Empty default keeps the app-DB fallback active when unset (THE-419 strangler).
+      - CORPUS_MONGODB_URI=${CORPUS_MONGODB_URI:-}
+      - CORPUS_STRICT_READS=${CORPUS_STRICT_READS:-}
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
