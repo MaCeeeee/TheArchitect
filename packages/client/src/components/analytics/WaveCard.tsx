@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ChevronDown, ChevronRight, DollarSign, Clock, AlertTriangle,
   Shield, Users, ArrowRight, Lightbulb, X, Cpu, GitBranch, TrendingUp,
@@ -122,11 +122,22 @@ interface WaveCardProps {
   onSelect: () => void;
   onElementClick?: (elementId: string) => void;
   roadmapId?: string;
+  /**
+   * REQ-PLATEAU-005 — monotonically increasing counter. Each increment
+   * force-expands the card (jump-to-next focuses this wave). Expansion
+   * stays user-controlled otherwise.
+   */
+  focusSignal?: number;
 }
 
-export default function WaveCard({ wave, isSelected, onSelect, onElementClick, roadmapId }: WaveCardProps) {
+export default function WaveCard({ wave, isSelected, onSelect, onElementClick, roadmapId, focusSignal }: WaveCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [selectedElement, setSelectedElement] = useState<string | null>(null);
+
+  // REQ-PLATEAU-005: jump-to-next opens the target wave card.
+  useEffect(() => {
+    if (focusSignal !== undefined && focusSignal > 0) setExpanded(true);
+  }, [focusSignal]);
 
   // ─── REQ-PLATEAU-003: optimistic-implementation tracking per element ─────
   // Local optimistic state mirrors implementedAt — string timestamp, null,
