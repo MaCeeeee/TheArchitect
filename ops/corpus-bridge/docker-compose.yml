@@ -1,0 +1,29 @@
+# THE-441 — declarative replacement for the raw `corpus-tailnet-bridge` container.
+#
+# Exposes the Coolify-managed corpus MongoDB (container `zcyizw0m4uvrahyp1txs1qj8`)
+# on the Tailnet IP of data-server (Server B), so Server A can read the canonical
+# regulation corpus over the encrypted Tailscale mesh (ADR-0001/0002).
+#
+# WHY socat (and not Coolify's built-in port publish): Coolify publishes on
+# 0.0.0.0 (public) — a security regression. socat lets us bind ONLY the Tailnet
+# IP. The target is the STABLE Coolify uuid container name, so a corpus-DB
+# redeploy does not break resolution.
+#
+# NOTE: this bridge is NOT visible in the Coolify UI — THIS FILE is the source of
+# truth. Deploy/verify/rollback: see README.md in this directory.
+services:
+  corpus-tailnet-bridge:
+    image: alpine/socat:latest
+    container_name: corpus-tailnet-bridge
+    restart: unless-stopped
+    command: >
+      tcp-listen:27017,fork,reuseaddr
+      tcp-connect:zcyizw0m4uvrahyp1txs1qj8:27017
+    ports:
+      - "100.106.223.83:27017:27017"   # Tailnet IP of data-server — NEVER 0.0.0.0
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true

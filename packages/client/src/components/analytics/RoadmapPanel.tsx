@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Map, Loader2, AlertTriangle, DollarSign, Clock, TrendingDown,
   Shield, Download, RefreshCw, ChevronDown, Trash2, Layers, ArrowRight,
+  CheckCircle2, Crosshair,
 } from 'lucide-react';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
@@ -11,6 +12,8 @@ import { useUIStore } from '../../stores/uiStore';
 import { roadmapAPI } from '../../services/api';
 import type { RoadmapStrategy } from '@thearchitect/shared';
 import { flyToElement } from '../3d/CameraControls';
+import { computeRoadmapProgress } from '../../utils/roadmapProgress';
+import { progressColor } from '../../utils/plateauComputation';
 import RoadmapTimeline from './RoadmapTimeline';
 import WaveCard from './WaveCard';
 import MigrationCandidates from './MigrationCandidates';
@@ -144,6 +147,28 @@ export default function RoadmapPanel() {
     if (el?.position3D) {
       flyToElement(el.position3D, el.id);
     }
+  };
+
+  // ─── REQ-PLATEAU-005 — roadmap-wide progress + jump-to-next ─────────────
+  const progress = useMemo(
+    () => (activeRoadmap?.waves ? computeRoadmapProgress(activeRoadmap.waves) : null),
+    [activeRoadmap]
+  );
+  // Per-wave focus counters: incrementing one force-expands that WaveCard.
+  const [waveFocusSignals, setWaveFocusSignals] = useState<Record<number, number>>({});
+  const waveRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const handleJumpToNext = () => {
+    if (!progress?.next) return;
+    const { waveNumber, elementId } = progress.next;
+    // AC-2: camera fly-to + select + expand + scroll the target WaveCard.
+    handleElementClick(elementId);
+    selectWave(waveNumber);
+    setWaveFocusSignals((prev) => ({ ...prev, [waveNumber]: (prev[waveNumber] || 0) + 1 }));
+    // Scroll after the expand has rendered.
+    setTimeout(() => {
+      waveRefs.current[waveNumber]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   if (!projectId) {
@@ -360,6 +385,43 @@ export default function RoadmapPanel() {
               </div>
             </div>
 
+            {/* REQ-PLATEAU-005: overall implementation progress + jump-to-next */}
+            {progress && progress.total > 0 && (
+              progress.implemented === progress.total ? (
+                /* AC-3: everything implemented → completion banner */
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-[#22c55e]/10 border border-[#22c55e]/30 text-sm text-[#22c55e]">
+                  <CheckCircle2 size={16} className="shrink-0" />
+                  <span className="font-medium">Roadmap complete — all {progress.total} elements implemented</span>
+                </div>
+              ) : (
+                /* AC-1 + AC-2: counter, clickable → jump to next unimplemented */
+                <button
+                  onClick={handleJumpToNext}
+                  className="w-full p-3 rounded-lg bg-[var(--surface-raised)] border border-[var(--border-subtle)] hover:border-[#00ff41] transition text-left group"
+                  title="Jump to next unimplemented element"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      <span className="font-medium text-white">{progress.implemented} / {progress.total}</span>
+                      {' '}implemented ({progress.pct}%)
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] group-hover:text-[#00ff41] transition">
+                      <Crosshair size={12} /> Next
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-[var(--surface-base)] overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${progress.pct}%`,
+                        backgroundColor: progressColor(progress.implemented / progress.total),
+                      }}
+                    />
+                  </div>
+                </button>
+              )
+            )}
+
             {/* Summary Metrics */}
             {activeRoadmap.summary && (
               <div className="grid grid-cols-2 gap-3">
@@ -419,14 +481,19 @@ export default function RoadmapPanel() {
                   Waves ({activeRoadmap.waves.length})
                 </div>
                 {activeRoadmap.waves.map((wave) => (
-                  <WaveCard
+                  <div
                     key={wave.waveNumber}
-                    wave={wave}
-                    isSelected={selectedWave === wave.waveNumber}
-                    onSelect={() => selectWave(selectedWave === wave.waveNumber ? null : wave.waveNumber)}
-                    onElementClick={handleElementClick}
-                    roadmapId={activeRoadmap.id}
-                  />
+                    ref={(node) => { waveRefs.current[wave.waveNumber] = node; }}
+                  >
+                    <WaveCard
+                      wave={wave}
+                      isSelected={selectedWave === wave.waveNumber}
+                      onSelect={() => selectWave(selectedWave === wave.waveNumber ? null : wave.waveNumber)}
+                      onElementClick={handleElementClick}
+                      roadmapId={activeRoadmap.id}
+                      focusSignal={waveFocusSignals[wave.waveNumber]}
+                    />
+                  </div>
                 ))}
               </div>
             )}
