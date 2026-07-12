@@ -26,6 +26,7 @@
     "golden:blind": "ts-node src/scripts/golden-kappa.ts blind",
     "golden:kappa": "ts-node src/scripts/golden-kappa.ts compare",
     "typing:build": "ts-node src/scripts/build-typing-golden.ts",
+    "typing:prelabel": "ts-node src/scripts/prelabel-typing.ts",
     "typing:worksheet": "ts-node src/scripts/typing-worksheet.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts"
   },
