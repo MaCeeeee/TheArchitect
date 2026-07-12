@@ -99,6 +99,19 @@ export async function getRegulationByKey(key: string): Promise<ICorpusRegulation
   return CorpusRegulation().findOne({ regulationKey: key }).sort({ version: -1 });
 }
 
+/** Exact version by key+hash — for version-pin (AC-3). Returns null if that version no longer exists. */
+export async function getRegulationByKeyAndHash(
+  key: string,
+  versionHash: string,
+): Promise<ICorpusRegulation | null> {
+  try {
+    return await CorpusRegulation().findOne({ regulationKey: key, versionHash });
+  } catch (err) {
+    log.warn({ err: safeErrorMessage(err), key }, '[corpus] getRegulationByKeyAndHash failed');
+    return null;
+  }
+}
+
 export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegulation[]> {
   if (keys.length === 0) return [];
   try {
@@ -137,12 +150,13 @@ export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegu
 /** Map of regulationKey → current (latest) versionHash. For drift-detection (THE-306/368). */
 export async function getCurrentVersionHashes(keys: string[]): Promise<Map<string, string>> {
   const regs = await getRegulationsByKeys([...new Set(keys)]);
-  const map = new Map<string, string>();
+  const latest = new Map<string, ICorpusRegulation>();
   for (const r of regs) {
-    const existing = map.get(r.regulationKey);
-    // keep the highest version's hash if duplicates exist
-    if (!existing || (r.version ?? 1) >= 1) map.set(r.regulationKey, r.versionHash);
+    const cur = latest.get(r.regulationKey);
+    if (!cur || (r.version ?? 1) > (cur.version ?? 1)) latest.set(r.regulationKey, r);
   }
+  const map = new Map<string, string>();
+  for (const [k, r] of latest) map.set(k, r.versionHash);
   return map;
 }
 

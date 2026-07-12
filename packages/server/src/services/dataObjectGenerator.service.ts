@@ -8,7 +8,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
-import { isConfigured as isRagConfigured, queryDocuments } from './dataServer.service';
+import { isConfigured as isRagConfigured } from './dataServer.service';
+import { governedQuery } from './governedRetrieval.service';
 import { log } from '../config/logger';
 
 // ─── Schema for generated data-objects ──────────────────────────────────────
@@ -274,7 +275,7 @@ async function queryRagSafe(projectId: string, proc: ProcessRow): Promise<string
   if (!isRagConfigured()) return [];
   try {
     const queryText = [proc.name, proc.description].filter(Boolean).join(' — ');
-    const res = await queryDocuments({ projectId, text: queryText, topK: 5 });
+    const res = await governedQuery({ projectId, text: queryText, topK: 5 });
     return (res.chunks || [])
       .filter((c) => c.score >= 0.55)
       .map((c) => c.text)

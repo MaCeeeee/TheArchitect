@@ -21,13 +21,16 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
+import { buildRegulationKey, type RegulationLanguage } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import { ComplianceMapping } from '../models/ComplianceMapping';
 import {
   mapRegulationsBatch,
   mapTextToElements,
   ComplianceMappingError,
+  type MappingRegulationInput,
 } from '../services/complianceMapping.service';
+import { resolveGovernedRegulations } from '../services/governedRetrieval.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { log } from '../config/logger';
 
@@ -39,6 +42,10 @@ router.use(authenticate);
 const AutoMappingBodySchema = z.object({
   regulationIds: z.array(z.string()).max(100).optional(),
   concurrency: z.number().int().min(1).max(10).optional(),
+  // THE-422: optional version-pin (regulationKey -> versionHash). The `z.string()`
+  // value both selects the exact pinned Mongo version AND blocks NoSQL-operator
+  // injection (a `{ $ne: null }` value fails validation → 400).
+  pin: z.record(z.string()).optional(),
 });
 
 const PreviewBodySchema = z.object({
@@ -133,9 +140,53 @@ router.post(
       });
     }
 
+    // 2b) THE-422 governed gate: resolve each legacy Regulation to its governed
+    // corpus version (current or pinned) by derived key, then UPGRADE the mapping
+    // input to that version. Corpus-miss → legacy passthrough (measured via warn).
+    // The legacy `_id` is ALWAYS threaded through: mapRegulationsBatch derives the
+    // persisted ComplianceMapping.regulationId from reg._id — the upgrade swaps
+    // TEXT/VERSION only, never the persistence identity.
+    const derived = regulations.map(r => ({
+      r,
+      key: buildRegulationKey(r.source, r.paragraphNumber),
+    }));
+    const governed = await resolveGovernedRegulations({
+      keys: derived.map(d => d.key),
+      pin: parsed.data.pin,
+      eligibleOnly: true,
+    });
+    const governedByKey = new Map(governed.map(g => [g.regulationKey, g]));
+    const mappingInput: MappingRegulationInput[] = derived.map(({ r, key }) => {
+      const g = governedByKey.get(key);
+      if (g) {
+        return {
+          _id: r._id,
+          source: g.source,
+          paragraphNumber: g.paragraphNumber,
+          title: g.title,
+          fullText: g.fullText,
+          language: g.language as RegulationLanguage,
+          jurisdiction: g.jurisdiction,
+        };
+      }
+      log.warn(
+        { fn: 'complianceAutoMap', regulationKey: key },
+        '[the-422] corpus miss — legacy Regulation used',
+      );
+      return {
+        _id: r._id,
+        source: r.source,
+        paragraphNumber: r.paragraphNumber,
+        title: r.title,
+        fullText: r.fullText,
+        language: r.language,
+        jurisdiction: r.jurisdiction,
+      };
+    });
+
     // 3) Concurrent Batch-Mapping (D4 — p-limit-style, default concurrency=5)
     const batch = await mapRegulationsBatch({
-      regulations,
+      regulations: mappingInput,
       candidateElements,
       projectId,
       concurrency: parsed.data.concurrency,
