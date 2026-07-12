@@ -9,6 +9,7 @@ import {
   DEFAULT_SCORE_WEIGHTS,
   DEFAULT_ROUTING_THRESHOLDS,
   SCORING_CONFIG_VERSION,
+  SLA_WINDOWS_MS,
 } from '../constants/register-scoring.constants';
 
 /** Round to 2 decimals so the score is bit-stable across runs (no float drift in equality tests). */
@@ -50,6 +51,15 @@ export function routeByScore(
 export function urgencyFromOccurrences(count: number): number {
   if (count <= 1) return 1;
   return Math.min(5, 1 + Math.floor(Math.log2(count)));
+}
+
+/**
+ * SLA deadline (epoch-ms) for an entry first seen at `firstSeenMs`, given its routing path
+ * (THE-447). Pure — the service converts to a Date. Returns null for paths without an SLA.
+ */
+export function slaDeadlineFrom(firstSeenMs: number, routingPath: RoutingPath): number | null {
+  const window = SLA_WINDOWS_MS[routingPath];
+  return window == null ? null : firstSeenMs + window;
 }
 
 /** Convenience: score + route + version stamp in one deterministic call. */

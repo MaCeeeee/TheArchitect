@@ -1,4 +1,4 @@
-import type { ScoreWeights, RoutingThresholds } from '../types/register.types';
+import type { ScoreWeights, RoutingThresholds, RoutingPath } from '../types/register.types';
 
 /**
  * Versioned scoring config (THE-445 AC-3). Bump this whenever weights/thresholds change so a
@@ -25,4 +25,14 @@ export const DEFAULT_SCORE_WEIGHTS: ScoreWeights = {
 export const DEFAULT_ROUTING_THRESHOLDS: RoutingThresholds = {
   critical: 16,
   noise: 5,
+};
+
+/**
+ * SLA windows per routing path in milliseconds (THE-447). A critical defect must be fixed
+ * fast; noise has no SLA. Start values — calibrate against real MTTR data.
+ */
+export const SLA_WINDOWS_MS: Record<RoutingPath, number | null> = {
+  critical: 24 * 60 * 60 * 1000, //  1 day
+  normal: 14 * 24 * 60 * 60 * 1000, // 14 days
+  noise: null,
 };
