@@ -4,7 +4,7 @@
 **Created:** 2026-07-11 · **Status:** Implementiert (In Review) — Branch `claude/enterprise-architecture-legal-r3tenn`, Commits `315f7e0` (Feature), `a6c48d2` (Reconciliation), `97c3980` (Spec)
 **RVTM:** `docs/superpowers/rvtm/2026-07-11-uc-law-001-rvtm.md`
 **Plan/Design:** `docs/superpowers/plans/2026-07-11-uc-law-001-applicability-radar.md`
-**Linear:** pending — MCP-Schreibzugriff in der Session gesperrt; dieses Dokument ist 1:1 als Feature-Ticket übernehmbar (Team TheArchitect · Label Feature · State In Review · related THE-309, THE-390)
+**Linear:** [THE-454](https://linear.app/thearchitect/issue/THE-454) (angelegt 2026-07-12) · REQs F1–F4: THE-455, THE-456, THE-457, THE-458 · Folge-UC „Vorschriften ermitteln" (Hybrid-Discovery): THE-459
 
 > ⚠️ **Retro-Spec:** NACH der Implementierung angelegt (Kennung UC-LAW-001 wurde während der
 > Umsetzung geprägt; dieses Dokument heilt die fehlende Spec-Ebene).
@@ -186,13 +186,13 @@ Ontologie-Zeile per E6-Contract), kein Code-Umbau.
   not_indicated-Gruppe, Add-to-pipeline, Empty-/Error-State, Re-Check, Footer-Zähler + Disclaimer. ✅
 - **REQ-LAW-001.6 — Verifikation:** 23 Server-Tests (pure, DB-frei) + 5 Client-Tests grün; TSC
   strict + Builds shared/server/client sauber. ✅
-- **REQ-LAW-001.7 (F1) — Deckungs-Transparenz:** Disclaimer + UI „geprüft gegen N kuratierte
+- **REQ-LAW-001.7 (F1) — Deckungs-Transparenz** ([THE-455](https://linear.app/thearchitect/issue/THE-455)): Disclaimer + UI „geprüft gegen N kuratierte
   Normen — nicht abschließend" + Liste der geprüften Normen. ⏳
-- **REQ-LAW-001.8 (F2) — Ungenutzte Signale:** erkanntes Signal ohne konsumierende Regel ⇒ Hinweis
+- **REQ-LAW-001.8 (F2) — Ungenutzte Signale** ([THE-456](https://linear.app/thearchitect/issue/THE-456)): erkanntes Signal ohne konsumierende Regel ⇒ Hinweis
   auf mögliche Gesetze außerhalb des Sets. ⏳
-- **REQ-LAW-001.9 (F3) — Regel-Erweiterung:** CRA, ePrivacy, MDR, PSD2, eIDAS, BDSG … als
+- **REQ-LAW-001.9 (F3) — Regel-Erweiterung** ([THE-457](https://linear.app/thearchitect/issue/THE-457)): CRA, ePrivacy, MDR, PSD2, eIDAS, BDSG … als
   Datenzeilen inkl. Signal-Ergänzungen. ⏳
-- **REQ-LAW-001.10 (F4) — Radar-Promotion:** Signal-Kind `applicability` + Baseline-Scope für den
+- **REQ-LAW-001.10 (F4) — Radar-Promotion** ([THE-458](https://linear.app/thearchitect/issue/THE-458)): Signal-Kind `applicability` + Baseline-Scope für den
   Impact-Matcher. ⏳ **blocked by THE-309**
 
 ## 11. Architektur-Entscheidungen
@@ -249,8 +249,9 @@ Ontologie-Zeile per E6-Contract), kein Code-Umbau.
 
 Traceability vollständig in der **RVTM** (`docs/superpowers/rvtm/2026-07-11-uc-law-001-rvtm.md`):
 28 automatisierte Tests (23 Server pure + 5 Client) — alle grün; TSC strict + Builds sauber.
-**Offen:** E2E-Demo gegen laufende Neo4j/Mongo (Sandbox ohne DBs — auf VPS nachholen), Linear-Ticket
-+ Scoring, PR/Merge.
+**Erledigt (2026-07-12):** Linear-Ticket THE-454 + REQs THE-455–458 angelegt.
+**Offen:** E2E-Demo gegen laufende Neo4j/Mongo (Sandbox ohne DBs — auf VPS nachholen), Scoring,
+PR/Merge.
 
 ## Sign-off
 
