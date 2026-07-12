@@ -137,12 +137,13 @@ export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegu
 /** Map of regulationKey → current (latest) versionHash. For drift-detection (THE-306/368). */
 export async function getCurrentVersionHashes(keys: string[]): Promise<Map<string, string>> {
   const regs = await getRegulationsByKeys([...new Set(keys)]);
-  const map = new Map<string, string>();
+  const latest = new Map<string, ICorpusRegulation>();
   for (const r of regs) {
-    const existing = map.get(r.regulationKey);
-    // keep the highest version's hash if duplicates exist
-    if (!existing || (r.version ?? 1) >= 1) map.set(r.regulationKey, r.versionHash);
+    const cur = latest.get(r.regulationKey);
+    if (!cur || (r.version ?? 1) > (cur.version ?? 1)) latest.set(r.regulationKey, r);
   }
+  const map = new Map<string, string>();
+  for (const [k, r] of latest) map.set(k, r.versionHash);
   return map;
 }
 
