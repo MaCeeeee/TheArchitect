@@ -24,8 +24,12 @@ describe('RegisterEntry model — WORM + schema (THE-445 AC-2)', () => {
     await RegisterEntry.deleteMany({});
   });
 
-  const base = () => ({
+  const base = () => {
+    const chainId = new mongoose.Types.ObjectId();
+    return {
     projectId: new mongoose.Types.ObjectId(),
+    chainId,
+    firstSeenAt: new Date(),
     kind: 'defect' as const,
     fingerprint: 'abc123def456',
     source: 'manual' as const,
@@ -40,7 +44,8 @@ describe('RegisterEntry model — WORM + schema (THE-445 AC-2)', () => {
     weightsVersion: 'v1',
     routingPath: 'critical' as const,
     status: 'assessed' as const,
-  });
+    };
+  };
 
   it('persists a valid entry with defaults', async () => {
     const e = await new RegisterEntry(base()).save();

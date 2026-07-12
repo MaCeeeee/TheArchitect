@@ -14,8 +14,19 @@ import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { RegisterEntry } from '../models/RegisterEntry';
-import { ingestEntry, decideGate, RegisterNotFoundError } from '../services/register.service';
+import {
+  ingestEntry,
+  decideGate,
+  closeEntry,
+  sweepSla,
+  createProblem,
+  RegisterNotFoundError,
+} from '../services/register.service';
 import type { ActorContext } from '../services/register.service';
+import {
+  suggestDuplicates,
+  suggestProblemClusters,
+} from '../services/registerEnrichment.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -49,8 +60,21 @@ const GateBodySchema = z.object({
     'create_backlog_item',
     'reply_reporter',
     'reject_noise',
+    'escalate',
   ]),
   decision: z.enum(['approve', 'reject']),
+});
+
+const CloseBodySchema = z.object({
+  testsGreen: z.boolean().optional(),
+  fixRef: z.string().max(300).optional(),
+  appliedAt: z.string().datetime().optional(),
+  note: z.string().max(2000).optional(),
+});
+
+const CreateProblemBodySchema = z.object({
+  title: z.string().min(3).max(300),
+  defectChainIds: z.array(z.string()).min(1).max(50),
 });
 
 function actorOf(req: Request): ActorContext {
@@ -119,6 +143,126 @@ router.post(
       }
       log.error({ err, projectId, entryId }, '[register.gate] failed');
       return res.status(500).json({ success: false, error: 'failed to record gate decision' });
+    }
+  },
+);
+
+// ─── POST /:projectId/register/:chainId/close (THE-447 verify-closure) ───────
+
+router.post(
+  '/:projectId/register/:chainId/close',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const chainId = String(req.params.chainId);
+    if (!mongoose.isValidObjectId(projectId) || !mongoose.isValidObjectId(chainId)) {
+      return res.status(400).json({ success: false, error: 'invalid id' });
+    }
+    const parsed = CloseBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    try {
+      const result = await closeEntry(projectId, chainId, parsed.data, actorOf(req));
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof RegisterNotFoundError) {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      log.error({ err, projectId, chainId }, '[register.close] failed');
+      return res.status(500).json({ success: false, error: 'failed to close register entry' });
+    }
+  },
+);
+
+// ─── POST /:projectId/register/sla-sweep (THE-447 SLA-breach escalation) ─────
+
+router.post(
+  '/:projectId/register/sla-sweep',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    try {
+      const breached = await sweepSla(projectId, actorOf(req));
+      return res.json({ success: true, data: { breached, count: breached.length } });
+    } catch (err) {
+      log.error({ err, projectId }, '[register.sla-sweep] failed');
+      return res.status(500).json({ success: false, error: 'failed to sweep SLA deadlines' });
+    }
+  },
+);
+
+// ─── POST /:projectId/register/:chainId/suggest-duplicates (THE-448 AC-1) ────
+
+router.post(
+  '/:projectId/register/:chainId/suggest-duplicates',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const chainId = String(req.params.chainId);
+    if (!mongoose.isValidObjectId(projectId) || !mongoose.isValidObjectId(chainId)) {
+      return res.status(400).json({ success: false, error: 'invalid id' });
+    }
+    try {
+      const result = await suggestDuplicates(projectId, chainId, actorOf(req));
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof RegisterNotFoundError) {
+        return res.status(404).json({ success: false, error: err.message });
+      }
+      log.error({ err, projectId, chainId }, '[register.suggest-duplicates] failed');
+      return res.status(500).json({ success: false, error: 'failed to suggest duplicates' });
+    }
+  },
+);
+
+// ─── POST /:projectId/register/suggest-problems (THE-448 AC-2) ────────────────
+
+router.post(
+  '/:projectId/register/suggest-problems',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    try {
+      const result = await suggestProblemClusters(projectId, actorOf(req));
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      log.error({ err, projectId }, '[register.suggest-problems] failed');
+      return res.status(500).json({ success: false, error: 'failed to suggest problem clusters' });
+    }
+  },
+);
+
+// ─── POST /:projectId/register/problem (THE-448 AC-2 — human confirm) ─────────
+
+router.post(
+  '/:projectId/register/problem',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const parsed = CreateProblemBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    try {
+      const problem = await createProblem(projectId, parsed.data, actorOf(req));
+      return res.status(201).json({ success: true, data: problem });
+    } catch (err) {
+      log.error({ err, projectId }, '[register.problem] failed');
+      return res.status(500).json({ success: false, error: 'failed to create problem' });
     }
   },
 );

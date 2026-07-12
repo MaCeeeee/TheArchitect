@@ -24,7 +24,8 @@ export interface ProposedAction {
     | 'create_blocker'
     | 'create_backlog_item'
     | 'reply_reporter'
-    | 'reject_noise';
+    | 'reject_noise'
+    | 'escalate';
   description: string;
   /** Always true in slice 1 — nothing outward-facing runs without human sign-off. */
   requiresApproval: boolean;
@@ -33,6 +34,16 @@ export interface ProposedAction {
 
 export interface IRegisterEntry extends Document {
   projectId: mongoose.Types.ObjectId;
+  /**
+   * Stable logical identity of an entry across its WORM chain. Set to the first row's _id on
+   * creation and copied onto every superseding row, so parent/child links and close/SLA actions
+   * can target an entry without knowing which physical row is currently the head (THE-447).
+   */
+  chainId: mongoose.Types.ObjectId;
+  /** When the chain's first row was created — the clock the SLA deadline is measured from. */
+  firstSeenAt: Date;
+  /** Absolute SLA deadline; null for paths without an SLA (e.g. noise). */
+  slaDeadline?: Date | null;
   kind: RegisterKind;
   fingerprint: string;
   source: RegisterSource;
@@ -100,6 +111,9 @@ const proposedActionSchema = new Schema<ProposedAction>(
 const registerEntrySchema = new Schema<IRegisterEntry>(
   {
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+    chainId: { type: Schema.Types.ObjectId, required: true },
+    firstSeenAt: { type: Date, required: true },
+    slaDeadline: { type: Date, default: null },
     kind: { type: String, enum: KINDS, required: true },
     fingerprint: { type: String, required: true },
     source: { type: String, enum: SOURCES, required: true },
@@ -147,6 +161,8 @@ registerEntrySchema.index(
   { projectId: 1, fingerprint: 1 },
   { name: 'by_project_fingerprint' },
 );
+registerEntrySchema.index({ projectId: 1, chainId: 1 }, { name: 'by_project_chain' });
+registerEntrySchema.index({ projectId: 1, parentRef: 1 }, { name: 'by_project_parent' });
 registerEntrySchema.index(
   { projectId: 1, kind: 1, status: 1 },
   { name: 'by_project_kind_status' },
