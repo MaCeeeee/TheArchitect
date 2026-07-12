@@ -118,3 +118,18 @@ export async function countPoints(client: QdrantClient): Promise<number> {
     return 0;
   }
 }
+
+/**
+ * Exact point count for one `source` (payload filter). Used by GET /corpus/status
+ * (REQ-LAWOPS-001.1 / THE-468) to compare Qdrant vectors against Mongo docs per law
+ * and surface the silent-embed-drift that let DORA sit in Mongo but not in Qdrant.
+ * Unlike countPoints() this does NOT swallow errors — the caller distinguishes
+ * "Qdrant unreachable" (report qdrantCount=null) from "0 vectors for this source".
+ */
+export async function countPointsBySource(client: QdrantClient, source: string): Promise<number> {
+  const res = await client.count(CORPUS_COLLECTION, {
+    exact: true,
+    filter: { must: [{ key: 'source', match: { value: source } }] },
+  });
+  return res.count;
+}

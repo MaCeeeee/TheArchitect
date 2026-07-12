@@ -14,6 +14,7 @@ import { connectMongo, disconnectMongo, setMongoLogger } from './db/mongo';
 import { healthRoutes } from './routes/health';
 import { crawlRoutes } from './routes/crawl';
 import { embedAllRoutes } from './routes/embed-all';
+import { corpusStatusRoutes } from './routes/corpus-status';
 
 async function buildApp() {
   const app = Fastify({
@@ -25,6 +26,7 @@ async function buildApp() {
   await app.register(healthRoutes);
   await app.register(crawlRoutes);
   await app.register(embedAllRoutes);
+  await app.register(corpusStatusRoutes);
 
   return app;
 }
