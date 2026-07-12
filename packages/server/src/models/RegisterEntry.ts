@@ -41,6 +41,7 @@ export interface IRegisterEntry extends Document {
   title: string;
   description?: string;
   stackTrace?: string;
+  errorType?: string;
   severity: number;
   urgency: number;
   criticality: number;
@@ -107,6 +108,7 @@ const registerEntrySchema = new Schema<IRegisterEntry>(
     title: { type: String, required: true },
     description: { type: String },
     stackTrace: { type: String },
+    errorType: { type: String },
     severity: { type: Number, required: true, min: 1, max: 5 },
     urgency: { type: Number, required: true, min: 1, max: 5 },
     criticality: { type: Number, required: true, min: 1, max: 5 },

@@ -42,6 +42,16 @@ export function routeByScore(
   return 'normal';
 }
 
+/**
+ * Derive urgency (1–5) from how often a defect occurred (THE-446 AC-4).
+ * log2 growth: 1→1, 2→2, 4→3, 8→4, 16+→5 — repeated hits escalate fast at first,
+ * then saturate. Callers take max(reported urgency, derived urgency).
+ */
+export function urgencyFromOccurrences(count: number): number {
+  if (count <= 1) return 1;
+  return Math.min(5, 1 + Math.floor(Math.log2(count)));
+}
+
 /** Convenience: score + route + version stamp in one deterministic call. */
 export function scoreAndRoute(
   input: ScoreInput,

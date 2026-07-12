@@ -26,22 +26,30 @@ import { isNormSource, NORM_SOURCE_IDS } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 const router = Router();
+
+// ──────────────────────────────────────────────────────────
+// PUBLIC: GET /api/regulations/corpus/health — canonical corpus reachability
+// from Server A (THE-368). Deliberately un-authenticated (THE-453): returns only
+// a reachability boolean + a count of public legal-text paragraphs, and serves as
+// the keyless probe for the THE-441 corpus healthcheck. Defined ABOVE
+// `router.use(authenticate)` so it is not shadowed by this router's own auth.
+// ──────────────────────────────────────────────────────────
+router.get('/regulations/corpus/health', async (_req: Request, res: Response) => {
+  const configured = isCorpusConfigured();
+  const health = configured ? await corpusHealth() : { ok: false };
+  res.json({ configured, health, ok: health.ok });
+});
+
 router.use(authenticate);
 
 // ──────────────────────────────────────────────────────────
-// GET /api/regulations/crawler/health — service-level health (not project-scoped)
+// GET /api/regulations/crawler/health — service-level health (not project-scoped).
+// Authenticated (THE-453): crawlerConfig() exposes the internal crawler Tailnet URL.
 // ──────────────────────────────────────────────────────────
 router.get('/regulations/crawler/health', async (_req: Request, res: Response) => {
   const config = crawlerConfig();
   const h = await crawlerHealth();
   res.json({ config, health: h, ok: h?.status === 'ok' });
-});
-
-// GET /api/regulations/corpus/health — canonical corpus reachability from Server A (THE-368)
-router.get('/regulations/corpus/health', async (_req: Request, res: Response) => {
-  const configured = isCorpusConfigured();
-  const health = configured ? await corpusHealth() : { ok: false };
-  res.json({ configured, health, ok: health.ok });
 });
 
 // ──────────────────────────────────────────────────────────

@@ -33,6 +33,8 @@ const IngestBodySchema = z.object({
   title: z.string().min(3).max(300),
   description: z.string().max(5000).optional(),
   stackTrace: z.string().max(20_000).optional(),
+  errorType: z.string().max(200).optional(),
+  eventId: z.string().max(200).optional(),
   severity: z.number().int().min(1).max(5),
   urgency: z.number().int().min(1).max(5),
   criticality: z.number().int().min(1).max(5),

@@ -10,7 +10,7 @@
 | REQ | Linear | Slice | 15288 §6.3.7 | Verifikation | Evidence | Status |
 |---|---|---|---|---|---|---|
 | REQ-PROBMGMT-001.1 — Ingest + Schema-Validierung + deterministischer P_score + WORM-Register + Human-Gate | [THE-445](https://linear.app/thearchitect/issue/THE-445) | 1 | Identify + Analyze | Unit (Schema, Score-Determinismus, WORM-Append) + Route-Supertest | **17/17 grün**, `tsc --noEmit` sauber (2026-07-11) | **done** |
-| REQ-PROBMGMT-001.2 — Sentry-Quelle + Fingerprint-Dedup + occurrence_counter | [THE-446](https://linear.app/thearchitect/issue/THE-446) | 2 | Identify | Integration (2 Payloads gleiche Ursache → 1 Defect, Counter=2) | — | offen |
+| REQ-PROBMGMT-001.2 — Sentry-Quelle + Fingerprint-Dedup + occurrence_counter | [THE-446](https://linear.app/thearchitect/issue/THE-446) | 2 | Identify | Integration (2 Payloads gleiche Ursache → 1 Defect, Counter=2) + Fingerprint-Unit-Tests + Urgency-Eskalation | **26/26 grün** (4 Suites), `tsc` sauber; n8n-Workflow `3QMcMgiKMh7WsFei` validiert, inaktiv (2026-07-12) | **implementiert** — Live-Aktivierung offen (Credential + Projekt-ID + Sentry-Webhook) |
 | REQ-PROBMGMT-001.3 — Closed Loop: Verify-Closure + Cascade-Close + SLA-Breach | [THE-447](https://linear.app/thearchitect/issue/THE-447) | 3 | Track + Verify | Integration (fix→verify→cascade; SLA→Eskalation) | — | offen |
 | REQ-PROBMGMT-001.4 — LLM-Anreicherung (Duplikat/Trend) + Notify | [THE-448](https://linear.app/thearchitect/issue/THE-448) | 4 | Analyze + Monitor | Test (LLM=Vorschlag; Degradation ohne LLM) | — | offen |
 
@@ -20,7 +20,15 @@
 **Server** (`packages/server/src/`): `models/RegisterEntry.ts` (WORM, pre-save-Guard), `services/register.service.ts` (`ingestEntry`/`decideGate`/`computeFingerprint` + Audit je Schritt), `routes/register.routes.ts` (POST `/ingest`, POST `/:id/gate`, GET `/`), Mount in `index.ts`.
 **Tests** (`packages/server/src/__tests__/`): `register-scoring.test.ts`, `RegisterEntry.model.test.ts`, `register.routes.test.ts` — 17 Tests.
 
-Score-Kalibrierung `v1`: Gewichte S=2,0 · U=1,0 · C=1,5; Schwellen critical≥16, noise≤5 (Spanne −5…22,5). Register-Store = Mongo. Ausgehende Aktionen alle `proposed`/`requiresApproval` (kein Auto-Execute). Offen für Bau: Sentry-Ingest (.2), Verify/Cascade/SLA (.3), LLM (.4).
+Score-Kalibrierung `v1`: Gewichte S=2,0 · U=1,0 · C=1,5; Schwellen critical≥16, noise≤5 (Spanne −5…22,5). Register-Store = Mongo. Ausgehende Aktionen alle `proposed`/`requiresApproval` (kein Auto-Execute).
+
+## Slice 2 — Artefakte (2026-07-12)
+
+**Engine-Erweiterung:** `computeFingerprint` = hash(component + errorType + normalisierter Top-Frame) — lowercase, `:line[:col]` gestrippt, Titel nur als Fallback ohne Stacktrace. Dedup in `ingestEntry`: offene Chain (open/assessed/triaging/mitigating) mit gleichem Fingerprint → `recordOccurrence` schreibt neue WORM-Row mit `supersedes`, `occurrence_counter+1`, Urgency = max(gemeldet, `urgencyFromOccurrences` log2: 1→1, 2→2, 4→3, 8→4, 16→5), Score re-berechnet, eingehender Report als `evidence.occurrences[]`-Link, Human-Gate-Entscheidungen per Aktions-Typ übernommen. Terminal-Chains (noise/resolved/…) absorbieren nicht → frischer Defect. Audit: `register.occurrence`. Route-Schema: + `errorType`, `eventId`. Model: + `errorType`.
+
+**n8n (AC-1):** Workflow `Sentry → Register Ingest (THE-446)` — id `3QMcMgiKMh7WsFei`, validiert (4 Nodes), **inaktiv**. Webhook `POST /sentry-defect-ingest` → Code-Node normalisiert (level→severity fatal=5…debug=1, Sentry-Frames oldest→newest → letzter = Top-Frame, tags Array/Objekt-tolerant) → HTTP-POST an Engine. **AC-6:** API-Key als n8n-Credential `TheArchitect Register API Key` (httpHeaderAuth `X-API-Key`), nichts im Repo. Aktivierung braucht: Projekt-ID in URL, Credential befüllen, Sentry-Alert-Webhook zeigen lassen.
+
+Offen für Bau: Verify/Cascade/SLA (.3), LLM (.4).
 
 ## Wiederverwendung (senkt Feasibility-Risiko)
 

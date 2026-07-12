@@ -6,6 +6,7 @@ import {
   computePScore,
   routeByScore,
   scoreAndRoute,
+  urgencyFromOccurrences,
   DEFAULT_SCORE_WEIGHTS,
   DEFAULT_ROUTING_THRESHOLDS,
   SCORING_CONFIG_VERSION,
@@ -56,5 +57,15 @@ describe('Register scoring (THE-445 AC-3/AC-4)', () => {
   it('exposes the calibrated v1 defaults', () => {
     expect(DEFAULT_SCORE_WEIGHTS).toEqual({ severity: 2.0, urgency: 1.0, criticality: 1.5 });
     expect(DEFAULT_ROUTING_THRESHOLDS).toEqual({ critical: 16, noise: 5 });
+  });
+
+  it('THE-446 AC-4: derives urgency from occurrence count via log2 escalation', () => {
+    expect(urgencyFromOccurrences(1)).toBe(1);
+    expect(urgencyFromOccurrences(2)).toBe(2);
+    expect(urgencyFromOccurrences(3)).toBe(2);
+    expect(urgencyFromOccurrences(4)).toBe(3);
+    expect(urgencyFromOccurrences(8)).toBe(4);
+    expect(urgencyFromOccurrences(16)).toBe(5);
+    expect(urgencyFromOccurrences(1000)).toBe(5); // saturates at 5
   });
 });
