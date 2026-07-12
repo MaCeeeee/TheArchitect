@@ -93,6 +93,19 @@ export function __setCorpusForTests(model: Model<ICorpusRegulation> | null): voi
   _model = model;
 }
 
+/**
+ * Test seam: fully reset the lazy corpus connection + model so the next access
+ * re-opens a fresh (still-handshaking) connection — used to exercise the
+ * first-poll-after-boot readiness race in corpusHealth() (THE-470).
+ */
+export async function __resetCorpusForTests(): Promise<void> {
+  _model = null;
+  if (_connection) {
+    await _connection.close();
+    _connection = null;
+  }
+}
+
 // ─── Read API ───
 
 export async function getRegulationByKey(key: string): Promise<ICorpusRegulation | null> {
@@ -173,10 +186,50 @@ export async function upsertCorpusRegulation(
   return { inserted: (res.upsertedCount ?? 0) > 0 };
 }
 
+/**
+ * How long corpusHealth() waits for the lazy corpus connection's initial handshake
+ * before declaring the corpus unreachable. Covers a normal Tailnet handshake
+ * (sub-second) without letting a genuinely-down corpus hang the (polled) health
+ * probe. THE-368 / THE-419 / THE-470.
+ */
+const CORPUS_HEALTH_READY_TIMEOUT_MS = 3000;
+
+/**
+ * Await the lazily-opened corpus connection reaching readyState 1, bounded by
+ * timeoutMs. No-op when no real connection is open (injected-model test path) or
+ * when it is already connected. Closes the first-poll-after-boot race where
+ * estimatedDocumentCount() would otherwise throw "before initial connection is
+ * complete" with bufferCommands:false (THE-470).
+ */
+async function waitForCorpusReadyIfConnected(timeoutMs: number): Promise<void> {
+  if (!_connection || _connection.readyState === 1) return;
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      _connection.asPromise(),
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('corpus connection not ready within timeout')),
+          timeoutMs,
+        );
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function corpusHealth(): Promise<{ ok: boolean; count?: number }> {
   if (!isCorpusConfigured()) return { ok: false };
   try {
-    const count = await CorpusRegulation().estimatedDocumentCount();
+    // Resolve the model first — this lazily opens the real corpus connection (or
+    // returns the injected test model) — THEN wait out the connection's handshake
+    // so the first poll right after a container recreate doesn't race it and
+    // false-alarm {ok:false} (THE-470).
+    const model = CorpusRegulation();
+    await waitForCorpusReadyIfConnected(CORPUS_HEALTH_READY_TIMEOUT_MS);
+    const count = await model.estimatedDocumentCount();
     return { ok: true, count };
   } catch (err) {
     log.warn({ err: safeErrorMessage(err) }, '[corpus] health check failed');
