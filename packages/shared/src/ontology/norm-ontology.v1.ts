@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.2.0',
-  updatedAt: '2026-07-10',
+  ontologyVersion: '1.3.0',
+  updatedAt: '2026-07-12',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -40,6 +40,19 @@ export const NORM_ONTOLOGY = {
     { id: 'binding-for-agencies', label: 'Binding for agencies' },
     { id: 'voluntary-de-facto', label: 'Voluntary / de-facto' },
     { id: 'persuasive', label: 'Persuasive' },
+  ],
+
+  /**
+   * E6 — deontic force of a provision (the von-Wright triple). Orthogonal to
+   * `bindingness` (which is about the *norm's* authority) — this is about what a
+   * single provision DOES to its addressee. Closed label space for term typing
+   * (THE-432); deliberately minimal (highest inter-annotator agreement). Finer
+   * functional kinds (exemption/notification/…) are additive rows if needed.
+   */
+  obligationKinds: [
+    { id: 'obligation', label: 'Obligation / Gebot' },
+    { id: 'prohibition', label: 'Prohibition / Verbot' },
+    { id: 'permission', label: 'Permission / Erlaubnis' },
   ],
 
   /**

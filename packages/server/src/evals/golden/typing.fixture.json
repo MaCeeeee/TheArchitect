@@ -1,0 +1,48 @@
+{
+  "version": "fixture-v1",
+  "frozen": true,
+  "ontologyVersion": "1.3.0",
+  "rubricRef": "../RUBRIC.md",
+  "cases": [
+    {
+      "caseId": "dsgvo-art-5",
+      "source": "dsgvo",
+      "paragraphNumber": "art-5",
+      "title": "Grundsätze für die Verarbeitung",
+      "fullText": "Personenbezogene Daten müssen auf rechtmäßige Weise, nach Treu und Glauben und in einer für die betroffene Person nachvollziehbaren Weise verarbeitet werden.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "labels": { "normKind": "legislation", "bindingness": "binding", "obligationKind": "obligation", "partyRole": "controller" }
+    },
+    {
+      "caseId": "dsgvo-art-4",
+      "source": "dsgvo",
+      "paragraphNumber": "art-4",
+      "title": "Begriffsbestimmungen",
+      "fullText": "Im Sinne dieser Verordnung bezeichnet der Ausdruck personenbezogene Daten alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "labels": { "normKind": "legislation", "bindingness": "binding", "obligationKind": null, "partyRole": null }
+    },
+    {
+      "caseId": "nis2-art-21",
+      "source": "nis2",
+      "paragraphNumber": "art-21",
+      "title": "Cybersecurity risk-management measures",
+      "fullText": "Member States shall ensure that essential and important entities take appropriate and proportionate technical, operational and organisational measures to manage the risks posed to the security of network and information systems.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": { "normKind": "legislation", "bindingness": "binding", "obligationKind": "obligation", "partyRole": null }
+    },
+    {
+      "caseId": "nis2-art-32",
+      "source": "nis2",
+      "paragraphNumber": "art-32",
+      "title": "Supervisory measures",
+      "fullText": "Member States shall ensure that the supervisory measures imposed on essential entities are effective, proportionate and dissuasive, taking into account the circumstances of each individual case.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": { "normKind": "legislation", "bindingness": "binding", "obligationKind": "obligation", "partyRole": "supervisory_authority" }
+    }
+  ]
+}

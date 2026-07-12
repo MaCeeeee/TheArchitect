@@ -47,6 +47,7 @@ export const NormOntologySchema = z.object({
   updatedAt: z.string().min(1),
   normKinds: z.array(NormKindEntry).min(1),
   bindingness: z.array(IdLabel).min(1),
+  obligationKinds: z.array(IdLabel).min(1),
   relationTypes: z.array(RelationTypeEntry).min(1),
   partyRoles: z.array(PartyRoleEntry).min(1),
   maturityScales: z.array(MaturityScaleEntry).min(1),
@@ -73,6 +74,7 @@ export function assertOntologyValid(ontology: unknown = NORM_ONTOLOGY): void {
   const facets: Array<[string, string[]]> = [
     ['normKinds', o.normKinds.map((x) => x.id)],
     ['bindingness', o.bindingness.map((x) => x.id)],
+    ['obligationKinds', o.obligationKinds.map((x) => x.id)],
     ['relationTypes', o.relationTypes.map((x) => x.id)],
     ['partyRoles', o.partyRoles.map((x) => x.id)],
     ['jurisdictions', o.jurisdictions.map((x) => x.id)],
@@ -111,6 +113,7 @@ export function makeMemberSchema(ids: readonly string[], facet: string): z.ZodTy
 
 const kindIds = NORM_ONTOLOGY.normKinds.map((k) => k.id);
 const bindingIds = NORM_ONTOLOGY.bindingness.map((b) => b.id);
+const obligationKindIds = NORM_ONTOLOGY.obligationKinds.map((o) => o.id);
 const relationIds = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 const partyRoleIds = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
 const sourceIds = NORM_ONTOLOGY.normSources.map((s) => s.id);
@@ -118,6 +121,7 @@ const languageIds = NORM_ONTOLOGY.languages.map((l) => l.id);
 
 export const NormKindSchema = makeMemberSchema(kindIds, 'normKinds');
 export const BindingnessSchema = makeMemberSchema(bindingIds, 'bindingness');
+export const ObligationKindSchema = makeMemberSchema(obligationKindIds, 'obligationKinds');
 export const RelationTypeSchema = makeMemberSchema(relationIds, 'relationTypes');
 export const PartyRoleSchema = makeMemberSchema(partyRoleIds, 'partyRoles');
 export const NormSourceSchema = makeMemberSchema(sourceIds, 'normSources');
