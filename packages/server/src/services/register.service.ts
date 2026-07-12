@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import type { RegisterKind, RegisterSource, ScoreInput } from '@thearchitect/shared';
-import { scoreAndRoute } from '@thearchitect/shared';
+import type { RegisterKind, RegisterSource, RegisterStatus, ScoreInput } from '@thearchitect/shared';
+import { scoreAndRoute, urgencyFromOccurrences } from '@thearchitect/shared';
 import { RegisterEntry } from '../models/RegisterEntry';
 import type { IRegisterEntry, ProposedAction } from '../models/RegisterEntry';
 import { createAuditEntry } from '../middleware/audit.middleware';
@@ -25,6 +25,10 @@ export interface IngestInput {
   title: string;
   description?: string;
   stackTrace?: string;
+  /** e.g. 'TypeError' — part of the stable fingerprint (THE-446 AC-2) */
+  errorType?: string;
+  /** upstream event id (e.g. Sentry event_id) — kept as occurrence evidence, not in the fingerprint */
+  eventId?: string;
   severity: number;
   urgency: number;
   criticality: number;
@@ -40,23 +44,48 @@ export class RegisterNotFoundError extends Error {
 }
 
 /**
- * Stable dedup fingerprint. Derived from the affected component + an error signature (top
- * stacktrace frame, else the title), NOT the free-text title alone — so a reworded report of the
- * same fault still collides. Deterministic (sha256 hex, first 16 chars). Full stacktrace-frame
- * normalization is refined in REQ-.2 (Sentry).
+ * Stable dedup fingerprint (THE-446 AC-2): hash(component + errorType + normalized top stack
+ * frame). Never the free-text title alone — a reworded report of the same fault still collides.
+ * The top frame is normalized (lowercased, line/column numbers stripped) so the same fault
+ * survives a reformulated message AND small line shifts across releases. Deterministic
+ * (sha256 hex, first 16 chars).
  */
 export function computeFingerprint(input: {
   systemComponent: string;
   stackTrace?: string;
   title: string;
+  errorType?: string;
 }): string {
-  const topFrame = (input.stackTrace ?? '')
+  const topFrameRaw = (input.stackTrace ?? '')
     .split('\n')
     .map((l) => l.trim())
     .find((l) => l.length > 0);
-  const signature = topFrame ?? input.title.trim().toLowerCase();
-  const basis = `${input.systemComponent.trim().toLowerCase()}::${signature}`;
+  // strip :line and :line:col so parser.ts:142 and parser.ts:150 are the same fault
+  const topFrame = topFrameRaw?.toLowerCase().replace(/:\d+(:\d+)?/g, '');
+  const parts = [
+    input.errorType?.trim().toLowerCase(),
+    topFrame ?? input.title.trim().toLowerCase(),
+  ].filter(Boolean);
+  const basis = `${input.systemComponent.trim().toLowerCase()}::${parts.join('::')}`;
   return crypto.createHash('sha256').update(basis).digest('hex').slice(0, 16);
+}
+
+/** Statuses a new occurrence can attach to. Terminal/decided chains start a fresh defect. */
+const OPEN_STATUSES: ReadonlySet<RegisterStatus> = new Set([
+  'open',
+  'assessed',
+  'triaging',
+  'mitigating',
+]);
+
+function occurrenceRecord(input: IngestInput): Record<string, unknown> {
+  return {
+    title: input.title,
+    source: input.source,
+    eventId: input.eventId ?? null,
+    environment: input.environment,
+    at: new Date().toISOString(),
+  };
 }
 
 /** Build human-gated proposed actions from the routing path. None execute in slice 1. */
@@ -104,9 +133,11 @@ async function audit(
 }
 
 /**
- * Ingest one incident/defect (THE-445 AC-1/AC-3/AC-4/AC-5). Body is validated upstream (route
- * zod). Score is deterministic; consequent actions are proposed, not executed (human gate).
- * Persists exactly one WORM row and audits ingest/score/route.
+ * Ingest one incident/defect (THE-445 AC-1/AC-3/AC-4/AC-5 + THE-446 AC-3). Body is validated
+ * upstream (route zod). Dedup first: if an open chain with the same fingerprint exists, this is
+ * a re-occurrence — no new defect, the chain's counter is incremented (WORM: via a new
+ * superseding row). Otherwise a fresh defect is created. Score is deterministic; consequent
+ * actions are proposed, not executed (human gate).
  */
 export async function ingestEntry(
   projectId: string,
@@ -114,6 +145,17 @@ export async function ingestEntry(
   actor: ActorContext,
 ): Promise<IRegisterEntry> {
   const kind = input.kind ?? 'defect';
+  const fingerprint = computeFingerprint(input);
+
+  // THE-446 AC-3: dedup against the chain head (latest row wins; WORM chains never mutate).
+  const latest = await RegisterEntry.findOne({ projectId, kind, fingerprint }).sort({
+    createdAt: -1,
+    _id: -1,
+  });
+  if (latest && OPEN_STATUSES.has(latest.status)) {
+    return recordOccurrence(projectId, latest, input, actor);
+  }
+
   const scoreInput: ScoreInput = {
     severity: input.severity,
     urgency: input.urgency,
@@ -121,7 +163,6 @@ export async function ingestEntry(
     mitigation: input.mitigation ?? 0,
   };
   const { pScore, routingPath, weightsVersion } = scoreAndRoute(scoreInput);
-  const fingerprint = computeFingerprint(input);
 
   await audit(actor, projectId, 'register.ingest', undefined, {
     source: input.source,
@@ -145,6 +186,7 @@ export async function ingestEntry(
     title: input.title,
     description: input.description,
     stackTrace: input.stackTrace,
+    errorType: input.errorType,
     severity: input.severity,
     urgency: input.urgency,
     criticality: input.criticality,
@@ -154,12 +196,86 @@ export async function ingestEntry(
     routingPath,
     status: 'assessed',
     owner: input.owner ?? null,
-    evidence: {},
+    evidence: { occurrences: [occurrenceRecord(input)] },
     proposedActions: proposeActions(routingPath),
     createdBy: actor.userId ?? null,
   });
   await entry.save();
   return entry;
+}
+
+/**
+ * Record a re-occurrence of a known defect (THE-446 AC-3/AC-4). WORM-conform: writes a NEW row
+ * that supersedes the chain head — occurrence_counter+1, urgency re-derived from the counter
+ * (log2 escalation, max'd with the reported urgency), score recomputed deterministically.
+ * The incoming report is linked as evidence; the chain keeps its canonical title. Human
+ * decisions already taken on proposed actions are carried over by action type.
+ */
+async function recordOccurrence(
+  projectId: string,
+  latest: IRegisterEntry,
+  input: IngestInput,
+  actor: ActorContext,
+): Promise<IRegisterEntry> {
+  const occurrenceCounter = latest.occurrenceCounter + 1;
+  const scoreInput: ScoreInput = {
+    severity: Math.max(latest.severity, input.severity),
+    urgency: Math.max(input.urgency, urgencyFromOccurrences(occurrenceCounter)),
+    criticality: Math.max(latest.criticality, input.criticality),
+    mitigation: input.mitigation ?? latest.mitigation,
+  };
+  const { pScore, routingPath, weightsVersion } = scoreAndRoute(scoreInput);
+
+  await audit(actor, projectId, 'register.occurrence', latest._id.toString(), {
+    fingerprint: latest.fingerprint,
+    occurrenceCounter,
+    pScore,
+    routingPath,
+    incomingTitle: input.title,
+  });
+
+  const evidence = (latest.evidence ?? {}) as Record<string, unknown>;
+  const occurrences = Array.isArray(evidence.occurrences) ? evidence.occurrences : [];
+
+  // re-propose for the (possibly escalated) route, but keep human decisions by action type
+  const decided = new Map(
+    latest.proposedActions
+      .filter((a) => a.status !== 'proposed')
+      .map((a) => [a.type, a.status] as const),
+  );
+  const proposedActions = proposeActions(routingPath).map((a) =>
+    decided.has(a.type) ? { ...a, status: decided.get(a.type)! } : a,
+  );
+
+  const next = new RegisterEntry({
+    projectId,
+    kind: latest.kind,
+    fingerprint: latest.fingerprint,
+    source: input.source,
+    systemComponent: latest.systemComponent,
+    environment: input.environment,
+    title: latest.title, // canonical first title; the incoming one lands in evidence
+    description: latest.description,
+    stackTrace: latest.stackTrace ?? input.stackTrace,
+    errorType: latest.errorType ?? input.errorType,
+    severity: scoreInput.severity,
+    urgency: scoreInput.urgency,
+    criticality: scoreInput.criticality,
+    mitigation: scoreInput.mitigation,
+    pScore,
+    weightsVersion,
+    routingPath,
+    occurrenceCounter,
+    parentRef: latest.parentRef ?? null,
+    supersedes: latest._id,
+    status: latest.status,
+    owner: latest.owner ?? null,
+    evidence: { ...evidence, occurrences: [...occurrences, occurrenceRecord(input)] },
+    proposedActions,
+    createdBy: actor.userId ?? latest.createdBy ?? null,
+  });
+  await next.save();
+  return next;
 }
 
 /**

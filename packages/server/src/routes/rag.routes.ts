@@ -14,10 +14,16 @@ import { log } from '../config/logger';
 
 const router = Router();
 
-router.use(authenticate);
+// NOTE: authenticate is applied PER ROUTE, not via a path-less `router.use()`.
+// This router is mounted at `/api` (index.ts) alongside other `/api` routers.
+// A path-less `router.use(authenticate)` runs for EVERY `/api/*` request that
+// enters this router — including paths this router does not own (e.g.
+// /api/regulations/corpus/health) — and would 401 them before they fall through
+// to their real router. Keeping auth on the individual routes lets unrelated
+// paths pass through cleanly. (THE-453)
 
-// GET /api/rag/health — check Data-Server reachability
-router.get('/rag/health', async (_req: Request, res: Response) => {
+// GET /api/rag/health — Data-Server reachability (authenticated: exposes a version string)
+router.get('/rag/health', authenticate, async (_req: Request, res: Response) => {
   if (!isConfigured()) {
     return res.json({ configured: false, ok: false });
   }
@@ -28,6 +34,7 @@ router.get('/rag/health', async (_req: Request, res: Response) => {
 // POST /api/projects/:projectId/rag/ingest
 router.post(
   '/:projectId/rag/ingest',
+  authenticate,
   requireProjectAccess('editor'),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
@@ -63,6 +70,7 @@ router.post(
 // POST /api/projects/:projectId/rag/query
 router.post(
   '/:projectId/rag/query',
+  authenticate,
   requireProjectAccess('viewer'),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);

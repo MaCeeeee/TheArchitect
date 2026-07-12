@@ -181,9 +181,11 @@ async function main() {
   app.use('/api/projects', oracleRoutes);
   app.use('/api/waitlist', waitlistRoutes);
   app.use('/api/projects', envisionAIRoutes);
-  app.use('/api', ragRoutes);          // Health: /api/rag/health
+  // ragRoutes authenticates PER ROUTE (not path-less) so it does not shadow the
+  // public health endpoints of routers mounted after it at /api (THE-453).
+  app.use('/api', ragRoutes);          // /api/rag/health (authed)
   app.use('/api/projects', ragRoutes); // Scoped: /api/projects/:projectId/rag/*
-  app.use('/api', regulationsRoutes);          // Service health: /api/regulations/crawler/health
+  app.use('/api', regulationsRoutes);          // Public: /api/regulations/corpus/health · authed: crawler/health
   app.use('/api/projects', regulationsRoutes); // UC-ICM-001: /api/projects/:projectId/regulations/*
   app.use('/api/projects', complianceRoutes);  // UC-ICM-002: /api/projects/:projectId/compliance/mappings/*
   app.use('/api/projects', requirementsRoutes); // UC-REQGEN-001: /api/projects/:projectId/requirements/*
