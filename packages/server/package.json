@@ -28,6 +28,7 @@
     "typing:build": "ts-node src/scripts/build-typing-golden.ts",
     "typing:prelabel": "ts-node src/scripts/prelabel-typing.ts",
     "typing:worksheet": "ts-node src/scripts/typing-worksheet.ts",
+    "typing:eval": "ts-node src/evals/runTypingEval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts"
   },
   "dependencies": {
