@@ -17,6 +17,22 @@ import { log } from '../config/logger';
 
 const router = Router();
 
+/**
+ * THE-422 security guard: `pin` arrives in an untrusted JSON body. Only string
+ * values may pass — a value like `{ $ne: null }` would otherwise reach Mongo as a
+ * query operator (NoSQL injection) via `getRegulationByKeyAndHash`. Non-object
+ * input and non-string entries are dropped; an all-dropped result → undefined.
+ * Exported for unit testing.
+ */
+export function sanitizePin(raw: unknown): VersionPin | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const out: VersionPin = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === 'string') out[k] = v;
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
 // NOTE: authenticate is applied PER ROUTE, not via a path-less `router.use()`.
 // This router is mounted at `/api` (index.ts) alongside other `/api` routers.
 // A path-less `router.use(authenticate)` runs for EVERY `/api/*` request that
@@ -89,7 +105,7 @@ router.post(
         text,
         topK: typeof topK === 'number' ? topK : undefined,
         filters,
-        pin: pin as VersionPin | undefined,
+        pin: sanitizePin(pin),
         eligibleOnly: typeof eligibleOnly === 'boolean' ? eligibleOnly : undefined,
       };
       const result = await governedQuery(input);

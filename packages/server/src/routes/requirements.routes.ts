@@ -30,6 +30,7 @@ import { loadProjectCandidateElements } from '../services/complianceElements.ser
 import { projectRequirementsToModel } from '../services/requirementProjection.service';
 import { computeComplianceGaps } from '../services/compliance-gaps.service';
 import { getPipelineNorm, derivePipelineAnchorId } from '../services/norm.service';
+import { resolveGovernedRegulations } from '../services/governedRetrieval.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -49,6 +50,9 @@ const GenerateBodySchema = z.object({
   // THE-390 P3: kanonische Norm-Referenz (`corpus:<source>` | `upload:<standardId>`).
   normId: z.string().optional(),
   sectionEId: z.string().optional(),
+  // THE-422: optional version-pin for corpus norms (regulationKey -> versionHash).
+  // The `z.string()` value blocks NoSQL-operator injection (a `{ $ne: null }` → 400).
+  pin: z.record(z.string()).optional(),
   // if regulationId provided + persist=true → service called with persist mode
   persist: z.boolean().default(false),
 });
@@ -139,6 +143,25 @@ router.post(
         return res
           .status(404)
           .json({ success: false, error: 'norm section not found or has no text' });
+      }
+      // THE-422 read-side gate: only CORPUS norms carry a version — for those the
+      // section `id` IS the `regulationKey` (norm.service regulationsToNormView).
+      // Resolve it through the gate (current or pinned); an empty result means the
+      // version is stale / the pin vanished → 409. UPLOAD norms have no version and
+      // pass through untouched — 409-ing them would regress document-upload
+      // generation (AC-5).
+      if (norm.source === 'corpus') {
+        const governed = await resolveGovernedRegulations({
+          keys: [section.id],
+          pin: parsed.data.pin,
+          eligibleOnly: true,
+        });
+        if (governed.length === 0) {
+          return res.status(409).json({
+            success: false,
+            error: 'norm section version is stale — re-sync or pin an available version',
+          });
+        }
       }
       text = section.content.slice(0, 12_000);
       source = norm.name;
