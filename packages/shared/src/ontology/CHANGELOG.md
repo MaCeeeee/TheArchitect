@@ -7,6 +7,14 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.3.0 — 2026-07-12 (THE-430 / THE-432)
+
+- **obligationKinds** (3, E6) NEU: obligation, prohibition, permission — der deontische
+  von-Wright-Kern als geschlossener Label-Raum fürs Term Typing (THE-432). Bewusst
+  minimal (höchstes Inter-Annotator-Agreement); feinere funktionale Typen
+  (exemption/notification/…) wären additive Zeilen. Fließt in den OntoLearner-Export
+  (`termTypes.obligationKind`) + `ObligationKindSchema` / `isObligationKind`.
+
 ## 1.0.0 — 2026-07-07 (THE-429)
 
 Initial ontology. Seeds the E6/E7/E8-R5 vocabularies from ADR-0004:

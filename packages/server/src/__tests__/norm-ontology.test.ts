@@ -17,6 +17,9 @@ import {
   LANGUAGE_IDS,
   isLanguage,
   isNormKind,
+  OBLIGATION_KIND_IDS,
+  isObligationKind,
+  ObligationKindSchema,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -88,7 +91,7 @@ describe('source registry (THE-413)', () => {
   });
 
   it('bumped ontologyVersion for the additive rows', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.2.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
   });
 
   it('isNormSource accepts ontology rows, rejects everything else', () => {
@@ -125,6 +128,27 @@ describe('languages facet + kind coverage (THE-417)', () => {
     }
   });
   it('bumped to 1.2.0', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.2.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
+  });
+});
+
+describe('obligationKinds facet (THE-430 / THE-432)', () => {
+  it('ships the deontic triple as the closed typing label space', () => {
+    expect(OBLIGATION_KIND_IDS).toEqual(['obligation', 'prohibition', 'permission']);
+  });
+  it('isObligationKind: membership + OOV rejection (exact case)', () => {
+    expect(isObligationKind('obligation')).toBe(true);
+    expect(isObligationKind('prohibition')).toBe(true);
+    expect(isObligationKind('duty')).toBe(false);
+    expect(isObligationKind('Obligation')).toBe(false);
+    expect(isObligationKind('')).toBe(false);
+  });
+  it('ObligationKindSchema gates ingested/suggested values', () => {
+    expect(ObligationKindSchema.safeParse('permission').success).toBe(true);
+    expect(ObligationKindSchema.safeParse('exemption').success).toBe(false);
+  });
+  it('OntoLearner export covers the obligationKind facet', () => {
+    const exported = exportForOntoLearner();
+    expect(exported.termTypes.obligationKind).toEqual(OBLIGATION_KIND_IDS);
   });
 });
