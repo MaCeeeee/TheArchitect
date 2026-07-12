@@ -2,7 +2,7 @@
 
 **Spec / Linear:** [THE-422 — REQ-CTXGOV-001.1](https://linear.app/thearchitect/issue/THE-422) (Parent [THE-420](https://linear.app/thearchitect/issue/THE-420) / UC-CTXGOV-001)
 **Plan:** `docs/superpowers/plans/2026-07-12-the-422-governed-retrieval.md`
-**Created:** 2026-07-12 · **Status:** Backlog — Pre-Flight + Plan abgeschlossen, Implementierung nicht gestartet
+**Created:** 2026-07-12 · **Status:** IMPLEMENTIERT + review-gehärtet (subagent-driven, alle Chunks APPROVED) — 107/107 Surface-Tests grün, tsc clean. Offen: Chunk-0-Spike (operativ), Branch-Bereinigung (Git-Race THE-430/431), Merge+Done (human-gated). Commits: 192913a·a2c16ee·c270196·35a78e3·abc4fc6
 **Verifiziert gegen:** HEAD `56fa11b` (nach THE-440 Korpus-Cutover `cca1969`)
 **Blocks:** [THE-461](https://linear.app/thearchitect/issue/THE-461) (UC-LAW-002 korpusweite Discovery) · **Related:** [THE-306](https://linear.app/thearchitect/issue/THE-306) (VERLOCK Write-Side, Done), [THE-419](https://linear.app/thearchitect/issue/THE-419) (STRICT_READS-Muster, Done), [THE-423](https://linear.app/thearchitect/issue/THE-423) (ContextTrace — Handoff-Seam)
 **Memory:** `progress_uc_ctxgov_001`, `feedback_preflight_check`, `feedback_complexity_assessment`, `feedback_backlog_rescore_trigger`
@@ -27,11 +27,11 @@ Change Amplification **mittel** (Legacy-Bypass hebt es leicht: AI-Match braucht 
 
 | AC | Anforderung | Plan-Task | Verifikationsmethode | Evidence (bei Ausführung) | Status |
 |--|--|--|--|--|--|
-| **AC-1** | Inputs akzeptieren `pin` + `eligibleOnly` (Default true) | Chunk 1 (Struktur-Pfad), Chunk 2 (Vektor-Pfad) | Unit: Typ-Signatur + Default-Verhalten | `governedRetrieval.service.test.ts` | ⬜ |
-| **AC-2** | Stale-Chunk verworfen + `staleDropped`-Counter | Chunk 0 (Spike-Gate) → Chunk 2 | Unit: stale gedroppt, current behalten, Counter=1 | Test „governedQuery drops stale…" | ⬜ |
-| **AC-3** | Pin liefert exakte Mongo-Version, nie Qdrant | Chunk 1 (`getRegulationByKeyAndHash`), Chunk 2 (Text-Override) | Unit: Pin serviert `fullText` der gepinnten Version; vanished pin → staleDropped | Tests „pin serves…" | ⬜ |
-| **AC-4** | Alle 6 Konsumenten nur über das Modul | Chunk 3 (4 Generatoren + `/rag/query`), Chunk 4 (AI-Match + REQGEN) | Grep: `queryDocuments(` nur in `governedRetrieval.service.ts`; Legacy `Regulation.find()` aus Retrieval-Pfad raus | `grep -rn`, Wiring-Tests | ⬜ |
-| **AC-5** | Regression grün; Pin/Stale-Tests grün | alle Chunks; Chunk 4 Step 6/7 | `npm test -w @thearchitect/server` + `npm run build` clean | CI/lokal-Log | ⬜ |
+| **AC-1** | Inputs akzeptieren `pin` + `eligibleOnly` (Default true) | Chunk 1 (Struktur-Pfad), Chunk 2 (Vektor-Pfad) | Unit: Typ-Signatur + Default-Verhalten | `governedRetrieval.service.test.ts` | ✅ |
+| **AC-2** | Stale-Chunk verworfen + `staleDropped`-Counter | Chunk 0 (Spike-Gate) → Chunk 2 | Unit: stale gedroppt, current behalten, Counter=1 | Test „governedQuery drops stale…" | ✅ |
+| **AC-3** | Pin liefert exakte Mongo-Version, nie Qdrant | Chunk 1 (`getRegulationByKeyAndHash`), Chunk 2 (Text-Override) | Unit: Pin serviert `fullText` der gepinnten Version; vanished pin → staleDropped | Tests „pin serves…" | ✅ |
+| **AC-4** | Alle 6 Konsumenten nur über das Modul | Chunk 3 (4 Generatoren + `/rag/query`), Chunk 4 (AI-Match + REQGEN) | Grep: `queryDocuments(` nur in `governedRetrieval.service.ts`; Legacy `Regulation.find()` aus Retrieval-Pfad raus | `grep -rn`, Wiring-Tests | ✅ |
+| **AC-5** | Regression grün; Pin/Stale-Tests grün | alle Chunks; Chunk 4 Step 6/7 | `npm test -w @thearchitect/server` + `npm run build` clean | CI/lokal-Log | ✅ |
 
 ## Watch-Points / Risiken
 
