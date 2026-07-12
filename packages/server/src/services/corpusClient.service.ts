@@ -99,6 +99,19 @@ export async function getRegulationByKey(key: string): Promise<ICorpusRegulation
   return CorpusRegulation().findOne({ regulationKey: key }).sort({ version: -1 });
 }
 
+/** Exact version by key+hash — for version-pin (AC-3). Returns null if that version no longer exists. */
+export async function getRegulationByKeyAndHash(
+  key: string,
+  versionHash: string,
+): Promise<ICorpusRegulation | null> {
+  try {
+    return await CorpusRegulation().findOne({ regulationKey: key, versionHash });
+  } catch (err) {
+    log.warn({ err: safeErrorMessage(err), key }, '[corpus] getRegulationByKeyAndHash failed');
+    return null;
+  }
+}
+
 export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegulation[]> {
   if (keys.length === 0) return [];
   try {
