@@ -13,6 +13,12 @@ import {
   getRegulationByKeyAndHash,
   type ICorpusRegulation,
 } from './corpusClient.service';
+import {
+  queryDocuments,
+  type QueryInput,
+  type QueryResult,
+  type QueryChunk,
+} from './dataServer.service';
 import { log } from '../config/logger';
 
 export type VersionPin = Record<string, string>; // regulationKey -> versionHash
@@ -83,8 +89,10 @@ export async function resolveGovernedRegulations(
   const unpinned = keys.filter(k => !(pin && pin[k]));
 
   // 1) Pinned keys — exact version from Mongo (AC-3).
+  // Dedup keys (mirrors the unpinned path's byKey discipline): a duplicated pinned
+  // key must emit ONE view and count `pinnedServed` once, not per occurrence.
   if (pin) {
-    for (const k of keys) {
+    for (const k of new Set(keys)) {
       const hash = pin[k];
       if (!hash) continue;
       const doc = await getRegulationByKeyAndHash(k, hash);
@@ -109,6 +117,10 @@ export async function resolveGovernedRegulations(
       if (!cur || (r.version ?? 1) > (cur.version ?? 1)) byKey.set(r.regulationKey, r);
     }
     for (const [k, r] of byKey) {
+      // Belt-and-suspenders: `byKey` already picks the same max-version reg that
+      // `getCurrentVersionHashes` returns, so this mismatch is currently inert
+      // (never true). Kept as a live guard until draft/published lifecycle (THE-426)
+      // decouples "current" from "max version", at which point this becomes load-bearing.
       if (current && current.get(k) !== r.versionHash) {
         stats.staleDropped += 1;
         continue;
@@ -117,4 +129,78 @@ export async function resolveGovernedRegulations(
     }
   }
   return out;
+}
+
+export interface GovernedQueryInput extends QueryInput {
+  pin?: VersionPin;
+  eligibleOnly?: boolean; // default true
+}
+
+/** Corpus key from a chunk's payload (snake_case fallback for legacy points). */
+const keyOf = (c: QueryChunk): string | undefined =>
+  (c.metadata?.regulationKey ?? c.metadata?.regulation_key) as string | undefined;
+/** Version hash from a chunk's payload (snake_case fallback for legacy points). */
+const hashOf = (c: QueryChunk): string | undefined =>
+  (c.metadata?.versionHash ?? c.metadata?.version_hash) as string | undefined;
+
+/**
+ * Vector-path governed retrieval (AC-2/AC-3). Wraps `queryDocuments`:
+ * - non-law chunks (no `regulationKey`) pass through untouched;
+ * - pinned law chunks are replaced with the pinned Mongo `fullText` (never Qdrant);
+ * - law chunks whose `versionHash` is PRESENT and stale are dropped + counted;
+ * - law chunks with NO `versionHash` (legacy pre-payload points) are KEPT + counted
+ *   `unverifiable` — we never silently blank out existing generator context.
+ */
+export async function governedQuery(input: GovernedQueryInput): Promise<QueryResult> {
+  const eligibleOnly = input.eligibleOnly ?? true;
+  const raw = await queryDocuments({
+    projectId: input.projectId,
+    text: input.text,
+    topK: input.topK,
+    filters: input.filters,
+  });
+
+  const keys = [...new Set(raw.chunks.map(keyOf).filter((k): k is string => !!k))];
+  if (keys.length === 0) return raw; // non-law chunks (user uploads) pass through untouched
+
+  const current = await getCurrentVersionHashes(keys);
+  const kept: QueryChunk[] = [];
+  for (const c of raw.chunks) {
+    const k = keyOf(c);
+    if (!k) {
+      kept.push(c); // non-law chunk
+      continue;
+    }
+
+    const pinnedHash = input.pin?.[k];
+    if (pinnedHash) {
+      const doc = await getRegulationByKeyAndHash(k, pinnedHash);
+      if (doc) {
+        kept.push({
+          ...c,
+          text: doc.fullText,
+          metadata: { ...c.metadata, versionHash: doc.versionHash, pinned: true },
+        });
+        stats.pinnedServed += 1;
+      } else {
+        stats.staleDropped += 1;
+        log.warn({ k, pinnedHash }, '[governed] pinned version not found — chunk dropped');
+      }
+      continue;
+    }
+
+    // Policy (AC-5 regression safety): a chunk whose versionHash is PRESENT and
+    // mismatched is stale → drop. A chunk with NO versionHash (legacy point ingested
+    // before the payload field existed) cannot be proven stale → KEEP + count, so we
+    // never silently blank out existing generator context. Tighten to hard-drop only
+    // once the corpus is fully re-ingested with versionHash (track via this counter).
+    const h = hashOf(c);
+    if (eligibleOnly && h !== undefined && h !== current.get(k)) {
+      stats.staleDropped += 1;
+      continue;
+    }
+    if (h === undefined) stats.unverifiable += 1;
+    kept.push(c);
+  }
+  return { chunks: kept };
 }
