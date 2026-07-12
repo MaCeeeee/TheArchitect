@@ -3,13 +3,16 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import {
   ingestDocument,
-  queryDocuments,
   health,
   isConfigured,
   DataServerNotConfiguredError,
   type IngestDocumentInput,
-  type QueryInput,
 } from '../services/dataServer.service';
+import {
+  governedQuery,
+  type GovernedQueryInput,
+  type VersionPin,
+} from '../services/governedRetrieval.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -74,20 +77,22 @@ router.post(
   requireProjectAccess('viewer'),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
-    const { text, topK, filters } = req.body ?? {};
+    const { text, topK, filters, pin, eligibleOnly } = req.body ?? {};
 
     if (typeof text !== 'string' || text.trim().length === 0) {
       return res.status(400).json({ success: false, error: 'text is required' });
     }
 
     try {
-      const input: QueryInput = {
+      const input: GovernedQueryInput = {
         projectId,
         text,
         topK: typeof topK === 'number' ? topK : undefined,
         filters,
+        pin: pin as VersionPin | undefined,
+        eligibleOnly: typeof eligibleOnly === 'boolean' ? eligibleOnly : undefined,
       };
-      const result = await queryDocuments(input);
+      const result = await governedQuery(input);
       res.json({ success: true, data: result });
     } catch (err) {
       if (err instanceof DataServerNotConfiguredError) {

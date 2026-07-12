@@ -6,7 +6,8 @@ import {
   type StandardConnectionType,
   type ElementType,
 } from '@thearchitect/shared';
-import { queryDocuments, isConfigured as isRagConfigured } from './dataServer.service';
+import { isConfigured as isRagConfigured } from './dataServer.service';
+import { governedQuery } from './governedRetrieval.service';
 
 export interface SuggestionInput {
   id: string;
@@ -384,7 +385,7 @@ function pairKey(a: string, b: string): string {
 async function fetchRagContextSafe(projectId: string, query: string): Promise<{ context: string; used: boolean }> {
   if (!isRagConfigured()) return { context: '', used: false };
   try {
-    const result = await queryDocuments({ projectId, text: query, topK: 3 });
+    const result = await governedQuery({ projectId, text: query, topK: 3 });
     if (!result?.chunks?.length) return { context: '', used: false };
     const context = result.chunks
       .slice(0, 3)
