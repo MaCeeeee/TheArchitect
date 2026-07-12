@@ -284,3 +284,139 @@ export function cohenKappa(a: PairLabel[], b: PairLabel[]): number {
   if (pe === 1) return 1; // beide Annotatoren völlig einseitig UND einig
   return (po - pe) / (1 - pe);
 }
+
+// ─── Kalibrierung: Expected Calibration Error (ECE) ──────────────
+//
+// THE-430 (OL-Eval-Suite) AC-2: F1 allein ist blind für den Fall "konfident
+// falsch". ECE misst, ob die selbst-berichtete Confidence zur tatsächlichen
+// Trefferquote passt. Kern-Befund des OntoLearner-Papers (§5): Kalibrierung ist
+// eine Modell×Domäne-Interaktion — für ein Compliance-Produkt ist unkalibrierte
+// Extraktion ein Audit-Risiko. Generisch (confidence, correct) → nutzbar für
+// Mapping, Relations UND Typing.
+
+export interface CalibrationSample {
+  confidence: number; // [0,1]
+  correct: boolean;
+}
+
+export interface CalibrationBin {
+  band: string; // z. B. "0.8–0.9"
+  count: number;
+  avgConfidence: number;
+  accuracy: number;
+  /** |accuracy − avgConfidence| im Band; hoch = Band ist mis-kalibriert. */
+  gap: number;
+}
+
+export interface CalibrationReport {
+  /** ECE = Σ_b (n_b/N)·|acc_b − conf_b| ∈ [0,1]. 0 = perfekt kalibriert. */
+  ece: number;
+  bins: CalibrationBin[];
+  samples: number;
+}
+
+/** Extrahiert (confidence, correct)-Paare aus Mapping-Outcomes je VORHERSAGE. */
+export function calibrationSamplesFromOutcomes(outcomes: CaseOutcome[]): CalibrationSample[] {
+  const out: CalibrationSample[] = [];
+  for (const o of outcomes) {
+    const gold = new Set(o.goldElementIds);
+    for (const p of o.predicted) out.push({ confidence: p.confidence, correct: gold.has(p.elementId) });
+  }
+  return out;
+}
+
+export function expectedCalibrationError(
+  samples: CalibrationSample[],
+  edges: number[] = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+): CalibrationReport {
+  const bins: CalibrationBin[] = [];
+  const n = samples.length;
+  let ece = 0;
+  for (let i = 0; i < edges.length - 1; i++) {
+    const lo = edges[i];
+    const hi = edges[i + 1];
+    const isLast = i === edges.length - 2;
+    const inBin = samples.filter(
+      s => s.confidence >= lo && (isLast ? s.confidence <= hi : s.confidence < hi)
+    );
+    const count = inBin.length;
+    const avgConfidence = count ? inBin.reduce((a, s) => a + s.confidence, 0) / count : 0;
+    const accuracy = count ? inBin.filter(s => s.correct).length / count : 0;
+    const gap = Math.abs(accuracy - avgConfidence);
+    if (count > 0 && n > 0) ece += (count / n) * gap;
+    bins.push({ band: `${lo.toFixed(1)}–${hi.toFixed(1)}`, count, avgConfidence, accuracy, gap });
+  }
+  return { ece, bins, samples: n };
+}
+
+// ─── FP/FN-Bias-Ausweis ─────────────────────────────────────────
+//
+// THE-430 AC-2: Der OntoLearner-Befund ist, dass der Fehler-Bias je
+// Ontologie-Struktur KIPPT (mal über-, mal unter-matchend). Ein einzelner
+// F-Wert verbirgt das. `bias` ∈ [−1,1]: +1 = nur FP (über-matchend), −1 = nur
+// FN (übersieht). Für Compliance ist FN (übersehenes Gesetz) audit-kritischer
+// als FP — der Ausweis macht die Richtung sichtbar.
+
+export interface BiasReport {
+  tp: number;
+  fp: number;
+  fn: number;
+  /** (fp − fn) / (fp + fn) ∈ [−1,1]; 0 = ausgewogen. */
+  bias: number;
+  lean: 'fp' | 'fn' | 'balanced';
+}
+
+export function fpFnBias(outcomes: CaseOutcome[], deadzone = 0.1): BiasReport {
+  const m = aggregateMetrics(outcomes);
+  const denom = m.fp + m.fn;
+  const bias = denom === 0 ? 0 : (m.fp - m.fn) / denom;
+  const lean: BiasReport['lean'] = bias > deadzone ? 'fp' : bias < -deadzone ? 'fn' : 'balanced';
+  return { tp: m.tp, fp: m.fp, fn: m.fn, bias, lean };
+}
+
+// ─── Leakage-aware Split ─────────────────────────────────────────
+//
+// THE-430 AC / Paper §3.2: ein naiver Random-Split leakt, wenn strukturell
+// verwandte Fälle (gleiches Gesetz, gleicher Element-Cluster) über train/test
+// streuen — das Modell "sieht" Test-Struktur im Training. Dieser Split hält
+// alle Fälle mit gleichem `keyOf` in DERSELBEN Falte. Deterministisch (seed,
+// kein Math.random) → reproduzierbare Golden-Splits.
+
+export interface DatasetSplit<T> {
+  train: T[];
+  test: T[];
+}
+
+export function leakageAwareSplit<T>(
+  items: T[],
+  keyOf: (item: T) => string,
+  testFraction = 0.3,
+  seed = 42
+): DatasetSplit<T> {
+  const groups = new Map<string, T[]>();
+  for (const it of items) {
+    const k = keyOf(it);
+    const list = groups.get(k) ?? [];
+    list.push(it);
+    groups.set(k, list);
+  }
+  // Basis-Reihenfolge stabil (sortiert), dann deterministisch gemischt für
+  // Repräsentativität — gleiche (items, seed) → gleicher Split.
+  const keys = [...groups.keys()].sort();
+  const rand = mulberry32(seed);
+  for (let i = keys.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+  }
+  const target = Math.round(items.length * testFraction);
+  const test: T[] = [];
+  const train: T[] = [];
+  for (const k of keys) {
+    const g = groups.get(k)!;
+    // Ganze Gruppe fällt in test, solange das Ziel nicht erreicht ist — Gruppen-
+    // Integrität schlägt exakte Fraktion (sonst Leakage).
+    if (test.length < target) test.push(...g);
+    else train.push(...g);
+  }
+  return { train, test };
+}
