@@ -22,6 +22,7 @@ import {
   CrawlerUnreachableError,
 } from '../services/complianceCrawler.service';
 import { corpusHealth, isCorpusConfigured } from '../services/corpusClient.service';
+import { getFallbackStats, isStrictCorpusReads } from '../services/regulationResolver.service';
 import { isNormSource, NORM_SOURCE_IDS } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
@@ -37,7 +38,19 @@ const router = Router();
 router.get('/regulations/corpus/health', async (_req: Request, res: Response) => {
   const configured = isCorpusConfigured();
   const health = configured ? await corpusHealth() : { ok: false };
-  res.json({ configured, health, ok: health.ok });
+  // THE-419 cutover-readiness telemetry: app-DB fallback counters since process
+  // start. When both are 0 over a full traffic window, the corpus serves every
+  // read and CORPUS_STRICT_READS can be flipped safely. `fallbackStats` is
+  // in-memory (resets on restart) — interpret it together with `uptimeSeconds`.
+  // Tamper-proof vs. log-grep: a typo can fake a "0" in a shell, not here.
+  res.json({
+    configured,
+    health,
+    ok: health.ok,
+    strictReads: isStrictCorpusReads(),
+    fallbackStats: getFallbackStats(),
+    uptimeSeconds: Math.round(process.uptime()),
+  });
 });
 
 router.use(authenticate);
