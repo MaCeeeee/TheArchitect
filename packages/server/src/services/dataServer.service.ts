@@ -66,7 +66,18 @@ function assertConfigured(): void {
   }
 }
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+interface PostJsonOptions<T> {
+  /**
+   * Called when the Data-Server returns a 2xx with an empty/whitespace body.
+   * An empty body is NOT valid JSON, so without a default `res.json()` throws
+   * (SyntaxError: Unexpected end of JSON input). Provide a default only where an
+   * empty response is a legitimate outcome (e.g. "0 hits" → `{ chunks: [] }`).
+   * If omitted, an empty 2xx body throws a descriptive error.
+   */
+  emptyBodyDefault?: () => T;
+}
+
+async function postJson<T>(path: string, body: unknown, opts?: PostJsonOptions<T>): Promise<T> {
   assertConfigured();
   const url = `${DATA_SERVER_URL}${path}`;
   const start = Date.now();
@@ -87,8 +98,25 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     throw new Error(`Data-Server ${path} → ${res.status}: ${errText.slice(0, 200)}`);
   }
 
+  // n8n "Respond to Webhook" returns an empty body for an empty items array,
+  // so a 200 with content-length: 0 is a real (and expected) case. Read as text
+  // first and decide, instead of letting res.json() throw on empty input.
+  const text = await res.text();
+  if (text.trim() === '') {
+    if (opts?.emptyBodyDefault) {
+      log.debug({ url, elapsed }, '[DataServer] empty 2xx body → default');
+      return opts.emptyBodyDefault();
+    }
+    log.warn({ url, elapsed }, '[DataServer] unexpected empty 2xx body');
+    throw new Error(`Data-Server ${path} → ${res.status} with empty body (expected JSON)`);
+  }
+
   log.debug({ url, elapsed }, '[DataServer] request ok');
-  return (await res.json()) as T;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    throw new Error(`Data-Server ${path} → ${res.status} with invalid JSON body: ${text.slice(0, 200)}`);
+  }
 }
 
 export async function ingestDocument(input: IngestDocumentInput): Promise<IngestDocumentResult> {
@@ -96,7 +124,9 @@ export async function ingestDocument(input: IngestDocumentInput): Promise<Ingest
 }
 
 export async function queryDocuments(input: QueryInput): Promise<QueryResult> {
-  return postJson<QueryResult>(QUERY_PATH, input);
+  // An empty 2xx body means "0 hits" — surface it as an empty chunk set rather
+  // than throwing, so callers can distinguish "no context" from a transport error.
+  return postJson<QueryResult>(QUERY_PATH, input, { emptyBodyDefault: () => ({ chunks: [] }) });
 }
 
 export async function health(): Promise<{ ok: boolean; version?: string }> {
