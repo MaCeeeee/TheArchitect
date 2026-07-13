@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import {
-  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield, Plug,
+  User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield, Plug, ShieldAlert,
 } from 'lucide-react';
 
 const SECTIONS = [
@@ -17,6 +17,7 @@ const SECTIONS = [
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'audit-logs', label: 'Audit Logs', icon: FileText },
+  { id: 'ops-register', label: 'Ops Register', icon: ShieldAlert },
 ] as const;
 
 const ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
@@ -32,6 +33,7 @@ export default function SettingsSidebar() {
     if (s.id === 'billing') return BILLING_ROLES.includes(role || '');
     if (s.id === 'users') return ADMIN_ROLES.includes(role || '');
     if (s.id === 'audit-logs') return ADMIN_ROLES.includes(role || '');
+    if (s.id === 'ops-register') return ADMIN_ROLES.includes(role || '');
     return true;
   });
 

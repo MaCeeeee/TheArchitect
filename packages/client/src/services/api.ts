@@ -721,6 +721,18 @@ export const adminAPI = {
     api.get('/admin/audit-log/export', { params, responseType: 'blob' as const }),
 };
 
+// Ops Register API (THE-476) — platform-wide operational register, system-admin only.
+export const opsRegisterAPI = {
+  list: () => api.get('/ops/register'),
+  gate: (chainId: string, body: { actionType: string; decision: 'approve' | 'reject' }) =>
+    api.post(`/ops/register/${chainId}/gate`, body),
+  close: (
+    chainId: string,
+    body: { testsGreen?: boolean; fixRef?: string; appliedAt?: string; note?: string },
+  ) => api.post(`/ops/register/${chainId}/close`, body),
+  slaSweep: () => api.post('/ops/register/sla-sweep', {}),
+};
+
 export const simulationAPI = {
   list: (projectId: string, page = 1, limit = 20) =>
     api.get(`/projects/${projectId}/simulations`, { params: { page, limit } }),

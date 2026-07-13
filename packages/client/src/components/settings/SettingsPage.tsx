@@ -14,6 +14,7 @@ import AccessibilitySection from './AccessibilitySection';
 import BillingSection from './BillingSection';
 import UsersSection from './UsersSection';
 import AuditLogsSection from './AuditLogsSection';
+import OpsRegisterSection from './OpsRegisterSection';
 
 const SECTION_MAP: Record<string, React.ComponentType> = {
   profile: ProfileSection,
@@ -28,6 +29,7 @@ const SECTION_MAP: Record<string, React.ComponentType> = {
   billing: BillingSection,
   users: UsersSection,
   'audit-logs': AuditLogsSection,
+  'ops-register': OpsRegisterSection,
 };
 
 export default function SettingsPage() {
