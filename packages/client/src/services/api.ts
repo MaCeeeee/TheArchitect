@@ -43,13 +43,22 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _retryCount?: number };
 
-    // ── 429 Too Many Requests → retry with exponential backoff ──
+    // ── 429 Too Many Requests → single jittered retry ──
+    // One retry only: more just amplifies a burst (N requests × retries) and keeps
+    // the rate window pinned. We honor the server's retryAfter hint but CAP it — a
+    // long global window, or the AI limiters' retryAfter of up to 24h, must never
+    // turn into a multi-minute (or multi-hour) hanging request. Random jitter
+    // de-synchronizes a burst of simultaneous 429s so their retries don't arrive
+    // together and re-trip the same window (thundering herd). Beyond one retry we
+    // fail fast and let the caller surface a graceful "couldn't load" state.
     if (error.response?.status === 429) {
       const retryCount = originalRequest._retryCount || 0;
-      if (retryCount < 3) {
+      const MAX_429_RETRIES = 1;
+      if (retryCount < MAX_429_RETRIES) {
         originalRequest._retryCount = retryCount + 1;
         const retryAfter = (error.response.data as { retryAfter?: number })?.retryAfter;
-        const delay = retryAfter ? retryAfter * 1000 : Math.min(1000 * 2 ** retryCount, 8000);
+        const base = retryAfter ? retryAfter * 1000 : 1000;
+        const delay = Math.min(base, 6000) + Math.random() * 400;
         await new Promise((r) => setTimeout(r, delay));
         return api(originalRequest);
       }

@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { Grid, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import LayerPlane from './LayerPlane';
 import ArchitectureElements from './ArchitectureElements';
 import ConnectionLines from './ConnectionLines';
@@ -54,6 +54,21 @@ export default function Scene() {
   const is3D = viewMode === '3d';
   const isLayerView = viewMode === 'layer';
 
+  // WebGL context-loss recovery. The browser drops the GL context under memory
+  // pressure or too many live contexts (many tabs). Without preventDefault() on
+  // 'webglcontextlost' the browser never attempts to restore it, so the canvas
+  // stays permanently black. We preventDefault (three.js re-inits GL on restore,
+  // and the always-on frameloop repaints automatically) and surface a calm
+  // overlay for the brief gap instead of a dead scene.
+  const [contextLost, setContextLost] = useState(false);
+  const handleContextLost = useCallback((e: Event) => {
+    e.preventDefault();
+    setContextLost(true);
+  }, []);
+  const handleContextRestored = useCallback(() => {
+    setContextLost(false);
+  }, []);
+
   // Guard: auto-deactivate Plateau View when leaving 3D mode
   useEffect(() => {
     if (!is3D && isPlateauActive) {
@@ -76,9 +91,14 @@ export default function Scene() {
   return (
     <div className="relative w-full h-full">
       <Canvas
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         style={{ background: isXRayActive ? '#080e1a' : is3D ? '#0a0a0a' : '#0d1117' }}
         onPointerMissed={handleCanvasClick}
+        onCreated={({ gl }) => {
+          const canvas = gl.domElement;
+          canvas.addEventListener('webglcontextlost', handleContextLost, false);
+          canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+        }}
       >
         <Suspense fallback={null}>
           {/* Lighting adapts to view mode */}
@@ -193,6 +213,18 @@ export default function Scene() {
 
       {/* X-Ray HUD - rendered OUTSIDE Canvas so it stays fixed on screen */}
       {isXRayActive && <XRayHUD />}
+
+      {/* WebGL context-loss recovery overlay — calm feedback during the restore
+          gap instead of a dead black canvas. Clears itself on 'webglcontextrestored'. */}
+      {contextLost && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#334155] border-t-[#7c3aed]" />
+            <p className="text-sm font-medium text-slate-200">Restoring 3D view…</p>
+            <p className="text-xs text-slate-400">Reconnecting the graphics context — this only takes a moment.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

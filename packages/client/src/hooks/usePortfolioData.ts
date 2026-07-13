@@ -79,6 +79,36 @@ export interface PortfolioData {
   refresh: () => void;
 }
 
+// ─── Concurrency-limited map ───
+// The portfolio enrichment fires 5 reads per project (one of them, /advisor/health,
+// runs a full advisor scan server-side). Firing list.map() unbounded means 5×N
+// simultaneous requests, which spikes the global rate limiter on larger portfolios
+// and triggers the client 429-retry storm. Cap in-flight projects to a small pool so
+// the burst stays flat (~POOL×5 concurrent) regardless of portfolio size. Results keep
+// their original index; nothing is dropped — the dashboard just fills progressively.
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<PromiseSettledResult<R>[]> {
+  const results = new Array<PromiseSettledResult<R>>(items.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < items.length) {
+      const idx = cursor++;
+      try {
+        results[idx] = { status: 'fulfilled', value: await fn(items[idx]) };
+      } catch (reason) {
+        results[idx] = { status: 'rejected', reason };
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+const ENRICH_POOL_SIZE = 3;
+
 // ─── Hook ───
 
 export function usePortfolioData(): PortfolioData {
@@ -119,8 +149,7 @@ export function usePortfolioData(): PortfolioData {
       // Phase 2: enrich each project in parallel
       setEnriching(true);
 
-      const enrichResults = await Promise.allSettled(
-        list.map(async (p) => {
+      const enrichResults = await mapWithConcurrency(list, ENRICH_POOL_SIZE, async (p) => {
           const [statsRes, healthRes, riskRes, costRes, complianceRes] = await Promise.allSettled([
             projectAPI.getStats(p._id),
             advisorAPI.health(p._id),
@@ -151,8 +180,7 @@ export function usePortfolioData(): PortfolioData {
             cost: unwrap(costRes),
             compliance: unwrap(complianceRes),
           };
-        })
-      );
+      });
 
       const newStats: Record<string, ProjectStats | null> = {};
       const newHealth: Record<string, HealthData | null> = {};
