@@ -34,7 +34,7 @@ router.use(authenticate);
 
 // ─── Validators (AC-1: strict schema, reject malformed with 400) ────────────
 
-const IngestBodySchema = z.object({
+export const IngestBodySchema = z.object({
   kind: z.enum(['incident', 'defect', 'problem', 'risk']).default('defect'),
   source: z
     .enum(['manual', 'sentry', 'github', 'sonarqube', 'dependabot', 'support'])
@@ -53,7 +53,7 @@ const IngestBodySchema = z.object({
   owner: z.string().max(200).optional(),
 });
 
-const GateBodySchema = z.object({
+export const GateBodySchema = z.object({
   actionType: z.enum([
     'page_oncall',
     'create_blocker',
@@ -65,19 +65,19 @@ const GateBodySchema = z.object({
   decision: z.enum(['approve', 'reject']),
 });
 
-const CloseBodySchema = z.object({
+export const CloseBodySchema = z.object({
   testsGreen: z.boolean().optional(),
   fixRef: z.string().max(300).optional(),
   appliedAt: z.string().datetime().optional(),
   note: z.string().max(2000).optional(),
 });
 
-const CreateProblemBodySchema = z.object({
+export const CreateProblemBodySchema = z.object({
   title: z.string().min(3).max(300),
   defectChainIds: z.array(z.string()).min(1).max(50),
 });
 
-function actorOf(req: Request): ActorContext {
+export function actorOf(req: Request): ActorContext {
   return {
     userId: req.user?._id?.toString(),
     ip: req.ip,
