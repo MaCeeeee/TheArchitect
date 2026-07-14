@@ -178,6 +178,60 @@ describe('regulationResolver (THE-368 D2)', () => {
       expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
     });
 
+    // ── THE-419: strict is strict for CANONICAL sources only; live-paste stays ──
+    it('strict mode: still serves live-paste (user-pasted, app-DB-only) content', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      process.env.CORPUS_STRICT_READS = 'true';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', 'live-paste');
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs).toHaveLength(1);
+      expect(regs[0].paragraphNumber).toBe('live-paste');
+      // live-paste is not a cutover blocker → counter stays clean
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
+    });
+
+    it('strict mode: drops canonical app-DB regs but keeps live-paste in a mixed project', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      process.env.CORPUS_STRICT_READS = 'true';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 6');      // canonical → corpus's job → dropped under strict
+      await appRegulation(pid, 'lksg', 'live-paste'); // user-pasted → kept
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs.map((r) => r.paragraphNumber)).toEqual(['live-paste']);
+    });
+
+    it('non-strict: a live-paste-only project does NOT record a corpusMiss', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected'; // corpus configured, but project has only live-paste
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', 'live-paste');
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs).toHaveLength(1);
+      // The whole point: live-paste must not pin the readiness counter above 0.
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 0 });
+    });
+
+    it('non-strict: a genuine canonical gap STILL records a corpusMiss', async () => {
+      process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
+      const pid = new mongoose.Types.ObjectId();
+      await appRegulation(pid, 'lksg', '§ 6'); // canonical content the corpus fails to serve
+      await ComplianceMapping.create({
+        projectId: pid,
+        regulationId: new mongoose.Types.ObjectId(),
+        regulationKey: 'lksg:6', // canonical key, deliberately NOT seeded in the corpus
+        regulationVersionHash: 'h'.repeat(64),
+        elementId: 'el-1',
+        elementType: 'application',
+        confidence: 0.9,
+        reasoning: 'r',
+        status: 'auto',
+        createdBy: 'llm',
+      });
+      const regs = await getRegulationsForProject(pid.toString());
+      expect(regs.some((r) => r.paragraphNumber === '§ 6')).toBe(true);
+      expect(getFallbackStats()).toMatchObject({ corpusUnconfigured: 0, corpusMiss: 1 });
+    });
+
     it('falls back to app-DB when the corpus read THROWS (unreachable / auth failure)', async () => {
       process.env.CORPUS_MONGODB_URI = 'mongodb://injected';
       const pid = new mongoose.Types.ObjectId();
