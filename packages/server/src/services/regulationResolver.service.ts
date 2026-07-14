@@ -52,6 +52,29 @@ export function isStrictCorpusReads(): boolean {
   return process.env.CORPUS_STRICT_READS === 'true';
 }
 
+/**
+ * Live-paste marker. "Paste & See" (UC-ICM-003.3) stores user-pasted text as a
+ * Regulation with `paragraphNumber === LIVE_PASTE_PARAGRAPH`, mapped under the key
+ * `${source}:live-paste`. This content is user-authored, NOT canonical crawled law,
+ * so it is legitimately app-DB-only and never exists in the corpus.
+ *
+ * CORPUS_STRICT_READS is therefore strict for CANONICAL sources only: it disables
+ * the app-DB fallback for law the corpus is supposed to serve, but live-paste keeps
+ * being served in every mode. Live-paste reads are likewise NOT counted as a
+ * cutover-blocking fallback — otherwise the readiness counter could never reach 0.
+ */
+const LIVE_PASTE_PARAGRAPH = 'live-paste';
+
+/** A corpus/mapping key that points at live-paste content (`<source>:live-paste`). */
+function isLivePasteKey(key: string): boolean {
+  return key.endsWith(`:${LIVE_PASTE_PARAGRAPH}`);
+}
+
+/** An app-DB Regulation that is user-pasted (live-paste), not canonical law. */
+function isLivePasteReg(r: Pick<IRegulation, 'paragraphNumber'>): boolean {
+  return r.paragraphNumber === LIVE_PASTE_PARAGRAPH;
+}
+
 function recordFallback(reason: keyof FallbackStats, context: Record<string, unknown>): void {
   fallbackStats[reason] += 1;
   log.warn(
@@ -125,22 +148,37 @@ export async function countRegulations(): Promise<number> {
  * corpus is unconfigured or yields nothing for this project.
  */
 export async function getRegulationsForProject(projectId: string): Promise<RegulationView[]> {
+  // 1. Canonical corpus reads (the cutover target). Live-paste keys never resolve
+  //    in the corpus by design, so exclude them from the corpus lookup.
   if (isCorpusConfigured()) {
     const keys = (await ComplianceMapping.distinct('regulationKey', {
       projectId,
       regulationKey: { $exists: true },
     })) as string[];
-    if (keys.length > 0) {
-      const regs = await getRegulationsByKeys(keys);
+    const canonicalKeys = keys.filter((k) => !isLivePasteKey(k));
+    if (canonicalKeys.length > 0) {
+      const regs = await getRegulationsByKeys(canonicalKeys);
       if (regs.length > 0) return regs.map(corpusToView);
     }
   }
-  // THE-419: Strangler-Cutover — im Strict-Modus gibt es keinen Legacy-Pfad mehr.
-  if (isStrictCorpusReads()) return [];
-  recordFallback(isCorpusConfigured() ? 'corpusMiss' : 'corpusUnconfigured', {
-    fn: 'getRegulationsForProject',
-    projectId,
-  });
+
+  // 2. No canonical corpus hit. THE-419: in strict mode there is no app-DB fallback
+  //    for canonical law — but live-paste is legitimately app-DB-only, so it is
+  //    still served (and is not a cutover blocker).
+  if (isStrictCorpusReads()) {
+    const livePaste = await Regulation.find({ projectId, paragraphNumber: LIVE_PASTE_PARAGRAPH });
+    return livePaste.map(appToView);
+  }
+
+  // 3. Non-strict: full app-DB fallback (legacy behaviour). Record it as
+  //    cutover-readiness telemetry ONLY when genuine canonical content is at
+  //    stake — a live-paste-only project must not pin the readiness counter.
   const docs = await Regulation.find({ projectId });
+  if (docs.some((d) => !isLivePasteReg(d))) {
+    recordFallback(isCorpusConfigured() ? 'corpusMiss' : 'corpusUnconfigured', {
+      fn: 'getRegulationsForProject',
+      projectId,
+    });
+  }
   return docs.map(appToView);
 }
