@@ -453,6 +453,8 @@ In `checkCompliance` (Zeile 86-110) `summary` umbauen:
 Run: `npm test --workspace=@thearchitect/server -- --testPathPattern=compliance-score && npm test --workspace=@thearchitect/server`
 Expected: compliance-score PASS. Gesamt-Suite: verbleibende severity-Literal-Fehler fixen (Konsument `governance.routes.ts:363-368` Filter validiert nichts → keine Änderung nötig; `apply-compliance-facts.ts` enthält KEINE severity-Literale — verifiziert).
 
+**Pflicht-Konsument (Task-1-Inventur 2026-07-14, in keinem früheren Sweep!):** `advisor.service.ts:305-330` `detectComplianceIssues` konsumiert `checkCompliance` direkt — `report.summary.errors/warnings` (Z.308, Shape existiert nach diesem Task nicht mehr) UND `v.severity === 'error'/'warning'`-Filter (Z.310-311). Umstellen auf `summary.critical+high` / `summary.medium` und Filter auf `['critical','high'].includes(v.severity)` bzw. `'medium'`. ACHTUNG: Die `InsightSeverity`-Werte des Advisors selbst (`'critical'|'high'|'warning'|'info'`, advisor.types.ts) sind eine ANDERE Domäne — nicht anfassen.
+
 - [ ] **Step 5: Commit**
 
 ```bash
