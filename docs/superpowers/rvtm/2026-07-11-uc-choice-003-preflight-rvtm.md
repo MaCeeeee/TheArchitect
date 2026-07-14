@@ -111,8 +111,8 @@ April-Score: **85,7** (damals #2 im Backlog). Re-Score wegen veränderter Inputs
 | R-442a | severity-Domain `low/medium/high/critical` + Migration bestandsdatenstabil | T1, T2, T4 | `shared/.../compliance.types.ts`, `models/Policy.ts`, `models/PolicyViolation.ts`, `scripts/migrate-severity-enforcement.ts` | `jest migrate-severity` (Mapping+Idempotenz) + `jest policy-evaluation -t THE-442` | PENDING |
 | R-442b | Scoring-Formel regressionsstabil (Alt-Score reproduziert) | T3 | `services/compliance.service.ts` | `jest compliance-score` (error·3+warning·1 ≙ high·3+medium·1 = 55%) | PENDING |
 | R-442c | `ruleId` als stabile Rule-Identität + Index-Umstellung auf `(policyId,elementId,ruleId)` | T2, T4, T5 | `models/Policy.ts`, `models/PolicyViolation.ts`, `services/policy-evaluation.service.ts` | `jest policy-evaluation` (ruleId gesetzt, unique) | PENDING |
-| R-442d | `enforcementLevel`-Achse (Default advisory), DTOs + LLM-Draft-Pipeline | T1, T2, T6 | `models/Policy.ts`, `shared/.../compliance.types.ts`, `standards.routes.ts` | Build 3 Pakete + `jest policy-evaluation` | PENDING |
-| R-442e | Blast-Radius vollständig (Governance-UIs, Seeds, Tests) | T6, T7 | `client/.../PolicyDraftReview.tsx`, `ComplianceDashboard.tsx`, `PolicyManager.tsx`, `data/seed-policies.ts` | `grep`-Sweep (keine Legacy-Literale) + volle Suite | PENDING |
+| R-442d | `enforcementLevel`-Achse (Default advisory), DTOs + LLM-Draft-Pipeline | T1, T2, T6 | `models/Policy.ts`, `shared/.../compliance.types.ts`, `standards.routes.ts`, `ai.service.ts` (Prompt-Sites 764/767/966) | Build 3 Pakete + `jest policy-evaluation` | PENDING |
+| R-442e | Blast-Radius vollständig (Governance-UIs, Seeds, Tests) | T6, T7 | `client/.../PolicyDraftReview.tsx`, `ComplianceDashboard.tsx`, `PolicyManager.tsx`, `ui/PropertyPanel.tsx`, `ui/Sidebar.tsx`, `data/seed-policies.ts` | 2 `grep`-Sweeps (Legacy-Literale + Prompt-Prosa) + volle Suite | PENDING |
 | R-202a | Strukturierte Messages `{ruleId,severity,message,resourcePath,docLink}` + JSON-Schema | T8 | `schemas/validation-violation.schema.json`, `services/violation-format.ts` | `jest violation-schema` (ajv, CI-Gate) | PENDING |
 | R-202b | docLink auf Norm-Registry (Fallback KB), keine hartkodierten URLs | T9 | `services/policy-evaluation.service.ts` | `jest` deriveDocLink (standardId+section) | PENDING |
 | R-202c | Frontend: Inline-Violation-Details am 3D-Knoten (nicht nur Count) | T10 | `stores/complianceStore.ts`, `components/3d/NodeObject3D.tsx` | `vitest complianceStore.details` + In-Browser (Tooltip zeigt severity+message) | PENDING |
@@ -135,4 +135,6 @@ April-Score: **85,7** (damals #2 im Backlog). Re-Score wegen veränderter Inputs
 
 **Coverage (Plan-Phase):** 23 Requirements · 0 PASS · 0 FAIL · 22 PENDING · 1 N/A · geplante Coverage nach Ausführung 100%.
 
-**Change Log:** 2026-07-11 — §9 initial angelegt (Plan-Phase), alle testbaren REQs PENDING.
+**Change Log:**
+- 2026-07-11 — §9 initial angelegt (Plan-Phase), alle testbaren REQs PENDING.
+- 2026-07-14 — Chunk 1 (THE-442) gegen aktuellen Code re-verifiziert (kein Drift durch PRs #54–#57, alle Anker exakt) + Review-Loop (2 Runden): 9 Plan-Patches — `governance.routes.ts:202`-Fallback, `PolicyManager.tsx:19/27/46`-Anker, `PropertyPanel.tsx`/`Sidebar.tsx`-Violation-Renderer (Task 6 Step 2b), `ai.service.ts`-Prompt-Sites 764/767/966, beide Sweep-Greps gehärtet (inkl. Double-Quote-Literale für Z.767), `rules.0`-Migrations-Guard + Testfall, `ensureRuleIds`-Dedupe (AC-3 an der Schreibgrenze), Deploy-Fenster-Hinweis präzisiert. R-442d/e Files-Spalten erweitert. Chunk 1 review-approved, execution-ready.
