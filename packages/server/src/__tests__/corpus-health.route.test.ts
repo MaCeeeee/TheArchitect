@@ -30,6 +30,7 @@ import regulationsRoutes from '../routes/regulations.routes';
 import { __setCorpusForTests } from '../services/corpusClient.service';
 import { resetFallbackStats, getRegulationsForProject } from '../services/regulationResolver.service';
 import { makeFakeCorpus } from './helpers/fakeCorpus';
+import { Regulation } from '../models/Regulation';
 
 const HEALTH = '/api/regulations/corpus/health';
 
@@ -67,6 +68,10 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
     __setCorpusForTests(makeFakeCorpus([]));
   });
 
+  afterEach(async () => {
+    await Regulation.deleteMany({});
+  });
+
   it('returns the telemetry shape with zeroed counters after reset', async () => {
     const res = await request(app).get(HEALTH);
     expect(res.status).toBe(200);
@@ -86,9 +91,26 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
   });
 
   it('surfaces a real corpusMiss fallback in the counter (the readiness signal)', async () => {
-    // Project has no ComplianceMappings → no keys → corpus yields nothing →
-    // app-DB fallback recorded as corpusMiss (corpus IS configured).
-    await getRegulationsForProject('507f1f77bcf86cd799439099');
+    // The project holds a CANONICAL (non-live-paste) app-DB regulation with no corpus
+    // mapping → the corpus can't serve it → app-DB fallback recorded as corpusMiss
+    // (corpus IS configured). THE-419 (#63): only genuine canonical content pins the
+    // readiness counter — a keyless or live-paste-only project must NOT — so the miss
+    // has to be triggered by real canonical law, not an empty project.
+    const projectId = '507f1f77bcf86cd799439099';
+    await Regulation.create({
+      projectId,
+      source: 'dsgvo',
+      jurisdiction: 'EU',
+      paragraphNumber: 'Art. 30', // canonical — NOT LIVE_PASTE_PARAGRAPH ('live-paste')
+      title: 'Records of processing activities',
+      fullText: 'Each controller shall maintain a record of processing activities.',
+      sourceUrl: 'https://eur-lex.europa.eu/eli/reg/2016/679/art_30',
+      effectiveFrom: new Date('2018-05-25'),
+      language: 'de',
+      version: 1,
+    });
+
+    await getRegulationsForProject(projectId);
 
     const res = await request(app).get(HEALTH);
     expect(res.body.fallbackStats.corpusMiss).toBe(1);
