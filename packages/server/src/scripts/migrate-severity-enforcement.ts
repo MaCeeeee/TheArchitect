@@ -16,7 +16,7 @@
  * ('rules.0'-Guard: Policies mit rules:[] würden sonst auf jedem Lauf zählen).
  *
  * Mac (Dev):  npm run migrate:severity --workspace=@thearchitect/server
- * VPS (Prod): docker compose exec app node dist/scripts/migrate-severity-enforcement.js
+ * VPS (Prod): docker compose exec app node packages/server/dist/scripts/migrate-severity-enforcement.js
  */
 import mongoose from 'mongoose';
 import { randomUUID } from 'crypto';
@@ -95,7 +95,7 @@ export async function runSeverityEnforcementMigration(): Promise<MigrationResult
             enforcementLevel: 'advisory',
             ruleId: `r-orphaned-${randomUUID()}`,
             resourcePath: `/elements/${v.elementId}/${v.field}`,
-            details: `${v.details || ''} | auto-resolved: rule identity not resolvable (THE-442 migration)`.trim(),
+            details: [v.details, 'auto-resolved: rule identity not resolvable (THE-442 migration)'].filter(Boolean).join(' | '),
           },
         },
       );
@@ -118,7 +118,12 @@ export async function runSeverityEnforcementMigration(): Promise<MigrationResult
   }
 
   // 3) Index-Umbau: alter Unique-Key (policyId,elementId,field) → (policyId,elementId,ruleId)
-  try { await violations.dropIndex('policyId_1_elementId_1_field_1'); } catch { /* nicht vorhanden — ok */ }
+  try {
+    await violations.dropIndex('policyId_1_elementId_1_field_1');
+  } catch (err) {
+    const e = err as { code?: number; codeName?: string };
+    if (e.code !== 27 && e.codeName !== 'IndexNotFound') throw err; // 27 = IndexNotFound
+  }
   await violations.createIndex({ policyId: 1, elementId: 1, ruleId: 1 }, { unique: true });
 
   return result;

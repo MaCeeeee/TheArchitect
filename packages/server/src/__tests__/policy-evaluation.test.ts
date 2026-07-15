@@ -164,11 +164,12 @@ describe('UC-GOV-001: Soft-Delete', () => {
   it('resolves all open violations on archive', async () => {
     const policy = await Policy.create(createPolicyDoc({ name: 'Will Archive' }));
 
-    // Create open violations
+    // Create open violations (THE-442: explizite ruleId, kein Schema-Default)
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId: policy.rules[0].ruleId,
       message: 'Violation 1',
       field: 'description',
       status: 'open',
@@ -177,6 +178,7 @@ describe('UC-GOV-001: Soft-Delete', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-2',
+      ruleId: policy.rules[0].ruleId,
       message: 'Violation 2',
       field: 'description',
       status: 'open',
@@ -214,6 +216,7 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-abc',
+      ruleId: policy.rules[0].ruleId,
       message: 'Missing description',
       field: 'description',
       currentValue: null,
@@ -225,8 +228,9 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
   });
 
   it('enforces unique index on policyId+elementId+ruleId (deduplication)', async () => {
-    // THE-442: Identität ist die Regel, nicht das Feld — dieselbe Regel
-    // erneut detektiert kollidiert, statt zu duplizieren.
+    // THE-442: Identität ist die Regel, nicht das Feld — dieselbe ruleId
+    // kollidiert auch bei VERSCHIEDENEN fields. (Diskriminierend: unter dem
+    // Alt-Index (policyId,elementId,field) ginge dieses Paar durch.)
     const policy = await Policy.create(createPolicyDoc());
     const ruleId = policy.rules[0].ruleId;
     await PolicyViolation.create({
@@ -244,11 +248,14 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       elementId: 'elem-1',
       ruleId,
       message: 'Duplicate',
-      field: 'description',
+      field: 'riskLevel',
     })).rejects.toThrow(/duplicate key|E11000/);
   });
 
   it('allows same policy+element for different rules (distinct ruleId)', async () => {
+    // THE-442: verschiedene ruleIds koexistieren auch bei GLEICHEM field.
+    // (Diskriminierend: unter dem Alt-Index (policyId,elementId,field)
+    // wäre dieses Paar ein E11000-Duplikat.)
     const policy = await Policy.create(createPolicyDoc());
     await PolicyViolation.create({
       projectId: PROJECT_ID,
@@ -263,8 +270,8 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       policyId: policy._id,
       elementId: 'elem-1',
       ruleId: 'r-rule-b',
-      message: 'Bad risk',
-      field: 'riskLevel',
+      message: 'Also about desc',
+      field: 'description',
     });
     expect(v2).toBeDefined();
   });
@@ -489,11 +496,13 @@ describe('UC-GOV-001: evaluateElementPolicies', () => {
 
     const elementId = 'elem-resolve';
 
-    // Pre-create an open violation
+    // Pre-create an open violation (THE-442: trägt die echte ruleId der Regel,
+    // damit der ruleId-basierte Auto-Resolve sie findet)
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'Need desc',
       field: 'description',
       status: 'open',
@@ -533,6 +542,7 @@ describe('UC-GOV-001: evaluateElementPolicies', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'V1',
       field: 'description',
       status: 'open',
@@ -771,14 +781,17 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
     const policy = await Policy.create(createPolicyDoc());
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e1',
+      ruleId: policy.rules[0].ruleId,
       message: 'Open', field: 'description', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e2',
+      ruleId: policy.rules[0].ruleId,
       message: 'Resolved', field: 'description', status: 'resolved',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e3',
+      ruleId: policy.rules[0].ruleId,
       message: 'Suppressed', field: 'description', status: 'suppressed',
     });
 
@@ -796,14 +809,17 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
 
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p1._id, elementId: 'target-elem',
+      ruleId: p1.rules[0].ruleId,
       message: 'V1', field: 'description', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p2._id, elementId: 'target-elem',
+      ruleId: p2.rules[0].ruleId,
       message: 'V2', field: 'riskLevel', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p1._id, elementId: 'other-elem',
+      ruleId: p1.rules[0].ruleId,
       message: 'V3', field: 'description', status: 'open',
     });
 
@@ -820,6 +836,7 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
     for (let i = 0; i < 5; i++) {
       await PolicyViolation.create({
         projectId: PROJECT_ID, policyId: policy._id, elementId: `e-${i}`,
+        ruleId: policy.rules[0].ruleId,
         message: `V${i}`, field: 'description', status: 'open',
       });
     }
@@ -989,13 +1006,15 @@ describe('UC-GOV-001: Multi-Rule Policy Evaluation', () => {
 
     const elementId = 'elem-partial';
 
-    // Step 1: both rules violated
+    // Step 1: both rules violated (THE-442: echte ruleIds der jeweiligen Regel)
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'No critical risk', field: 'riskLevel', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId,
+      ruleId: policy.rules[1].ruleId,
       message: 'Desc required', field: 'description', status: 'open',
     });
 
@@ -1195,6 +1214,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: goalId,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
       severity: 'medium',
@@ -1232,6 +1252,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: reqId1,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
       severity: 'medium',
@@ -1243,6 +1264,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: reqId2,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
       severity: 'medium',
@@ -1254,6 +1276,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: otherId,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
       severity: 'medium',

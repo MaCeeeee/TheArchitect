@@ -113,12 +113,16 @@ async function seedPolicy(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 async function seedViolation(policyId: mongoose.Types.ObjectId, elementId: string, overrides: Partial<Record<string, unknown>> = {}) {
+  // THE-442: ruleId ist Pflicht ohne Schema-Default — Fixtures setzen eine
+  // explizite, aus dem effektiven field abgeleitete ruleId (überschreibbar).
+  const field = (overrides.field as string) ?? 'description';
   return PolicyViolation.create({
     projectId: PROJECT_ID,
     policyId,
     elementId,
     elementName: elementId,
-    field: 'description',
+    field,
+    ruleId: `r-test-${field}`,
     severity: 'medium',
     message: 'Description required',
     status: 'open',
