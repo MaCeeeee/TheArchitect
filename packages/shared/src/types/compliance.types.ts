@@ -18,11 +18,16 @@ export const VIOLATION_SEVERITIES: readonly ViolationSeverity[] = ['low', 'mediu
 export const ENFORCEMENT_LEVELS: readonly EnforcementLevel[] = ['advisory', 'soft_mandatory', 'hard_mandatory'];
 
 /** Mapping der Alt-Domain (pre-THE-442) für Migration + Abwärtskompatibilität. */
-export const LEGACY_SEVERITY_MAP: Record<string, ViolationSeverity> = {
+export const LEGACY_SEVERITY_MAP: Record<'error' | 'warning' | 'info', ViolationSeverity> = {
   error: 'high',
   warning: 'medium',
   info: 'low',
 };
+
+/** Lookup für DB-Strings unbekannter Herkunft — undefined statt Typ-Lüge. */
+export function mapLegacySeverity(s: string): ViolationSeverity | undefined {
+  return (LEGACY_SEVERITY_MAP as Record<string, ViolationSeverity | undefined>)[s];
+}
 
 /**
  * Wire-Form einer Violation (REQ-003.2, OPA/Kyverno-Stil) — SHARED, weil
