@@ -305,10 +305,11 @@ async function detectCycles(projectId: string): Promise<AdvisorInsight[]> {
 async function detectComplianceIssues(projectId: string): Promise<AdvisorInsight[]> {
   try {
     const report = await checkCompliance(projectId);
-    if (report.summary.errors === 0 && report.summary.warnings === 0) return [];
+    // THE-442: critical+high ↔ ehem. errors, medium ↔ ehem. warnings
+    if (report.summary.critical + report.summary.high === 0 && report.summary.medium === 0) return [];
 
-    const errorViolations = report.violations.filter((v) => v.severity === 'error');
-    const warningViolations = report.violations.filter((v) => v.severity === 'warning');
+    const errorViolations = report.violations.filter((v) => ['critical', 'high'].includes(v.severity));
+    const warningViolations = report.violations.filter((v) => v.severity === 'medium');
 
     const insights: AdvisorInsight[] = [];
 

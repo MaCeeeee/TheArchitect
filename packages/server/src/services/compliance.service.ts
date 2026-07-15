@@ -1,3 +1,4 @@
+import { ViolationSeverity } from '@thearchitect/shared';
 import { Policy, IPolicy } from '../models/Policy';
 import { runCypher } from '../config/neo4j';
 
@@ -7,12 +8,19 @@ export interface ComplianceViolation {
   elementType: string;
   policyId: string;
   policyName: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
   category: string;
   message: string;
   field: string;
   currentValue: unknown;
   expectedValue: unknown;
+}
+
+export interface SeverityCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
 }
 
 export interface ComplianceReport {
@@ -22,12 +30,32 @@ export interface ComplianceReport {
   totalPolicies: number;
   violations: ComplianceViolation[];
   summary: {
-    errors: number;
-    warnings: number;
-    infos: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
     complianceScore: number;
   };
   byCategory: Record<string, number>;
+}
+
+// THE-442: Gewichte so gewählt, dass migrierte Alt-Daten (error→high,
+// warning→medium, info→low) exakt den Alt-Score reproduzieren.
+const SEVERITY_SCORE_WEIGHTS: Record<ViolationSeverity, number> = {
+  critical: 4,
+  high: 3,
+  medium: 1,
+  low: 0,
+};
+
+export function computeComplianceScore(counts: SeverityCounts, maxPossible: number): number {
+  const max = Math.max(maxPossible, 1);
+  const penalty =
+    counts.critical * SEVERITY_SCORE_WEIGHTS.critical +
+    counts.high * SEVERITY_SCORE_WEIGHTS.high +
+    counts.medium * SEVERITY_SCORE_WEIGHTS.medium +
+    counts.low * SEVERITY_SCORE_WEIGHTS.low;
+  return Math.max(0, Math.min(100, Math.round(((max - penalty) / max) * 100)));
 }
 
 // Run compliance check against all enabled policies
@@ -83,17 +111,20 @@ export async function checkCompliance(projectId: string): Promise<ComplianceRepo
     }
   }
 
-  const errors = violations.filter((v) => v.severity === 'error').length;
-  const warnings = violations.filter((v) => v.severity === 'warning').length;
-  const infos = violations.filter((v) => v.severity === 'info').length;
+  const counts = {
+    critical: violations.filter((v) => v.severity === 'critical').length,
+    high: violations.filter((v) => v.severity === 'high').length,
+    medium: violations.filter((v) => v.severity === 'medium').length,
+    low: violations.filter((v) => v.severity === 'low').length,
+  };
   const maxPossible = Math.max(elements.length * policies.length, 1);
-  const complianceScore = Math.round(((maxPossible - errors * 3 - warnings) / maxPossible) * 100);
 
   const byCategory: Record<string, number> = {};
   for (const v of violations) {
     byCategory[v.category] = (byCategory[v.category] || 0) + 1;
   }
 
+  // summary shape: errors/warnings/infos → bySeverity (Konsumenten: ComplianceDashboard, advisor.service)
   return {
     projectId,
     timestamp: new Date().toISOString(),
@@ -101,10 +132,8 @@ export async function checkCompliance(projectId: string): Promise<ComplianceRepo
     totalPolicies: policies.length,
     violations,
     summary: {
-      errors,
-      warnings,
-      infos,
-      complianceScore: Math.max(0, Math.min(100, complianceScore)),
+      ...counts,
+      complianceScore: computeComplianceScore(counts, maxPossible),
     },
     byCategory,
   };
@@ -119,7 +148,7 @@ export function getBuiltInChecks(elements: { name: string; description: string; 
       violations.push({
         elementId: '', elementName: el.name, elementType: el.type,
         policyId: 'builtin-description', policyName: 'Description Required',
-        severity: 'warning', category: 'architecture', message: 'Element should have a description (min 10 chars)',
+        severity: 'medium', category: 'architecture', message: 'Element should have a description (min 10 chars)',
         field: 'description', currentValue: el.description, expectedValue: 'min 10 chars',
       });
     }
@@ -128,7 +157,7 @@ export function getBuiltInChecks(elements: { name: string; description: string; 
       violations.push({
         elementId: '', elementName: el.name, elementType: el.type,
         policyId: 'builtin-retired-risk', policyName: 'Retired Critical Risk',
-        severity: 'error', category: 'security', message: 'Retired elements should not have critical risk level',
+        severity: 'high', category: 'security', message: 'Retired elements should not have critical risk level',
         field: 'riskLevel', currentValue: el.riskLevel, expectedValue: 'low or medium',
       });
     }
@@ -137,7 +166,7 @@ export function getBuiltInChecks(elements: { name: string; description: string; 
       violations.push({
         elementId: '', elementName: el.name, elementType: el.type,
         policyId: 'builtin-low-maturity', policyName: 'Low Maturity Current',
-        severity: 'warning', category: 'architecture', message: 'Current elements with maturity 1 should be reviewed',
+        severity: 'medium', category: 'architecture', message: 'Current elements with maturity 1 should be reviewed',
         field: 'maturityLevel', currentValue: el.maturity, expectedValue: '>= 2',
       });
     }

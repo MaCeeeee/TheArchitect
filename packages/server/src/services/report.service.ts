@@ -284,8 +284,9 @@ async function renderExecutiveReport(doc: PDFKit.PDFDocument, project: { name: s
   const compY = doc.y;
   const scoreColor = compliance.summary.complianceScore >= 80 ? '#22c55e' : compliance.summary.complianceScore >= 50 ? '#eab308' : '#ef4444';
   drawMetricCard(doc, MARGIN, compY, cardW, 'Compliance Score', formatPercent(compliance.summary.complianceScore), scoreColor);
+  // THE-442: summary shape errors/warnings → severity counts (critical/high ↔ errors, medium ↔ warnings)
   drawMetricCard(doc, MARGIN + cardW + 10, compY, cardW, 'Violations',
-    `${compliance.summary.errors} errors, ${compliance.summary.warnings} warnings`);
+    `${compliance.summary.critical + compliance.summary.high} critical/high, ${compliance.summary.medium} medium`);
   doc.y = compY + 70;
 
   if (compliance.violations.length > 0) {
