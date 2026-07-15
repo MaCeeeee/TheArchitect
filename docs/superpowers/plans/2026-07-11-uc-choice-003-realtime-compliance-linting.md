@@ -61,6 +61,9 @@ Monorepo: `packages/shared` (Types, baut ZUERST) → `packages/server` (Express)
 | `packages/client/src/components/governance/PolicyDraftReview.tsx` | Modify | severity-Domain, „Preview violations" (Dry-Run) |
 | `packages/client/src/components/governance/ComplianceDashboard.tsx` | Modify | severity-Domain, Enforcement-Icons, Override-Button, Alert-Fatigue-Banner |
 | `packages/client/src/components/governance/PolicyManager.tsx` | Modify | enforcementLevel-Select, severity-Domain, ruleId-Durchreichung, Promotion-Hint |
+| `packages/client/src/components/ui/PropertyPanel.tsx` | Modify | Violation-Glyph/Farben auf 4er-severity-Domain (Review-Fund 2026-07-14) |
+| `packages/client/src/components/ui/Sidebar.tsx` | Modify | Violation-Buckets 3→4 Tiles + Icon-Branches auf neue Domain (Review-Fund 2026-07-14) |
+| `packages/server/src/services/ai.service.ts` | Modify | Draft-Prompt-Wertemenge (Z.764 JSON-Beispiel + Z.767 Instruktion) + Remediation-Priority-Guidance (Z.966) auf neue Domain (Review-Funde 2026-07-14) |
 | `packages/client/src/stores/architectureStore.ts` | Modify | 422-`policy_violation`-Handling bei create/update |
 
 **Nicht im Scope (deskopiert):** Scenario-/Sandbox-Eval (Seed dokumentiert), E-Mail-Versand für Admin-Warnungen (Banner statt Mail), Anonymisierungs-Routen (Export nutzt IDs statt Klarnamen).
@@ -269,9 +272,18 @@ WICHTIG — Identitäts-Stabilität über Updates: `findByIdAndUpdate` mit `{...
 
 ```typescript
 // ruleId-Stabilität: Client-Payloads ohne ruleId bekommen serverseitig eine;
-// mitgeschickte ruleIds bleiben unangetastet (THE-442).
+// mitgeschickte ruleIds bleiben unangetastet (THE-442). Duplikate INNERHALB
+// eines Payloads (Buggy-Client, Copy-Paste-Rule) werden neu gewürfelt — sonst
+// kollidiert später der Unique-Index (policyId,elementId,ruleId). AC-3: „je
+// Policy eindeutige ruleId" wird hier an der Schreibgrenze erzwungen.
 export function ensureRuleIds<T extends { ruleId?: string }>(rules: T[]): (T & { ruleId: string })[] {
-  return rules.map((r) => ({ ...r, ruleId: r.ruleId || `r-${randomUUID()}` }));
+  const seen = new Set<string>();
+  return rules.map((r) => {
+    let ruleId = r.ruleId || `r-${randomUUID()}`;
+    if (seen.has(ruleId)) ruleId = `r-${randomUUID()}`; // Duplikat → frische Identität
+    seen.add(ruleId);
+    return { ...r, ruleId };
+  });
 }
 ```
 
@@ -441,6 +453,8 @@ In `checkCompliance` (Zeile 86-110) `summary` umbauen:
 Run: `npm test --workspace=@thearchitect/server -- --testPathPattern=compliance-score && npm test --workspace=@thearchitect/server`
 Expected: compliance-score PASS. Gesamt-Suite: verbleibende severity-Literal-Fehler fixen (Konsument `governance.routes.ts:363-368` Filter validiert nichts → keine Änderung nötig; `apply-compliance-facts.ts` enthält KEINE severity-Literale — verifiziert).
 
+**Pflicht-Konsument (Task-1-Inventur 2026-07-14, in keinem früheren Sweep!):** `advisor.service.ts:305-330` `detectComplianceIssues` konsumiert `checkCompliance` direkt — `report.summary.errors/warnings` (Z.308, Shape existiert nach diesem Task nicht mehr) UND `v.severity === 'error'/'warning'`-Filter (Z.310-311). Umstellen auf `summary.critical+high` / `summary.medium` und Filter auf `['critical','high'].includes(v.severity)` bzw. `'medium'`. ACHTUNG: Die `InsightSeverity`-Werte des Advisors selbst (`'critical'|'high'|'warning'|'info'`, advisor.types.ts) sind eine ANDERE Domäne — nicht anfassen.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -541,6 +555,21 @@ describe('migrate-severity-enforcement (THE-442)', () => {
     expect(v!.status).toBe('resolved');
     expect(v!.details).toContain('THE-442');
   });
+
+  it('is counter-idempotent for policies with empty rules arrays (rules.0-Guard)', async () => {
+    const db = mongoose.connection.db!;
+    await db.collection('policies').insertOne({
+      projectId: new mongoose.Types.ObjectId(), name: 'NoRules', category: 'custom',
+      severity: 'warning', enabled: true, status: 'active', source: 'custom',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [],
+      createdBy: new mongoose.Types.ObjectId(), version: 1,
+    });
+    const first = await runSeverityEnforcementMigration();
+    expect(first.policiesMigrated).toBe(1); // severity warning→medium gemappt
+    const second = await runSeverityEnforcementMigration();
+    expect(second.policiesMigrated).toBe(0); // ohne rules.0-Guard bliebe das >0
+  });
 });
 ```
 
@@ -577,8 +606,14 @@ export async function runSeverityEnforcementMigration(): Promise<MigrationResult
   const result: MigrationResult = { policiesMigrated: 0, violationsMigrated: 0, violationsResolvedUnmappable: 0 };
 
   // 1) Policies: severity mappen, enforcementLevel + ruleIds backfillen
+  // ('rules.0' als Guard: Policies mit rules:[] würden 'rules.ruleId $exists:false'
+  //  auf jedem Lauf matchen und den Idempotenz-Zähler verfälschen — Review 2026-07-14)
   const legacyPolicies = await policies
-    .find({ $or: [{ severity: { $in: LEGACY } }, { enforcementLevel: { $exists: false } }, { 'rules.ruleId': { $exists: false } }] })
+    .find({ $or: [
+      { severity: { $in: LEGACY } },
+      { enforcementLevel: { $exists: false } },
+      { 'rules.0': { $exists: true }, 'rules.ruleId': { $exists: false } },
+    ] })
     .toArray();
 
   for (const p of legacyPolicies) {
@@ -670,6 +705,8 @@ if (require.main === module) {
 
 `packages/server/package.json` scripts ergänzen: `"migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"`.
 
+**Typ-Härtung (Quality-Review 2026-07-15):** `LEGACY_SEVERITY_MAP` in shared von `Record<string, ViolationSeverity>` auf `Record<'error' | 'warning' | 'info', ViolationSeverity>` verengen (sonst ist `MAP['medium']` typseitig defined, runtime undefined) und daneben Helper exportieren: `export function mapLegacySeverity(s: string): ViolationSeverity | undefined { return (LEGACY_SEVERITY_MAP as Record<string, ViolationSeverity | undefined>)[s]; }`. Die Migration nutzt den Helper statt Raw-Indexing: `mapLegacySeverity(p.severity as string) || p.severity`. Shared danach neu bauen.
+
 - [ ] **Step 4: Run — PASS**
 
 Run: `npm test --workspace=@thearchitect/server -- --testPathPattern=migrate-severity`
@@ -681,14 +718,24 @@ git add packages/server/src/scripts/migrate-severity-enforcement.ts packages/ser
 git commit -m "feat(compliance): severity/ruleId data migration, idempotent (THE-442)" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
-**Deploy-Hinweis (in PR-Beschreibung übernehmen):** Auf dem VPS nach dem Deploy einmalig `npm run migrate:severity` im Server-Container ausführen (Mac: nicht nötig, Memory-DB in Tests).
+**Deploy-Hinweis (in PR-Beschreibung übernehmen):** Auf dem VPS **sofort nach dem Deploy, vor Edit-Traffic**, einmalig ausführen: `docker compose exec app node packages/server/dist/scripts/migrate-severity-enforcement.js` (NICHT `npm run migrate:severity` — das Prod-Image hat kein src/ts-node; Pfad-Korrektur Quality-Review 2026-07-15). Mac: nicht nötig, Memory-DB in Tests. Fenster-Effekt: Zwischen Boot des neuen Codes und Migrationslauf fallen unmigrierte `error/warning`-Policy-Severities in keinen Score-Bucket (Score erscheint zu hoch, ein Pipeline-Lauf im Fenster persistiert einen falschen Snapshot) — heilt sich mit der Migration; deshalb Migration VOR Traffic. Nach dem Lauf `db.policyviolations.getIndexes()` gegenprüfen (Alt-Index weg, neuer unique da). **Tasks 2–5 sind EIN Deploy-Unit** (Quality-Review 2026-07-15: der temporäre ruleId-Default aus Task 2 ist ohne die Task-5-Upsert-Umstellung nicht concurrency-sicher — ein Teil-Deploy 2–4 shipped ein Silent-Duplicate-Fenster). Erwartbares Fenster-Verhalten (Review 2026-07-14): Mongoose versucht beim ersten Boot mit neuem Code den Unique-Index `{policyId,elementId,ruleId}` VOR der Migration zu bauen — auf Legacy-Daten mit ≥2 Violations pro Policy+Element schlägt der Build laut fehl (nicht fatal); Migration Schritt 3 baut ihn danach korrekt. Im selben Fenster upserten Evaluations mit `ruleId: undefined` — heilt sich durch die Migration ebenfalls selbst.
 
 ### Task 5: Evaluation schreibt ruleId — und Routen normalisieren Rules
 
 **Files:**
 - Modify: `packages/server/src/services/policy-evaluation.service.ts`
+- Modify: `packages/server/src/models/PolicyViolation.ts` (temp-Default entfernen, Step 0)
 - Modify: `packages/server/src/routes/governance.routes.ts` (Create/Update-Policy)
-- Test: bestehende `policy-evaluation.test.ts`-Assertions erweitern
+- Test: bestehende `policy-evaluation.test.ts`-Assertions erweitern + `governance-routes.test.ts` seedViolation-Fixtures
+
+- [ ] **Step 0: Pflicht-Vorarbeiten (Quality-Review 2026-07-15, BINDEND)**
+
+1. **Temp-ruleId-Default entfernen:** `PolicyViolation.ts` — der in Task 2 eingeführte `default: () => r-${randomUUID()}` auf `ruleId` MUSS raus, sobald die Upserts echte ruleIds schreiben (dieser Task). Empirisch belegt: Unter dem Default sind 4 parallele Upserts = 4 Duplikate (Unique-Index deckt den Dedupe-Key des alten Filters nicht mehr). `governance-routes.test.ts:115` (`seedViolation`) verlässt sich auf den Default → Fixtures bekommen explizite ruleIds.
+2. **Identity-Tests diskriminierend machen:** Die zwei in Task 2 umgeschriebenen Tests (policy-evaluation.test.ts ~227-270) ko-variieren field mit ruleId und würden auch unter dem ALTEN Index bestehen. Fix: Dedupe-Test → gleiche ruleId, VERSCHIEDENE fields (muss weiter E11000 werfen); Koexistenz-Test → verschiedene ruleIds, GLEICHES field (unter Alt-Index unmöglich, muss durchgehen).
+3. **Update-Pfad-Domain-Enforcement:** `governance.routes.ts:241` + `:277` (`findByIdAndUpdate` ohne runValidators) lassen Legacy-severity ROH in die DB (empirisch belegt — re-kontaminiert Task-3-Gewichte, Task-7-Sweep sieht nur Code, nicht Daten). Fix: eingehende severity an der Grenze via `mapLegacySeverity` normalisieren (graceful für stale Clients) UND `runValidators: true` als Backstop.
+4. **Migrations-Runbook reparieren (Quality-Review T3+4):** Script-Header `migrate-severity-enforcement.ts:19` UND der Deploy-Hinweis unten nennen nicht-ausführbare Kommandos (Prod-Image ist `npm ci --omit=dev` ohne src/ts-node; `exec` landet in WORKDIR `/app`). Beide auf `docker compose exec app node packages/server/dist/scripts/migrate-severity-enforcement.js` korrigieren.
+5. **dropIndex-Catch verengen:** `migrate-severity-enforcement.ts:~121` schluckt ALLE Fehler — nur `IndexNotFound` (err.code === 27 / codeName 'IndexNotFound') schlucken, Rest rethrow. Sonst meldet die Migration Erfolg, während der Alt-Index weiterlebt und genau die Per-Rule-Violations blockiert, die dieser Task einführt.
+6. **Kosmetik Orphan-details:** führendes `"| "` bei leerem details (`[v.details, '…'].filter(Boolean).join(' | ')`).
 
 - [ ] **Step 1: Failing Test**
 
@@ -735,6 +782,8 @@ function deriveDocLink(policy: { standardId?: unknown; sourceSectionNumber?: str
 
 In `governance.routes.ts` Create (Zeile ~196) und Update (Zeile ~241): Rules durch `ensureRuleIds(rules)` normalisieren (Import aus `../models/Policy`). Beim Update: `req.body.rules && (req.body.rules = ensureRuleIds(req.body.rules));` VOR `findByIdAndUpdate`.
 
+**Ebenfalls in der Create-Route (verifiziert 2026-07-14):** Zeile 202 hat den Legacy-Fallback `severity: severity || 'warning'` → auf `|| 'medium'` ändern — exakt das Pendant zu `standards.routes.ts:604` (Task 6); ohne Fix wirft jeder Policy-Create ohne severity nach der Migration einen Mongoose-Enum-Fehler.
+
 - [ ] **Step 3: Run — PASS** (`--testPathPattern=policy-evaluation`), **Step 4: Commit**
 
 ```bash
@@ -745,7 +794,8 @@ git commit -m "feat(compliance): evaluation writes ruleId/enforcementLevel/resou
 ### Task 6: LLM-Draft-Pipeline + Client auf neue Domain
 
 **Files:**
-- Modify: Server-Draft-Generierung — Datei finden via `grep -rn "generate-policies\|PolicyDraft" packages/server/src/routes packages/server/src/services --include="*.ts" -l` (Standards-Route + zugehöriger Service); im LLM-Prompt die severity-Wertemenge `error|warning|info` → `low|medium|high|critical` ersetzen und `enforcementLevel` NICHT vom LLM erfragen (immer advisory).
+- Modify: `packages/server/src/services/ai.service.ts` — Draft-Prompt: JSON-Beispiel Z.764 + Instruktionszeile Z.767 (`Set severity: "error" for SHALL/MUST..., "warning" for SHOULD, "info" for MAY`) auf `low|medium|high|critical` umstellen (SHALL/MUST→`high`, SHOULD→`medium`, MAY→`low`; `critical` dem LLM NICHT anbieten — Eskalation ist menschliche Entscheidung); Remediation-Guidance Z.966 (siehe unten). `enforcementLevel` NICHT vom LLM erfragen (immer advisory).
+- Modify: `packages/server/src/routes/standards.routes.ts` — Fallback Z.604 (siehe unten).
 - Modify: `packages/client/src/components/governance/PolicyDraftReview.tsx`
 - Modify: `packages/client/src/components/governance/ComplianceDashboard.tsx`
 - Modify: `packages/client/src/components/governance/PolicyManager.tsx`
@@ -753,6 +803,8 @@ git commit -m "feat(compliance): evaluation writes ruleId/enforcementLevel/resou
 - [ ] **Step 1: Server-Draft-Pipeline**
 
 Im Draft-Generierungs-Prompt (severity-Aufzählung) `error|warning|info` → `low|medium|high|critical` ersetzen; Beispiel-JSON im Prompt mitziehen. Beim Persistieren approved Drafts (`approvePolicies`-Endpoint) `enforcementLevel: 'advisory'` explizit setzen. **Konkret verifiziert:** `standards.routes.ts:604` hat den Fallback `severity: draft.severity || 'warning'` → auf `|| 'medium'` ändern (sonst Enum-Fehler bei leerem Draft-severity).
+
+**Zweiter LLM-Prompt (Review-Fund 2026-07-14, für beide Sweep-Greps unsichtbar!):** `ai.service.ts` Remediation-Suggestions — Zeile ~940 interpoliert `p.severity` in den Policy-Kontext (neue Werte fließen automatisch rein), aber Zeile ~966 instruiert `Priority: "high" for SHALL/MUST or Error-severity policies, "medium" for SHOULD/Warning, "low" for MAY/Info`. Guidance umschreiben auf: `Priority: "high" for SHALL/MUST or critical/high-severity policies, "medium" for SHOULD/medium, "low" for MAY/low`. Ohne Fix sieht das LLM nach der Migration Labels wie `(critical)`, die in der Anleitung nicht vorkommen.
 
 - [ ] **Step 2: Client — SEVERITY_CONFIG-Domänen**
 
@@ -767,7 +819,14 @@ const SEVERITY_CONFIG = {
 };
 ```
 
-Die Badge-Beschriftung „Enforcement severity" (Zeile ~346-353) in **„Severity"** umbenennen (Entwirrung severity ≠ enforcement, THE-442). `ComplianceDashboard.tsx`: `severityIcon`-Map (Zeile ~51-55) auf 4 Werte erweitern; die Summary-Tiles `errors/warnings/infos` auf `summary.critical/high/medium/low` umstellen (Server-Shape aus Task 3). `PolicyManager.tsx`: severity-`<select>`-Options auf neue Domain; ruleId bei Edits unangetastet mitschicken (Rules-State 1:1 durchreichen, kein Strippen unbekannter Felder).
+Die Badge-Beschriftung „Enforcement severity" (Zeile ~346-353) in **„Severity"** umbenennen (Entwirrung severity ≠ enforcement, THE-442). `ComplianceDashboard.tsx`: `severityIcon`-Map (Zeile ~51-55) auf 4 Werte erweitern; die Summary-Tiles `errors/warnings/infos` auf `summary.critical/high/medium/low` umstellen (Server-Shape aus Task 3). `PolicyManager.tsx`: severity-`<select>`-Options auf neue Domain; ruleId bei Edits unangetastet mitschicken (Rules-State 1:1 durchreichen, kein Strippen unbekannter Felder). **Konkrete Anker (verifiziert 2026-07-14):** Interface-Typ Zeile 19, `SEVERITIES`-Const Zeile 27, und `useState<string>('warning')` Zeile 46 → Default `'medium'` — Letzteres ist ein Runtime-Enum-Fehler, KEIN Compile-Fehler (useState ist `<string>` getypt), fällt also nicht bei der Typfehler-Inventur aus Task 1 auf.
+
+- [ ] **Step 2b: Violation-Renderer außerhalb governance/ (Review-Fund 2026-07-14 — sonst Post-Migration-Rendering-Regression: alles fällt in den else-/Info-Zweig)**
+
+Einheitliche Farbsprache wie `SEVERITY_CONFIG` aus Step 2 (critical=rot `#ef4444`, high=orange `#f97316`, medium=gelb `#eab308`, low=blau `#3b82f6`):
+
+- `packages/client/src/components/ui/PropertyPanel.tsx`: Glyph-Branch Zeile ~372 (`error→'!'` / `warning→'○'` / else `'i'`) → `critical|high→'!'`, `medium→'○'`, `low→'i'` (Unterscheidung critical/high trägt die Farbe); `SEVERITY_COLORS`-Map Zeile ~1578-1582 auf die 4 neuen Keys umstellen (genutzt an ~1638/~1707); severity-Vergleiche Zeile ~1708 mitziehen.
+- `packages/client/src/components/ui/Sidebar.tsx`: Bucket-Reducer Zeile ~439-447 von `{errors, warnings, infos}` auf `{critical, high, medium, low}` umstellen und **4 Count-Tiles** rendern (statt 3, gleiche Optik wie die ComplianceDashboard-Tiles aus diesem Task); Icon-Branches Zeile ~739-741: `critical|high→AlertCircle` (rot/orange), `medium→AlertTriangle` (gelb), `low→Info` (blau).
 
 - [ ] **Step 3: Builds grün**
 
@@ -785,8 +844,13 @@ git commit -m "feat(compliance): draft pipeline + governance UIs on new severity
 
 - [ ] **Step 1: Vollständigkeits-Check gegen RVTM §4**
 
-Run: `grep -rn "error' | 'warning' | 'info\|'error'|'warning'|'info'" packages/server/src packages/shared/src packages/client/src --include="*.ts" --include="*.tsx" | grep -iv "toast\|log\|console"`
-Expected: Keine policy-/violation-bezogenen Treffer mehr. `syncViolationToNeo4j`-Signatur prüfen (`policy-graph.service.ts` — nimmt severity als string entgegen → kompiliert, keine Änderung nötig, aber Neo4j-severity-Property enthält jetzt neue Werte: PolicyBoard/NodeObject3D keyen auf Counts, nicht auf severity → unkritisch).
+Run: `grep -rn "severity: '\(error\|warning\|info\)'\|severity === '\(error\|warning\|info\)'\|severity || '\(error\|warning\|info\)'\|error' | 'warning' | 'info" packages/server/src packages/shared/src packages/client/src --include="*.ts" --include="*.tsx" | grep -iv "toast\|console\|InsightSeverity\|advisor"`
+Expected: Keine policy-/violation-bezogenen Treffer mehr. (Grep gehärtet 2026-07-14: fängt jetzt auch `|| 'warning'`-Fallbacks und Einzel-Literale — der ursprüngliche Union-Type-only-Grep übersah `governance.routes.ts:202`. Bekannte Ist-Treffer vor dem Sweep, u. a.: Modelle/DTOs aus Task 1–2, Fixtures in `governance-routes.test.ts`/`policy-evaluation.test.ts`/`norm-pipeline.test.ts:268`, `seed-policies.ts`, `demo-seed.ts` (9 Sites ab Z.166), `demo-seed-bsh.ts` (6 Sites: 182/195/208/221/234/248), `PolicyManager.tsx:19/27/46`, `PropertyPanel.tsx:372/1578-1582/1708`, `Sidebar.tsx:439-447/739-741` — die Liste ist NICHT exhaustiv, der Grep ist die Autorität.)
+
+Zusätzlicher Prompt-Sweep (LLM-Prompts sind Prosa/double-quoted — obiger Grep sieht sie nicht):
+
+Run: `grep -rn "Error-severity\|for SHOULD/Warning\|MAY/Info\|error|warning|info\|\"error\"\|\"warning\"\|\"info\"" packages/server/src/services/ai.service.ts packages/server/src/routes/standards.routes.ts packages/server/src/prompts/`
+Expected: Keine Treffer (Task 6 hat alle drei Prompt-Sites umgestellt). Vor dem Sweep fängt dieses Muster exakt `ai.service.ts:764` (JSON-Beispiel), `:767` (Instruktionszeile `Set severity: "error" for SHALL/MUST...`) und `:966` (Remediation-Guidance) — empirisch verifiziert 2026-07-14, kein Rauschen. Die Double-Quote-Literale sind Pflicht: Zeile 767 entging sowohl dem Haupt-Sweep (single-quoted-Muster) als auch der ersten Fassung dieses Greps. `syncViolationToNeo4j`-Signatur prüfen (`policy-graph.service.ts` — nimmt severity als string entgegen → kompiliert, keine Änderung nötig, aber Neo4j-severity-Property enthält jetzt neue Werte: PolicyBoard/NodeObject3D keyen auf Counts, nicht auf severity → unkritisch).
 
 - [ ] **Step 2: Gesamte Test-Suite + THE-442 in Linear auf Done**
 

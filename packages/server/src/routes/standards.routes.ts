@@ -3,7 +3,7 @@ import multer from 'multer';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
-import { PERMISSIONS } from '@thearchitect/shared';
+import { PERMISSIONS, mapLegacySeverity, VIOLATION_SEVERITIES, type ViolationSeverity } from '@thearchitect/shared';
 import { findMatchingDriver, projectPoliciesAsRequirements } from '../services/policy-to-requirement.service';
 import {
   parseAndStore,
@@ -21,7 +21,7 @@ import { getPipelineNorm, getNorm, derivePipelineAnchorId } from '../services/no
 import { mapRegulationsBatch } from '../services/complianceMapping.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { StandardMapping } from '../models/StandardMapping';
-import { Policy } from '../models/Policy';
+import { Policy, ensureRuleIds } from '../models/Policy';
 import {
   getOrCreatePipelineState,
   refreshMappingStats,
@@ -601,9 +601,23 @@ router.post(
           // store them as 'custom' and keep the actual standard id on standardId
           // + sourceSectionNumber for traceability.
           framework: 'custom' as const,
-          severity: draft.severity || 'warning',
+          // THE-442: normalize legacy error/warning/info from older clients/drafts
+          // to the ViolationSeverity domain and clamp out-of-domain LLM values to
+          // 'medium' (one junk draft must not 500 the whole approve batch at
+          // insertMany). enforcementLevel is a human governance decision — always
+          // start LLM-drafted policies as 'advisory', never let the LLM or the
+          // request escalate it.
+          severity:
+            mapLegacySeverity(String(draft.severity ?? '')) ??
+            (VIOLATION_SEVERITIES.includes(draft.severity as ViolationSeverity)
+              ? (draft.severity as ViolationSeverity)
+              : 'medium'),
+          enforcementLevel: 'advisory' as const,
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
-          rules: draft.rules || [],
+          // THE-442 AC-3: per-policy-unique ruleId also on THIS write boundary —
+          // duplicate ruleIds within a draft would upsert into the SAME violation
+          // document later (silent last-write-wins, one rule permanently masked).
+          rules: ensureRuleIds(Array.isArray(draft.rules) ? (draft.rules as Array<{ ruleId?: string }>) : []),
           standardId: persistId,
           sourceSectionNumber: draft.sourceSection || '',
           enabled: true,

@@ -2,13 +2,14 @@
  * Seed Policy Templates for DORA, NIS2, and TOGAF frameworks.
  * These are imported as 'draft' status — the user must review and activate.
  */
+import type { ViolationSeverity } from '@thearchitect/shared';
 
 interface SeedPolicy {
   name: string;
   description: string;
   category: string;
   framework: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
   source: 'dora' | 'nis2' | 'togaf';
   scope: { domains: string[]; elementTypes: string[]; layers: string[] };
   rules: Array<{ field: string; operator: string; value: unknown; message: string }>;
@@ -22,7 +23,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'DORA Art. 6: All ICT systems must have documented risk assessments with risk level no higher than "high".',
     category: 'compliance',
     framework: 'DORA',
-    severity: 'error',
+    severity: 'high',
     source: 'dora',
     scope: { domains: [], elementTypes: [], layers: ['application', 'technology'] },
     rules: [
@@ -35,7 +36,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'DORA Art. 18: Major ICT incidents must be classified by maturity level >= 2.',
     category: 'compliance',
     framework: 'DORA',
-    severity: 'warning',
+    severity: 'medium',
     source: 'dora',
     scope: { domains: [], elementTypes: [], layers: ['application', 'technology'] },
     rules: [
@@ -47,7 +48,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'DORA Art. 26: Critical ICT systems must undergo resilience testing — status must not be "retired".',
     category: 'compliance',
     framework: 'DORA',
-    severity: 'error',
+    severity: 'high',
     source: 'dora',
     scope: { domains: [], elementTypes: [], layers: ['application', 'technology'] },
     rules: [
@@ -59,7 +60,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'DORA Art. 28: Third-party ICT service dependencies must be documented and assessed.',
     category: 'security',
     framework: 'DORA',
-    severity: 'warning',
+    severity: 'medium',
     source: 'dora',
     scope: { domains: [], elementTypes: ['application', 'application_component', 'platform_service'], layers: [] },
     rules: [
@@ -71,7 +72,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'DORA Art. 45: Financial entities should have processes for sharing threat intelligence.',
     category: 'compliance',
     framework: 'DORA',
-    severity: 'info',
+    severity: 'low',
     source: 'dora',
     scope: { domains: [], elementTypes: [], layers: ['business', 'application'] },
     rules: [
@@ -86,7 +87,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'NIS2 Art. 21(2a): Entities must implement risk analysis and information system security policies.',
     category: 'security',
     framework: 'NIS2',
-    severity: 'error',
+    severity: 'high',
     source: 'nis2',
     scope: { domains: [], elementTypes: [], layers: ['application', 'technology'] },
     rules: [
@@ -99,7 +100,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'NIS2 Art. 21(2b): Incident handling procedures must be in place for all operational systems.',
     category: 'compliance',
     framework: 'NIS2',
-    severity: 'warning',
+    severity: 'medium',
     source: 'nis2',
     scope: { domains: [], elementTypes: [], layers: ['application'] },
     rules: [
@@ -112,7 +113,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'NIS2 Art. 21(2c): Business continuity and crisis management must cover all critical systems.',
     category: 'compliance',
     framework: 'NIS2',
-    severity: 'error',
+    severity: 'high',
     source: 'nis2',
     scope: { domains: [], elementTypes: [], layers: ['business', 'application'] },
     rules: [
@@ -124,7 +125,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'NIS2 Art. 21(2d): Supply chain security including security-related aspects of supplier relationships.',
     category: 'security',
     framework: 'NIS2',
-    severity: 'warning',
+    severity: 'medium',
     source: 'nis2',
     scope: { domains: [], elementTypes: ['application', 'application_component', 'technology_component'], layers: [] },
     rules: [
@@ -139,7 +140,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'TOGAF 10 §4.1: Every architecture element must have a meaningful description.',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning',
+    severity: 'medium',
     source: 'togaf',
     scope: { domains: [], elementTypes: [], layers: [] },
     rules: [
@@ -151,7 +152,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'TOGAF 10 §5.2: Element names must be descriptive (minimum 3 characters).',
     category: 'naming',
     framework: 'TOGAF 10',
-    severity: 'warning',
+    severity: 'medium',
     source: 'togaf',
     scope: { domains: [], elementTypes: [], layers: [] },
     rules: [
@@ -163,7 +164,7 @@ export const SEED_POLICIES: SeedPolicy[] = [
     description: 'TOGAF 10: Technology layer elements should not have "retired" status without replacement plan.',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning',
+    severity: 'medium',
     source: 'togaf',
     scope: { domains: [], elementTypes: [], layers: ['technology'] },
     rules: [

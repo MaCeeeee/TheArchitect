@@ -4,6 +4,45 @@ export type PolicyStatus = 'active' | 'draft' | 'deprecated' | 'archived';
 /** @deprecated THE-413 (ADR-0004 E6): policy sources are ontology data; validate writes with `isNormSource()`. */
 export type PolicySource = string;
 
+// ─── Severity & Enforcement (UC-CHOICE-003, THE-442) ───
+// severity = WIE SCHLIMM ist ein Verstoß (Klassifikation, Score-Gewicht).
+// enforcementLevel = WAS PASSIERT bei Verstoß (advisory: anzeigen |
+// soft_mandatory: Override mit Begründung | hard_mandatory: Write blockt).
+// Zwei orthogonale Achsen — severity war vorher überladen (THE-442).
+
+export type ViolationSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export type EnforcementLevel = 'advisory' | 'soft_mandatory' | 'hard_mandatory';
+
+export const VIOLATION_SEVERITIES: readonly ViolationSeverity[] = ['low', 'medium', 'high', 'critical'];
+export const ENFORCEMENT_LEVELS: readonly EnforcementLevel[] = ['advisory', 'soft_mandatory', 'hard_mandatory'];
+
+/** Mapping der Alt-Domain (pre-THE-442) für Migration + Abwärtskompatibilität. */
+export const LEGACY_SEVERITY_MAP: Record<'error' | 'warning' | 'info', ViolationSeverity> = {
+  error: 'high',
+  warning: 'medium',
+  info: 'low',
+};
+
+/** Lookup für DB-Strings unbekannter Herkunft — undefined statt Typ-Lüge. */
+export function mapLegacySeverity(s: string): ViolationSeverity | undefined {
+  return (LEGACY_SEVERITY_MAP as Record<string, ViolationSeverity | undefined>)[s];
+}
+
+/**
+ * Wire-Form einer Violation (REQ-003.2, OPA/Kyverno-Stil) — SHARED, weil
+ * Server (violation-format.ts, Gate-422-Response) UND Client
+ * (EnforcementBlockDialog, architectureStore) sie typisieren.
+ */
+export interface ViolationMessage {
+  ruleId: string;
+  severity: ViolationSeverity;
+  enforcementLevel: EnforcementLevel;
+  message: string;
+  resourcePath: string;
+  docLink?: string;
+}
+
 // ─── Policy Violation ───
 
 export type PolicyViolationStatus = 'open' | 'resolved' | 'suppressed';
@@ -16,15 +55,22 @@ export interface PolicyViolationDTO {
   elementId: string;
   elementName?: string;
   violationType: 'violation' | 'partial';
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
+  enforcementLevel: EnforcementLevel;
+  ruleId: string;
   message: string;
   field: string;
+  resourcePath: string;
+  docLink?: string;
   currentValue: unknown;
   expectedValue: unknown;
   status: PolicyViolationStatus;
   detectedAt: string;
   resolvedAt?: string;
   resolvedBy?: string;
+  overrideReason?: string;
+  suppressedAt?: string;
+  suppressedBy?: string;
   details: string;
 }
 
@@ -46,7 +92,8 @@ export interface PolicyDraftScope {
 export interface PolicyDraft {
   name: string;
   description: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
+  enforcementLevel?: EnforcementLevel; // optional: Drafts default zu 'advisory'
   scope: PolicyDraftScope;
   rules: PolicyDraftRule[];
   sourceSection: string;

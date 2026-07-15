@@ -1,7 +1,9 @@
+import { randomUUID } from 'crypto';
 import mongoose, { Schema, Document } from 'mongoose';
-import { isNormSource } from '@thearchitect/shared';
+import { isNormSource, ViolationSeverity, EnforcementLevel } from '@thearchitect/shared';
 
 export interface IPolicyRule {
+  ruleId: string; // stabile Identität (THE-442) — bleibt über Edits erhalten
   field: string;
   operator: 'equals' | 'not_equals' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte' | 'exists' | 'regex';
   value: unknown;
@@ -18,7 +20,8 @@ export interface IPolicy extends Document {
   description: string;
   category: 'naming' | 'security' | 'compliance' | 'architecture' | 'data' | 'custom';
   framework: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
+  enforcementLevel: EnforcementLevel;
   enabled: boolean;
   status: PolicyStatus;
   source: PolicySource;
@@ -40,6 +43,7 @@ export interface IPolicy extends Document {
 }
 
 const policyRuleSchema = new Schema<IPolicyRule>({
+  ruleId: { type: String, default: () => `r-${randomUUID()}` },
   field: { type: String, required: true },
   operator: {
     type: String,
@@ -61,7 +65,12 @@ const policySchema = new Schema<IPolicy>(
       required: true,
     },
     framework: { type: String, default: 'TOGAF 10' },
-    severity: { type: String, enum: ['error', 'warning', 'info'], default: 'warning' },
+    severity: { type: String, enum: ['low', 'medium', 'high', 'critical'], default: 'medium' },
+    enforcementLevel: {
+      type: String,
+      enum: ['advisory', 'soft_mandatory', 'hard_mandatory'],
+      default: 'advisory', // Audit-Mode-First (REQ-003.3 AC-5)
+    },
     enabled: { type: Boolean, default: true },
     status: {
       type: String,
@@ -99,5 +108,20 @@ const policySchema = new Schema<IPolicy>(
 policySchema.index({ projectId: 1, enabled: 1 });
 policySchema.index({ projectId: 1, status: 1 });
 policySchema.index({ projectId: 1, standardId: 1 });
+
+// ruleId-Stabilität: Client-Payloads ohne ruleId bekommen serverseitig eine;
+// mitgeschickte ruleIds bleiben unangetastet (THE-442). Duplikate INNERHALB
+// eines Payloads (Buggy-Client, Copy-Paste-Rule) werden neu gewürfelt — sonst
+// kollidiert später der Unique-Index (policyId,elementId,ruleId). AC-3: „je
+// Policy eindeutige ruleId" wird hier an der Schreibgrenze erzwungen.
+export function ensureRuleIds<T extends { ruleId?: string }>(rules: T[]): (T & { ruleId: string })[] {
+  const seen = new Set<string>();
+  return rules.map((r) => {
+    let ruleId = r.ruleId || `r-${randomUUID()}`;
+    if (seen.has(ruleId)) ruleId = `r-${randomUUID()}`; // Duplikat → frische Identität
+    seen.add(ruleId);
+    return { ...r, ruleId };
+  });
+}
 
 export const Policy = mongoose.model<IPolicy>('Policy', policySchema);

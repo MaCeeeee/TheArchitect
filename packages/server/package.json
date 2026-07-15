@@ -29,7 +29,8 @@
     "typing:prelabel": "ts-node src/scripts/prelabel-typing.ts",
     "typing:worksheet": "ts-node src/scripts/typing-worksheet.ts",
     "typing:eval": "ts-node src/evals/runTypingEval.ts",
-    "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts"
+    "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
+    "migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

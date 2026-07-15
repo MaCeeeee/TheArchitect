@@ -9,6 +9,7 @@ import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth
 import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI } from '../../services/api';
 import { RequirementsForElementSection } from '../compliance/RequirementsForElementSection';
 import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
+import { mapLegacySeverity } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
 import { CATEGORY_BY_TYPE } from '@thearchitect/shared/src/constants/archimate-categories';
 import { getValidRelationships, getDefaultRelationship, hasStrongRelationship, type StandardConnectionType } from '@thearchitect/shared/src/constants/archimate-rules';
@@ -368,8 +369,13 @@ export default function PropertyPanel() {
                 }}
                 className="flex items-start gap-1.5 text-[10px] w-full text-left hover:bg-white/5 rounded px-1 py-0.5 transition"
               >
-                <span className="mt-0.5 shrink-0 text-red-400">
-                  {v.severity === 'error' ? '!' : v.severity === 'warning' ? '\u25CB' : 'i'}
+                <span className={`mt-0.5 shrink-0 ${
+                  v.severity === 'critical' ? 'text-red-400'
+                    : v.severity === 'high' ? 'text-orange-400'
+                    : v.severity === 'medium' ? 'text-yellow-400'
+                    : 'text-blue-400'
+                }`}>
+                  {v.severity === 'critical' || v.severity === 'high' ? '!' : v.severity === 'medium' ? '\u25CB' : 'i'}
                 </span>
                 <div>
                   <span className="text-[var(--text-secondary)]">{v.policyName || 'Policy'}</span>
@@ -1576,9 +1582,10 @@ function CostInputSection({ element, onChange }: {
 // ─── Policy Property View ───
 
 const SEVERITY_COLORS: Record<string, string> = {
-  error: '#ef4444',
-  warning: '#eab308',
-  info: '#3b82f6',
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#eab308',
+  low: '#3b82f6',
 };
 
 interface PolicyPropertyViewProps {
@@ -1605,7 +1612,10 @@ function PolicyPropertyView({ element, metadata, violations, onClose, onSelectEl
 
   const violationCount = violations.length;
   const hasViolations = violationCount > 0;
-  const severity = (metadata.severity as string) || 'warning';
+  // Graph-node metadata can still carry pre-THE-442 values (error/warning/info)
+  // until nodes are re-synced — normalize for display instead of falling through.
+  const rawSeverity = (metadata.severity as string) || 'medium';
+  const severity = mapLegacySeverity(rawSeverity) ?? rawSeverity;
   const source = ((metadata.source as string) || 'custom').toUpperCase();
   const category = (metadata.category as string) || 'compliance';
   const version = (metadata.version as number) || 1;
@@ -1705,7 +1715,7 @@ function PolicyPropertyView({ element, metadata, violations, onClose, onSelectEl
                 className="flex items-start gap-1.5 text-[10px] w-full text-left hover:bg-white/5 rounded px-1 py-0.5 transition"
               >
                 <span className="mt-0.5 shrink-0" style={{ color: SEVERITY_COLORS[v.severity] || '#eab308' }}>
-                  {v.severity === 'error' ? '!' : '\u25CB'}
+                  {v.severity === 'critical' || v.severity === 'high' ? '!' : v.severity === 'medium' ? '\u25CB' : 'i'}
                 </span>
                 <div>
                   <span className="text-[var(--text-secondary)]">{v.elementName || v.elementId}</span>

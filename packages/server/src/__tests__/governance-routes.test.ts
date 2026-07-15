@@ -101,7 +101,7 @@ async function seedPolicy(overrides: Partial<Record<string, unknown>> = {}) {
     description: 'Every element needs a description',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -113,13 +113,17 @@ async function seedPolicy(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 async function seedViolation(policyId: mongoose.Types.ObjectId, elementId: string, overrides: Partial<Record<string, unknown>> = {}) {
+  // THE-442: ruleId ist Pflicht ohne Schema-Default — Fixtures setzen eine
+  // explizite, aus dem effektiven field abgeleitete ruleId (überschreibbar).
+  const field = (overrides.field as string) ?? 'description';
   return PolicyViolation.create({
     projectId: PROJECT_ID,
     policyId,
     elementId,
     elementName: elementId,
-    field: 'description',
-    severity: 'warning',
+    field,
+    ruleId: `r-test-${field}`,
+    severity: 'medium',
     message: 'Description required',
     status: 'open',
     detectedAt: new Date(),
@@ -162,17 +166,17 @@ describe('UC-GOV-001 Test 8.1: GET /:projectId/violations', () => {
   });
 
   it('filters by severity', async () => {
-    const policy = await seedPolicy({ severity: 'error' });
-    await seedViolation(policy._id, ELEMENT_A, { severity: 'error' });
-    await seedViolation(policy._id, ELEMENT_B, { severity: 'warning' });
+    const policy = await seedPolicy({ severity: 'high' });
+    await seedViolation(policy._id, ELEMENT_A, { severity: 'high' });
+    await seedViolation(policy._id, ELEMENT_B, { severity: 'medium' });
 
     const res = await request(app)
       .get(`/api/projects/${PROJECT_ID}/violations`)
-      .query({ severity: 'error' });
+      .query({ severity: 'high' });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].severity).toBe('error');
+    expect(res.body.data[0].severity).toBe('high');
   });
 
   it('supports limit + offset pagination', async () => {
@@ -264,5 +268,76 @@ describe('UC-GOV-001 Test 8.3: POST /:projectId/violations/re-evaluate', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.data.policiesEvaluated).toBe(0);
+  });
+});
+
+// ─── THE-442: POST/PUT policy write normalization ───────────────────────────
+
+describe('THE-442: policy write normalization', () => {
+  it('POST normalizes legacy severity and assigns ruleIds (with in-payload dedupe)', async () => {
+    const res = await request(app)
+      .post(`/api/projects/${PROJECT_ID}/policies`)
+      .send({
+        name: 'Legacy Client Policy',
+        category: 'architecture',
+        severity: 'warning', // legacy → medium
+        status: 'draft',     // draft: keine async Eval-Hooks
+        rules: [
+          { ruleId: 'r-dup', field: 'description', operator: 'exists', value: true, message: 'm1' },
+          { ruleId: 'r-dup', field: 'name', operator: 'exists', value: true, message: 'm2' },
+          { field: 'riskLevel', operator: 'not_equals', value: 'critical', message: 'm3' },
+        ],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.severity).toBe('medium');
+    const ruleIds = res.body.data.rules.map((r: { ruleId: string }) => r.ruleId);
+    expect(ruleIds[0]).toBe('r-dup');     // mitgeschickte ruleId bleibt erhalten
+    expect(ruleIds[1]).not.toBe('r-dup'); // In-Payload-Duplikat neu gewürfelt
+    expect(ruleIds[2]).toMatch(/^r-/);    // fehlende ruleId serverseitig vergeben
+    expect(new Set(ruleIds).size).toBe(3);
+  });
+
+  it('POST defaults missing severity to medium', async () => {
+    const res = await request(app)
+      .post(`/api/projects/${PROJECT_ID}/policies`)
+      .send({
+        name: 'No Severity',
+        category: 'architecture',
+        status: 'draft',
+        rules: [{ field: 'description', operator: 'exists', value: true, message: 'm' }],
+      });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.severity).toBe('medium');
+  });
+
+  it('PUT normalizes legacy severity, assigns ruleIds and bumps version', async () => {
+    const policy = await seedPolicy({ status: 'draft' });
+
+    const res = await request(app)
+      .put(`/api/projects/${PROJECT_ID}/policies/${policy._id}`)
+      .send({
+        severity: 'error', // legacy → high
+        rules: [{ field: 'maturity', operator: 'gte', value: 3, message: 'm' }], // ohne ruleId
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.severity).toBe('high');
+    expect(res.body.data.rules[0].ruleId).toMatch(/^r-/);
+    expect(res.body.data.version).toBe(2);
+  });
+
+  it('PUT rejects out-of-domain severity (runValidators backstop)', async () => {
+    const policy = await seedPolicy({ status: 'draft' });
+
+    const res = await request(app)
+      .put(`/api/projects/${PROJECT_ID}/policies/${policy._id}`)
+      .send({ severity: 'catastrophic' });
+
+    expect(res.status).toBe(500);
+
+    const unchanged = await Policy.findById(policy._id);
+    expect(unchanged!.severity).toBe('medium');
   });
 });

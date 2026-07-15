@@ -1,6 +1,7 @@
 // Demo seed: Vision, Stakeholders, Standards, Policies
 // Seeded alongside architecture elements to populate every feature panel
 
+import type { ViolationSeverity } from '@thearchitect/shared';
 import type { IVision, IStakeholder } from '../models/Project';
 
 // ── Vision (Phase A — Architecture Vision) ──
@@ -163,7 +164,7 @@ export interface DemoPolicy {
   name: string;
   description: string;
   category: 'naming' | 'security' | 'compliance' | 'architecture' | 'data' | 'custom';
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
   enabled: boolean;
   status: 'active' | 'draft';
   source: 'custom' | 'dora' | 'iso27001' | 'togaf';
@@ -176,7 +177,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'Critical Services Must Have High Maturity',
     description: 'Any element with critical risk level must have maturity level >= 4 to ensure operational resilience.',
     category: 'architecture',
-    severity: 'error',
+    severity: 'high',
     enabled: true,
     status: 'active',
     source: 'dora',
@@ -190,7 +191,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'All Services Must Have Error Rate < 5%',
     description: 'Application services must maintain error rates below 5% threshold per SLA requirements.',
     category: 'compliance',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -203,7 +204,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'Technology Components Require Owner Documentation',
     description: 'All technology layer components must have an owner defined in metadata for incident escalation.',
     category: 'architecture',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'togaf',
@@ -216,7 +217,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'High Technical Debt Requires Transformation Plan',
     description: 'Elements with technical debt ratio > 0.4 must have an active transformation strategy other than retain.',
     category: 'architecture',
-    severity: 'error',
+    severity: 'high',
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -230,7 +231,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'Encryption Required for Data Services',
     description: 'Database and storage components must use encryption at rest per ISO 27001:2022 control 8.24.',
     category: 'security',
-    severity: 'error',
+    severity: 'high',
     enabled: true,
     status: 'active',
     source: 'iso27001',
@@ -243,7 +244,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'Customer-Facing Services Require 99.9% Availability',
     description: 'Services accessed by external users must target < 0.1% error rate for SLA compliance.',
     category: 'compliance',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'dora',
@@ -257,7 +258,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'Naming Convention: Lowercase with Hyphens',
     description: 'All element names should follow kebab-case convention for API and infrastructure naming consistency.',
     category: 'naming',
-    severity: 'info',
+    severity: 'low',
     enabled: true,
     status: 'draft',
     source: 'custom',
@@ -270,7 +271,7 @@ export const DEMO_POLICIES: DemoPolicy[] = [
     name: 'DORA: ICT Third-Party Risk Assessment',
     description: 'Third-party technology dependencies must be documented with vendor information and SLA terms.',
     category: 'compliance',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'dora',

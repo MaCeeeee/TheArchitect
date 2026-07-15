@@ -11,9 +11,10 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import type { PolicyDraft } from '@thearchitect/shared';
 
 const SEVERITY_CONFIG = {
-  error: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'Error' },
-  warning: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', label: 'Warning' },
-  info: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', label: 'Info' },
+  critical: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'Critical' },
+  high: { icon: AlertCircle, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30', label: 'High' },
+  medium: { icon: AlertTriangle, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', label: 'Medium' },
+  low: { icon: Info, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', label: 'Low' },
 };
 
 interface DraftState {
@@ -308,7 +309,9 @@ export function PolicyDraftReview() {
           {/* Draft List */}
           <div className="space-y-3 max-h-[60vh] overflow-y-auto">
             {draftStates.map((ds, i) => {
-              const sev = SEVERITY_CONFIG[ds.draft.severity];
+              // LLM output is unvalidated on the generate path — guard against
+              // out-of-domain severity values so one bad draft can't crash the list.
+              const sev = SEVERITY_CONFIG[ds.draft.severity] ?? SEVERITY_CONFIG.medium;
               const SevIcon = sev.icon;
               const isExpanded = expandedIndices.has(i);
 
@@ -343,10 +346,12 @@ export function PolicyDraftReview() {
                       }`}>
                         {Math.round(ds.draft.confidence * 100)}% conf.
                       </span>
-                      {/* Severity badge — enforcement severity of future violations,
-                          NOT a generation error (THE-389) */}
+                      {/* Severity badge — classification of future violations (how bad,
+                          weighs into the compliance score). NOT enforcement (what happens
+                          on violation — approved drafts start as advisory) and NOT a
+                          generation error (THE-389, THE-442) */}
                       <span
-                        title={`Enforcement severity: violations of this policy will be classified as "${sev.label}". This is a property of the rule, not a generation error.`}
+                        title={`Severity: violations of this policy will be classified as "${sev.label}" — how serious a violation is, weighted in the compliance score. Enforcement (what happens on violation) is a separate setting; approved policies start as advisory. Not a generation error.`}
                         className={`text-xs px-2 py-0.5 rounded ${sev.bg} ${sev.color}`}
                       >
                         Severity: {sev.label}

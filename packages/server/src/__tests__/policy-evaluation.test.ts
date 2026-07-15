@@ -60,7 +60,7 @@ function createPolicyDoc(overrides: Partial<Record<string, unknown>> = {}) {
     description: 'Test description',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning' as const,
+    severity: 'medium' as const,
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -164,11 +164,12 @@ describe('UC-GOV-001: Soft-Delete', () => {
   it('resolves all open violations on archive', async () => {
     const policy = await Policy.create(createPolicyDoc({ name: 'Will Archive' }));
 
-    // Create open violations
+    // Create open violations (THE-442: explizite ruleId, kein Schema-Default)
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId: policy.rules[0].ruleId,
       message: 'Violation 1',
       field: 'description',
       status: 'open',
@@ -177,6 +178,7 @@ describe('UC-GOV-001: Soft-Delete', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-2',
+      ruleId: policy.rules[0].ruleId,
       message: 'Violation 2',
       field: 'description',
       status: 'open',
@@ -214,6 +216,7 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-abc',
+      ruleId: policy.rules[0].ruleId,
       message: 'Missing description',
       field: 'description',
       currentValue: null,
@@ -221,15 +224,20 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
     });
     expect(violation.status).toBe('open');
     expect(violation.violationType).toBe('violation');
-    expect(violation.severity).toBe('warning');
+    expect(violation.severity).toBe('medium');
   });
 
-  it('enforces unique index on policyId+elementId+field (deduplication)', async () => {
+  it('enforces unique index on policyId+elementId+ruleId (deduplication)', async () => {
+    // THE-442: Identität ist die Regel, nicht das Feld — dieselbe ruleId
+    // kollidiert auch bei VERSCHIEDENEN fields. (Diskriminierend: unter dem
+    // Alt-Index (policyId,elementId,field) ginge dieses Paar durch.)
     const policy = await Policy.create(createPolicyDoc());
+    const ruleId = policy.rules[0].ruleId;
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId,
       message: 'Missing desc',
       field: 'description',
     });
@@ -238,17 +246,22 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId,
       message: 'Duplicate',
-      field: 'description',
+      field: 'riskLevel',
     })).rejects.toThrow(/duplicate key|E11000/);
   });
 
-  it('allows same policy+element with different fields', async () => {
+  it('allows same policy+element for different rules (distinct ruleId)', async () => {
+    // THE-442: verschiedene ruleIds koexistieren auch bei GLEICHEM field.
+    // (Diskriminierend: unter dem Alt-Index (policyId,elementId,field)
+    // wäre dieses Paar ein E11000-Duplikat.)
     const policy = await Policy.create(createPolicyDoc());
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId: 'r-rule-a',
       message: 'Missing desc',
       field: 'description',
     });
@@ -256,22 +269,27 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
-      message: 'Bad risk',
-      field: 'riskLevel',
+      ruleId: 'r-rule-b',
+      message: 'Also about desc',
+      field: 'description',
     });
     expect(v2).toBeDefined();
   });
 
   it('upsert pattern updates existing violation instead of duplicating', async () => {
+    // THE-442: Upsert-Muster des Evaluation-Service — Identität (policyId,
+    // elementId, ruleId); field ist Datenfeld im $set.
     const policy = await Policy.create(createPolicyDoc());
+    const ruleId = policy.rules[0].ruleId;
     const elementId = 'elem-upsert';
 
     // First upsert creates
     await PolicyViolation.findOneAndUpdate(
-      { policyId: policy._id, elementId, field: 'description' },
+      { policyId: policy._id, elementId, ruleId },
       {
         $set: {
           projectId: PROJECT_ID,
+          field: 'description',
           message: 'First detection',
           status: 'open',
           detectedAt: new Date(),
@@ -282,10 +300,11 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
 
     // Second upsert updates
     await PolicyViolation.findOneAndUpdate(
-      { policyId: policy._id, elementId, field: 'description' },
+      { policyId: policy._id, elementId, ruleId },
       {
         $set: {
           projectId: PROJECT_ID,
+          field: 'description',
           message: 'Re-detected',
           status: 'open',
           detectedAt: new Date(),
@@ -482,11 +501,13 @@ describe('UC-GOV-001: evaluateElementPolicies', () => {
 
     const elementId = 'elem-resolve';
 
-    // Pre-create an open violation
+    // Pre-create an open violation (THE-442: trägt die echte ruleId der Regel,
+    // damit der ruleId-basierte Auto-Resolve sie findet)
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'Need desc',
       field: 'description',
       status: 'open',
@@ -526,6 +547,7 @@ describe('UC-GOV-001: evaluateElementPolicies', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'V1',
       field: 'description',
       status: 'open',
@@ -703,6 +725,13 @@ describe('UC-GOV-001: evaluateAllForPolicy', () => {
     expect(violations).toHaveLength(2);
     const violatedIds = violations.map(v => v.elementId).sort();
     expect(violatedIds).toEqual(['e1', 'e3']);
+
+    // THE-442: auch der Bulk-Upsert schreibt Rule-Identität + Enforcement-Metadaten
+    for (const v of violations) {
+      expect(v.ruleId).toBe(policy.rules[0].ruleId);
+      expect(v.enforcementLevel).toBe('advisory'); // Policy-Default
+      expect(v.resourcePath).toBe(`/elements/${v.elementId}/maturity`);
+    }
   });
 
   it('skips draft policies', async () => {
@@ -764,14 +793,17 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
     const policy = await Policy.create(createPolicyDoc());
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e1',
+      ruleId: policy.rules[0].ruleId,
       message: 'Open', field: 'description', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e2',
+      ruleId: policy.rules[0].ruleId,
       message: 'Resolved', field: 'description', status: 'resolved',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId: 'e3',
+      ruleId: policy.rules[0].ruleId,
       message: 'Suppressed', field: 'description', status: 'suppressed',
     });
 
@@ -789,14 +821,17 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
 
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p1._id, elementId: 'target-elem',
+      ruleId: p1.rules[0].ruleId,
       message: 'V1', field: 'description', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p2._id, elementId: 'target-elem',
+      ruleId: p2.rules[0].ruleId,
       message: 'V2', field: 'riskLevel', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: p1._id, elementId: 'other-elem',
+      ruleId: p1.rules[0].ruleId,
       message: 'V3', field: 'description', status: 'open',
     });
 
@@ -813,6 +848,7 @@ describe('UC-GOV-001: Violations Query Patterns', () => {
     for (let i = 0; i < 5; i++) {
       await PolicyViolation.create({
         projectId: PROJECT_ID, policyId: policy._id, elementId: `e-${i}`,
+        ruleId: policy.rules[0].ruleId,
         message: `V${i}`, field: 'description', status: 'open',
       });
     }
@@ -968,6 +1004,10 @@ describe('UC-GOV-001: Multi-Rule Policy Evaluation', () => {
 
     const fields = violations.map(v => v.field).sort();
     expect(fields).toEqual(['maturity', 'riskLevel']);
+
+    // THE-442: jede Violation trägt die echte ruleId ihrer Regel
+    const ruleIds = violations.map(v => v.ruleId).sort();
+    expect(ruleIds).toEqual([...policy.rules.map(r => r.ruleId)].sort());
   });
 
   it('partially resolves — fixes one rule, keeps violation for another', async () => {
@@ -982,13 +1022,15 @@ describe('UC-GOV-001: Multi-Rule Policy Evaluation', () => {
 
     const elementId = 'elem-partial';
 
-    // Step 1: both rules violated
+    // Step 1: both rules violated (THE-442: echte ruleIds der jeweiligen Regel)
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId,
+      ruleId: policy.rules[0].ruleId,
       message: 'No critical risk', field: 'riskLevel', status: 'open',
     });
     await PolicyViolation.create({
       projectId: PROJECT_ID, policyId: policy._id, elementId,
+      ruleId: policy.rules[1].ruleId,
       message: 'Desc required', field: 'description', status: 'open',
     });
 
@@ -1040,7 +1082,7 @@ describe('UC-GOV-001: E2E Policy Lifecycle', () => {
     const policy = await Policy.create(createPolicyDoc({
       name: 'E2E DORA ICT Risk',
       source: 'dora',
-      severity: 'error',
+      severity: 'high',
       scope: { domains: [], elementTypes: [], layers: ['application'] },
       rules: [
         { field: 'maturity', operator: 'gte', value: 2, message: 'DORA: Maturity must be >= 2' },
@@ -1061,7 +1103,7 @@ describe('UC-GOV-001: E2E Policy Lifecycle', () => {
     let violations = await PolicyViolation.find({ policyId: policy._id, status: 'open' });
     expect(violations).toHaveLength(1);
     expect(violations[0].elementId).toBe('core-db');
-    expect(violations[0].severity).toBe('error');
+    expect(violations[0].severity).toBe('high');
 
     // 3. User fixes element (maturity → 2) → auto-resolve
     mockRunCypher.mockResolvedValueOnce([
@@ -1188,9 +1230,10 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: goalId,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'phantom on goal',
       status: 'open',
       detectedAt: new Date(),
@@ -1225,9 +1268,10 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: reqId1,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'self violation',
       status: 'open',
       detectedAt: new Date(),
@@ -1236,9 +1280,10 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: reqId2,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'self violation',
       status: 'open',
       detectedAt: new Date(),
@@ -1247,9 +1292,10 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: otherId,
+      ruleId: policy.rules[0].ruleId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'real violation on normal element',
       status: 'open',
       detectedAt: new Date(),
@@ -1283,5 +1329,134 @@ describe('UC-GOV-001: compliance-policy projections', () => {
     const result = await cleanupCompliancePolicySelfViolations(PROJECT_ID.toString());
     expect(result.resolvedCount).toBe(0);
     expect(result.affectedElementIds).toEqual([]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// THE-442: schema foundation (severity domain, ruleId, enforcementLevel)
+// ═══════════════════════════════════════════════════════════════
+
+describe('THE-442: schema foundation', () => {
+  it('assigns a stable ruleId to every rule and persists enforcementLevel', async () => {
+    const policy = await Policy.create({
+      projectId: PROJECT_ID,
+      name: 'Sec Policy',
+      category: 'security',
+      severity: 'high',
+      enforcementLevel: 'soft_mandatory',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs description' }],
+      createdBy: USER_ID,
+    });
+    expect(policy.severity).toBe('high');
+    expect(policy.enforcementLevel).toBe('soft_mandatory');
+    expect(policy.rules[0].ruleId).toMatch(/^r-[0-9a-f-]{36}$/);
+  });
+
+  it('defaults enforcementLevel to advisory and severity to medium', async () => {
+    const policy = await Policy.create({
+      projectId: PROJECT_ID, name: 'Min', category: 'custom',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'name', operator: 'exists', value: true, message: 'm' }],
+      createdBy: USER_ID,
+    });
+    expect(policy.enforcementLevel).toBe('advisory');
+    expect(policy.severity).toBe('medium');
+  });
+
+  it('rejects legacy severity values', async () => {
+    await expect(Policy.create({
+      projectId: PROJECT_ID, name: 'Legacy', category: 'custom', severity: 'error',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'name', operator: 'exists', value: true, message: 'm' }],
+      createdBy: USER_ID,
+    })).rejects.toThrow(/is not a valid enum value/);
+  });
+
+  it('writes ruleId + enforcementLevel + resourcePath into upserted violations', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'Desc',
+      severity: 'high',
+      enforcementLevel: 'soft_mandatory',
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs desc' }],
+    }));
+
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: 'el-9',
+        name: 'X',
+        type: 'application_component',
+        layer: 'application',
+        domain: 'IT',
+        maturity: { toNumber: () => 2 },
+        riskLevel: 'low',
+        status: 'current',
+        description: '',
+        metadataJson: null,
+      }),
+    ]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-9', 'create');
+
+    const v = await PolicyViolation.findOne({ elementId: 'el-9' });
+    expect(v).not.toBeNull();
+    expect(v!.ruleId).toBe(policy.rules[0].ruleId);
+    expect(v!.enforcementLevel).toBe('soft_mandatory');
+    expect(v!.severity).toBe('high');
+    expect(v!.field).toBe('description'); // field bleibt Datenfeld
+    expect(v!.resourcePath).toBe('/elements/el-9/description');
+    expect(v!.docLink).toBeUndefined(); // deriveDocLink-Stub — Registry-Anbindung in THE-202
+  });
+
+  it('auto-resolves open violations whose rule was removed from the policy (rule identity)', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'Two Rules',
+      rules: [
+        { field: 'description', operator: 'exists', value: true, message: 'needs desc' },
+        { field: 'riskLevel', operator: 'not_equals', value: 'critical', message: 'no critical' },
+      ],
+    }));
+    const keptRuleId = policy.rules[0].ruleId;
+    const removedRuleId = policy.rules[1].ruleId;
+
+    // Beide Regeln offen verletzt (echte ruleIds)
+    await PolicyViolation.create({
+      projectId: PROJECT_ID, policyId: policy._id, elementId: 'el-stale',
+      ruleId: keptRuleId, message: 'needs desc', field: 'description', status: 'open',
+    });
+    await PolicyViolation.create({
+      projectId: PROJECT_ID, policyId: policy._id, elementId: 'el-stale',
+      ruleId: removedRuleId, message: 'no critical', field: 'riskLevel', status: 'open',
+    });
+
+    // Rule 2 wird aus der Policy gelöscht
+    await Policy.updateOne({ _id: policy._id }, {
+      $set: {
+        rules: [{
+          ruleId: keptRuleId,
+          field: 'description', operator: 'exists', value: true, message: 'needs desc',
+        }],
+      },
+    });
+
+    // Element verletzt Rule 1 weiterhin (leere description)
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: 'el-stale', name: 'Stale', type: 'application', layer: 'application',
+        domain: 'IT', maturity: { toNumber: () => 2 }, riskLevel: 'low',
+        status: 'current', description: '', metadataJson: null,
+      }),
+    ]);
+
+    const { evaluateAllForPolicy } = await import('../services/policy-evaluation.service');
+    await evaluateAllForPolicy(PROJECT_ID.toString(), policy._id.toString());
+
+    const kept = await PolicyViolation.findOne({ elementId: 'el-stale', ruleId: keptRuleId });
+    expect(kept!.status).toBe('open');
+
+    const removed = await PolicyViolation.findOne({ elementId: 'el-stale', ruleId: removedRuleId });
+    expect(removed!.status).toBe('resolved');
+    expect(removed!.details).toContain('rule removed');
   });
 });

@@ -109,6 +109,11 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
   }));
 }
 
+/** REQ-003.2 — docLink-Ableitung; Registry-Anbindung in THE-202. */
+function deriveDocLink(_policy: { standardId?: unknown; sourceSectionNumber?: string }): string | undefined {
+  return undefined;
+}
+
 /**
  * Evaluate all active policies against a single element.
  * Called after element create/update/delete.
@@ -168,15 +173,25 @@ export async function evaluateElementPolicies(
       const isCompliant = evaluateRule(fieldValue, rule.operator, rule.value);
 
       if (!isCompliant) {
-        // Upsert violation (unique index on policyId+elementId+field)
+        // Upsert violation — THE-442: Rule-Identität ist die ruleId
+        // (unique index policyId+elementId+ruleId); `field` bleibt reines
+        // Datenfeld im $set.
+        const docLink = deriveDocLink(policy);
         await PolicyViolation.findOneAndUpdate(
-          { policyId: policy._id, elementId, field: rule.field },
+          { policyId: policy._id, elementId, ruleId: rule.ruleId },
           {
             $set: {
               projectId,
+              ruleId: rule.ruleId,
               violationType: 'violation',
               severity: policy.severity,
+              enforcementLevel: policy.enforcementLevel,
               message: rule.message,
+              field: rule.field,
+              resourcePath: `/elements/${elementId}/${rule.field}`,
+              // docLink nur setzen, wenn abgeleitet — `docLink: undefined` würde
+              // sonst als $set-Pfad mitgehen (Stub liefert bis THE-202 nichts).
+              ...(docLink ? { docLink } : {}),
               currentValue: fieldValue,
               expectedValue: rule.value,
               status: 'open',
@@ -196,9 +211,9 @@ export async function evaluateElementPolicies(
           console.error('[PolicyEval] Failed to sync violation to Neo4j:', err);
         }
       } else {
-        // Resolve existing violation if any
+        // Resolve existing violation if any (THE-442: per ruleId adressiert)
         const resolved = await PolicyViolation.findOneAndUpdate(
-          { policyId: policy._id, elementId, field: rule.field, status: 'open' },
+          { policyId: policy._id, elementId, ruleId: rule.ruleId, status: 'open' },
           { $set: { status: 'resolved', resolvedAt: now } },
         );
 
@@ -246,14 +261,21 @@ export async function evaluateAllForPolicy(
       const isCompliant = evaluateRule(fieldValue, rule.operator, rule.value);
 
       if (!isCompliant) {
+        // THE-442: Rule-Identität ist die ruleId; `field` bleibt Datenfeld im $set.
+        const docLink = deriveDocLink(policy);
         await PolicyViolation.findOneAndUpdate(
-          { policyId: policy._id, elementId: el.id, field: rule.field },
+          { policyId: policy._id, elementId: el.id, ruleId: rule.ruleId },
           {
             $set: {
               projectId,
+              ruleId: rule.ruleId,
               violationType: 'violation',
               severity: policy.severity,
+              enforcementLevel: policy.enforcementLevel,
               message: rule.message,
+              field: rule.field,
+              resourcePath: `/elements/${el.id}/${rule.field}`,
+              ...(docLink ? { docLink } : {}),
               currentValue: fieldValue,
               expectedValue: rule.value,
               status: 'open',
@@ -270,6 +292,41 @@ export async function evaluateAllForPolicy(
           await syncViolationToNeo4j(policyId, el.id, policy.severity);
         } catch (err) {
           console.error('[PolicyEval] Failed to sync violation to Neo4j:', err);
+        }
+      }
+    }
+  }
+
+  // THE-442 (Rule-Identität): Violations, deren Rule nicht mehr in der Policy
+  // existiert (Rule gelöscht oder ruleId client-seitig neu vergeben), würden
+  // sonst ewig offen bleiben — Upsert-/Resolve-Pfade adressieren nur AKTUELLE
+  // Rules. Minimal-konsistente Lösung: offene Violations dieser Policy mit
+  // unbekannter ruleId auto-resolven + Neo4j-Kante räumen, wenn für das
+  // Element danach nichts mehr offen ist.
+  const activeRuleIds = policy.rules.map((r) => r.ruleId);
+  const staleOpen = await PolicyViolation.find(
+    { policyId: policy._id, status: 'open', ruleId: { $nin: activeRuleIds } },
+  ).select('elementId');
+  if (staleOpen.length > 0) {
+    await PolicyViolation.updateMany(
+      { policyId: policy._id, status: 'open', ruleId: { $nin: activeRuleIds } },
+      {
+        $set: {
+          status: 'resolved',
+          resolvedAt: now,
+          details: 'Auto-resolved: rule removed from policy (THE-442 rule identity)',
+        },
+      },
+    );
+    for (const staleElementId of [...new Set(staleOpen.map((v) => v.elementId))]) {
+      const remaining = await PolicyViolation.countDocuments({
+        policyId: policy._id, elementId: staleElementId, status: 'open',
+      });
+      if (remaining === 0) {
+        try {
+          await removeViolationFromNeo4j(policyId, staleElementId);
+        } catch (err) {
+          console.error('[PolicyEval] Failed to remove violation from Neo4j:', err);
         }
       }
     }
