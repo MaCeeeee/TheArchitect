@@ -3,9 +3,9 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
-import { PERMISSIONS } from '@thearchitect/shared';
+import { PERMISSIONS, mapLegacySeverity } from '@thearchitect/shared';
 import { ApprovalRequest } from '../models/ApprovalRequest';
-import { Policy } from '../models/Policy';
+import { Policy, ensureRuleIds } from '../models/Policy';
 import { PolicyViolation } from '../models/PolicyViolation';
 import { AuditLog } from '../models/AuditLog';
 import { checkCompliance } from '../services/compliance.service';
@@ -199,11 +199,12 @@ router.post(
         description,
         category,
         framework: framework || 'TOGAF 10',
-        severity: severity || 'warning',
+        // THE-442: Legacy-Clients (error|warning|info) normalisieren; leer → medium
+        severity: mapLegacySeverity(severity) ?? severity ?? 'medium',
         status: status || 'active',
         source: source || 'custom',
         scope: scope || { domains: [], elementTypes: [], layers: [] },
-        rules,
+        rules: ensureRuleIds(rules), // THE-442: stabile Rule-Identität an der Schreibgrenze
         effectiveFrom: effectiveFrom || undefined,
         effectiveUntil: effectiveUntil || undefined,
         createdBy: req.user!._id,
@@ -238,10 +239,16 @@ router.put(
       const projectId = String(req.params.projectId);
       const policyId = String(req.params.policyId);
 
+      // THE-442: Rule-Identität + severity-Domain an der Schreibgrenze normalisieren
+      if (Array.isArray(req.body.rules)) req.body.rules = ensureRuleIds(req.body.rules);
+      if (typeof req.body.severity === 'string') {
+        req.body.severity = mapLegacySeverity(req.body.severity) ?? req.body.severity;
+      }
+
       const policy = await Policy.findByIdAndUpdate(
         policyId,
         { ...req.body, updatedBy: req.user!._id, $inc: { version: 1 } },
-        { new: true },
+        { new: true, runValidators: true }, // THE-442: Backstop gegen Out-of-Domain-Werte
       );
       if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
       res.json({ success: true, data: policy });
@@ -277,7 +284,7 @@ router.delete(
       const policy = await Policy.findByIdAndUpdate(
         policyId,
         { status: 'archived', enabled: false, updatedBy: req.user!._id },
-        { new: true },
+        { new: true, runValidators: true }, // THE-442: Backstop gegen Out-of-Domain-Werte
       );
       if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
 

@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import mongoose, { Schema, Document } from 'mongoose';
 import { ViolationSeverity, EnforcementLevel } from '@thearchitect/shared';
 
@@ -33,13 +32,8 @@ const policyViolationSchema = new Schema<IPolicyViolation>(
     projectId: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
     policyId: { type: Schema.Types.ObjectId, ref: 'Policy', required: true },
     elementId: { type: String, required: true },
-    // THE-442: required + Default statt nur required — die Upserts in
-    // policy-evaluation.service.ts schreiben bis Task 5 noch kein ruleId;
-    // ohne Default kollidierten sie als (policyId,elementId,null) am
-    // Unique-Index. Der Zufalls-Default ist eine Placeholder-Identität;
-    // Task 5 schreibt die echte Policy.rules[].ruleId und darf den Default
-    // dann entfernen.
-    ruleId: { type: String, required: true, default: () => `r-${randomUUID()}` },
+    // THE-442: referenziert Policy.rules[].ruleId; Upserts schreiben echte Werte (Task 5)
+    ruleId: { type: String, required: true },
     violationType: {
       type: String,
       enum: ['violation', 'partial'],

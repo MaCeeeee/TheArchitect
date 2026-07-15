@@ -277,15 +277,19 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
   });
 
   it('upsert pattern updates existing violation instead of duplicating', async () => {
+    // THE-442: Upsert-Muster des Evaluation-Service — Identität (policyId,
+    // elementId, ruleId); field ist Datenfeld im $set.
     const policy = await Policy.create(createPolicyDoc());
+    const ruleId = policy.rules[0].ruleId;
     const elementId = 'elem-upsert';
 
     // First upsert creates
     await PolicyViolation.findOneAndUpdate(
-      { policyId: policy._id, elementId, field: 'description' },
+      { policyId: policy._id, elementId, ruleId },
       {
         $set: {
           projectId: PROJECT_ID,
+          field: 'description',
           message: 'First detection',
           status: 'open',
           detectedAt: new Date(),
@@ -296,10 +300,11 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
 
     // Second upsert updates
     await PolicyViolation.findOneAndUpdate(
-      { policyId: policy._id, elementId, field: 'description' },
+      { policyId: policy._id, elementId, ruleId },
       {
         $set: {
           projectId: PROJECT_ID,
+          field: 'description',
           message: 'Re-detected',
           status: 'open',
           detectedAt: new Date(),
@@ -720,6 +725,13 @@ describe('UC-GOV-001: evaluateAllForPolicy', () => {
     expect(violations).toHaveLength(2);
     const violatedIds = violations.map(v => v.elementId).sort();
     expect(violatedIds).toEqual(['e1', 'e3']);
+
+    // THE-442: auch der Bulk-Upsert schreibt Rule-Identität + Enforcement-Metadaten
+    for (const v of violations) {
+      expect(v.ruleId).toBe(policy.rules[0].ruleId);
+      expect(v.enforcementLevel).toBe('advisory'); // Policy-Default
+      expect(v.resourcePath).toBe(`/elements/${v.elementId}/maturity`);
+    }
   });
 
   it('skips draft policies', async () => {
@@ -992,6 +1004,10 @@ describe('UC-GOV-001: Multi-Rule Policy Evaluation', () => {
 
     const fields = violations.map(v => v.field).sort();
     expect(fields).toEqual(['maturity', 'riskLevel']);
+
+    // THE-442: jede Violation trägt die echte ruleId ihrer Regel
+    const ruleIds = violations.map(v => v.ruleId).sort();
+    expect(ruleIds).toEqual([...policy.rules.map(r => r.ruleId)].sort());
   });
 
   it('partially resolves — fixes one rule, keeps violation for another', async () => {
@@ -1355,5 +1371,92 @@ describe('THE-442: schema foundation', () => {
       rules: [{ field: 'name', operator: 'exists', value: true, message: 'm' }],
       createdBy: USER_ID,
     })).rejects.toThrow(/is not a valid enum value/);
+  });
+
+  it('writes ruleId + enforcementLevel + resourcePath into upserted violations', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'Desc',
+      severity: 'high',
+      enforcementLevel: 'soft_mandatory',
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs desc' }],
+    }));
+
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: 'el-9',
+        name: 'X',
+        type: 'application_component',
+        layer: 'application',
+        domain: 'IT',
+        maturity: { toNumber: () => 2 },
+        riskLevel: 'low',
+        status: 'current',
+        description: '',
+        metadataJson: null,
+      }),
+    ]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-9', 'create');
+
+    const v = await PolicyViolation.findOne({ elementId: 'el-9' });
+    expect(v).not.toBeNull();
+    expect(v!.ruleId).toBe(policy.rules[0].ruleId);
+    expect(v!.enforcementLevel).toBe('soft_mandatory');
+    expect(v!.severity).toBe('high');
+    expect(v!.field).toBe('description'); // field bleibt Datenfeld
+    expect(v!.resourcePath).toBe('/elements/el-9/description');
+    expect(v!.docLink).toBeUndefined(); // deriveDocLink-Stub — Registry-Anbindung in THE-202
+  });
+
+  it('auto-resolves open violations whose rule was removed from the policy (rule identity)', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'Two Rules',
+      rules: [
+        { field: 'description', operator: 'exists', value: true, message: 'needs desc' },
+        { field: 'riskLevel', operator: 'not_equals', value: 'critical', message: 'no critical' },
+      ],
+    }));
+    const keptRuleId = policy.rules[0].ruleId;
+    const removedRuleId = policy.rules[1].ruleId;
+
+    // Beide Regeln offen verletzt (echte ruleIds)
+    await PolicyViolation.create({
+      projectId: PROJECT_ID, policyId: policy._id, elementId: 'el-stale',
+      ruleId: keptRuleId, message: 'needs desc', field: 'description', status: 'open',
+    });
+    await PolicyViolation.create({
+      projectId: PROJECT_ID, policyId: policy._id, elementId: 'el-stale',
+      ruleId: removedRuleId, message: 'no critical', field: 'riskLevel', status: 'open',
+    });
+
+    // Rule 2 wird aus der Policy gelöscht
+    await Policy.updateOne({ _id: policy._id }, {
+      $set: {
+        rules: [{
+          ruleId: keptRuleId,
+          field: 'description', operator: 'exists', value: true, message: 'needs desc',
+        }],
+      },
+    });
+
+    // Element verletzt Rule 1 weiterhin (leere description)
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: 'el-stale', name: 'Stale', type: 'application', layer: 'application',
+        domain: 'IT', maturity: { toNumber: () => 2 }, riskLevel: 'low',
+        status: 'current', description: '', metadataJson: null,
+      }),
+    ]);
+
+    const { evaluateAllForPolicy } = await import('../services/policy-evaluation.service');
+    await evaluateAllForPolicy(PROJECT_ID.toString(), policy._id.toString());
+
+    const kept = await PolicyViolation.findOne({ elementId: 'el-stale', ruleId: keptRuleId });
+    expect(kept!.status).toBe('open');
+
+    const removed = await PolicyViolation.findOne({ elementId: 'el-stale', ruleId: removedRuleId });
+    expect(removed!.status).toBe('resolved');
+    expect(removed!.details).toContain('rule removed');
   });
 });
