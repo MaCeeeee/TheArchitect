@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ScrollText, Plus, ToggleLeft, ToggleRight, AlertTriangle, AlertCircle, Info, Trash2, Loader2, FileStack, ChevronDown, ChevronUp, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import type { ViolationSeverity } from '@thearchitect/shared';
 import { governanceAPI } from '../../services/api';
 
 interface PolicyRule {
+  // Stable rule identity (THE-442). Loaded from the API and passed through 1:1 —
+  // never strip it when sending rules back on edit.
+  ruleId?: string;
   field: string;
   operator: string;
   value: unknown;
@@ -16,7 +20,7 @@ interface PolicyItem {
   name: string;
   description: string;
   category: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
   enabled: boolean;
   framework: string;
   rules: PolicyRule[];
@@ -24,7 +28,7 @@ interface PolicyItem {
 }
 
 const CATEGORIES = ['architecture', 'security', 'naming', 'compliance', 'data', 'custom'] as const;
-const SEVERITIES = ['error', 'warning', 'info'] as const;
+const SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
 const OPERATORS = ['equals', 'not_equals', 'contains', 'gt', 'lt', 'gte', 'lte', 'exists', 'regex'] as const;
 const FIELDS = ['description', 'maturityLevel', 'riskLevel', 'status', 'type', 'layer', 'name'] as const;
 
@@ -43,7 +47,7 @@ export default function PolicyManager() {
   // Create form
   const [newName, setNewName] = useState('');
   const [newCategory, setNewCategory] = useState<string>('architecture');
-  const [newSeverity, setNewSeverity] = useState<string>('warning');
+  const [newSeverity, setNewSeverity] = useState<string>('medium');
   const [newDescription, setNewDescription] = useState('');
   const [ruleField, setRuleField] = useState<string>('description');
   const [ruleOperator, setRuleOperator] = useState<string>('exists');
@@ -165,8 +169,9 @@ export default function PolicyManager() {
   };
 
   const severityIcon = (s: string) => {
-    if (s === 'error') return <AlertCircle size={16} className="text-[#ef4444]" />;
-    if (s === 'warning') return <AlertTriangle size={16} className="text-[#eab308]" />;
+    if (s === 'critical') return <AlertCircle size={16} className="text-[#ef4444]" />;
+    if (s === 'high') return <AlertCircle size={16} className="text-[#f97316]" />;
+    if (s === 'medium') return <AlertTriangle size={16} className="text-[#eab308]" />;
     return <Info size={16} className="text-[#3b82f6]" />;
   };
 
@@ -218,7 +223,7 @@ export default function PolicyManager() {
           <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-4 space-y-3">
             <p className="text-xs text-[var(--text-secondary)]">Apply policy templates from regulatory frameworks. Imported as draft — review before activating.</p>
             {[
-              { id: 'dora', label: 'DORA', desc: '5 policies (ICT Risk, Incidents, Resilience, Third-Party, Intelligence)', severity: 'critical/high' },
+              { id: 'dora', label: 'DORA', desc: '5 policies (ICT Risk, Incidents, Resilience, Third-Party, Intelligence)', severity: 'high/medium/low' },
               { id: 'nis2', label: 'NIS2', desc: '4 policies (Risk, Incidents, Continuity, Supply Chain)', severity: 'high/medium' },
               { id: 'togaf', label: 'TOGAF Baseline', desc: '3 policies (Description, Naming, Layer Integrity)', severity: 'medium' },
             ].map(({ id, label, desc, severity }) => (

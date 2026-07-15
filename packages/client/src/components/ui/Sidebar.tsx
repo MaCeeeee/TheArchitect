@@ -438,12 +438,13 @@ function CompliancePanel() {
   // Violation severity counts
   const violationSeverity = violations.reduce(
     (acc, v) => {
-      if (v.severity === 'error') acc.errors++;
-      else if (v.severity === 'warning') acc.warnings++;
-      else acc.infos++;
+      if (v.severity === 'critical') acc.critical++;
+      else if (v.severity === 'high') acc.high++;
+      else if (v.severity === 'medium') acc.medium++;
+      else acc.low++;
       return acc;
     },
-    { errors: 0, warnings: 0, infos: 0 },
+    { critical: 0, high: 0, medium: 0, low: 0 },
   );
 
   // Stage labels for pipeline
@@ -719,26 +720,32 @@ function CompliancePanel() {
               <div className="flex justify-center py-6"><Loader2 size={18} className="animate-spin text-[var(--text-tertiary)]" /></div>
             ) : violations.length > 0 ? (
               <>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
-                    <div className="text-sm font-bold text-[#ef4444]">{violationSeverity.errors}</div>
-                    <div className="text-[9px] text-[var(--text-tertiary)]">Errors</div>
+                    <div className="text-sm font-bold text-[#ef4444]">{violationSeverity.critical}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Critical</div>
                   </div>
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
-                    <div className="text-sm font-bold text-[#eab308]">{violationSeverity.warnings}</div>
-                    <div className="text-[9px] text-[var(--text-tertiary)]">Warnings</div>
+                    <div className="text-sm font-bold text-[#f97316]">{violationSeverity.high}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">High</div>
                   </div>
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
-                    <div className="text-sm font-bold text-[#3b82f6]">{violationSeverity.infos}</div>
-                    <div className="text-[9px] text-[var(--text-tertiary)]">Info</div>
+                    <div className="text-sm font-bold text-[#eab308]">{violationSeverity.medium}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Medium</div>
+                  </div>
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-2 text-center">
+                    <div className="text-sm font-bold text-[#3b82f6]">{violationSeverity.low}</div>
+                    <div className="text-[9px] text-[var(--text-tertiary)]">Low</div>
                   </div>
                 </div>
                 <div className="space-y-1">
                   {violations.slice(0, 8).map((v) => (
                     <div key={v._id} className="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-[var(--surface-overlay)]">
-                      {v.severity === 'error'
+                      {v.severity === 'critical'
                         ? <AlertCircle size={12} className="text-[#ef4444] shrink-0 mt-0.5" />
-                        : v.severity === 'warning'
+                        : v.severity === 'high'
+                        ? <AlertCircle size={12} className="text-[#f97316] shrink-0 mt-0.5" />
+                        : v.severity === 'medium'
                         ? <AlertTriangle size={12} className="text-[#eab308] shrink-0 mt-0.5" />
                         : <Info size={12} className="text-[#3b82f6] shrink-0 mt-0.5" />}
                       <div className="flex-1 min-w-0">

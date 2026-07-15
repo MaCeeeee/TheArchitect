@@ -3,7 +3,7 @@ import multer from 'multer';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
-import { PERMISSIONS } from '@thearchitect/shared';
+import { PERMISSIONS, mapLegacySeverity } from '@thearchitect/shared';
 import { findMatchingDriver, projectPoliciesAsRequirements } from '../services/policy-to-requirement.service';
 import {
   parseAndStore,
@@ -601,7 +601,12 @@ router.post(
           // store them as 'custom' and keep the actual standard id on standardId
           // + sourceSectionNumber for traceability.
           framework: 'custom' as const,
-          severity: draft.severity || 'warning',
+          // THE-442: normalize legacy error/warning/info from older clients/drafts
+          // to the ViolationSeverity domain; enforcementLevel is a human governance
+          // decision — always start LLM-drafted policies as 'advisory', never let
+          // the LLM or the request escalate it.
+          severity: mapLegacySeverity(String(draft.severity ?? '')) ?? draft.severity ?? 'medium',
+          enforcementLevel: 'advisory' as const,
           scope: draft.scope || { domains: [], elementTypes: [], layers: [] },
           rules: draft.rules || [],
           standardId: persistId,

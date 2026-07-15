@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShieldCheck, AlertTriangle, AlertCircle, Info, RefreshCw, Loader2 } from 'lucide-react';
+import type { ViolationSeverity } from '@thearchitect/shared';
 import { governanceAPI } from '../../services/api';
 
 interface Violation {
   elementName: string;
   elementType: string;
   policyName: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: ViolationSeverity;
   category: string;
   message: string;
   field: string;
@@ -20,9 +21,10 @@ interface ComplianceReport {
   totalPolicies: number;
   violations: Violation[];
   summary: {
-    errors: number;
-    warnings: number;
-    infos: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
     complianceScore: number;
   };
   byCategory: Record<string, number>;
@@ -49,8 +51,9 @@ export default function ComplianceDashboard() {
   };
 
   const severityIcon = (s: string) => {
-    if (s === 'error') return <AlertCircle size={16} className="text-[#ef4444]" />;
-    if (s === 'warning') return <AlertTriangle size={16} className="text-[#eab308]" />;
+    if (s === 'critical') return <AlertCircle size={16} className="text-[#ef4444]" />;
+    if (s === 'high') return <AlertCircle size={16} className="text-[#f97316]" />;
+    if (s === 'medium') return <AlertTriangle size={16} className="text-[#eab308]" />;
     return <Info size={16} className="text-[#3b82f6]" />;
   };
 
@@ -117,18 +120,22 @@ export default function ComplianceDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-4 gap-2 mt-3">
               <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-center">
-                <div className="text-sm font-bold text-[#ef4444]">{report.summary.errors}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">Errors</div>
+                <div className="text-sm font-bold text-[#ef4444]">{report.summary.critical}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">Critical</div>
               </div>
               <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-center">
-                <div className="text-sm font-bold text-[#eab308]">{report.summary.warnings}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">Warnings</div>
+                <div className="text-sm font-bold text-[#f97316]">{report.summary.high}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">High</div>
               </div>
               <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-center">
-                <div className="text-sm font-bold text-[#3b82f6]">{report.summary.infos}</div>
-                <div className="text-xs text-[var(--text-tertiary)]">Info</div>
+                <div className="text-sm font-bold text-[#eab308]">{report.summary.medium}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">Medium</div>
+              </div>
+              <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)] p-3 text-center">
+                <div className="text-sm font-bold text-[#3b82f6]">{report.summary.low}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">Low</div>
               </div>
             </div>
           </div>

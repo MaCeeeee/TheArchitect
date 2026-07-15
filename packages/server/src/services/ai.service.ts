@@ -761,10 +761,10 @@ Good examples:
 Skip sections that are purely informational with no checkable requirement.
 
 Respond with ONLY a JSON array. No other text. Each entry:
-{"name":"...","description":"...","severity":"error|warning|info","scope":{"domains":[],"elementTypes":[],"layers":[]},"rules":[{"field":"...","operator":"...","value":...,"message":"..."}],"sourceSection":"...","sourceSectionTitle":"...","confidence":0.0-1.0}
+{"name":"...","description":"...","severity":"low|medium|high|critical","scope":{"domains":[],"elementTypes":[],"layers":[]},"rules":[{"field":"...","operator":"...","value":...,"message":"..."}],"sourceSection":"...","sourceSectionTitle":"...","confidence":0.0-1.0}
 
 Set confidence based on how clearly the standard section maps to a concrete, evaluable rule.
-Set severity: "error" for SHALL/MUST requirements, "warning" for SHOULD, "info" for MAY/recommendations.`;
+Set severity: "high" for SHALL/MUST requirements, "medium" for SHOULD, "low" for MAY/recommendations.`;
 
   let fullResponse = '';
 
@@ -963,7 +963,7 @@ For each suggestion provide:
 - A clear name following ArchiMate conventions
 - The correct element type and layer
 - A description explaining what to do and WHY (referencing the policy/gap)
-- Priority: "high" for SHALL/MUST or Error-severity policies, "medium" for SHOULD/Warning, "low" for MAY/Info
+- Priority: "high" for SHALL/MUST or critical/high-severity policies, "medium" for SHOULD/medium, "low" for MAY/low
 - Proposed connections to existing architecture elements (by name)
 
 Respond with ONLY a JSON array:
