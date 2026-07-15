@@ -101,7 +101,7 @@ async function seedPolicy(overrides: Partial<Record<string, unknown>> = {}) {
     description: 'Every element needs a description',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning',
+    severity: 'medium',
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -119,7 +119,7 @@ async function seedViolation(policyId: mongoose.Types.ObjectId, elementId: strin
     elementId,
     elementName: elementId,
     field: 'description',
-    severity: 'warning',
+    severity: 'medium',
     message: 'Description required',
     status: 'open',
     detectedAt: new Date(),
@@ -162,17 +162,17 @@ describe('UC-GOV-001 Test 8.1: GET /:projectId/violations', () => {
   });
 
   it('filters by severity', async () => {
-    const policy = await seedPolicy({ severity: 'error' });
-    await seedViolation(policy._id, ELEMENT_A, { severity: 'error' });
-    await seedViolation(policy._id, ELEMENT_B, { severity: 'warning' });
+    const policy = await seedPolicy({ severity: 'high' });
+    await seedViolation(policy._id, ELEMENT_A, { severity: 'high' });
+    await seedViolation(policy._id, ELEMENT_B, { severity: 'medium' });
 
     const res = await request(app)
       .get(`/api/projects/${PROJECT_ID}/violations`)
-      .query({ severity: 'error' });
+      .query({ severity: 'high' });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveLength(1);
-    expect(res.body.data[0].severity).toBe('error');
+    expect(res.body.data[0].severity).toBe('high');
   });
 
   it('supports limit + offset pagination', async () => {

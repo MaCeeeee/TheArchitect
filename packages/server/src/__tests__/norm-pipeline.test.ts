@@ -265,7 +265,7 @@ describe('pipeline over norm facade (THE-390 P2)', () => {
       description: 'Art. 30 DSGVO',
       category: 'compliance',
       framework: 'custom',
-      severity: 'warning',
+      severity: 'medium',
       scope: { domains: [], elementTypes: [], layers: [] },
       rules: [],
       standardId: anchor,

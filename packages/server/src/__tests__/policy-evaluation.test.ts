@@ -60,7 +60,7 @@ function createPolicyDoc(overrides: Partial<Record<string, unknown>> = {}) {
     description: 'Test description',
     category: 'architecture',
     framework: 'TOGAF 10',
-    severity: 'warning' as const,
+    severity: 'medium' as const,
     enabled: true,
     status: 'active',
     source: 'custom',
@@ -221,15 +221,19 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
     });
     expect(violation.status).toBe('open');
     expect(violation.violationType).toBe('violation');
-    expect(violation.severity).toBe('warning');
+    expect(violation.severity).toBe('medium');
   });
 
-  it('enforces unique index on policyId+elementId+field (deduplication)', async () => {
+  it('enforces unique index on policyId+elementId+ruleId (deduplication)', async () => {
+    // THE-442: Identität ist die Regel, nicht das Feld — dieselbe Regel
+    // erneut detektiert kollidiert, statt zu duplizieren.
     const policy = await Policy.create(createPolicyDoc());
+    const ruleId = policy.rules[0].ruleId;
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId,
       message: 'Missing desc',
       field: 'description',
     });
@@ -238,17 +242,19 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId,
       message: 'Duplicate',
       field: 'description',
     })).rejects.toThrow(/duplicate key|E11000/);
   });
 
-  it('allows same policy+element with different fields', async () => {
+  it('allows same policy+element for different rules (distinct ruleId)', async () => {
     const policy = await Policy.create(createPolicyDoc());
     await PolicyViolation.create({
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId: 'r-rule-a',
       message: 'Missing desc',
       field: 'description',
     });
@@ -256,6 +262,7 @@ describe('UC-GOV-001: PolicyViolation Model', () => {
       projectId: PROJECT_ID,
       policyId: policy._id,
       elementId: 'elem-1',
+      ruleId: 'r-rule-b',
       message: 'Bad risk',
       field: 'riskLevel',
     });
@@ -1040,7 +1047,7 @@ describe('UC-GOV-001: E2E Policy Lifecycle', () => {
     const policy = await Policy.create(createPolicyDoc({
       name: 'E2E DORA ICT Risk',
       source: 'dora',
-      severity: 'error',
+      severity: 'high',
       scope: { domains: [], elementTypes: [], layers: ['application'] },
       rules: [
         { field: 'maturity', operator: 'gte', value: 2, message: 'DORA: Maturity must be >= 2' },
@@ -1061,7 +1068,7 @@ describe('UC-GOV-001: E2E Policy Lifecycle', () => {
     let violations = await PolicyViolation.find({ policyId: policy._id, status: 'open' });
     expect(violations).toHaveLength(1);
     expect(violations[0].elementId).toBe('core-db');
-    expect(violations[0].severity).toBe('error');
+    expect(violations[0].severity).toBe('high');
 
     // 3. User fixes element (maturity → 2) → auto-resolve
     mockRunCypher.mockResolvedValueOnce([
@@ -1190,7 +1197,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       elementId: goalId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'phantom on goal',
       status: 'open',
       detectedAt: new Date(),
@@ -1227,7 +1234,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       elementId: reqId1,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'self violation',
       status: 'open',
       detectedAt: new Date(),
@@ -1238,7 +1245,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       elementId: reqId2,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'self violation',
       status: 'open',
       detectedAt: new Date(),
@@ -1249,7 +1256,7 @@ describe('UC-GOV-001: compliance-policy projections', () => {
       elementId: otherId,
       field: 'description',
       violationType: 'violation',
-      severity: 'warning',
+      severity: 'medium',
       message: 'real violation on normal element',
       status: 'open',
       detectedAt: new Date(),
@@ -1283,5 +1290,47 @@ describe('UC-GOV-001: compliance-policy projections', () => {
     const result = await cleanupCompliancePolicySelfViolations(PROJECT_ID.toString());
     expect(result.resolvedCount).toBe(0);
     expect(result.affectedElementIds).toEqual([]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// THE-442: schema foundation (severity domain, ruleId, enforcementLevel)
+// ═══════════════════════════════════════════════════════════════
+
+describe('THE-442: schema foundation', () => {
+  it('assigns a stable ruleId to every rule and persists enforcementLevel', async () => {
+    const policy = await Policy.create({
+      projectId: PROJECT_ID,
+      name: 'Sec Policy',
+      category: 'security',
+      severity: 'high',
+      enforcementLevel: 'soft_mandatory',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs description' }],
+      createdBy: USER_ID,
+    });
+    expect(policy.severity).toBe('high');
+    expect(policy.enforcementLevel).toBe('soft_mandatory');
+    expect(policy.rules[0].ruleId).toMatch(/^r-[0-9a-f-]{36}$/);
+  });
+
+  it('defaults enforcementLevel to advisory and severity to medium', async () => {
+    const policy = await Policy.create({
+      projectId: PROJECT_ID, name: 'Min', category: 'custom',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'name', operator: 'exists', value: true, message: 'm' }],
+      createdBy: USER_ID,
+    });
+    expect(policy.enforcementLevel).toBe('advisory');
+    expect(policy.severity).toBe('medium');
+  });
+
+  it('rejects legacy severity values', async () => {
+    await expect(Policy.create({
+      projectId: PROJECT_ID, name: 'Legacy', category: 'custom', severity: 'error',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'name', operator: 'exists', value: true, message: 'm' }],
+      createdBy: USER_ID,
+    })).rejects.toThrow(/is not a valid enum value/);
   });
 });
