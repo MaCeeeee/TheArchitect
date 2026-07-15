@@ -705,6 +705,8 @@ if (require.main === module) {
 
 `packages/server/package.json` scripts ergänzen: `"migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"`.
 
+**Typ-Härtung (Quality-Review 2026-07-15):** `LEGACY_SEVERITY_MAP` in shared von `Record<string, ViolationSeverity>` auf `Record<'error' | 'warning' | 'info', ViolationSeverity>` verengen (sonst ist `MAP['medium']` typseitig defined, runtime undefined) und daneben Helper exportieren: `export function mapLegacySeverity(s: string): ViolationSeverity | undefined { return (LEGACY_SEVERITY_MAP as Record<string, ViolationSeverity | undefined>)[s]; }`. Die Migration nutzt den Helper statt Raw-Indexing: `mapLegacySeverity(p.severity as string) || p.severity`. Shared danach neu bauen.
+
 - [ ] **Step 4: Run — PASS**
 
 Run: `npm test --workspace=@thearchitect/server -- --testPathPattern=migrate-severity`
@@ -716,14 +718,21 @@ git add packages/server/src/scripts/migrate-severity-enforcement.ts packages/ser
 git commit -m "feat(compliance): severity/ruleId data migration, idempotent (THE-442)" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 ```
 
-**Deploy-Hinweis (in PR-Beschreibung übernehmen):** Auf dem VPS **sofort nach dem Deploy, vor Edit-Traffic**, einmalig `npm run migrate:severity` im Server-Container ausführen (Mac: nicht nötig, Memory-DB in Tests). Erwartbares Fenster-Verhalten (Review 2026-07-14): Mongoose versucht beim ersten Boot mit neuem Code den Unique-Index `{policyId,elementId,ruleId}` VOR der Migration zu bauen — auf Legacy-Daten mit ≥2 Violations pro Policy+Element schlägt der Build laut fehl (nicht fatal); Migration Schritt 3 baut ihn danach korrekt. Im selben Fenster upserten Evaluations mit `ruleId: undefined` — heilt sich durch die Migration ebenfalls selbst.
+**Deploy-Hinweis (in PR-Beschreibung übernehmen):** Auf dem VPS **sofort nach dem Deploy, vor Edit-Traffic**, einmalig `npm run migrate:severity` im Server-Container ausführen (Mac: nicht nötig, Memory-DB in Tests). **Tasks 2–5 sind EIN Deploy-Unit** (Quality-Review 2026-07-15: der temporäre ruleId-Default aus Task 2 ist ohne die Task-5-Upsert-Umstellung nicht concurrency-sicher — ein Teil-Deploy 2–4 shipped ein Silent-Duplicate-Fenster). Erwartbares Fenster-Verhalten (Review 2026-07-14): Mongoose versucht beim ersten Boot mit neuem Code den Unique-Index `{policyId,elementId,ruleId}` VOR der Migration zu bauen — auf Legacy-Daten mit ≥2 Violations pro Policy+Element schlägt der Build laut fehl (nicht fatal); Migration Schritt 3 baut ihn danach korrekt. Im selben Fenster upserten Evaluations mit `ruleId: undefined` — heilt sich durch die Migration ebenfalls selbst.
 
 ### Task 5: Evaluation schreibt ruleId — und Routen normalisieren Rules
 
 **Files:**
 - Modify: `packages/server/src/services/policy-evaluation.service.ts`
+- Modify: `packages/server/src/models/PolicyViolation.ts` (temp-Default entfernen, Step 0)
 - Modify: `packages/server/src/routes/governance.routes.ts` (Create/Update-Policy)
-- Test: bestehende `policy-evaluation.test.ts`-Assertions erweitern
+- Test: bestehende `policy-evaluation.test.ts`-Assertions erweitern + `governance-routes.test.ts` seedViolation-Fixtures
+
+- [ ] **Step 0: Pflicht-Vorarbeiten (Quality-Review 2026-07-15, BINDEND)**
+
+1. **Temp-ruleId-Default entfernen:** `PolicyViolation.ts` — der in Task 2 eingeführte `default: () => r-${randomUUID()}` auf `ruleId` MUSS raus, sobald die Upserts echte ruleIds schreiben (dieser Task). Empirisch belegt: Unter dem Default sind 4 parallele Upserts = 4 Duplikate (Unique-Index deckt den Dedupe-Key des alten Filters nicht mehr). `governance-routes.test.ts:115` (`seedViolation`) verlässt sich auf den Default → Fixtures bekommen explizite ruleIds.
+2. **Identity-Tests diskriminierend machen:** Die zwei in Task 2 umgeschriebenen Tests (policy-evaluation.test.ts ~227-270) ko-variieren field mit ruleId und würden auch unter dem ALTEN Index bestehen. Fix: Dedupe-Test → gleiche ruleId, VERSCHIEDENE fields (muss weiter E11000 werfen); Koexistenz-Test → verschiedene ruleIds, GLEICHES field (unter Alt-Index unmöglich, muss durchgehen).
+3. **Update-Pfad-Domain-Enforcement:** `governance.routes.ts:241` + `:277` (`findByIdAndUpdate` ohne runValidators) lassen Legacy-severity ROH in die DB (empirisch belegt — re-kontaminiert Task-3-Gewichte, Task-7-Sweep sieht nur Code, nicht Daten). Fix: eingehende severity an der Grenze via `LEGACY_SEVERITY_MAP` normalisieren (graceful für stale Clients) UND `runValidators: true` als Backstop.
 
 - [ ] **Step 1: Failing Test**
 
