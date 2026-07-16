@@ -3,7 +3,7 @@
 // :station route param drives only camera framing and which Sheet is open.
 // This component deliberately does NOT live under MainLayout: the shell owns
 // its own (minimal) chrome. Classic UI stays untouched (additive v2).
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import Scene from '../3d/Scene';
 import PropertyPanel from '../ui/PropertyPanel';
@@ -36,8 +36,15 @@ export default function JourneyShell() {
   // Station drives the camera framing — and nothing else about how the world
   // is drawn (Station ⟂ viewMode). Deliberately NOT depending on `elements`:
   // we reframe on arrival at a station, not on every model edit.
+  const lastArrivalKey = useRef('');
   useEffect(() => {
     if (loading || elements.length === 0) return;
+    // Idempotency guard: the effect reads seen-state and then writes it, so a
+    // double invoke (React StrictMode in dev, spurious remounts) would turn a
+    // genuine first arrival instant. Same (project, station) → no-op.
+    const arrivalKey = `${projectId}:${station}`;
+    if (lastArrivalKey.current === arrivalKey) return;
+    lastArrivalKey.current = arrivalKey;
     // A docked Sheet covers part of the viewport — pass its width so the model
     // centres in the *visible* area, not behind the Sheet (THE-488). Read via
     // getState so neither selection nor a Sheet resize reframes (deps: station/
