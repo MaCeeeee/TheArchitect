@@ -50,9 +50,15 @@ export const GATE_CARDS: GateCard[] = [
   },
 ];
 
-export default function ConformanceHub() {
+export type GateVerb = GateCard['verb'];
+
+export default function ConformanceHub({ scopeVerb }: { scopeVerb?: GateVerb } = {}) {
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId: string }>();
+
+  const orderedCards = scopeVerb
+    ? [GATE_CARDS.find((c) => c.verb === scopeVerb)!, ...GATE_CARDS.filter((c) => c.verb !== scopeVerb)]
+    : GATE_CARDS;
 
   return (
     <div className="space-y-6" data-testid="conformance-hub">
@@ -65,18 +71,27 @@ export default function ConformanceHub() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {GATE_CARDS.map((card) => (
+        {orderedCards.map((card) => {
+          const isScoped = scopeVerb === card.verb;
+          return (
           <button
             key={card.verb}
             onClick={() => navigate(`/project/${projectId}/compliance/${card.target}`)}
             data-testid={`gate-card-${card.verb.toLowerCase()}`}
-            className="group flex flex-col items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 text-left transition hover:border-[#7c3aed] hover:bg-[#7c3aed]/5"
+            {...(scopeVerb ? { 'data-scoped': isScoped } : {})}
+            aria-current={isScoped ? 'true' : undefined}
+            className={`group flex flex-col items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 text-left transition hover:border-[#7c3aed] hover:bg-[#7c3aed]/5${isScoped ? ' border-[#7c3aed] ring-1 ring-[#7c3aed]/40' : ''}`}
           >
             <div className="flex w-full items-center justify-between">
               <card.icon size={20} className="text-[#a78bfa]" />
               <span className="rounded bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-tertiary)]">
                 {card.verb}
               </span>
+              {isScoped && (
+                <span className="rounded bg-[#7c3aed]/15 px-1.5 py-0.5 text-[9px] font-medium text-[#a78bfa]">
+                  For this station
+                </span>
+              )}
             </div>
 
             <p className="text-sm font-semibold text-white leading-snug">{card.question}</p>
@@ -98,13 +113,18 @@ export default function ConformanceHub() {
               Open <ArrowRight size={12} />
             </span>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       <p className="text-[10px] text-[var(--text-tertiary)] max-w-2xl">
         The first two check the model you built. The third certifies something imported from outside — that is why it
         carries a sign-off step: the machine states only what it can know, a human attests the rest.
       </p>
+
+      {scopeVerb && (
+        <p className="text-[10px] text-[var(--text-tertiary)]">Each card opens in the classic UI.</p>
+      )}
     </div>
   );
 }

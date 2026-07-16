@@ -7,14 +7,16 @@ import { useEffect } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import Scene from '../3d/Scene';
 import PropertyPanel from '../ui/PropertyPanel';
+import ConformanceHub from '../compliance/ConformanceHub';
 import StationRail from './StationRail';
 import StationSheet from './StationSheet';
 import Sheet from './Sheet';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useComplianceStore } from '../../stores/complianceStore';
 import { flyToStation } from '../3d/ViewModeCamera';
-import { DEFAULT_STATION, isStationKey, type StationKey } from './stations';
+import { DEFAULT_STATION, isStationKey, STATIONS, type StationKey } from './stations';
 
 export default function JourneyShell() {
   const { projectId, station: stationParam } = useParams<{ projectId: string; station: string }>();
@@ -23,8 +25,10 @@ export default function JourneyShell() {
   const projectName = useArchitectureStore((s) => s.projectName);
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
+  const setShowComplianceGlow = useComplianceStore((s) => s.setShowComplianceGlow);
 
   const station: StationKey = isStationKey(stationParam) ? stationParam : DEFAULT_STATION;
+  const conformanceGate = STATIONS.find((s) => s.key === station)?.conformanceGate;
 
   // Station drives the camera framing — and nothing else about how the world
   // is drawn (Station ⟂ viewMode). Deliberately NOT depending on `elements`:
@@ -35,6 +39,33 @@ export default function JourneyShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
+
+  // Conformance stations show the coverage heatmap as "results in the World" —
+  // but only when the project actually has coverage data. An unassessed project
+  // (0 mappings) would otherwise light up as a misleading wall of red "gaps", so
+  // we load mappings first and stay neutral when there are none. showComplianceGlow
+  // is a shared global toggle, so save its prior value and restore it on leave
+  // (station change or unmount) — classic UI must not inherit the heatmap (AC-7).
+  useEffect(() => {
+    if (!conformanceGate || !projectId) return;
+    const prev = useComplianceStore.getState().showComplianceGlow;
+    let cancelled = false;
+    const enableIfCovered = () => {
+      if (!cancelled && useComplianceStore.getState().mappingsByElement.size > 0) {
+        setShowComplianceGlow(true);
+      }
+    };
+    const store = useComplianceStore.getState();
+    if (store.mappingsByElement.size > 0) {
+      enableIfCovered();
+    } else {
+      void store.loadAllMappings(projectId).then(enableIfCovered);
+    }
+    return () => {
+      cancelled = true;
+      setShowComplianceGlow(prev);
+    };
+  }, [conformanceGate, projectId, setShowComplianceGlow]);
 
   // Canonical URL for junk station params (AC-5 deep-link hygiene).
   if (stationParam && !isStationKey(stationParam)) {
@@ -62,9 +93,11 @@ export default function JourneyShell() {
   // flat conditional instead of an inline IIFE.
   const sheetBody = !projectId
     ? null
-    : station !== 'model'
-      ? <StationSheet station={station} projectId={projectId} />
-      : (isPropertyPanelOpen && selectedElementId ? <PropertyPanel fill /> : null);
+    : station === 'model'
+      ? (isPropertyPanelOpen && selectedElementId ? <PropertyPanel fill /> : null)
+      : conformanceGate
+        ? <ConformanceHub scopeVerb={conformanceGate} />
+        : <StationSheet station={station} projectId={projectId} />;
 
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
