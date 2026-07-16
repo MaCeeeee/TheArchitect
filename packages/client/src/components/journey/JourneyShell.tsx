@@ -65,7 +65,12 @@ export default function JourneyShell() {
       }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      // Leaving v2 with the menu open (e.g. browser back) must not re-show a
+      // stale palette on the next mount — the flag is transient shell state.
+      setCommandMenuOpen(false);
+    };
   }, [setCommandMenuOpen]);
 
   // Conformance stations show the coverage heatmap as "results in the World" —
