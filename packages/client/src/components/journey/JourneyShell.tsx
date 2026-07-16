@@ -3,7 +3,7 @@
 // :station route param drives only camera framing and which Sheet is open.
 // This component deliberately does NOT live under MainLayout: the shell owns
 // its own (minimal) chrome. Classic UI stays untouched (additive v2).
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import Scene from '../3d/Scene';
 import PropertyPanel from '../ui/PropertyPanel';
@@ -18,6 +18,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { flyToStation } from '../3d/ViewModeCamera';
 import { DEFAULT_STATION, isStationKey, STATIONS, type StationKey } from './stations';
+import { decideTempo, markStationSeen } from './stationTempo';
 
 export default function JourneyShell() {
   const { projectId, station: stationParam } = useParams<{ projectId: string; station: string }>();
@@ -35,8 +36,15 @@ export default function JourneyShell() {
   // Station drives the camera framing — and nothing else about how the world
   // is drawn (Station ⟂ viewMode). Deliberately NOT depending on `elements`:
   // we reframe on arrival at a station, not on every model edit.
+  const lastArrivalKey = useRef('');
   useEffect(() => {
     if (loading || elements.length === 0) return;
+    // Idempotency guard: the effect reads seen-state and then writes it, so a
+    // double invoke (React StrictMode in dev, spurious remounts) would turn a
+    // genuine first arrival instant. Same (project, station) → no-op.
+    const arrivalKey = `${projectId}:${station}`;
+    if (lastArrivalKey.current === arrivalKey) return;
+    lastArrivalKey.current = arrivalKey;
     // A docked Sheet covers part of the viewport — pass its width so the model
     // centres in the *visible* area, not behind the Sheet (THE-488). Read via
     // getState so neither selection nor a Sheet resize reframes (deps: station/
@@ -46,10 +54,16 @@ export default function JourneyShell() {
     // Mirrors `sheetBody` below: a Sheet shows on every station except Model
     // with nothing selected.
     const sheetShown = station !== 'model' || (ui.isPropertyPanelOpen && !!selId);
+    // Two tempi (ADR-0005 #8): cinematic only on the FIRST arrival at this
+    // station in this project; instant afterwards. Reduced motion always instant.
+    const tempo = projectId ? decideTempo(projectId, station) : 'cinematic';
     flyToStation(station, elements, {
       sheetOffsetPx: sheetShown ? ui.sheetWidth : 0,
       sheetDock: ui.sheetDock,
+      instant: tempo === 'instant',
     });
+    // Mark on arrival (not after the flight) — an interrupted flight still counts.
+    if (projectId) markStationSeen(projectId, station);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
 
@@ -155,7 +169,7 @@ export default function JourneyShell() {
             <p className="mb-3 text-sm text-[var(--text-secondary)]">No architecture yet.</p>
             <Link
               to={`/project/${projectId}/blueprint`}
-              className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#6d31d4]"
+              className="rounded-lg border border-[#00ff41]/40 bg-[#00ff41]/10 px-4 py-2 text-sm font-medium text-[#00ff41] transition hover:bg-[#00ff41]/20"
             >
               Generate with AI →
             </Link>

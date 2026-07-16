@@ -213,6 +213,7 @@ export default function DashboardPage() {
                 costData={cost[project._id]}
                 onClick={() => navigate(`/project/${project._id}`)}
                 onDelete={() => setDeleteTarget(project)}
+                onOpenJourney={() => navigate(`/v2/project/${project._id}`)}
               />
             ))}
           </div>

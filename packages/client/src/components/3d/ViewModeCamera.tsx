@@ -16,6 +16,8 @@ import type { DockSide } from '../journey/sheetPrefs';
 interface CameraTarget {
   position: THREE.Vector3;
   lookAt: THREE.Vector3;
+  /** Apply in one frame (no lerp) — the second tempo (THE-494). */
+  instant?: boolean;
 }
 
 let flyTarget: CameraTarget | null = null;
@@ -232,6 +234,8 @@ export interface StationFramingOptions {
   sheetOffsetPx?: number;
   /** Which side that Sheet is docked to. Defaults to 'right'. */
   sheetDock?: DockSide;
+  /** Apply the framing in one frame instead of the cinematic lerp (THE-494). */
+  instant?: boolean;
 }
 
 export function flyToStation(
@@ -245,6 +249,10 @@ export function flyToStation(
   if (viewMode !== '3d') {
     // Projection wins: 2D/layer users get the same top-down fit they get today.
     fitToScreen(elements);
+    // Carry the tempo onto whatever fitToScreen armed (THE-494). The
+    // flyProgress === 0 guard skips the case where fitToScreen no-opped
+    // (empty view positions) and a stale in-flight target is still armed.
+    if (opts.instant && flyTarget && flyProgress === 0) flyTarget.instant = true;
     return;
   }
 
@@ -294,7 +302,7 @@ export function flyToStation(
     lookAt.add(pan);
   }
 
-  flyTarget = { position, lookAt };
+  flyTarget = { position, lookAt, instant: opts.instant };
   flyProgress = 0;
 }
 
@@ -358,7 +366,21 @@ export default function ViewModeCamera() {
 
   // Fly-to animation
   useFrame((_, delta) => {
-    if (flyTarget && flyProgress < 1) {
+    if (!flyTarget) return;
+
+    // Instant tempo (THE-494): apply in one frame, no lerp.
+    if (flyTarget.instant) {
+      camera.position.copy(flyTarget.position);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(flyTarget.lookAt);
+        controlsRef.current.update();
+      }
+      flyTarget = null;
+      flyProgress = 1;
+      return;
+    }
+
+    if (flyProgress < 1) {
       flyProgress = Math.min(flyProgress + delta * 1.5, 1);
       const t = easeInOutCubic(flyProgress);
 

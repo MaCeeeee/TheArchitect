@@ -28,7 +28,9 @@ export default function BlueprintImport() {
   const handleOpenInView = () => {
     reset();
     if (projectId) {
-      navigate(`/project/${projectId}`);
+      // Genesis round-trip (THE-494): a freshly generated architecture opens in
+      // the World (v2 Journey). Classic stays one click away in the shell.
+      navigate(`/v2/project/${projectId}/model`);
     }
   };
 
