@@ -92,6 +92,13 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       ? (s.violationsByPolicy.get(policyId) ?? 0)
       : (s.violationsByElement.get(element.id) ?? 0)
   );
+  // THE-202 — structured top-5 violations for THIS element (keyed by the
+  // violating element). Regular nodes only; policy tiles show a count, not
+  // per-element messages. Selecting the stored array by reference keeps this
+  // stable between reloads (no re-render storm); undefined until violations load.
+  const violationDetails = useComplianceStore((s) =>
+    isPolicyNode ? undefined : s.violationDetailsByElement.get(element.id)
+  );
 
   // X-Ray mode state
   const isXRayActive = useXRayStore((s) => s.isActive);
@@ -503,6 +510,27 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
           ) : (
             <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '2px' }}>
               {element.type.replace(/_/g, ' ')}
+            </div>
+          )}
+          {/* THE-202 — inline structured violation messages (top-3) on the
+              element tooltip. The red dot is the persistent indicator; hovering
+              reveals the actual messages. Suppressed in X-Ray so the active-lens
+              label stays uncluttered; policy tiles show a count, not messages. */}
+          {!isPolicyNode && !isXRayActive && violationCount > 0 && violationDetails && violationDetails.length > 0 && (
+            <div style={{ marginTop: '3px', paddingTop: '3px', borderTop: '1px solid rgba(239, 68, 68, 0.35)' }}>
+              {violationDetails.slice(0, 3).map((v) => (
+                <div
+                  key={v._id}
+                  style={{ fontSize: '9px', color: '#fca5a5', whiteSpace: 'normal', maxWidth: '180px', lineHeight: 1.3 }}
+                >
+                  {v.severity.toUpperCase()}: {v.message}
+                </div>
+              ))}
+              {violationCount > 3 && (
+                <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '1px' }}>
+                  +{violationCount - 3} more
+                </div>
+              )}
             </div>
           )}
         </Html>
