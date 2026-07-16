@@ -3,6 +3,7 @@
 // suggestion, no lock). Tools do not live here.
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -21,8 +22,14 @@ export default function StationRail({ projectId, station }: Props) {
   const connections = useArchitectureStore((s) => s.connections);
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
   const snapshots = useComplianceStore((s) => s.snapshots);
+  const loadPipelineStatus = useComplianceStore((s) => s.loadPipelineStatus);
 
-  // Same recompute trigger pattern as PhaseBar.tsx:36-37.
+  // Same load + recompute pairing as PhaseBar.tsx:31-37 — the Rail is
+  // self-sufficient: it loads the pipeline data its recompute reads.
+  useEffect(() => {
+    if (projectId) loadPipelineStatus(projectId);
+  }, [projectId, loadPipelineStatus]);
+
   useEffect(() => {
     if (projectId) recompute(projectId);
   }, [projectId, elements.length, connections.length, pipelineStates, snapshots, recompute]);
@@ -36,7 +43,7 @@ export default function StationRail({ projectId, station }: Props) {
           Slice 1: navigational only — it flies to the recommended station.
           Executing the action itself (connection mode, envision fields, …)
           needs that station's tools in v2 → later slices. Don't "fix" this. */}
-      {currentPhaseInfo?.nextAction && (
+      {currentPhaseInfo?.nextAction && stationForPhase(currentPhase).key !== station && (
         <div className="w-[420px] max-w-[90vw] pointer-events-auto">
           <NextStepBanner
             message={`${stationForPhase(currentPhase).label} — ${currentPhaseInfo.description}`}
@@ -58,7 +65,7 @@ export default function StationRail({ projectId, station }: Props) {
           return (
             <button
               key={s.key}
-              aria-current={isCurrent ? 'true' : undefined}
+              aria-current={isCurrent ? 'page' : undefined}
               onClick={() => navigate(`/v2/project/${projectId}/${s.key}`)}
               className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition ${
                 isCurrent
@@ -74,9 +81,11 @@ export default function StationRail({ projectId, station }: Props) {
                 }`}
               />
               <span className="font-medium">{s.label}</span>
+              {isDone && <Check size={10} strokeWidth={3} className="text-[#a78bfa]" />}
               <span className="text-[9px] font-mono uppercase tracking-wide text-[var(--text-tertiary)]">
                 {s.admBadge}
               </span>
+              <span className="sr-only">{isDone ? '(complete)' : ''}</span>
             </button>
           );
         })}
