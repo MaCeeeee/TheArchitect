@@ -33,6 +33,12 @@ describe('Sheet container — shell', () => {
     expect(sep).toHaveAttribute('aria-valuemin', '300');
     expect(sep).toHaveAttribute('aria-valuemax', '640');
   });
+
+  test('resize handle shows a visible grip affordance', () => {
+    render(<Sheet ariaLabel="Test sheet"><div /></Sheet>);
+    const sep = screen.getByRole('separator');
+    expect(sep.querySelector('[data-sheet-grip]')).not.toBeNull();
+  });
 });
 
 describe('Sheet container — resize', () => {

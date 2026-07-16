@@ -61,8 +61,13 @@ export default function Sheet({ children, ariaLabel }: Props) {
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
         onKeyDown={onKeyDown}
-        className="pointer-events-auto w-1.5 cursor-col-resize bg-transparent hover:bg-[var(--border-default)]/60 focus-visible:bg-[#00ff41]/50"
-      />
+        className="group pointer-events-auto flex w-2.5 cursor-col-resize items-center justify-center bg-transparent transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:bg-[#00ff41]/15"
+      >
+        <div
+          data-sheet-grip
+          className="h-10 w-1 rounded-full bg-white/20 transition-colors group-hover:bg-[#a78bfa] group-focus-visible:bg-[#00ff41]"
+        />
+      </div>
 
       <aside
         role="complementary"
