@@ -97,6 +97,14 @@ export default function JourneyShell() {
         </div>
       )}
 
+      {/* Hint on the Model station when nothing is selected yet (v2 shows the
+          PropertyPanel only on selection — unlike classic's always-open panel). */}
+      {station === 'model' && !selectedElementId && elements.length > 0 && (
+        <div className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)]/80 px-3 py-1.5 text-xs text-[var(--text-tertiary)] backdrop-blur-md">
+          Click an element for details
+        </div>
+      )}
+
       {projectId && sheetBody ? <Sheet ariaLabel="Station panel">{sheetBody}</Sheet> : null}
 
       {/* The Rail + the one CTA */}

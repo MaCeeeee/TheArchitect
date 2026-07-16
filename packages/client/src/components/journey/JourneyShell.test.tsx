@@ -158,4 +158,16 @@ describe('JourneyShell (ADR-0005)', () => {
     // un-redirected '/v2/project/p1/nonsense' and verify nothing.
     expect(screen.getByTestId('loc').textContent).toMatch(/^\/v2\/project\/p1$/);
   });
+
+  test('shows a hint on the model station when nothing is selected', () => {
+    useArchitectureStore.setState({ selectedElementId: null } as never);
+    renderShell('/v2/project/p1/model');
+    expect(screen.getByText('Click an element for details')).toBeInTheDocument();
+  });
+
+  test('hides the hint once an element is selected', () => {
+    useArchitectureStore.setState({ selectedElementId: 'e1' } as never);
+    renderShell('/v2/project/p1/model');
+    expect(screen.queryByText('Click an element for details')).not.toBeInTheDocument();
+  });
 });
