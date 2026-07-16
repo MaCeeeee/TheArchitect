@@ -31,6 +31,11 @@ vi.mock('../../hooks/useProjectData', () => ({
 
 vi.mock('../ui/PropertyPanel', () => ({ default: () => <aside data-testid="property-panel" /> }));
 
+vi.mock('../compliance/ConformanceHub', () => ({
+  default: ({ scopeVerb }: { scopeVerb?: string }) =>
+    <div data-testid="conformance-hub" data-scope={scopeVerb ?? ''} />,
+}));
+
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -73,7 +78,11 @@ beforeEach(() => {
   });
   // Freeze the Rail's store side-effects so seeded state survives its mount effects.
   useJourneyStore.setState({ recompute: vi.fn(), phases: [], currentPhase: 1 } as Partial<JourneyState>);
-  useComplianceStore.setState({ loadPipelineStatus: vi.fn() } as Partial<ComplianceState>);
+  useComplianceStore.setState({
+    loadPipelineStatus: vi.fn(),
+    setShowComplianceGlow: vi.fn(),
+    showComplianceGlow: false,
+  } as Partial<ComplianceState>);
   useUIStore.setState({ isPropertyPanelOpen: false });
 });
 
@@ -131,7 +140,10 @@ describe('JourneyShell (ADR-0005)', () => {
   test('placeholder Sheet shows for non-migrated stations, not for model', () => {
     // getByRole, not getByText(/classic/i): the header's "Back to classic UI"
     // and the sheet's body copy would make a text query ambiguous.
-    const { unmount } = renderShell('/v2/project/p1/govern');
+    // Repointed from /govern to /vision (THE-487): govern is now a conformance
+    // station and renders the ConformanceHub instead of the placeholder Sheet.
+    // vision stays ungated, so it still proves the placeholder path.
+    const { unmount } = renderShell('/v2/project/p1/vision');
     expect(screen.getByRole('link', { name: /open in classic ui/i })).toBeInTheDocument();
     unmount(); // screen queries span document.body — unmount before the second render
     renderShell('/v2/project/p1/model');
@@ -169,5 +181,23 @@ describe('JourneyShell (ADR-0005)', () => {
     useArchitectureStore.setState({ selectedElementId: 'e1' } as never);
     renderShell('/v2/project/p1/model');
     expect(screen.queryByText('Click an element for details')).not.toBeInTheDocument();
+  });
+});
+
+describe('JourneyShell conformance stations (THE-487)', () => {
+  test('govern station renders the ConformanceHub pre-scoped to Enforce', () => {
+    renderShell('/v2/project/p1/govern');
+    const hub = screen.getByTestId('conformance-hub');
+    expect(hub).toBeInTheDocument();
+    expect(hub).toHaveAttribute('data-scope', 'Enforce');
+  });
+  test('vision station still shows the StationSheet placeholder, not the hub', () => {
+    renderShell('/v2/project/p1/vision');
+    expect(screen.queryByTestId('conformance-hub')).not.toBeInTheDocument();
+  });
+  test('entering a conformance station enables the coverage heatmap', () => {
+    const spy = vi.spyOn(useComplianceStore.getState(), 'setShowComplianceGlow');
+    renderShell('/v2/project/p1/explore');
+    expect(spy).toHaveBeenCalledWith(true);
   });
 });
