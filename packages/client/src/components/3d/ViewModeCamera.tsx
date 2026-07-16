@@ -9,6 +9,7 @@ import { useRoadmapStore } from '../../stores/roadmapStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 import { computeViewPositions } from '../../hooks/useViewPositions';
+import type { StationKey } from '../journey/stations';
 
 // ─── Fly-to animation state (module-level for external access) ────────
 interface CameraTarget {
@@ -192,6 +193,59 @@ export function fitAllWorkspaces(workspaces: { offsetX: number }[]) {
     };
   }
   flyProgress = 0;
+}
+
+// ─── Station framing (ADR-0005 / THE-482) ─────────────────────────────
+// A Station sets the camera framing *intent*; viewMode keeps owning the
+// projection (Station ⟂ viewMode). In 2D/layer the top-down constraint wins,
+// exactly like the other fly-to helpers above — we delegate to fitToScreen.
+const STATION_FRAMING: Record<StationKey, { dir: [number, number, number]; distFactor: number }> = {
+  vision:  { dir: [0.0, 0.9, 0.8],   distFactor: 2.2 }, // elevated far total — see the whole intent
+  model:   { dir: [0.6, 0.5, 0.6],   distFactor: 1.5 }, // the working angle (matches fitToScreen)
+  explore: { dir: [0.2, 1.2, 0.4],   distFactor: 1.7 }, // high inspection view
+  plan:    { dir: [1.1, 0.35, 0.5],  distFactor: 1.8 }, // dramatic side — world under load
+  govern:  { dir: [-0.6, 0.9, 0.6],  distFactor: 1.8 }, // elevated opposite side
+  track:   { dir: [0.0, 0.6, 1.2],   distFactor: 2.4 }, // far front total — the timeline view
+};
+
+export function flyToStation(
+  station: StationKey,
+  elements: { id?: string; position3D: { x: number; y: number; z: number } }[],
+) {
+  if (elements.length === 0) return;
+  const viewMode = useUIStore.getState().viewMode;
+
+  if (viewMode !== '3d') {
+    // Projection wins: 2D/layer users get the same top-down fit they get today.
+    fitToScreen(elements);
+    return;
+  }
+
+  const center = new THREE.Vector3();
+  for (const el of elements) {
+    center.add(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
+  }
+  center.divideScalar(elements.length);
+
+  let maxDist = 0;
+  for (const el of elements) {
+    const d = center.distanceTo(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
+    if (d > maxDist) maxDist = d;
+  }
+
+  const f = STATION_FRAMING[station];
+  const distance = Math.max(maxDist * f.distFactor, 15);
+  const dir = new THREE.Vector3(f.dir[0], f.dir[1], f.dir[2]).normalize();
+  flyTarget = {
+    position: center.clone().add(dir.multiplyScalar(distance)),
+    lookAt: center,
+  };
+  flyProgress = 0;
+}
+
+/** Test-only introspection of the module-level fly target. */
+export function __getFlyTargetForTests(): CameraTarget | null {
+  return flyTarget;
 }
 
 // ─── Layer navigation helpers ─────────────────────────────────────────
