@@ -157,6 +157,7 @@ interface ComplianceStore {
   // UC-ICM-003.1 — Heat-Map: bulk-load all mappings + populate mappingsByElement
   loadAllMappings: (projectId: string) => Promise<void>;
   toggleComplianceGlow: () => void;
+  setShowComplianceGlow: (v: boolean) => void;
 
   clear: () => void;
 }
@@ -436,6 +437,8 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
   toggleComplianceGlow: () => {
     set((state) => ({ showComplianceGlow: !state.showComplianceGlow }));
   },
+
+  setShowComplianceGlow: (v) => set({ showComplianceGlow: v }),
 
   // ── UC-GAP-001 (THE-307) ──────────────────────────────────────────
 
