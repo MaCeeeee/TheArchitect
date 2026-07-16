@@ -7,25 +7,16 @@ import ConnectionTypePicker from './ConnectionTypePicker';
 import SelectionActionBar from './SelectionActionBar';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
-import { architectureAPI, projectAPI, workspaceAPI } from '../../services/api';
-import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useJourneyStore } from '../../stores/journeyStore';
-import { useComplianceStore } from '../../stores/complianceStore';
-import { useEnvisionStore } from '../../stores/envisionStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
-import { connectSocket, joinProject, getSocket } from '../../services/socket';
 import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
 import NextStepBanner from '../../design-system/patterns/NextStepBanner';
+import { useProjectData } from '../../hooks/useProjectData';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const setElements = useArchitectureStore((s) => s.setElements);
-  const setConnections = useArchitectureStore((s) => s.setConnections);
-  const setProjectId = useArchitectureStore((s) => s.setProjectId);
-  const setProjectName = useArchitectureStore((s) => s.setProjectName);
-  const setWorkspaces = useWorkspaceStore((s) => s.setWorkspaces);
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
   const showMissionControl = useUIStore((s) => s.showMissionControl);
   const toggleMissionControl = useUIStore((s) => s.toggleMissionControl);
@@ -38,8 +29,7 @@ export default function ProjectView() {
   const exitConnectionMode = useUIStore((s) => s.exitConnectionMode);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const elements = useArchitectureStore((s) => s.elements);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { loading, error } = useProjectData(projectId);
   const [dismissedEmpty, setDismissedEmpty] = useState(false);
 
   const currentPhaseInfo = phases.find((p) => p.phase === currentPhase);
@@ -52,76 +42,6 @@ export default function ProjectView() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [isConnectionMode, exitConnectionMode]);
-
-  useEffect(() => {
-    if (!projectId) return;
-    setProjectId(projectId);
-
-    let cancelled = false;
-    let violationDebounce: ReturnType<typeof setTimeout> | null = null;
-    setLoading(true);
-    setError(null);
-
-    Promise.all([
-      architectureAPI.getElements(projectId),
-      architectureAPI.getConnections(projectId),
-      projectAPI.get(projectId),
-      workspaceAPI.list(projectId).catch(() => ({ data: { data: [] } })),
-    ])
-      .then(([elemRes, connRes, projRes, wsRes]) => {
-        if (cancelled) return;
-        setElements(elemRes.data.data || []);
-        setConnections(connRes.data.data || []);
-        setProjectName(projRes.data.data?.name || projRes.data.name || null);
-        const serverWorkspaces = wsRes.data.data || [];
-        if (serverWorkspaces.length > 0) {
-          setWorkspaces(serverWorkspaces.map((ws: any) => ({
-            id: ws._id || ws.id,
-            name: ws.name,
-            projectId: ws.projectId,
-            source: ws.source,
-            color: ws.color,
-            offsetX: ws.offsetX,
-            createdAt: ws.createdAt,
-          })));
-        }
-
-        // Load envision data (vision + stakeholders) for Phase A
-        useEnvisionStore.getState().load(projectId);
-
-        // Load policy violations for real-time compliance visualization
-        useComplianceStore.getState().loadViolations(projectId);
-
-        // Connect WebSocket and listen for violation updates (debounced to prevent request storms)
-        const sock = connectSocket();
-        joinProject(projectId);
-        sock.on('violation:update', (data: { projectId: string }) => {
-          if (data.projectId === projectId) {
-            if (violationDebounce) clearTimeout(violationDebounce);
-            violationDebounce = setTimeout(() => {
-              useComplianceStore.getState().loadViolations(projectId);
-            }, 1000);
-          }
-        });
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        if (import.meta.env.DEV) console.error('Failed to load project data:', err);
-        setError('Failed to load project data');
-        setElements([]);
-        setConnections([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-      if (violationDebounce) clearTimeout(violationDebounce);
-      const sock = getSocket();
-      if (sock) sock.off('violation:update');
-    };
-  }, [projectId, setElements, setConnections, setProjectId, setProjectName, setWorkspaces]);
 
   if (loading) {
     return (
