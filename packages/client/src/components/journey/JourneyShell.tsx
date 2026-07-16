@@ -20,6 +20,7 @@ export default function JourneyShell() {
   const { loading, error } = useProjectData(projectId);
   const elements = useArchitectureStore((s) => s.elements);
   const projectName = useArchitectureStore((s) => s.projectName);
+  const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
 
   const station: StationKey = isStationKey(stationParam) ? stationParam : DEFAULT_STATION;
@@ -89,8 +90,8 @@ export default function JourneyShell() {
       {/* Station Sheet: placeholder for stations that migrate in later slices */}
       {station !== 'model' && projectId && <StationSheet station={station} projectId={projectId} />}
 
-      {/* PropertyPanel as an overlay Sheet (AC-4) — same component, new posture */}
-      {isPropertyPanelOpen && (
+      {/* v2: PropertyPanel is an overlay Sheet only on Model, only with a selection — avoids empty-panel clutter + right-edge collision with StationSheet (THE-482 review). */}
+      {station === 'model' && isPropertyPanelOpen && selectedElementId && (
         <div className="absolute bottom-0 right-0 top-0 z-30 flex">
           <PropertyPanel />
         </div>

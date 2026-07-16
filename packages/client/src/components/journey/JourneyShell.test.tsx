@@ -69,6 +69,7 @@ beforeEach(() => {
   flyToStation.mockReset();
   useArchitectureStore.setState({
     elements: [{ id: 'e1', position3D: { x: 0, y: 0, z: 0 } }] as never,
+    selectedElementId: null,
   });
   // Freeze the Rail's store side-effects so seeded state survives its mount effects.
   useJourneyStore.setState({ recompute: vi.fn(), phases: [], currentPhase: 1 } as Partial<JourneyState>);
@@ -103,10 +104,28 @@ describe('JourneyShell (ADR-0005)', () => {
     expect(screen.queryByTestId('property-panel')).not.toBeInTheDocument();
     act(() => {
       useUIStore.setState({ isPropertyPanelOpen: true });
+      useArchitectureStore.setState({ selectedElementId: 'e1' });
     });
     expect(screen.getByTestId('property-panel')).toBeInTheDocument();
     expect(screen.getByTestId('loc')).toHaveTextContent('/v2/project/p1/model');
     expect(sceneUnmounts).toBe(0);
+  });
+
+  test('THE-482 review: PropertyPanel does NOT render on a non-model station even when open + a selection exists (StationSheet collision fix)', () => {
+    renderShell('/v2/project/p1/govern');
+    act(() => {
+      useUIStore.setState({ isPropertyPanelOpen: true });
+      useArchitectureStore.setState({ selectedElementId: 'e1' });
+    });
+    expect(screen.queryByTestId('property-panel')).not.toBeInTheDocument();
+  });
+
+  test('THE-482 review: PropertyPanel does NOT render on the model station when open but nothing is selected (empty-panel clutter fix)', () => {
+    renderShell('/v2/project/p1/model');
+    act(() => {
+      useUIStore.setState({ isPropertyPanelOpen: true });
+    });
+    expect(screen.queryByTestId('property-panel')).not.toBeInTheDocument();
   });
 
   test('placeholder Sheet shows for non-migrated stations, not for model', () => {
