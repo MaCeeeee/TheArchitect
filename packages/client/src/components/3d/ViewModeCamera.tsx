@@ -212,7 +212,7 @@ const WORLD_UP = new THREE.Vector3(0, 1, 0);
 const STATION_FRAMING: Record<StationKey, { dir: [number, number, number]; distFactor: number }> = {
   vision:  { dir: [0.0, 0.9, 0.8],   distFactor: 1.9 }, // elevated total — see the whole intent
   model:   { dir: [0.6, 0.5, 0.6],   distFactor: 1.5 }, // the working angle (matches fitToScreen)
-  explore: { dir: [0.2, 1.2, 0.4],   distFactor: 1.6 }, // high inspection view
+  explore: { dir: [0.5, 0.6, 0.5],   distFactor: 1.6 }, // elevated 3/4 inspection view (~40°, not top-down)
   plan:    { dir: [1.1, 0.35, 0.5],  distFactor: 1.7 }, // dramatic side — world under load
   govern:  { dir: [-0.6, 0.9, 0.6],  distFactor: 1.7 }, // elevated opposite side
   track:   { dir: [0.0, 0.6, 1.2],   distFactor: 1.8 }, // front total — the timeline view
