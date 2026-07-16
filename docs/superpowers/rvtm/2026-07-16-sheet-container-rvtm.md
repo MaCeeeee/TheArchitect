@@ -28,8 +28,10 @@
 
 - **Total Requirements:** 13
 - **Automated verification (unit tests + build):** ALL PASS — 17 new tests green across sheetPrefs/uiStore/Sheet/StationSheet/JourneyShell/PropertyPanel.fill; full suite 267 pass; `vite build` ✓; tsc unchanged at the 19-error pre-existing baseline (0 new errors in the slice's files; PropertyPanel stays at its 10).
-- **Browser-only (pending user authenticated pass):** AC-2 real canvas/OrbitControls non-interference, and the dock/persist/resize *visual* behavior + policy-node fill + left-dock header/toggle overlap.
+- **Browser pass (2026-07-16, claude-in-chrome on the user's session):** PASS. AC-2 canvas-safety confirmed by the user (camera stays still during a resize drag — pointer-capture works in the live WebGL scene). Verified live via DOM/store: Sheet renders (420px, full height, shadow), resize changes width + persists to `ta_sheet_width`, PropertyPanel fills the Sheet (`w-full`) on Model when an element is selected. Two review fixes landed from the pass: `dc7fb01` (visible grip affordance — the 6px transparent handle was ungrabbable) and `0858191` (hint "Click an element for details" on Model when nothing is selected — v2 shows the panel only on selection, unlike classic).
+- **Root cause of the user's initial "nothing renders":** the `:3001` dev server was serving stale Slice-1 code from the the-482 worktree, not the-485 — resolved by restarting vite from the correct worktree.
 - **Failed:** 0
+- **Pre-existing (out of scope, ticketed):** THE-486 — 19 `ViolationSeverity`-family tsc errors that break cold `tsc -b`/`npm run build` (not a deploy blocker; Dockerfile uses `vite build`/`tsc --noCheck`).
 
 Execution: subagent-driven, fresh implementer per task, two-stage review each (spec + quality) + a final whole-branch review (Ready for PR). Commits `e2ad6b7 → b441db1`.
 
