@@ -9,6 +9,7 @@ import Scene from '../3d/Scene';
 import PropertyPanel from '../ui/PropertyPanel';
 import StationRail from './StationRail';
 import StationSheet from './StationSheet';
+import Sheet from './Sheet';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -56,13 +57,22 @@ export default function JourneyShell() {
     );
   }
 
+  // Exactly one Sheet at a time (structural — replaces the Slice-1
+  // station!==model hack). Hoisted out of the JSX so the render below stays a
+  // flat conditional instead of an inline IIFE.
+  const sheetBody = !projectId
+    ? null
+    : station !== 'model'
+      ? <StationSheet station={station} projectId={projectId} />
+      : (isPropertyPanelOpen && selectedElementId ? <PropertyPanel fill /> : null);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
       {/* The World — mounted once, never keyed by station */}
       <Scene />
 
       {/* Minimal HUD chrome */}
-      <header className="absolute left-4 top-3 z-30 flex items-center gap-2 text-xs">
+      <header className="absolute left-4 top-3 z-40 flex items-center gap-2 text-xs">
         <span className="font-semibold text-white">{projectName ?? 'Project'}</span>
         <span className="rounded border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-[#a78bfa]">
           Journey beta
@@ -87,15 +97,15 @@ export default function JourneyShell() {
         </div>
       )}
 
-      {/* Station Sheet: placeholder for stations that migrate in later slices */}
-      {station !== 'model' && projectId && <StationSheet station={station} projectId={projectId} />}
-
-      {/* v2: PropertyPanel is an overlay Sheet only on Model, only with a selection — avoids empty-panel clutter + right-edge collision with StationSheet (THE-482 review). */}
-      {station === 'model' && isPropertyPanelOpen && selectedElementId && (
-        <div className="absolute bottom-0 right-0 top-0 z-30 flex">
-          <PropertyPanel />
+      {/* Hint on the Model station when nothing is selected yet (v2 shows the
+          PropertyPanel only on selection — unlike classic's always-open panel). */}
+      {station === 'model' && !selectedElementId && elements.length > 0 && (
+        <div className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)]/80 px-3 py-1.5 text-xs text-[var(--text-tertiary)] backdrop-blur-md">
+          Click an element for details
         </div>
       )}
+
+      {projectId && sheetBody ? <Sheet ariaLabel="Station panel">{sheetBody}</Sheet> : null}
 
       {/* The Rail + the one CTA */}
       {projectId && <StationRail projectId={projectId} station={station} />}

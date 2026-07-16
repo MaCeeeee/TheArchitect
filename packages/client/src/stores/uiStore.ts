@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ArchitectureLayer } from '@thearchitect/shared';
 import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
+import { type DockSide, loadSheetWidth, saveSheetWidth, loadSheetDock, saveSheetDock } from '../components/journey/sheetPrefs';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
 type SidebarPanel = 'envision' | 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
@@ -36,6 +37,9 @@ interface UIState {
   showAllSections: boolean;
   // Field highlight (pulsing green border)
   highlightedField: string | null;
+  // Sheet container width/dock
+  sheetWidth: number;
+  sheetDock: DockSide;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -66,6 +70,9 @@ interface UIState {
   toggleShowAll: () => void;
   // Field highlight
   highlightField: (field: string) => void;
+  // Sheet container width/dock
+  setSheetWidth: (w: number) => void;
+  toggleSheetDock: () => void;
 }
 
 // Load favorites from localStorage
@@ -153,4 +160,13 @@ export const useUIStore = create<UIState>((set) => ({
     set({ highlightedField: field });
     setTimeout(() => set({ highlightedField: null }), 3000);
   },
+  // Sheet container width/dock
+  sheetWidth: loadSheetWidth(),
+  sheetDock: loadSheetDock(),
+  setSheetWidth: (w) => set({ sheetWidth: saveSheetWidth(w) }),
+  toggleSheetDock: () => set((s) => {
+    const next: DockSide = s.sheetDock === 'right' ? 'left' : 'right';
+    saveSheetDock(next);
+    return { sheetDock: next };
+  }),
 }));
