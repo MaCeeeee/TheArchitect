@@ -11,6 +11,7 @@ import ConformanceHub from '../compliance/ConformanceHub';
 import StationRail from './StationRail';
 import StationSheet from './StationSheet';
 import Sheet from './Sheet';
+import CommandMenu from './CommandMenu';
 import { useProjectData } from '../../hooks/useProjectData';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -26,6 +27,7 @@ export default function JourneyShell() {
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
   const setShowComplianceGlow = useComplianceStore((s) => s.setShowComplianceGlow);
+  const setCommandMenuOpen = useUIStore((s) => s.setCommandMenuOpen);
 
   const station: StationKey = isStationKey(stationParam) ? stationParam : DEFAULT_STATION;
   const conformanceGate = STATIONS.find((s) => s.key === station)?.conformanceGate;
@@ -50,6 +52,26 @@ export default function JourneyShell() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
+
+  // ⌘K / Ctrl+K opens the command menu (THE-493). v2-only — the listener lives
+  // and dies with the shell. Ignores keystrokes while typing in a field.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        e.preventDefault();
+        setCommandMenuOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      // Leaving v2 with the menu open (e.g. browser back) must not re-show a
+      // stale palette on the next mount — the flag is transient shell state.
+      setCommandMenuOpen(false);
+    };
+  }, [setCommandMenuOpen]);
 
   // Conformance stations show the coverage heatmap as "results in the World" —
   // but only when the project actually has coverage data. An unassessed project
@@ -150,6 +172,8 @@ export default function JourneyShell() {
       )}
 
       {projectId && sheetBody ? <Sheet ariaLabel="Station panel">{sheetBody}</Sheet> : null}
+
+      {projectId && <CommandMenu projectId={projectId} />}
 
       {/* The Rail + the one CTA */}
       {projectId && <StationRail projectId={projectId} station={station} />}
