@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from 'vitest';
-import { getStationActions } from './stationActions';
+import { getStationActions } from './stationCommands';
 import type { CommandContext } from './commands';
 import type { PhaseInfo } from '../../stores/journeyStore';
 
@@ -38,6 +38,7 @@ describe('getStationActions (THE-492)', () => {
     expect(actions.some((a) => a.id === 'open:approvals')).toBe(true);
   });
 
+  // The analyze gate is dormant in 3a production (plan station is always phase 4); this exercises the filter mechanism, which becomes load-bearing in Slice 3b's palette.
   test('drops actions failing available() (analyze before phase 4)', () => {
     const actions = getStationActions('plan', phases({}), ctx({ phase: 3 }));
     expect(actions.some((a) => a.id === 'open:analyze')).toBe(false);

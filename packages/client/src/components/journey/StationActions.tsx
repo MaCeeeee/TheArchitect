@@ -5,12 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { STATIONS, type StationKey } from './stations';
-// Explicit .ts extension (THE-492): 'stationActions.ts' and this file
-// ('StationActions.tsx') differ only in the leading letter's case, which
-// collides under case-insensitive filesystems (default macOS APFS) — an
-// extensionless import here is a coin flip between the two modules. The
-// explicit extension bypasses guessing and resolves unambiguously.
-import { getStationActions } from './stationActions.ts';
+import { getStationActions } from './stationCommands';
 import type { CommandContext } from './commands';
 
 interface Props {

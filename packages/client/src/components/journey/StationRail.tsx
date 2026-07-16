@@ -8,9 +8,7 @@ import { useJourneyStore } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { STATIONS, type StationKey } from './stations';
-// Explicit .tsx extension (THE-492): disambiguates from the sibling
-// 'stationActions.ts' curation module — see StationActions.tsx's own import.
-import StationActions from './StationActions.tsx';
+import StationActions from './StationActions';
 
 interface Props {
   projectId: string;

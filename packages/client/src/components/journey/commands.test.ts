@@ -28,9 +28,7 @@ describe('buildCommandRegistry (THE-492)', () => {
     expect(c.navigate).toHaveBeenCalledWith('/project/p1/compliance/matrix');
   });
   test('analyze command is unavailable before phase 4 (reuses isToolbarActionVisible gating)', () => {
-    const early = buildCommandRegistry(ctx({ phase: 3 }));
-    const late = buildCommandRegistry(ctx({ phase: 4 }));
-    expect(early['open:analyze'].available?.(ctx({ phase: 3 }))).toBe(false);
-    expect(late['open:analyze'].available?.(ctx({ phase: 4 }))).toBe(true);
+    expect(buildCommandRegistry(ctx({ phase: 3 }))['open:analyze'].available?.(ctx({ phase: 3 }))).toBe(false);
+    expect(buildCommandRegistry(ctx({ phase: 4 }))['open:analyze'].available?.(ctx({ phase: 4 }))).toBe(true);
   });
 });

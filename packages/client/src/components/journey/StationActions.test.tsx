@@ -10,11 +10,7 @@ vi.mock('react-router-dom', async (orig) => ({ ...(await orig<typeof import('rea
 // Drive the journey + architecture stores the component reads.
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
-// Explicit .tsx extension (THE-492): disambiguates from the sibling
-// 'stationActions.ts' curation module, whose basename collides with this
-// component's under case-insensitive filesystems (default macOS APFS). See
-// the comment in StationActions.tsx's own import of that module.
-import StationActions from './StationActions.tsx';
+import StationActions from './StationActions';
 
 const seedPhases = (nextLabel: string | null) =>
   useJourneyStore.setState({
