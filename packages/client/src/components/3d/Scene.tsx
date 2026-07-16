@@ -24,6 +24,7 @@ import PlateauHUD from '../ui/PlateauHUD';
 import ActivityHUD from '../ui/ActivityHUD';
 import Minimap from '../ui/Minimap';
 import LayerNavigator from '../ui/LayerNavigator';
+import { acquireSceneSlot } from './sceneSingleton';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
@@ -40,6 +41,9 @@ const LAYER_CONFIG = ARCHITECTURE_LAYERS.map(l => ({
 }));
 
 export default function Scene() {
+  // ADR-0005 AC-6: exactly one architecture canvas may live at a time.
+  useEffect(() => acquireSceneSlot(), []);
+
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
   const clearSelection = useArchitectureStore((s) => s.clearSelection);
   const closeContextMenu = useArchitectureStore((s) => s.closeContextMenu);

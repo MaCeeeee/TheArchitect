@@ -38,7 +38,7 @@ interface JourneyState {
   recompute: (projectId: string) => void;
 }
 
-const PHASE_CONFIG: Record<JourneyPhase, { admLabel: string; name: string; description: string }> = {
+export const PHASE_CONFIG: Record<JourneyPhase, { admLabel: string; name: string; description: string }> = {
   1: { admLabel: 'Phase A', name: 'Architecture Vision', description: 'Define scope, stakeholders & vision' },
   2: { admLabel: 'Phases B-D', name: 'Architecture Definition', description: 'Model business, data, application & technology' },
   3: { admLabel: 'Phase E', name: 'Opportunities & Solutions', description: 'Map standards, identify gaps & evaluate alternatives' },

@@ -1,8 +1,9 @@
 # ADR-0003: Conformance-Informationsarchitektur — eine Sektion, nach Subjekt getrennt
 
-- **Status:** Accepted
+- **Status:** Accepted — Oberfläche verlagert durch ADR-0005 (2026-07-15)
 - **Datum:** 2026-06-30
 - **Entscheider:** Matthias Ganzmann (Enterprise Architect)
+- **Addendum (2026-07-15, ADR-0005):** Die hier entschiedene Struktur bleibt gültig, wandert aber in die räumliche Journey: Der **Conformance Hub** wird ein **Sheet** (Einstieg/Scoping, Subjekt×Norm), die **World** ergänzt den Ergebnis-Layer (wo die Gaps sind), ein **Matrix-Sheet** hält das Detail. Ein einziger Hub, erreichbar aus den Phasen E/G/H. „Conformance" ist damit kein Top-Level-Nav mehr, sondern lebt in den Stationen.
 - **Baut auf:** `docs/strategy/2026-06-28-conformance-three-gates.md` (die Landkarte) · [[strategy_conformance_three_gates]] · [[strategy_complexity_comprehension_ux]] · [[strategy_trust_spine]]
 
 ## Kontext

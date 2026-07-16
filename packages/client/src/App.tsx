@@ -21,6 +21,7 @@ import SharedSnapshotView from './components/portfolio/SharedSnapshotView';
 import LandingPage from './components/landing/LandingPage';
 import LegalPage from './components/landing/LegalPage';
 import HealthReport from './components/healthcheck/HealthReport';
+import JourneyShell from './components/journey/JourneyShell';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -70,6 +71,17 @@ export default function App() {
         <Route path="/project/:projectId/analyze" element={<AnalyzePage />} />
         <Route path="/project/:projectId/analyze/:section" element={<AnalyzePage />} />
       </Route>
+
+      {/* Journey v2 shell (ADR-0005, THE-482) — additive, opt-in via /v2 URL.
+          Outside MainLayout on purpose: the shell owns its chrome. */}
+      <Route
+        path="/v2/project/:projectId/:station?"
+        element={
+          <ProtectedRoute>
+            <JourneyShell />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
     </ErrorBoundary>
   );
