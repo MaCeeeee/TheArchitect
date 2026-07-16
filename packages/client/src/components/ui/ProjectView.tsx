@@ -120,15 +120,6 @@ export default function ProjectView() {
       <div className="flex-1 relative">
         <Scene />
 
-        {/* On-ramp into the v2 Journey world (THE-494) — mirror of the shell's
-            "Back to classic UI" escape hatch. */}
-        <button
-          onClick={() => navigate(`/v2/project/${projectId}`)}
-          className="absolute right-4 top-4 z-20 rounded-full border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-3 py-1.5 text-xs font-medium text-[#a78bfa] backdrop-blur-md transition hover:bg-[#7c3aed]/20"
-        >
-          Journey →
-        </button>
-
         {/* Connection mode banner */}
         {isConnectionMode && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">

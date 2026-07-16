@@ -47,7 +47,7 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import ProjectCollaborators from './ProjectCollaborators';
 import HealthScoreRing from '../copilot/HealthScoreRing';
 import { HealWorkspaceModal } from '../copilot/HealWorkspaceModal';
-import { Crosshair } from 'lucide-react';
+import { Crosshair, Orbit } from 'lucide-react';
 import { ARCHIMATE_VIEWPOINTS, VIEWPOINT_CATEGORIES } from '@thearchitect/shared/src/constants/archimate-viewpoints';
 
 interface ToolbarProps {
@@ -273,6 +273,16 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
             >
               <Crosshair size={12} />
               Mission
+            </button>
+            {/* On-ramp into the v2 Journey world (THE-494) — lives in the toolbar
+                (a scene overlay top-right collides with the layer legend). */}
+            <button
+              onClick={() => projectId && navigate(`/v2/project/${projectId}`)}
+              className="ml-1 flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium text-[#a78bfa] hover:bg-[#7c3aed]/10 transition"
+              title="Open in the Journey world"
+            >
+              <Orbit size={12} />
+              Journey
             </button>
           </div>
         )}
