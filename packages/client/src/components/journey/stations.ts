@@ -13,17 +13,20 @@ export interface StationDef {
   phase: JourneyPhase;
   /** Escape hatch: where this station's work lives in the classic UI today. */
   classicRoute: (projectId: string) => string;
+  /** Conformance gate this station maps onto (ADR-0005 #4), when it has one. */
+  conformanceGate?: 'Cover' | 'Enforce' | 'Attest';
 }
 
 // admBadge is derived from journeyStore's PHASE_CONFIG (single source of truth)
 // so the badge can never silently drift from the store's admLabel strings.
+// Conformance gates map onto ADM stations (ADR-0005 #4): Explore=Cover, Govern=Enforce, Track=Attest.
 export const STATIONS: StationDef[] = [
   { key: 'vision',  label: 'Vision',  admBadge: PHASE_CONFIG[1].admLabel, phase: 1, classicRoute: (id) => `/project/${id}` },
   { key: 'model',   label: 'Model',   admBadge: PHASE_CONFIG[2].admLabel, phase: 2, classicRoute: (id) => `/project/${id}` },
-  { key: 'explore', label: 'Explore', admBadge: PHASE_CONFIG[3].admLabel, phase: 3, classicRoute: (id) => `/project/${id}/compliance/standards` },
+  { key: 'explore', label: 'Explore', admBadge: PHASE_CONFIG[3].admLabel, phase: 3, classicRoute: (id) => `/project/${id}/compliance/standards`, conformanceGate: 'Cover' },
   { key: 'plan',    label: 'Plan',    admBadge: PHASE_CONFIG[4].admLabel, phase: 4, classicRoute: (id) => `/project/${id}/compliance/roadmap` },
-  { key: 'govern',  label: 'Govern',  admBadge: PHASE_CONFIG[5].admLabel, phase: 5, classicRoute: (id) => `/project/${id}/compliance/policies` },
-  { key: 'track',   label: 'Track',   admBadge: PHASE_CONFIG[6].admLabel, phase: 6, classicRoute: (id) => `/project/${id}/compliance/audit` },
+  { key: 'govern',  label: 'Govern',  admBadge: PHASE_CONFIG[5].admLabel, phase: 5, classicRoute: (id) => `/project/${id}/compliance/policies`, conformanceGate: 'Enforce' },
+  { key: 'track',   label: 'Track',   admBadge: PHASE_CONFIG[6].admLabel, phase: 6, classicRoute: (id) => `/project/${id}/compliance/audit`, conformanceGate: 'Attest' },
 ];
 
 export const DEFAULT_STATION: StationKey = 'model';
