@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useJourneyStore, type PhaseInfo } from '../../stores/journeyStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
 import type { StationKey } from './stations';
 import StationRail from './StationRail';
 
@@ -40,6 +41,7 @@ const seedStore = (overrides: Partial<JourneyState> = {}) => {
 
 beforeEach(() => {
   seedStore();
+  useArchitectureStore.setState({ elements: [] as never });
 });
 
 const renderRail = (station = 'model') =>
@@ -71,27 +73,17 @@ describe('StationRail (ADR-0005 AC-3)', () => {
     expect(screen.getByRole('button', { name: /Model/ })).toHaveAttribute('aria-current', 'page');
   });
 
-  test('CTA is shown away from the recommended station and flies to it on click', () => {
-    renderRail('vision');
-    fireEvent.click(screen.getByText('Add Connections'));
-    expect(screen.getByTestId('loc')).toHaveTextContent('/v2/project/p1/model');
+  test('surfaces the current station\'s actions when the world is non-empty', () => {
+    useArchitectureStore.setState({ elements: [{ id: 'a' }] as never });
+    renderRail('model'); // phase 2, nextAction 'Add Connections'
+    expect(screen.getByRole('group', { name: /station actions/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Add Connections/i })).toBeInTheDocument();
   });
 
-  test('CTA is hidden when already at the recommended station', () => {
+  test('renders no actions on an empty world (the empty-world CTA owns that state)', () => {
+    // beforeEach already set elements to []
     renderRail('model');
-    expect(screen.queryByText('Add Connections')).toBeNull();
-  });
-
-  test('CTA is absent when the current phase has no nextAction', () => {
-    seedStore({
-      phases: [
-        phase(1, true),
-        phase(2, false, null),
-        phase(3, false), phase(4, false), phase(5, false), phase(6, false),
-      ],
-    });
-    renderRail('vision');
-    expect(screen.queryByText('Add Connections')).toBeNull();
+    expect(screen.queryByRole('group', { name: /station actions/i })).toBeNull();
   });
 
   test('done stations expose a non-color complete signal for screen readers', () => {
