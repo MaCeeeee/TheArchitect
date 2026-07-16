@@ -36,6 +36,16 @@ vi.mock('../compliance/ConformanceHub', () => ({
     <div data-testid="conformance-hub" data-scope={scopeVerb ?? ''} />,
 }));
 
+vi.mock('./CommandMenu', async () => {
+  const { useUIStore } = await import('../../stores/uiStore');
+  return {
+    default: () => {
+      const open = useUIStore((s) => s.isCommandMenuOpen);
+      return open ? <div data-testid="command-menu" /> : null;
+    },
+  };
+});
+
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useJourneyStore } from '../../stores/journeyStore';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -85,7 +95,7 @@ beforeEach(() => {
     mappingsByElement: new Map(),
     loadAllMappings: vi.fn().mockResolvedValue(undefined),
   } as Partial<ComplianceState>);
-  useUIStore.setState({ isPropertyPanelOpen: false });
+  useUIStore.setState({ isPropertyPanelOpen: false, isCommandMenuOpen: false });
 });
 
 describe('JourneyShell (ADR-0005)', () => {
@@ -183,6 +193,22 @@ describe('JourneyShell (ADR-0005)', () => {
     useArchitectureStore.setState({ selectedElementId: 'e1' } as never);
     renderShell('/v2/project/p1/model');
     expect(screen.queryByText('Click an element for details')).not.toBeInTheDocument();
+  });
+
+  test('⌘K opens the command menu; Ctrl+K works too', () => {
+    renderShell('/v2/project/p1/model');
+    expect(screen.queryByTestId('command-menu')).toBeNull();
+    fireEvent.keyDown(window, { key: 'k', metaKey: true });
+    expect(screen.getByTestId('command-menu')).toBeInTheDocument();
+  });
+
+  test('⌘K does not open while typing in an input', () => {
+    renderShell('/v2/project/p1/model');
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    fireEvent.keyDown(input, { key: 'k', metaKey: true });
+    expect(screen.queryByTestId('command-menu')).toBeNull();
+    input.remove();
   });
 });
 
