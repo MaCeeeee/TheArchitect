@@ -16,6 +16,13 @@ const phases = (nextByPhase: Partial<Record<number, PhaseInfo['nextAction']>>): 
   }));
 
 describe('getStationActions (THE-492)', () => {
+  test('vision always offers a next-step hint, even when its phase is done (no empty cluster)', () => {
+    // phases({}) → every phase done (nextAction null) → vision has no primary.
+    const actions = getStationActions('vision', phases({}), ctx({ phase: 1 }));
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.some((a) => a.id === 'goto:model')).toBe(true);
+  });
+
   test('primary is the station-phase nextAction, resolved, first', () => {
     const p = phases({ 2: { label: 'Add Connections', route: '__connection_mode__' } });
     const actions = getStationActions('model', p, ctx());

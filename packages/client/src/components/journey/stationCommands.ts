@@ -10,7 +10,7 @@ const MAX_ACTIONS = 4;
 // Curated secondary command ids per station (primary nextAction is prepended).
 // Starting point — tunable in browser review (see plan).
 const STATION_SECONDARY: Record<StationKey, string[]> = {
-  vision:  [],
+  vision:  ['goto:model'],
   model:   ['open:model-classic'],
   explore: ['open:matrix'],
   plan:    ['open:analyze'],
