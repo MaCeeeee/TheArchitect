@@ -40,16 +40,32 @@ export default function JourneyShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
 
-  // Conformance stations show the coverage heatmap as "results in the World".
-  // showComplianceGlow is a shared global toggle, so save its prior value and
-  // restore it on leave (station change or unmount) — classic UI must not
-  // silently inherit the heatmap (AC-7).
+  // Conformance stations show the coverage heatmap as "results in the World" —
+  // but only when the project actually has coverage data. An unassessed project
+  // (0 mappings) would otherwise light up as a misleading wall of red "gaps", so
+  // we load mappings first and stay neutral when there are none. showComplianceGlow
+  // is a shared global toggle, so save its prior value and restore it on leave
+  // (station change or unmount) — classic UI must not inherit the heatmap (AC-7).
   useEffect(() => {
-    if (!conformanceGate) return;
+    if (!conformanceGate || !projectId) return;
     const prev = useComplianceStore.getState().showComplianceGlow;
-    setShowComplianceGlow(true);
-    return () => setShowComplianceGlow(prev);
-  }, [conformanceGate, setShowComplianceGlow]);
+    let cancelled = false;
+    const enableIfCovered = () => {
+      if (!cancelled && useComplianceStore.getState().mappingsByElement.size > 0) {
+        setShowComplianceGlow(true);
+      }
+    };
+    const store = useComplianceStore.getState();
+    if (store.mappingsByElement.size > 0) {
+      enableIfCovered();
+    } else {
+      void store.loadAllMappings(projectId).then(enableIfCovered);
+    }
+    return () => {
+      cancelled = true;
+      setShowComplianceGlow(prev);
+    };
+  }, [conformanceGate, projectId, setShowComplianceGlow]);
 
   // Canonical URL for junk station params (AC-5 deep-link hygiene).
   if (stationParam && !isStationKey(stationParam)) {

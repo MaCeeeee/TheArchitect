@@ -82,6 +82,8 @@ beforeEach(() => {
     loadPipelineStatus: vi.fn(),
     setShowComplianceGlow: vi.fn(),
     showComplianceGlow: false,
+    mappingsByElement: new Map(),
+    loadAllMappings: vi.fn().mockResolvedValue(undefined),
   } as Partial<ComplianceState>);
   useUIStore.setState({ isPropertyPanelOpen: false });
 });
@@ -195,9 +197,21 @@ describe('JourneyShell conformance stations (THE-487)', () => {
     renderShell('/v2/project/p1/vision');
     expect(screen.queryByTestId('conformance-hub')).not.toBeInTheDocument();
   });
-  test('entering a conformance station enables the coverage heatmap', () => {
+  test('a conformance station with coverage data enables the heatmap', () => {
+    // Project already has mappings → the effect takes the synchronous path.
+    useComplianceStore.setState({ mappingsByElement: new Map([['e1', [{} as never]]]) });
     const spy = vi.spyOn(useComplianceStore.getState(), 'setShowComplianceGlow');
     renderShell('/v2/project/p1/explore');
     expect(spy).toHaveBeenCalledWith(true);
+  });
+  test('an unassessed project (no mappings) leaves the heatmap off — no wall of red', async () => {
+    // 0 mappings → the effect loads them, finds none, and never lights the glow.
+    const loadAllMappings = vi.fn().mockResolvedValue(undefined);
+    useComplianceStore.setState({ mappingsByElement: new Map(), loadAllMappings });
+    const spy = vi.spyOn(useComplianceStore.getState(), 'setShowComplianceGlow');
+    renderShell('/v2/project/p1/explore');
+    await act(async () => { await Promise.resolve(); }); // flush loadAllMappings().then(...)
+    expect(loadAllMappings).toHaveBeenCalledWith('p1');
+    expect(spy).not.toHaveBeenCalledWith(true);
   });
 });
