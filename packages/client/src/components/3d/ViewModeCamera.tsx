@@ -218,6 +218,14 @@ const STATION_FRAMING: Record<StationKey, { dir: [number, number, number]; distF
   track:   { dir: [0.0, 0.6, 1.2],   distFactor: 1.8 }, // front total — the timeline view
 };
 
+/** Median of a numeric list (robust centre/spread — see flyToStation). */
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const s = [...values].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 /** Framing modifiers captured at station-arrival (THE-488). */
 export interface StationFramingOptions {
   /** CSS-px width of a Sheet docked over the viewport right now (0 / omit = none). */
@@ -240,20 +248,27 @@ export function flyToStation(
     return;
   }
 
-  const center = new THREE.Vector3();
-  for (const el of elements) {
-    center.add(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
-  }
-  center.divideScalar(elements.length);
-
-  let maxDist = 0;
-  for (const el of elements) {
-    const d = center.distanceTo(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
-    if (d > maxDist) maxDist = d;
-  }
+  // Robust framing (THE-488): use the median centre and a MAD-trimmed radius so
+  // a single element with a broken layout position — e.g. z=-1682 while the rest
+  // sit within ±20 (data anomaly THE-490) — can't drag the centre off-screen or
+  // blow the camera distance up until the whole model is a speck. A mean centroid
+  // + raw maxDist did exactly that. On clean models the cutoff sits above the true
+  // max, so nothing is trimmed and this matches the old behaviour.
+  const center = new THREE.Vector3(
+    median(elements.map((e) => e.position3D.x)),
+    median(elements.map((e) => e.position3D.y)),
+    median(elements.map((e) => e.position3D.z)),
+  );
+  const dists = elements.map((e) =>
+    center.distanceTo(new THREE.Vector3(e.position3D.x, e.position3D.y, e.position3D.z)),
+  );
+  const medD = median(dists);
+  const mad = median(dists.map((d) => Math.abs(d - medD)));
+  const cutoff = medD + Math.max(6 * mad, medD); // generous: keeps normal spread, drops gross outliers
+  const radius = dists.reduce((mx, d) => (d <= cutoff && d > mx ? d : mx), 0);
 
   const f = STATION_FRAMING[station];
-  const distance = Math.max(maxDist * f.distFactor, 15);
+  const distance = Math.max(radius * f.distFactor, 15);
   const dir = new THREE.Vector3(f.dir[0], f.dir[1], f.dir[2]).normalize();
   const position = center.clone().add(dir.clone().multiplyScalar(distance));
   const lookAt = center.clone();

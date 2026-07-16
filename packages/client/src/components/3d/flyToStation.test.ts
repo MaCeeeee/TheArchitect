@@ -68,6 +68,20 @@ describe('flyToStation (ADR-0005: Station ⟂ viewMode)', () => {
     expect(t.lookAt.z).toBeCloseTo(5);
   });
 
+  test('a single outlier position does not blow up the framing (robust radius/centre)', () => {
+    // One element with a broken layout position (THE-490) far from the others.
+    const withOutlier = [
+      ...elements,
+      { id: 'x', name: 'X', type: 'node', layer: 'strategy', position3D: { x: -366, y: 13, z: -1682 } },
+    ];
+    flyToStation('model', withOutlier);
+    const t = __getFlyTargetForTests()!;
+    // Camera distance stays bounded by the core (~8), not the outlier (~1700 × distFactor).
+    expect(t.position.distanceTo(t.lookAt)).toBeLessThan(60);
+    // Median centre stays in the core, not dragged toward z=-1682.
+    expect(t.lookAt.z).toBeGreaterThan(-50);
+  });
+
   test('sheet-offset pans the framing toward the visible area (dock-aware)', () => {
     flyToStation('model', elements); // no offset → centred on the centroid
     const centred = __getFlyTargetForTests()!.lookAt.clone();
