@@ -20,6 +20,7 @@ export function toViolationMessage(input: ViolationMessageInput): ViolationMessa
     severity: input.severity,
     enforcementLevel: input.enforcementLevel,
     message: input.message,
+    // Assumes elementId/field contain no '/' (IDs are UUID/ObjectId-shaped), keeping the path 3 segments.
     resourcePath: `/elements/${input.elementId}/${input.field}`,
   };
   if (input.docLink) msg.docLink = input.docLink;

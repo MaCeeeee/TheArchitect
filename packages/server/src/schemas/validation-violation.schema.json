@@ -2,8 +2,9 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "validation-violation.schema.json",
   "title": "PolicyViolation output contract (REQ-CHOICE-003.2, OPA/Kyverno style)",
+  "description": "Unknown extra properties are deliberately allowed (no additionalProperties:false): OPA/Kyverno-style outputs tolerate tool annotations, and this keeps the wire contract forward-compatible.",
   "type": "object",
-  "required": ["ruleId", "severity", "message", "resourcePath"],
+  "required": ["ruleId", "severity", "enforcementLevel", "message", "resourcePath"],
   "properties": {
     "ruleId": { "type": "string", "minLength": 1 },
     "severity": { "enum": ["low", "medium", "high", "critical"] },
