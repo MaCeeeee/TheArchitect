@@ -31,6 +31,9 @@ interface UIState {
   paletteSearch: string;
   recentTypes: ElementType[];
   favoriteTypes: ElementType[];
+  // v2 command menu (THE-493) — transient, v2-only; NOT the ElementPalette's isPaletteOpen
+  isCommandMenuOpen: boolean;
+  setCommandMenuOpen: (v: boolean) => void;
   // Viewpoint filtering
   activeViewpoint: string | null;
   // Progressive disclosure
@@ -135,6 +138,8 @@ export const useUIStore = create<UIState>((set) => ({
   favoriteTypes: loadFavorites(),
   togglePalette: () => set((s) => ({ isPaletteOpen: !s.isPaletteOpen })),
   setPaletteSearch: (q) => set({ paletteSearch: q }),
+  isCommandMenuOpen: false,
+  setCommandMenuOpen: (v) => set({ isCommandMenuOpen: v }),
   addRecentType: (type) => set((s) => {
     const recent = [type, ...s.recentTypes.filter(t => t !== type)].slice(0, 5);
     return { recentTypes: recent };
