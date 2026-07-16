@@ -23,6 +23,8 @@ interface ProjectCardProps {
   costData?: CostData | null;
   onClick: () => void;
   onDelete: () => void;
+  /** On-ramp into the v2 Journey world (THE-494). Optional — absent = no button. */
+  onOpenJourney?: () => void;
 }
 
 function formatCost(value: number): string {
@@ -31,7 +33,7 @@ function formatCost(value: number): string {
   return `€${value.toFixed(0)}`;
 }
 
-export default function ProjectCard({ project, stats, healthData, riskData, complianceData, costData, onClick, onDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, stats, healthData, riskData, complianceData, costData, onClick, onDelete, onOpenJourney }: ProjectCardProps) {
   const phase = stats?.currentPhase ?? 1;
   const health = healthData?.healthScore?.total ?? stats?.healthScore ?? 0;
   const trend = healthData?.healthScore?.trend;
@@ -98,6 +100,15 @@ export default function ProjectCard({ project, stats, healthData, riskData, comp
           <span className="text-xs text-[var(--text-tertiary)]">
             {new Date(project.updatedAt).toLocaleDateString()}
           </span>
+        )}
+        {onOpenJourney && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenJourney(); }}
+            title="Open in the Journey world"
+            className="rounded px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[#a78bfa] border border-[#7c3aed]/40 bg-[#7c3aed]/10 hover:bg-[#7c3aed]/20 transition"
+          >
+            Journey
+          </button>
         )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
