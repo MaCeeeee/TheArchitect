@@ -169,7 +169,7 @@ export default function JourneyShell() {
             <p className="mb-3 text-sm text-[var(--text-secondary)]">No architecture yet.</p>
             <Link
               to={`/project/${projectId}/blueprint`}
-              className="rounded-lg bg-[#7c3aed] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#6d31d4]"
+              className="rounded-lg border border-[#00ff41]/40 bg-[#00ff41]/10 px-4 py-2 text-sm font-medium text-[#00ff41] transition hover:bg-[#00ff41]/20"
             >
               Generate with AI →
             </Link>
