@@ -99,4 +99,18 @@ describe('flyToStation (ADR-0005: Station ⟂ viewMode)', () => {
     const mid = right.clone().add(left).multiplyScalar(0.5);
     expect(mid.distanceTo(centred)).toBeCloseTo(0, 3);
   });
+
+  // THE-494 — instant tempo
+  test('instant option is carried on the fly target; default is animated', () => {
+    flyToStation('model', elements, { instant: true });
+    expect(__getFlyTargetForTests()!.instant).toBe(true);
+    flyToStation('model', elements);
+    expect(__getFlyTargetForTests()!.instant).toBeFalsy();
+  });
+
+  test('instant survives the non-3d branch (fitToScreen path)', () => {
+    useUIStore.setState({ viewMode: '2d-topdown' });
+    flyToStation('plan', elements, { instant: true });
+    expect(__getFlyTargetForTests()!.instant).toBe(true);
+  });
 });
