@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { MemoryRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -82,6 +82,7 @@ beforeEach(() => {
   sceneMounts = 0;
   sceneUnmounts = 0;
   flyToStation.mockReset();
+  localStorage.clear();
   useArchitectureStore.setState({
     elements: [{ id: 'e1', position3D: { x: 0, y: 0, z: 0 } }] as never,
     selectedElementId: null,
@@ -97,6 +98,8 @@ beforeEach(() => {
   } as Partial<ComplianceState>);
   useUIStore.setState({ isPropertyPanelOpen: false, isCommandMenuOpen: false });
 });
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe('JourneyShell (ADR-0005)', () => {
   test('AC-5: /v2/project/p1 resolves to the model station', () => {
@@ -209,6 +212,25 @@ describe('JourneyShell (ADR-0005)', () => {
     fireEvent.keyDown(input, { key: 'k', metaKey: true });
     expect(screen.queryByTestId('command-menu')).toBeNull();
     input.remove();
+  });
+
+  test('two tempi: first arrival cinematic, revisit instant (per project+station)', () => {
+    renderShell('/v2/project/p1/model');
+    // first arrival → cinematic (instant false/undefined)
+    expect(flyToStation.mock.calls[0][2]?.instant).toBeFalsy();
+    // the arrival was persisted per project
+    expect(JSON.parse(localStorage.getItem('ta_seen_stations:p1')!)).toContain('model');
+    // a fresh mount of the same station is now instant
+    flyToStation.mockClear();
+    renderShell('/v2/project/p1/model');
+    expect(flyToStation.mock.calls[0][2]?.instant).toBe(true);
+  });
+
+  test('reduced motion forces instant even on a first arrival', () => {
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    renderShell('/v2/project/p1/track');
+    expect(flyToStation.mock.calls[0][2]?.instant).toBe(true);
+    vi.unstubAllGlobals();
   });
 });
 

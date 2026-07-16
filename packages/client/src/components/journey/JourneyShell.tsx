@@ -18,6 +18,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { flyToStation } from '../3d/ViewModeCamera';
 import { DEFAULT_STATION, isStationKey, STATIONS, type StationKey } from './stations';
+import { decideTempo, markStationSeen } from './stationTempo';
 
 export default function JourneyShell() {
   const { projectId, station: stationParam } = useParams<{ projectId: string; station: string }>();
@@ -46,10 +47,16 @@ export default function JourneyShell() {
     // Mirrors `sheetBody` below: a Sheet shows on every station except Model
     // with nothing selected.
     const sheetShown = station !== 'model' || (ui.isPropertyPanelOpen && !!selId);
+    // Two tempi (ADR-0005 #8): cinematic only on the FIRST arrival at this
+    // station in this project; instant afterwards. Reduced motion always instant.
+    const tempo = projectId ? decideTempo(projectId, station) : 'cinematic';
     flyToStation(station, elements, {
       sheetOffsetPx: sheetShown ? ui.sheetWidth : 0,
       sheetDock: ui.sheetDock,
+      instant: tempo === 'instant',
     });
+    // Mark on arrival (not after the flight) — an interrupted flight still counts.
+    if (projectId) markStationSeen(projectId, station);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
 
