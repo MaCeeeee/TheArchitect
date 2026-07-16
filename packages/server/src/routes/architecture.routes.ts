@@ -9,6 +9,7 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { evaluateElementPolicies } from '../services/policy-evaluation.service';
+import { clampPosition3D } from '../utils/position';
 import {
   provenanceInlineFragment,
   provenanceCypherFragment,
@@ -41,11 +42,15 @@ import { log } from '../config/logger';
 const router = Router();
 
 // Validation schemas
-const Position3DSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-  z: z.number(),
-});
+// Clamp on parse so no route can persist an absurd position (THE-491): guards
+// both create (default {0,0,0}) and update. See utils/position.ts.
+const Position3DSchema = z
+  .object({
+    x: z.number(),
+    y: z.number(),
+    z: z.number(),
+  })
+  .transform(clampPosition3D);
 
 const LayerEnum = z.enum([
   'motivation', 'strategy', 'business', 'information', 'application',
