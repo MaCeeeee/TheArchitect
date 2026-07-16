@@ -119,6 +119,20 @@ describe('JourneyShell (ADR-0005)', () => {
     expect(screen.queryByRole('link', { name: /open in classic ui/i })).not.toBeInTheDocument();
   });
 
+  test('camera does NOT refire on model edits — only on station arrival', () => {
+    renderShell('/v2/project/p1/model');
+    const calls = flyToStation.mock.calls.length;
+    act(() => {
+      useArchitectureStore.setState({
+        elements: [
+          { id: 'e1', position3D: { x: 0, y: 0, z: 0 } },
+          { id: 'e2', position3D: { x: 5, y: 0, z: 5 } },
+        ] as never,
+      });
+    });
+    expect(flyToStation.mock.calls.length).toBe(calls);
+  });
+
   test('invalid station param falls back to model (canonical redirect)', () => {
     renderShell('/v2/project/p1/nonsense');
     // Exact match — a substring assertion would also pass on the

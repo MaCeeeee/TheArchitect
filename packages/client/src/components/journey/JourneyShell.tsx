@@ -73,7 +73,7 @@ export default function JourneyShell() {
 
       {/* Empty world: point at the classic on-ramp (Genesis arrives in Slice 5) */}
       {elements.length === 0 && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           <div className="pointer-events-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-raised)]/90 p-6 text-center backdrop-blur-md">
             <p className="mb-3 text-sm text-[var(--text-secondary)]">No architecture yet.</p>
             <Link
