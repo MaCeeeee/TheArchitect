@@ -1460,3 +1460,13 @@ describe('THE-442: schema foundation', () => {
     expect(removed!.details).toContain('rule removed');
   });
 });
+
+describe('THE-202: docLink derivation', () => {
+  it('derives docLink from standardId + sourceSectionNumber, else undefined', async () => {
+    const { deriveDocLink } = await import('../services/policy-evaluation.service');
+    expect(deriveDocLink({ standardId: 'std-1', sourceSectionNumber: '4.2' }))
+      .toBe('/compliance/standards/std-1#4.2');
+    expect(deriveDocLink({ standardId: 'std-1' })).toBe('/compliance/standards/std-1');
+    expect(deriveDocLink({})).toBeUndefined();
+  });
+});

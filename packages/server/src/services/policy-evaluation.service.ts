@@ -109,9 +109,15 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
   }));
 }
 
-/** REQ-003.2 — docLink-Ableitung; Registry-Anbindung in THE-202. */
-function deriveDocLink(_policy: { standardId?: unknown; sourceSectionNumber?: string }): string | undefined {
-  return undefined;
+/**
+ * REQ-003.2: docLink zeigt auf die Quelle der Policy — Standards/Norm-Registry
+ * (THE-413/414) wenn die Policy daraus generiert wurde; sonst undefined
+ * (Client rendert dann keinen Link). Relative App-Route, KEINE externe URL.
+ */
+export function deriveDocLink(policy: { standardId?: unknown; sourceSectionNumber?: string }): string | undefined {
+  if (!policy.standardId) return undefined;
+  const base = `/compliance/standards/${String(policy.standardId)}`;
+  return policy.sourceSectionNumber ? `${base}#${policy.sourceSectionNumber}` : base;
 }
 
 /**
