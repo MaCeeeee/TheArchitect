@@ -56,6 +56,10 @@ export default function ConformanceHub({ scopeVerb }: { scopeVerb?: GateVerb } =
   const navigate = useNavigate();
   const { projectId } = useParams<{ projectId: string }>();
 
+  const orderedCards = scopeVerb
+    ? [GATE_CARDS.find((c) => c.verb === scopeVerb)!, ...GATE_CARDS.filter((c) => c.verb !== scopeVerb)]
+    : GATE_CARDS;
+
   return (
     <div className="space-y-6" data-testid="conformance-hub">
       <div>
@@ -67,14 +71,15 @@ export default function ConformanceHub({ scopeVerb }: { scopeVerb?: GateVerb } =
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {GATE_CARDS.map((card) => {
+        {orderedCards.map((card) => {
           const isScoped = scopeVerb === card.verb;
           return (
           <button
             key={card.verb}
             onClick={() => navigate(`/project/${projectId}/compliance/${card.target}`)}
             data-testid={`gate-card-${card.verb.toLowerCase()}`}
-            data-scoped={isScoped}
+            {...(scopeVerb ? { 'data-scoped': isScoped } : {})}
+            aria-current={isScoped ? 'true' : undefined}
             className={`group flex flex-col items-start gap-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-raised)] p-5 text-left transition hover:border-[#7c3aed] hover:bg-[#7c3aed]/5${isScoped ? ' border-[#7c3aed] ring-1 ring-[#7c3aed]/40' : ''}`}
           >
             <div className="flex w-full items-center justify-between">

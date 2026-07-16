@@ -29,4 +29,19 @@ describe('ConformanceHub scopeVerb (THE-487)', () => {
     expect(screen.getByTestId('gate-card-cover')).toHaveAttribute('data-scoped', 'false');
     expect(screen.getByText(/opens in the classic ui/i)).toBeInTheDocument();
   });
+
+  test('scoped: the scoped gate is rendered FIRST', () => {
+    renderHub({ scopeVerb: 'Attest' });
+    const cards = screen.getAllByTestId(/^gate-card-/);
+    expect(cards[0]).toHaveAttribute('data-testid', 'gate-card-attest');
+    expect(cards[0]).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('classic (no prop): no data-scoped attribute is emitted, natural order', () => {
+    renderHub();
+    const cards = screen.getAllByTestId(/^gate-card-/);
+    expect(cards[0]).toHaveAttribute('data-testid', 'gate-card-cover'); // GATE_CARDS order
+    expect(cards[0]).not.toHaveAttribute('data-scoped');
+    expect(cards[0]).not.toHaveAttribute('aria-current');
+  });
 });
