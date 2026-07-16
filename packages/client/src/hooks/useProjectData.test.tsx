@@ -37,6 +37,7 @@ beforeEach(() => {
   getProject.mockReset().mockReturnValue(ok({ name: 'Acme' }));
   listWorkspaces.mockReset().mockReturnValue(ok([]));
   socketOn.mockReset();
+  socketOff.mockReset();
   useEnvisionStore.setState({ load: vi.fn() } as never);
   useComplianceStore.setState({ loadViolations: vi.fn() } as never);
 });
@@ -57,5 +58,18 @@ describe('useProjectData (ADR-0005 AC-2)', () => {
     const { result } = renderHook(() => useProjectData('p1'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe('Failed to load project data');
+  });
+
+  test('cleanup removes only its own violation listener', async () => {
+    const { result, unmount } = renderHook(() => useProjectData('p1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    unmount();
+    expect(socketOff).toHaveBeenCalledWith('violation:update', expect.any(Function));
+  });
+
+  test('does nothing without a projectId', () => {
+    const { result } = renderHook(() => useProjectData(undefined));
+    expect(getElements).not.toHaveBeenCalled();
+    expect(result.current.loading).toBe(true);
   });
 });

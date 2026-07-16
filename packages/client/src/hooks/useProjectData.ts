@@ -27,6 +27,7 @@ export function useProjectData(projectId: string | undefined) {
 
     let cancelled = false;
     let violationDebounce: ReturnType<typeof setTimeout> | null = null;
+    let onViolationUpdate: ((data: { projectId: string }) => void) | null = null;
     setLoading(true);
     setError(null);
 
@@ -63,14 +64,15 @@ export function useProjectData(projectId: string | undefined) {
         // Connect WebSocket and listen for violation updates (debounced to prevent request storms)
         const sock = connectSocket();
         joinProject(projectId);
-        sock.on('violation:update', (data: { projectId: string }) => {
+        onViolationUpdate = (data: { projectId: string }) => {
           if (data.projectId === projectId) {
             if (violationDebounce) clearTimeout(violationDebounce);
             violationDebounce = setTimeout(() => {
               useComplianceStore.getState().loadViolations(projectId);
             }, 1000);
           }
-        });
+        };
+        sock.on('violation:update', onViolationUpdate);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -87,7 +89,7 @@ export function useProjectData(projectId: string | undefined) {
       cancelled = true;
       if (violationDebounce) clearTimeout(violationDebounce);
       const sock = getSocket();
-      if (sock) sock.off('violation:update');
+      if (sock && onViolationUpdate) sock.off('violation:update', onViolationUpdate);
     };
   }, [projectId, setElements, setConnections, setProjectId, setProjectName, setWorkspaces]);
 
