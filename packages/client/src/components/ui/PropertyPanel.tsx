@@ -41,7 +41,15 @@ const AUTONOMY_COLORS: Record<string, string> = {
   autonomous: '#ef4444',
 };
 
-export default function PropertyPanel() {
+interface PropertyPanelProps {
+  /** Additive (THE-485 Task 5): true when hosted inside the resizable v2 Sheet
+   * container, where the panel should fill the Sheet's width instead of the
+   * classic fixed 288px rail. Defaults to false so ProjectView (classic) is
+   * byte-identical in behavior. */
+  fill?: boolean;
+}
+
+export default function PropertyPanel({ fill = false }: PropertyPanelProps = {}) {
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);
   const elements = useArchitectureStore((s) => s.elements);
   const connections = useArchitectureStore((s) => s.connections);
@@ -289,7 +297,7 @@ export default function PropertyPanel() {
 
   if (!element) {
     return (
-      <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4">
+      <aside className={`${fill ? 'w-full' : 'w-72'} border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] p-4`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-white">Properties</h3>
           <button onClick={togglePropertyPanel} className="text-[var(--text-secondary)] hover:text-white">
@@ -331,12 +339,13 @@ export default function PropertyPanel() {
         violations={violations.filter((v) => v.policyId === (elementMeta?.policyId as string))}
         onClose={togglePropertyPanel}
         onSelectElement={selectElement}
+        fill={fill}
       />
     );
   }
 
   return (
-    <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full">
+    <aside className={`${fill ? 'w-full' : 'w-72'} border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
         <div className="flex items-center gap-2 min-w-0">
@@ -1594,9 +1603,11 @@ interface PolicyPropertyViewProps {
   violations: PolicyViolationDTO[];
   onClose: () => void;
   onSelectElement: (id: string) => void;
+  /** Additive (THE-485 Task 5): threaded from PropertyPanel — see PropertyPanelProps.fill. */
+  fill?: boolean;
 }
 
-function PolicyPropertyView({ element, metadata, violations, onClose, onSelectElement }: PolicyPropertyViewProps) {
+function PolicyPropertyView({ element, metadata, violations, onClose, onSelectElement, fill = false }: PolicyPropertyViewProps) {
   const [policyDetails, setPolicyDetails] = useState<Record<string, unknown> | null>(null);
   const projectId = useArchitectureStore((s) => s.projectId);
 
@@ -1621,7 +1632,7 @@ function PolicyPropertyView({ element, metadata, violations, onClose, onSelectEl
   const version = (metadata.version as number) || 1;
 
   return (
-    <aside className="w-72 border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full">
+    <aside className={`${fill ? 'w-full' : 'w-72'} border-l border-[var(--border-subtle)] bg-[var(--surface-raised)] overflow-y-auto h-full`}>
       <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: hasViolations ? '#ef4444' : '#22c55e' }} />

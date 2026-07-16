@@ -57,6 +57,15 @@ export default function JourneyShell() {
     );
   }
 
+  // Exactly one Sheet at a time (structural — replaces the Slice-1
+  // station!==model hack). Hoisted out of the JSX so the render below stays a
+  // flat conditional instead of an inline IIFE.
+  const sheetBody = !projectId
+    ? null
+    : station !== 'model'
+      ? <StationSheet station={station} projectId={projectId} />
+      : (isPropertyPanelOpen && selectedElementId ? <PropertyPanel fill /> : null);
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
       {/* The World — mounted once, never keyed by station */}
@@ -88,15 +97,7 @@ export default function JourneyShell() {
         </div>
       )}
 
-      {/* Exactly one Sheet at a time (structural — replaces the Slice-1 station!==model hack). */}
-      {projectId && (() => {
-        const sheetBody =
-          station !== 'model'
-            ? <StationSheet station={station} projectId={projectId} />
-            // TODO(THE-485 Task 5): add fill
-            : (isPropertyPanelOpen && selectedElementId ? <PropertyPanel /> : null);
-        return sheetBody ? <Sheet ariaLabel="Station panel">{sheetBody}</Sheet> : null;
-      })()}
+      {projectId && sheetBody ? <Sheet ariaLabel="Station panel">{sheetBody}</Sheet> : null}
 
       {/* The Rail + the one CTA */}
       {projectId && <StationRail projectId={projectId} station={station} />}
