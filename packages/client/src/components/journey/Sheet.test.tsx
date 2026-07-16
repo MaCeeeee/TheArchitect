@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { useUIStore } from '../../stores/uiStore';
@@ -32,5 +32,50 @@ describe('Sheet container — shell', () => {
     expect(sep).toHaveAttribute('aria-valuenow', '420');
     expect(sep).toHaveAttribute('aria-valuemin', '300');
     expect(sep).toHaveAttribute('aria-valuemax', '640');
+  });
+});
+
+describe('Sheet container — resize', () => {
+  test('pointer drag on the handle changes width and does not bubble to the canvas', () => {
+    const onBubble = vi.fn();
+    render(
+      <div onPointerMove={onBubble} onPointerDown={onBubble}>
+        <Sheet ariaLabel="Test sheet"><div /></Sheet>
+      </div>,
+    );
+    const sep = screen.getByRole('separator');
+    fireEvent.pointerDown(sep, { pointerId: 1, clientX: 1000 });
+    fireEvent.pointerMove(sep, { pointerId: 1, clientX: 900 }); // docked right: -100 delta → +100 width
+    fireEvent.pointerUp(sep, { pointerId: 1, clientX: 900 });
+    expect(useUIStore.getState().sheetWidth).toBe(520);
+    expect(onBubble).not.toHaveBeenCalled();
+  });
+
+  test('drag clamps to MAX', () => {
+    render(<Sheet ariaLabel="Test sheet"><div /></Sheet>);
+    const sep = screen.getByRole('separator');
+    fireEvent.pointerDown(sep, { pointerId: 1, clientX: 1000 });
+    fireEvent.pointerMove(sep, { pointerId: 1, clientX: 0 });
+    fireEvent.pointerUp(sep, { pointerId: 1, clientX: 0 });
+    expect(useUIStore.getState().sheetWidth).toBe(640);
+  });
+
+  test('when docked left, dragging RIGHT widens', () => {
+    useUIStore.setState({ sheetDock: 'left', sheetWidth: 420 });
+    render(<Sheet ariaLabel="Test sheet"><div /></Sheet>);
+    const sep = screen.getByRole('separator');
+    fireEvent.pointerDown(sep, { pointerId: 1, clientX: 100 });
+    fireEvent.pointerMove(sep, { pointerId: 1, clientX: 180 }); // +80
+    fireEvent.pointerUp(sep, { pointerId: 1, clientX: 180 });
+    expect(useUIStore.getState().sheetWidth).toBe(500);
+  });
+
+  test('keyboard: ArrowRight widens, ArrowLeft narrows', () => {
+    render(<Sheet ariaLabel="Test sheet"><div /></Sheet>);
+    const sep = screen.getByRole('separator');
+    fireEvent.keyDown(sep, { key: 'ArrowRight' });
+    expect(useUIStore.getState().sheetWidth).toBe(444); // +24 step
+    fireEvent.keyDown(sep, { key: 'ArrowLeft' });
+    expect(useUIStore.getState().sheetWidth).toBe(420);
   });
 });
