@@ -117,7 +117,11 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
 export function deriveDocLink(policy: { standardId?: unknown; sourceSectionNumber?: string }): string | undefined {
   if (!policy.standardId) return undefined;
   const base = `/compliance/standards/${String(policy.standardId)}`;
-  return policy.sourceSectionNumber ? `${base}#${policy.sourceSectionNumber}` : base;
+  // sourceSectionNumber ist AI-extrahierter Text ("Art. 5 (1)") — Fragment
+  // kodieren, sonst bricht der Schema-Vertrag (format: uri-reference).
+  return policy.sourceSectionNumber
+    ? `${base}#${encodeURIComponent(policy.sourceSectionNumber)}`
+    : base;
 }
 
 /**
@@ -196,7 +200,7 @@ export async function evaluateElementPolicies(
               field: rule.field,
               resourcePath: `/elements/${elementId}/${rule.field}`,
               // docLink nur setzen, wenn abgeleitet — `docLink: undefined` würde
-              // sonst als $set-Pfad mitgehen (Stub liefert bis THE-202 nichts).
+              // sonst als $set-Pfad mitgehen (Policies ohne standardId liefern undefined).
               ...(docLink ? { docLink } : {}),
               currentValue: fieldValue,
               expectedValue: rule.value,
