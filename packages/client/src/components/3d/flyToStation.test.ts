@@ -59,4 +59,44 @@ describe('flyToStation (ADR-0005: Station ⟂ viewMode)', () => {
     // top-down: camera directly above, per existing fitToScreen convention
     expect(t!.position.y).toBe(80);
   });
+
+  // THE-488 — Sheet-offset
+  test('no sheet-offset by default keeps lookAt on the centroid (back-compat)', () => {
+    flyToStation('track', elements);
+    const t = __getFlyTargetForTests()!;
+    expect(t.lookAt.x).toBeCloseTo(5);
+    expect(t.lookAt.z).toBeCloseTo(5);
+  });
+
+  test('a single outlier position does not blow up the framing (robust radius/centre)', () => {
+    // One element with a broken layout position (THE-490) far from the others.
+    const withOutlier = [
+      ...elements,
+      { id: 'x', name: 'X', type: 'node', layer: 'strategy', position3D: { x: -366, y: 13, z: -1682 } },
+    ];
+    flyToStation('model', withOutlier);
+    const t = __getFlyTargetForTests()!;
+    // Camera distance stays bounded by the core (~8), not the outlier (~1700 × distFactor).
+    expect(t.position.distanceTo(t.lookAt)).toBeLessThan(60);
+    // Median centre stays in the core, not dragged toward z=-1682.
+    expect(t.lookAt.z).toBeGreaterThan(-50);
+  });
+
+  test('sheet-offset pans the framing toward the visible area (dock-aware)', () => {
+    flyToStation('model', elements); // no offset → centred on the centroid
+    const centred = __getFlyTargetForTests()!.lookAt.clone();
+
+    flyToStation('model', elements, { sheetOffsetPx: 420, sheetDock: 'right' });
+    const right = __getFlyTargetForTests()!.lookAt.clone();
+    flyToStation('model', elements, { sheetOffsetPx: 420, sheetDock: 'left' });
+    const left = __getFlyTargetForTests()!.lookAt.clone();
+
+    // The offset shifts the lookAt off the centroid...
+    expect(right.distanceTo(centred)).toBeGreaterThan(0.5);
+    // ...and the two dock sides pan in opposite directions (mirror through it):
+    // their midpoint is the un-offset centroid, equal magnitudes either way.
+    expect(left.distanceTo(centred)).toBeCloseTo(right.distanceTo(centred), 3);
+    const mid = right.clone().add(left).multiplyScalar(0.5);
+    expect(mid.distanceTo(centred)).toBeCloseTo(0, 3);
+  });
 });

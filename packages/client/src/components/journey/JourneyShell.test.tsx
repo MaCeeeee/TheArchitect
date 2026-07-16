@@ -91,13 +91,13 @@ beforeEach(() => {
 describe('JourneyShell (ADR-0005)', () => {
   test('AC-5: /v2/project/p1 resolves to the model station', () => {
     renderShell('/v2/project/p1');
-    expect(flyToStation).toHaveBeenCalledWith('model', expect.any(Array));
+    expect(flyToStation).toHaveBeenCalledWith('model', expect.any(Array), expect.any(Object));
     expect(screen.getByTestId('scene')).toBeInTheDocument();
   });
 
   test('AC-5: station deep-link sets the camera for that station', () => {
     renderShell('/v2/project/p1/track');
-    expect(flyToStation).toHaveBeenCalledWith('track', expect.any(Array));
+    expect(flyToStation).toHaveBeenCalledWith('track', expect.any(Array), expect.any(Object));
   });
 
   test('AC-1: navigating between stations never remounts the Scene', () => {
@@ -107,7 +107,7 @@ describe('JourneyShell (ADR-0005)', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/v2/project/p1/govern');
     expect(sceneMounts).toBe(mountsAfterInitial);
     expect(sceneUnmounts).toBe(0);
-    expect(flyToStation).toHaveBeenLastCalledWith('govern', expect.any(Array));
+    expect(flyToStation).toHaveBeenLastCalledWith('govern', expect.any(Array), expect.any(Object));
   });
 
   test('AC-4: PropertyPanel appears as an overlay Sheet without a route change', () => {
