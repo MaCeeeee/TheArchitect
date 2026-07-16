@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "validation-violation.schema.json",
+  "title": "PolicyViolation output contract (REQ-CHOICE-003.2, OPA/Kyverno style)",
+  "type": "object",
+  "required": ["ruleId", "severity", "message", "resourcePath"],
+  "properties": {
+    "ruleId": { "type": "string", "minLength": 1 },
+    "severity": { "enum": ["low", "medium", "high", "critical"] },
+    "enforcementLevel": { "enum": ["advisory", "soft_mandatory", "hard_mandatory"] },
+    "message": { "type": "string", "minLength": 1 },
+    "resourcePath": { "type": "string", "pattern": "^/elements/.+" },
+    "docLink": { "type": "string", "format": "uri-reference" }
+  }
+}
