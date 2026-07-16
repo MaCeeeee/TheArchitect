@@ -30,9 +30,20 @@ export default function JourneyShell() {
   // is drawn (Station ⟂ viewMode). Deliberately NOT depending on `elements`:
   // we reframe on arrival at a station, not on every model edit.
   useEffect(() => {
-    if (!loading && elements.length > 0) {
-      flyToStation(station, elements);
-    }
+    if (loading || elements.length === 0) return;
+    // A docked Sheet covers part of the viewport — pass its width so the model
+    // centres in the *visible* area, not behind the Sheet (THE-488). Read via
+    // getState so neither selection nor a Sheet resize reframes (deps: station/
+    // loading only; the latter matches THE-485 AC-2 "camera still on resize").
+    const ui = useUIStore.getState();
+    const { selectedElementId: selId } = useArchitectureStore.getState();
+    // Mirrors `sheetBody` below: a Sheet shows on every station except Model
+    // with nothing selected.
+    const sheetShown = station !== 'model' || (ui.isPropertyPanelOpen && !!selId);
+    flyToStation(station, elements, {
+      sheetOffsetPx: sheetShown ? ui.sheetWidth : 0,
+      sheetDock: ui.sheetDock,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [station, loading]);
 

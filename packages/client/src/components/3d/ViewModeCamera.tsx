@@ -10,6 +10,7 @@ import { useXRayStore } from '../../stores/xrayStore';
 import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
 import { computeViewPositions } from '../../hooks/useViewPositions';
 import type { StationKey } from '../journey/stations';
+import type { DockSide } from '../journey/sheetPrefs';
 
 // ─── Fly-to animation state (module-level for external access) ────────
 interface CameraTarget {
@@ -199,18 +200,36 @@ export function fitAllWorkspaces(workspaces: { offsetX: number }[]) {
 // A Station sets the camera framing *intent*; viewMode keeps owning the
 // projection (Station ⟂ viewMode). In 2D/layer the top-down constraint wins,
 // exactly like the other fly-to helpers above — we delegate to fitToScreen.
+// Vertical field-of-view of the perspective camera (see <PerspectiveCamera> below).
+// Single source so the Sheet-offset math stays in sync with what's actually rendered.
+const CAMERA_FOV_DEG = 60;
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+// Per-station framing (THE-482). `dir` = the distinct viewing angle; `distFactor`
+// = how far back to pull (× the model's radius). THE-488 tightened the band to
+// 1.5–1.9 so every station frames the model at a readable size — the old
+// vision 2.2 / track 2.4 pulled the camera so far the model became a speck.
 const STATION_FRAMING: Record<StationKey, { dir: [number, number, number]; distFactor: number }> = {
-  vision:  { dir: [0.0, 0.9, 0.8],   distFactor: 2.2 }, // elevated far total — see the whole intent
+  vision:  { dir: [0.0, 0.9, 0.8],   distFactor: 1.9 }, // elevated total — see the whole intent
   model:   { dir: [0.6, 0.5, 0.6],   distFactor: 1.5 }, // the working angle (matches fitToScreen)
-  explore: { dir: [0.2, 1.2, 0.4],   distFactor: 1.7 }, // high inspection view
-  plan:    { dir: [1.1, 0.35, 0.5],  distFactor: 1.8 }, // dramatic side — world under load
-  govern:  { dir: [-0.6, 0.9, 0.6],  distFactor: 1.8 }, // elevated opposite side
-  track:   { dir: [0.0, 0.6, 1.2],   distFactor: 2.4 }, // far front total — the timeline view
+  explore: { dir: [0.2, 1.2, 0.4],   distFactor: 1.6 }, // high inspection view
+  plan:    { dir: [1.1, 0.35, 0.5],  distFactor: 1.7 }, // dramatic side — world under load
+  govern:  { dir: [-0.6, 0.9, 0.6],  distFactor: 1.7 }, // elevated opposite side
+  track:   { dir: [0.0, 0.6, 1.2],   distFactor: 1.8 }, // front total — the timeline view
 };
+
+/** Framing modifiers captured at station-arrival (THE-488). */
+export interface StationFramingOptions {
+  /** CSS-px width of a Sheet docked over the viewport right now (0 / omit = none). */
+  sheetOffsetPx?: number;
+  /** Which side that Sheet is docked to. Defaults to 'right'. */
+  sheetDock?: DockSide;
+}
 
 export function flyToStation(
   station: StationKey,
   elements: { id?: string; position3D: { x: number; y: number; z: number } }[],
+  opts: StationFramingOptions = {},
 ) {
   if (elements.length === 0) return;
   const viewMode = useUIStore.getState().viewMode;
@@ -236,10 +255,31 @@ export function flyToStation(
   const f = STATION_FRAMING[station];
   const distance = Math.max(maxDist * f.distFactor, 15);
   const dir = new THREE.Vector3(f.dir[0], f.dir[1], f.dir[2]).normalize();
-  flyTarget = {
-    position: center.clone().add(dir.multiplyScalar(distance)),
-    lookAt: center,
-  };
+  const position = center.clone().add(dir.clone().multiplyScalar(distance));
+  const lookAt = center.clone();
+
+  // Sheet-offset (THE-488): a docked Sheet covers part of the viewport, so pan
+  // camera+target sideways to re-centre the model in the *visible* area rather
+  // than behind the Sheet. A pure pan preserves the station's angle+distance.
+  // The world shift equals half the Sheet width mapped through the perspective
+  // frustum at the model's distance (square px → same world/px on both axes):
+  //   worldShift = (sheetPx/2) · (2·distance·tan(fov/2) / viewportH)
+  // Captured once here; resizing the Sheet does NOT reframe (THE-485 AC-2).
+  const sheetOffsetPx = opts.sheetOffsetPx ?? 0;
+  if (sheetOffsetPx > 0) {
+    const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const fovRad = (CAMERA_FOV_DEG * Math.PI) / 180;
+    const worldShift = (sheetOffsetPx * distance * Math.tan(fovRad / 2)) / viewportH;
+    const forward = center.clone().sub(position).normalize(); // camera → model
+    const right = forward.clone().cross(WORLD_UP).normalize(); // screen-right in world
+    // Sheet on the right → pan right so the model sits left-of-centre (and vice-versa).
+    const sign = opts.sheetDock === 'left' ? -1 : 1;
+    const pan = right.multiplyScalar(sign * worldShift);
+    position.add(pan);
+    lookAt.add(pan);
+  }
+
+  flyTarget = { position, lookAt };
   flyProgress = 0;
 }
 
@@ -429,7 +469,7 @@ export default function ViewModeCamera() {
       <PerspectiveCamera
         ref={perspRef}
         makeDefault={viewMode === '3d'}
-        fov={60}
+        fov={CAMERA_FOV_DEG}
         near={0.1}
         far={1000}
         position={[20, 15, 20]}
