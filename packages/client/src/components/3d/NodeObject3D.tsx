@@ -38,12 +38,13 @@ const TYPE_GEOMETRY: Record<string, 'box' | 'sphere' | 'cylinder' | 'cone'> = {
 interface NodeObject3DProps {
   element: ArchitectureElement;
   viewPosition?: { x: number; y: number; z: number };
+  salience?: number;
 }
 
 const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 
-export default function NodeObject3D({ element, viewPosition }: NodeObject3DProps) {
+export default function NodeObject3D({ element, viewPosition, salience = 1 }: NodeObject3DProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -98,6 +99,11 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   const xraySubView = useXRayStore((s) => s.subView);
   const xrayElementData = useXRayStore((s) => s.elementData);
   const xrayPositions = useXRayStore((s) => s.xrayPositions);
+
+  // Station-adaptive salience (THE-500) — inert in classic (journeyStation null
+  // → journeyActive false), so classic renders byte-identically.
+  const journeyActive = useUIStore((s) => s.journeyStation !== null);
+  const appliedSalienceRef = useRef(1);
 
   const xrayData = useMemo(() => {
     if (!isXRayActive) return null;
@@ -213,11 +219,20 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
       if (isSelected && !dragging) {
         meshRef.current.rotation.y += delta * 0.5;
       }
-      const targetScale = hovered || isSelected ? 1.15 : 1;
-      meshRef.current.scale.lerp(
-        new THREE.Vector3(targetScale, targetScale, targetScale),
-        0.1
-      );
+      // Station-adaptive salience (THE-500): fold importance into the ONE scale
+      // target + dim opacity. Inert in classic (journeyActive false → factor 1),
+      // so classic renders byte-identically. instant = revisit/reduced-motion.
+      const instant = useUIStore.getState().salienceInstant;
+      const targetS = journeyActive ? salience : 1;
+      appliedSalienceRef.current = instant
+        ? targetS
+        : THREE.MathUtils.lerp(appliedSalienceRef.current, targetS, Math.min(1, delta * 6));
+      const s = appliedSalienceRef.current;
+      const targetScale = (hovered || isSelected ? 1.15 : 1) * (0.7 + 0.3 * s);
+      meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), instant ? 1 : 0.1);
+      const mat = meshRef.current.material as THREE.MeshPhysicalMaterial;
+      mat.transparent = materialOpacity < 1 || s < 1;
+      mat.opacity = materialOpacity * s;
     }
   });
 
@@ -448,7 +463,7 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
 
       {/* Label - always visible in 2D/Layer modes; in X-Ray only for critical path + hover/selection
           (color/size/glow already communicate the metric — labels would obscure connections) */}
-      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath)) && (
+      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath) || (journeyActive && !isXRayActive && salience >= 0.5)) && (
         <Html
           position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center
