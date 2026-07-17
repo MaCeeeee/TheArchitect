@@ -16,6 +16,7 @@ import { useProjectData } from '../../hooks/useProjectData';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 import { flyToStation } from '../3d/ViewModeCamera';
 import { DEFAULT_STATION, isStationKey, STATIONS, type StationKey } from './stations';
 import { decideTempo, markStationSeen } from './stationTempo';
@@ -29,6 +30,13 @@ export default function JourneyShell() {
   const isPropertyPanelOpen = useUIStore((s) => s.isPropertyPanelOpen);
   const setShowComplianceGlow = useComplianceStore((s) => s.setShowComplianceGlow);
   const setCommandMenuOpen = useUIStore((s) => s.setCommandMenuOpen);
+  // Station data-absent fallback hint (THE-500) — mirrors the hasData gates in
+  // useStationSalience + the trackReform gate in Scene, so the hint appears
+  // exactly when the station shows the full re-dress fallback instead of its
+  // re-form/focus.
+  const mappingsCount = useComplianceStore((s) => s.mappingsByElement.size);
+  const roadmapsCount = useRoadmapStore((s) => s.roadmaps.length);
+  const plateauCount = useRoadmapStore((s) => s.plateauSnapshots.length);
 
   const station: StationKey = isStationKey(stationParam) ? stationParam : DEFAULT_STATION;
   const conformanceGate = STATIONS.find((s) => s.key === station)?.conformanceGate;
@@ -57,6 +65,8 @@ export default function JourneyShell() {
     // Two tempi (ADR-0005 #8): cinematic only on the FIRST arrival at this
     // station in this project; instant afterwards. Reduced motion always instant.
     const tempo = projectId ? decideTempo(projectId, station) : 'cinematic';
+    // Station-adaptive LOD (THE-500): the salience transition rides the same tempo.
+    useUIStore.getState().setJourneyStation(station, tempo === 'instant');
     flyToStation(station, elements, {
       sheetOffsetPx: sheetShown ? ui.sheetWidth : 0,
       sheetDock: ui.sheetDock,
@@ -86,6 +96,11 @@ export default function JourneyShell() {
       setCommandMenuOpen(false);
     };
   }, [setCommandMenuOpen]);
+
+  // Station-adaptive LOD (THE-500): journeyStation is transient v2-only shell
+  // state — clear it on unmount so classic UI never inherits a stale station
+  // (salience must be inert there, mirroring the THE-494 stale-flag reset).
+  useEffect(() => () => { useUIStore.getState().setJourneyStation(null, true); }, []);
 
   // Conformance stations show the coverage heatmap as "results in the World" —
   // but only when the project actually has coverage data. An unassessed project
@@ -146,6 +161,18 @@ export default function JourneyShell() {
         ? <ConformanceHub scopeVerb={conformanceGate} />
         : <StationSheet station={station} projectId={projectId} />;
 
+  // Station data-absent hint (THE-500): "No X yet" pointer, shown only when the
+  // station has nothing to focus on and instead falls back to full re-dress.
+  const stationHint = elements.length === 0
+    ? null
+    : station === 'explore' && mappingsCount === 0
+      ? 'No coverage yet — upload a standard'
+      : station === 'plan' && roadmapsCount === 0
+        ? 'No roadmap yet — plan one'
+        : station === 'track' && plateauCount === 0
+          ? 'No plateaus yet — activate a roadmap view'
+          : null;
+
   return (
     <div className="relative h-screen w-screen overflow-hidden bg-[var(--surface-base)]">
       {/* The World — mounted once, never keyed by station */}
@@ -182,6 +209,14 @@ export default function JourneyShell() {
       {station === 'model' && !selectedElementId && elements.length > 0 && (
         <div className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)]/80 px-3 py-1.5 text-xs text-[var(--text-tertiary)] backdrop-blur-md">
           Click an element for details
+        </div>
+      )}
+
+      {/* Station data-absent hint (THE-500): points at how to get this station's
+          focus data instead of leaving the full re-dress unexplained. */}
+      {stationHint && (
+        <div className="pointer-events-none absolute right-4 top-3 z-30 rounded-full border border-[var(--border-subtle)] bg-[var(--surface-raised)]/80 px-3 py-1.5 text-xs text-[var(--text-tertiary)] backdrop-blur-md">
+          {stationHint}
         </div>
       )}
 

@@ -53,6 +53,12 @@ export default function Scene() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
+  // Track re-form (THE-500): station-driven, gated on computed plateaus — NOT
+  // roadmaps.length. PlateauRenderer returns null with 0 snapshots, so gating on
+  // the roadmap list alone would swap the box-world for a blank renderer.
+  const journeyStation = useUIStore((s) => s.journeyStation);
+  const hasPlateaus = useRoadmapStore((s) => s.plateauSnapshots.length > 0);
+  const trackReform = journeyStation === 'track' && hasPlateaus;
   const isActivityActive = useActivityViewStore((s) => s.isActive);
   const exitActivityView = useActivityViewStore((s) => s.exit);
   const is3D = viewMode === '3d';
@@ -113,7 +119,7 @@ export default function Scene() {
           {/* Activity View: replaces normal rendering with pyramid drill-down */}
           {isActivityActive && is3D ? (
             <ActivityScene />
-          ) : isPlateauActive && is3D ? (
+          ) : (isPlateauActive || trackReform) && is3D ? (
             <>
               <PlateauRenderer />
               <AgentAvatars3D />

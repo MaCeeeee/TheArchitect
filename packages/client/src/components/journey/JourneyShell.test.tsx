@@ -96,7 +96,7 @@ beforeEach(() => {
     mappingsByElement: new Map(),
     loadAllMappings: vi.fn().mockResolvedValue(undefined),
   } as Partial<ComplianceState>);
-  useUIStore.setState({ isPropertyPanelOpen: false, isCommandMenuOpen: false });
+  useUIStore.setState({ isPropertyPanelOpen: false, isCommandMenuOpen: false, journeyStation: null, salienceOverride: false });
 });
 
 afterEach(() => vi.unstubAllGlobals());
@@ -111,6 +111,13 @@ describe('JourneyShell (ADR-0005)', () => {
   test('AC-5: station deep-link sets the camera for that station', () => {
     renderShell('/v2/project/p1/track');
     expect(flyToStation).toHaveBeenCalledWith('track', expect.any(Array), expect.any(Object));
+  });
+
+  test('sets journeyStation + cinematic-first salienceInstant on arrival (THE-500)', () => {
+    localStorage.clear();
+    renderShell('/v2/project/p1/govern');
+    expect(useUIStore.getState().journeyStation).toBe('govern');
+    expect(useUIStore.getState().salienceInstant).toBe(false); // first arrival → cinematic
   });
 
   test('AC-1: navigating between stations never remounts the Scene', () => {
