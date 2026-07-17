@@ -19,7 +19,10 @@ const STATION_SECONDARY: Record<StationKey, string[]> = {
 };
 
 /** A stable "route" for dedup: the target a command navigates to. Derived by
- *  running the command against a capturing navigate. */
+ *  running the command against a capturing navigate.
+ *  ⚠️ This EXECUTES the command. Safe only for navigation-only commands — never
+ *  put a side-effecting command (e.g. `toggle:show-all`, THE-500) into
+ *  STATION_SECONDARY, or its effect fires on every chip build. */
 function routeOf(cmd: Command, ctx: CommandContext): string {
   let captured = '';
   cmd.run({ ...ctx, navigate: (to) => (captured = to) });

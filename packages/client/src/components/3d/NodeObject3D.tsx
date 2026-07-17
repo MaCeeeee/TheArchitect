@@ -227,6 +227,12 @@ export default function NodeObject3D({ element, viewPosition, salience = 1 }: No
       appliedSalienceRef.current = instant
         ? targetS
         : THREE.MathUtils.lerp(appliedSalienceRef.current, targetS, Math.min(1, delta * 6));
+      // Epsilon-snap: an asymptotic lerp would keep opacity at ~0.999 for seconds,
+      // leaving every orb in the transparent render pass (depth-sort artifacts
+      // under Bloom). Snap once we are visually there.
+      if (Math.abs(appliedSalienceRef.current - targetS) < 0.005) {
+        appliedSalienceRef.current = targetS;
+      }
       const s = appliedSalienceRef.current;
       const targetScale = (hovered || isSelected ? 1.15 : 1) * (0.7 + 0.3 * s);
       meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), instant ? 1 : 0.1);
