@@ -14,6 +14,7 @@ export interface ComplianceViolation {
   field: string;
   currentValue: unknown;
   expectedValue: unknown;
+  operator?: string; // THE-499: optional, damit getBuiltInChecks (setzt kein operator) unangetastet bleibt
 }
 
 export interface SeverityCounts {
@@ -105,6 +106,7 @@ export async function checkCompliance(projectId: string): Promise<ComplianceRepo
             field: rule.field,
             currentValue: fieldValue,
             expectedValue: rule.value,
+            operator: rule.operator,
           });
         }
       }
