@@ -1,9 +1,12 @@
-// The command vocabulary of the v2 Journey (THE-492, Slice 3a). Every command is
-// SAFE — it only navigates (to a v2 station, a classic route, or a v2 sheet).
-// Nothing toggles classic-only UI state (that no-ops/breaks from v2). The ⌘K
+// The command vocabulary of the v2 Journey (THE-492, Slice 3a). Almost every
+// command is SAFE — it only navigates (to a v2 station, a classic route, or a
+// v2 sheet). Nothing toggles classic-only UI state (that no-ops/breaks from v2).
+// One exception (THE-500's toggle:show-all) flips transient v2-only UI state
+// (salienceOverride) — still v2-safe, since classic never reads it. The ⌘K
 // CommandMenu (THE-493) lists this registry.
 import type { JourneyPhase } from '../../stores/journeyStore';
 import { getVisibleSections, isToolbarActionVisible } from '../../utils/phaseVisibility';
+import { useUIStore } from '../../stores/uiStore';
 
 export interface CommandContext {
   projectId: string;
@@ -54,6 +57,10 @@ export function buildCommandRegistry(ctx: CommandContext): Record<string, Comman
     { id: 'goto:plan',    group: 'Go to', label: 'Go to Plan',    keywords: ['station', 'roadmap', 'migration'],    run: nav(`/v2/project/${projectId}/plan`) },
     { id: 'goto:govern',  group: 'Go to', label: 'Go to Govern',  keywords: ['station', 'policies', 'enforce'],     run: nav(`/v2/project/${projectId}/govern`) },
     { id: 'goto:track',   group: 'Go to', label: 'Go to Track',   keywords: ['station', 'audit', 'attest'],         run: nav(`/v2/project/${projectId}/track`) },
+    // View (THE-500) — the first non-navigation command: flips transient v2-only
+    // salience state instead of routing.
+    { id: 'toggle:show-all', group: 'View', label: 'Toggle: show all detail', keywords: ['lod', 'salience', 'focus', 'detail', 'show all'],
+      run: () => useUIStore.getState().toggleSalienceOverride() },
     // Model / project (ids frozen)
     { id: 'open:model-classic', group: 'Model', label: 'Open in classic editor', keywords: ['3d', 'edit', 'project view'], run: nav(`/project/${projectId}`) },
     { id: 'open:blueprint',     group: 'Model', label: 'Generate with AI (Blueprint)', keywords: ['ai', 'generate', 'import', 'create'], run: nav(`/project/${projectId}/blueprint`) },

@@ -1,5 +1,6 @@
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { buildCommandRegistry, resolveActionRoute, type CommandContext } from './commands';
+import { useUIStore } from '../../stores/uiStore';
 
 const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   projectId: 'p1',
@@ -72,5 +73,18 @@ describe('buildCommandRegistry — 3b curated expansion (THE-493)', () => {
     const c = ctx();
     buildCommandRegistry(c)['open:blueprint'].run(c);
     expect(c.navigate).toHaveBeenCalledWith('/project/p1/blueprint');
+  });
+});
+
+describe('buildCommandRegistry — show-all override (THE-500)', () => {
+  beforeEach(() => {
+    useUIStore.setState({ salienceOverride: false });
+  });
+
+  test('toggle:show-all flips salienceOverride instead of navigating', () => {
+    const c = ctx();
+    buildCommandRegistry(c)['toggle:show-all'].run(c);
+    expect(useUIStore.getState().salienceOverride).toBe(true);
+    expect(c.navigate).not.toHaveBeenCalled();
   });
 });
