@@ -90,4 +90,31 @@ describe('ComplianceDashboard — one-click [Fix] (THE-502)', () => {
     await screen.findByText(/Set type to application_component/);
     expect(screen.queryByRole('button', { name: /^Fix$/ })).not.toBeInTheDocument();
   });
+
+  test('disabled [Fix] mit Tooltip, wenn dem User element:update fehlt (viewer)', async () => {
+    setRole('viewer'); // kein element:update
+    checkCompliance.mockReturnValue(okReport(reportWith([equalsStatusViolation])));
+    updateElement.mockResolvedValue({ data: { success: true } });
+
+    renderDashboard();
+    fireEvent.click(screen.getByText('Run Compliance Check'));
+    await screen.findByText(/Set status to current/);
+
+    const fixBtn = screen.getByRole('button', { name: /^Fix$/ });
+    expect(fixBtn).toBeDisabled();
+    expect(fixBtn).toHaveAttribute('title', expect.stringContaining('element:update'));
+
+    fireEvent.click(fixBtn); // disabled → kein Effekt
+    expect(updateElement).not.toHaveBeenCalled();
+  });
+
+  test('kein [Fix] bei malformter Policy (expectedValue null) trotz equals+fixbarem Feld', async () => {
+    checkCompliance.mockReturnValue(okReport(reportWith([
+      { ...equalsStatusViolation, expectedValue: null },
+    ])));
+    renderDashboard();
+    fireEvent.click(screen.getByText('Run Compliance Check'));
+    await screen.findByText(/Policy: P/); // Zeile gerendert
+    expect(screen.queryByRole('button', { name: /^Fix$/ })).not.toBeInTheDocument();
+  });
 });
