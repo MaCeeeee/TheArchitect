@@ -17,6 +17,7 @@ export interface IPolicyViolation extends Document {
   docLink?: string;     // REQ-003.2: Norm-Registry oder Knowledge-Base
   currentValue: unknown;
   expectedValue: unknown;
+  operator?: string; // THE-499: PolicyRule-Operator für deterministische Fix-Ableitung; optional (Legacy-Docs ohne)
   status: PolicyViolationStatus;
   detectedAt: Date;
   resolvedAt?: Date;
@@ -55,6 +56,7 @@ const policyViolationSchema = new Schema<IPolicyViolation>(
     docLink: { type: String },
     currentValue: { type: Schema.Types.Mixed },
     expectedValue: { type: Schema.Types.Mixed },
+    operator: { type: String },
     status: {
       type: String,
       enum: ['open', 'resolved', 'suppressed'],
