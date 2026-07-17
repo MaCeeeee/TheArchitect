@@ -1406,7 +1406,7 @@ describe('THE-442: schema foundation', () => {
     expect(v!.severity).toBe('high');
     expect(v!.field).toBe('description'); // field bleibt Datenfeld
     expect(v!.resourcePath).toBe('/elements/el-9/description');
-    expect(v!.docLink).toBeUndefined(); // deriveDocLink-Stub — Registry-Anbindung in THE-202
+    expect(v!.docLink).toBeUndefined(); // Fixture-Policy hat keine standardId → kein docLink
   });
 
   it('auto-resolves open violations whose rule was removed from the policy (rule identity)', async () => {
@@ -1458,5 +1458,51 @@ describe('THE-442: schema foundation', () => {
     const removed = await PolicyViolation.findOne({ elementId: 'el-stale', ruleId: removedRuleId });
     expect(removed!.status).toBe('resolved');
     expect(removed!.details).toContain('rule removed');
+  });
+});
+
+describe('THE-202: docLink derivation', () => {
+  it('derives docLink from standardId + sourceSectionNumber, else undefined', async () => {
+    const { deriveDocLink } = await import('../services/policy-evaluation.service');
+    expect(deriveDocLink({ standardId: 'std-1', sourceSectionNumber: '4.2' }))
+      .toBe('/compliance/standards/std-1#4.2');
+    expect(deriveDocLink({ standardId: 'std-1' })).toBe('/compliance/standards/std-1');
+    expect(deriveDocLink({})).toBeUndefined();
+    // AI-extrahierte Abschnittsnummern können Leerzeichen/Klammern enthalten —
+    // das Fragment muss URL-kodiert sein (Schema-Vertrag: format uri-reference).
+    expect(deriveDocLink({ standardId: 'std-1', sourceSectionNumber: 'Art. 5 (1)' }))
+      .toBe('/compliance/standards/std-1#Art.%205%20(1)');
+  });
+
+  it('stringifies a Mongoose ObjectId standardId into the link (production shape)', async () => {
+    const { deriveDocLink } = await import('../services/policy-evaluation.service');
+    const standardId = new mongoose.Types.ObjectId();
+    expect(deriveDocLink({ standardId }))
+      .toBe(`/compliance/standards/${standardId.toHexString()}`);
+  });
+
+  it('persists docLink on upserted violations when the policy has a standardId', async () => {
+    const standardId = new mongoose.Types.ObjectId();
+    await Policy.create(createPolicyDoc({
+      name: 'Norm-generated Policy',
+      standardId,
+      sourceSectionNumber: '4.2',
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs desc' }],
+    }));
+
+    mockRunCypher.mockResolvedValueOnce([
+      fakeNeo4jRecord({
+        id: 'el-doclink', name: 'X', type: 'application_component', layer: 'application',
+        domain: 'IT', maturity: { toNumber: () => 2 }, riskLevel: 'low',
+        status: 'current', description: '', metadataJson: null,
+      }),
+    ]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-doclink', 'create');
+
+    const v = await PolicyViolation.findOne({ elementId: 'el-doclink' });
+    expect(v).not.toBeNull();
+    expect(v!.docLink).toBe(`/compliance/standards/${standardId.toHexString()}#4.2`);
   });
 });

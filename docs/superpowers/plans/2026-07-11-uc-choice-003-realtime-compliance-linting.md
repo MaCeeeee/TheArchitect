@@ -1361,6 +1361,8 @@ curl -s -X POST http://localhost:4000/api/projects/$PROJECT/elements \
 - Modify: `packages/client/src/components/governance/PolicyManager.tsx` (enforcementLevel-Select)
 - Modify: `packages/client/src/components/governance/ComplianceDashboard.tsx` (Icons)
 
+**Entscheidung docLink→Route (2026-07-17, aus Task-9-Quality-Review):** `deriveDocLink` liefert `/compliance/standards/{id}#{section}` — das matcht bewusst KEINE Client-Route (Router kennt nur `/project/:projectId/compliance/:section`; für Corpus-Normen ist `standardId` zudem eine Pseudo-ObjectId ohne Standard-Dokument). docLink bleibt router-agnostischer Resource-Identifier. Die konsumierende Komponente (EnforcementBlockDialog, dieser Task) mappt beim Rendern auf die reale Route: Prefix `/project/${projectId}` + Section `standards` + Standard-Selektion via CompliancePage-State; Pseudo-ObjectIds wie in `CompliancePage.tsx:76-81` über `normId ?? standardId` behandeln. Keinen Redirect-Route-Ausbau vornehmen. Zweiter Merker: Die 422-Response des Gates (Task 13) MUSS durch `toViolationMessage` (violation-format.ts, Task 8) laufen — nicht hand-rollen.
+
 - [ ] **Step 1: Store-Handling — ACHTUNG, der Store ist OPTIMISTISCH.** `addElement`/`updateElement` (`architectureStore.ts:~217-250`) wenden Änderungen synchron auf den lokalen State an und feuern die API fire-and-forget (`.catch` schluckt Fehler). Ein Gate-422 muss deshalb **zurückrollen**, sonst steht das geblockte Element trotzdem im 3D:
 
 ```typescript
