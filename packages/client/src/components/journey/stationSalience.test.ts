@@ -40,3 +40,30 @@ describe('stationSalience (THE-500)', () => {
     expect(stationSalience(el(), 'plan', c)).toBe(1);
   });
 });
+
+import { forcedLabelIds, FORCED_LABEL_MAX } from './stationSalience';
+
+describe('forcedLabelIds (THE-500 label-wall fix, user-reported)', () => {
+  const map = (entries: [string, number][]) => new Map(entries);
+
+  test('all-salient station (Model/fallbacks) forces NO labels — no label wall', () => {
+    const m = map([['a', 1], ['b', 1], ['c', 1]]);
+    expect(forcedLabelIds(m).size).toBe(0);
+  });
+
+  test('discriminating station with a small salient set forces exactly those labels', () => {
+    const m = map([['a', 1], ['b', 0.18], ['c', 0.18]]);
+    expect([...forcedLabelIds(m)]).toEqual(['a']);
+  });
+
+  test('salient set above the cap forces no labels (visual pop still applies)', () => {
+    const entries: [string, number][] = [];
+    for (let i = 0; i < FORCED_LABEL_MAX + 1; i++) entries.push([`s${i}`, 1]);
+    entries.push(['r', 0.18]);
+    expect(forcedLabelIds(map(entries)).size).toBe(0);
+  });
+
+  test('all-receded (empty focus) forces no labels', () => {
+    expect(forcedLabelIds(map([['a', 0.18]])).size).toBe(0);
+  });
+});

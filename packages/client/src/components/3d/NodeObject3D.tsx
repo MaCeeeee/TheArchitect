@@ -39,12 +39,14 @@ interface NodeObject3DProps {
   element: ArchitectureElement;
   viewPosition?: { x: number; y: number; z: number };
   salience?: number;
+  /** Force the label on (station focus is small + discriminating — THE-500). */
+  labelForced?: boolean;
 }
 
 const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 
-export default function NodeObject3D({ element, viewPosition, salience = 1 }: NodeObject3DProps) {
+export default function NodeObject3D({ element, viewPosition, salience = 1, labelForced = false }: NodeObject3DProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -469,7 +471,7 @@ export default function NodeObject3D({ element, viewPosition, salience = 1 }: No
 
       {/* Label - always visible in 2D/Layer modes; in X-Ray only for critical path + hover/selection
           (color/size/glow already communicate the metric — labels would obscure connections) */}
-      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath) || (journeyActive && !isXRayActive && salience >= 0.5)) && (
+      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath) || (journeyActive && !isXRayActive && labelForced)) && (
         <Html
           position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
           center

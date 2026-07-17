@@ -3,6 +3,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRemediationStore } from '../../stores/remediationStore';
 import { useViewPositions } from '../../hooks/useViewPositions';
 import { useStationSalience } from '../../hooks/useStationSalience';
+import { forcedLabelIds } from '../journey/stationSalience';
 import { LAYER_Y } from '@thearchitect/shared';
 import NodeObject3D from './NodeObject3D';
 import type { ArchitectureElement } from '@thearchitect/shared';
@@ -13,6 +14,10 @@ export default function ArchitectureElements() {
   const previewElements = useRemediationStore((s) => s.previewElements);
   const { positions: viewPositions, visibleElementIds } = useViewPositions();
   const salience = useStationSalience();
+  // Labels are forced only when the station discriminates AND the focus set is
+  // small enough to read — an all-salient station (Model, fallbacks) must NOT
+  // paint a wall of 40+ label boxes (user-reported, THE-500).
+  const labelIds = useMemo(() => forcedLabelIds(salience), [salience]);
 
   const visibleElements = elements.filter(
     (el) => visibleLayers.has(el.layer) && visibleElementIds.has(el.id)
@@ -65,6 +70,7 @@ export default function ArchitectureElements() {
           element={element}
           viewPosition={viewPositions.get(element.id)}
           salience={salience.get(element.id) ?? 1}
+          labelForced={labelIds.has(element.id)}
         />
       ))}
       {proposalOverlays.map((element) => (

@@ -45,3 +45,21 @@ export function stationSalience(
       return 1;
   }
 }
+
+/** Labels are only FORCED on when the station actually discriminates: there must
+ *  be receded elements (a real focus), and the salient set must be small enough
+ *  to read — otherwise 40+ overlapping label boxes bury the screen (and cost a
+ *  DOM overlay per element, user-reported 2026-07-17). Everything else stays on
+ *  the classic hover/selection behaviour. Cap is a tunable starting value. */
+export const FORCED_LABEL_MAX = 10;
+
+export function forcedLabelIds(salience: Map<string, number>, cap: number = FORCED_LABEL_MAX): Set<string> {
+  const salient: string[] = [];
+  let receded = 0;
+  for (const [id, w] of salience) {
+    if (w >= 0.5) salient.push(id);
+    else receded++;
+  }
+  if (receded === 0 || salient.length === 0 || salient.length > cap) return new Set();
+  return new Set(salient);
+}
