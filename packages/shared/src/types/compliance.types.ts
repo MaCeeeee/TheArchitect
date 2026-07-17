@@ -64,6 +64,7 @@ export interface PolicyViolationDTO {
   docLink?: string;
   currentValue: unknown;
   expectedValue: unknown;
+  operator?: string; // THE-499
   status: PolicyViolationStatus;
   detectedAt: string;
   resolvedAt?: string;

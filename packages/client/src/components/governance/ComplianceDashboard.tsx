@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShieldCheck, AlertTriangle, AlertCircle, Info, RefreshCw, Loader2 } from 'lucide-react';
 import type { ViolationSeverity } from '@thearchitect/shared';
+import { deriveViolationFix } from '@thearchitect/shared';
 import { governanceAPI } from '../../services/api';
 
 interface Violation {
@@ -14,6 +15,7 @@ interface Violation {
   field: string;
   currentValue: unknown;
   expectedValue: unknown;
+  operator?: string;
 }
 
 interface ComplianceReport {
@@ -55,6 +57,13 @@ export default function ComplianceDashboard() {
     if (s === 'high') return <AlertCircle size={16} className="text-[#f97316]" />;
     if (s === 'medium') return <AlertTriangle size={16} className="text-[#eab308]" />;
     return <Info size={16} className="text-[#3b82f6]" />;
+  };
+
+  const fmtValue = (v: unknown): string => {
+    if (v === null || v === undefined) return '(none)';
+    if (v === '') return '(empty)';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
   };
 
   const categoryColors: Record<string, string> = {
@@ -163,16 +172,25 @@ export default function ComplianceDashboard() {
             <div className="px-4 pb-4 border-t border-[var(--border-subtle)] pt-4">
               <h4 className="text-xs font-semibold uppercase text-[var(--text-tertiary)] mb-2">Violations ({report.violations.length})</h4>
               <div className="space-y-1.5">
-                {report.violations.slice(0, 20).map((v, i) => (
-                  <div key={i} className="flex items-start gap-2.5 py-2 px-2 rounded hover:bg-[var(--surface-raised)]">
-                    {severityIcon(v.severity)}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-sm text-white block truncate">{v.elementName}</span>
-                      <span className="text-xs text-[var(--text-tertiary)]">{v.message}</span>
-                      <span className="text-xs text-[var(--text-disabled)] block">Policy: {v.policyName} · Field: {v.field}</span>
+                {report.violations.slice(0, 20).map((v, i) => {
+                  const fix = deriveViolationFix({ operator: v.operator, field: v.field, currentValue: v.currentValue, expectedValue: v.expectedValue });
+                  return (
+                    <div key={i} className="flex items-start gap-2.5 py-2 px-2 rounded hover:bg-[var(--surface-raised)]">
+                      {severityIcon(v.severity)}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-white block truncate">{v.elementName}</span>
+                        <span className="text-xs text-[var(--text-tertiary)]">{v.message}</span>
+                        <span className="text-xs text-[var(--text-disabled)] block">Policy: {v.policyName} · Field: {v.field}</span>
+                        {/* REQ-FIX-001.1: deterministischer Fix-Hinweis */}
+                        <span className="text-xs text-[#22c55e] block mt-0.5">Fix: {fix.instruction}</span>
+                        {/* AC-4: Transition-Zeile */}
+                        <span className="text-xs text-[var(--text-disabled)] block">
+                          Field {v.field}: {fmtValue(v.currentValue)} → {fmtValue(v.expectedValue)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {report.violations.length > 20 && (
                   <p className="text-xs text-[var(--text-disabled)] text-center">+{report.violations.length - 20} more</p>
                 )}

@@ -1506,3 +1506,26 @@ describe('THE-202: docLink derivation', () => {
     expect(v!.docLink).toBe(`/compliance/standards/${standardId.toHexString()}#4.2`);
   });
 });
+
+describe('REQ-FIX-001.1: operator persistence (THE-499)', () => {
+  it('writes the rule operator onto the upserted violation', async () => {
+    const policy = await Policy.create({
+      projectId: PROJECT_ID, name: 'Desc', category: 'architecture',
+      severity: 'high', enforcementLevel: 'advisory', source: 'custom',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'description', operator: 'exists', value: true, message: 'needs desc' }],
+      createdBy: USER_ID,
+    });
+    mockRunCypher.mockResolvedValue([fakeNeo4jRecord({
+      id: 'el-op', name: 'X', type: 'application_component', layer: 'application', description: '',
+    })]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-op', 'create');
+
+    const v = await PolicyViolation.findOne({ elementId: 'el-op' });
+    expect(v).not.toBeNull();
+    expect(v!.operator).toBe('exists');
+    expect(v!.ruleId).toBe(policy.rules[0].ruleId);
+  });
+});
