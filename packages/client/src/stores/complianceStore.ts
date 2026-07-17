@@ -350,6 +350,11 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
 
       // THE-202 — per-element structured details, top-5 sorted critical→low,
       // for the 3D inline tooltip. Purely additive to the count maps above.
+      // The ruleId tiebreak makes same-severity order deterministic across
+      // evaluation runs (detectedAt refreshes per run, so DB order isn't).
+      // When an element's rendered content is unchanged vs the previous load,
+      // the OLD array reference is reused so reference-equality subscribers
+      // (e.g. NodeObject3D's selector) don't re-render on every poll.
       const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
       const detailsByElement = new Map<string, PolicyViolationDTO[]>();
       for (const v of violations) {
@@ -357,9 +362,15 @@ export const useComplianceStore = create<ComplianceStore>((set, get) => ({
         list.push(v);
         detailsByElement.set(v.elementId, list);
       }
+      const prev = get().violationDetailsByElement;
       for (const [k, list] of detailsByElement) {
-        list.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
-        detailsByElement.set(k, list.slice(0, 5));
+        list.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9) || a.ruleId.localeCompare(b.ruleId));
+        const next = list.slice(0, 5);
+        const old = prev.get(k);
+        const same = old?.length === next.length &&
+          old.every((o, i) => o._id === next[i]._id && o.severity === next[i].severity && o.message === next[i].message
+            && o.docLink === next[i].docLink && o.enforcementLevel === next[i].enforcementLevel);
+        detailsByElement.set(k, same ? old! : next);
       }
 
       set({

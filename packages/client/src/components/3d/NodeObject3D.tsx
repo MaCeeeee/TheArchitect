@@ -94,8 +94,10 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
   );
   // THE-202 — structured top-5 violations for THIS element (keyed by the
   // violating element). Regular nodes only; policy tiles show a count, not
-  // per-element messages. Selecting the stored array by reference keeps this
-  // stable between reloads (no re-render storm); undefined until violations load.
+  // per-element messages. The store reuses the previous array reference while
+  // this element's rendered content is unchanged, so the selector yields a new
+  // reference — and a re-render — only when the top-5 actually change;
+  // undefined until violations load.
   const violationDetails = useComplianceStore((s) =>
     isPolicyNode ? undefined : s.violationDetailsByElement.get(element.id)
   );
@@ -521,7 +523,12 @@ export default function NodeObject3D({ element, viewPosition }: NodeObject3DProp
               {violationDetails.slice(0, 3).map((v) => (
                 <div
                   key={v._id}
-                  style={{ fontSize: '9px', color: '#fca5a5', whiteSpace: 'normal', maxWidth: '180px', lineHeight: 1.3 }}
+                  style={{
+                    fontSize: '9px', color: '#fca5a5', whiteSpace: 'normal', maxWidth: '180px', lineHeight: 1.3,
+                    // 2-line clamp: long messages must not blow up the label —
+                    // in 2D/layer mode it is permanently mounted, not hover-only.
+                    display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                  }}
                 >
                   {v.severity.toUpperCase()}: {v.message}
                 </div>
