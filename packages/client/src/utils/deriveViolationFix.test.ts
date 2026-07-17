@@ -58,4 +58,22 @@ describe('deriveViolationFix (REQ-FIX-001.1)', () => {
     expect(fix.instruction).toBe('status should be approved');
     expect(fix.action).toBeUndefined();
   });
+
+  it('unbekannter operator → generischer "should be"-Hinweis (default branch, AC-3)', () => {
+    const fix = deriveViolationFix({ operator: 'starts_with', field: 'code', currentValue: 'x', expectedValue: 'ABC' });
+    expect(fix.applicable).toBe(false);
+    expect(fix.instruction).toBe('code should be ABC');
+    expect(fix.action).toBeUndefined();
+  });
+
+  it('equals mit Objekt-expectedValue → JSON-stringified in instruction/payload', () => {
+    const fix = deriveViolationFix({ operator: 'equals', field: 'cfg', currentValue: null, expectedValue: { a: 1 } });
+    expect(fix.instruction).toBe('Set cfg to {"a":1}');
+    expect(fix.action?.payload).toEqual({ field: 'cfg', value: { a: 1 } });
+  });
+
+  it('equals mit leerem expectedValue → \'\' wird als "" dargestellt', () => {
+    const fix = deriveViolationFix({ operator: 'equals', field: 'label', currentValue: 'x', expectedValue: '' });
+    expect(fix.instruction).toBe('Set label to ""');
+  });
 });
