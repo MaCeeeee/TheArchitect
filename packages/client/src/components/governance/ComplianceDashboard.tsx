@@ -215,6 +215,9 @@ export default function ComplianceDashboard() {
                         <span className="text-xs text-[var(--text-disabled)] block">
                           Field {v.field}: {fmtValue(v.currentValue)} → {fmtValue(v.expectedValue)}
                         </span>
+                        {/* THE-502: disabled uses !!applyingKey (not the per-row `applying`) so ALL [Fix]
+                            buttons lock while any apply is in flight — prevents a second applyFix→runCheck
+                            from racing the list rebuild. Do not simplify back to disabled={applying}. */}
                         {canOneClick && fix.action && (
                           <button
                             onClick={() => applyFix(v, fix.action!.payload?.value)}
