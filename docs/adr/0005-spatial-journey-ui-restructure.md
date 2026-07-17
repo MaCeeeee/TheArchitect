@@ -62,3 +62,17 @@ Randbedingung: TheArchitect ist deployed, aber es sind **noch keine echten Nutze
 ## Verwandt
 
 ADR-0003 (Conformance-IA, verlagert) · `CONTEXT.md` · Storyboard-Artifact · nächster Schritt: Pre-Flight „Slice 1 — Shell + Model-Station".
+
+## Addendum zu #7 — Slice-4-Konkretisierung (2026-07-17, gegrillt, THE-500)
+
+Die Grill-Session mit Matze schärfte #7 nach: das gefühlte Problem ist **nicht Performance** (kein gemessenes Limit; größtes reales Modell ~110 Elemente), sondern dass sich die Stationen **nur durch die Kamera** unterschieden — gleiche Boxen, gleiches Modell, anderes Stativ. Beschlossen:
+
+- **Semantisches LOD = LOD nach WICHTIGKEIT, nicht nach Distanz.** Eine pure Funktion `stationSalience(element, station) → [0..1]` aus bestehenden Phasen-Daten; einheitlicher Ausdruck (salient = voll/Label/Pop; nicht-salient rezediert auf einen Floor, nie 0).
+- **Wichtig pro Station (tunebare Defaults):** Vision → Motivation/Strategy · Model → volle Detailtiefe (Zuhause) · Explore → Deckungslücken · Govern → Policy-Verletzungen · Plan → Roadmap/Kosten · Track → Änderung über Plateaus.
+- **Hybrid statt Voll-Metamorphose:** Rückgrat = Re-dress (Boxen bleiben, Emphasis wandert); **Track = echter Re-form** (bestehender PlateauRenderer, station-getrieben, nur bei vorhandenen Plateau-Snapshots); **Explore/Govern = Re-form-Gefühl** (Boxen rezedieren hart hinter ComplianceGlow/Verletzungs-Salience). Kein Vertex-Morph (Render-Zweige teilen keine Geometrie — Follow-up).
+- **Bewegung:** Cross-Fade/Dissolve pro Node (imperativ im Frame-Loop), getaktet mit den Zwei-Tempi aus #8 (kinematisch beim ersten Erreichen, instant danach, reduced-motion immer instant).
+- **Daten-Fallback:** fehlen die Phasen-Daten → volle Re-dress-Ansicht + dezenter Hinweis; nie ein leerer Re-form.
+- **Umkehrbarkeit:** „Show all detail"-Toggle (⌘K) flacht die Salience überall ab.
+- **Klassik byte-identisch:** Salience feuert nur bei aktiver Station (`journeyStation`-Signal, v2-only).
+
+Das große Zoom-Aggregations-LOD (Elemente zu Gruppen clustern, THE-23/THE-58) bleibt ein eigenes Feature; Slice 4 legt das Station-Signal + Salience-Plumbing, das es wiederverwendet.
