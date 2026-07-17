@@ -6,6 +6,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useViewPositions } from '../../hooks/useViewPositions';
+import { useStationSalience } from '../../hooks/useStationSalience';
 
 const CONNECTION_COLORS: Record<string, string> = {
   depends_on: '#ef4444',
@@ -95,6 +96,7 @@ export default function ConnectionLines() {
   const xrayPositions = useXRayStore((s) => s.xrayPositions);
 
   const { positions: viewPositions, visibleElementIds } = useViewPositions();
+  const salience = useStationSalience();
 
   const criticalPathSet = useMemo(() => new Set(criticalPath), [criticalPath]);
 
@@ -275,6 +277,13 @@ export default function ConnectionLines() {
           lineWidth = isSelected ? 3 : isHighlighted ? 2 : 1.5;
           opacity = isSelected ? 1 : isHighlighted ? 0.8 : 0.4;
           showParticles = isHighlighted || isSelected;
+        }
+
+        // Station-adaptive salience (THE-500): dim by the weaker endpoint. Skipped
+        // under X-Ray, which already owns opacity. Inert in classic (map is all-1).
+        if (!isXRayActive) {
+          const edgeSalience = Math.min(salience.get(conn.sourceId) ?? 1, salience.get(conn.targetId) ?? 1);
+          opacity = opacity * edgeSalience;
         }
 
         return (
