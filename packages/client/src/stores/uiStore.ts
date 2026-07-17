@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { ArchitectureLayer } from '@thearchitect/shared';
 import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
 import { type DockSide, loadSheetWidth, saveSheetWidth, loadSheetDock, saveSheetDock } from '../components/journey/sheetPrefs';
+import type { StationKey } from '../components/journey/stations';
 
 export type ViewMode = '3d' | '2d-topdown' | 'layer';
 type SidebarPanel = 'envision' | 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
@@ -43,6 +44,12 @@ interface UIState {
   // Sheet container width/dock
   sheetWidth: number;
   sheetDock: DockSide;
+  // v2 station-adaptive LOD (THE-500) — transient, v2-only
+  journeyStation: StationKey | null;
+  salienceInstant: boolean;
+  salienceOverride: boolean;
+  setJourneyStation: (s: StationKey | null, instant: boolean) => void;
+  toggleSalienceOverride: () => void;
 
   setViewMode: (mode: ViewMode) => void;
   setFocusedLayer: (layer: ArchitectureLayer) => void;
@@ -106,6 +113,9 @@ export const useUIStore = create<UIState>((set) => ({
   complianceOverlaySection: 'pipeline',
   showPolicyBoard: true,
   highlightedField: null,
+  journeyStation: null,
+  salienceInstant: true,
+  salienceOverride: false,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setFocusedLayer: (layer) => set({ focusedLayer: layer }),
@@ -174,4 +184,6 @@ export const useUIStore = create<UIState>((set) => ({
     saveSheetDock(next);
     return { sheetDock: next };
   }),
+  setJourneyStation: (s, instant) => set({ journeyStation: s, salienceInstant: instant }),
+  toggleSalienceOverride: () => set((st) => ({ salienceOverride: !st.salienceOverride })),
 }));

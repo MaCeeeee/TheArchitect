@@ -57,6 +57,8 @@ export default function JourneyShell() {
     // Two tempi (ADR-0005 #8): cinematic only on the FIRST arrival at this
     // station in this project; instant afterwards. Reduced motion always instant.
     const tempo = projectId ? decideTempo(projectId, station) : 'cinematic';
+    // Station-adaptive LOD (THE-500): the salience transition rides the same tempo.
+    useUIStore.getState().setJourneyStation(station, tempo === 'instant');
     flyToStation(station, elements, {
       sheetOffsetPx: sheetShown ? ui.sheetWidth : 0,
       sheetDock: ui.sheetDock,
@@ -86,6 +88,11 @@ export default function JourneyShell() {
       setCommandMenuOpen(false);
     };
   }, [setCommandMenuOpen]);
+
+  // Station-adaptive LOD (THE-500): journeyStation is transient v2-only shell
+  // state — clear it on unmount so classic UI never inherits a stale station
+  // (salience must be inert there, mirroring the THE-494 stale-flag reset).
+  useEffect(() => () => { useUIStore.getState().setJourneyStation(null, true); }, []);
 
   // Conformance stations show the coverage heatmap as "results in the World" —
   // but only when the project actually has coverage data. An unassessed project
