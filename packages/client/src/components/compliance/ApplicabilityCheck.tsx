@@ -168,6 +168,15 @@ export default function ApplicabilityCheck() {
   };
 
   const signalById = new Map((report?.signals ?? []).map((s) => [s.id, s]));
+  // AC-4 (Fix 1): element-id → name resolution for the corpus drilldown. The
+  // report carries no element map, but every signal's evidence names its
+  // matched elements — one pass builds the lookup (pattern: signalById).
+  const elementNameById = new Map<string, string>();
+  for (const s of report?.signals ?? []) {
+    for (const e of s.evidence) {
+      if (e.elementId && !elementNameById.has(e.elementId)) elementNameById.set(e.elementId, e.name);
+    }
+  }
   const indicated = (report?.assessments ?? []).filter((a) => a.verdict !== 'not_indicated');
   const notIndicated = (report?.assessments ?? []).filter((a) => a.verdict === 'not_indicated');
 
@@ -303,25 +312,34 @@ export default function ApplicabilityCheck() {
                 <p className="mt-1 text-xs text-[var(--text-secondary)]">{a.corpus.reasoning}</p>
                 {a.corpus.keyParagraphs.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {a.corpus.keyParagraphs.map(k => (
+                    {/* AC-4 (Fix 1): chip text = paragraph title (fallback: raw key for
+                        legacy findings without details), tooltip = regulationKey. */}
+                    {(
+                      a.corpus.keyParagraphDetails?.length
+                        ? a.corpus.keyParagraphDetails
+                        : a.corpus.keyParagraphs.map(k => ({ regulationKey: k, title: k }))
+                    ).map(d => (
                       <span
-                        key={k}
-                        title={k}
+                        key={d.regulationKey}
+                        title={d.regulationKey}
                         className="rounded bg-[var(--surface-base)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
                       >
-                        {k}
+                        {d.title}
                       </span>
                     ))}
                   </div>
                 )}
                 {a.corpus.elementIds.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {/* AC-4 (Fix 1): resolve element ids to names via the report's
+                        signal evidence where possible; fallback: raw id. */}
                     {a.corpus.elementIds.map(id => (
                       <span
                         key={id}
+                        title={id}
                         className="rounded bg-[var(--surface-base)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
                       >
-                        {id}
+                        {elementNameById.get(id) ?? id}
                       </span>
                     ))}
                   </div>

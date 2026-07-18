@@ -63,4 +63,10 @@ describe('judgeCandidate', () => {
     await judgeCandidate(args); await judgeCandidate(args);
     expect(create).toHaveBeenCalledTimes(1);
   });
+
+  it('AC-4 (Slice-2b Fix 1): keyParagraphDetails werden aus den topHits-Titeln abgeleitet', async () => {
+    const client = fakeClient({ family: 'ai-act', applies: true, confidence: 0.9, reasoning: 'AI system', elementIds: [], keyParagraphs: ['ai-act-en:5'] });
+    const v = await judgeCandidate({ profileText: 'p-details', profileElements, candidate, projectId: 'p1', corpusVersionHash: 'H', anthropicClient: client });
+    expect(v.keyParagraphDetails).toEqual([{ regulationKey: 'ai-act-en:5', title: 'Art 5' }]);
+  });
 });

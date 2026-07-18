@@ -182,6 +182,16 @@ describe('mergeApplicability', () => {
     expect(a!.corpus!.corpusVersionHash).toBe('H-123');
   });
 
+  it('corpus block passes keyParagraphDetails through (AC-4, Fix 1) — undefined for legacy findings without it', () => {
+    const stageA = stageAReport([]);
+    const details = [{ regulationKey: 'ai-act-en:5', title: 'Classification rules for high-risk AI systems' }];
+    const withDetails = finding({ family: 'ai-act', keyParagraphDetails: details });
+    const legacy = finding({ family: 'nis2', sources: ['nis2-en'] }); // persisted pre-Fix-1, no details
+    const merged = mergeApplicability(stageA, [withDetails, legacy], 'H');
+    expect(merged.assessments.find(x => x.ruleId === 'ai-act')!.corpus!.keyParagraphDetails).toEqual(details);
+    expect(merged.assessments.find(x => x.ruleId === 'nis2')!.corpus!.keyParagraphDetails).toBeUndefined();
+  });
+
   it('corpus-only WITH world state gets workId/availableInCorpus/inPipeline derived (Review-Fix 1 — otherwise AC-5 is unimplementable)', () => {
     const stageA = stageAReport([]);
     const f = finding({ family: 'ai-act', sources: ['ai-act-en'] });

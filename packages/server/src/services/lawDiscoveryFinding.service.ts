@@ -31,6 +31,10 @@ function toDiscoveryFinding(doc: ILawDiscoveryFinding): DiscoveryFinding {
     reasoning: doc.reasoning,
     elementIds: doc.elementIds,
     keyParagraphs: doc.keyParagraphs,
+    // AC-4 (Fix 1): additiv — Alt-Docs ohne das Feld liefern undefined (UI-Fallback: Key).
+    ...(doc.keyParagraphDetails?.length
+      ? { keyParagraphDetails: doc.keyParagraphDetails.map(d => ({ regulationKey: d.regulationKey, title: d.title })) }
+      : {}),
     retrievalScore: doc.retrievalScore,
     corpusVersionHash: doc.corpusVersionHash,
     judgeModel: doc.judgeModel,
@@ -74,6 +78,7 @@ export async function upsertFindings(
       reasoning: f.reasoning,
       elementIds: f.elementIds,
       keyParagraphs: f.keyParagraphs,
+      ...(f.keyParagraphDetails ? { keyParagraphDetails: f.keyParagraphDetails } : {}),
       retrievalScore: f.retrievalScore,
       judgeModel: f.judgeModel,
       status: 'auto',

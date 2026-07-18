@@ -47,6 +47,9 @@ function corpusBlock(finding: DiscoveryFinding, stale: boolean): NonNullable<Nor
     confidence: finding.confidence,
     reasoning: finding.reasoning,
     keyParagraphs: [...finding.keyParagraphs],
+    // AC-4 (Fix 1): Titel-Details durchreichen — Alt-Findings ohne das Feld
+    // bleiben undefined (UI-Fallback: roher regulationKey).
+    ...(finding.keyParagraphDetails ? { keyParagraphDetails: finding.keyParagraphDetails.map(d => ({ ...d })) } : {}),
     elementIds: [...finding.elementIds],
     sources: [...finding.sources],
     corpusVersionHash: finding.corpusVersionHash,

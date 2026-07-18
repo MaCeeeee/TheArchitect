@@ -41,8 +41,10 @@ import {
   calibrationSamplesFromOutcomes,
   bootstrapCI,
   mulberry32,
+  fBeta,
   type CaseOutcome,
   type ConfidenceInterval,
+  type PrfMetrics,
 } from './metrics';
 
 const REPORTS_DIR = path.join(__dirname, 'reports');
@@ -179,6 +181,57 @@ export function lossAttributionForCase(
   return { caseId, missedAtRetrieval, missedAtJudge, falsePositiveAtJudge };
 }
 
+/**
+ * AC-2 (Fix 3): das End-to-End-Outcome eines Cases nach der Judge-Stufe —
+ * mit der ECHTEN Judge-Confidence je Familie (nicht der Konstante 1), sonst
+ * sind Kalibrierung (ECE) und Confidence-Bands bedeutungslos.
+ */
+export function buildJudgePostOutcome(
+  caseId: string,
+  goldFamilies: string[],
+  judged: Map<string, { applies: boolean; confidence: number }>,
+): CaseOutcome {
+  return {
+    caseId,
+    source: 'discovery',
+    goldElementIds: goldFamilies,
+    predicted: [...judged.entries()]
+      .filter(([, v]) => v.applies)
+      .map(([family, v]) => ({ elementId: family, confidence: v.confidence })),
+  };
+}
+
+// ─── Per-Family-Breakdown (AC-2, Fix 2) ────────────────────────────
+
+/**
+ * P/R/F2 JE Gesetz (Familie) über alle Cases aggregiert — deckt auf, ob ein
+ * guter Gesamt-Recall einzelne Familien-Blindstellen versteckt (z. B. mdr
+ * nie gefunden, dsgvo überall). Familien-Universum = Gold ∪ Predicted.
+ */
+export function perFamilyBreakdown(outcomes: CaseOutcome[]): Record<string, PrfMetrics> {
+  const counts = new Map<string, { tp: number; fp: number; fn: number }>();
+  const bump = (family: string, key: 'tp' | 'fp' | 'fn') => {
+    const c = counts.get(family) ?? { tp: 0, fp: 0, fn: 0 };
+    c[key]++;
+    counts.set(family, c);
+  };
+  for (const o of outcomes) {
+    const gold = new Set(o.goldElementIds);
+    const predicted = new Set(o.predicted.map(p => p.elementId));
+    for (const f of predicted) bump(f, gold.has(f) ? 'tp' : 'fp');
+    for (const f of gold) {
+      if (!predicted.has(f)) bump(f, 'fn');
+    }
+  }
+  const result: Record<string, PrfMetrics> = {};
+  for (const [family, c] of [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    const precision = c.tp + c.fp === 0 ? 0 : c.tp / (c.tp + c.fp);
+    const recall = c.tp + c.fn === 0 ? 0 : c.tp / (c.tp + c.fn);
+    result[family] = { precision, recall, f2: fBeta(precision, recall, 2), tp: c.tp, fp: c.fp, fn: c.fn };
+  }
+  return result;
+}
+
 // ─── ruleLessGold-Recall (AC-7 Kern-Indikator) ─────────────────────
 
 export function ruleLessGoldRecall(outcomes: CaseOutcome[], ruleLessByCaseId: Map<string, string[]>): number | null {
@@ -286,6 +339,16 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     `| **ruleLessGold Recall** (Stage-A-blind families — the corpus value-add) | **${pct(ruleLessRecall)}** | — |`,
   );
   lines.push('');
+  // AC-2 (Fix 2): P/R JE Gesetz — deckt Familien-Blindstellen auf, die der
+  // Gesamt-Recall versteckt.
+  lines.push('### Per-family breakdown (retrieval)');
+  lines.push('');
+  lines.push('| Family | Precision | Recall | F2 | TP/FP/FN |');
+  lines.push('|---|---|---|---|---|');
+  for (const [family, m] of Object.entries(perFamilyBreakdown(retrievalOutcomes))) {
+    lines.push(`| ${family} | ${pct(m.precision)} | ${pct(m.recall)} | ${pct(m.f2)} | ${m.tp}/${m.fp}/${m.fn} |`);
+  }
+  lines.push('');
   lines.push('## DE/EN family consistency (AC-5)');
   lines.push('');
   if (args.familyIssues.length === 0) {
@@ -308,6 +371,15 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     lines.push(`| End-to-end Precision | ${pct(post.precision)} |`);
     lines.push(`| **End-to-end F2** | **${pct(post.f2)}** |`);
     lines.push(`| ECE (calibration) | ${ece.ece.toFixed(3)} |`);
+    lines.push('');
+    // AC-2 (Fix 2): per-family auch auf End-to-End-Ebene.
+    lines.push('### Per-family breakdown (end-to-end)');
+    lines.push('');
+    lines.push('| Family | Precision | Recall | F2 | TP/FP/FN |');
+    lines.push('|---|---|---|---|---|');
+    for (const [family, m] of Object.entries(perFamilyBreakdown(postOutcomes))) {
+      lines.push(`| ${family} | ${pct(m.precision)} | ${pct(m.recall)} | ${pct(m.f2)} | ${m.tp}/${m.fp}/${m.fn} |`);
+    }
     lines.push('');
     lines.push('### Loss attribution per case');
     lines.push('');
@@ -408,7 +480,8 @@ async function runJudgeStage(
 
   for (const c of golden.cases) {
     const candidates = perCaseCandidates.get(c.caseId) ?? [];
-    const judged = new Map<string, { applies: boolean }>();
+    // Fix 3 (AC-2): confidence wird MITGEFÜHRT — sie speist ECE/Bands im Report.
+    const judged = new Map<string, { applies: boolean; confidence: number }>();
     for (const candidate of candidates) {
       if (offline) {
         // No file-based judge cache shipped in this eval yet — offline runs skip
@@ -432,17 +505,12 @@ async function runJudgeStage(
       };
       const verdict = await judgeCandidate(args);
       callCount++;
-      judged.set(candidate.family, { applies: verdict.applies });
+      judged.set(candidate.family, { applies: verdict.applies, confidence: verdict.confidence });
     }
     const retrievalFamilies = (retrievalOutcomes.find(o => o.caseId === c.caseId)?.predicted ?? []).map(p => p.elementId);
     attributions.push(lossAttributionForCase(c.caseId, c.goldFamilies, retrievalFamilies, judged));
-    const postFamilies = [...judged.entries()].filter(([, v]) => v.applies).map(([f]) => f);
-    postOutcomes.push({
-      caseId: c.caseId,
-      source: 'discovery',
-      goldElementIds: c.goldFamilies,
-      predicted: postFamilies.map(f => ({ elementId: f, confidence: 1 })),
-    });
+    // Fix 3 (AC-2): echte Judge-Confidence im Post-Outcome (nicht Konstante 1).
+    postOutcomes.push(buildJudgePostOutcome(c.caseId, c.goldFamilies, judged));
   }
 
   return { postOutcomes, attributions, callCount, callWarningThreshold: golden.cases.length * 2 };
@@ -521,9 +589,16 @@ async function main(): Promise<void> {
         startedAt,
         topK: DEFAULT_TOP_K,
         overall: aggregateMetrics(retrievalOutcomes),
+        perFamily: perFamilyBreakdown(retrievalOutcomes),
         ruleLessGoldRecall: ruleLessGoldRecall(retrievalOutcomes, ruleLessByCaseId),
         familyIssues,
-        judge: judgeRun ? { callCount: judgeRun.callCount, overall: aggregateMetrics(judgeRun.postOutcomes) } : null,
+        judge: judgeRun
+          ? {
+              callCount: judgeRun.callCount,
+              overall: aggregateMetrics(judgeRun.postOutcomes),
+              perFamily: perFamilyBreakdown(judgeRun.postOutcomes),
+            }
+          : null,
         hyde: hydeRun ? { overall: aggregateMetrics(hydeRun.hydeOutcomes) } : null,
         retrievalOutcomes,
       },

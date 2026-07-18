@@ -242,6 +242,64 @@ describe('ApplicabilityCheck — Discover from corpus (UC-LAW-002 Slice-2b)', ()
     });
   });
 
+  describe('corpus drilldown — keyParagraph titles + element name resolution (AC-4, Fix 1)', () => {
+    test('renders paragraph chips with the title (tooltip = regulationKey) when keyParagraphDetails is present', async () => {
+      const a = bothAssessment({
+        corpus: {
+          ...bothAssessment().corpus,
+          keyParagraphDetails: [{ regulationKey: 'ai-act-en:5', title: 'Classification rules for high-risk AI systems' }],
+        },
+      });
+      mockApplicability([a], { enabled: true, corpusConfigured: true, providerConfigured: true });
+      renderCheck();
+      await waitFor(() => expect(screen.getByText('AI Act')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('AI Act'));
+
+      const chip = await screen.findByText('Classification rules for high-risk AI systems');
+      expect(chip).toHaveAttribute('title', 'ai-act-en:5');
+      expect(screen.queryByText('ai-act-en:5')).not.toBeInTheDocument(); // raw key not shown as chip text
+    });
+
+    test('legacy finding without keyParagraphDetails falls back to the raw regulationKey', async () => {
+      mockApplicability([bothAssessment()], { enabled: true, corpusConfigured: true, providerConfigured: true });
+      renderCheck();
+      await waitFor(() => expect(screen.getByText('AI Act')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('AI Act'));
+
+      expect(await screen.findByText('ai-act-en:5')).toBeInTheDocument();
+    });
+
+    test('element chips resolve ids to names via the report signal evidence, with id fallback', async () => {
+      const a = bothAssessment({
+        corpus: { ...bothAssessment().corpus, elementIds: ['e1', 'e-unknown'] },
+      });
+      const signals = [
+        {
+          id: 'ai-components',
+          label: 'AI components',
+          description: 'x',
+          detected: true,
+          matchCount: 1,
+          evidence: [{ kind: 'element', elementId: 'e1', name: 'CV Scoring Model', detail: 'matched "AI"' }],
+        },
+      ];
+      applicabilityMock.mockResolvedValue({
+        data: {
+          success: true,
+          data: { ...BASE_REPORT, signals, assessments: [a] },
+          discovery: { enabled: true, corpusConfigured: true, providerConfigured: true },
+        },
+      } as never);
+      renderCheck();
+      await waitFor(() => expect(screen.getByText('AI Act')).toBeInTheDocument());
+      fireEvent.click(screen.getByText('AI Act'));
+
+      expect(await screen.findByText('CV Scoring Model')).toBeInTheDocument(); // resolved name
+      expect(screen.getByText('e-unknown')).toBeInTheDocument(); // fallback: raw id
+      expect(screen.queryByText(/^e1$/)).not.toBeInTheDocument(); // raw id replaced by name
+    });
+  });
+
   describe('stale badge', () => {
     test('renders when corpus.stale is true', async () => {
       mockApplicability(
@@ -298,6 +356,24 @@ describe('ApplicabilityCheck — Discover from corpus (UC-LAW-002 Slice-2b)', ()
 
       await waitFor(() => expect(rejectMock).toHaveBeenCalledWith('p1', 'nis2', 'H2'));
       await waitFor(() => expect(screen.queryByText('nis2')).not.toBeInTheDocument());
+    });
+  });
+
+  describe('add to pipeline for confirmed corpus-only findings (AC-5, Review-Fix 1 / Fix 4)', () => {
+    test('confirmed corpus-only assessment with workId shows the Add-to-pipeline button and calls the adapter with the workId', async () => {
+      const addMock = vi.mocked(normsAPI.addToPipeline);
+      addMock.mockResolvedValue({ data: { success: true } } as never);
+      mockApplicability(
+        [corpusOnlyAssessment({ corpus: { ...corpusOnlyAssessment().corpus, status: 'confirmed' } })],
+        { enabled: true, corpusConfigured: true, providerConfigured: true },
+      );
+      renderCheck();
+      await waitFor(() => expect(screen.getByText('nis2')).toBeInTheDocument());
+
+      const addBtn = screen.getByRole('button', { name: /add to pipeline/i });
+      fireEvent.click(addBtn);
+
+      await waitFor(() => expect(addMock).toHaveBeenCalledWith('p1', 'corpus:nis2-en'));
     });
   });
 

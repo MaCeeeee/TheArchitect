@@ -16,7 +16,10 @@ import {
   ruleLessGoldRecall,
   bootstrapDeltaCI,
   buildMarkdownReport,
+  perFamilyBreakdown,
+  buildJudgePostOutcome,
 } from '../evals/runDiscoveryEval';
+import { precisionByConfidenceBand, expectedCalibrationError, calibrationSamplesFromOutcomes } from '../evals/metrics';
 import type { FixtureCorpus, DiscoveryGoldenSet } from '../evals/discoveryGolden';
 import type { DiscoveryCandidate } from '@thearchitect/shared';
 import type { CaseOutcome } from '../evals/metrics';
@@ -197,6 +200,83 @@ describe('bootstrapDeltaCI', () => {
     ];
     const ci = bootstrapDeltaCI(outcomes, outcomes, o => o.filter(x => x.predicted.length >= 0).length / (o.length || 1), 200, 7);
     expect(ci.lo).toBeCloseTo(ci.hi, 5);
+  });
+});
+
+describe('perFamilyBreakdown (AC-2, Fix 2)', () => {
+  it('aggregates TP/FP/FN per family across all cases', () => {
+    const outcomes: CaseOutcome[] = [
+      // c1: ai-act gold + predicted (TP for ai-act); dora predicted but not gold (FP for dora)
+      { caseId: 'c1', source: 'discovery', goldElementIds: ['ai-act'], predicted: [{ elementId: 'ai-act', confidence: 0.8 }, { elementId: 'dora', confidence: 0.4 }] },
+      // c2: ai-act gold but NOT predicted (FN for ai-act); dora gold + predicted (TP for dora)
+      { caseId: 'c2', source: 'discovery', goldElementIds: ['ai-act', 'dora'], predicted: [{ elementId: 'dora', confidence: 0.6 }] },
+    ];
+    const byFamily = perFamilyBreakdown(outcomes);
+    expect(byFamily['ai-act']).toMatchObject({ tp: 1, fp: 0, fn: 1 });
+    expect(byFamily['ai-act'].precision).toBeCloseTo(1);
+    expect(byFamily['ai-act'].recall).toBeCloseTo(0.5);
+    expect(byFamily['dora']).toMatchObject({ tp: 1, fp: 1, fn: 0 });
+    expect(byFamily['dora'].precision).toBeCloseTo(0.5);
+    expect(byFamily['dora'].recall).toBeCloseTo(1);
+  });
+
+  it('appears as a per-family table in the markdown report', () => {
+    const outcomes: CaseOutcome[] = [
+      { caseId: 'c1', source: 'discovery', goldElementIds: ['ai-act'], predicted: [{ elementId: 'ai-act', confidence: 0.8 }] },
+      { caseId: 'c2', source: 'discovery', goldElementIds: ['dora'], predicted: [] },
+    ];
+    const md = buildMarkdownReport({
+      golden: { version: 'v1', frozen: false, rubricRef: 'x', cases: [] },
+      startedAt: '2026-07-18T00:00:00.000Z',
+      topK: 60,
+      retrievalOutcomes: outcomes,
+      ruleLessByCaseId: new Map(),
+      familyIssues: [],
+      judgeRun: null,
+      hydeRun: null,
+    });
+    expect(md).toMatch(/per-family/i);
+    expect(md).toMatch(/\| ai-act \|/);
+    expect(md).toMatch(/\| dora \|/);
+  });
+});
+
+describe('buildJudgePostOutcome (AC-2, Fix 3 — real judge confidence, not the constant 1)', () => {
+  it('uses the judge confidence in the post outcome predictions', () => {
+    const judged = new Map([
+      ['ai-act', { applies: true, confidence: 0.9 }],
+      ['dora', { applies: true, confidence: 0.3 }],
+      ['nis2', { applies: false, confidence: 0.8 }], // applies:false → not predicted
+    ]);
+    const outcome = buildJudgePostOutcome('c1', ['ai-act'], judged);
+    expect(outcome.predicted).toEqual(
+      expect.arrayContaining([
+        { elementId: 'ai-act', confidence: 0.9 },
+        { elementId: 'dora', confidence: 0.3 },
+      ]),
+    );
+    expect(outcome.predicted).toHaveLength(2);
+  });
+
+  it('varying confidences flow into calibration: bands/ECE differ from the constant-1 encoding', () => {
+    // ai-act: correct at 0.9 · dora: wrong at 0.3.
+    const judged = new Map([
+      ['ai-act', { applies: true, confidence: 0.9 }],
+      ['dora', { applies: true, confidence: 0.3 }],
+    ]);
+    const outcomes = [buildJudgePostOutcome('c1', ['ai-act'], judged)];
+
+    const bands = precisionByConfidenceBand(outcomes);
+    // The 0.9–1.0 band holds exactly the one correct prediction; with the old
+    // constant-1 encoding BOTH predictions would land there (precision 0.5).
+    const topBand = bands.find(b => b.band === '0.9–1.0')!;
+    expect(topBand.predictions).toBe(1);
+    expect(topBand.precision).toBeCloseTo(1);
+
+    const ece = expectedCalibrationError(calibrationSamplesFromOutcomes(outcomes));
+    // Perfectly calibrated-ish: 0.9-confident correct (gap 0.1), 0.3-confident wrong (gap 0.3)
+    // → ECE = 0.5·0.1 + 0.5·0.3 = 0.2. Constant-1 would give 0.5·0 + 0.5·1 = 0.5.
+    expect(ece.ece).toBeCloseTo(0.2, 5);
   });
 });
 

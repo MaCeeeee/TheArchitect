@@ -214,6 +214,8 @@ export async function discoverAndJudge(
       reasoning: verdict.reasoning,
       elementIds: verdict.elementIds,
       keyParagraphs: verdict.keyParagraphs,
+      // AC-4 (Fix 1): Titel-Details mit persistieren (additiv).
+      ...(verdict.keyParagraphDetails ? { keyParagraphDetails: verdict.keyParagraphDetails } : {}),
       retrievalScore: candidate.score,
       corpusVersionHash,
       judgeModel: model,

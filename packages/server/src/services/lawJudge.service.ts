@@ -112,6 +112,19 @@ export function sanitizeLawJudgeResponse(
   };
 }
 
+/**
+ * AC-4 (Slice-2b Fix 1): Anzeige-Titel je keyParagraph aus den Kandidaten-
+ * topHits ableiten (`title` ist dort vorhanden). Additiv — Fallback bleibt
+ * der rohe regulationKey, falls ein Key wider Erwarten keinen Titel hat.
+ */
+export function buildKeyParagraphDetails(
+  keyParagraphs: string[],
+  topHits: Array<{ regulationKey: string; title: string }>,
+): Array<{ regulationKey: string; title: string }> {
+  const titleByKey = new Map(topHits.map(h => [h.regulationKey, h.title]));
+  return keyParagraphs.map(k => ({ regulationKey: k, title: titleByKey.get(k) ?? k }));
+}
+
 // ─── Cache (in-process, THE-462 AC-2) ────────────────────────────
 
 const judgeCache = new Map<string, LawJudgeVerdict>();
@@ -221,6 +234,8 @@ export async function judgeCandidate(args: JudgeCandidateArgs): Promise<LawJudge
     args.profileElements.map(e => e.id),
     args.candidate.topHits.map(h => h.regulationKey),
   );
+  // AC-4 (Slice-2b Fix 1): Titel je keyParagraph für die UI mitliefern.
+  sanitized.keyParagraphDetails = buildKeyParagraphDetails(sanitized.keyParagraphs, args.candidate.topHits);
 
   const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
 
