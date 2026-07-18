@@ -2,6 +2,9 @@
  * Norm-Routen (UC-CANON-001 / THE-390 P2) — die quellenagnostische Norm-Sicht.
  *
  * GET  /api/projects/:projectId/norms                     — alle Normen (Upload + Korpus)
+ * GET  /api/projects/:projectId/norms/applicability       — UC-LAW-001: Welche Gesetze
+ *      gelten für diese Architektur? Deterministischer Signal-Check über Elemente
+ *      (inkl. AI-Wizard/Blueprint-Provenienz) + Projekt-Kontext, mit Evidenz.
  * GET  /api/projects/:projectId/norms/:workId/mappings    — Mappings einer Norm
  * POST /api/projects/:projectId/norms/:workId/pipeline    — „Add to pipeline"-Adapter:
  *      legt den Pipeline-State für eine (Korpus-)Norm an + initialer Stats-Refresh.
@@ -17,6 +20,7 @@ import {
 } from '../services/norm.service';
 import { isCorpusConfigured } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
+import { buildApplicabilityReport } from '../services/regulationApplicability.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -45,6 +49,18 @@ router.get('/:projectId/norms', async (req, res) => {
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.list] failed');
     return res.status(500).json({ success: false, error: 'failed to list norms' });
+  }
+});
+
+// UC-LAW-001 — Anwendbarkeits-Radar. VOR den :workId-Routen registriert, damit
+// „applicability" nie als workId interpretiert wird (statische Segmente zuerst).
+router.get('/:projectId/norms/applicability', async (req, res) => {
+  try {
+    const report = await buildApplicabilityReport(req.params.projectId);
+    return res.json({ success: true, data: report });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.applicability] failed');
+    return res.status(500).json({ success: false, error: 'failed to assess applicability' });
   }
 });
 
