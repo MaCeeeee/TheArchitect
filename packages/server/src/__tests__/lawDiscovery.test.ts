@@ -22,6 +22,16 @@ describe('discoverCandidates', () => {
     expect(res.candidates.every(c => c.score >= 0 && c.score <= 1)).toBe(true);
   });
 
+  it('klemmt negative Qdrant-Cosine-Scores auf 0 (untere Klemme, AC-3)', async () => {
+    // Qdrant-Cosine ist roh ∈[-1,1]. Ein Kandidat mit ausschließlich negativen Scores
+    // ⇒ gewichteter Schnitt negativ ⇒ Math.max(0, ...) muss auf 0 klemmen.
+    mockSearch.mockResolvedValue([h('dora-en', '3', -0.5), h('dora-en', '4', -0.3)]);
+    const res = await discoverCandidates('p1');
+    const dora = res.candidates.find(c => c.family === 'dora');
+    expect(dora).toBeDefined();
+    expect(dora!.score).toBe(0); // ohne untere Klemme wäre er negativ
+  });
+
   it('unkonfigurierter Korpus ⇒ degraded, leere Kandidaten (kein Fehler)', async () => {
     mockConfigured.mockReturnValue(false);
     const res = await discoverCandidates('p1');

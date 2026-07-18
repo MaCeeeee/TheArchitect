@@ -38,27 +38,37 @@ export async function buildUseCaseProfile(projectId: string): Promise<UseCasePro
   // ACHTUNG: Feld heißt `detected` (ApplicabilitySignalResult), NICHT `triggered`.
   const signalHints = signals.filter(s => s.detected).map(s => s.id).sort();
 
-  // Stabile Sortierung: Layer asc (Gruppierung), dann Priorität desc, dann name asc (AC-1/AC-2).
-  const ordered = [...facts.elements].sort(
+  const header = facts.projectFields.map(f => `${f.name}: ${f.value}`).join('\n');
+  const hintLine = signalHints.length ? `signals: ${signalHints.join(', ')}` : '';
+  const budgetForElements = PROFILE_CHAR_BUDGET - header.length - hintLine.length - 2;
+
+  // PASS 1 — Auswahl (AC-2): WER überlebt, entscheidet die Priorität, NICHT der Layer.
+  // Sortiere ALLE Elemente nach priority() desc, dann name asc, und fülle das Budget in
+  // dieser Reihenfolge. So überlebt ein hochpriorisiertes (PII/Wizard) Element auch dann,
+  // wenn es in einem alphabetisch späteren Layer liegt als budget-fressende Filler.
+  const byPriority = [...facts.elements].sort(
+    (a, b) => priority(b) - priority(a) || a.name.localeCompare(b.name),
+  );
+  const selected: ElementFact[] = [];
+  let usedChars = 0;
+  let truncated = false;
+  for (const e of byPriority) {
+    const cost = elementLine(e).length + (selected.length ? 1 : 0); // +1 für den Zeilenumbruch
+    if (usedChars + cost > budgetForElements) { truncated = true; continue; }
+    selected.push(e);
+    usedChars += cost;
+  }
+
+  // PASS 2 — Rendering (AC-1): nur die Überlebenden, layer-gruppiert für den Ausgabetext
+  // (Layer asc, dann Priorität desc, dann name asc). Determinismus bleibt erhalten.
+  const rendered = [...selected].sort(
     (a, b) =>
       (a.layer ?? 'zzz').localeCompare(b.layer ?? 'zzz') ||
       priority(b) - priority(a) ||
       a.name.localeCompare(b.name),
   );
-
-  const header = facts.projectFields.map(f => `${f.name}: ${f.value}`).join('\n');
-  const hintLine = signalHints.length ? `signals: ${signalHints.join(', ')}` : '';
-
-  const lines: string[] = [];
-  let used = 0;
-  let truncated = false;
-  const budgetForElements = PROFILE_CHAR_BUDGET - header.length - hintLine.length - 2;
-  for (const e of ordered) {
-    const line = elementLine(e);
-    if (lines.join('\n').length + line.length + 1 > budgetForElements) { truncated = true; break; }
-    lines.push(line);
-    used += 1;
-  }
+  const lines = rendered.map(elementLine);
+  const used = selected.length;
 
   const text = [header, hintLine, ...lines].filter(Boolean).join('\n').slice(0, PROFILE_CHAR_BUDGET);
   return {

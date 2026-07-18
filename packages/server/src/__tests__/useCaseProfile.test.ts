@@ -41,9 +41,13 @@ describe('buildUseCaseProfile', () => {
     expect(p.text).toMatch(/\[business\]/);
   });
 
-  it('priorisiert PII/Wizard/hohe Sensitivity beim Kürzen', async () => {
-    const many = Array.from({ length: 200 }, (_, i) => ({ id: `e${i}`, name: `El${i}`, type: 'node', layer: 'technology', description: 'x'.repeat(50), fromWizard: false }));
-    many.push({ id: 'pii', name: 'PII Store', type: 'data-object', layer: 'application', description: 'personal', sensitivity: 'PII', fromWizard: true } as never);
+  it('priorisiert PII/Wizard/hohe Sensitivity beim Kürzen — auch über Layer-Grenzen (AC-2)', async () => {
+    // ADVERSARIAL: das PII/Wizard-Element liegt in einem alphabetisch SPÄTEREN Layer
+    // (`technology`) als der Filler (`application`). Bei layer-primärer Auswahl würde
+    // das Budget von den `application`-Fillern aufgebraucht und das PII-Element fiele weg.
+    // Zwei-Pass (Auswahl per Priorität, Rendering per Layer) muss es trotzdem behalten.
+    const many = Array.from({ length: 200 }, (_, i) => ({ id: `e${i}`, name: `El${i}`, type: 'node', layer: 'application', description: 'x'.repeat(50), fromWizard: false }));
+    many.push({ id: 'pii', name: 'PII Store', type: 'data-object', layer: 'technology', description: 'personal', sensitivity: 'PII', fromWizard: true } as never);
     mockFacts.mockResolvedValue(facts(many));
     mockSignals.mockReturnValue([]);
     const p = await buildUseCaseProfile('p1');

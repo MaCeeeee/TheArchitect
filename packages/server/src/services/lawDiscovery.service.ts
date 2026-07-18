@@ -8,7 +8,9 @@ import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
 import { isCorpusConfigured } from './corpusClient.service';
 
-const TOP_K = 60;
+// K (Retrieval-Breite) ist laufzeit-konfigurierbar (AC-2): Default 60, per
+// LAW_DISCOVERY_TOP_K override-bar — Tuning-Hook fürs Eval-Gate .6 (THE-465).
+const TOP_K = Number(process.env.LAW_DISCOVERY_TOP_K) || 60;
 const TOP_HITS_PER_CANDIDATE = 5;
 
 /** `ai-act-de` / `ai-act-en` → `ai-act` (Sprach-Familie, AC-4). */
