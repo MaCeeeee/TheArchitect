@@ -24,9 +24,11 @@ jest.mock('../services/corpusClient.service', () => ({ isCorpusConfigured: () =>
 
 const mockBuildReport = jest.fn();
 const mockLoadFacts = jest.fn();
+const mockLoadWorld = jest.fn();
 jest.mock('../services/regulationApplicability.service', () => ({
   buildApplicabilityReport: (...a: unknown[]) => mockBuildReport(...a),
   loadProjectFacts: (...a: unknown[]) => mockLoadFacts(...a),
+  loadNormWorldState: (...a: unknown[]) => mockLoadWorld(...a),
 }));
 
 const mockJudge = jest.fn();
@@ -95,6 +97,12 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     mockProfile.mockResolvedValue({ projectId: 'p1', text: 'profile text', signalHints: [], meta: { elementsUsed: 1, elementsTotal: 1, truncated: false, charBudget: 6000 } });
     mockLoadFacts.mockResolvedValue({ projectId: 'p1', elements: [{ id: 'e1', name: 'Auth', type: 'application_service', description: '', fromWizard: false, layer: 'application' }], projectFields: [] });
     mockBuildReport.mockResolvedValue(stageAReport);
+    mockLoadWorld.mockResolvedValue({
+      referencedCorpusSources: new Set(),
+      availableCorpusSources: new Set(),
+      pipelineNormIds: new Set(),
+      uploadTitles: [],
+    });
   });
 
   afterAll(() => {
@@ -185,6 +193,19 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     const a = report.assessments.find(x => x.ruleId === 'ai-act');
     expect(a).toBeDefined();                    // altes positives Finding bleibt sichtbar (Mensch entscheidet)
     expect(a!.corpus!.stale).toBe(true);        // aber als überholt markiert
+  });
+
+  it('(e) Graceful je Kandidat (Eval-Fund): wirft der Judge für EINEN Kandidaten, liefern die übrigen weiter', async () => {
+    mockSearch.mockResolvedValue([h('ai-act-en', '5', 0.9), h('dora-en', '3', 0.85)]);
+    mockJudge.mockImplementation(async (args: { candidate: { family: string } }) => {
+      if (args.candidate.family === 'dora') throw new Error('law-judge output invalid after 2 attempts: reasoning too long');
+      return { family: 'ai-act', applies: true, confidence: 0.8, reasoning: 'r', elementIds: [], keyParagraphs: [] };
+    });
+
+    const report = await discoverAndJudge('p1'); // darf NICHT werfen
+    expect(report.assessments.find(a => a.ruleId === 'ai-act')).toBeDefined();
+    const persisted = mockUpsert.mock.calls[0][1] as FakeFinding[];
+    expect(persisted.map(f => f.family)).toEqual(['ai-act']); // dora übersprungen, kein Finding
   });
 
   it('graceful degradation: kein Korpus-konfiguriert ⇒ reiner Stage-A-Report, kein Fehler', async () => {

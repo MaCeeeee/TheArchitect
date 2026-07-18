@@ -28,6 +28,8 @@ export interface ILawDiscoveryFinding extends Document {
   reasoning: string;
   elementIds: string[];
   keyParagraphs: string[];
+  /** Titel je keyParagraph (additiv, AC-4/Fix 1) — Alt-Docs ohne das Feld bleiben gültig. */
+  keyParagraphDetails?: Array<{ regulationKey: string; title: string }>;
   retrievalScore: number;
   corpusVersionHash: string;
   judgeModel: string;
@@ -74,6 +76,13 @@ const lawDiscoveryFindingSchema = new Schema<ILawDiscoveryFinding>(
     },
     elementIds: { type: [String], default: [] },
     keyParagraphs: { type: [String], default: [] },
+    // Additiv (AC-4/Fix 1): Anzeige-Titel je keyParagraph. Kein Migrationszwang —
+    // Alt-Docs ohne das Feld bleiben gültig (UI-Fallback: roher Key). `_id:false`,
+    // reine Wert-Objekte.
+    keyParagraphDetails: {
+      type: [new Schema({ regulationKey: { type: String, required: true }, title: { type: String, required: true } }, { _id: false })],
+      default: undefined,
+    },
     retrievalScore: {
       type: Number,
       required: true,

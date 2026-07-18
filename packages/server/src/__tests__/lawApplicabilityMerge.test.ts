@@ -7,8 +7,9 @@
  * Run: cd packages/server && npx jest src/__tests__/lawApplicabilityMerge.test.ts --verbose
  */
 import type { ApplicabilityReport, DiscoveryFinding, NormApplicabilityAssessment } from '@thearchitect/shared';
-import { verdictFromScore } from '@thearchitect/shared';
+import { verdictFromScore, deriveNormWorkId } from '@thearchitect/shared';
 import { mergeApplicability } from '../services/lawApplicabilityMerge.service';
+import type { NormWorldState } from '../services/regulationApplicability.service';
 
 function assessment(overrides: Partial<NormApplicabilityAssessment> = {}): NormApplicabilityAssessment {
   return {
@@ -169,5 +170,51 @@ describe('mergeApplicability', () => {
     ]);
     const merged = mergeApplicability(stageA, [], undefined);
     expect(merged.assessments.map(a => a.label)).toEqual(['Alpha', 'Beta']);
+  });
+
+  // ─── UC-LAW-002 Slice-2b Review-Fix 1 (Task 3a) — corpusVersionHash + world-based workId/inPipeline ───
+
+  it('corpus block carries corpusVersionHash from the finding', () => {
+    const stageA = stageAReport([]);
+    const f = finding({ family: 'ai-act', corpusVersionHash: 'H-123' });
+    const merged = mergeApplicability(stageA, [f], 'H-123');
+    const a = merged.assessments.find(x => x.ruleId === 'ai-act');
+    expect(a!.corpus!.corpusVersionHash).toBe('H-123');
+  });
+
+  it('corpus block passes keyParagraphDetails through (AC-4, Fix 1) — undefined for legacy findings without it', () => {
+    const stageA = stageAReport([]);
+    const details = [{ regulationKey: 'ai-act-en:5', title: 'Classification rules for high-risk AI systems' }];
+    const withDetails = finding({ family: 'ai-act', keyParagraphDetails: details });
+    const legacy = finding({ family: 'nis2', sources: ['nis2-en'] }); // persisted pre-Fix-1, no details
+    const merged = mergeApplicability(stageA, [withDetails, legacy], 'H');
+    expect(merged.assessments.find(x => x.ruleId === 'ai-act')!.corpus!.keyParagraphDetails).toEqual(details);
+    expect(merged.assessments.find(x => x.ruleId === 'nis2')!.corpus!.keyParagraphDetails).toBeUndefined();
+  });
+
+  it('corpus-only WITH world state gets workId/availableInCorpus/inPipeline derived (Review-Fix 1 — otherwise AC-5 is unimplementable)', () => {
+    const stageA = stageAReport([]);
+    const f = finding({ family: 'ai-act', sources: ['ai-act-en'] });
+    const world: NormWorldState = {
+      referencedCorpusSources: new Set(),
+      availableCorpusSources: new Set(['ai-act-en']),
+      pipelineNormIds: new Set([deriveNormWorkId('corpus', 'ai-act-en')]),
+      uploadTitles: [],
+    };
+    const merged = mergeApplicability(stageA, [f], 'H', undefined, world);
+    const a = merged.assessments.find(x => x.ruleId === 'ai-act');
+    expect(a!.workId).toBe(deriveNormWorkId('corpus', 'ai-act-en'));
+    expect(a!.availableInCorpus).toBe(true);
+    expect(a!.inPipeline).toBe(true);
+  });
+
+  it('corpus-only WITHOUT world state keeps prior behaviour (workId undefined, no crash)', () => {
+    const stageA = stageAReport([]);
+    const f = finding({ family: 'ai-act', sources: ['ai-act-en'] });
+    const merged = mergeApplicability(stageA, [f], 'H');
+    const a = merged.assessments.find(x => x.ruleId === 'ai-act');
+    expect(a!.workId).toBeUndefined();
+    expect(a!.availableInCorpus).toBe(true);
+    expect(a!.inPipeline).toBe(false);
   });
 });

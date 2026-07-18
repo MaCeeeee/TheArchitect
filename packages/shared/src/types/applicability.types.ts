@@ -11,7 +11,7 @@
 //
 // WICHTIG: Entscheidungsunterstützung, KEINE Rechtsberatung (siehe `disclaimer`).
 
-import type { ApplicabilityProvenance, FindingStatus } from './law-discovery.types';
+import type { ApplicabilityProvenance, FindingStatus, KeyParagraphDetail } from './law-discovery.types';
 
 /** Wie sicher ist die Anwendbarkeit? Abgeleitet aus dem Score (noisy-OR). */
 export type ApplicabilityVerdict =
@@ -98,8 +98,12 @@ export interface NormApplicabilityAssessment {
     confidence: number;      // ∈ [0,1]
     reasoning: string;
     keyParagraphs: string[];
+    /** Titel je keyParagraph (additiv, AC-4) — Alt-Findings ohne dieses Feld: UI zeigt den Key. */
+    keyParagraphDetails?: KeyParagraphDetail[];
     elementIds: string[];
     sources: string[];
+    /** Evidence-Set-Hash des Befunds — Body-Adressierung für confirm/reject (UC-LAW-002 Slice-2b). */
+    corpusVersionHash: string;
     /**
      * True, wenn das Evidence-Set des Befunds NICHT mehr dem aktuellen
      * Retrieval-Stand der Familie entspricht (Paragraphen-Version geändert

@@ -7,7 +7,7 @@
  * straight into the compliance pipeline (same adapter as RegulationsPanel).
  * Decision support, not legal advice — the disclaimer is always visible.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Radar,
@@ -20,12 +20,15 @@ import {
   RefreshCw,
   Sparkles,
   Scale,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type {
   ApplicabilityReport,
   NormApplicabilityAssessment,
   ApplicabilityVerdict,
+  DiscoveryAvailability,
+  DiscoveryFinding,
 } from '@thearchitect/shared';
 import { normsAPI } from '../../services/api';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -47,6 +50,14 @@ export default function ApplicabilityCheck() {
   const [showNotIndicated, setShowNotIndicated] = useState(false);
   const [addingId, setAddingId] = useState<string | null>(null);
 
+  // UC-LAW-002 Slice-2b (THE-464) — "Discover from corpus" additive state.
+  const [discovery, setDiscovery] = useState<DiscoveryAvailability | null>(null);
+  const [discovering, setDiscovering] = useState(false);
+  const [decidingKey, setDecidingKey] = useState<string | null>(null);
+  const [showRejected, setShowRejected] = useState(false);
+  const [rejectedFindings, setRejectedFindings] = useState<DiscoveryFinding[] | null>(null);
+  const [loadingRejected, setLoadingRejected] = useState(false);
+
   const load = useCallback(async () => {
     if (!projectId) return;
     setLoading(true);
@@ -54,6 +65,7 @@ export default function ApplicabilityCheck() {
     try {
       const { data } = await normsAPI.applicability(projectId);
       setReport(data?.data ?? null);
+      setDiscovery(data?.discovery ?? null);
     } catch {
       setError('Failed to assess applicability');
     } finally {
@@ -64,6 +76,82 @@ export default function ApplicabilityCheck() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const discoverFromCorpus = async () => {
+    if (!projectId) return;
+    setDiscovering(true);
+    try {
+      const { data } = await normsAPI.discover(projectId);
+      setReport(data?.data ?? null);
+      toast.success('Corpus discovery complete');
+    } catch {
+      toast.error('Failed to discover from corpus');
+    } finally {
+      setDiscovering(false);
+    }
+  };
+
+  const decisionKey = (a: NormApplicabilityAssessment) => `${a.ruleId}:${a.corpus?.corpusVersionHash ?? ''}`;
+
+  const decideFinding = async (a: NormApplicabilityAssessment, action: 'confirm' | 'reject') => {
+    if (!projectId || !a.corpus) return;
+    const key = decisionKey(a);
+    setDecidingKey(key);
+    try {
+      if (action === 'confirm') {
+        await normsAPI.confirmFinding(projectId, a.ruleId, a.corpus.corpusVersionHash);
+        setReport(prev =>
+          prev
+            ? {
+                ...prev,
+                assessments: prev.assessments.map(x =>
+                  x.ruleId === a.ruleId && x.corpus ? { ...x, corpus: { ...x.corpus, status: 'confirmed' } } : x,
+                ),
+              }
+            : prev,
+        );
+        toast.success(`${a.label} confirmed`);
+      } else {
+        await normsAPI.rejectFinding(projectId, a.ruleId, a.corpus.corpusVersionHash);
+        setReport(prev => {
+          if (!prev) return prev;
+          if (a.provenance === 'corpus') {
+            // The assessment exists ONLY because of this judge finding — drop it entirely.
+            return { ...prev, assessments: prev.assessments.filter(x => x.ruleId !== a.ruleId) };
+          }
+          // provenance 'both' — the authoritative Stage-A verdict stays; only the corpus block goes.
+          return {
+            ...prev,
+            assessments: prev.assessments.map(x =>
+              x.ruleId === a.ruleId ? { ...x, provenance: 'rules' as const, corpus: undefined } : x,
+            ),
+          };
+        });
+        toast.success(`${a.label} rejected`);
+      }
+    } catch {
+      toast.error(`Failed to ${action} ${a.label}`);
+    } finally {
+      setDecidingKey(null);
+    }
+  };
+
+  const toggleRejected = async () => {
+    const next = !showRejected;
+    setShowRejected(next);
+    if (next && rejectedFindings === null && projectId) {
+      setLoadingRejected(true);
+      try {
+        const { data } = await normsAPI.discoveryFindings(projectId);
+        const all = (data?.data ?? []) as DiscoveryFinding[];
+        setRejectedFindings(all.filter(f => f.status === 'rejected'));
+      } catch {
+        setRejectedFindings([]);
+      } finally {
+        setLoadingRejected(false);
+      }
+    }
+  };
 
   const addToPipeline = async (a: NormApplicabilityAssessment) => {
     if (!projectId || !a.workId) return;
@@ -79,7 +167,27 @@ export default function ApplicabilityCheck() {
     }
   };
 
-  const signalById = new Map((report?.signals ?? []).map((s) => [s.id, s]));
+  // Quality-Fix: shared busy lock — load/discover/confirm/reject/add all write
+  // `report`; without a mutual lock a late response can visibly roll back a
+  // newer state (e.g. Re-check overwriting a just-finished discover run).
+  const busy = loading || discovering || decidingKey !== null || addingId !== null;
+
+  const signalById = useMemo(
+    () => new Map((report?.signals ?? []).map((s) => [s.id, s])),
+    [report],
+  );
+  // AC-4 (Fix 1): element-id → name resolution for the corpus drilldown. The
+  // report carries no element map, but every signal's evidence names its
+  // matched elements — one pass builds the lookup (pattern: signalById).
+  const elementNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of report?.signals ?? []) {
+      for (const e of s.evidence) {
+        if (e.elementId && !m.has(e.elementId)) m.set(e.elementId, e.name);
+      }
+    }
+    return m;
+  }, [report]);
   const indicated = (report?.assessments ?? []).filter((a) => a.verdict !== 'not_indicated');
   const notIndicated = (report?.assessments ?? []).filter((a) => a.verdict === 'not_indicated');
 
@@ -109,6 +217,29 @@ export default function ApplicabilityCheck() {
                 {a.referenced && (
                   <span className="shrink-0 text-[10px] text-emerald-400">referenced</span>
                 )}
+                {(a.provenance === 'both' || a.provenance === 'corpus') && (
+                  <span className="shrink-0 rounded border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#7c3aed]">
+                    {a.provenance === 'both' ? 'rules+corpus' : 'corpus'}
+                  </span>
+                )}
+                {a.corpus?.status === 'auto' && (
+                  <span className="shrink-0 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+                    auto — needs review
+                  </span>
+                )}
+                {a.corpus?.status === 'confirmed' && (
+                  <span className="shrink-0 rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-400">
+                    confirmed
+                  </span>
+                )}
+                {a.corpus?.stale && (
+                  <span
+                    title="The corpus paragraphs behind this finding changed since it was judged — re-run discovery."
+                    className="shrink-0 rounded border border-slate-500/40 bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-medium text-slate-400"
+                  >
+                    stale evidence
+                  </span>
+                )}
               </div>
               <div className="mt-0.5 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
                 {a.kind.replace(/_/g, ' ')} · {a.jurisdiction} · {a.bindingness.replace(/-/g, ' ')}
@@ -130,7 +261,7 @@ export default function ApplicabilityCheck() {
           ) : canAdd ? (
             <button
               onClick={() => void addToPipeline(a)}
-              disabled={addingId === a.ruleId}
+              disabled={addingId === a.ruleId || busy}
               className="flex shrink-0 items-center gap-1.5 rounded border border-[#7c3aed] px-2.5 py-1 text-xs text-[#7c3aed] transition hover:bg-[#7c3aed] hover:text-white disabled:opacity-50"
             >
               {addingId === a.ruleId ? (
@@ -181,6 +312,72 @@ export default function ApplicabilityCheck() {
                 </div>
               );
             })}
+            {a.corpus && (
+              <div className="rounded border border-[#7c3aed]/30 bg-[#7c3aed]/5 p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-medium text-[#7c3aed]">Corpus evidence</span>
+                  <span className="text-[10px] text-[var(--text-tertiary)]">
+                    AI judge confidence: {Math.round(a.corpus.confidence * 100)}% — separate from the deterministic score
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-[var(--text-secondary)]">{a.corpus.reasoning}</p>
+                {a.corpus.keyParagraphs.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {/* AC-4 (Fix 1): chip text = paragraph title (fallback: raw key for
+                        legacy findings without details), tooltip = regulationKey. */}
+                    {(
+                      a.corpus.keyParagraphDetails?.length
+                        ? a.corpus.keyParagraphDetails
+                        : a.corpus.keyParagraphs.map(k => ({ regulationKey: k, title: k }))
+                    ).map(d => (
+                      <span
+                        key={d.regulationKey}
+                        title={d.regulationKey}
+                        className="rounded bg-[var(--surface-base)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+                      >
+                        {d.title}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {a.corpus.elementIds.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {/* AC-4 (Fix 1): resolve element ids to names via the report's
+                        signal evidence where possible; fallback: raw id. */}
+                    {a.corpus.elementIds.map(id => (
+                      <span
+                        key={id}
+                        title={id}
+                        className="rounded bg-[var(--surface-base)] px-1.5 py-0.5 text-[10px] text-[var(--text-secondary)]"
+                      >
+                        {elementNameById.get(id) ?? id}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1.5 text-[10px] text-[var(--text-tertiary)]">
+                  Sources: {a.corpus.sources.join(', ')}
+                </p>
+                {a.corpus.status === 'auto' && (
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      onClick={() => void decideFinding(a, 'confirm')}
+                      disabled={busy}
+                      className="flex items-center gap-1 rounded border border-emerald-500/40 px-2 py-1 text-[10px] text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={11} /> Confirm
+                    </button>
+                    <button
+                      onClick={() => void decideFinding(a, 'reject')}
+                      disabled={busy}
+                      className="flex items-center gap-1 rounded border border-red-500/40 px-2 py-1 text-[10px] text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
+                    >
+                      <X size={11} /> Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             {a.baselineNote && (
               <p className="text-[10px] italic text-[var(--text-tertiary)]">{a.baselineNote}</p>
             )}
@@ -202,19 +399,43 @@ export default function ApplicabilityCheck() {
             Which laws apply to this architecture?
           </h3>
         </div>
-        <button
-          onClick={() => void load()}
-          disabled={loading}
-          title="Re-run check"
-          className="flex items-center gap-1 rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-tertiary)] transition hover:text-[var(--text-primary)] disabled:opacity-50"
-        >
-          <RefreshCw size={11} className={loading ? 'animate-spin' : ''} /> Re-check
-        </button>
+        <div className="flex items-center gap-2">
+          {discovery?.enabled && (
+            <button
+              onClick={() => void discoverFromCorpus()}
+              disabled={busy || !discovery.corpusConfigured || !discovery.providerConfigured}
+              title={
+                !discovery.corpusConfigured
+                  ? 'Corpus not connected'
+                  : !discovery.providerConfigured
+                    ? 'No AI provider key configured'
+                    : 'Runs an LLM analysis over the law corpus — provider costs apply.'
+              }
+              className="flex items-center gap-1 rounded border border-[#7c3aed]/40 px-2 py-1 text-[10px] text-[#7c3aed] transition hover:bg-[#7c3aed]/10 disabled:opacity-50"
+            >
+              {discovering ? <Loader2 size={11} className="animate-spin" /> : <Sparkles size={11} />}
+              Discover from corpus
+            </button>
+          )}
+          <button
+            onClick={() => void load()}
+            disabled={busy}
+            title="Re-run check"
+            className="flex items-center gap-1 rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-tertiary)] transition hover:text-[var(--text-primary)] disabled:opacity-50"
+          >
+            <RefreshCw size={11} className={loading ? 'animate-spin' : ''} /> Re-check
+          </button>
+        </div>
       </div>
-      <p className="mb-4 text-xs text-[var(--text-tertiary)]">
+      <p className={discovery?.enabled ? 'mb-1 text-xs text-[var(--text-tertiary)]' : 'mb-4 text-xs text-[var(--text-tertiary)]'}>
         Deterministic check over your architecture elements (including the ones generated by the
         AI wizard) and project context — each verdict carries its evidence.
       </p>
+      {discovery?.enabled && (
+        <p className="mb-4 text-[10px] text-[var(--text-tertiary)]">
+          Runs an LLM analysis over the law corpus — provider costs apply.
+        </p>
+      )}
 
       {loading && (
         <div className="flex items-center gap-2 py-6 text-xs text-[var(--text-tertiary)]">
@@ -266,6 +487,45 @@ export default function ApplicabilityCheck() {
             </div>
           )}
 
+          {discovery?.enabled && (
+            <div className="mt-3">
+              <button
+                onClick={() => void toggleRejected()}
+                className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+              >
+                {showRejected ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+                Show rejected corpus findings{rejectedFindings ? ` (${rejectedFindings.length})` : ''}
+              </button>
+              {showRejected && (
+                <>
+                  {loadingRejected && (
+                    <div className="flex items-center gap-2 py-2 text-[10px] text-[var(--text-tertiary)]">
+                      <Loader2 size={11} className="animate-spin" /> Loading…
+                    </div>
+                  )}
+                  {!loadingRejected && (rejectedFindings ?? []).length === 0 && (
+                    <p className="py-2 text-[10px] text-[var(--text-tertiary)]">No rejected findings.</p>
+                  )}
+                  {!loadingRejected && (rejectedFindings ?? []).length > 0 && (
+                    <ul className="mt-1 divide-y divide-[var(--border-subtle)] opacity-60">
+                      {(rejectedFindings ?? []).map(f => (
+                        <li key={`${f.family}-${f.corpusVersionHash}`} className="py-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[var(--text-secondary)]">{f.family}</span>
+                            <span className="rounded border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[10px] text-red-400">
+                              rejected
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-[10px] text-[var(--text-tertiary)]">{f.reasoning}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--border-subtle)] pt-3 text-[10px] text-[var(--text-tertiary)]">
             <span>
               {report.elementCount} elements analyzed
@@ -279,6 +539,12 @@ export default function ApplicabilityCheck() {
             </span>
             <span>Assumed jurisdictions: {report.assumedJurisdictions.join(', ')}</span>
           </div>
+          {report.coverage && (
+            <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+              Stage A: {report.coverage.stageARuleCount} rules · Stage B: {report.coverage.stageBCorpusCount} corpus laws
+              {report.coverage.corpusVersion ? ` · corpus state ${report.coverage.corpusVersion.slice(0, 8)}` : ''}
+            </p>
+          )}
           <p className="mt-2 flex items-start gap-1.5 text-[10px] text-[var(--text-tertiary)]">
             <Scale size={11} className="mt-0.5 shrink-0" />
             {report.disclaimer}

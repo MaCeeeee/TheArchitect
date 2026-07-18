@@ -12,11 +12,12 @@ import type { ApplicabilityReport, CorpusHit, DiscoveryCandidate, DiscoveryResul
 import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
 import { isCorpusConfigured } from './corpusClient.service';
-import { buildApplicabilityReport, loadProjectFacts } from './regulationApplicability.service';
+import { buildApplicabilityReport, loadProjectFacts, loadNormWorldState } from './regulationApplicability.service';
 import { judgeCandidate } from './lawJudge.service';
 import { upsertFindings, findExisting, listFindings, type UpsertFindingInput } from './lawDiscoveryFinding.service';
 import { mergeApplicability } from './lawApplicabilityMerge.service';
 import { computeVersionHash } from '../utils/regulationVersion';
+import { log } from '../config/logger';
 
 // K (Retrieval-Breite) ist laufzeit-konfigurierbar (AC-2): Default 60, per
 // LAW_DISCOVERY_TOP_K override-bar — Tuning-Hook fürs Eval-Gate .6 (THE-465).
@@ -28,16 +29,16 @@ export function toFamily(source: string): string {
   return source.replace(/-(de|en)$/i, '');
 }
 
-export async function discoverCandidates(projectId: string): Promise<DiscoveryResult> {
-  if (!isCorpusConfigured()) {
-    return { projectId, corpusConfigured: false, candidates: [], degraded: 'corpus not configured' };
-  }
-  const profile = await buildUseCaseProfile(projectId);
-  const hits = await governedCorpusSearch({ text: profile.text, topK: TOP_K });
-  if (hits.length === 0) {
-    return { projectId, corpusConfigured: true, candidates: [], degraded: 'no corpus hits' };
-  }
-
+/**
+ * §→Gesetz-Aggregation (AC-3/AC-4): Sprach-Familien mergen (toFamily), kombinierter
+ * Score (0.7·max + 0.3·mean, beidseitig auf [0,1] geklemmt — Qdrant-Cosine ist roh
+ * ∈[-1,1]), Top-Hits gekürzt, deterministisch sortiert (Score desc, family asc).
+ * PURE — kein I/O. Extrahiert (Slice-2b Task 4) für Eval-Reuse (THE-465): der
+ * Runner nutzt exakt diese Prod-Aggregation statt sie nachzubauen (kein Metrik-Drift).
+ * Verhaltens-unverändert gegenüber der vorherigen Inline-Fassung — dieselben
+ * discoverCandidates-Tests decken das ab.
+ */
+export function aggregateHitsToCandidates(hits: CorpusHit[]): DiscoveryCandidate[] {
   const byFamily = new Map<string, CorpusHit[]>();
   for (const hit of hits) {
     const fam = toFamily(hit.source);
@@ -66,6 +67,20 @@ export async function discoverCandidates(projectId: string): Promise<DiscoveryRe
   }
   // Determinismus: Score desc, dann family asc.
   candidates.sort((a, b) => b.score - a.score || a.family.localeCompare(b.family));
+  return candidates;
+}
+
+export async function discoverCandidates(projectId: string): Promise<DiscoveryResult> {
+  if (!isCorpusConfigured()) {
+    return { projectId, corpusConfigured: false, candidates: [], degraded: 'corpus not configured' };
+  }
+  const profile = await buildUseCaseProfile(projectId);
+  const hits = await governedCorpusSearch({ text: profile.text, topK: TOP_K });
+  if (hits.length === 0) {
+    return { projectId, corpusConfigured: true, candidates: [], degraded: 'no corpus hits' };
+  }
+
+  const candidates = aggregateHitsToCandidates(hits);
   return { projectId, corpusConfigured: true, candidates };
 }
 
@@ -95,6 +110,23 @@ function defaultJudgeModel(): string {
 }
 
 /**
+ * Prod-Gating als PURE Funktion (Eval-Degeneration-Fix): nur Kandidaten über
+ * der Retrieval-Schwelle, gedeckelt auf Top-N — exakt das, was in Prod den
+ * Judge erreicht. Exportiert, damit der Eval-Runner (runDiscoveryEval) dieselbe
+ * Kandidatenmenge misst statt der ungegateten (die bei kleinem Fixture-Korpus
+ * mit topK ≥ #§§ trivial ALLE Familien enthält ⇒ Recall degeneriert zu 100 %).
+ * Defaults = die env-Funktionen (LAW_DISCOVERY_JUDGE_THRESHOLD/_MAX_JUDGE) —
+ * Muster aggregateHitsToCandidates: Extraktion ohne Verhaltens-Change.
+ */
+export function gateCandidatesForJudge(
+  candidates: DiscoveryCandidate[],
+  threshold: number = judgeThreshold(),
+  max: number = maxJudge(),
+): DiscoveryCandidate[] {
+  return candidates.filter(c => c.score >= threshold).slice(0, max);
+}
+
+/**
  * Abgeleiteter Evidence-Set-Hash (Review-Fix 1 / Task 1): es gibt KEINEN
  * globalen Korpus-Versions-Skalar — `getCurrentVersionHashes` liefert einen
  * Hash PRO regulationKey. Ein Kandidat aggregiert mehrere Paragraphen, daher
@@ -120,19 +152,23 @@ export async function discoverAndJudge(
   projectId: string,
   opts: DiscoverAndJudgeOptions = {},
 ): Promise<ApplicabilityReport> {
-  const stageA = await buildApplicabilityReport(projectId);
+  // Review-Fix 1 (Slice-2b Task 3a): eigener, billiger World-State-Read —
+  // damit bekommen corpus-only-Assessments (kein Stage-A-Regel-Match) auch
+  // workId/inPipeline (sonst ist "Add to pipeline" für sie unimplementierbar).
+  const [stageA, world] = await Promise.all([
+    buildApplicabilityReport(projectId),
+    loadNormWorldState(projectId),
+  ]);
 
   const discovery = await discoverCandidates(projectId);
   const hasProvider = Boolean(opts.anthropicClient || process.env.ANTHROPIC_API_KEY);
   if (discovery.candidates.length === 0 || !hasProvider) {
-    return mergeApplicability(stageA, [], undefined);
+    return mergeApplicability(stageA, [], undefined, undefined, world);
   }
 
-  const gated = discovery.candidates
-    .filter(c => c.score >= judgeThreshold())
-    .slice(0, maxJudge());
+  const gated = gateCandidatesForJudge(discovery.candidates);
   if (gated.length === 0) {
-    return mergeApplicability(stageA, [], undefined);
+    return mergeApplicability(stageA, [], undefined, undefined, world);
   }
 
   const model = defaultJudgeModel();
@@ -165,21 +201,31 @@ export async function discoverAndJudge(
       continue;
     }
 
-    const verdict = await judgeCandidate({
-      profileText: profile.text,
-      profileElements,
-      candidate: {
-        family: candidate.family,
-        sources: candidate.sources,
-        jurisdiction: candidate.jurisdiction,
-        topHits: candidate.topHits.map(h => ({ regulationKey: h.regulationKey, title: h.title })),
-        retrievalScore: candidate.score,
-      },
-      projectId,
-      corpusVersionHash,
-      model,
-      anthropicClient: opts.anthropicClient,
-    });
+    // Graceful degradation je Kandidat (Eval-Fund 2026-07-18): ein einzelner
+    // fehlgeschlagener Judge-Call (z.B. Schema-Bruch nach beiden Attempts) darf
+    // NICHT den ganzen /discover-Lauf auf 500 werfen — Kandidat überspringen,
+    // die übrigen liefern weiter.
+    let verdict;
+    try {
+      verdict = await judgeCandidate({
+        profileText: profile.text,
+        profileElements,
+        candidate: {
+          family: candidate.family,
+          sources: candidate.sources,
+          jurisdiction: candidate.jurisdiction,
+          topHits: candidate.topHits.map(h => ({ regulationKey: h.regulationKey, title: h.title })),
+          retrievalScore: candidate.score,
+        },
+        projectId,
+        corpusVersionHash,
+        model,
+        anthropicClient: opts.anthropicClient,
+      });
+    } catch (err) {
+      log.warn({ family: candidate.family, err }, '[law-discovery] judge failed for candidate — skipped');
+      continue;
+    }
 
     // Spec-Fix 1 (AC-2): BEIDE Urteile persistieren — auch applies:false. Sonst
     // findet der Reuse-Guard oben beim nächsten Lauf (insb. nach Redeploy, wenn
@@ -194,6 +240,8 @@ export async function discoverAndJudge(
       reasoning: verdict.reasoning,
       elementIds: verdict.elementIds,
       keyParagraphs: verdict.keyParagraphs,
+      // AC-4 (Fix 1): Titel-Details mit persistieren (additiv).
+      ...(verdict.keyParagraphDetails ? { keyParagraphDetails: verdict.keyParagraphDetails } : {}),
       retrievalScore: candidate.score,
       corpusVersionHash,
       judgeModel: model,
@@ -210,5 +258,5 @@ export async function discoverAndJudge(
   // ändert sich, sobald sich irgendein geurteiltes Evidence-Set ändert.
   const corpusVersion = computeVersionHash([...evidenceHashes].sort().join('|'));
 
-  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes);
+  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
 }

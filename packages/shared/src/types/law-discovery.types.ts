@@ -54,6 +54,17 @@ export type FindingStatus = 'auto' | 'confirmed' | 'rejected';
 /** Herkunft eines Applicability-Befunds im gemergten Report. */
 export type ApplicabilityProvenance = 'rules' | 'corpus' | 'both';
 
+/**
+ * Anzeige-Detail zu einem keyParagraph (UC-LAW-002 Slice-2b AC-4): die UI
+ * zeigt Titel statt roher regulationKeys. ADDITIV neben `keyParagraphs`
+ * (string[]) — bereits persistierte Findings tragen nur die Keys; kein
+ * Migrationszwang, alte Findings zeigen dann den Key als Fallback.
+ */
+export interface KeyParagraphDetail {
+  regulationKey: string;
+  title: string;
+}
+
 /** Rohes Judge-Urteil für EIN Kandidaten-Gesetz (Output des LLM). */
 export interface LawJudgeVerdict {
   family: string;            // MUSS aus der Kandidatenmenge stammen (Anti-Halluzination)
@@ -62,6 +73,8 @@ export interface LawJudgeVerdict {
   reasoning: string;         // ≤ 500 Zeichen
   elementIds: string[];      // MÜSSEN reale Profil-Element-Ids sein
   keyParagraphs: string[];   // regulationKeys aus den topHits des Kandidaten
+  /** Titel je keyParagraph, aus den topHits des Kandidaten abgeleitet (additiv, AC-4). */
+  keyParagraphDetails?: KeyParagraphDetail[];
 }
 
 /**
@@ -86,8 +99,19 @@ export interface DiscoveryFinding {
   reasoning: string;
   elementIds: string[];
   keyParagraphs: string[];
+  /** Titel je keyParagraph (additiv, AC-4) — Alt-Findings ohne dieses Feld zeigen den Key. */
+  keyParagraphDetails?: KeyParagraphDetail[];
   retrievalScore: number;     // Slice-1 Kandidaten-Score ∈ [0,1]
   corpusVersionHash: string;  // Dedup-/Cache-Achse — abgeleiteter Evidence-Set-Hash
   judgeModel: string;         // Modell, das dieses Urteil erzeugte (Cache-/Reuse-Achse)
   createdBy: 'llm' | 'human';
+}
+
+// ─── UC-LAW-002 Slice-2b (THE-464) — UI-Gating ────────────────────
+
+/** Verfügbarkeits-Signal fürs UI-Gating (THE-464 AC-1) — additiv in der /applicability-Response. */
+export interface DiscoveryAvailability {
+  enabled: boolean;            // LAW_DISCOVERY_ENABLED
+  corpusConfigured: boolean;   // Mongo-Korpus erreichbar konfiguriert
+  providerConfigured: boolean; // ANTHROPIC_API_KEY vorhanden (Judge lauffähig)
 }

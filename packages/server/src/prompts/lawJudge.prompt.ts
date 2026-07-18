@@ -39,7 +39,7 @@ Hard rules (violating these breaks the audit trail — outputs that break them a
   - "family" in your answer MUST be EXACTLY the candidate family you were given. NEVER invent or rename a family.
   - "elementIds" MUST be a subset of the verbatim element ids listed in the profile. NEVER invent an id, NEVER use an element name instead of its id.
   - "keyParagraphs" MUST be a subset of the regulationKey values listed for this candidate's top paragraphs. NEVER invent a paragraph key.
-  - "reasoning" is <= 500 characters, in English, and cites the concrete architecture signal (element/layer/PII/AI marker) AND the concrete paragraph that justifies the verdict.
+  - "reasoning" MUST be under 400 characters — one or two dense sentences, NO lists, NO enumerations. Longer reasoning is REJECTED by schema validation and discarded. In English; cite the concrete architecture signal (element/layer/PII/AI marker) AND the concrete paragraph that justifies the verdict.
   - Calibrate confidence strictly: 0.9+ only for unambiguous, clearly-scoped applicability; 0.5-0.7 for plausible-but-uncertain; below 0.3 when the evidence is thin. Precision matters more than recall here — LAW-001 is already the generous first pass; this judge is the precise second pass.
   - When in doubt, prefer "applies: false" with LOW confidence over a speculative "applies: true". An honest low-confidence negative is more useful than a hallucinated positive.
 
@@ -48,7 +48,7 @@ Output — JSON ONLY, exactly this schema:
   "family": "<candidate family, verbatim>",
   "applies": <boolean>,
   "confidence": <number 0..1>,
-  "reasoning": "<= 500 chars, cites architecture signal + paragraph>",
+  "reasoning": "<under 400 chars, one-two dense sentences, cites architecture signal + paragraph>",
   "elementIds": ["<verbatim profile element id>", ...],
   "keyParagraphs": ["<verbatim regulationKey from the candidate's top paragraphs>", ...]
 }

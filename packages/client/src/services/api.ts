@@ -417,6 +417,15 @@ export const normsAPI = {
   // check over elements (incl. AI-wizard provenance) + project context.
   applicability: (projectId: string) =>
     api.get(`/projects/${projectId}/norms/applicability`),
+  // UC-LAW-002 — corpus-wide discovery (LLM judge). Explicit user action, costs provider money.
+  discover: (projectId: string) =>
+    api.post(`/projects/${projectId}/norms/discover`),
+  discoveryFindings: (projectId: string) =>
+    api.get(`/projects/${projectId}/norms/discover/findings`),
+  confirmFinding: (projectId: string, family: string, corpusVersionHash: string) =>
+    api.post(`/projects/${projectId}/norms/discover/confirm`, { family, corpusVersionHash }),
+  rejectFinding: (projectId: string, family: string, corpusVersionHash: string) =>
+    api.post(`/projects/${projectId}/norms/discover/reject`, { family, corpusVersionHash }),
 };
 
 // Compliance Pipeline API
