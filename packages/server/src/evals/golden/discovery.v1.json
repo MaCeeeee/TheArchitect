@@ -1,0 +1,127 @@
+{
+  "version": "v1",
+  "frozen": false,
+  "rubricRef": "docs/superpowers/plans/2026-07-18-uc-law-002-slice2b.md#task-5",
+  "cases": [
+    {
+      "caseId": "bank-payment-provider",
+      "title": "Bank / Zahlungsdienstleister",
+      "profileText": "project name: NovaPay Retail Banking\ndescription: Core banking and payment processing platform for retail customers, offering account management and SEPA/card payments.\nsignals: financial-sector, personal-data, pii-classified\n[application] Payment Initiation Service (application_service, PII): initiates SEPA and card payments on behalf of retail customers.\n[application] Customer Account Ledger (data_object, PII): stores account balances, IBANs and transaction history.\n[business] Retail Banking Operations (business_process): manages customer onboarding and day-to-day account servicing.\n[technology] Core Banking Platform (node): hosts the ledger and payment-processing systems for the bank.",
+      "signalHints": ["financial-sector", "personal-data", "pii-classified"],
+      "goldFamilies": ["dora", "dsgvo", "psd2"],
+      "ruleLessGold": ["psd2"],
+      "ambiguous": false,
+      "notes": "PSD2 (strong customer authentication, open-banking access) is Stage-A-blind — only the corpus can surface it; DORA and GDPR are both rule-covered and corpus-supported."
+    },
+    {
+      "caseId": "regional-clinic-patient-portal",
+      "title": "Regional-Klinik mit Patientenportal",
+      "profileText": "project name: Lakeside Regional Hospital\ndescription: Regional hospital group operating a patient portal and a connected diagnostic imaging device product line sold to partner clinics.\nsignals: personal-data, pii-classified, health-data\n[application] Patient Portal (application_service, PII): lets patients view lab results and diagnostic imaging reports online.\n[technology] Diagnostic Imaging Device Software (system_software): controls a CE-marked medical imaging device deployed at partner clinics.\n[business] Patient Care Pathway (business_process): coordinates diagnosis and treatment records across departments.",
+      "signalHints": ["personal-data", "pii-classified", "health-data"],
+      "goldFamilies": ["dsgvo", "mdr"],
+      "ruleLessGold": ["mdr"],
+      "ambiguous": false,
+      "notes": "MDR (medical device software, conformity assessment, post-market surveillance) is Stage-A-blind — GDPR is rule-covered via the health-data/PII signals."
+    },
+    {
+      "caseId": "iot-device-manufacturer",
+      "title": "IoT-Gerätehersteller",
+      "profileText": "project name: GridSense Smart Metering\ndescription: Manufacturer of connected smart-home sensors and gateway devices with cloud telemetry and remote firmware updates.\nsignals: connected-products, cloud-services, personal-data\n[technology] Smart Meter Fleet (device): connected products transmitting usage readings and diagnostics to the cloud.\n[application] Telemetry Ingest Service (application_service): receives sensor readings and device health data from the field.\n[application] Firmware Update Service (application_component): pushes signed firmware updates to deployed devices, remediating known vulnerabilities.\n[business] Customer Registration (business_object, PII): stores device-owner name and address for warranty support.",
+      "signalHints": ["connected-products", "cloud-services", "personal-data"],
+      "goldFamilies": ["cra", "data-act", "dsgvo"],
+      "ruleLessGold": ["cra"],
+      "ambiguous": false,
+      "notes": "CRA (essential cybersecurity requirements, vulnerability handling for connected products) is Stage-A-blind; Data Act and GDPR are both rule-covered."
+    },
+    {
+      "caseId": "ai-recruiting-saas",
+      "title": "AI-Recruiting-SaaS",
+      "profileText": "project name: HireLens Screening Platform\ndescription: SaaS platform that automatically screens and ranks job applicants for corporate HR departments across the EU.\nsignals: ai-components, high-risk-ai-context, personal-data\n[application] CV Scoring Model (ai_agent): ranks candidate resumes using a trained scoring model before human review.\n[business] Recruiting Process (business_process): hiring workflow from application intake to offer decision.\n[application] Applicant Data Store (data_object, PII): stores resumes, contact data and interview notes for each candidate.",
+      "signalHints": ["ai-components", "high-risk-ai-context", "personal-data"],
+      "goldFamilies": ["ai-act", "dsgvo"],
+      "ruleLessGold": [],
+      "ambiguous": false,
+      "notes": "Both families are rule-covered — this case is a Stage-A/Stage-B agreement check, not a rule-less discovery test."
+    },
+    {
+      "caseId": "internal-crm-precision",
+      "title": "Reines internes CRM (Precision-Fall)",
+      "profileText": "project name: Internal Sales CRM\ndescription: Internal CRM used by the domestic sales team to track customer contacts and the deal pipeline, no AI, single-country deployment.\nsignals: personal-data, pii-classified, customer-facing\n[application] Customer Relationship Management (application_component, PII): stores customer contact details, deal stage and communication history.\n[business] Sales Process (business_process): manages the deal pipeline from lead to close for domestic accounts only.",
+      "signalHints": ["personal-data", "pii-classified", "customer-facing"],
+      "goldFamilies": ["dsgvo"],
+      "ruleLessGold": [],
+      "ambiguous": false,
+      "notes": "Precision case — deliberately narrow architecture. A good retriever should NOT surface dora/nis2/ai-act/mdr here despite generic business-software language; only GDPR (personal data in a CRM) applies."
+    },
+    {
+      "caseId": "energy-grid-operator",
+      "title": "Energienetz-Betreiber",
+      "profileText": "project name: RegioGrid Distribution\ndescription: Regional electricity grid operator running SCADA systems for substation monitoring and control, serving critical infrastructure customers.\nsignals: critical-sector, security-baseline, personal-data\n[technology] SCADA Control System (node): monitors and controls substations across the regional distribution grid.\n[business] Grid Operations (business_process): balances load and manages outages for critical infrastructure.\n[application] Customer Contract Management (application_component, PII): stores household customer contracts and metering data.",
+      "signalHints": ["critical-sector", "security-baseline", "personal-data"],
+      "goldFamilies": ["nis2", "dsgvo"],
+      "ruleLessGold": [],
+      "ambiguous": false,
+      "notes": "Both families are rule-covered — NIS2 via the critical-sector/security-baseline signals, GDPR via household customer data."
+    },
+    {
+      "caseId": "automotive-telematics",
+      "title": "Automotive-Telematik",
+      "profileText": "project name: FleetLink Telematics Unit\ndescription: Automotive OEM telematics unit collecting vehicle diagnostics and location data, connected via cellular network to a fleet backend.\nsignals: connected-products, personal-data, cloud-services\n[technology] Telematics Control Unit (device): in-vehicle unit transmitting diagnostic and location data over a cellular connection.\n[application] Fleet Backend Service (application_service): aggregates vehicle data for fleet operators and dealers.\n[application] OTA Update Manager (application_component): manages over-the-air software updates and monitors the vehicle's cybersecurity posture for type approval.",
+      "signalHints": ["connected-products", "personal-data", "cloud-services"],
+      "goldFamilies": ["dsgvo", "data-act", "unece-r155"],
+      "ruleLessGold": ["unece-r155"],
+      "ambiguous": false,
+      "notes": "UNECE R155 (vehicle type-approval cybersecurity management system) is Stage-A-blind; GDPR and Data Act are both rule-covered."
+    },
+    {
+      "caseId": "ecommerce-tracking",
+      "title": "E-Commerce mit Tracking",
+      "profileText": "project name: UrbanCart Online Shop\ndescription: Online shop using tracking cookies and newsletter marketing, storing customer accounts and order history for EU consumers.\nsignals: personal-data, customer-facing\n[application] Web Storefront (application_component, PII): customer accounts and browsing behaviour tracked via cookies for retargeting.\n[application] Marketing Automation (application_service): sends newsletter emails and behavioural ad campaigns using tracking pixels.\n[business] Order Fulfillment (business_process): processes customer orders and payment for the online shop.",
+      "signalHints": ["personal-data", "customer-facing"],
+      "goldFamilies": ["dsgvo", "eprivacy"],
+      "ruleLessGold": ["eprivacy"],
+      "ambiguous": false,
+      "notes": "ePrivacy (cookie consent, unsolicited marketing communications) is Stage-A-blind; GDPR is rule-covered via the personal-data signal."
+    },
+    {
+      "caseId": "cloud-msp-financial-clients",
+      "title": "Cloud-MSP mit Finanzkunden",
+      "profileText": "project name: NimbusOps Managed Cloud\ndescription: Managed service provider hosting workloads for enterprise clients, including several regulated financial-sector customers, across the EU.\nsignals: critical-sector, cloud-services, personal-data\n[technology] Multi-Tenant Cloud Platform (node): hosts customer workloads including systems belonging to banking clients.\n[business] Client Onboarding (business_process): manages contracts with enterprise customers across multiple sectors.\n[application] Access Management Service (application_component, PII): manages administrator credentials and client contact data.",
+      "signalHints": ["critical-sector", "cloud-services", "personal-data"],
+      "goldFamilies": ["nis2", "dsgvo"],
+      "ruleLessGold": [],
+      "ambiguous": true,
+      "notes": "DORA is plausible only indirectly (as an ICT third-party provider to financial clients, not itself a financial entity) — deliberately excluded from goldFamilies pending Owner review; a retriever surfacing dora here is not necessarily wrong."
+    },
+    {
+      "caseId": "offline-carpentry-hard-negative",
+      "title": "Offline-Handwerksbetrieb ohne IT (Hard Negative)",
+      "profileText": "project name: Holzwerk Mueller\ndescription: Small carpentry workshop with no digital systems, paper-based scheduling and invoicing, serving local private customers only.\n[business] Workshop Scheduling (business_process): paper appointment book used to plan custom furniture orders.\n[business] Manual Invoicing (business_object): handwritten invoices filed in physical binders at the end of each month.",
+      "signalHints": [],
+      "goldFamilies": [],
+      "ruleLessGold": [],
+      "ambiguous": false,
+      "notes": "Hard negative — no IT estate, no meaningful personal-data processing beyond a paper appointment book. A retriever should not surface any law family with meaningful confidence here."
+    },
+    {
+      "caseId": "ai-radiology-diagnostics",
+      "title": "Medizin-KI-Diagnostik",
+      "profileText": "project name: RadAssist Diagnostic AI\ndescription: Startup building an AI-based diagnostic support system that analyzes radiology images for partner hospitals across the EU.\nsignals: ai-components, high-risk-ai-context, personal-data, health-data\n[application] Diagnostic AI Model (ai_agent): analyzes CT and MRI scans to flag suspected anomalies for radiologists.\n[application] Imaging Data Store (data_object, PII): stores patient scans and diagnostic reports for review.\n[business] Radiology Review Workflow (business_process): clinician review and sign-off of AI-flagged findings before diagnosis.",
+      "signalHints": ["ai-components", "high-risk-ai-context", "personal-data", "health-data"],
+      "goldFamilies": ["ai-act", "mdr", "dsgvo"],
+      "ruleLessGold": ["mdr"],
+      "ambiguous": false,
+      "notes": "MDR (software as a medical device, conformity assessment for diagnostic AI) is Stage-A-blind; AI Act and GDPR are both rule-covered — a two-family Stage-A/B agreement plus one rule-less family."
+    },
+    {
+      "caseId": "supply-chain-conglomerate",
+      "title": "Lieferketten-Konzern",
+      "profileText": "project name: Meridian Industrial Group\ndescription: Large industrial group with over 3000 employees and a multi-tier global supply chain sourcing raw materials for manufacturing.\nsignals: supply-chain, personal-data\n[business] Supplier Risk Assessment (business_process): evaluates human-rights and environmental risk across tier-1 and tier-2 suppliers.\n[application] Supplier Master Data (data_object, PII): stores supplier contact persons and compliance certificates.\n[business] Procurement (business_process): manages purchase orders across the global supply chain.",
+      "signalHints": ["supply-chain", "personal-data"],
+      "goldFamilies": ["lksg", "dsgvo"],
+      "ruleLessGold": [],
+      "ambiguous": false,
+      "notes": "Both families are rule-covered — LKSG via the supply-chain signal (employee-count threshold assumed met), GDPR via supplier contact data."
+    }
+  ]
+}

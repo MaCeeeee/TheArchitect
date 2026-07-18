@@ -1,0 +1,365 @@
+{
+  "version": "v1",
+  "paragraphs": [
+    {
+      "regulationKey": "dsgvo:5",
+      "versionHash": "fx-dsgvo-5",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 5",
+      "title": "Grundsätze für die Verarbeitung personenbezogener Daten",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Personenbezogene Daten müssen auf rechtmäßige, faire und für die betroffene Person nachvollziehbare Weise verarbeitet werden. Erhebung nur für festgelegte, eindeutige Zwecke, Datenminimierung und eine Speicherbegrenzung auf das notwendige Maß sind einzuhalten."
+    },
+    {
+      "regulationKey": "dsgvo:6",
+      "versionHash": "fx-dsgvo-6",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 6",
+      "title": "Rechtmäßigkeit der Verarbeitung",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Die Verarbeitung personenbezogener Daten ist nur rechtmäßig, wenn mindestens eine Bedingung erfüllt ist, etwa Einwilligung der betroffenen Person, Vertragserfüllung, rechtliche Verpflichtung oder ein berechtigtes Interesse des Verantwortlichen."
+    },
+    {
+      "regulationKey": "dsgvo:32",
+      "versionHash": "fx-dsgvo-32",
+      "source": "dsgvo",
+      "paragraphNumber": "Art. 32",
+      "title": "Sicherheit der Verarbeitung",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Verantwortliche und Auftragsverarbeiter müssen geeignete technische und organisatorische Maßnahmen treffen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten, etwa Pseudonymisierung, Verschlüsselung und die Fähigkeit zur Wiederherstellung nach Zwischenfällen."
+    },
+
+    {
+      "regulationKey": "ai-act-de:6",
+      "versionHash": "fx-aiact-de-6",
+      "source": "ai-act-de",
+      "paragraphNumber": "Art. 6",
+      "title": "Einstufungsvorschriften für Hochrisiko-KI-Systeme",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Ein KI-System gilt als hochriskant, wenn es als Sicherheitsbauteil eines Produkts eingesetzt wird oder in einem der im Anhang aufgeführten Bereiche verwendet wird, etwa bei der Bewertung von Bewerbern in Beschäftigungsverhältnissen oder bei kritischer Infrastruktur."
+    },
+    {
+      "regulationKey": "ai-act-de:9",
+      "versionHash": "fx-aiact-de-9",
+      "source": "ai-act-de",
+      "paragraphNumber": "Art. 9",
+      "title": "Risikomanagementsystem",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Anbieter von Hochrisiko-KI-Systemen müssen ein durchgehendes Risikomanagementsystem einrichten, dokumentieren und aktuell halten, das bekannte und vorhersehbare Risiken für Gesundheit, Sicherheit und Grundrechte identifiziert und mindert."
+    },
+    {
+      "regulationKey": "ai-act-en:6",
+      "versionHash": "fx-aiact-en-6",
+      "source": "ai-act-en",
+      "paragraphNumber": "Art. 6",
+      "title": "Classification rules for high-risk AI systems",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "An AI system is considered high-risk where it is used as a safety component of a product or falls within one of the areas listed in the annex, such as scoring candidates in employment or being deployed in critical infrastructure operations."
+    },
+    {
+      "regulationKey": "ai-act-en:9",
+      "versionHash": "fx-aiact-en-9",
+      "source": "ai-act-en",
+      "paragraphNumber": "Art. 9",
+      "title": "Risk management system",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Providers of high-risk AI systems shall establish, document and keep current a continuous risk management process that identifies and mitigates known and foreseeable risks to health, safety and fundamental rights throughout the system lifecycle."
+    },
+
+    {
+      "regulationKey": "data-act-de:4",
+      "versionHash": "fx-dataact-de-4",
+      "source": "data-act-de",
+      "paragraphNumber": "Art. 4",
+      "title": "Zugang zu Daten vernetzter Produkte",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Nutzer vernetzter Produkte und Dienste haben Anspruch auf Zugang zu den bei der Nutzung erzeugten Daten in einem strukturierten, gängigen Format und können deren Weitergabe an Dritte verlangen, soweit keine schutzwürdigen Geschäftsgeheimnisse entgegenstehen."
+    },
+    {
+      "regulationKey": "data-act-de:5",
+      "versionHash": "fx-dataact-de-5",
+      "source": "data-act-de",
+      "paragraphNumber": "Art. 5",
+      "title": "Datenweitergabepflicht an Dritte",
+      "jurisdiction": "EU",
+      "language": "de",
+      "text": "Der Dateninhaber eines vernetzten Produkts muss auf Verlangen des Nutzers die erzeugten Daten unentgeltlich, unverzüglich und in maschinenlesbarer Form an einen vom Nutzer benannten Dritten übermitteln."
+    },
+    {
+      "regulationKey": "data-act-en:4",
+      "versionHash": "fx-dataact-en-4",
+      "source": "data-act-en",
+      "paragraphNumber": "Art. 4",
+      "title": "Access to connected-product data",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Users of connected products and related services are entitled to access the data generated through their use in a structured, commonly used format and may request that the data be shared with third parties, subject to trade-secret protections."
+    },
+    {
+      "regulationKey": "data-act-en:5",
+      "versionHash": "fx-dataact-en-5",
+      "source": "data-act-en",
+      "paragraphNumber": "Art. 5",
+      "title": "Obligation to make data available to third parties",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "The data holder of a connected product shall, at the user's request, make the generated data available to a third party designated by the user free of charge, without undue delay and in a machine-readable format."
+    },
+
+    {
+      "regulationKey": "nis2:21",
+      "versionHash": "fx-nis2-21",
+      "source": "nis2",
+      "paragraphNumber": "Art. 21",
+      "title": "Cybersecurity risk-management measures",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Essential and important entities operating in sectors such as energy, transport and digital infrastructure shall take appropriate technical, operational and organisational measures to manage the risks posed to the security of network and information systems."
+    },
+    {
+      "regulationKey": "nis2:23",
+      "versionHash": "fx-nis2-23",
+      "source": "nis2",
+      "paragraphNumber": "Art. 23",
+      "title": "Reporting obligations",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Essential and important entities shall notify the competent authority without undue delay of any significant incident having a substantial impact on the provision of their services, including an initial notification within 24 hours."
+    },
+    {
+      "regulationKey": "nis2:2",
+      "versionHash": "fx-nis2-2",
+      "source": "nis2",
+      "paragraphNumber": "Art. 2",
+      "title": "Scope — essential and important entities",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "This directive applies to entities of a type referred to as essential or important that provide services in sectors including energy, transport, banking, health, digital infrastructure and managed service providers above the relevant size thresholds."
+    },
+
+    {
+      "regulationKey": "dora:5",
+      "versionHash": "fx-dora-5",
+      "source": "dora",
+      "paragraphNumber": "Art. 5",
+      "title": "ICT risk management framework",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Financial entities shall have in place a sound, comprehensive and well-documented ICT risk-management framework that enables them to address ICT risk quickly, efficiently and comprehensively and to ensure a high level of digital operational resilience."
+    },
+    {
+      "regulationKey": "dora:28",
+      "versionHash": "fx-dora-28",
+      "source": "dora",
+      "paragraphNumber": "Art. 28",
+      "title": "Managing ICT third-party risk",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Financial entities shall manage ICT third-party risk as an integral component of ICT risk within their ICT risk-management framework, including for services provided by cloud providers and managed service providers supporting critical functions."
+    },
+    {
+      "regulationKey": "dora:2",
+      "versionHash": "fx-dora-2",
+      "source": "dora",
+      "paragraphNumber": "Art. 2",
+      "title": "Scope — financial entities",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "This regulation applies to financial entities such as credit institutions, payment institutions, investment firms and insurance undertakings, requiring them to maintain digital operational resilience for their ICT systems supporting core banking and payment functions."
+    },
+
+    {
+      "regulationKey": "lksg:3",
+      "versionHash": "fx-lksg-3",
+      "source": "lksg",
+      "paragraphNumber": "§ 3",
+      "title": "Sorgfaltspflichten und Anwendungsbereich",
+      "jurisdiction": "DE",
+      "language": "de",
+      "text": "Unternehmen mit in der Regel mindestens 1000 im Inland beschäftigten Personen haben die in diesem Gesetz beschriebenen menschenrechtlichen und umweltbezogenen Sorgfaltspflichten in ihren Lieferketten in angemessener Weise zu beachten."
+    },
+    {
+      "regulationKey": "lksg:5",
+      "versionHash": "fx-lksg-5",
+      "source": "lksg",
+      "paragraphNumber": "§ 5",
+      "title": "Risikoanalyse",
+      "jurisdiction": "DE",
+      "language": "de",
+      "text": "Das Unternehmen hat eine angemessene Risikoanalyse durchzuführen, um menschenrechtliche und umweltbezogene Risiken im eigenen Geschäftsbereich sowie bei unmittelbaren Zulieferern zu ermitteln, zu gewichten und zu priorisieren."
+    },
+    {
+      "regulationKey": "lksg:8",
+      "versionHash": "fx-lksg-8",
+      "source": "lksg",
+      "paragraphNumber": "§ 8",
+      "title": "Beschwerdeverfahren",
+      "jurisdiction": "DE",
+      "language": "de",
+      "text": "Das Unternehmen hat ein wirksames Beschwerdeverfahren einzurichten, das es Personen ermöglicht, auf menschenrechtliche und umweltbezogene Risiken sowie auf Verletzungen im eigenen Geschäftsbereich oder bei Zulieferern hinzuweisen."
+    },
+
+    {
+      "regulationKey": "psd2:97",
+      "versionHash": "fx-psd2-97",
+      "source": "psd2",
+      "paragraphNumber": "Art. 97",
+      "title": "Strong customer authentication",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Payment service providers shall apply strong customer authentication whenever a payer accesses its payment account online, initiates an electronic payment transaction, or carries out any action through a remote channel that may imply a risk of fraud."
+    },
+    {
+      "regulationKey": "psd2:66",
+      "versionHash": "fx-psd2-66",
+      "source": "psd2",
+      "paragraphNumber": "Art. 66",
+      "title": "Access to payment accounts for payment initiation services",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Account-servicing payment service providers shall enable a licensed payment initiation service provider to access and initiate a payment from a payer's account, via a dedicated open-banking interface, under the same conditions as the account holder."
+    },
+    {
+      "regulationKey": "psd2:1",
+      "versionHash": "fx-psd2-1",
+      "source": "psd2",
+      "paragraphNumber": "Art. 1",
+      "title": "Subject matter and scope",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "This directive lays down the rules for payment service providers, including banks and licensed payment institutions, regarding the provision of payment services, account access and the conduct of payment institutions across the internal market."
+    },
+
+    {
+      "regulationKey": "mdr:2",
+      "versionHash": "fx-mdr-2",
+      "source": "mdr",
+      "paragraphNumber": "Art. 2",
+      "title": "Definition of medical device, incl. software",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "A medical device includes software intended by the manufacturer for use in human beings for purposes such as diagnosis, prevention, monitoring or treatment of disease, including software supporting diagnostic imaging or clinical decision-making."
+    },
+    {
+      "regulationKey": "mdr:52",
+      "versionHash": "fx-mdr-52",
+      "source": "mdr",
+      "paragraphNumber": "Art. 52",
+      "title": "Conformity assessment procedures",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Manufacturers shall undergo a conformity assessment appropriate to the risk class of the device before placing it on the market, involving a notified body for higher-risk devices such as diagnostic software analysing patient scans."
+    },
+    {
+      "regulationKey": "mdr:83",
+      "versionHash": "fx-mdr-83",
+      "source": "mdr",
+      "paragraphNumber": "Art. 83",
+      "title": "Post-market surveillance system",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Manufacturers shall establish and keep up to date a post-market surveillance system proportionate to the risk class and appropriate for the device, actively and systematically gathering data on the device's performance after it enters clinical use."
+    },
+
+    {
+      "regulationKey": "cra:6",
+      "versionHash": "fx-cra-6",
+      "source": "cra",
+      "paragraphNumber": "Art. 6",
+      "title": "Scope — products with digital elements",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "This regulation applies to products with digital elements whose intended use includes a direct or indirect logical or physical data connection to a device or network, including connected sensors, gateways and other smart-home hardware."
+    },
+    {
+      "regulationKey": "cra:11",
+      "versionHash": "fx-cra-11",
+      "source": "cra",
+      "paragraphNumber": "Art. 11",
+      "title": "Essential cybersecurity requirements",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Manufacturers shall ensure that products with digital elements are designed, developed and produced to reduce cybersecurity risk, ship without known exploitable vulnerabilities and provide security updates for the expected product lifetime."
+    },
+    {
+      "regulationKey": "cra:14",
+      "versionHash": "fx-cra-14",
+      "source": "cra",
+      "paragraphNumber": "Art. 14",
+      "title": "Vulnerability handling and reporting",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Manufacturers shall establish a coordinated vulnerability disclosure process, provide security updates to remediate vulnerabilities without delay, and notify actively exploited vulnerabilities to the competent authority within 24 hours of awareness."
+    },
+
+    {
+      "regulationKey": "eprivacy:5",
+      "versionHash": "fx-eprivacy-5",
+      "source": "eprivacy",
+      "paragraphNumber": "Art. 5",
+      "title": "Confidentiality of electronic communications",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Member states shall ensure the confidentiality of communications made over public electronic networks, prohibiting listening, tapping, storage or interception without the consent of the users concerned, except where legally authorised."
+    },
+    {
+      "regulationKey": "eprivacy:5a",
+      "versionHash": "fx-eprivacy-5a",
+      "source": "eprivacy",
+      "paragraphNumber": "Art. 5(3)",
+      "title": "Consent for cookies and tracking",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "Storing information, or gaining access to information already stored, in a website visitor's terminal equipment is only permitted if the visitor has given prior, informed consent, unless the storage is strictly necessary for a requested service."
+    },
+    {
+      "regulationKey": "eprivacy:13",
+      "versionHash": "fx-eprivacy-13",
+      "source": "eprivacy",
+      "paragraphNumber": "Art. 13",
+      "title": "Unsolicited communications",
+      "jurisdiction": "EU",
+      "language": "en",
+      "text": "The use of electronic mail for direct marketing purposes, such as newsletter campaigns, may only be allowed in respect of recipients who have given their prior consent, or under a narrow existing-customer exemption for similar products."
+    },
+
+    {
+      "regulationKey": "unece-r155:7",
+      "versionHash": "fx-r155-7",
+      "source": "unece-r155",
+      "paragraphNumber": "§ 7",
+      "title": "Cybersecurity management system (CSMS)",
+      "jurisdiction": "UN/ECE",
+      "language": "en",
+      "text": "A vehicle manufacturer applying for type approval shall demonstrate that it has a certified cybersecurity management system covering the design, development, production and post-production phases of the vehicle type, including telematics units."
+    },
+    {
+      "regulationKey": "unece-r155:7a",
+      "versionHash": "fx-r155-7a",
+      "source": "unece-r155",
+      "paragraphNumber": "§ 7.2",
+      "title": "Risk identification for vehicle types",
+      "jurisdiction": "UN/ECE",
+      "language": "en",
+      "text": "The manufacturer shall identify risks to the vehicle type, including risks arising from external connectivity such as cellular telematics units and over-the-air update channels, and assess associated risks for each identified vulnerability."
+    },
+    {
+      "regulationKey": "unece-r155:8",
+      "versionHash": "fx-r155-8",
+      "source": "unece-r155",
+      "paragraphNumber": "§ 8",
+      "title": "Monitoring and incident response",
+      "jurisdiction": "UN/ECE",
+      "language": "en",
+      "text": "The manufacturer shall monitor, detect and respond to cyber attacks, cyber threats and vulnerabilities affecting the vehicle type throughout its lifetime, and analyse the effectiveness of implemented mitigations for the fleet's connected units."
+    }
+  ]
+}
