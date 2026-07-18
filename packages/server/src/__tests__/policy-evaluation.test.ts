@@ -1529,3 +1529,62 @@ describe('REQ-FIX-001.1: operator persistence (THE-499)', () => {
     expect(v!.ruleId).toBe(policy.rules[0].ruleId);
   });
 });
+
+describe('THE-501: maturityLevel field-name alias in getFieldValue', () => {
+  it('a satisfied maturityLevel rule produces no violation (real rule.field name, not the internal object key)', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'MaturityLevel Rule',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'maturityLevel', operator: 'gte', value: 2, message: 'Maturity must be >= 2' }],
+    }));
+
+    mockRunCypher.mockResolvedValue([fakeNeo4jRecord({
+      id: 'el-mat', name: 'X', type: 'application', layer: 'application', domain: '',
+      maturity: { toNumber: () => 3 }, riskLevel: 'low', status: 'current', description: 'desc', metadata: null,
+    })]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-mat', 'create');
+
+    const violations = await PolicyViolation.find({ policyId: policy._id, status: 'open' });
+    expect(violations).toHaveLength(0);
+  });
+
+  it('an unsatisfied maturityLevel rule produces an open violation with the real current value', async () => {
+    const policy = await Policy.create(createPolicyDoc({
+      name: 'MaturityLevel Rule Strict',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'maturityLevel', operator: 'gte', value: 4, message: 'Maturity must be >= 4' }],
+    }));
+
+    mockRunCypher.mockResolvedValue([fakeNeo4jRecord({
+      id: 'el-mat-2', name: 'Y', type: 'application', layer: 'application', domain: '',
+      maturity: { toNumber: () => 3 }, riskLevel: 'low', status: 'current', description: 'desc', metadata: null,
+    })]);
+
+    const { evaluateElementPolicies } = await import('../services/policy-evaluation.service');
+    await evaluateElementPolicies(PROJECT_ID.toString(), 'el-mat-2', 'create');
+
+    const violations = await PolicyViolation.find({ policyId: policy._id, status: 'open' });
+    expect(violations).toHaveLength(1);
+    expect(violations[0].currentValue).toBe(3); // proves the real value (3) resolved, not undefined
+  });
+
+  it('checkCompliance (report path) resolves maturityLevel the same way', async () => {
+    await Policy.create(createPolicyDoc({
+      name: 'MaturityLevel Report Rule',
+      scope: { domains: [], elementTypes: [], layers: [] },
+      rules: [{ field: 'maturityLevel', operator: 'gte', value: 2, message: 'Maturity must be >= 2' }],
+    }));
+
+    mockRunCypher.mockResolvedValue([fakeNeo4jRecord({
+      id: 'el-mat-3', name: 'Z', type: 'application', layer: 'application', domain: '',
+      maturity: { toNumber: () => 3 }, riskLevel: 'low', status: 'current', description: 'desc', metadata: null,
+    })]);
+
+    const { checkCompliance } = await import('../services/compliance.service');
+    const report = await checkCompliance(PROJECT_ID.toString());
+
+    expect(report.violations).toHaveLength(0);
+  });
+});
