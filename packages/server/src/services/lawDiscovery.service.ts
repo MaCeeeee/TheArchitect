@@ -28,16 +28,16 @@ export function toFamily(source: string): string {
   return source.replace(/-(de|en)$/i, '');
 }
 
-export async function discoverCandidates(projectId: string): Promise<DiscoveryResult> {
-  if (!isCorpusConfigured()) {
-    return { projectId, corpusConfigured: false, candidates: [], degraded: 'corpus not configured' };
-  }
-  const profile = await buildUseCaseProfile(projectId);
-  const hits = await governedCorpusSearch({ text: profile.text, topK: TOP_K });
-  if (hits.length === 0) {
-    return { projectId, corpusConfigured: true, candidates: [], degraded: 'no corpus hits' };
-  }
-
+/**
+ * §→Gesetz-Aggregation (AC-3/AC-4): Sprach-Familien mergen (toFamily), kombinierter
+ * Score (0.7·max + 0.3·mean, beidseitig auf [0,1] geklemmt — Qdrant-Cosine ist roh
+ * ∈[-1,1]), Top-Hits gekürzt, deterministisch sortiert (Score desc, family asc).
+ * PURE — kein I/O. Extrahiert (Slice-2b Task 4) für Eval-Reuse (THE-465): der
+ * Runner nutzt exakt diese Prod-Aggregation statt sie nachzubauen (kein Metrik-Drift).
+ * Verhaltens-unverändert gegenüber der vorherigen Inline-Fassung — dieselben
+ * discoverCandidates-Tests decken das ab.
+ */
+export function aggregateHitsToCandidates(hits: CorpusHit[]): DiscoveryCandidate[] {
   const byFamily = new Map<string, CorpusHit[]>();
   for (const hit of hits) {
     const fam = toFamily(hit.source);
@@ -66,6 +66,20 @@ export async function discoverCandidates(projectId: string): Promise<DiscoveryRe
   }
   // Determinismus: Score desc, dann family asc.
   candidates.sort((a, b) => b.score - a.score || a.family.localeCompare(b.family));
+  return candidates;
+}
+
+export async function discoverCandidates(projectId: string): Promise<DiscoveryResult> {
+  if (!isCorpusConfigured()) {
+    return { projectId, corpusConfigured: false, candidates: [], degraded: 'corpus not configured' };
+  }
+  const profile = await buildUseCaseProfile(projectId);
+  const hits = await governedCorpusSearch({ text: profile.text, topK: TOP_K });
+  if (hits.length === 0) {
+    return { projectId, corpusConfigured: true, candidates: [], degraded: 'no corpus hits' };
+  }
+
+  const candidates = aggregateHitsToCandidates(hits);
   return { projectId, corpusConfigured: true, candidates };
 }
 
