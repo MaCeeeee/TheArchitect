@@ -16,7 +16,8 @@ export type AiTraceOperation =
   | 'mapping' // Regulation → element, persisted
   | 'mapping-live' // Paste-&-see, not persisted
   | 'requirement-generation'
-  | 'judge'; // Kaskaden-Validator (THE-401 S2): bewertet Generator-Mappings, löscht nie
+  | 'judge' // Kaskaden-Validator (THE-401 S2): bewertet Generator-Mappings, löscht nie
+  | 'discovery-judge'; // UC-LAW-002 Slice-2 (THE-462): LLM-Applicability-Urteil je Kandidaten-Gesetz
 
 export interface AiTracePrediction {
   elementId: string;
@@ -67,7 +68,7 @@ const aiTraceSchema = new Schema<IAiTrace>(
     requestId: { type: String, required: true, index: true },
     operation: {
       type: String,
-      enum: ['mapping', 'mapping-live', 'requirement-generation', 'judge'],
+      enum: ['mapping', 'mapping-live', 'requirement-generation', 'judge', 'discovery-judge'],
       required: true,
     },
     modelId: { type: String, required: true },
