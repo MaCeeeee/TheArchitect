@@ -109,6 +109,23 @@ function defaultJudgeModel(): string {
 }
 
 /**
+ * Prod-Gating als PURE Funktion (Eval-Degeneration-Fix): nur Kandidaten über
+ * der Retrieval-Schwelle, gedeckelt auf Top-N — exakt das, was in Prod den
+ * Judge erreicht. Exportiert, damit der Eval-Runner (runDiscoveryEval) dieselbe
+ * Kandidatenmenge misst statt der ungegateten (die bei kleinem Fixture-Korpus
+ * mit topK ≥ #§§ trivial ALLE Familien enthält ⇒ Recall degeneriert zu 100 %).
+ * Defaults = die env-Funktionen (LAW_DISCOVERY_JUDGE_THRESHOLD/_MAX_JUDGE) —
+ * Muster aggregateHitsToCandidates: Extraktion ohne Verhaltens-Change.
+ */
+export function gateCandidatesForJudge(
+  candidates: DiscoveryCandidate[],
+  threshold: number = judgeThreshold(),
+  max: number = maxJudge(),
+): DiscoveryCandidate[] {
+  return candidates.filter(c => c.score >= threshold).slice(0, max);
+}
+
+/**
  * Abgeleiteter Evidence-Set-Hash (Review-Fix 1 / Task 1): es gibt KEINEN
  * globalen Korpus-Versions-Skalar — `getCurrentVersionHashes` liefert einen
  * Hash PRO regulationKey. Ein Kandidat aggregiert mehrere Paragraphen, daher
@@ -148,9 +165,7 @@ export async function discoverAndJudge(
     return mergeApplicability(stageA, [], undefined, undefined, world);
   }
 
-  const gated = discovery.candidates
-    .filter(c => c.score >= judgeThreshold())
-    .slice(0, maxJudge());
+  const gated = gateCandidatesForJudge(discovery.candidates);
   if (gated.length === 0) {
     return mergeApplicability(stageA, [], undefined, undefined, world);
   }

@@ -233,8 +233,10 @@ describe('shipped discovery.v1.json + discovery.corpus.v1.json (Task 5 content)'
     expect(aiActParagraphs.some(p => p.language === 'en')).toBe(true);
   });
 
-  it('no fixture paragraph carries a vector yet (precompute has not run in this environment)', () => {
+  it('every present vector has exactly 768 dims (valid pre- AND post-precompute; absence is covered by the runner fail-fast guard)', () => {
     const fixtureCorpus = loadFixtureCorpus();
-    expect(fixtureCorpus.paragraphs.every(p => p.vector === undefined)).toBe(true);
+    for (const p of fixtureCorpus.paragraphs) {
+      if (p.vector !== undefined) expect(p.vector).toHaveLength(768);
+    }
   });
 });

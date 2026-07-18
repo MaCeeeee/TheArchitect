@@ -5,7 +5,8 @@ jest.mock('../services/useCaseProfile.service', () => ({ buildUseCaseProfile: (.
 jest.mock('../services/governedRetrieval.service', () => ({ governedCorpusSearch: (...a: unknown[]) => mockSearch(...a) }));
 jest.mock('../services/corpusClient.service', () => ({ isCorpusConfigured: () => mockConfigured() }));
 
-import { discoverCandidates } from '../services/lawDiscovery.service';
+import { discoverCandidates, gateCandidatesForJudge } from '../services/lawDiscovery.service';
+import type { DiscoveryCandidate } from '@thearchitect/shared';
 const h = (source: string, para: string, score: number) => ({ regulationKey: `${source}:${para}`, versionHash: 'x', source, paragraphNumber: para, title: 't', jurisdiction: 'EU', language: source.endsWith('-de') ? 'de' : 'en', score });
 
 describe('discoverCandidates', () => {
@@ -37,5 +38,39 @@ describe('discoverCandidates', () => {
     const res = await discoverCandidates('p1');
     expect(res.candidates).toEqual([]);
     expect(res.degraded).toBeTruthy();
+  });
+});
+
+describe('gateCandidatesForJudge (pure Prod-Gating — Eval-Reuse, kein Drift)', () => {
+  const cand = (family: string, score: number): DiscoveryCandidate => ({
+    family, sources: [`${family}-en`], jurisdiction: 'EU', score, hitCount: 1, topHits: [],
+  });
+
+  it('filtert unter der Schwelle und deckelt auf max (0.9/0.4/0.1, thr 0.3, max 5 ⇒ 2 Familien)', () => {
+    const gated = gateCandidatesForJudge([cand('a', 0.9), cand('b', 0.4), cand('c', 0.1)], 0.3, 5);
+    expect(gated.map(c => c.family)).toEqual(['a', 'b']);
+  });
+
+  it('max deckelt die Anzahl auch über der Schwelle', () => {
+    const gated = gateCandidatesForJudge([cand('a', 0.9), cand('b', 0.8), cand('c', 0.7)], 0.3, 2);
+    expect(gated.map(c => c.family)).toEqual(['a', 'b']);
+  });
+
+  it('lauter Sub-Threshold-Scores ⇒ leere Menge', () => {
+    expect(gateCandidatesForJudge([cand('a', 0.1), cand('b', 0.2)], 0.3, 5)).toEqual([]);
+  });
+
+  it('Defaults kommen aus den Env-Funktionen (LAW_DISCOVERY_JUDGE_THRESHOLD/_MAX_JUDGE)', () => {
+    const prevThr = process.env.LAW_DISCOVERY_JUDGE_THRESHOLD;
+    const prevMax = process.env.LAW_DISCOVERY_MAX_JUDGE;
+    try {
+      process.env.LAW_DISCOVERY_JUDGE_THRESHOLD = '0.5';
+      process.env.LAW_DISCOVERY_MAX_JUDGE = '1';
+      const gated = gateCandidatesForJudge([cand('a', 0.9), cand('b', 0.6), cand('c', 0.4)]);
+      expect(gated.map(c => c.family)).toEqual(['a']); // 0.4 < 0.5 raus, max 1 kappt b
+    } finally {
+      if (prevThr === undefined) delete process.env.LAW_DISCOVERY_JUDGE_THRESHOLD; else process.env.LAW_DISCOVERY_JUDGE_THRESHOLD = prevThr;
+      if (prevMax === undefined) delete process.env.LAW_DISCOVERY_MAX_JUDGE; else process.env.LAW_DISCOVERY_MAX_JUDGE = prevMax;
+    }
   });
 });

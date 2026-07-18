@@ -31,7 +31,7 @@ import {
   type FixtureCorpus,
 } from './discoveryGolden';
 import { readQueriesFile, DEFAULT_QUERIES_PATH, type QueriesFile } from '../scripts/build-discovery-eval-vectors';
-import { aggregateHitsToCandidates } from '../services/lawDiscovery.service';
+import { aggregateHitsToCandidates, gateCandidatesForJudge } from '../services/lawDiscovery.service';
 import { judgeCandidate, type JudgeCandidateArgs } from '../services/lawJudge.service';
 import {
   aggregateMetrics,
@@ -298,7 +298,13 @@ export interface BuildReportArgs {
   golden: DiscoveryGoldenSet;
   startedAt: string;
   topK: number;
+  /** PRIMÄR: die GEGATETE Kandidatenmenge (was in Prod den Judge erreicht). */
   retrievalOutcomes: CaseOutcome[];
+  /** Diagnose: alle aggregierten Familien (upper bound — degeneriert bei topK ≥ Korpus). */
+  anyHitOutcomes: CaseOutcome[];
+  corpusParagraphCount: number;
+  threshold: number;
+  maxJudge: number;
   ruleLessByCaseId: Map<string, string[]>;
   familyIssues: string[];
   judgeRun: JudgeRunSummary | null;
@@ -306,12 +312,14 @@ export interface BuildReportArgs {
 }
 
 export function buildMarkdownReport(args: BuildReportArgs): string {
-  const { golden, retrievalOutcomes } = args;
+  const { golden, retrievalOutcomes, anyHitOutcomes } = args;
   const stats = discoveryGoldenSetStats(golden);
   const overall = aggregateMetrics(retrievalOutcomes);
   const empty = emptySetAccuracy(retrievalOutcomes);
   const ruleLessRecall = ruleLessGoldRecall(retrievalOutcomes, args.ruleLessByCaseId);
   const recallCI = bootstrapCI(retrievalOutcomes, o => aggregateMetrics(o).recall);
+  const anyHit = aggregateMetrics(anyHitOutcomes);
+  const degenerate = args.topK >= args.corpusParagraphCount;
 
   const lines: string[] = [];
   lines.push(`# Discovery-Eval Report — Golden-Set ${golden.version}`);
@@ -321,12 +329,22 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     lines.push('> Results are development values, not a THE-381-style baseline.');
     lines.push('');
   }
-  lines.push(`- Date: ${args.startedAt} · Top-K: ${args.topK}`);
+  if (degenerate) {
+    // Degeneration-Hinweis (Ursache des ersten echten Laufs): topK ≥ Fixture-
+    // Korpus ⇒ jede Query retrievt ALLE §§ ⇒ any-hit-Metriken sind bedeutungslos.
+    lines.push(
+      `> ⚠️ **DEGENERATE any-hit setting**: topK (${args.topK}) ≥ fixture corpus size (${args.corpusParagraphCount} paragraphs) —`,
+    );
+    lines.push('> every query retrieves every paragraph, so any-hit recall is trivially 100%. The gated');
+    lines.push('> metrics below remain meaningful (they measure what actually reaches the judge in prod).');
+    lines.push('');
+  }
+  lines.push(`- Date: ${args.startedAt} · Top-K: ${args.topK} · Judge gate: threshold ${args.threshold}, max ${args.maxJudge}`);
   lines.push(
     `- Cases: ${stats.total} (hard negatives: ${stats.hardNegatives} = ${pct(stats.hardNegativeShare)}, ambiguous: ${stats.ambiguous}, rule-less-gold cases: ${stats.ruleLessCases})`,
   );
   lines.push('');
-  lines.push('## Retrieval (AC-7 — separate from the judge)');
+  lines.push('## Retrieval — gated candidate set (what reaches the judge in prod; AC-7)');
   lines.push('');
   lines.push('| Metric | Value | 95%-CI (bootstrap) |');
   lines.push('|---|---|---|');
@@ -339,9 +357,13 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     `| **ruleLessGold Recall** (Stage-A-blind families — the corpus value-add) | **${pct(ruleLessRecall)}** | — |`,
   );
   lines.push('');
+  lines.push(
+    `_Diagnostic: any-hit recall (upper bound): ${pct(anyHit.recall)} — K=${args.topK} vs corpus=${args.corpusParagraphCount} paragraphs; degenerate if K≥corpus._`,
+  );
+  lines.push('');
   // AC-2 (Fix 2): P/R JE Gesetz — deckt Familien-Blindstellen auf, die der
   // Gesamt-Recall versteckt.
-  lines.push('### Per-family breakdown (retrieval)');
+  lines.push('### Per-family breakdown (retrieval, gated)');
   lines.push('');
   lines.push('| Family | Precision | Recall | F2 | TP/FP/FN |');
   lines.push('|---|---|---|---|---|');
@@ -445,6 +467,9 @@ interface CliOptions {
   judge: boolean;
   judgeModel: string;
   outDir: string;
+  /** Judge-Gate fürs Retrieval-Scoring — Default wie Prod (0.3/5), CLI-override-bar. */
+  threshold: number;
+  maxJudge: number;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -455,6 +480,8 @@ function parseArgs(argv: string[]): CliOptions {
     judge: false,
     judgeModel: process.env.LAW_DISCOVERY_JUDGE_MODEL || 'claude-haiku-4-5-20251001',
     outDir: REPORTS_DIR,
+    threshold: 0.3,
+    maxJudge: 5,
   };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--golden' && argv[i + 1]) opts.goldenPath = path.resolve(argv[++i]);
@@ -463,6 +490,8 @@ function parseArgs(argv: string[]): CliOptions {
     else if (argv[i] === '--judge') opts.judge = true;
     else if (argv[i] === '--judge-model' && argv[i + 1]) opts.judgeModel = argv[++i];
     else if (argv[i] === '--out' && argv[i + 1]) opts.outDir = path.resolve(argv[++i]);
+    else if (argv[i] === '--threshold' && argv[i + 1]) opts.threshold = Number(argv[++i]);
+    else if (argv[i] === '--max-judge' && argv[i + 1]) opts.maxJudge = Number(argv[++i]);
   }
   return opts;
 }
@@ -526,17 +555,23 @@ async function main(): Promise<void> {
   const byCaseId = new Map((queries as QueriesFile).queries.map(q => [q.caseId, q]));
 
   const ruleLessByCaseId = new Map(golden.cases.map(c => [c.caseId, c.ruleLessGold]));
-  const retrievalOutcomes: CaseOutcome[] = [];
-  const perCaseCandidates = new Map<string, DiscoveryCandidate[]>();
+  // Degeneration-Fix: PRIMÄR wird die GEGATETE Kandidatenmenge gemessen (was in
+  // Prod wirklich den Judge erreicht) — die ungegatete any-hit-Menge ist bei
+  // topK ≥ #Fixture-§§ trivial vollständig (Recall 100 %) und nur noch Diagnose.
+  const retrievalOutcomes: CaseOutcome[] = []; // gated (primary)
+  const anyHitOutcomes: CaseOutcome[] = []; // ungated (upper-bound diagnostic)
+  const perCaseCandidates = new Map<string, DiscoveryCandidate[]>(); // GATED — feeds the judge stage
   const familyIssues: string[] = [];
 
   for (const c of golden.cases) {
     const baselineVector = byCaseId.get(c.caseId)!.baselineVector as number[];
     const hits = topKByCosine(baselineVector, corpus.paragraphs, DEFAULT_TOP_K);
     const candidates = aggregateHitsToCandidates(hits);
-    perCaseCandidates.set(c.caseId, candidates);
+    const gated = gateCandidatesForJudge(candidates, opts.threshold, opts.maxJudge);
+    perCaseCandidates.set(c.caseId, gated);
     familyIssues.push(...familyLanguageConsistencyIssues(candidates));
-    retrievalOutcomes.push(familyOutcomeForCase(c.caseId, c.goldFamilies, candidates));
+    retrievalOutcomes.push(familyOutcomeForCase(c.caseId, c.goldFamilies, gated));
+    anyHitOutcomes.push(familyOutcomeForCase(c.caseId, c.goldFamilies, candidates));
   }
 
   let hydeRun: HydeRunSummary | null = null;
@@ -546,7 +581,10 @@ async function main(): Promise<void> {
       const hydeVector = byCaseId.get(c.caseId)!.hydeVector as number[];
       const hits = topKByCosine(hydeVector, corpus.paragraphs, DEFAULT_TOP_K);
       const candidates = aggregateHitsToCandidates(hits);
-      hydeOutcomes.push(familyOutcomeForCase(c.caseId, c.goldFamilies, candidates));
+      // Vergleichslauf auf derselben (gegateten) Ebene wie die Baseline — sonst
+      // vergleicht man eine gated- gegen eine degenerierte any-hit-Menge.
+      const gated = gateCandidatesForJudge(candidates, opts.threshold, opts.maxJudge);
+      hydeOutcomes.push(familyOutcomeForCase(c.caseId, c.goldFamilies, gated));
     }
     hydeRun = { hydeOutcomes };
   }
@@ -570,6 +608,10 @@ async function main(): Promise<void> {
     startedAt,
     topK: DEFAULT_TOP_K,
     retrievalOutcomes,
+    anyHitOutcomes,
+    corpusParagraphCount: corpus.paragraphs.length,
+    threshold: opts.threshold,
+    maxJudge: opts.maxJudge,
     ruleLessByCaseId,
     familyIssues: [...new Set(familyIssues)],
     judgeRun,
@@ -588,9 +630,15 @@ async function main(): Promise<void> {
         frozen: golden.frozen,
         startedAt,
         topK: DEFAULT_TOP_K,
+        judgeGate: { threshold: opts.threshold, maxJudge: opts.maxJudge },
+        corpusParagraphCount: corpus.paragraphs.length,
+        degenerateAnyHit: DEFAULT_TOP_K >= corpus.paragraphs.length,
+        // PRIMARY: gated candidate set (what reaches the judge in prod).
         overall: aggregateMetrics(retrievalOutcomes),
         perFamily: perFamilyBreakdown(retrievalOutcomes),
         ruleLessGoldRecall: ruleLessGoldRecall(retrievalOutcomes, ruleLessByCaseId),
+        // Diagnostic upper bound (degenerate when topK >= corpus size).
+        anyHit: { overall: aggregateMetrics(anyHitOutcomes) },
         familyIssues,
         judge: judgeRun
           ? {

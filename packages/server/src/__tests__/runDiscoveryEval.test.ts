@@ -19,7 +19,8 @@ import {
   perFamilyBreakdown,
   buildJudgePostOutcome,
 } from '../evals/runDiscoveryEval';
-import { precisionByConfidenceBand, expectedCalibrationError, calibrationSamplesFromOutcomes } from '../evals/metrics';
+import { precisionByConfidenceBand, expectedCalibrationError, calibrationSamplesFromOutcomes, emptySetAccuracy } from '../evals/metrics';
+import { gateCandidatesForJudge } from '../services/lawDiscovery.service';
 import type { FixtureCorpus, DiscoveryGoldenSet } from '../evals/discoveryGolden';
 import type { DiscoveryCandidate } from '@thearchitect/shared';
 import type { CaseOutcome } from '../evals/metrics';
@@ -225,16 +226,7 @@ describe('perFamilyBreakdown (AC-2, Fix 2)', () => {
       { caseId: 'c1', source: 'discovery', goldElementIds: ['ai-act'], predicted: [{ elementId: 'ai-act', confidence: 0.8 }] },
       { caseId: 'c2', source: 'discovery', goldElementIds: ['dora'], predicted: [] },
     ];
-    const md = buildMarkdownReport({
-      golden: { version: 'v1', frozen: false, rubricRef: 'x', cases: [] },
-      startedAt: '2026-07-18T00:00:00.000Z',
-      topK: 60,
-      retrievalOutcomes: outcomes,
-      ruleLessByCaseId: new Map(),
-      familyIssues: [],
-      judgeRun: null,
-      hydeRun: null,
-    });
+    const md = buildMarkdownReport(reportArgs({ retrievalOutcomes: outcomes, anyHitOutcomes: outcomes }));
     expect(md).toMatch(/per-family/i);
     expect(md).toMatch(/\| ai-act \|/);
     expect(md).toMatch(/\| dora \|/);
@@ -280,33 +272,85 @@ describe('buildJudgePostOutcome (AC-2, Fix 3 — real judge confidence, not the 
   });
 });
 
+// Shared default args for report tests — the degeneration fix added required
+// fields (anyHitOutcomes, corpusParagraphCount, threshold, maxJudge).
+function reportArgs(overrides: Partial<Parameters<typeof buildMarkdownReport>[0]> = {}): Parameters<typeof buildMarkdownReport>[0] {
+  return {
+    golden: { version: 'v1', frozen: false, rubricRef: 'x', cases: [] },
+    startedAt: '2026-07-18T00:00:00.000Z',
+    topK: 60,
+    retrievalOutcomes: [],
+    anyHitOutcomes: [],
+    corpusParagraphCount: 100,
+    threshold: 0.3,
+    maxJudge: 5,
+    ruleLessByCaseId: new Map(),
+    familyIssues: [],
+    judgeRun: null,
+    hydeRun: null,
+    ...overrides,
+  };
+}
+
+describe('gated vs any-hit prediction sets (eval degeneration fix)', () => {
+  const cand = (family: string, score: number): DiscoveryCandidate => ({
+    family, sources: [`${family}-en`], jurisdiction: 'EU', score, hitCount: 1, topHits: [],
+  });
+
+  it('gated outcome carries only prod-judge candidates (0.9/0.4/0.1, thr 0.3, max 5 ⇒ 2), any-hit all 3', () => {
+    const candidates = [cand('a', 0.9), cand('b', 0.4), cand('c', 0.1)];
+    const gatedOutcome = familyOutcomeForCase('c1', ['a'], gateCandidatesForJudge(candidates, 0.3, 5));
+    const anyHitOutcome = familyOutcomeForCase('c1', ['a'], candidates);
+    expect(gatedOutcome.predicted.map(p => p.elementId)).toEqual(['a', 'b']);
+    expect(anyHitOutcome.predicted.map(p => p.elementId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('hard negative with only sub-threshold scores: gated is empty ⇒ empty-set accuracy counts it as correct (any-hit would not)', () => {
+    const candidates = [cand('a', 0.1), cand('b', 0.2)];
+    const gatedOutcome = familyOutcomeForCase('neg', [], gateCandidatesForJudge(candidates, 0.3, 5));
+    const anyHitOutcome = familyOutcomeForCase('neg', [], candidates);
+    expect(gatedOutcome.predicted).toEqual([]);
+    expect(emptySetAccuracy([gatedOutcome])).toBe(1);
+    expect(emptySetAccuracy([anyHitOutcome])).toBe(0); // the degenerate read this fix removes from the headline
+  });
+
+  it('report shows the main tables on the gated set and any-hit only as an upper-bound diagnostic line', () => {
+    const gated: CaseOutcome[] = [
+      { caseId: 'c1', source: 'discovery', goldElementIds: ['a'], predicted: [{ elementId: 'a', confidence: 0.9 }] },
+    ];
+    const anyHit: CaseOutcome[] = [
+      { caseId: 'c1', source: 'discovery', goldElementIds: ['a'], predicted: [{ elementId: 'a', confidence: 0.9 }, { elementId: 'b', confidence: 0.1 }] },
+    ];
+    const md = buildMarkdownReport(reportArgs({ retrievalOutcomes: gated, anyHitOutcomes: anyHit, corpusParagraphCount: 100, topK: 60 }));
+    expect(md).toMatch(/gated/i); // headline section names the gated set
+    expect(md).toMatch(/any-hit recall \(upper bound\)/i);
+    expect(md).toMatch(/K=60 vs corpus=100 paragraphs/);
+  });
+});
+
+describe('degeneration hint (topK ≥ fixture corpus size)', () => {
+  it('warns when topK >= corpusParagraphCount (every query retrieves everything)', () => {
+    const md = buildMarkdownReport(reportArgs({ topK: 60, corpusParagraphCount: 35 }));
+    expect(md).toMatch(/DEGENERATE any-hit setting/);
+    expect(md).toMatch(/60.*35|35.*60/);
+  });
+
+  it('does not show the warning banner when topK < corpusParagraphCount (the standing diagnostic line stays)', () => {
+    const md = buildMarkdownReport(reportArgs({ topK: 60, corpusParagraphCount: 100 }));
+    expect(md).not.toMatch(/DEGENERATE any-hit setting/);
+    expect(md).toMatch(/any-hit recall \(upper bound\)/i); // diagnostic line is always present
+  });
+});
+
 describe('buildMarkdownReport', () => {
   it('shows the PRELIMINARY banner when the golden set is not frozen', () => {
-    const md = buildMarkdownReport({
-      golden: { version: 'v1', frozen: false, rubricRef: 'x', cases: [] },
-      startedAt: '2026-07-18T00:00:00.000Z',
-      topK: 60,
-      retrievalOutcomes: [],
-      ruleLessByCaseId: new Map(),
-      familyIssues: [],
-      judgeRun: null,
-      hydeRun: null,
-    });
+    const md = buildMarkdownReport(reportArgs());
     expect(md).toMatch(/PRELIMINARY/);
     expect(md).toMatch(/not yet owner-approved/i);
   });
 
   it('omits the banner when frozen:true', () => {
-    const md = buildMarkdownReport({
-      golden: { version: 'v1', frozen: true, rubricRef: 'x', cases: [] },
-      startedAt: '2026-07-18T00:00:00.000Z',
-      topK: 60,
-      retrievalOutcomes: [],
-      ruleLessByCaseId: new Map(),
-      familyIssues: [],
-      judgeRun: null,
-      hydeRun: null,
-    });
+    const md = buildMarkdownReport(reportArgs({ golden: { version: 'v1', frozen: true, rubricRef: 'x', cases: [] } }));
     expect(md).not.toMatch(/PRELIMINARY/);
   });
 });
