@@ -91,3 +91,12 @@ export interface DiscoveryFinding {
   judgeModel: string;         // Modell, das dieses Urteil erzeugte (Cache-/Reuse-Achse)
   createdBy: 'llm' | 'human';
 }
+
+// ─── UC-LAW-002 Slice-2b (THE-464) — UI-Gating ────────────────────
+
+/** Verfügbarkeits-Signal fürs UI-Gating (THE-464 AC-1) — additiv in der /applicability-Response. */
+export interface DiscoveryAvailability {
+  enabled: boolean;            // LAW_DISCOVERY_ENABLED
+  corpusConfigured: boolean;   // Mongo-Korpus erreichbar konfiguriert
+  providerConfigured: boolean; // ANTHROPIC_API_KEY vorhanden (Judge lauffähig)
+}

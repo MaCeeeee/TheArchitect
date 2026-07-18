@@ -12,6 +12,7 @@
  */
 import { Router } from 'express';
 import { z } from 'zod';
+import type { DiscoveryAvailability } from '@thearchitect/shared';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
@@ -23,9 +24,10 @@ import {
 } from '../services/norm.service';
 import { isCorpusConfigured } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
-import { buildApplicabilityReport } from '../services/regulationApplicability.service';
+import { buildApplicabilityReport, loadNormWorldState } from '../services/regulationApplicability.service';
 import { discoverAndJudge } from '../services/lawDiscovery.service';
-import { setFindingStatus } from '../services/lawDiscoveryFinding.service';
+import { setFindingStatus, listFindings } from '../services/lawDiscoveryFinding.service';
+import { mergeApplicability } from '../services/lawApplicabilityMerge.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -59,10 +61,34 @@ router.get('/:projectId/norms', async (req, res) => {
 
 // UC-LAW-001 — Anwendbarkeits-Radar. VOR den :workId-Routen registriert, damit
 // „applicability" nie als workId interpretiert wird (statische Segmente zuerst).
+//
+// UC-LAW-002 Slice-2b (THE-464 AC-1 + Review-Fix 4): additiv um ein
+// `discovery`-Verfügbarkeits-Feld erweitert (Muster GET /norms:
+// available/corpusConfigured — Präzedenzfall). Ist das Flag an, mergt der
+// Handler den Stage-A-Report zusätzlich BILLIG mit bereits persistierten,
+// nicht-abgelehnten Korpus-Funden (reiner Mongo-Read, KEIN Retrieval/LLM) —
+// so sieht der Nutzer bestätigte/offene Korpus-Funde bei jedem Seitenaufruf,
+// ohne erneut auf „Discover" zu klicken. Trade-off (bewusst): ohne einen
+// aktuellen Retrieval-Lauf wird hier kein `stale` berechnet.
 router.get('/:projectId/norms/applicability', async (req, res) => {
   try {
-    const report = await buildApplicabilityReport(req.params.projectId);
-    return res.json({ success: true, data: report });
+    const projectId = req.params.projectId;
+    const stageA = await buildApplicabilityReport(projectId);
+    const discovery: DiscoveryAvailability = {
+      enabled: process.env.LAW_DISCOVERY_ENABLED === 'true',
+      corpusConfigured: isCorpusConfigured(),
+      providerConfigured: Boolean(process.env.ANTHROPIC_API_KEY),
+    };
+    if (!discovery.enabled) {
+      return res.json({ success: true, data: stageA, discovery });
+    }
+    const [findings, world] = await Promise.all([
+      listFindings(projectId),
+      loadNormWorldState(projectId),
+    ]);
+    const persisted = findings.filter(f => f.applies && f.status !== 'rejected');
+    const merged = mergeApplicability(stageA, persisted, undefined, undefined, world);
+    return res.json({ success: true, data: merged, discovery });
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.applicability] failed');
     return res.status(500).json({ success: false, error: 'failed to assess applicability' });
@@ -175,6 +201,23 @@ router.post('/:projectId/norms/discover/reject', requireProjectAccess('editor'),
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.discover.reject] failed');
     return res.status(500).json({ success: false, error: 'failed to reject finding' });
+  }
+});
+
+// UC-LAW-002 Slice-2b (THE-464 AC-3) — read-only Liste ALLER Korpus-Funde
+// (inkl. rejected) fürs „show rejected"-Toggle im Panel. VOR :workId
+// registriert (statische Segmente zuerst); `authenticate` genügt, kein
+// editor-Gate — reiner Read.
+router.get('/:projectId/norms/discover/findings', async (req, res) => {
+  if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
+    return res.status(404).json({ success: false, error: 'not found' });
+  }
+  try {
+    const data = await listFindings(String(req.params.projectId));
+    return res.json({ success: true, data });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.discover.findings] failed');
+    return res.status(500).json({ success: false, error: 'failed to list discovery findings' });
   }
 });
 
