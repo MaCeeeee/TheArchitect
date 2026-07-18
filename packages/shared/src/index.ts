@@ -38,3 +38,4 @@ export * from './constants/register-scoring.constants';
 export * from './utils/register-scoring';
 export * from './utils/violation-fix';
 export * from './ontology';
+export * from './types/law-discovery.types';

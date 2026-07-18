@@ -19,6 +19,8 @@ import {
   type QueryResult,
   type QueryChunk,
 } from './dataServer.service';
+import { corpusVectorSearch } from './corpusVectorSearch.service';
+import type { CorpusHit } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
 export type VersionPin = Record<string, string>; // regulationKey -> versionHash
@@ -203,4 +205,54 @@ export async function governedQuery(input: GovernedQueryInput): Promise<QueryRes
     kept.push(c);
   }
   return { chunks: kept };
+}
+
+export interface GovernedCorpusSearchInput {
+  text: string;
+  topK?: number;
+  pin?: VersionPin;
+  eligibleOnly?: boolean; // default true
+  /**
+   * NAHT (THE-432 / Weg-A 2026-07-18): künftiger Provision-Typ-Filter. Der Korpus
+   * ist heute untypisiert → dieser Parameter ist DORMANT (keine Wirkung), bis die
+   * ONTO-Typisierung Payload-Typen liefert und das Eval-Gate .6 (THE-465) zeigt,
+   * dass Retrieval-Präzision die Bremse ist. NICHT entfernen — dokumentierte Naht.
+   */
+  provisionKind?: string;
+}
+
+/**
+ * Governter korpusweiter Vektor-Search (THE-461). Wendet dieselbe Eligibility-/
+ * Stale-Drop-/Pin-/unverifiable-Politik wie `governedQuery` an, damit LAW-002
+ * keinen ungoverneten Lesepfad öffnet (THE-459-Kontrakt). `provisionKind` ist eine
+ * dormante Naht (s. o.).
+ *
+ * DIVERGENZ zu `governedQuery`: dort wird ein gepinnter Treffer aus dem Mongo-
+ * `fullText` bedient (Volltext). Hier trägt `CorpusHit` NUR Metadaten (kein
+ * fullText) — der Pin verifiziert daher nur den versionHash und behält den
+ * Qdrant-Treffer; ein Pin-Treffer ohne versionHash ist nicht verifizierbar →
+ * `unverifiable` (nicht `pinnedServed`).
+ */
+export async function governedCorpusSearch(input: GovernedCorpusSearchInput): Promise<CorpusHit[]> {
+  const eligibleOnly = input.eligibleOnly ?? true;
+  const hits = await corpusVectorSearch(input.text, input.topK ?? 50);
+  if (hits.length === 0) return [];
+
+  const keys = [...new Set(hits.map(h => h.regulationKey))];
+  const current = await getCurrentVersionHashes(keys);
+
+  const kept: CorpusHit[] = [];
+  for (const h of hits) {
+    const pinned = input.pin?.[h.regulationKey];
+    if (pinned) {
+      if (!h.versionHash) { stats.unverifiable += 1; kept.push(h); continue; }
+      if (h.versionHash !== pinned) { stats.staleDropped += 1; continue; }
+      stats.pinnedServed += 1; kept.push(h); continue;
+    }
+    if (!h.versionHash) { stats.unverifiable += 1; kept.push(h); continue; }
+    if (eligibleOnly && h.versionHash !== current.get(h.regulationKey)) { stats.staleDropped += 1; continue; }
+    kept.push(h);
+  }
+  // provisionKind: dormant — bewusst kein Filter (THE-432).
+  return kept;
 }
