@@ -21,6 +21,7 @@ import {
 import { isCorpusConfigured } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
 import { buildApplicabilityReport } from '../services/regulationApplicability.service';
+import { discoverCandidates } from '../services/lawDiscovery.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -61,6 +62,21 @@ router.get('/:projectId/norms/applicability', async (req, res) => {
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.applicability] failed');
     return res.status(500).json({ success: false, error: 'failed to assess applicability' });
+  }
+});
+
+// UC-LAW-002 (THE-459) — korpusweite Discovery. Feature-flagged (Slice-1: Judge/UI
+// folgen in Slice-2). Statisches Segment, daher vor den :workId-Routen registriert.
+router.post('/:projectId/norms/discover', async (req, res) => {
+  if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
+    return res.status(404).json({ success: false, error: 'not found' });
+  }
+  try {
+    const result = await discoverCandidates(req.params.projectId);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.discover] failed');
+    return res.status(500).json({ success: false, error: 'failed to discover regulations' });
   }
 });
 
