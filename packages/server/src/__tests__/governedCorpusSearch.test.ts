@@ -1,5 +1,3 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-
 const mockCurrent = jest.fn();
 jest.mock('../services/corpusClient.service', () => ({
   getCurrentVersionHashes: (...a: unknown[]) => mockCurrent(...a),

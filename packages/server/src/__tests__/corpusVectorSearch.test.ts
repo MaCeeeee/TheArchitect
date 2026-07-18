@@ -1,4 +1,3 @@
-import { describe, it, expect } from '@jest/globals';
 import { __setCorpusSearchDeps, __resetCorpusSearchDeps, corpusVectorSearch } from '../services/corpusVectorSearch.service';
 
 describe('corpusVectorSearch', () => {

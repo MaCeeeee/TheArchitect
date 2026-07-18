@@ -1,5 +1,3 @@
-import { describe, it, expect, jest } from '@jest/globals';
-
 // loadProjectFacts + evaluateSignals mocken — pure Profil-Logik isoliert testen.
 const mockFacts = jest.fn();
 const mockSignals = jest.fn();

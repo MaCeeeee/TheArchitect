@@ -1,5 +1,3 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-
 const mockProfile = jest.fn();
 const mockSearch = jest.fn();
 const mockConfigured = jest.fn();
