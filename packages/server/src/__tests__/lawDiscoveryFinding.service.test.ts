@@ -88,6 +88,23 @@ describe('lawDiscoveryFinding.service (UC-LAW-002 Slice-2 / THE-463)', () => {
       const all = await listFindings(pid);
       expect(all).toHaveLength(2);
     });
+
+    it('survives an E11000 upsert race (parallel /discover) and falls back to a plain update (Code-Review-Fix)', async () => {
+      const pid = projectId();
+      await upsertFindings(pid, [finding({ confidence: 0.5 })]); // der "Gewinner" des Race
+
+      // Der Verlierer: sein upsert wirft E11000, weil das Dokument inzwischen existiert.
+      const spy = jest.spyOn(LawDiscoveryFinding, 'updateOne').mockImplementationOnce(() => {
+        const err = new Error('E11000 duplicate key error') as Error & { code: number };
+        err.code = 11000;
+        throw err;
+      });
+      await expect(upsertFindings(pid, [finding({ confidence: 0.99 })])).resolves.toBeUndefined();
+      spy.mockRestore();
+
+      const found = await findExisting(pid, 'ai-act', 'hash-1');
+      expect(found!.confidence).toBe(0.99); // per plain update nachgezogen, kein Crash
+    });
   });
 
   describe('setFindingStatus — lifecycle transitions', () => {

@@ -75,11 +75,20 @@ export async function discoverCandidates(projectId: string): Promise<DiscoveryRe
 // gedeckelt auf eine Top-N-Anzahl — beide runtime-konfigurierbar. Bewusst PER
 // AUFRUF gelesen (nicht modul-weit gecacht wie TOP_K oben), damit Env-Änderungen
 // (Tests, Config-Reload) sofort greifen statt am Modul-Import-Zeitpunkt einzufrieren.
+// Code-Review-Fix: `Number(env)||default` schluckt ein bewusstes `0` (z.B.
+// MAX_JUDGE=0 als Judge-Kill-Switch). Explizit: unset/leer/ungültig → Default,
+// jede endliche Zahl ≥0 (inkl. 0) wird respektiert.
+function envNonNegative(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
 function judgeThreshold(): number {
-  return Number(process.env.LAW_DISCOVERY_JUDGE_THRESHOLD) || 0.3;
+  return envNonNegative('LAW_DISCOVERY_JUDGE_THRESHOLD', 0.3);
 }
 function maxJudge(): number {
-  return Number(process.env.LAW_DISCOVERY_MAX_JUDGE) || 5;
+  return envNonNegative('LAW_DISCOVERY_MAX_JUDGE', 5);
 }
 function defaultJudgeModel(): string {
   return process.env.LAW_DISCOVERY_JUDGE_MODEL || 'claude-haiku-4-5-20251001';

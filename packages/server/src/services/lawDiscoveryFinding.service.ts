@@ -65,25 +65,34 @@ export async function upsertFindings(
       continue;
     }
 
-    await LawDiscoveryFinding.updateOne(
-      { projectId: projectObjectId, family: f.family, corpusVersionHash: f.corpusVersionHash },
-      {
-        $set: {
-          sources: f.sources,
-          jurisdiction: f.jurisdiction,
-          applies: f.applies,
-          confidence: f.confidence,
-          reasoning: f.reasoning,
-          elementIds: f.elementIds,
-          keyParagraphs: f.keyParagraphs,
-          retrievalScore: f.retrievalScore,
-          judgeModel: f.judgeModel,
-          status: 'auto',
-          createdBy: 'llm',
-        },
-      },
-      { upsert: true, runValidators: true },
-    );
+    const query = { projectId: projectObjectId, family: f.family, corpusVersionHash: f.corpusVersionHash };
+    const content = {
+      sources: f.sources,
+      jurisdiction: f.jurisdiction,
+      applies: f.applies,
+      confidence: f.confidence,
+      reasoning: f.reasoning,
+      elementIds: f.elementIds,
+      keyParagraphs: f.keyParagraphs,
+      retrievalScore: f.retrievalScore,
+      judgeModel: f.judgeModel,
+      status: 'auto',
+      createdBy: 'llm',
+    };
+
+    try {
+      await LawDiscoveryFinding.updateOne(query, { $set: content }, { upsert: true, runValidators: true });
+    } catch (err) {
+      // Code-Review-Fix: findOne+upsert ist nicht atomar — bei parallelem
+      // /discover (Doppelklick, zwei Tabs) verliert einer das bekannte Mongo-
+      // Upsert-Race mit E11000, obwohl upsert:true gesetzt ist. Das Dokument
+      // existiert dann bereits: menschlichen Status respektieren, sonst als
+      // reines Update (ohne upsert) nachziehen. Alles andere wirft weiter.
+      if ((err as { code?: number }).code !== 11000) throw err;
+      const raced = await LawDiscoveryFinding.findOne(query).select('status').lean();
+      if (raced && raced.status !== 'auto') continue;
+      await LawDiscoveryFinding.updateOne(query, { $set: content }, { runValidators: true });
+    }
   }
 }
 

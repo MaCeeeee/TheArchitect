@@ -115,6 +115,10 @@ export function sanitizeLawJudgeResponse(
 // ─── Cache (in-process, THE-462 AC-2) ────────────────────────────
 
 const judgeCache = new Map<string, LawJudgeVerdict>();
+// Code-Review-Fix: FIFO-Cap gegen unbegrenztes Wachstum über Prozesslaufzeit —
+// die DAUERHAFTE Dedup-Funktion liegt in der persistierten findExisting-Lookup
+// (discoverAndJudge); dieser Cache fängt nur kurzfristige Doppel-Calls ab.
+const JUDGE_CACHE_MAX = 500;
 
 function cacheKey(profileText: string, family: string, corpusVersionHash: string, model: string): string {
   const profileHash = createHash('sha256').update(profileText, 'utf8').digest('hex');
@@ -240,5 +244,9 @@ export async function judgeCandidate(args: JudgeCandidateArgs): Promise<LawJudge
   });
 
   judgeCache.set(key, sanitized);
+  if (judgeCache.size > JUDGE_CACHE_MAX) {
+    const oldest = judgeCache.keys().next().value;
+    if (oldest !== undefined) judgeCache.delete(oldest);
+  }
   return sanitized;
 }

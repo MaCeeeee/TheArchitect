@@ -85,7 +85,24 @@ export function mergeApplicability(
   // AC-2 (nur applies:true zählt als Korpus-Signal — ein "gilt nicht"-Urteil
   // trägt keine positive Evidenz und darf keinen Assessment berühren/erzeugen).
   const applicableFindings = findings.filter(f => f.applies);
-  const findingByFamily = new Map(applicableFindings.map(f => [f.family, f]));
+
+  // Code-Review-Fix (Determinismus): mehrere Findings derselben Familie können
+  // koexistieren (Evidence-Wechsel = neuer Dedup-Key, alte Docs bleiben als
+  // Historie). Pro Familie gewinnt DETERMINISTISCH das Finding, dessen
+  // Evidence-Set dem aktuellen Lauf entspricht — nie die zufällige Mongo-
+  // Reihenfolge. Ohne currentHashes (Unit-Merge): erstes gesehenes gewinnt.
+  const findingByFamily = new Map<string, DiscoveryFinding>();
+  for (const f of applicableFindings) {
+    const cur = findingByFamily.get(f.family);
+    if (!cur) {
+      findingByFamily.set(f.family, f);
+      continue;
+    }
+    const currentHash = currentEvidenceHashes?.get(f.family);
+    if (currentHash !== undefined && f.corpusVersionHash === currentHash && cur.corpusVersionHash !== currentHash) {
+      findingByFamily.set(f.family, f);
+    }
+  }
 
   const matchedFamilies = new Set<string>();
   const merged: NormApplicabilityAssessment[] = stageA.assessments.map(a => {
@@ -101,7 +118,9 @@ export function mergeApplicability(
     };
   });
 
-  for (const finding of applicableFindings) {
+  // Über die deduplizierte Familien-Sicht iterieren — sonst erzeugen zwei
+  // Findings derselben Familie zwei corpus-only-Assessments (Code-Review-Fix).
+  for (const finding of findingByFamily.values()) {
     if (matchedFamilies.has(finding.family)) continue; // schon als 'both' gemerged
     merged.push(toCorpusOnlyAssessment(finding, isStale(finding, currentEvidenceHashes)));
   }
@@ -114,7 +133,9 @@ export function mergeApplicability(
     assessments: merged,
     coverage: {
       stageARuleCount: stageA.assessments.length,
-      stageBCorpusCount: findings.length,
+      // Familien-Zählung (dedupliziert, nur applies:true) — „M Korpus-Gesetze",
+      // nicht rohe Finding-Dokumente (Code-Review-Fix).
+      stageBCorpusCount: findingByFamily.size,
       corpusVersion,
     },
   };

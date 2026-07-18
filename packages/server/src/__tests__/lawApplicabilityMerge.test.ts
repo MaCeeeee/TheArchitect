@@ -141,6 +141,22 @@ describe('mergeApplicability', () => {
     expect(merged.assessments.find(a => a.ruleId === 'nis2')!.corpus!.stale).toBeUndefined();
   });
 
+  it('with multiple applicable findings for one family, deterministically prefers the current evidence set (Code-Review-Fix)', () => {
+    const stageA = stageAReport([]);
+    const fOld = finding({ corpusVersionHash: 'OLD', confidence: 0.9 });
+    const fNew = finding({ corpusVersionHash: 'CUR', confidence: 0.7 });
+    const current = new Map([['ai-act', 'CUR']]);
+    // Reihenfolge egal — das CURRENT-Finding gewinnt in beiden Fällen, genau EIN Assessment.
+    for (const order of [[fOld, fNew], [fNew, fOld]]) {
+      const merged = mergeApplicability(stageA, order, 'X', current);
+      const matches = merged.assessments.filter(a => a.ruleId === 'ai-act');
+      expect(matches).toHaveLength(1);
+      expect(matches[0].corpus!.confidence).toBe(0.7); // CUR, nicht OLD
+      expect(matches[0].corpus!.stale).toBeUndefined();
+      expect(merged.coverage!.stageBCorpusCount).toBe(1); // Familien, nicht Roh-Dokumente
+    }
+  });
+
   it('without currentEvidenceHashes (unit-merge without a live run) nothing is flagged stale', () => {
     const merged = mergeApplicability(stageAReport([]), [finding({ corpusVersionHash: 'OLD' })], 'X');
     expect(merged.assessments[0].corpus!.stale).toBeUndefined();
