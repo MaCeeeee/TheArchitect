@@ -11,7 +11,10 @@
  *      Ab hier läuft eine gecrawlte Regulation durch die Compliance-Pipeline.
  */
 import { Router } from 'express';
+import { z } from 'zod';
 import { authenticate } from '../middleware/auth.middleware';
+import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+import { createAuditEntry } from '../middleware/audit.middleware';
 import {
   listNorms,
   getNorm,
@@ -21,7 +24,8 @@ import {
 import { isCorpusConfigured } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
 import { buildApplicabilityReport } from '../services/regulationApplicability.service';
-import { discoverCandidates } from '../services/lawDiscovery.service';
+import { discoverAndJudge } from '../services/lawDiscovery.service';
+import { setFindingStatus } from '../services/lawDiscoveryFinding.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -65,18 +69,97 @@ router.get('/:projectId/norms/applicability', async (req, res) => {
   }
 });
 
-// UC-LAW-002 (THE-459) — korpusweite Discovery. Feature-flagged (Slice-1: Judge/UI
-// folgen in Slice-2). Statisches Segment, daher vor den :workId-Routen registriert.
-router.post('/:projectId/norms/discover', async (req, res) => {
+// UC-LAW-002 (THE-459/462/463) — korpusweite Discovery + LLM-Judge + Hybrid-
+// Merge. Feature-flagged. Statische Segmente, daher vor den :workId-Routen
+// registriert (sonst würde "discover" als workId interpretiert).
+//
+// Review-Fix 6: `/discover` kostet jetzt LLM-Geld (Judge-Calls), nicht mehr
+// nur Retrieval — dasselbe Access-Gate wie die anderen Write-Pfade
+// (compliance.routes confirm/auto: `requireProjectAccess('editor')`).
+router.post('/:projectId/norms/discover', requireProjectAccess('editor'), async (req, res) => {
   if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
     return res.status(404).json({ success: false, error: 'not found' });
   }
   try {
-    const result = await discoverCandidates(req.params.projectId);
-    return res.json({ success: true, data: result });
+    const report = await discoverAndJudge(String(req.params.projectId));
+    return res.json({ success: true, data: report });
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.discover] failed');
     return res.status(500).json({ success: false, error: 'failed to discover regulations' });
+  }
+});
+
+const DiscoverLifecycleBodySchema = z.object({
+  family: z.string().min(1),
+  corpusVersionHash: z.string().min(1),
+});
+
+// UC-LAW-002 Slice-2 (THE-463) — menschliche Entscheidung über einen
+// Korpus-Befund. Muster compliance.routes.ts confirm-Route (Body-Zod,
+// requireProjectAccess('editor'), createAuditEntry).
+router.post('/:projectId/norms/discover/confirm', requireProjectAccess('editor'), async (req, res) => {
+  if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
+    return res.status(404).json({ success: false, error: 'not found' });
+  }
+  const parsed = DiscoverLifecycleBodySchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+  }
+  try {
+    const projectId = String(req.params.projectId);
+    const updated = await setFindingStatus(projectId, parsed.data.family, parsed.data.corpusVersionHash, 'confirmed');
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'finding not found' });
+    }
+    if (req.user) {
+      await createAuditEntry({
+        userId: req.user._id.toString(),
+        projectId,
+        action: 'law.discovery.confirm',
+        entityType: 'LawDiscoveryFinding',
+        ip: req.ip,
+        userAgent: req.get('user-agent') ?? undefined,
+        riskLevel: 'medium',
+        after: { family: parsed.data.family, corpusVersionHash: parsed.data.corpusVersionHash, status: 'confirmed' },
+      });
+    }
+    return res.json({ success: true, data: { family: parsed.data.family, status: 'confirmed' } });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.discover.confirm] failed');
+    return res.status(500).json({ success: false, error: 'failed to confirm finding' });
+  }
+});
+
+router.post('/:projectId/norms/discover/reject', requireProjectAccess('editor'), async (req, res) => {
+  if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
+    return res.status(404).json({ success: false, error: 'not found' });
+  }
+  const parsed = DiscoverLifecycleBodySchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+  }
+  try {
+    const projectId = String(req.params.projectId);
+    const updated = await setFindingStatus(projectId, parsed.data.family, parsed.data.corpusVersionHash, 'rejected');
+    if (!updated) {
+      return res.status(404).json({ success: false, error: 'finding not found' });
+    }
+    if (req.user) {
+      await createAuditEntry({
+        userId: req.user._id.toString(),
+        projectId,
+        action: 'law.discovery.reject',
+        entityType: 'LawDiscoveryFinding',
+        ip: req.ip,
+        userAgent: req.get('user-agent') ?? undefined,
+        riskLevel: 'medium',
+        after: { family: parsed.data.family, corpusVersionHash: parsed.data.corpusVersionHash, status: 'rejected' },
+      });
+    }
+    return res.json({ success: true, data: { family: parsed.data.family, status: 'rejected' } });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.discover.reject] failed');
+    return res.status(500).json({ success: false, error: 'failed to reject finding' });
   }
 });
 
