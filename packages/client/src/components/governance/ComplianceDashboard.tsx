@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ShieldCheck, AlertTriangle, AlertCircle, Info, RefreshCw, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, AlertCircle, Info, RefreshCw, Loader2, Wrench } from 'lucide-react';
 import type { ViolationSeverity } from '@thearchitect/shared';
-import { deriveViolationFix } from '@thearchitect/shared';
-import { governanceAPI } from '../../services/api';
+import { deriveViolationFix, isAutoFixableField, ROLE_PERMISSIONS, PERMISSIONS } from '@thearchitect/shared';
+import { governanceAPI, architectureAPI } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
+import toast from 'react-hot-toast';
 
 interface Violation {
+  elementId: string;
   elementName: string;
   elementType: string;
   policyName: string;
@@ -37,6 +40,10 @@ export default function ComplianceDashboard() {
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [applyingKey, setApplyingKey] = useState<string | null>(null);
+
+  const role = useAuthStore((s) => s.user?.role);
+  const canUpdate = !!role && (ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] ?? []).includes(PERMISSIONS.ELEMENT_UPDATE);
 
   const runCheck = async () => {
     if (!projectId) return;
@@ -49,6 +56,24 @@ export default function ComplianceDashboard() {
       setError('Compliance check failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // THE-502/AC-4: await the real PUT (not the optimistic store), then re-run the
+  // existing runCheck() — checkCompliance is stateless, so the server-resolved
+  // violation drops out of the recomputed list.
+  const applyFix = async (v: Violation, value: unknown) => {
+    if (!projectId || !v.elementId) return;
+    const key = `${v.elementId}:${v.field}`;
+    setApplyingKey(key);
+    try {
+      await architectureAPI.updateElement(projectId, v.elementId, { [v.field]: value });
+      toast.success(`Applied fix: ${v.field}`);
+      await runCheck();
+    } catch {
+      toast.error('Could not apply fix');
+    } finally {
+      setApplyingKey(null);
     }
   };
 
@@ -174,6 +199,9 @@ export default function ComplianceDashboard() {
               <div className="space-y-1.5">
                 {report.violations.slice(0, 20).map((v, i) => {
                   const fix = deriveViolationFix({ operator: v.operator, field: v.field, currentValue: v.currentValue, expectedValue: v.expectedValue });
+                  const key = `${v.elementId}:${v.field}`;
+                  const applying = applyingKey === key;
+                  const canOneClick = fix.applicable && !!v.elementId && isAutoFixableField(v.field) && fix.action?.payload?.value != null;
                   return (
                     <div key={i} className="flex items-start gap-2.5 py-2 px-2 rounded hover:bg-[var(--surface-raised)]">
                       {severityIcon(v.severity)}
@@ -187,6 +215,20 @@ export default function ComplianceDashboard() {
                         <span className="text-xs text-[var(--text-disabled)] block">
                           Field {v.field}: {fmtValue(v.currentValue)} → {fmtValue(v.expectedValue)}
                         </span>
+                        {/* THE-502: disabled uses !!applyingKey (not the per-row `applying`) so ALL [Fix]
+                            buttons lock while any apply is in flight — prevents a second applyFix→runCheck
+                            from racing the list rebuild. Do not simplify back to disabled={applying}. */}
+                        {canOneClick && fix.action && (
+                          <button
+                            onClick={() => applyFix(v, fix.action!.payload?.value)}
+                            disabled={!!applyingKey || !canUpdate}
+                            title={!canUpdate ? 'Requires element:update permission' : undefined}
+                            className="mt-1.5 inline-flex items-center gap-1 rounded bg-[#1a2a1a] px-2 py-1 text-xs font-medium text-white hover:bg-[#3a4a3a] disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          >
+                            {applying ? <Loader2 size={12} className="animate-spin" /> : <Wrench size={12} />}
+                            {applying ? 'Applying…' : 'Fix'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

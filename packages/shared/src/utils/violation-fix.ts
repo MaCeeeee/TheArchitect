@@ -57,19 +57,23 @@ export function deriveViolationFix(input: DeriveViolationFixInput): ViolationFix
       return { applicable: false, instruction: `Change ${field} — must not be ${fmt(expectedValue)}` };
 
     case 'exists':
-      // exists:true verletzt wenn Feld leer → Add; exists:false verletzt wenn
-      // Feld vorhanden → Remove. payload.value = expectedValue (AC-2).
-      return expectedValue
-        ? editField(field, expectedValue, `Add ${field}`)
-        : editField(field, expectedValue, `Remove ${field}`);
+      // THE-502/AC-1: exists ist NICHT ein-Klick-fixbar — es gibt keinen
+      // deterministischen Feldwert („Add owner" ist kein konkreter Inhalt,
+      // value=false löscht nicht). Instruction bleibt als manueller Hinweis.
+      return { applicable: false, instruction: expectedValue ? `Add ${field}` : `Remove ${field}` };
 
-    case 'gt':  return editField(field, expectedValue, `Set ${field} > ${fmt(expectedValue)}`);
+    // THE-502/AC-1: nur gte/lte sind ein-Klick-fixbar — set = expectedValue
+    // erfüllt ≥/≤ (Grenzwert inklusiv). gt/lt (strikt) werden davon NICHT
+    // erfüllt → applicable:false, Instruction bleibt Hinweis.
     case 'gte': return editField(field, expectedValue, `Set ${field} ≥ ${fmt(expectedValue)}`);
-    case 'lt':  return editField(field, expectedValue, `Set ${field} < ${fmt(expectedValue)}`);
     case 'lte': return editField(field, expectedValue, `Set ${field} ≤ ${fmt(expectedValue)}`);
+    case 'gt':  return { applicable: false, instruction: `Set ${field} > ${fmt(expectedValue)}` };
+    case 'lt':  return { applicable: false, instruction: `Set ${field} < ${fmt(expectedValue)}` };
 
     case 'contains':
-      return editField(field, expectedValue, `Include '${fmt(expectedValue)}' in ${field}`);
+      // THE-502/AC-1: contains ist Teilstring-Semantik — set = expectedValue
+      // würde ersetzen statt anfügen. Kein Ein-Klick-Fix.
+      return { applicable: false, instruction: `Include '${fmt(expectedValue)}' in ${field}` };
 
     case 'regex':
       // Slice 3 (AC-1): kein deterministischer Einzel-Edit für ein Pattern.
@@ -79,4 +83,17 @@ export function deriveViolationFix(input: DeriveViolationFixInput): ViolationFix
       // Unbekannter Operator → gleiche graceful Haltung wie fehlender Operator.
       return { applicable: false, instruction: `${field} should be ${fmt(expectedValue)}` };
   }
+}
+
+/**
+ * THE-502/AC-2: Felder, für die ein Ein-Klick-[Fix] sicher ist — flache,
+ * schreibbare Neo4j-Spalten mit geringem Blast-Radius. Bewusst NICHT enthalten:
+ * `type` (nicht in UpdateElementSchema → unschreibbar), `maturityLevel` (Fix
+ * defekt — THE-501), `layer` (Ein-Klick-Change triggert Re-Embed + 3D-Reposition
+ * + Policy-Scope-Kaskade via elementMatchesScope → als eigener REQ mit Bestätigung).
+ */
+export const AUTO_FIXABLE_FIELDS = ['description', 'name', 'riskLevel', 'status'] as const;
+export type AutoFixableField = (typeof AUTO_FIXABLE_FIELDS)[number];
+export function isAutoFixableField(field: string): field is AutoFixableField {
+  return (AUTO_FIXABLE_FIELDS as readonly string[]).includes(field);
 }
