@@ -11,6 +11,8 @@
 //
 // WICHTIG: Entscheidungsunterstützung, KEINE Rechtsberatung (siehe `disclaimer`).
 
+import type { ApplicabilityProvenance, FindingStatus } from './law-discovery.types';
+
 /** Wie sicher ist die Anwendbarkeit? Abgeleitet aus dem Score (noisy-OR). */
 export type ApplicabilityVerdict =
   | 'applicable' // starke Signale — Gesetz sollte in die Pipeline
@@ -86,6 +88,26 @@ export interface NormApplicabilityAssessment {
   inPipeline: boolean;
   /** Im angebundenen Korpus verfügbar (Add-to-pipeline möglich). */
   availableInCorpus: boolean;
+  // ─── Stage B (UC-LAW-002 Slice-2) — additiv, optional (LAW-001 unberührt) ───
+  /** Herkunft: 'rules' (nur deterministisch), 'corpus' (nur Judge), 'both'. Undefined = 'rules' (Alt-Verhalten). */
+  provenance?: ApplicabilityProvenance;
+  /** Korpus-/Judge-Achse — getrennt vom deterministischen `score`/`verdict` (NICHT verrechnet). */
+  corpus?: {
+    status: FindingStatus;
+    applies: boolean;
+    confidence: number;      // ∈ [0,1]
+    reasoning: string;
+    keyParagraphs: string[];
+    elementIds: string[];
+    sources: string[];
+    /**
+     * True, wenn das Evidence-Set des Befunds NICHT mehr dem aktuellen
+     * Retrieval-Stand der Familie entspricht (Paragraphen-Version geändert
+     * oder Familie nicht mehr im aktuellen Lauf) — der Befund bleibt sichtbar
+     * (Mensch entscheidet), ist aber als überholt markiert (Spec-Fix 4).
+     */
+    stale?: boolean;
+  };
 }
 
 /** Vollständiger Report — Antwort von GET /api/projects/:id/norms/applicability. */
@@ -104,6 +126,12 @@ export interface ApplicabilityReport {
   assessments: NormApplicabilityAssessment[];
   /** Rechtlicher Hinweis — immer anzeigen. */
   disclaimer: string;
+  /** Deckungs-Transparenz (THE-455/F1-Muster): Stage-A-Regeln + Stage-B-Korpus-Stand. */
+  coverage?: {
+    stageARuleCount: number;
+    stageBCorpusCount: number;
+    corpusVersion?: string;  // corpusVersionHash zum Zeitpunkt der Discovery
+  };
 }
 
 /** Score → Verdict (eine Stelle, überall gleich — Server, Tests, UI-Legende). */
