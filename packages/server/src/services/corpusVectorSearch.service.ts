@@ -14,8 +14,11 @@ const CORPUS_COLLECTION = 'regulations-corpus'; // = crawler CORPUS_COLLECTION
 const EMBEDDING_DIM = 768;
 
 // Env-Namen aus elementSimilarity.service.ts gespiegelt (verifiziert 2026-07-18).
-const SIDECAR_URL = process.env.EMBEDDING_SIDECAR_URL || '';
-const QDRANT_URL = process.env.QDRANT_URL || '';
+// Sidecar-/Qdrant-URL werden im Config-Guard LIVE aus process.env gelesen (nicht als
+// modul-globale Konstante eingefroren), damit die Prüfung unabhängig von der Modul-
+// Ladereihenfolge ist (z. B. wenn Env erst nach dem Import gesetzt wird).
+const sidecarUrl = (): string => process.env.EMBEDDING_SIDECAR_URL || '';
+const qdrantUrl = (): string => process.env.QDRANT_URL || '';
 const QDRANT_API_KEY = process.env.QDRANT_API_KEY || undefined;
 
 interface QdrantSearchHit { score: number; payload: Record<string, unknown> | null | undefined }
@@ -25,7 +28,7 @@ interface Deps {
 }
 
 async function defaultEmbed(text: string): Promise<number[]> {
-  const res = await fetch(`${SIDECAR_URL}/embed`, {
+  const res = await fetch(`${sidecarUrl()}/embed`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }),
   });
   if (!res.ok) throw new Error(`sidecar ${res.status}`);
@@ -36,7 +39,7 @@ async function defaultEmbed(text: string): Promise<number[]> {
 
 let _client: QdrantClient | null = null;
 async function defaultSearch(vector: number[], topK: number): Promise<QdrantSearchHit[]> {
-  if (!_client) _client = new QdrantClient({ url: QDRANT_URL, apiKey: QDRANT_API_KEY });
+  if (!_client) _client = new QdrantClient({ url: qdrantUrl(), apiKey: QDRANT_API_KEY });
   const res = await _client.search(CORPUS_COLLECTION, { vector, limit: topK, with_payload: true });
   return res.map(r => ({ score: r.score, payload: r.payload as Record<string, unknown> }));
 }
@@ -46,14 +49,16 @@ let deps: Deps = defaultDeps;
 export function __setCorpusSearchDeps(d: Deps): void { deps = d; }
 export function __resetCorpusSearchDeps(): void { deps = defaultDeps; }
 
+/** True wenn Sidecar + Qdrant konfiguriert sind (graceful degradation sonst). */
+export function isCorpusVectorSearchConfigured(): boolean {
+  return !!(qdrantUrl() && sidecarUrl());
+}
+
 const str = (v: unknown, d = ''): string => (typeof v === 'string' ? v : d);
 
 export async function corpusVectorSearch(text: string, topK: number): Promise<CorpusHit[]> {
-  // Der Konfigurations-Check gilt nur für die echten Deps (Sidecar/Qdrant per HTTP) —
-  // DI-injizierte Test-Deps (__setCorpusSearchDeps) laufen unabhängig vom Env, sonst
-  // maskiert dieser Guard jeden Test ohne echte Qdrant/Sidecar-Env (siehe Testlauf).
-  if (deps === defaultDeps && (!QDRANT_URL || !SIDECAR_URL)) {
-    log.warn('[law-discovery] Qdrant/Sidecar nicht konfiguriert');
+  if (!isCorpusVectorSearchConfigured()) {
+    log.warn({ qdrant: !!qdrantUrl(), sidecar: !!sidecarUrl() }, '[law-discovery] corpus vector search not configured');
     return [];
   }
   const vector = await deps.embed(text);
