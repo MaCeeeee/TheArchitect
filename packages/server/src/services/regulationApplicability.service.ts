@@ -49,6 +49,8 @@ export interface ElementFact {
   sensitivity?: string;
   /** True bei `source='blueprint'` — vom AI Wizard generiert. */
   fromWizard: boolean;
+  /** ArchiMate-Layer (business/application/technology/…) — additiv (UC-LAW-002 AC-1). */
+  layer?: string;
 }
 
 export interface ProjectField {
@@ -70,7 +72,7 @@ export async function loadProjectFacts(projectId: string): Promise<ProjectFacts>
     `MATCH (e:ArchitectureElement {projectId: $projectId})
      RETURN e.id as id, e.name as name, e.type as type,
             e.description as description, e.metadataJson as metadataJson,
-            e.source as source
+            e.source as source, e.layer as layer
      ORDER BY e.layer, e.name`,
     { projectId },
   );
@@ -97,6 +99,7 @@ export async function loadProjectFacts(projectId: string): Promise<ProjectFacts>
       description: props.description != null ? String(props.description) : '',
       sensitivity,
       fromWizard: props.source === 'blueprint',
+      layer: props.layer != null ? String(props.layer) : undefined,
     });
   }
 
