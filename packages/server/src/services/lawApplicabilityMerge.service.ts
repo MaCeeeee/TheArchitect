@@ -15,11 +15,13 @@
  * Linear: THE-463 (REQ-LAW-002.4)
  */
 import {
+  deriveNormWorkId,
   verdictFromScore,
   type ApplicabilityReport,
   type DiscoveryFinding,
   type NormApplicabilityAssessment,
 } from '@thearchitect/shared';
+import type { NormWorldState } from './regulationApplicability.service';
 
 /** Rang-Wert für die Sortierung — corpus-Konfidenz zählt gleichwertig zum det. Score. */
 function rankScore(a: NormApplicabilityAssessment): number {
@@ -47,11 +49,30 @@ function corpusBlock(finding: DiscoveryFinding, stale: boolean): NonNullable<Nor
     keyParagraphs: [...finding.keyParagraphs],
     elementIds: [...finding.elementIds],
     sources: [...finding.sources],
+    corpusVersionHash: finding.corpusVersionHash,
     ...(stale ? { stale: true } : {}),
   };
 }
 
-function toCorpusOnlyAssessment(finding: DiscoveryFinding, stale: boolean): NormApplicabilityAssessment {
+/**
+ * Review-Fix 1 (Slice-2b Task 3a): ohne World-State bleibt das Alt-Verhalten
+ * (workId undefined, availableInCorpus hart true, inPipeline false) — reine
+ * Merge-Unit-Tests crashen nicht. MIT World-State wird — exakt wie
+ * `enrichAssessment` für Stage-A-Assessments — workId/availableInCorpus/
+ * inPipeline aus dem tatsächlichen Norm-/Pipeline-Zustand abgeleitet, sonst
+ * kann „Add to pipeline" für bestätigte Korpus-Funde nie erscheinen (AC-5).
+ */
+function toCorpusOnlyAssessment(
+  finding: DiscoveryFinding,
+  stale: boolean,
+  world?: NormWorldState,
+): NormApplicabilityAssessment {
+  const referencedSource = world && finding.sources.find(s => world.referencedCorpusSources.has(s));
+  const availableSource = world && finding.sources.find(s => world.availableCorpusSources.has(s));
+  const preferredSource = referencedSource ?? availableSource;
+  const inPipeline = world
+    ? finding.sources.some(s => world.pipelineNormIds.has(deriveNormWorkId('corpus', s)))
+    : false;
   return {
     ruleId: finding.family,
     label: finding.family,
@@ -69,8 +90,9 @@ function toCorpusOnlyAssessment(finding: DiscoveryFinding, stale: boolean): Norm
     contributions: [],
     rationale: finding.reasoning,
     referenced: false,
-    inPipeline: false,
-    availableInCorpus: true,
+    inPipeline,
+    availableInCorpus: world ? Boolean(availableSource) || Boolean(referencedSource) : true,
+    workId: preferredSource ? deriveNormWorkId('corpus', preferredSource) : undefined,
     provenance: 'corpus',
     corpus: corpusBlock(finding, stale),
   };
@@ -81,6 +103,7 @@ export function mergeApplicability(
   findings: DiscoveryFinding[],
   corpusVersion: string | undefined,
   currentEvidenceHashes?: Map<string, string>,
+  world?: NormWorldState,
 ): ApplicabilityReport {
   // AC-2 (nur applies:true zählt als Korpus-Signal — ein "gilt nicht"-Urteil
   // trägt keine positive Evidenz und darf keinen Assessment berühren/erzeugen).
@@ -122,7 +145,7 @@ export function mergeApplicability(
   // Findings derselben Familie zwei corpus-only-Assessments (Code-Review-Fix).
   for (const finding of findingByFamily.values()) {
     if (matchedFamilies.has(finding.family)) continue; // schon als 'both' gemerged
-    merged.push(toCorpusOnlyAssessment(finding, isStale(finding, currentEvidenceHashes)));
+    merged.push(toCorpusOnlyAssessment(finding, isStale(finding, currentEvidenceHashes), world));
   }
 
   // Sortierung: max(score, corpus.confidence) absteigend, stabiler Tie-Break nach label.

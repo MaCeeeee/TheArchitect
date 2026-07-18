@@ -282,14 +282,20 @@ export function assessRules(signals: ApplicabilitySignalResult[]): RuleAssessmen
 
 // ─── 4. Report bauen (Orchestrierung + Norm-Zustand) ─────────────────
 
-interface NormWorldState {
+/**
+ * Additiv exportiert (UC-LAW-002 Slice-2b Review-Fix 1): `discoverAndJudge`
+ * lädt denselben World-State, damit corpus-only-Assessments (kein Stage-A-
+ * Regel-Match) ebenfalls `workId`/`inPipeline` bekommen — sonst ist
+ * „Add to pipeline" für bestätigte Korpus-Funde unimplementierbar (THE-464 AC-5).
+ */
+export interface NormWorldState {
   referencedCorpusSources: Set<string>;
   availableCorpusSources: Set<string>;
   pipelineNormIds: Set<string>;
   uploadTitles: string[];
 }
 
-async function loadNormWorldState(projectId: string): Promise<NormWorldState> {
+export async function loadNormWorldState(projectId: string): Promise<NormWorldState> {
   const [norms, available] = await Promise.all([
     listNorms(projectId).catch(() => []),
     listAvailableCorpusNorms(projectId).catch(() => []),

@@ -24,9 +24,11 @@ jest.mock('../services/corpusClient.service', () => ({ isCorpusConfigured: () =>
 
 const mockBuildReport = jest.fn();
 const mockLoadFacts = jest.fn();
+const mockLoadWorld = jest.fn();
 jest.mock('../services/regulationApplicability.service', () => ({
   buildApplicabilityReport: (...a: unknown[]) => mockBuildReport(...a),
   loadProjectFacts: (...a: unknown[]) => mockLoadFacts(...a),
+  loadNormWorldState: (...a: unknown[]) => mockLoadWorld(...a),
 }));
 
 const mockJudge = jest.fn();
@@ -95,6 +97,12 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     mockProfile.mockResolvedValue({ projectId: 'p1', text: 'profile text', signalHints: [], meta: { elementsUsed: 1, elementsTotal: 1, truncated: false, charBudget: 6000 } });
     mockLoadFacts.mockResolvedValue({ projectId: 'p1', elements: [{ id: 'e1', name: 'Auth', type: 'application_service', description: '', fromWizard: false, layer: 'application' }], projectFields: [] });
     mockBuildReport.mockResolvedValue(stageAReport);
+    mockLoadWorld.mockResolvedValue({
+      referencedCorpusSources: new Set(),
+      availableCorpusSources: new Set(),
+      pipelineNormIds: new Set(),
+      uploadTitles: [],
+    });
   });
 
   afterAll(() => {

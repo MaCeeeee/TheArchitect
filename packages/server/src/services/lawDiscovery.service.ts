@@ -12,7 +12,7 @@ import type { ApplicabilityReport, CorpusHit, DiscoveryCandidate, DiscoveryResul
 import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
 import { isCorpusConfigured } from './corpusClient.service';
-import { buildApplicabilityReport, loadProjectFacts } from './regulationApplicability.service';
+import { buildApplicabilityReport, loadProjectFacts, loadNormWorldState } from './regulationApplicability.service';
 import { judgeCandidate } from './lawJudge.service';
 import { upsertFindings, findExisting, listFindings, type UpsertFindingInput } from './lawDiscoveryFinding.service';
 import { mergeApplicability } from './lawApplicabilityMerge.service';
@@ -120,19 +120,25 @@ export async function discoverAndJudge(
   projectId: string,
   opts: DiscoverAndJudgeOptions = {},
 ): Promise<ApplicabilityReport> {
-  const stageA = await buildApplicabilityReport(projectId);
+  // Review-Fix 1 (Slice-2b Task 3a): eigener, billiger World-State-Read —
+  // damit bekommen corpus-only-Assessments (kein Stage-A-Regel-Match) auch
+  // workId/inPipeline (sonst ist "Add to pipeline" für sie unimplementierbar).
+  const [stageA, world] = await Promise.all([
+    buildApplicabilityReport(projectId),
+    loadNormWorldState(projectId),
+  ]);
 
   const discovery = await discoverCandidates(projectId);
   const hasProvider = Boolean(opts.anthropicClient || process.env.ANTHROPIC_API_KEY);
   if (discovery.candidates.length === 0 || !hasProvider) {
-    return mergeApplicability(stageA, [], undefined);
+    return mergeApplicability(stageA, [], undefined, undefined, world);
   }
 
   const gated = discovery.candidates
     .filter(c => c.score >= judgeThreshold())
     .slice(0, maxJudge());
   if (gated.length === 0) {
-    return mergeApplicability(stageA, [], undefined);
+    return mergeApplicability(stageA, [], undefined, undefined, world);
   }
 
   const model = defaultJudgeModel();
@@ -210,5 +216,5 @@ export async function discoverAndJudge(
   // ändert sich, sobald sich irgendein geurteiltes Evidence-Set ändert.
   const corpusVersion = computeVersionHash([...evidenceHashes].sort().join('|'));
 
-  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes);
+  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
 }

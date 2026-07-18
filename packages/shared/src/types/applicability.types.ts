@@ -100,6 +100,8 @@ export interface NormApplicabilityAssessment {
     keyParagraphs: string[];
     elementIds: string[];
     sources: string[];
+    /** Evidence-Set-Hash des Befunds — Body-Adressierung für confirm/reject (UC-LAW-002 Slice-2b). */
+    corpusVersionHash: string;
     /**
      * True, wenn das Evidence-Set des Befunds NICHT mehr dem aktuellen
      * Retrieval-Stand der Familie entspricht (Paragraphen-Version geändert
