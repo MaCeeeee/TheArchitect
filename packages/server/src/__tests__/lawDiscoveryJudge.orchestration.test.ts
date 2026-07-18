@@ -119,7 +119,7 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     expect(mockJudge.mock.calls.every(c => c[0].candidate.family !== 'weak')).toBe(true);
   });
 
-  it('(b) persistiert nur applies:true-Befunde und merged sie in den Report', async () => {
+  it('(b) persistiert BEIDE Urteile (Spec-Fix 1), merged aber nur applies:true in den Report', async () => {
     mockSearch.mockResolvedValue([h('ai-act-en', '5', 0.9), h('dora-en', '3', 0.9)]);
     mockJudge.mockImplementation(async (args: { candidate: { family: string } }) => {
       if (args.candidate.family === 'ai-act') {
@@ -132,11 +132,15 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
 
     expect(mockUpsert).toHaveBeenCalledTimes(1);
     const persisted = mockUpsert.mock.calls[0][1] as FakeFinding[];
-    expect(persisted.map(f => f.family)).toEqual(['ai-act']); // dora (applies:false) NICHT persistiert
+    // Spec-Fix 1: auch das negative dora-Urteil wird persistiert (Reuse-Basis) …
+    expect(persisted.map(f => f.family).sort()).toEqual(['ai-act', 'dora']);
+    expect(persisted.find(f => f.family === 'dora')!.applies).toBe(false);
 
+    // … aber ins Merge fließt nur applies:true.
     const corpusAssessment = report.assessments.find(a => a.ruleId === 'ai-act');
     expect(corpusAssessment).toBeDefined();
     expect(corpusAssessment!.provenance).toBe('corpus');
+    expect(report.assessments.find(a => a.ruleId === 'dora')).toBeUndefined();
     expect(report.coverage).toBeDefined();
   });
 
@@ -150,6 +154,37 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     mockJudge.mockClear();
     await discoverAndJudge('p1');
     expect(mockJudge).toHaveBeenCalledTimes(0); // Review-Fix 3/4: reuse statt neuer LLM-Call
+  });
+
+  it('(c2) Persisted-Reuse gilt auch für applies:false (Spec-Fix 1): 2. Lauf macht 0 Judge-Calls', async () => {
+    mockSearch.mockResolvedValue([h('dora-en', '3', 0.9)]);
+    mockJudge.mockResolvedValue({ family: 'dora', applies: false, confidence: 0.2, reasoning: 'no', elementIds: [], keyParagraphs: [] });
+
+    await discoverAndJudge('p1');
+    expect(mockJudge).toHaveBeenCalledTimes(1);
+
+    mockJudge.mockClear();
+    const report = await discoverAndJudge('p1');
+    expect(mockJudge).toHaveBeenCalledTimes(0); // negatives Urteil persistiert → Reuse statt Re-Judge
+    expect(report.assessments.find(a => a.ruleId === 'dora')).toBeUndefined(); // bleibt aus dem Report
+  });
+
+  it('(d) altes applies:true-Finding mit überholtem Evidence-Set erscheint als corpus.stale (Spec-Fix 4)', async () => {
+    // Lauf 1: Evidenz v-ai-act-en-5, Judge sagt applies:true → persistiert.
+    mockSearch.mockResolvedValue([h('ai-act-en', '5', 0.9)]);
+    mockJudge.mockResolvedValue({ family: 'ai-act', applies: true, confidence: 0.8, reasoning: 'r', elementIds: [], keyParagraphs: [] });
+    await discoverAndJudge('p1');
+
+    // Korpus ändert sich (neuer versionHash) → neues Evidence-Set; neues Urteil: applies:false.
+    mockSearch.mockResolvedValue([{ ...h('ai-act-en', '5', 0.9), versionHash: 'v2' }]);
+    mockJudge.mockClear();
+    mockJudge.mockResolvedValue({ family: 'ai-act', applies: false, confidence: 0.3, reasoning: 'changed', elementIds: [], keyParagraphs: [] });
+    const report = await discoverAndJudge('p1');
+
+    expect(mockJudge).toHaveBeenCalledTimes(1); // neues Evidence-Set → genau EIN neuer Judge-Call
+    const a = report.assessments.find(x => x.ruleId === 'ai-act');
+    expect(a).toBeDefined();                    // altes positives Finding bleibt sichtbar (Mensch entscheidet)
+    expect(a!.corpus!.stale).toBe(true);        // aber als überholt markiert
   });
 
   it('graceful degradation: kein Korpus-konfiguriert ⇒ reiner Stage-A-Report, kein Fehler', async () => {

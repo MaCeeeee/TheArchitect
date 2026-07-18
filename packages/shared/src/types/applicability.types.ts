@@ -100,6 +100,13 @@ export interface NormApplicabilityAssessment {
     keyParagraphs: string[];
     elementIds: string[];
     sources: string[];
+    /**
+     * True, wenn das Evidence-Set des Befunds NICHT mehr dem aktuellen
+     * Retrieval-Stand der Familie entspricht (Paragraphen-Version geändert
+     * oder Familie nicht mehr im aktuellen Lauf) — der Befund bleibt sichtbar
+     * (Mensch entscheidet), ist aber als überholt markiert (Spec-Fix 4).
+     */
+    stale?: boolean;
   };
 }
 

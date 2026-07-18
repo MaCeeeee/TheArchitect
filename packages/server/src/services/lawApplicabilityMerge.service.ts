@@ -26,7 +26,32 @@ function rankScore(a: NormApplicabilityAssessment): number {
   return Math.max(a.score, a.corpus?.confidence ?? 0);
 }
 
-function toCorpusOnlyAssessment(finding: DiscoveryFinding): NormApplicabilityAssessment {
+/**
+ * Spec-Fix 4 (Staleness): ein Finding, dessen Evidence-Set-Hash nicht mehr dem
+ * aktuellen Retrieval-Stand seiner Familie entspricht (oder dessen Familie im
+ * aktuellen Lauf gar nicht mehr auftaucht), bleibt sichtbar (Mensch entscheidet),
+ * wird aber als `stale` markiert. Ohne übergebene currentHashes (z.B. reine
+ * Merge-Unit-Tests) wird nichts markiert.
+ */
+function isStale(finding: DiscoveryFinding, currentHashes?: Map<string, string>): boolean {
+  if (!currentHashes) return false;
+  return currentHashes.get(finding.family) !== finding.corpusVersionHash;
+}
+
+function corpusBlock(finding: DiscoveryFinding, stale: boolean): NonNullable<NormApplicabilityAssessment['corpus']> {
+  return {
+    status: finding.status,
+    applies: finding.applies,
+    confidence: finding.confidence,
+    reasoning: finding.reasoning,
+    keyParagraphs: [...finding.keyParagraphs],
+    elementIds: [...finding.elementIds],
+    sources: [...finding.sources],
+    ...(stale ? { stale: true } : {}),
+  };
+}
+
+function toCorpusOnlyAssessment(finding: DiscoveryFinding, stale: boolean): NormApplicabilityAssessment {
   return {
     ruleId: finding.family,
     label: finding.family,
@@ -47,15 +72,7 @@ function toCorpusOnlyAssessment(finding: DiscoveryFinding): NormApplicabilityAss
     inPipeline: false,
     availableInCorpus: true,
     provenance: 'corpus',
-    corpus: {
-      status: finding.status,
-      applies: finding.applies,
-      confidence: finding.confidence,
-      reasoning: finding.reasoning,
-      keyParagraphs: [...finding.keyParagraphs],
-      elementIds: [...finding.elementIds],
-      sources: [...finding.sources],
-    },
+    corpus: corpusBlock(finding, stale),
   };
 }
 
@@ -63,6 +80,7 @@ export function mergeApplicability(
   stageA: ApplicabilityReport,
   findings: DiscoveryFinding[],
   corpusVersion: string | undefined,
+  currentEvidenceHashes?: Map<string, string>,
 ): ApplicabilityReport {
   // AC-2 (nur applies:true zählt als Korpus-Signal — ein "gilt nicht"-Urteil
   // trägt keine positive Evidenz und darf keinen Assessment berühren/erzeugen).
@@ -79,21 +97,13 @@ export function mergeApplicability(
     return {
       ...a, // score/verdict/contributions/rationale UNVERÄNDERT — det. Urteil autoritativ.
       provenance: 'both' as const,
-      corpus: {
-        status: finding.status,
-        applies: finding.applies,
-        confidence: finding.confidence,
-        reasoning: finding.reasoning,
-        keyParagraphs: [...finding.keyParagraphs],
-        elementIds: [...finding.elementIds],
-        sources: [...finding.sources],
-      },
+      corpus: corpusBlock(finding, isStale(finding, currentEvidenceHashes)),
     };
   });
 
   for (const finding of applicableFindings) {
     if (matchedFamilies.has(finding.family)) continue; // schon als 'both' gemerged
-    merged.push(toCorpusOnlyAssessment(finding));
+    merged.push(toCorpusOnlyAssessment(finding, isStale(finding, currentEvidenceHashes)));
   }
 
   // Sortierung: max(score, corpus.confidence) absteigend, stabiler Tie-Break nach label.

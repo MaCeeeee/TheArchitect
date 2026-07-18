@@ -43,8 +43,11 @@ const MAX_TOKENS = 2048;
 const LawJudgeResponseSchema = z.object({
   family: z.string().min(1),
   applies: z.boolean(),
-  confidence: z.number(),
-  reasoning: z.string(),
+  // Bounds IM Schema (Spec-Fix 3, Muster complianceJudge `.max(400)`): out-of-
+  // range löst den Retry aus statt still geklemmt zu werden — das nachgelagerte
+  // Klemmen/Kürzen in sanitize bleibt als Belt-and-Suspenders.
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string().max(500),
   elementIds: z.array(z.string()).default([]),
   keyParagraphs: z.array(z.string()).default([]),
 });

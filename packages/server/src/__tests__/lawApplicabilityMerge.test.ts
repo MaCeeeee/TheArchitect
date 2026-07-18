@@ -131,6 +131,21 @@ describe('mergeApplicability', () => {
     });
   });
 
+  it('flags findings whose evidence-set hash no longer matches the current run as corpus.stale (Spec-Fix 4)', () => {
+    const stageA = stageAReport([]);
+    const fOld = finding({ family: 'ai-act', corpusVersionHash: 'OLD' });
+    const fCur = finding({ family: 'nis2', sources: ['nis2-en'], corpusVersionHash: 'CUR' });
+    const current = new Map([['ai-act', 'NEW'], ['nis2', 'CUR']]);
+    const merged = mergeApplicability(stageA, [fOld, fCur], 'X', current);
+    expect(merged.assessments.find(a => a.ruleId === 'ai-act')!.corpus!.stale).toBe(true);
+    expect(merged.assessments.find(a => a.ruleId === 'nis2')!.corpus!.stale).toBeUndefined();
+  });
+
+  it('without currentEvidenceHashes (unit-merge without a live run) nothing is flagged stale', () => {
+    const merged = mergeApplicability(stageAReport([]), [finding({ corpusVersionHash: 'OLD' })], 'X');
+    expect(merged.assessments[0].corpus!.stale).toBeUndefined();
+  });
+
   it('sorts by max(score, corpus.confidence) descending; ties broken by label', () => {
     const stageA = stageAReport([
       assessment({ ruleId: 'a', label: 'Alpha', score: 0.2, verdict: 'possible' }),

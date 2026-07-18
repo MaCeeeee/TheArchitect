@@ -81,7 +81,22 @@ router.post('/:projectId/norms/discover', requireProjectAccess('editor'), async 
     return res.status(404).json({ success: false, error: 'not found' });
   }
   try {
-    const report = await discoverAndJudge(String(req.params.projectId));
+    const projectId = String(req.params.projectId);
+    const report = await discoverAndJudge(projectId);
+    // Spec-Fix 2: der Lauf kostet LLM-Geld und persistiert Findings — Audit-
+    // Eintrag wie bei confirm/reject (CLAUDE.md: security-sensitive → audit).
+    if (req.user) {
+      await createAuditEntry({
+        userId: req.user._id.toString(),
+        projectId,
+        action: 'law.discovery.run',
+        entityType: 'LawDiscoveryFinding',
+        ip: req.ip,
+        userAgent: req.get('user-agent') ?? undefined,
+        riskLevel: 'medium',
+        after: { coverage: report.coverage ?? null },
+      });
+    }
     return res.json({ success: true, data: report });
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.discover] failed');

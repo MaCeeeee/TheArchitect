@@ -37,6 +37,25 @@ describe('judgeCandidate', () => {
     expect(v.elementIds).toEqual(['e1']);      // GHOST verworfen
   });
 
+  it('Schema-Bounds (Spec-Fix 3): confidence>1 löst Retry aus — 2. valider Versuch gewinnt', async () => {
+    const create = jest.fn()
+      .mockResolvedValueOnce({ content: [{ type: 'tool_use', name: 'submit_law_verdicts', input: { family: 'ai-act', applies: true, confidence: 1.5, reasoning: 'x', elementIds: [], keyParagraphs: [] } }], usage: {} })
+      .mockResolvedValueOnce({ content: [{ type: 'tool_use', name: 'submit_law_verdicts', input: { family: 'ai-act', applies: true, confidence: 0.9, reasoning: 'x', elementIds: [], keyParagraphs: [] } }], usage: {} });
+    const client = { messages: { create } } as never;
+    const v = await judgeCandidate({ profileText: 'p-retry', profileElements, candidate, projectId: 'p1', corpusVersionHash: 'H', anthropicClient: client });
+    expect(create).toHaveBeenCalledTimes(2); // 1. Attempt scheitert am Zod-Bound → Retry
+    expect(v.confidence).toBe(0.9);
+  });
+
+  it('Schema-Bounds (Spec-Fix 3): dauerhaft out-of-range ⇒ wirft nach MAX_ATTEMPTS', async () => {
+    const create = jest.fn(async () => ({ content: [{ type: 'tool_use', name: 'submit_law_verdicts', input: { family: 'ai-act', applies: true, confidence: 1.5, reasoning: 'x', elementIds: [], keyParagraphs: [] } }], usage: {} }));
+    const client = { messages: { create } } as never;
+    await expect(
+      judgeCandidate({ profileText: 'p-throw', profileElements, candidate, projectId: 'p1', corpusVersionHash: 'H', anthropicClient: client }),
+    ).rejects.toThrow(/invalid after 2 attempts/);
+    expect(create).toHaveBeenCalledTimes(2);
+  });
+
   it('Cache: zweiter Call mit gleichem (profile,family,corpusVersion) macht 0 LLM-Calls', async () => {
     const create = jest.fn(async () => ({ content: [{ type: 'tool_use', name: 'submit_law_verdicts', input: { family: 'ai-act', applies: true, confidence: 0.7, reasoning: 'x', elementIds: [], keyParagraphs: [] } }], usage: {} }));
     const client = { messages: { create } } as never;

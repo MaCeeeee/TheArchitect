@@ -79,6 +79,11 @@ describe('UC-LAW-002 Slice-2 discover/confirm/reject endpoints', () => {
       await request(appWith('true')).post('/api/projects/p1/norms/discover');
       expect(mockRequireProjectAccess).toHaveBeenCalledWith('editor');
     });
+
+    it('creates an audit entry for the discovery run (Spec-Fix 2 — costs LLM money + persists findings)', async () => {
+      await request(appWith('true')).post('/api/projects/p1/norms/discover');
+      expect(mockAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'law.discovery.run' }));
+    });
   });
 
   describe('POST /:projectId/norms/discover/confirm', () => {

@@ -135,6 +135,12 @@ export async function discoverAndJudge(
 
   const toUpsert: UpsertFindingInput[] = [];
   const evidenceHashes: string[] = [];
+  // Spec-Fix 4: aktueller Evidence-Stand JE Familie (über ALLE Kandidaten, nicht
+  // nur gated — auch eine unter-Schwelle-Familie hat einen aktuellen Stand).
+  // Persistierte Findings mit abweichendem Hash werden im Merge `stale` markiert.
+  const currentEvidenceHashes = new Map(
+    discovery.candidates.map(c => [c.family, evidenceSetHash(c)]),
+  );
 
   for (const candidate of gated) {
     const corpusVersionHash = evidenceSetHash(candidate);
@@ -166,21 +172,23 @@ export async function discoverAndJudge(
       anthropicClient: opts.anthropicClient,
     });
 
-    if (verdict.applies) {
-      toUpsert.push({
-        family: verdict.family,
-        sources: candidate.sources,
-        jurisdiction: candidate.jurisdiction,
-        applies: verdict.applies,
-        confidence: verdict.confidence,
-        reasoning: verdict.reasoning,
-        elementIds: verdict.elementIds,
-        keyParagraphs: verdict.keyParagraphs,
-        retrievalScore: candidate.score,
-        corpusVersionHash,
-        judgeModel: model,
-      });
-    }
+    // Spec-Fix 1 (AC-2): BEIDE Urteile persistieren — auch applies:false. Sonst
+    // findet der Reuse-Guard oben beim nächsten Lauf (insb. nach Redeploy, wenn
+    // der In-Process-Cache leer ist) nichts und bezahlt den Judge erneut. Ins
+    // MERGE fließen negative Urteile weiterhin NICHT (Filter unten).
+    toUpsert.push({
+      family: verdict.family,
+      sources: candidate.sources,
+      jurisdiction: candidate.jurisdiction,
+      applies: verdict.applies,
+      confidence: verdict.confidence,
+      reasoning: verdict.reasoning,
+      elementIds: verdict.elementIds,
+      keyParagraphs: verdict.keyParagraphs,
+      retrievalScore: candidate.score,
+      corpusVersionHash,
+      judgeModel: model,
+    });
   }
 
   await upsertFindings(projectId, toUpsert);
@@ -193,5 +201,5 @@ export async function discoverAndJudge(
   // ändert sich, sobald sich irgendein geurteiltes Evidence-Set ändert.
   const corpusVersion = computeVersionHash([...evidenceHashes].sort().join('|'));
 
-  return mergeApplicability(stageA, findingsForMerge, corpusVersion);
+  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes);
 }
