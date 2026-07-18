@@ -14,6 +14,7 @@
     "eval:judge": "ts-node src/evals/runJudgeEval.ts",
     "eval:escalation": "ts-node src/evals/runEscalationEval.ts",
     "eval:discovery:build": "ts-node src/scripts/build-discovery-eval-vectors.ts",
+    "eval:discovery": "ts-node src/evals/runDiscoveryEval.ts",
     "seed:golden-from-db": "ts-node src/scripts/seed-golden-from-db.ts",
     "golden:candidates": "ts-node src/scripts/golden-candidates.ts",
     "facts:apply": "ts-node src/scripts/apply-compliance-facts.ts",
