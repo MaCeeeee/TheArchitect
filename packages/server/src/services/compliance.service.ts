@@ -186,7 +186,11 @@ export function elementMatchesScope(el: { type: string; domain: string; layer: s
 }
 
 export function getFieldValue(el: Record<string, unknown>, field: string): unknown {
-  return field.split('.').reduce((obj, key) => (obj && typeof obj === 'object' ? (obj as Record<string, unknown>)[key] : undefined), el as unknown);
+  // THE-501: rule fields target `maturityLevel`, but both read paths (checkCompliance
+  // above and policy-evaluation.service, which imports this function) map the Neo4j
+  // column onto the object key `maturity` — resolve the alias here so one fix covers both.
+  const resolved = field === 'maturityLevel' ? 'maturity' : field;
+  return resolved.split('.').reduce((obj, key) => (obj && typeof obj === 'object' ? (obj as Record<string, unknown>)[key] : undefined), el as unknown);
 }
 
 export function evaluateRule(value: unknown, operator: string, expected: unknown): boolean {
