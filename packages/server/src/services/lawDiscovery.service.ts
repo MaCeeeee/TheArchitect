@@ -17,6 +17,7 @@ import { judgeCandidate } from './lawJudge.service';
 import { upsertFindings, findExisting, listFindings, type UpsertFindingInput } from './lawDiscoveryFinding.service';
 import { mergeApplicability } from './lawApplicabilityMerge.service';
 import { computeVersionHash } from '../utils/regulationVersion';
+import { log } from '../config/logger';
 
 // K (Retrieval-Breite) ist laufzeit-konfigurierbar (AC-2): Default 60, per
 // LAW_DISCOVERY_TOP_K override-bar — Tuning-Hook fürs Eval-Gate .6 (THE-465).
@@ -200,21 +201,31 @@ export async function discoverAndJudge(
       continue;
     }
 
-    const verdict = await judgeCandidate({
-      profileText: profile.text,
-      profileElements,
-      candidate: {
-        family: candidate.family,
-        sources: candidate.sources,
-        jurisdiction: candidate.jurisdiction,
-        topHits: candidate.topHits.map(h => ({ regulationKey: h.regulationKey, title: h.title })),
-        retrievalScore: candidate.score,
-      },
-      projectId,
-      corpusVersionHash,
-      model,
-      anthropicClient: opts.anthropicClient,
-    });
+    // Graceful degradation je Kandidat (Eval-Fund 2026-07-18): ein einzelner
+    // fehlgeschlagener Judge-Call (z.B. Schema-Bruch nach beiden Attempts) darf
+    // NICHT den ganzen /discover-Lauf auf 500 werfen — Kandidat überspringen,
+    // die übrigen liefern weiter.
+    let verdict;
+    try {
+      verdict = await judgeCandidate({
+        profileText: profile.text,
+        profileElements,
+        candidate: {
+          family: candidate.family,
+          sources: candidate.sources,
+          jurisdiction: candidate.jurisdiction,
+          topHits: candidate.topHits.map(h => ({ regulationKey: h.regulationKey, title: h.title })),
+          retrievalScore: candidate.score,
+        },
+        projectId,
+        corpusVersionHash,
+        model,
+        anthropicClient: opts.anthropicClient,
+      });
+    } catch (err) {
+      log.warn({ family: candidate.family, err }, '[law-discovery] judge failed for candidate — skipped');
+      continue;
+    }
 
     // Spec-Fix 1 (AC-2): BEIDE Urteile persistieren — auch applies:false. Sonst
     // findet der Reuse-Guard oben beim nächsten Lauf (insb. nach Redeploy, wenn

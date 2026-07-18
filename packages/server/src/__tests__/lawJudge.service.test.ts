@@ -45,6 +45,10 @@ describe('judgeCandidate', () => {
     const v = await judgeCandidate({ profileText: 'p-retry', profileElements, candidate, projectId: 'p1', corpusVersionHash: 'H', anthropicClient: client });
     expect(create).toHaveBeenCalledTimes(2); // 1. Attempt scheitert am Zod-Bound → Retry
     expect(v.confidence).toBe(0.9);
+    // Feedback-Retry (Eval-Fund 2026-07-18): der 2. Attempt trägt die konkreten Zod-Issues.
+    const secondCallContent = (create.mock.calls[1][0] as { messages: { content: string }[] }).messages[0].content;
+    expect(secondCallContent).toContain('VALIDATION FEEDBACK');
+    expect(secondCallContent).toContain('confidence');
   });
 
   it('Schema-Bounds (Spec-Fix 3): dauerhaft out-of-range ⇒ wirft nach MAX_ATTEMPTS', async () => {

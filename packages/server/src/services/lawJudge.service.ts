@@ -68,7 +68,10 @@ const LAW_JUDGE_TOOL: Anthropic.Tool = {
       family: { type: 'string' },
       applies: { type: 'boolean' },
       confidence: { type: 'number' },
-      reasoning: { type: 'string' },
+      // maxLength als API-seitiger Hint (Eval-Fund 2026-07-18: Haiku überschritt
+      // den Zod-Bound in beiden Attempts → LawJudgeError; Prompt + Feedback-Retry
+      // sind die weiteren Verteidigungslinien).
+      reasoning: { type: 'string', maxLength: 500 },
       elementIds: { type: 'array', items: { type: 'string' } },
       keyParagraphs: { type: 'array', items: { type: 'string' } },
     },
@@ -185,11 +188,18 @@ export async function judgeCandidate(args: JudgeCandidateArgs): Promise<LawJudge
   let parsed: ReturnType<typeof LawJudgeResponseSchema.safeParse> | undefined;
   let lastErr = '';
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // Feedback-Retry (Eval-Fund 2026-07-18): der 2. Versuch bekommt die konkreten
+    // Zod-Issues mit, statt blind zu hoffen — Haiku überschritt z.B. den
+    // reasoning-Bound in BEIDEN blinden Attempts.
+    const content =
+      attempt === 1
+        ? userMessage
+        : `${userMessage}\n\n=== VALIDATION FEEDBACK (attempt ${attempt}) ===\nYour previous output was rejected by schema validation: ${lastErr}. Fix exactly these issues — same tool, same schema. Keep "reasoning" under 400 characters.`;
     try {
       response = await client.messages.create({
         model,
         system: LAW_JUDGE_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userMessage }],
+        messages: [{ role: 'user', content }],
         max_tokens: MAX_TOKENS,
         tools: [LAW_JUDGE_TOOL],
         tool_choice: { type: 'tool', name: LAW_JUDGE_TOOL.name },

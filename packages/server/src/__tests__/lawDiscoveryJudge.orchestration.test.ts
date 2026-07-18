@@ -195,6 +195,19 @@ describe('discoverAndJudge (UC-LAW-002 Slice-2 / THE-462/463)', () => {
     expect(a!.corpus!.stale).toBe(true);        // aber als überholt markiert
   });
 
+  it('(e) Graceful je Kandidat (Eval-Fund): wirft der Judge für EINEN Kandidaten, liefern die übrigen weiter', async () => {
+    mockSearch.mockResolvedValue([h('ai-act-en', '5', 0.9), h('dora-en', '3', 0.85)]);
+    mockJudge.mockImplementation(async (args: { candidate: { family: string } }) => {
+      if (args.candidate.family === 'dora') throw new Error('law-judge output invalid after 2 attempts: reasoning too long');
+      return { family: 'ai-act', applies: true, confidence: 0.8, reasoning: 'r', elementIds: [], keyParagraphs: [] };
+    });
+
+    const report = await discoverAndJudge('p1'); // darf NICHT werfen
+    expect(report.assessments.find(a => a.ruleId === 'ai-act')).toBeDefined();
+    const persisted = mockUpsert.mock.calls[0][1] as FakeFinding[];
+    expect(persisted.map(f => f.family)).toEqual(['ai-act']); // dora übersprungen, kein Finding
+  });
+
   it('graceful degradation: kein Korpus-konfiguriert ⇒ reiner Stage-A-Report, kein Fehler', async () => {
     mockConfigured.mockReturnValue(false);
     const report = await discoverAndJudge('p1');

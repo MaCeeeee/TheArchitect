@@ -288,6 +288,8 @@ export interface JudgeRunSummary {
   attributions: LossAttribution[];
   callCount: number;
   callWarningThreshold: number;
+  /** Per-Kandidat-Fehler (z.B. Schema-Bruch nach beiden Attempts) — Case wird mit den restlichen Verdicts gewertet (Eval-Fund 2026-07-18). */
+  judgeErrors: number;
 }
 
 export interface HydeRunSummary {
@@ -381,7 +383,7 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
   lines.push('');
 
   if (args.judgeRun) {
-    const { postOutcomes, attributions, callCount, callWarningThreshold } = args.judgeRun;
+    const { postOutcomes, attributions, callCount, callWarningThreshold, judgeErrors } = args.judgeRun;
     const post = aggregateMetrics(postOutcomes);
     const samples = calibrationSamplesFromOutcomes(postOutcomes);
     const ece = expectedCalibrationError(samples);
@@ -421,6 +423,9 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     lines.push('## Cost (AC-4)');
     lines.push('');
     lines.push(`- Judge calls: ${callCount}${callCount > callWarningThreshold ? ` ⚠️ above warning threshold (${callWarningThreshold})` : ''}`);
+    if (judgeErrors > 0) {
+      lines.push(`- ⚠️ Judge errors (candidates skipped, cases scored with remaining verdicts): ${judgeErrors}`);
+    }
     lines.push('');
   }
 
@@ -506,6 +511,7 @@ async function runJudgeStage(
   const postOutcomes: CaseOutcome[] = [];
   const attributions: LossAttribution[] = [];
   let callCount = 0;
+  let judgeErrors = 0;
 
   for (const c of golden.cases) {
     const candidates = perCaseCandidates.get(c.caseId) ?? [];
@@ -532,9 +538,19 @@ async function runJudgeStage(
         corpusVersionHash: `eval:${c.caseId}:${candidate.family}`,
         model,
       };
-      const verdict = await judgeCandidate(args);
-      callCount++;
-      judged.set(candidate.family, { applies: verdict.applies, confidence: verdict.confidence });
+      // Runner-Toleranz (Eval-Fund 2026-07-18): ein fehlgeschlagener Judge-Call
+      // (z.B. Schema-Bruch nach beiden Attempts) bricht NICHT den ganzen Eval-Lauf
+      // ab — Kandidat wird gezählt und übersprungen, der Case mit den restlichen
+      // Verdicts gewertet.
+      try {
+        const verdict = await judgeCandidate(args);
+        callCount++;
+        judged.set(candidate.family, { applies: verdict.applies, confidence: verdict.confidence });
+      } catch (err) {
+        judgeErrors++;
+        callCount++;
+        console.warn(`[eval:discovery] judge failed for ${c.caseId}/${candidate.family} — skipped: ${(err as Error).message}`);
+      }
     }
     const retrievalFamilies = (retrievalOutcomes.find(o => o.caseId === c.caseId)?.predicted ?? []).map(p => p.elementId);
     attributions.push(lossAttributionForCase(c.caseId, c.goldFamilies, retrievalFamilies, judged));
@@ -542,7 +558,7 @@ async function runJudgeStage(
     postOutcomes.push(buildJudgePostOutcome(c.caseId, c.goldFamilies, judged));
   }
 
-  return { postOutcomes, attributions, callCount, callWarningThreshold: golden.cases.length * 2 };
+  return { postOutcomes, attributions, callCount, callWarningThreshold: golden.cases.length * 2, judgeErrors };
 }
 
 async function main(): Promise<void> {

@@ -292,6 +292,22 @@ function reportArgs(overrides: Partial<Parameters<typeof buildMarkdownReport>[0]
   };
 }
 
+describe('judge error tolerance (Eval-Fund 2026-07-18)', () => {
+  it('report shows a judge-errors warning line when candidates were skipped', () => {
+    const md = buildMarkdownReport(reportArgs({
+      judgeRun: { postOutcomes: [], attributions: [], callCount: 5, callWarningThreshold: 24, judgeErrors: 2 },
+    }));
+    expect(md).toContain('Judge errors (candidates skipped, cases scored with remaining verdicts): 2');
+  });
+
+  it('no judge-errors line when all candidates judged cleanly', () => {
+    const md = buildMarkdownReport(reportArgs({
+      judgeRun: { postOutcomes: [], attributions: [], callCount: 5, callWarningThreshold: 24, judgeErrors: 0 },
+    }));
+    expect(md).not.toContain('Judge errors');
+  });
+});
+
 describe('gated vs any-hit prediction sets (eval degeneration fix)', () => {
   const cand = (family: string, score: number): DiscoveryCandidate => ({
     family, sources: [`${family}-en`], jurisdiction: 'EU', score, hitCount: 1, topHits: [],
