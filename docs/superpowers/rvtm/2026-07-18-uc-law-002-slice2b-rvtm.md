@@ -23,7 +23,7 @@
 | R10 | 465 AC-3: Determinismus-Tests Profil (.1) + Aggregation (.2) bit-stabil | THE-465 | bestehende Unit-Tests (useCaseProfile/lawDiscovery) + T4-Regression | jest grün (unverändert) | Done |
 | R11 | 465 AC-4: Kosten-Regression — LLM-Calls+Tokens protokolliert, Budget-Warnung im Report | THE-465 | T7 | Runner-Test (Zähler); Token-Detail NICHT verfügbar (judgeCandidate gibt keine usage zurück) — nur Call-Count geloggt, dokumentierte Einschränkung | Done (eingeschränkt) |
 | R12 | 465 AC-5: DE/EN-Konsistenz — familien-konsistente Ergebnisse (de/en-Fixtures im Korpus) | THE-465 | T5+T7 | Konsistenz-Check im Runner + ai-act-de/-en im Fixture-Korpus | Done |
-| R13 | 465 AC-6: Eval reproduzierbar ohne Live-Korpus (Fixture-Korpus + vorberechnete Embeddings im Repo, `--offline`) | THE-465 | T5+T6+T7 | Fail-Fast-Pfad verifiziert; VOLLER `eval:discovery --offline`-Lauf braucht den Controller-Precompute-Schritt (kein Netz in dieser Session) | Blocked auf Controller-Schritt |
+| R13 | 465 AC-6: Eval reproduzierbar ohne Live-Korpus (Fixture-Korpus + vorberechnete Embeddings im Repo, `--offline`) | THE-465 | T5+T6+T7 | Fail-Fast-Pfad verifiziert; VOLLER `eval:discovery --offline`-Lauf braucht den Controller-Precompute-Schritt (kein Netz in dieser Session) | **Done** (Precompute 2026-07-18 via Prod-Sidecar-Tunnel; Vektoren committed; voller `--offline`-Lauf grün) |
 | R14 | 465 AC-7 (Owner 2026-07-18): Retrieval-Recall SEPARAT vom Judge; `ruleLessGold`-Familien nur im Korpus (Stage-A-blind) mit eigenem Recall-Ausweis | THE-465 | T5 (ruleLessGold) + T7 (Verlust-Attribution) | Runner-Tests + Report-Spalten | Done |
 | R15 | 465 AC-8 (Owner 2026-07-18): offline HyDE-Vergleichslauf — Baseline vs. HyDE-Recall + Δ mit bootstrapCI; NICHT im Prod-Pfad | THE-465 | T6 (--hyde Precompute) + T7 | Runner-Tests + Report; realer Lauf braucht Controller-Precompute mit `--hyde` | Done (Code), Lauf ausstehend |
 | R16 | Golden-Governance: `frozen:false` bis Owner-Abnahme; Report trägt PRELIMINARY-Banner | Owner 2026-07-18 | T5+T7 | Loader-Flag + Report-Test | Done |
@@ -32,3 +32,6 @@
 
 ## Bewusst nicht abgedeckt
 HyDE/Übersetzung im Prod-Pfad (Folge-REQ nur bei belegter Recall-Lücke) · THE-432/`provisionKind` (Trigger = `ruleLessGold`-Recall-Befund) · Freitext-Input · Journey-Einbettung.
+
+## Live-Eval-Baseline (2026-07-18, PRELIMINARY — frozen:false)
+Voller Lauf (baseline+HyDE+judge, Haiku): **Gated Retrieval R 44,0 % / P 40,7 %** · Empty-Set 100 % · ruleLessGold-Recall 83,3 % · **HyDE Δ-Recall +56,0pp (CI 42,9–70,8)**, ruleLessGold Δ +16,7pp (CI berührt 0) · **Judge: P 73,3 %, ECE 0,152, 0 missed@judge** — ALLE Misses sind missed@retrieval (dsgvo ×11, eprivacy, lksg, data-act). Befund: Engpass = Retrieval (Vokabular-Mismatch), Judge verlustfrei. Evidenz-Report: docs/superpowers/2026-07-18-uc-law-002-discovery-eval-baseline.md. Zwei Live-Funde gefixt: Eval-Degeneration (gated metrics) + Judge-reasoning-Längen-Bug (Prompt-Härtung, Feedback-Retry, per-Kandidat-Skip).
