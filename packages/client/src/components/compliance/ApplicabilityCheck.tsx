@@ -7,7 +7,7 @@
  * straight into the compliance pipeline (same adapter as RegulationsPanel).
  * Decision support, not legal advice — the disclaimer is always visible.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Radar,
@@ -167,16 +167,27 @@ export default function ApplicabilityCheck() {
     }
   };
 
-  const signalById = new Map((report?.signals ?? []).map((s) => [s.id, s]));
+  // Quality-Fix: shared busy lock — load/discover/confirm/reject/add all write
+  // `report`; without a mutual lock a late response can visibly roll back a
+  // newer state (e.g. Re-check overwriting a just-finished discover run).
+  const busy = loading || discovering || decidingKey !== null || addingId !== null;
+
+  const signalById = useMemo(
+    () => new Map((report?.signals ?? []).map((s) => [s.id, s])),
+    [report],
+  );
   // AC-4 (Fix 1): element-id → name resolution for the corpus drilldown. The
   // report carries no element map, but every signal's evidence names its
   // matched elements — one pass builds the lookup (pattern: signalById).
-  const elementNameById = new Map<string, string>();
-  for (const s of report?.signals ?? []) {
-    for (const e of s.evidence) {
-      if (e.elementId && !elementNameById.has(e.elementId)) elementNameById.set(e.elementId, e.name);
+  const elementNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of report?.signals ?? []) {
+      for (const e of s.evidence) {
+        if (e.elementId && !m.has(e.elementId)) m.set(e.elementId, e.name);
+      }
     }
-  }
+    return m;
+  }, [report]);
   const indicated = (report?.assessments ?? []).filter((a) => a.verdict !== 'not_indicated');
   const notIndicated = (report?.assessments ?? []).filter((a) => a.verdict === 'not_indicated');
 
@@ -250,7 +261,7 @@ export default function ApplicabilityCheck() {
           ) : canAdd ? (
             <button
               onClick={() => void addToPipeline(a)}
-              disabled={addingId === a.ruleId}
+              disabled={addingId === a.ruleId || busy}
               className="flex shrink-0 items-center gap-1.5 rounded border border-[#7c3aed] px-2.5 py-1 text-xs text-[#7c3aed] transition hover:bg-[#7c3aed] hover:text-white disabled:opacity-50"
             >
               {addingId === a.ruleId ? (
@@ -351,14 +362,14 @@ export default function ApplicabilityCheck() {
                   <div className="mt-2 flex gap-2">
                     <button
                       onClick={() => void decideFinding(a, 'confirm')}
-                      disabled={decidingKey === decisionKey(a)}
+                      disabled={busy}
                       className="flex items-center gap-1 rounded border border-emerald-500/40 px-2 py-1 text-[10px] text-emerald-400 transition hover:bg-emerald-500/10 disabled:opacity-50"
                     >
                       <CheckCircle2 size={11} /> Confirm
                     </button>
                     <button
                       onClick={() => void decideFinding(a, 'reject')}
-                      disabled={decidingKey === decisionKey(a)}
+                      disabled={busy}
                       className="flex items-center gap-1 rounded border border-red-500/40 px-2 py-1 text-[10px] text-red-400 transition hover:bg-red-500/10 disabled:opacity-50"
                     >
                       <X size={11} /> Reject
@@ -392,7 +403,7 @@ export default function ApplicabilityCheck() {
           {discovery?.enabled && (
             <button
               onClick={() => void discoverFromCorpus()}
-              disabled={discovering || !discovery.corpusConfigured || !discovery.providerConfigured}
+              disabled={busy || !discovery.corpusConfigured || !discovery.providerConfigured}
               title={
                 !discovery.corpusConfigured
                   ? 'Corpus not connected'
@@ -408,7 +419,7 @@ export default function ApplicabilityCheck() {
           )}
           <button
             onClick={() => void load()}
-            disabled={loading}
+            disabled={busy}
             title="Re-run check"
             className="flex items-center gap-1 rounded border border-[var(--border-subtle)] px-2 py-1 text-[10px] text-[var(--text-tertiary)] transition hover:text-[var(--text-primary)] disabled:opacity-50"
           >
