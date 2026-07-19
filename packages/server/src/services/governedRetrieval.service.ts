@@ -20,8 +20,9 @@ import {
   type QueryChunk,
 } from './dataServer.service';
 import { corpusVectorSearch } from './corpusVectorSearch.service';
-import type { CorpusHit } from '@thearchitect/shared';
+import type { CorpusHit, ConsumedRef, TraceCtx } from '@thearchitect/shared';
 import { log } from '../config/logger';
+import { recordContextTrace } from './contextTrace.service';
 
 export type VersionPin = Record<string, string>; // regulationKey -> versionHash
 
@@ -255,4 +256,98 @@ export async function governedCorpusSearch(input: GovernedCorpusSearchInput): Pr
   }
   // provisionKind: dormant — bewusst kein Filter (THE-432).
   return kept;
+}
+
+/**
+ * Traced wrappers (THE-423 / AC-2, DD-1). Each wraps one of the three
+ * governedRetrieval read functions above: call the underlying (UNCHANGED)
+ * function, build a `consumed[]` array from the per-call hit set, persist a
+ * `ContextTrace` via `recordContextTrace`, and return `{data, contextTraceId}`.
+ * Call-sites (later tasks) just pass the id through — the consumed-building
+ * logic lives HERE, centrally, not scattered across consumers.
+ */
+
+/**
+ * `resolveGovernedRegulations` wrapper — `retrievalMethod:'direct'`, no score
+ * (a direct-by-key Mongo read has no similarity ranking to report).
+ */
+export async function tracedResolveGovernedRegulations(
+  input: GovernedReadInput & TraceCtx & { projectId: string },
+): Promise<{ views: GovernedRegulationView[]; contextTraceId: string }> {
+  const { feature, userId, model, promptVersion, llmTraceRef, projectId, ...rest } = input;
+  const views = await resolveGovernedRegulations(rest);
+  const consumed: ConsumedRef[] = views.map(v => ({
+    regulationKey: v.regulationKey,
+    versionHash: v.versionHash,
+    retrievalMethod: 'direct',
+  }));
+  const contextTraceId = await recordContextTrace({
+    feature,
+    userId,
+    model,
+    promptVersion,
+    llmTraceRef,
+    projectId,
+    consumed,
+  });
+  return { views, contextTraceId };
+}
+
+/**
+ * `governedQuery` wrapper — `retrievalMethod:'dense'`. `governedQuery` passes
+ * non-law chunks through untouched (no `regulationKey`/`versionHash` in their
+ * metadata), so those are FILTERED OUT before mapping to `ConsumedRef` — a
+ * consumed entry with an undefined required field would be wrong, not just
+ * unhelpful.
+ */
+export async function tracedGovernedQuery(
+  input: GovernedQueryInput & TraceCtx,
+): Promise<{ result: QueryResult; contextTraceId: string }> {
+  const { feature, userId, model, promptVersion, llmTraceRef, ...rest } = input;
+  const result = await governedQuery(rest);
+  const consumed: ConsumedRef[] = result.chunks
+    .filter(c => keyOf(c) !== undefined && hashOf(c) !== undefined)
+    .map(c => ({
+      regulationKey: keyOf(c) as string,
+      versionHash: hashOf(c) as string,
+      score: c.score,
+      retrievalMethod: 'dense',
+    }));
+  const contextTraceId = await recordContextTrace({
+    feature,
+    userId,
+    model,
+    promptVersion,
+    llmTraceRef,
+    projectId: input.projectId,
+    consumed,
+  });
+  return { result, contextTraceId };
+}
+
+/**
+ * `governedCorpusSearch` wrapper — `retrievalMethod:'dense'`, key/hash/score
+ * taken directly from each `CorpusHit` (all required fields there already).
+ */
+export async function tracedGovernedCorpusSearch(
+  input: GovernedCorpusSearchInput & TraceCtx & { projectId: string },
+): Promise<{ hits: CorpusHit[]; contextTraceId: string }> {
+  const { feature, userId, model, promptVersion, llmTraceRef, projectId, ...rest } = input;
+  const hits = await governedCorpusSearch(rest);
+  const consumed: ConsumedRef[] = hits.map(h => ({
+    regulationKey: h.regulationKey,
+    versionHash: h.versionHash,
+    score: h.score,
+    retrievalMethod: 'dense',
+  }));
+  const contextTraceId = await recordContextTrace({
+    feature,
+    userId,
+    model,
+    promptVersion,
+    llmTraceRef,
+    projectId,
+    consumed,
+  });
+  return { hits, contextTraceId };
 }
