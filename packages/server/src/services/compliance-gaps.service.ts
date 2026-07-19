@@ -17,9 +17,13 @@
  * outstanding work.
  */
 import mongoose from 'mongoose';
+import { buildRegulationKey } from '@thearchitect/shared';
+import type { ConsumedRef } from '@thearchitect/shared';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { Regulation } from '../models/Regulation';
 import { getPipelineNorm } from './norm.service';
+import { recordContextTrace } from './contextTrace.service';
+import { computeVersionHash } from '../utils/regulationVersion';
 
 export interface GapFilters {
   regulationId?: string;
@@ -72,10 +76,17 @@ export interface GapsSummary {
 const OPEN_STATUSES = new Set(['open', 'in_progress']);
 const MS_PER_DAY = 86_400_000;
 
+export interface ComplianceGapsResult {
+  items: GapItem[];
+  summary: GapsSummary;
+  /** THE-423 Task 8: ContextTrace(feature:'gap') id for this read. Always set (best-effort recorder). */
+  contextTraceId: string;
+}
+
 export async function computeComplianceGaps(
   projectId: string,
   filters: GapFilters = {},
-): Promise<{ items: GapItem[]; summary: GapsSummary }> {
+): Promise<ComplianceGapsResult> {
   const query: Record<string, unknown> = {
     projectId: new mongoose.Types.ObjectId(projectId),
   };
@@ -101,10 +112,46 @@ export async function computeComplianceGaps(
   const legacyIds = [
     ...new Set(requirements.filter((r) => !r.normId).map((r) => String(r.regulationId))),
   ];
+  // THE-423 (Task 8, DD-3 revised): retrieval stays the raw, ungoverned
+  // `Regulation.find` exactly as before — gap persists no output, so there is
+  // nothing to stamp and no reason to route through the governed reader
+  // (that would add version-gating = a behavioral change). `source` /
+  // `paragraphNumber` / `fullText` are additionally selected only to build
+  // the ContextTrace's `consumed[]` below — the query filter is untouched.
   const regulations = await Regulation.find({ _id: { $in: legacyIds } })
-    .select('title')
+    .select('title source paragraphNumber fullText')
     .lean();
   const regulationTitleById = new Map(regulations.map((r) => [String(r._id), r.title]));
+
+  // Best-effort ContextTrace: one direct record per read, built ONLY from
+  // regulations that actually carry both a derivable regulationKey (needs
+  // source + paragraphNumber) and a version hash (needs fullText). Legacy
+  // docs lacking those fields are skipped — consumed:[] is acceptable (mirrors
+  // the oracle consumer). No AiTrace exists on this path (DD-5) → llmTraceRef
+  // stays unset.
+  const consumed: ConsumedRef[] = [];
+  const seenKeys = new Set<string>();
+  for (const reg of regulations) {
+    if (!reg.source || !reg.paragraphNumber || !reg.fullText) continue;
+    let regulationKey: string;
+    try {
+      regulationKey = buildRegulationKey(reg.source, reg.paragraphNumber);
+    } catch {
+      continue;
+    }
+    if (seenKeys.has(regulationKey)) continue;
+    seenKeys.add(regulationKey);
+    consumed.push({
+      regulationKey,
+      versionHash: computeVersionHash(reg.fullText),
+      retrievalMethod: 'direct',
+    });
+  }
+  const contextTraceId = await recordContextTrace({
+    feature: 'gap',
+    projectId,
+    consumed,
+  });
 
   const normIds = [...new Set(requirements.map((r) => r.normId).filter((n): n is string => !!n))];
   const normTitleById = new Map<string, string>();
@@ -192,5 +239,5 @@ export async function computeComplianceGaps(
     .sort((a, b) => b.openMust - a.openMust || b.open - a.open)
     .slice(0, 5);
 
-  return { items, summary };
+  return { items, summary, contextTraceId };
 }

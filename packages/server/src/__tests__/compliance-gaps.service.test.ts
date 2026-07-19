@@ -5,11 +5,15 @@
 // semantics: gap = open|in_progress; done|waived = closed.
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { buildRegulationKey } from '@thearchitect/shared';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { Regulation } from '../models/Regulation';
+import { ContextTrace } from '../models/ContextTrace';
 import { computeComplianceGaps } from '../services/compliance-gaps.service';
+import { computeVersionHash } from '../utils/regulationVersion';
 
 let mongod: MongoMemoryServer;
+const originalEnv = { ...process.env };
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -19,11 +23,14 @@ beforeAll(async () => {
 afterAll(async () => {
   await mongoose.disconnect();
   await mongod.stop();
+  process.env = originalEnv;
 });
 
 afterEach(async () => {
   await ComplianceRequirement.deleteMany({});
   await Regulation.deleteMany({});
+  await ContextTrace.deleteMany({});
+  process.env = { ...originalEnv };
 });
 
 const PROJECT_ID = new mongoose.Types.ObjectId().toString();
@@ -158,5 +165,85 @@ describe('computeComplianceGaps (UC-GAP-001)', () => {
     expect(summary.total).toBe(0);
     expect(summary.byRegulation).toHaveLength(0);
     expect(summary.topElements).toHaveLength(0);
+  });
+});
+
+// THE-423 Task 8 — gap → ContextTrace (feature 'gap'), direct, retrieval unchanged.
+describe('computeComplianceGaps() → ContextTrace (THE-423 Task 8)', () => {
+  beforeEach(() => {
+    process.env.CONTEXT_TRACING_ENABLED = 'true';
+  });
+
+  it('records a ContextTrace(feature:gap) with consumed built from the read regulations (key+hash, direct), and returns contextTraceId', async () => {
+    const reg = await createRegulation('LkSG');
+    const regId = String(reg._id);
+    await createRequirement({ regulationId: regId, title: 'Risikoanalyse durchführen', status: 'open', priority: 'must' });
+
+    const result = await computeComplianceGaps(PROJECT_ID);
+
+    expect(result.contextTraceId).toBeDefined();
+
+    const traces = await ContextTrace.find({ feature: 'gap', projectId: PROJECT_ID });
+    expect(traces).toHaveLength(1);
+    expect(traces[0].requestId).toBe(result.contextTraceId);
+    expect(traces[0].llmTraceRef).toBeUndefined();
+
+    const expectedKey = buildRegulationKey(reg.source, reg.paragraphNumber);
+    const expectedHash = computeVersionHash(reg.fullText);
+    expect(traces[0].consumed).toHaveLength(1);
+    expect(traces[0].consumed[0]).toMatchObject({
+      regulationKey: expectedKey,
+      versionHash: expectedHash,
+      retrievalMethod: 'direct',
+    });
+  });
+
+  it('does not change the gap retrieval or gap result: items/summary are byte-identical whether tracing is on or off', async () => {
+    const reg = await createRegulation('LkSG');
+    const regId = String(reg._id);
+    await createRequirement({ regulationId: regId, title: 'Risikoanalyse durchführen', status: 'open', priority: 'must' });
+    await createRequirement({ regulationId: regId, title: 'Präventionsmaßnahmen definieren', status: 'done', priority: 'should' });
+
+    process.env.CONTEXT_TRACING_ENABLED = 'false';
+    const disabled = await computeComplianceGaps(PROJECT_ID);
+
+    process.env.CONTEXT_TRACING_ENABLED = 'true';
+    const enabled = await computeComplianceGaps(PROJECT_ID);
+
+    expect(enabled.items).toEqual(disabled.items);
+    expect(enabled.summary).toEqual(disabled.summary);
+  });
+
+  it('is additive: still returns a (generated) contextTraceId and computes gaps normally when tracing is disabled', async () => {
+    process.env.CONTEXT_TRACING_ENABLED = 'false';
+    const reg = await createRegulation('LkSG');
+    await createRequirement({ regulationId: String(reg._id), title: 'Risikoanalyse durchführen', status: 'open' });
+
+    const result = await computeComplianceGaps(PROJECT_ID);
+    expect(result.summary.total).toBe(1);
+    expect(result.contextTraceId).toBeDefined();
+
+    const traces = await ContextTrace.find({ feature: 'gap', projectId: PROJECT_ID });
+    expect(traces).toHaveLength(0);
+  });
+
+  it('skips regulations missing regulationKey/versionHash inputs — consumed stays empty for those, never throws', async () => {
+    // Legacy regulation missing `source`/`paragraphNumber` cannot yield a
+    // regulationKey — write it directly via the collection to bypass Mongoose
+    // required-field validation, simulating pre-existing legacy data.
+    const legacyReg = await createRegulation('Legacy');
+    await Regulation.collection.updateOne(
+      { _id: legacyReg._id },
+      { $unset: { source: '', paragraphNumber: '' } },
+    );
+    await createRequirement({ regulationId: String(legacyReg._id), title: 'Legacy requirement', status: 'open' });
+
+    const result = await computeComplianceGaps(PROJECT_ID);
+    expect(result.summary.total).toBe(1);
+    expect(result.contextTraceId).toBeDefined();
+
+    const traces = await ContextTrace.find({ feature: 'gap', projectId: PROJECT_ID });
+    expect(traces).toHaveLength(1);
+    expect(traces[0].consumed).toHaveLength(0);
   });
 });
