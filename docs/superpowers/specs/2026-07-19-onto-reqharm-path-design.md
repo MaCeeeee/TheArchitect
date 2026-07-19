@@ -24,16 +24,19 @@ Dafür braucht es die **Struktur-Maschine** (UC-ONTO-001): (a) jeder Gesetzes-Pa
 ```mermaid
 graph LR
   subgraph Spur1 [Spur 1 — Struktur-Maschine seriell]
-    G[Slice G<br/>Golden-Ausbau<br/>2 Prüfsets] -->|Gate 1: frozen, Kappa >= 0.6| T[Slice T<br/>001.3 Typing<br/>5 Achsen, Korpus-Batch]
+    G0[Slice G-0 Vorstufe<br/>E6 v1.5.0: provisionKind-Werteraum<br/>+ Schema/Eval auf 5 Achsen<br/>deterministisch, UNGATED] --> G[Slice G<br/>Golden-Ausbau<br/>2 Prüfsets, 5 Achsen]
+    G -->|Gate 1: frozen, Kappa >= 0.6| T[Slice T<br/>001.3 Typing<br/>Korpus-Batch + Eval]
     T -->|Gate 2: Typing-Eval gruen| K[Slice K<br/>001.4 Kanten<br/>Verifier-Pipeline]
   end
   subgraph Spur2 [Spur 2 — Harmonisierungs-Vorbau parallel]
     H1[REQHARM .1<br/>Datenmodell Obligation + legalBases N:M<br/>deterministisch, UNGATED] --> H2[REQHARM .2<br/>Cluster-Vorschlag + Confirm-UI]
   end
   T -->|Gate 2 entsperrt| H2
+  T -->|Gate 2 entsperrt| D[Discovery: scope-Artikel-Priorisierung<br/>flag-gated, komplementaer zu HyDE/THE-514]
   K -->|Gate 3: gruen ODER dokumentierte Grenze| H2b[REQHARM .2b<br/>Kanten-Verfeinerung<br/>lex specialis, nur falls Gate 3 gruen]
-  T -->|Sofort-Nutzen| D[Discovery: scope-Artikel-Priorisierung<br/>flag-gated, komplementaer zu HyDE/THE-514]
 ```
+
+**Slice G-0 (Vorstufe, deterministisch, ungated):** Damit die Golden-Labelei auf 5 Achsen überhaupt starten kann, müssen VOR Slice G existieren: (a) der `provisionKind`-Werteraum in der Ontologie (E6 v1.5.0, reiner Daten-PR), (b) die Erweiterung von `TypingLabelsSchema`/`TYPING_AXES`/`runTypingEval.ts` auf die fünfte Achse. Beides ist Handwerk ohne KI-Anteil — löst die sonst zirkuläre Abhängigkeit (Golden braucht die Achse, die Achse stand bisher in Slice T).
 
 Begründung Zwei-Spur: REQHARM .1 ist reine Datenmodell-Handwerksarbeit ohne KI-Anteil → braucht keine Prüfungen, nutzt die Wartezeit der Golden-Adjudikation. Die Spuren berühren disjunkte Flächen (Eval/Ontologie vs. Mongo-Model) → geringes Konfliktrisiko.
 
@@ -43,7 +46,7 @@ Begründung Zwei-Spur: REQHARM .1 ist reine Datenmodell-Handwerksarbeit ohne KI-
 
 ### G-a: Typing-Golden-Ausbau (4 → ~60-80 Cases)
 - Stratifiziert über **Quelle** (alle 9 Gesetze vertreten), **Sprache** (DE/EN) und **C_score** (komplexe Normen müssen vertreten sein — C_score existiert, `packages/server/src/norms/complexityScore.ts`).
-- Gelabelt auf **5 Achsen**: NormKind, Bindingness, Obligation-Art, PartyRole + **provisionKind** (neu, siehe Slice T).
+- Gelabelt auf **5 Achsen**: NormKind, Bindingness, Obligation-Art, PartyRole + **provisionKind** (neu, Werteraum aus Slice G-0).
 - Bestehende frozen-Mechanik (`typingGolden.ts`: Kappa ≥ 0,6 + Adjudikation, RUBRIC.md §7) wird benutzt, nicht neu erfunden.
 
 ### G-b: Relations-Golden (neu, ~80-120 Paare)
@@ -55,8 +58,10 @@ Begründung Zwei-Spur: REQHARM .1 ist reine Datenmodell-Handwerksarbeit ohne KI-
 ### Zweitrater-Workflow (für beide Sets)
 1. Claude draftet alle Labels (mit Begründungs-Notiz je Label).
 2. **MikeOSS** rated unabhängig (Gesetzestexte sind öffentlich → gehostete Demo oder Self-Host zulässig; BYO-Key).
-3. Kappa je Achse/Relationstyp; Disagreements (erwartet ~10-25) gehen an den User als Schiedsrichter.
+3. Kappa je Achse/Relationstyp (bei n ≥ 10; seltene Typen über Macro-Kappa, siehe unten); Disagreements (erwartet ~10-25) gehen an den User als Schiedsrichter.
 4. Kappa ≥ 0,6 → `frozen: true`. **Gate 1 offen.**
+
+**Kappa bei seltenen Relationstypen:** Per-Typ-Kappa nur wo n ≥ 10 Paare; darunter ist Cohen's Kappa instabil → für seltene Typen zählt der **aggregierte (Macro-)Kappa** über den gesamten Relations-Set, und der Eval-Report weist die dünnen Typen explizit als „n zu klein für Einzel-Kappa" aus. Die Adjudikation bleibt trotzdem je Einzelfall.
 
 **Fallback (falls MikeOSS-Zugang hakt):** Zweitrater = anderes Modell-Haus (Gemini direkt, unabhängiger Prompt). Die Kappa-Messung bleibt ehrlich, solange die Rater unabhängig sind. → Offener Punkt O-1.
 
@@ -65,11 +70,11 @@ Begründung Zwei-Spur: REQHARM .1 ist reine Datenmodell-Handwerksarbeit ohne KI-
 **EA-Sicht:** Jeder Paragraph bekommt Katalog-Attribute — wie Element-Typisierung im Architektur-Repository. Vorschlag mit Herkunftsnachweis, kein Fakt.
 
 **Technisch:**
-- **E6-Datei → v1.5.0:** `provisionKind` als fünfte Achse, geschlossener Werteraum: `scope-applicability | definition | obligation | enforcement-supervision | procedural | other`. Ontologie-Änderung = Daten-PR mit CHANGELOG (bestehende Konvention `packages/shared/src/ontology/`). Der Werteraum bleibt klein; `other` fängt Rest ab.
+- **Vorausgesetzt (aus Slice G-0):** `provisionKind` ist bereits in der Ontologie (E6 v1.5.0, Werteraum `scope-applicability | definition | obligation | enforcement-supervision | procedural | other`) und Schema/Eval sind auf 5 Achsen erweitert. Slice T ist damit reiner Batch + Eval-Lauf.
 - **Batch-Job** über die 1532 §§ (Korpus-Mongo, Server B / `CORPUS_MONGODB_URI`): Haiku-Instruct (Paper-Befund 4: Instruct schlägt Thinking bei Typing), Tool-Use-JSON gegen den geschlossenen Typraum, halluzinierte Werte gedroppt (Muster `complianceMapping.service.ts`).
 - **Persistenz am Korpus-Doc** (additiv): `typing: { normKind?, bindingness?, obligationType?, partyRole?, provisionKind?, confidence, modelId, ontologyVersion, typedAt, status: 'suggested' }`. Kein Human-Confirm je § (1532 Einzel-Confirms unrealistisch) — Qualität wird stattdessen am frozen Golden **gemessen**; Stichproben-Confirm-UI ist späterer, separater Scope.
-- **Eval:** `runTypingEval.ts` auf 5 Achsen erweitert; per-Achse F1 + Kalibrierung (Metriken jenseits F1 existieren aus THE-430). Schwellen für Gate 2 werden **im Plan** fixiert (nach erstem Golden-Durchlauf seriös setzbar) → Offener Punkt O-2.
-- **Sofort-Nutzen Discovery:** `scope-applicability`-Provisions im Discovery-Retrieval priorisieren bzw. je Familie garantiert dem Judge vorlegen — der THE-423-belegte Hebel (CRA bekam nur Enforcement-§§, nie Art. 2), komplementär zur query-seitigen HyDE-Übersetzung (THE-514, live). Flag-gated, dark by default (Muster `LAW_DISCOVERY_HYDE`).
+- **Eval:** per-Achse F1 + Kalibrierung am frozen Golden (Metriken jenseits F1 existieren aus THE-430; die 5-Achsen-Erweiterung des Runners kam in G-0). Schwellen für Gate 2 werden **im Plan** fixiert (nach erstem Golden-Durchlauf seriös setzbar) → Offener Punkt O-2.
+- **Discovery-Nutzen (entsperrt durch Gate 2, nicht früher):** `scope-applicability`-Provisions im Discovery-Retrieval priorisieren bzw. je Familie garantiert dem Judge vorlegen — der THE-423-belegte Hebel (CRA bekam nur Enforcement-§§, nie Art. 2), komplementär zur query-seitigen HyDE-Übersetzung (THE-514, live). Flag-gated, dark by default (Muster `LAW_DISCOVERY_HYDE`). Bewusst hinter Gate 2: keine Retrieval-Priorisierung auf ungemessenen Labels („kein Suggest ohne Baseline").
 
 ## 5. Slice K — 001.4 Kanten (THE-433) — das Risiko-Slice
 
@@ -98,7 +103,7 @@ Weitere REQHARM-REQs (.3 Merge-UI-Ausbau, .4 Coverage/Gap-Umstellung, .5 Dashboa
 
 | Gate | Kriterium | Entsperrt |
 |---|---|---|
-| **G1** | Beide Golden-Sets frozen (Kappa ≥ 0,6 je Achse/Relationstyp, User-Adjudikation abgeschlossen) | Slice T Eval, Slice K Eval |
+| **G1** | Beide Golden-Sets frozen (Kappa ≥ 0,6 je Achse und je Relationstyp mit n ≥ 10; seltene Typen über Macro-Kappa, siehe §3; User-Adjudikation abgeschlossen) | Slice T Eval, Slice K Eval |
 | **G2** | Typing-Eval grün am frozen Golden (Schwellen: O-2) | REQHARM .2 (Cluster) + Discovery-provisionKind-Priorisierung |
 | **G3** | Kanten-Precision ≥ Schwelle **oder** dokumentierte Grenze | .2b Kanten-Verfeinerung (nur bei grün); bei Grenze: REQHARM läuft ohne Kanten |
 
