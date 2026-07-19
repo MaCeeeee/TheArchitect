@@ -138,13 +138,16 @@ async function main() {
     });
   });
 
-  // Global rate limit — disabled in dev to avoid 429s during rapid testing
-  // SPA fires 30–50 parallel reads per page; API scripts add bursts on top.
-  // AI routes have their own strict per-endpoint limits, so the global limit
-  // only blocks actual abuse — keep it generous.
+  // Global rate limit — disabled in dev to avoid 429s during rapid testing.
+  // The dashboard/portfolio eagerly enriches EVERY project with ~5 reads each
+  // (stats + advisor/health + analytics/risk + analytics/cost + standards/portfolio),
+  // so a tenant with many projects fires several hundred reads per dashboard load;
+  // 5000/min was too tight and 429'd legit dashboard use. AI routes keep their own
+  // strict per-endpoint limits, so this global cap only blocks actual abuse — keep
+  // it generous. Real fix (lazy per-card enrichment + cache advisor/health): THE-512.
   const isDev = process.env.NODE_ENV !== 'production';
   if (!isDev) {
-    app.use(rateLimit({ windowMs: 60_000, max: 5000, name: 'global' }));
+    app.use(rateLimit({ windowMs: 60_000, max: 20000, name: 'global' }));
   }
 
   // Routes
