@@ -13,6 +13,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import { ComplianceMapping, IComplianceMapping } from '../models/ComplianceMapping';
 import type {
   ComplianceMappingElementType,
@@ -22,6 +23,7 @@ import { buildRegulationKey, type RegulationLanguage } from '@thearchitect/share
 import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
 import { recordAiTrace } from './aiTrace.service';
+import { tracedResolveGovernedRegulations } from './governedRetrieval.service';
 import {
   buildSystemPrompt,
   buildUserPrompt,
@@ -163,21 +165,40 @@ export async function mapRegulationToElements(args: {
     return [];
   }
 
-  const { candidates, meta } = await callLLM({
-    regulation: args.regulation,
-    candidateElements: args.candidateElements,
-    anthropicClient: args.anthropicClient,
-  });
-
   const regulationKey = buildRegulationKey(
     args.regulation.source,
     args.regulation.paragraphNumber,
   );
   const regulationVersionHash = computeVersionHash(args.regulation.fullText);
 
+  // THE-423 (Task 6, AC-6 join): pre-generate ONE id shared by both the
+  // ContextTrace and the AiTrace of this run. The traced corpus read below
+  // happens BEFORE the LLM call, but `recordAiTrace` only runs AFTER — so the
+  // requestId can't be known at read time. Generating it up front and feeding
+  // it as `requestId` into `recordAiTrace` AND as `llmTraceRef` into the
+  // traced read makes `ContextTrace.llmTraceRef === AiTrace.requestId` hold
+  // for the same run. `views` is intentionally unused for the LLM input
+  // (`args.regulation` is already the resolved/governed value the caller
+  // passed in — see compliance.routes.ts) — this call exists to record the
+  // ContextTrace + governance audit trail, not to change mapping behavior.
+  const aiRequestId = randomUUID();
+  const { contextTraceId } = await tracedResolveGovernedRegulations({
+    keys: [regulationKey],
+    projectId: args.projectId,
+    feature: 'mapping',
+    llmTraceRef: aiRequestId,
+  });
+
+  const { candidates, meta } = await callLLM({
+    regulation: args.regulation,
+    candidateElements: args.candidateElements,
+    anthropicClient: args.anthropicClient,
+  });
+
   // Observability (THE-384) — best-effort, never blocks the request.
   await recordAiTrace({
     operation: 'mapping',
+    requestId: aiRequestId,
     model: meta.model,
     promptVersionHash: PROMPT_VERSION_HASH,
     projectId: args.projectId,
@@ -216,6 +237,8 @@ export async function mapRegulationToElements(args: {
     // Corpus reference (ADR-0001 / THE-306): pin the canonical key + the exact text version.
     regulationKey,
     regulationVersionHash,
+    // THE-423 (Task 6): provenance link to the ContextTrace of this run.
+    contextTraceId,
   });
 
   return persisted;
@@ -487,6 +510,7 @@ async function persistMappings(args: {
   projectId: string;
   regulationKey?: string;
   regulationVersionHash?: string;
+  contextTraceId?: string;
 }): Promise<IComplianceMapping[]> {
   if (args.candidates.length === 0) return [];
 
@@ -506,6 +530,7 @@ async function persistMappings(args: {
           regulationId: regulationObjectId,
           regulationKey: args.regulationKey,
           regulationVersionHash: args.regulationVersionHash,
+          contextTraceId: args.contextTraceId,
           elementId: c.elementId,
           elementType: c.elementType,
           confidence: c.confidence,

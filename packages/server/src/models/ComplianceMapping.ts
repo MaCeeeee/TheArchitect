@@ -30,6 +30,14 @@ export interface IComplianceMapping extends Document {
    * since this mapping was made and it should be reviewed / re-mapped.
    */
   regulationVersionMismatch?: boolean;
+  /**
+   * THE-423 (Task 6): id of the `ContextTrace` recorded for the governed
+   * corpus read that fed this mapping run. Optional/additive — unset for
+   * mappings persisted before this field existed or while context-tracing is
+   * disabled at write time (best-effort recorder still returns an id, so in
+   * practice this is populated whenever the field is written at all).
+   */
+  contextTraceId?: string;
   elementId: string;
   elementType: ComplianceMappingElementType;
   confidence: number;
@@ -68,6 +76,8 @@ const complianceMappingSchema = new Schema<IComplianceMapping>(
     regulationKey: { type: String, trim: true },
     regulationVersionHash: { type: String, trim: true },
     regulationVersionMismatch: { type: Boolean },
+    // THE-423 (Task 6) — corpus-read provenance link. Precedent: L68-70 above.
+    contextTraceId: { type: String, trim: true },
     elementId: { type: String, required: true, trim: true },
     elementType: {
       type: String,
