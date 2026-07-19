@@ -20,7 +20,7 @@ jest.mock('../services/dataServer.service', () => ({
 import mongoose, { Types } from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { ContextTrace } from '../models/ContextTrace';
-import { suggestConnectionsForIsolatedElements, type LLMReasoner } from '../services/connectionSuggestion.service';
+import { suggestConnectionsForIsolatedElements, type LLMReasoner, type Suggestion } from '../services/connectionSuggestion.service';
 import { __setCorpusForTests } from '../services/corpusClient.service';
 import { queryDocuments, type QueryChunk } from '../services/dataServer.service';
 import { makeFakeCorpus } from './helpers/fakeCorpus';
@@ -126,7 +126,10 @@ describe('connectionSuggestion.service → ContextTrace (THE-423 Task 9, connect
 
     // Element processing is concurrent (worker pool), so perElement iteration
     // order is not guaranteed — sort by sourceId before comparing content.
-    const strip = (s: { contextTraceId?: string }) => { const { contextTraceId: _c, ...rest } = s; return rest; };
+    const strip = (s: Suggestion): Omit<Suggestion, 'contextTraceId'> => {
+      const { contextTraceId: _c, ...rest } = s;
+      return rest;
+    };
     const bySourceId = (a: { sourceId: string }, b: { sourceId: string }) => a.sourceId.localeCompare(b.sourceId);
     const disabledSugs = [...disabled.perElement.values()].flat().map(strip).sort(bySourceId);
     const enabledSugs = [...enabled.perElement.values()].flat().map(strip).sort(bySourceId);
