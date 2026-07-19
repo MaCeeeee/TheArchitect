@@ -23,6 +23,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Regulation } from '../models/Regulation';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { ContextTrace } from '../models/ContextTrace';
 
 // ─── Middleware stubs ─────────────────────────────────────────
 jest.mock('../middleware/auth.middleware', () => ({
@@ -103,6 +104,7 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
   afterEach(async () => {
     await Regulation.deleteMany({});
     await ComplianceMapping.deleteMany({});
+    await ContextTrace.deleteMany({});
     loadCandidatesMock.mockReset();
     mapRegulationsBatchMock.mockReset();
     mapTextToElementsMock.mockReset();
@@ -594,6 +596,63 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
         'dsgvo:art-30',
         'v-hash-1',
       );
+    });
+  });
+
+  // ────────────────────────────────────────────────────────
+  // GET /:projectId/contexttrace/:traceId (THE-423 Task 13)
+  // ────────────────────────────────────────────────────────
+  describe('GET /:projectId/contexttrace/:traceId', () => {
+    it('rejects invalid projectId', async () => {
+      const res = await request(app).get('/api/projects/not-an-id/contexttrace/trace-1');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when no trace matches (e.g. disabled-tracing stamp)', async () => {
+      const res = await request(app).get(
+        `/api/projects/${PROJECT_ID}/contexttrace/does-not-exist`,
+      );
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('returns the trace when found, scoped to the project', async () => {
+      await ContextTrace.create({
+        requestId: 'trace-A',
+        feature: 'discovery',
+        projectId: PROJECT_ID,
+        consumed: [
+          {
+            regulationKey: 'dsgvo:art-30',
+            versionHash: 'v-hash-1',
+            retrievalMethod: 'dense',
+            score: 0.87,
+            citedByJudge: true,
+          },
+        ],
+        model: 'claude-haiku-4-5',
+        llmTraceRef: 'ai-trace-1',
+      });
+      // Same requestId under a different project must NOT be returned.
+      await ContextTrace.create({
+        requestId: 'trace-A',
+        feature: 'discovery',
+        projectId: OTHER_PROJECT_ID,
+        consumed: [],
+      });
+
+      const res = await request(app).get(
+        `/api/projects/${PROJECT_ID}/contexttrace/trace-A`,
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.requestId).toBe('trace-A');
+      expect(res.body.data.feature).toBe('discovery');
+      expect(res.body.data.consumed).toHaveLength(1);
+      expect(res.body.data.consumed[0].regulationKey).toBe('dsgvo:art-30');
+      expect(res.body.data.consumed[0].citedByJudge).toBe(true);
+      expect(res.body.data.llmTraceRef).toBe('ai-trace-1');
     });
   });
 });
