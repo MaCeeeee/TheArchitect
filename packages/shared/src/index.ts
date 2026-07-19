@@ -39,3 +39,4 @@ export * from './utils/register-scoring';
 export * from './utils/violation-fix';
 export * from './ontology';
 export * from './types/law-discovery.types';
+export * from './types/context-trace.types';
