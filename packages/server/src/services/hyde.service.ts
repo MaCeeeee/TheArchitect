@@ -56,7 +56,9 @@ export async function hydeRewrite(profileText: string, opts?: HydeRewriteOptions
   if (!client) {
     throw new HydeRewriteError('hydeRewrite: no Anthropic client provided and ANTHROPIC_API_KEY is not configured');
   }
-  const model = opts?.model ?? HYDE_MODEL_DEFAULT;
+  // DD-4: share the discovery model knob with the judge (LAW_DISCOVERY_JUDGE_MODEL),
+  // so an operator override moves HyDE too; Haiku default otherwise.
+  const model = opts?.model ?? process.env.LAW_DISCOVERY_JUDGE_MODEL ?? HYDE_MODEL_DEFAULT;
   const res = await client.messages.create({
     model,
     max_tokens: opts?.maxTokens ?? HYDE_MAX_TOKENS,
