@@ -15,7 +15,7 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.3.0',
+  ontologyVersion: '1.4.0',
   updatedAt: '2026-07-12',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
@@ -162,6 +162,24 @@ export const NORM_ONTOLOGY = {
     { id: 'ai-act-de', label: 'KI-Verordnung (EU) 2024/1689 — Deutsch', jurisdiction: 'EU' },
     { id: 'data-act-en', label: 'Data Act (EU) 2023/2854 — English', jurisdiction: 'EU' },
     { id: 'data-act-de', label: 'Datenverordnung (EU) 2023/2854 — Deutsch', jurisdiction: 'EU' },
+    // THE-511: language completeness — a DE-only law scores poorly against an EN
+    // architecture profile (cross-lingual retrieval gap, proven on the DSGVO
+    // blindspot 2026-07-19). Adds the missing language for the demo laws.
+    { id: 'dsgvo-en', label: 'GDPR (EU) 2016/679 — English', jurisdiction: 'EU' },
+    { id: 'nis2-de', label: 'NIS2-Richtlinie (EU) 2022/2555 — Deutsch', jurisdiction: 'EU' },
+    { id: 'dora-de', label: 'DORA (EU) 2022/2554 — Deutsch', jurisdiction: 'EU' },
+    // THE-511: rule-less laws — the corpus-discovery value of UC-LAW-002 (laws
+    // Stage-A rules do NOT cover). DE+EN each (regulationKey = source:paragraph).
+    { id: 'cra-en', label: 'Cyber Resilience Act (EU) 2024/2847 — English', jurisdiction: 'EU' },
+    { id: 'cra-de', label: 'Cyber Resilience Act (EU) 2024/2847 — Deutsch', jurisdiction: 'EU' },
+    { id: 'mdr-en', label: 'Medical Device Regulation (EU) 2017/745 — English', jurisdiction: 'EU' },
+    { id: 'mdr-de', label: 'Medizinprodukte-Verordnung (EU) 2017/745 — Deutsch', jurisdiction: 'EU' },
+    { id: 'psd2-en', label: 'Payment Services Directive 2 (EU) 2015/2366 — English', jurisdiction: 'EU' },
+    { id: 'psd2-de', label: 'Zahlungsdiensterichtlinie 2 (EU) 2015/2366 — Deutsch', jurisdiction: 'EU' },
+    { id: 'eprivacy-en', label: 'ePrivacy Directive 2002/58/EC — English', jurisdiction: 'EU' },
+    { id: 'eprivacy-de', label: 'ePrivacy-Richtlinie 2002/58/EG — Deutsch', jurisdiction: 'EU' },
+    { id: 'eidas-en', label: 'eIDAS Regulation (EU) 910/2014 — English', jurisdiction: 'EU' },
+    { id: 'eidas-de', label: 'eIDAS-Verordnung (EU) 910/2014 — Deutsch', jurisdiction: 'EU' },
     { id: 'iso27001', label: 'ISO/IEC 27001' },
     // THE-413: PolicySource collapse — modeling-framework sources become data
     // rows so Policy.source validates against the same registry as regulations.

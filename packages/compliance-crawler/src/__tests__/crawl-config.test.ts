@@ -23,26 +23,27 @@ describe('crawl-config (THE-418)', () => {
     }
   });
 
-  it('nis2 config matches the transcribed literal (byte-identity source)', () => {
+  // THE-511: whole laws — nis2/dsgvo/dora no longer carry an articleNumbers demo filter.
+  it('nis2 crawls the whole law (no articleNumbers filter — THE-511)', () => {
     expect(SOURCE_CRAWL_CONFIG.nis2).toEqual({
       celex: '32022L2555',
       language: 'en',
-      articleNumbers: [20, 21, 22, 23, 24],
       jurisdiction: 'EU',
       effectiveFrom: '2024-10-17',
       transport: 'eur-lex',
     });
+    expect(SOURCE_CRAWL_CONFIG.nis2.articleNumbers).toBeUndefined();
   });
 
-  it('dsgvo config matches the transcribed literal', () => {
+  it('dsgvo crawls the whole law (no articleNumbers filter — THE-511)', () => {
     expect(SOURCE_CRAWL_CONFIG.dsgvo).toEqual({
       celex: '32016R0679',
       language: 'de',
-      articleNumbers: [5, 6, 9, 32],
       jurisdiction: 'EU',
       effectiveFrom: '2018-05-25',
       transport: 'eur-lex',
     });
+    expect(SOURCE_CRAWL_CONFIG.dsgvo.articleNumbers).toBeUndefined();
   });
 
   it('ai-act-en / ai-act-de share celex, differ by language', () => {
@@ -79,14 +80,33 @@ describe('crawl-config (THE-418)', () => {
     });
   });
 
-  it('lksg config uses paragraphNumbers + lawSlug + gesetze-im-internet transport', () => {
+  it('lksg crawls all §§ 1–24 (whole law — THE-511) via gesetze-im-internet', () => {
     expect(SOURCE_CRAWL_CONFIG.lksg).toEqual({
-      paragraphNumbers: [3, 4, 5, 6, 7, 8, 9],
+      paragraphNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
       lawSlug: 'lksg',
       jurisdiction: 'DE',
       effectiveFrom: '2023-01-01',
       transport: 'gesetze-im-internet',
     });
+  });
+
+  // THE-511: the 5 rule-less laws (+ language completeness) onboard as pure data rows.
+  it('rule-less laws are wired as full eur-lex sources (no articleNumbers — THE-511)', () => {
+    for (const id of ['cra-en', 'cra-de', 'mdr-en', 'mdr-de', 'psd2-en', 'psd2-de', 'eprivacy-en', 'eprivacy-de', 'eidas-en', 'eidas-de']) {
+      const cfg = SOURCE_CRAWL_CONFIG[id];
+      expect(cfg).toBeDefined();
+      expect(cfg.transport).toBe('eur-lex');
+      expect(cfg.celex).toMatch(/^3\d{4}[LR]\d{4}$/);
+      expect(['en', 'de']).toContain(cfg.language);
+      expect(cfg.articleNumbers).toBeUndefined(); // whole law
+    }
+  });
+
+  it('language completeness rows share celex with their sibling (THE-511)', () => {
+    expect(SOURCE_CRAWL_CONFIG['dsgvo-en'].celex).toBe(SOURCE_CRAWL_CONFIG.dsgvo.celex);
+    expect(SOURCE_CRAWL_CONFIG['nis2-de'].celex).toBe(SOURCE_CRAWL_CONFIG.nis2.celex);
+    expect(SOURCE_CRAWL_CONFIG['dora-de'].celex).toBe(SOURCE_CRAWL_CONFIG.dora.celex);
+    expect(SOURCE_CRAWL_CONFIG['dsgvo-en'].language).toBe('en');
   });
 
   it('covers at least the 7 currently-wired sources (superset check — THE-418 Task 4 adds dora as a data-only row without touching this test)', () => {

@@ -67,23 +67,35 @@ describe('source registry (THE-414 / THE-418)', () => {
   describe('byte-identity: engines built from crawl-config data match the pre-refactor factory values', () => {
     // Literals transcribed here on purpose (not imported from the deleted
     // per-law factories) — this is the regression guard for Task 3's rewrite.
-    it('nis2 → EurLexSource with celex 32022L2555, articles [20-24], en, effectiveFrom 2024-10-17', () => {
+    // THE-511: whole laws — nis2/dsgvo no longer filter articleNumbers.
+    it('nis2 → EurLexSource, whole law (no articleNumbers), en, effectiveFrom 2024-10-17', () => {
       const parser = resolveSourceParser('nis2', env) as any;
       expect(parser.constructor.name).toBe('EurLexSource');
       expect(parser.config.celex).toBe('32022L2555');
       expect(parser.config.language).toBe('en');
-      expect(parser.config.articleNumbers).toEqual([20, 21, 22, 23, 24]);
+      expect(parser.config.articleNumbers).toBeUndefined();
       expect(parser.config.effectiveFrom).toEqual(new Date('2024-10-17'));
       expect(parser.config.jurisdiction).toBe('EU');
     });
 
-    it('dsgvo → EurLexSource with celex 32016R0679, articles [5,6,9,32], de, effectiveFrom 2018-05-25', () => {
+    it('dsgvo → EurLexSource, whole law (no articleNumbers), de, effectiveFrom 2018-05-25', () => {
       const parser = resolveSourceParser('dsgvo', env) as any;
       expect(parser.constructor.name).toBe('EurLexSource');
       expect(parser.config.celex).toBe('32016R0679');
       expect(parser.config.language).toBe('de');
-      expect(parser.config.articleNumbers).toEqual([5, 6, 9, 32]);
+      expect(parser.config.articleNumbers).toBeUndefined();
       expect(parser.config.effectiveFrom).toEqual(new Date('2018-05-25'));
+    });
+
+    // THE-511: a rule-less law resolves through the same generic engine (no wiring).
+    it('cra-en/de → EurLexSource, celex 32024R2847, whole law, per-language', () => {
+      const en = resolveSourceParser('cra-en', env) as any;
+      const de = resolveSourceParser('cra-de', env) as any;
+      expect(en.constructor.name).toBe('EurLexSource');
+      expect(en.config.celex).toBe('32024R2847');
+      expect(en.config.language).toBe('en');
+      expect(en.config.articleNumbers).toBeUndefined();
+      expect(de.config.language).toBe('de');
     });
 
     it('ai-act-en/de → EurLexSource with celex 32024R1689, effectiveFrom 2024-08-01, per-language', () => {
@@ -106,11 +118,11 @@ describe('source registry (THE-414 / THE-418)', () => {
       expect(de.config.language).toBe('de');
     });
 
-    it('lksg → GesetzeImInternetSource with lawSlug lksg, paragraphNumbers [3-9], effectiveFrom 2023-01-01', () => {
+    it('lksg → GesetzeImInternetSource with lawSlug lksg, whole law §§ 1–24 (THE-511)', () => {
       const parser = resolveSourceParser('lksg', env) as any;
       expect(parser.constructor.name).toBe('GesetzeImInternetSource');
       expect(parser.config.lawSlug).toBe('lksg');
-      expect(parser.config.paragraphNumbers).toEqual([3, 4, 5, 6, 7, 8, 9]);
+      expect(parser.config.paragraphNumbers).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]);
       expect(parser.config.effectiveFrom).toEqual(new Date('2023-01-01'));
       expect(parser.config.jurisdiction).toBe('DE');
     });
@@ -121,7 +133,7 @@ describe('source registry (THE-414 / THE-418)', () => {
       expect(parser.config.url).toBe(
         'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555',
       );
-      expect(parser.config.articleNumbers).toEqual([20, 21, 22, 23, 24]);
+      expect(parser.config.articleNumbers).toBeUndefined(); // whole law (THE-511)
     });
   });
 });

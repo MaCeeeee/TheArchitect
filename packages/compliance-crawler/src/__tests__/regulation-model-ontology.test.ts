@@ -65,5 +65,7 @@ it('Regulation accepts + keeps the ontologyVersion stamp (THE-417 AC-2)', () => 
     ontologyVersion: NORM_ONTOLOGY.ontologyVersion,
   });
   expect(doc.validateSync()?.errors?.ontologyVersion).toBeUndefined();
-  expect(doc.ontologyVersion).toBe('1.2.0');
+  // Version-agnostic round-trip (was hardcoded '1.2.0' — stale since the 1.3.0 bump,
+  // pre-existing red on master; THE-511 bumps to 1.4.0). Tests the stamp is KEPT.
+  expect(doc.ontologyVersion).toBe(NORM_ONTOLOGY.ontologyVersion);
 });
