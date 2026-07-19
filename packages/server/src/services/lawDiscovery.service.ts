@@ -8,7 +8,7 @@
  * `discoverCandidates` bleibt UNBERÜHRT (Slice-1-Vertrag).
  */
 import type Anthropic from '@anthropic-ai/sdk';
-import type { ApplicabilityReport, CorpusHit, DiscoveryCandidate, DiscoveryResult } from '@thearchitect/shared';
+import type { ApplicabilityReport, ConsumedRef, CorpusHit, DiscoveryCandidate, DiscoveryResult } from '@thearchitect/shared';
 import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
 import { isCorpusConfigured } from './corpusClient.service';
@@ -17,6 +17,7 @@ import { judgeCandidate } from './lawJudge.service';
 import { upsertFindings, findExisting, listFindings, type UpsertFindingInput } from './lawDiscoveryFinding.service';
 import { mergeApplicability } from './lawApplicabilityMerge.service';
 import { computeVersionHash } from '../utils/regulationVersion';
+import { recordContextTrace } from './contextTrace.service';
 import { log } from '../config/logger';
 
 // K (Retrieval-Breite) ist laufzeit-konfigurierbar (AC-2): Default 60, per
@@ -227,6 +228,29 @@ export async function discoverAndJudge(
       continue;
     }
 
+    // THE-423 (Task 5): PER-CANDIDATE trace, AFTER the judge — the search-time
+    // `tracedGovernedCorpusSearch` wrapper cannot know `citedByJudge` (it runs
+    // before the verdict exists). Direct `recordContextTrace` call is therefore
+    // the justified call-site here, not the wrapper. `consumed` covers ALL of
+    // the candidate's topHits (fed to the judge), `citedByJudge` marks exactly
+    // the ones the judge actually cited back (the "Art.16 vs Art.2" diagnostic).
+    const consumed: ConsumedRef[] = candidate.topHits.map(hit => ({
+      regulationKey: hit.regulationKey,
+      versionHash: hit.versionHash,
+      sectionRef: hit.paragraphNumber,
+      score: hit.score,
+      retrievalMethod: 'dense',
+      citedByJudge: verdict.keyParagraphs.includes(hit.regulationKey),
+    }));
+    const contextTraceId = await recordContextTrace({
+      feature: 'discovery',
+      projectId,
+      consumed,
+      model,
+      llmTraceRef: verdict.aiTraceRequestId,
+      evidenceSetHash: corpusVersionHash,
+    });
+
     // Spec-Fix 1 (AC-2): BEIDE Urteile persistieren — auch applies:false. Sonst
     // findet der Reuse-Guard oben beim nächsten Lauf (insb. nach Redeploy, wenn
     // der In-Process-Cache leer ist) nichts und bezahlt den Judge erneut. Ins
@@ -245,6 +269,8 @@ export async function discoverAndJudge(
       retrievalScore: candidate.score,
       corpusVersionHash,
       judgeModel: model,
+      // THE-423 (Task 5): Provenienz-Link zum Retrieval-ContextTrace.
+      contextTraceId,
     });
   }
 

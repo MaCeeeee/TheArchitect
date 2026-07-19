@@ -75,6 +75,12 @@ export interface LawJudgeVerdict {
   keyParagraphs: string[];   // regulationKeys aus den topHits des Kandidaten
   /** Titel je keyParagraph, aus den topHits des Kandidaten abgeleitet (additiv, AC-4). */
   keyParagraphDetails?: KeyParagraphDetail[];
+  /**
+   * requestId der zugehörigen AiTrace (THE-423), surfaced aus dem
+   * `recordAiTrace`-Call in judgeCandidate — additiv, damit discoverAndJudge
+   * ihn als ContextTrace.llmTraceRef weiterreichen kann (Judge↔Retrieval-Join).
+   */
+  aiTraceRequestId?: string;
 }
 
 /**
@@ -105,6 +111,13 @@ export interface DiscoveryFinding {
   corpusVersionHash: string;  // Dedup-/Cache-Achse — abgeleiteter Evidence-Set-Hash
   judgeModel: string;         // Modell, das dieses Urteil erzeugte (Cache-/Reuse-Achse)
   createdBy: 'llm' | 'human';
+  /**
+   * ContextTrace.requestId (THE-423) des Retrieval-Aufrufs, der dieses Finding
+   * erzeugte — additiv, Alt-Findings ohne dieses Feld existieren weiter ohne
+   * Provenienz-Link. Best-effort: kann gesetzt sein, ohne dass tatsächlich ein
+   * ContextTrace-Dokument existiert (Tracing per Env deaktiviert).
+   */
+  contextTraceId?: string;
 }
 
 // ─── UC-LAW-002 Slice-2b (THE-464) — UI-Gating ────────────────────
