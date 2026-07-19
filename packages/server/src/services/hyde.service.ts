@@ -58,7 +58,10 @@ export async function hydeRewrite(profileText: string, opts?: HydeRewriteOptions
   }
   // DD-4: share the discovery model knob with the judge (LAW_DISCOVERY_JUDGE_MODEL),
   // so an operator override moves HyDE too; Haiku default otherwise.
-  const model = opts?.model ?? process.env.LAW_DISCOVERY_JUDGE_MODEL ?? HYDE_MODEL_DEFAULT;
+  // NOTE: `||` not `??` — the prod convention sets LAW_DISCOVERY_JUDGE_MODEL='' (present but
+  // empty) to mean "use default"; `??` would pass the empty string through → 400 "model: String
+  // should have at least 1 character". `||` falls through on '' like defaultJudgeModel() does.
+  const model = opts?.model || process.env.LAW_DISCOVERY_JUDGE_MODEL || HYDE_MODEL_DEFAULT;
   const res = await client.messages.create({
     model,
     max_tokens: opts?.maxTokens ?? HYDE_MAX_TOKENS,

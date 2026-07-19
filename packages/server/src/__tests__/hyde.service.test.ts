@@ -26,4 +26,32 @@ describe('hydeRewrite', () => {
     const create = jest.fn().mockResolvedValue({ content: [] });
     await expect(hydeRewrite('p', { client: { messages: { create } } as any })).rejects.toThrow();
   });
+
+  it('falls back to the Haiku default when LAW_DISCOVERY_JUDGE_MODEL is present but EMPTY (prod convention)', async () => {
+    // Regression for the prod 400 "model: String should have at least 1 character":
+    // the env var is set to '' to mean "use default"; the model default must NOT pass '' to the API.
+    const prev = process.env.LAW_DISCOVERY_JUDGE_MODEL;
+    process.env.LAW_DISCOVERY_JUDGE_MODEL = '';
+    try {
+      const create = jest.fn().mockResolvedValue({ content: [{ type: 'text', text: 'H.' }] });
+      await hydeRewrite('profil', { client: { messages: { create } } as any });
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: 'claude-haiku-4-5-20251001' }));
+    } finally {
+      if (prev === undefined) delete process.env.LAW_DISCOVERY_JUDGE_MODEL;
+      else process.env.LAW_DISCOVERY_JUDGE_MODEL = prev;
+    }
+  });
+
+  it('honors a non-empty LAW_DISCOVERY_JUDGE_MODEL override (shared knob)', async () => {
+    const prev = process.env.LAW_DISCOVERY_JUDGE_MODEL;
+    process.env.LAW_DISCOVERY_JUDGE_MODEL = 'claude-sonnet-5';
+    try {
+      const create = jest.fn().mockResolvedValue({ content: [{ type: 'text', text: 'H.' }] });
+      await hydeRewrite('profil', { client: { messages: { create } } as any });
+      expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: 'claude-sonnet-5' }));
+    } finally {
+      if (prev === undefined) delete process.env.LAW_DISCOVERY_JUDGE_MODEL;
+      else process.env.LAW_DISCOVERY_JUDGE_MODEL = prev;
+    }
+  });
 });
