@@ -3,10 +3,10 @@ import {
   Eye, Send, ChevronDown, ChevronRight, AlertTriangle, CheckCircle,
   XCircle, MinusCircle, Clock, History, Shield, Users, Zap,
   FileText, Download, Database, Sparkles, ArrowRight, TrendingDown,
-  Minus, Plus, ArrowDownRight,
+  Minus, Plus, ArrowDownRight, ScrollText, Loader2,
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import api, { oracleAPI } from '../../services/api';
+import api, { oracleAPI, normsAPI } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import type {
   OracleVerdict,
@@ -18,6 +18,7 @@ import type {
   GeneratedAlternative,
   GeneratorResult,
 } from '@thearchitect/shared/src/types/scenario-generator.types';
+import type { ContextTraceRecord } from '@thearchitect/shared/src/types/context-trace.types';
 
 // ─── Constants ───
 
@@ -381,7 +382,7 @@ export default function OraclePanel() {
             {/* Results */}
             {verdict && (
               <>
-                <VerdictDisplay verdict={verdict} expandedAgents={expandedAgents} toggleAgent={toggleAgent} />
+                <VerdictDisplay verdict={verdict} expandedAgents={expandedAgents} toggleAgent={toggleAgent} projectId={projectId} />
                 {lastAssessmentId && projectId && (
                   <ReportExportBar projectId={projectId} assessmentId={lastAssessmentId} />
                 )}
@@ -452,10 +453,12 @@ function VerdictDisplay({
   verdict,
   expandedAgents,
   toggleAgent,
+  projectId,
 }: {
   verdict: OracleVerdict;
   expandedAgents: Set<string>;
   toggleAgent: (id: string) => void;
+  projectId?: string;
 }) {
   const posStyle = POSITION_STYLES[verdict.overallPosition] || POSITION_STYLES.contested;
 
@@ -534,6 +537,114 @@ function VerdictDisplay({
                 ` Overloaded: ${verdict.fatigueForecast.overloadedStakeholders.join(', ')}.`}
             </span>
           </div>
+        </div>
+      )}
+
+      {/* THE-423 Task 15 — Evidence / Audit (ContextTrace behind this assessment) */}
+      {verdict.contextTraceId && projectId && (
+        <EvidenceAuditSection projectId={projectId} traceId={verdict.contextTraceId} />
+      )}
+    </div>
+  );
+}
+
+// ─── Evidence / Audit Section (ContextTrace lazy-fetch) ───
+
+function EvidenceAuditSection({ projectId, traceId }: { projectId: string; traceId: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fetched, setFetched] = useState(false);
+  const [trace, setTrace] = useState<ContextTraceRecord | null>(null);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const toggle = useCallback(async () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && !fetched) {
+      setLoading(true);
+      try {
+        const { data } = await normsAPI.getContextTrace(projectId, traceId);
+        setTrace(data?.data ?? null);
+      } catch {
+        // 404 (tracing disabled at record-time) or any transport error — the
+        // trace is genuinely unavailable, not a bug. Graceful note, no crash.
+        setTrace(null);
+      } finally {
+        setFetched(true);
+        setLoading(false);
+      }
+    }
+  }, [expanded, fetched, projectId, traceId]);
+
+  const hasAudit = !!(trace?.audit && (trace.audit.systemPrompt || trace.audit.rawResponse));
+
+  return (
+    <div className="pt-2">
+      <button
+        onClick={() => void toggle()}
+        aria-expanded={expanded}
+        className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-purple-400 transition-colors"
+      >
+        {expanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        <ScrollText className="w-3 h-3" />
+        Evidence / Audit
+      </button>
+      {expanded && (
+        <div className="mt-1.5 p-3 bg-[#0f172a] border border-[#334155] rounded-lg">
+          {loading && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              Loading audit trace...
+            </div>
+          )}
+          {!loading && fetched && !trace && (
+            <p className="text-xs italic text-slate-500">No audit trace available.</p>
+          )}
+          {!loading && trace && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                {trace.model && (
+                  <span>Model: <span className="text-slate-300">{trace.model}</span></span>
+                )}
+                {trace.createdAt && (
+                  <span>Created: <span className="text-slate-300">{new Date(trace.createdAt).toLocaleString()}</span></span>
+                )}
+              </div>
+
+              {hasAudit ? (
+                <div>
+                  <button
+                    onClick={() => setShowRaw((s) => !s)}
+                    className="text-[11px] font-medium text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    {showRaw ? 'Hide raw' : 'Show raw'}
+                  </button>
+                  {showRaw && (
+                    <div className="mt-1.5 space-y-2">
+                      {trace.audit?.systemPrompt && (
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">System Prompt</div>
+                          <pre className="max-h-48 overflow-auto p-2 bg-black/40 border border-[#334155] rounded text-[10px] leading-relaxed text-slate-400 font-mono whitespace-pre-wrap">
+                            {trace.audit.systemPrompt}
+                          </pre>
+                        </div>
+                      )}
+                      {trace.audit?.rawResponse && (
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">Raw Response</div>
+                          <pre className="max-h-48 overflow-auto p-2 bg-black/40 border border-[#334155] rounded text-[10px] leading-relaxed text-slate-400 font-mono whitespace-pre-wrap">
+                            {trace.audit.rawResponse}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs italic text-slate-500">No audit trace available.</p>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
