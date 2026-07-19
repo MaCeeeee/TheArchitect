@@ -32,6 +32,7 @@ import {
   type FixtureCorpus,
   type DiscoveryGoldenSet,
 } from '../evals/discoveryGolden';
+import { hydeRewrite } from '../services/hyde.service';
 
 export const EMBEDDING_DIM = 768;
 export const DEFAULT_QUERIES_PATH = path.join(__dirname, '..', 'evals', 'golden', 'discovery.queries.v1.json');
@@ -88,26 +89,11 @@ async function defaultEmbed(text: string): Promise<number[]> {
   return validateDim(data.vector);
 }
 
-// HyDE-Prompt (Muster THE-434): das Modell schreibt den hypothetischen
-// Pflichten-/Rechtstext, der auf die Architektur zutreffen würde — dessen
-// Embedding wird als Query genutzt (Retrieval-Vergleichslauf, AC-8), NICHT
-// im Prod-Pfad.
-const HYDE_INSTRUCTION =
-  'Schreibe den hypothetischen Pflichten-/Rechtstext (2-4 Sätze), der auf diese Architektur zutreffen würde. ' +
-  'Antworte NUR mit dem Text selbst, ohne Einleitung oder Meta-Kommentar.';
-
+// HyDE prompt/generation now lives in ../services/hyde.service (THE-514) —
+// shared with the prod discovery path so there is ONE prompt source and no
+// drift against the golden-vector baseline (AC-8).
 function defaultGenerateHyde(model: string, client: Anthropic): (profileText: string) => Promise<string> {
-  return async (profileText: string): Promise<string> => {
-    const res = await client.messages.create({
-      model,
-      max_tokens: 400,
-      messages: [{ role: 'user', content: `${HYDE_INSTRUCTION}\n\nArchitektur-Profil:\n${profileText}` }],
-    });
-    const block = res.content.find(b => b.type === 'text');
-    const text = block && block.type === 'text' ? block.text.trim() : '';
-    if (!text) throw new BuildVectorsError('HyDE generation returned empty text');
-    return text;
-  };
+  return (profileText: string): Promise<string> => hydeRewrite(profileText, { model, client });
 }
 
 // ─── Pure Orchestrierung (kein direktes I/O — testbar mit gemocktem embed) ───
