@@ -21,6 +21,7 @@ import {
   Sparkles,
   Scale,
   X,
+  ScrollText,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type {
@@ -29,6 +30,7 @@ import type {
   ApplicabilityVerdict,
   DiscoveryAvailability,
   DiscoveryFinding,
+  ContextTraceRecord,
 } from '@thearchitect/shared';
 import { normsAPI } from '../../services/api';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -57,6 +59,13 @@ export default function ApplicabilityCheck() {
   const [showRejected, setShowRejected] = useState(false);
   const [rejectedFindings, setRejectedFindings] = useState<DiscoveryFinding[] | null>(null);
   const [loadingRejected, setLoadingRejected] = useState(false);
+
+  // THE-423 Task 14 — "Paragraphs the judge reviewed" expander. Lazy-fetched
+  // per contextTraceId (mirrors `toggleRejected`'s cache-once pattern), keyed
+  // so multiple assessments can each hold their own fetched/loading/error state.
+  const [expandedTraceKey, setExpandedTraceKey] = useState<string | null>(null);
+  const [traceByKey, setTraceByKey] = useState<Record<string, ContextTraceRecord | null>>({});
+  const [loadingTraceKey, setLoadingTraceKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -149,6 +158,27 @@ export default function ApplicabilityCheck() {
         setRejectedFindings([]);
       } finally {
         setLoadingRejected(false);
+      }
+    }
+  };
+
+  const toggleTrace = async (a: NormApplicabilityAssessment) => {
+    const traceId = a.corpus?.contextTraceId;
+    if (!projectId || !traceId) return;
+    const key = decisionKey(a);
+    const next = expandedTraceKey === key ? null : key;
+    setExpandedTraceKey(next);
+    if (next && !(key in traceByKey)) {
+      setLoadingTraceKey(key);
+      try {
+        const { data } = await normsAPI.getContextTrace(projectId, traceId);
+        setTraceByKey(prev => ({ ...prev, [key]: data?.data ?? null }));
+      } catch {
+        // 404 (tracing disabled at record-time) or any transport error — the
+        // trace is genuinely unavailable, not a bug. Graceful note, no crash.
+        setTraceByKey(prev => ({ ...prev, [key]: null }));
+      } finally {
+        setLoadingTraceKey(null);
       }
     }
   };
@@ -340,6 +370,68 @@ export default function ApplicabilityCheck() {
                     ))}
                   </div>
                 )}
+                {a.corpus.contextTraceId && (() => {
+                  const traceKey = decisionKey(a);
+                  const traceExpanded = expandedTraceKey === traceKey;
+                  const trace = traceByKey[traceKey];
+                  const traceLoading = loadingTraceKey === traceKey;
+                  return (
+                    <div className="mt-1.5">
+                      <button
+                        onClick={() => void toggleTrace(a)}
+                        aria-expanded={traceExpanded}
+                        className="flex items-center gap-1 text-[10px] font-medium text-[var(--text-tertiary)] transition hover:text-[#7c3aed]"
+                      >
+                        {traceExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                        <ScrollText size={10} />
+                        Paragraphs the judge reviewed
+                      </button>
+                      {traceExpanded && (
+                        <div className="mt-1.5 rounded border border-[#334155] bg-[#0f172a] p-2">
+                          {traceLoading && (
+                            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-tertiary)]">
+                              <Loader2 size={11} className="animate-spin" /> Loading evidence trace…
+                            </div>
+                          )}
+                          {!traceLoading && (!trace || trace.consumed.length === 0) && (
+                            <p className="text-[10px] italic text-[var(--text-tertiary)]">
+                              No evidence trace available.
+                            </p>
+                          )}
+                          {!traceLoading && trace && trace.consumed.length > 0 && (
+                            <ul className="space-y-1">
+                              {trace.consumed.map((c, i) => (
+                                <li
+                                  key={`${c.regulationKey}-${c.sectionRef ?? i}`}
+                                  className={`flex items-center justify-between gap-2 rounded px-1.5 py-1 text-[10px] ${
+                                    c.citedByJudge
+                                      ? 'border border-[#7c3aed]/40 bg-[#7c3aed]/10'
+                                      : 'opacity-60'
+                                  }`}
+                                >
+                                  <span className="min-w-0 truncate text-[var(--text-secondary)]">
+                                    {c.regulationKey}
+                                  </span>
+                                  <span className="flex shrink-0 items-center gap-1.5 text-[var(--text-tertiary)]">
+                                    {typeof c.score === 'number' && <span>{c.score.toFixed(2)}</span>}
+                                    <span className="uppercase tracking-wider">{c.retrievalMethod}</span>
+                                    {c.citedByJudge ? (
+                                      <span className="rounded bg-[#7c3aed] px-1 py-0.5 font-medium text-white">
+                                        cited
+                                      </span>
+                                    ) : (
+                                      <span>fed only</span>
+                                    )}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {a.corpus.elementIds.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {/* AC-4 (Fix 1): resolve element ids to names via the report's

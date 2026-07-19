@@ -54,6 +54,10 @@ function corpusBlock(finding: DiscoveryFinding, stale: boolean): NonNullable<Nor
     sources: [...finding.sources],
     corpusVersionHash: finding.corpusVersionHash,
     ...(stale ? { stale: true } : {}),
+    // THE-423 Task 14: surface the retrieval trace id so the UI can offer a
+    // "paragraphs the judge reviewed" expander. Additive — legacy findings
+    // without it simply render without the expander.
+    ...(finding.contextTraceId ? { contextTraceId: finding.contextTraceId } : {}),
   };
 }
 
