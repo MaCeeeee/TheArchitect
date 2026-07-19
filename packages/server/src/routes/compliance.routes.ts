@@ -7,6 +7,8 @@
  *   GET  /api/projects/:projectId/compliance/mappings/by-element/:elementId    (viewer)
  *   GET  /api/projects/:projectId/compliance/mappings/by-regulation/:regulationId  (viewer)
  *   POST /api/projects/:projectId/compliance/mappings/confirm    (editor)
+ *   GET  /api/projects/:projectId/regulations/impact             (viewer) — THE-423 Task 12, AC-5
+ *   GET  /api/projects/:projectId/contexttrace/:traceId          (viewer) — THE-423 Task 13
  *
  * Alle Routes authenticate-protected via globaler Mount-Reihenfolge in index.ts;
  * Mutationen verlangen `editor`, Lese-Endpoints `viewer`. Audit-Trail bei
@@ -24,6 +26,7 @@ import { rateLimit } from '../middleware/rateLimit.middleware';
 import { buildRegulationKey, type RegulationLanguage } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { ContextTrace } from '../models/ContextTrace';
 import {
   mapRegulationsBatch,
   mapTextToElements,
@@ -32,6 +35,7 @@ import {
 } from '../services/complianceMapping.service';
 import { resolveGovernedRegulations } from '../services/governedRetrieval.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
+import { findOutputsByRegulation } from '../services/contextTrace.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -443,6 +447,70 @@ router.post(
     }).lean();
 
     res.json({ success: true, data: persisted });
+  },
+);
+
+// ─── GET /api/projects/:projectId/regulations/impact ─────────────
+// Reverse-lookup (THE-423 Task 12, AC-5 — REGDIFF/drift foundation THE-308):
+// given ?regulationKey=&versionHash=, returns every output (mappings,
+// requirements, findings, elements, connections) whose generating request
+// consumed that exact regulation version.
+// ────────────────────────────────────────────────────────────────
+const RegulationImpactQuerySchema = z.object({
+  regulationKey: z.string().min(1),
+  versionHash: z.string().min(1),
+});
+
+router.get(
+  '/:projectId/regulations/impact',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const parsed = RegulationImpactQuerySchema.safeParse(req.query ?? {});
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'invalid query', details: parsed.error.issues });
+    }
+
+    const impact = await findOutputsByRegulation(
+      projectId,
+      parsed.data.regulationKey,
+      parsed.data.versionHash,
+    );
+
+    res.json({ success: true, data: impact });
+  },
+);
+
+// ─── GET /api/projects/:projectId/contexttrace/:traceId ──────────
+// Single-trace lookup (THE-423 Task 13): given the id a client already holds
+// (e.g. a discovery finding's contextTraceId), returns the full ContextTrace
+// so the UI can show which paragraphs/versions were consumed by the call
+// that produced that output. A disabled-tracing run stamps outputs with an
+// id that was never persisted (recordContextTrace is a best-effort no-op
+// when tracing is off) — the client must tolerate a clean 404 for that case.
+// ────────────────────────────────────────────────────────────────
+router.get(
+  '/:projectId/contexttrace/:traceId',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+
+    const traceId = String(req.params.traceId);
+    const trace = await ContextTrace.findOne({ projectId, requestId: traceId }).lean();
+    if (!trace) {
+      return res.status(404).json({ success: false, error: 'ContextTrace not found' });
+    }
+
+    res.json({ success: true, data: trace });
   },
 );
 

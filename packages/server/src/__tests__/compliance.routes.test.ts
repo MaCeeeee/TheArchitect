@@ -23,6 +23,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { Regulation } from '../models/Regulation';
 import { ComplianceMapping } from '../models/ComplianceMapping';
+import { ContextTrace } from '../models/ContextTrace';
 
 // ─── Middleware stubs ─────────────────────────────────────────
 jest.mock('../middleware/auth.middleware', () => ({
@@ -63,6 +64,13 @@ jest.mock('../services/complianceMapping.service', () => ({
   ComplianceMappingError: ComplianceMappingErrorReal,
 }));
 
+// findOutputsByRegulation touches Neo4j via runCypher — stub the whole
+// service so this route test stays Neo4j-free (mirrors the pattern above).
+const findOutputsByRegulationMock = jest.fn();
+jest.mock('../services/contextTrace.service', () => ({
+  findOutputsByRegulation: (...args: unknown[]) => findOutputsByRegulationMock(...args),
+}));
+
 // Import AFTER mocks
 import complianceRoutes from '../routes/compliance.routes';
 
@@ -96,9 +104,11 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
   afterEach(async () => {
     await Regulation.deleteMany({});
     await ComplianceMapping.deleteMany({});
+    await ContextTrace.deleteMany({});
     loadCandidatesMock.mockReset();
     mapRegulationsBatchMock.mockReset();
     mapTextToElementsMock.mockReset();
+    findOutputsByRegulationMock.mockReset();
     auditEntrySpy.mockClear();
   });
 
@@ -547,6 +557,102 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       expect(docs[0].status).toBe('confirmed');
       expect(docs[0].confidence).toBe(0.92);
       expect(docs[0].createdBy).toBe('human');
+    });
+  });
+
+  // ────────────────────────────────────────────────────────
+  // GET /:projectId/regulations/impact (THE-423 Task 12, AC-5)
+  // ────────────────────────────────────────────────────────
+  describe('GET /:projectId/regulations/impact', () => {
+    it('rejects invalid projectId', async () => {
+      const res = await request(app).get(
+        '/api/projects/not-an-id/regulations/impact?regulationKey=dsgvo:art-30&versionHash=v1',
+      );
+      expect(res.status).toBe(400);
+      expect(findOutputsByRegulationMock).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing regulationKey/versionHash', async () => {
+      const res = await request(app).get(`/api/projects/${PROJECT_ID}/regulations/impact`);
+      expect(res.status).toBe(400);
+      expect(findOutputsByRegulationMock).not.toHaveBeenCalled();
+    });
+
+    it('delegates to findOutputsByRegulation and returns its result', async () => {
+      const impact = {
+        affected: { mappings: [], requirements: [], findings: [], elements: [], connections: [] },
+        traceIds: ['trace-R'],
+      };
+      findOutputsByRegulationMock.mockResolvedValue(impact);
+
+      const res = await request(app).get(
+        `/api/projects/${PROJECT_ID}/regulations/impact?regulationKey=dsgvo:art-30&versionHash=v-hash-1`,
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual(impact);
+      expect(findOutputsByRegulationMock).toHaveBeenCalledWith(
+        PROJECT_ID,
+        'dsgvo:art-30',
+        'v-hash-1',
+      );
+    });
+  });
+
+  // ────────────────────────────────────────────────────────
+  // GET /:projectId/contexttrace/:traceId (THE-423 Task 13)
+  // ────────────────────────────────────────────────────────
+  describe('GET /:projectId/contexttrace/:traceId', () => {
+    it('rejects invalid projectId', async () => {
+      const res = await request(app).get('/api/projects/not-an-id/contexttrace/trace-1');
+      expect(res.status).toBe(400);
+    });
+
+    it('returns 404 when no trace matches (e.g. disabled-tracing stamp)', async () => {
+      const res = await request(app).get(
+        `/api/projects/${PROJECT_ID}/contexttrace/does-not-exist`,
+      );
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('returns the trace when found, scoped to the project', async () => {
+      await ContextTrace.create({
+        requestId: 'trace-A',
+        feature: 'discovery',
+        projectId: PROJECT_ID,
+        consumed: [
+          {
+            regulationKey: 'dsgvo:art-30',
+            versionHash: 'v-hash-1',
+            retrievalMethod: 'dense',
+            score: 0.87,
+            citedByJudge: true,
+          },
+        ],
+        model: 'claude-haiku-4-5',
+        llmTraceRef: 'ai-trace-1',
+      });
+      // Same requestId under a different project must NOT be returned.
+      await ContextTrace.create({
+        requestId: 'trace-A',
+        feature: 'discovery',
+        projectId: OTHER_PROJECT_ID,
+        consumed: [],
+      });
+
+      const res = await request(app).get(
+        `/api/projects/${PROJECT_ID}/contexttrace/trace-A`,
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.requestId).toBe('trace-A');
+      expect(res.body.data.feature).toBe('discovery');
+      expect(res.body.data.consumed).toHaveLength(1);
+      expect(res.body.data.consumed[0].regulationKey).toBe('dsgvo:art-30');
+      expect(res.body.data.consumed[0].citedByJudge).toBe(true);
+      expect(res.body.data.llmTraceRef).toBe('ai-trace-1');
     });
   });
 });

@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
-import type { PolicyDraft } from '@thearchitect/shared';
+import type { PolicyDraft, ContextTraceRecord } from '@thearchitect/shared';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -426,6 +426,20 @@ export const normsAPI = {
     api.post(`/projects/${projectId}/norms/discover/confirm`, { family, corpusVersionHash }),
   rejectFinding: (projectId: string, family: string, corpusVersionHash: string) =>
     api.post(`/projects/${projectId}/norms/discover/reject`, { family, corpusVersionHash }),
+  // THE-423 Task 13 — fetch a single ContextTrace by id (a discovery finding's
+  // or mapping's contextTraceId) to show which paragraphs/versions an AI call
+  // actually consumed. A disabled-tracing run stamps outputs with an id that
+  // was never persisted, so callers must tolerate a 404 here.
+  getContextTrace: (projectId: string, traceId: string) =>
+    api.get<{ success: boolean; data: ContextTraceRecord }>(
+      `/projects/${projectId}/contexttrace/${encodeURIComponent(traceId)}`,
+    ),
+  // THE-423 Task 12 (AC-5) — reverse-lookup: every output whose generating
+  // request consumed this exact regulationKey@versionHash.
+  getRegulationImpact: (projectId: string, regulationKey: string, versionHash: string) =>
+    api.get(`/projects/${projectId}/regulations/impact`, {
+      params: { regulationKey, versionHash },
+    }),
 };
 
 // Compliance Pipeline API

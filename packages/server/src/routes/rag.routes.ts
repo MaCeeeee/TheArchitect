@@ -9,7 +9,7 @@ import {
   type IngestDocumentInput,
 } from '../services/dataServer.service';
 import {
-  governedQuery,
+  tracedGovernedQuery,
   type GovernedQueryInput,
   type VersionPin,
 } from '../services/governedRetrieval.service';
@@ -108,8 +108,16 @@ router.post(
         pin: sanitizePin(pin),
         eligibleOnly: typeof eligibleOnly === 'boolean' ? eligibleOnly : undefined,
       };
-      const result = await governedQuery(input);
-      res.json({ success: true, data: result });
+      // THE-423 Task 11 (DD-6): this route persists NO output — it only traces
+      // the corpus read and threads the id through. `userId` comes from
+      // `authenticate` (sets `req.user`); omitted when unauthenticated API-key
+      // flows don't populate it.
+      const { result, contextTraceId } = await tracedGovernedQuery({
+        ...input,
+        feature: 'rag-query',
+        userId: req.user?._id?.toString(),
+      });
+      res.json({ success: true, data: result, contextTraceId });
     } catch (err) {
       if (err instanceof DataServerNotConfiguredError) {
         return res.status(503).json({ success: false, error: err.message });

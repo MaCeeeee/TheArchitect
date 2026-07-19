@@ -39,6 +39,8 @@ function toDiscoveryFinding(doc: ILawDiscoveryFinding): DiscoveryFinding {
     corpusVersionHash: doc.corpusVersionHash,
     judgeModel: doc.judgeModel,
     createdBy: doc.createdBy,
+    // THE-423 additiv — Alt-Docs ohne das Feld liefern undefined.
+    ...(doc.contextTraceId ? { contextTraceId: doc.contextTraceId } : {}),
   };
 }
 
@@ -83,6 +85,8 @@ export async function upsertFindings(
       judgeModel: f.judgeModel,
       status: 'auto',
       createdBy: 'llm',
+      // THE-423 additiv — Provenienz-Link zum Retrieval-ContextTrace.
+      ...(f.contextTraceId ? { contextTraceId: f.contextTraceId } : {}),
     };
 
     try {

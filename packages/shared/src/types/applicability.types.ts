@@ -111,6 +111,14 @@ export interface NormApplicabilityAssessment {
      * (Mensch entscheidet), ist aber als überholt markiert (Spec-Fix 4).
      */
     stale?: boolean;
+    /**
+     * ContextTrace.requestId (THE-423 Task 14) of the retrieval call that
+     * produced this finding — threaded from `DiscoveryFinding.contextTraceId`
+     * so the UI can lazy-fetch "which paragraphs did the judge actually see"
+     * evidence. Best-effort: may be set without a persisted ContextTrace
+     * document existing (tracing disabled) — callers must tolerate a 404.
+     */
+    contextTraceId?: string;
   };
 }
 

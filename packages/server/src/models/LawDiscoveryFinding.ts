@@ -34,6 +34,8 @@ export interface ILawDiscoveryFinding extends Document {
   corpusVersionHash: string;
   judgeModel: string;
   createdBy: 'llm' | 'human';
+  /** ContextTrace.requestId (THE-423) — additiv, Alt-Docs ohne das Feld bleiben gültig. */
+  contextTraceId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -96,6 +98,9 @@ const lawDiscoveryFindingSchema = new Schema<ILawDiscoveryFinding>(
       enum: CREATED_BY_ENUM,
       required: true,
     },
+    // Additiv (THE-423): Link zum ContextTrace-Dokument des Retrieval-Aufrufs,
+    // der dieses Finding erzeugte. Alt-Docs ohne das Feld bleiben gültig.
+    contextTraceId: { type: String, trim: true },
   },
   { timestamps: true },
 );

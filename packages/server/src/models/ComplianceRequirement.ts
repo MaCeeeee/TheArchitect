@@ -31,6 +31,8 @@ export interface IComplianceRequirement extends Document {
   normId?: string;
   /** Section-/Paragraphen-Referenz innerhalb der Norm (@eId bzw. regulationKey). */
   sectionEId?: string;
+  // THE-423 (Task 7) — corpus-read provenance link. Precedent: ComplianceMapping.ts:40/80.
+  contextTraceId?: string;
   sourceParagraph: string;
   title: string;
   description: string;
@@ -62,6 +64,7 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
     regulationId: { type: Schema.Types.ObjectId, ref: 'Regulation', required: true },
     normId: { type: String, trim: true },
     sectionEId: { type: String, trim: true },
+    contextTraceId: { type: String, trim: true },
     sourceParagraph: { type: String, default: '', maxlength: 5000 },
     title: {
       type: String,

@@ -6,6 +6,8 @@ export interface IOracleAssessment extends Document {
   proposal: Record<string, unknown>;
   verdict: Record<string, unknown>;
   generatedAlternatives: Record<string, unknown>[] | null;
+  /** THE-423 AC-4: id of the ContextTrace(feature:'oracle') persisted for this assessment. */
+  contextTraceId?: string;
   createdAt: Date;
 }
 
@@ -16,6 +18,7 @@ const OracleAssessmentSchema = new Schema<IOracleAssessment>(
     proposal: { type: Schema.Types.Mixed, required: true },
     verdict: { type: Schema.Types.Mixed, required: true },
     generatedAlternatives: { type: Schema.Types.Mixed, default: null },
+    contextTraceId: { type: String, trim: true },
   },
   {
     timestamps: true,

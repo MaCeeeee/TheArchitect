@@ -4,7 +4,9 @@ import { createHash } from 'crypto';
 import { getAllPresetPersonas } from './mirofish/personas';
 import { buildAgentContext } from './mirofish/agentContextFilter';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
+import { recordContextTrace } from './contextTrace.service';
 import type { AgentPersona } from '@thearchitect/shared/src/types/simulation.types';
+import type { ContextAuditPayload } from '@thearchitect/shared/src/types/context-trace.types';
 import type {
   OracleProposal,
   OracleVerdict,
@@ -449,6 +451,18 @@ export async function assessAcceptanceRisk(
     },
   };
 
+  // ─── Persist the (previously discarded) per-agent _audit as a ContextTrace ───
+  // (THE-423 AC-4). The oracle reads Neo4j architecture context, not the governed
+  // corpus, so `consumed` is always empty — this is purely the uncapped audit trail.
+  const contextTraceId = await recordContextTrace({
+    feature: 'oracle',
+    projectId,
+    userId: userContext?.userId,
+    consumed: [],
+    model: auditReport.model,
+    audit: buildOracleContextAuditPayload(assessmentResults, auditReport),
+  });
+
   return {
     acceptanceRiskScore: Math.round(acceptanceRiskScore),
     riskLevel,
@@ -460,6 +474,51 @@ export async function assessAcceptanceRisk(
     auditReport,
     timestamp: new Date().toISOString(),
     durationMs: Date.now() - start,
+    contextTraceId,
+  };
+}
+
+// ─── Aggregate multi-agent _audit into a single ContextAuditPayload ───
+//
+// The oracle runs N parallel agent assessments, each with its own systemPrompt,
+// rawResponse, architectureContext and modelParams (`AgentAssessmentResult._audit`).
+// ContextTrace.audit is a SINGLE payload per trace, so we fold all agents into it:
+//   - systemPrompt / rawResponse: JSON array keyed by personaId — uncapped, so full
+//     per-agent fidelity is preserved (unlike AiTrace's 4000-char rawResponse cap).
+//   - architectureContextRef: a compact reference (context hash + counts), not the
+//     full per-agent architecture context text (that stays in rawResponse's siblings
+//     via auditReport.agentReports for now — this ref is for reverse-lookup/display).
+//   - modelParams: the shared provider/model plus each agent's actual modelParams
+//     (relevant when a per-agent fallback provider was used).
+function buildOracleContextAuditPayload(
+  assessmentResults: AgentAssessmentResult[],
+  auditReport: { model: string; provider: string; contextSnapshot: { id: string; elementCount: number; connectionCount: number; affectedElementCount: number } },
+): ContextAuditPayload {
+  return {
+    systemPrompt: JSON.stringify(
+      assessmentResults.map((r) => ({
+        personaId: r.personaId,
+        personaName: r.personaName,
+        systemPrompt: r._audit.systemPrompt,
+      })),
+    ),
+    rawResponse: JSON.stringify(
+      assessmentResults.map((r) => ({
+        personaId: r.personaId,
+        personaName: r.personaName,
+        rawResponse: r._audit.rawResponse,
+      })),
+    ),
+    architectureContextRef:
+      `contextHash=${auditReport.contextSnapshot.id}; ` +
+      `elements=${auditReport.contextSnapshot.elementCount}; ` +
+      `connections=${auditReport.contextSnapshot.connectionCount}; ` +
+      `affectedElements=${auditReport.contextSnapshot.affectedElementCount}`,
+    modelParams: {
+      provider: auditReport.provider,
+      model: auditReport.model,
+      agents: assessmentResults.map((r) => ({ personaId: r.personaId, ...r._audit.modelParams })),
+    },
   };
 }
 

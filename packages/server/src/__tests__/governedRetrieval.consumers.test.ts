@@ -103,9 +103,13 @@ describe('AC-4 wiring guard — consumers route through the gate, not queryDocum
     'routes/rag.routes.ts',
   ];
 
-  test.each(consumers)('%s calls governedQuery and no longer calls queryDocuments directly', file => {
+  // THE-423 Task 9: the 4 Neo4j generators (activity/connection/process/dataobject)
+  // migrated from `governedQuery` to the traced wrapper `tracedGovernedQuery` — both
+  // route through the same gate (`tracedGovernedQuery` calls the underlying, UNCHANGED
+  // `governedQuery` internally), so either call-site satisfies this wiring guard.
+  test.each(consumers)('%s calls governedQuery (directly or via tracedGovernedQuery) and no longer calls queryDocuments directly', file => {
     const src = readFileSync(join(srcRoot, file), 'utf8');
-    expect(src).toMatch(/governedQuery\(/);
+    expect(src).toMatch(/\b(?:traced)?governedQuery\(/i);
     expect(src).not.toMatch(/\bqueryDocuments\(/);
   });
 });

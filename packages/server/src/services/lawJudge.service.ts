@@ -250,7 +250,7 @@ export async function judgeCandidate(args: JudgeCandidateArgs): Promise<LawJudge
   const usage = (response as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
 
   // Observability (THE-462 AC-3) — best-effort, blockiert nie.
-  await recordAiTrace({
+  const aiTraceRequestId = await recordAiTrace({
     operation: 'discovery-judge',
     model,
     promptVersionHash: LAW_JUDGE_PROMPT_VERSION_HASH,
@@ -267,6 +267,11 @@ export async function judgeCandidate(args: JudgeCandidateArgs): Promise<LawJudge
     inputTokens: usage?.input_tokens,
     outputTokens: usage?.output_tokens,
   });
+
+  // THE-423: surface the AiTrace requestId so discoverAndJudge can set it as
+  // ContextTrace.llmTraceRef (Judge↔Retrieval join) — additive, best-effort
+  // (recordAiTrace returns null only on an unexpected pre-write failure).
+  if (aiTraceRequestId) sanitized.aiTraceRequestId = aiTraceRequestId;
 
   judgeCache.set(key, sanitized);
   if (judgeCache.size > JUDGE_CACHE_MAX) {
