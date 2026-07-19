@@ -83,6 +83,7 @@ router.post(
         userId: (req as any).user._id,
         proposal: parsed,
         verdict,
+        contextTraceId: verdict.contextTraceId,
       });
 
       res.json({ success: true, data: verdict, assessmentId: String(saved._id) });
