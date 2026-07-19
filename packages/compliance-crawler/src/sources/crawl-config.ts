@@ -41,10 +41,10 @@ export interface CrawlConfig {
  * must crawl identically to before).
  */
 export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
+  // THE-511: ganze Gesetze — articleNumbers (Demo-Filter, war der Blindfleck) entfernt.
   nis2: {
     celex: '32022L2555',
     language: 'en',
-    articleNumbers: [20, 21, 22, 23, 24],
     jurisdiction: 'EU',
     effectiveFrom: '2024-10-17',
     transport: 'eur-lex',
@@ -52,7 +52,6 @@ export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
   dsgvo: {
     celex: '32016R0679',
     language: 'de',
-    articleNumbers: [5, 6, 9, 32],
     jurisdiction: 'EU',
     effectiveFrom: '2018-05-25',
     transport: 'eur-lex',
@@ -86,23 +85,38 @@ export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
     transport: 'eur-lex',
   },
   lksg: {
-    paragraphNumbers: [3, 4, 5, 6, 7, 8, 9],
+    // THE-511: ganzes LkSG (§§ 1–24). gesetze-im-internet crawlt 1 Request/§, direkt (keine WAF).
+    paragraphNumbers: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
     lawSlug: 'lksg',
     jurisdiction: 'DE',
     effectiveFrom: '2023-01-01',
     transport: 'gesetze-im-internet',
   },
-  // THE-418 AC-1 proof: DORA onboarded as a pure data row — no other file in
-  // this diff. Regulation (EU) 2022/2554 (DORA), application date 2025-01-17.
-  // Demo article set: Art. 5-10 (Chapter II, ICT risk management framework).
+  // THE-511: ganze DORA (articleNumbers entfernt).
   dora: {
     celex: '32022R2554',
     language: 'en',
-    articleNumbers: [5, 6, 7, 8, 9, 10],
     jurisdiction: 'EU',
     effectiveFrom: '2025-01-17',
     transport: 'eur-lex',
   },
+
+  // ─── THE-511: Sprach-Vollständigkeit (cross-linguales Retrieval) ───
+  'dsgvo-en': { celex: '32016R0679', language: 'en', jurisdiction: 'EU', effectiveFrom: '2018-05-25', transport: 'eur-lex' },
+  'nis2-de': { celex: '32022L2555', language: 'de', jurisdiction: 'EU', effectiveFrom: '2024-10-17', transport: 'eur-lex' },
+  'dora-de': { celex: '32022R2554', language: 'de', jurisdiction: 'EU', effectiveFrom: '2025-01-17', transport: 'eur-lex' },
+
+  // ─── THE-511: regel-lose Gesetze (UC-LAW-002 Discovery-Wert), ganze Gesetze, DE+EN ───
+  'cra-en': { celex: '32024R2847', language: 'en', jurisdiction: 'EU', effectiveFrom: '2024-12-10', transport: 'eur-lex' },
+  'cra-de': { celex: '32024R2847', language: 'de', jurisdiction: 'EU', effectiveFrom: '2024-12-10', transport: 'eur-lex' },
+  'mdr-en': { celex: '32017R0745', language: 'en', jurisdiction: 'EU', effectiveFrom: '2021-05-26', transport: 'eur-lex' },
+  'mdr-de': { celex: '32017R0745', language: 'de', jurisdiction: 'EU', effectiveFrom: '2021-05-26', transport: 'eur-lex' },
+  'psd2-en': { celex: '32015L2366', language: 'en', jurisdiction: 'EU', effectiveFrom: '2018-01-13', transport: 'eur-lex' },
+  'psd2-de': { celex: '32015L2366', language: 'de', jurisdiction: 'EU', effectiveFrom: '2018-01-13', transport: 'eur-lex' },
+  'eprivacy-en': { celex: '32002L0058', language: 'en', jurisdiction: 'EU', effectiveFrom: '2002-07-31', transport: 'eur-lex' },
+  'eprivacy-de': { celex: '32002L0058', language: 'de', jurisdiction: 'EU', effectiveFrom: '2002-07-31', transport: 'eur-lex' },
+  'eidas-en': { celex: '32014R0910', language: 'en', jurisdiction: 'EU', effectiveFrom: '2016-07-01', transport: 'eur-lex' },
+  'eidas-de': { celex: '32014R0910', language: 'de', jurisdiction: 'EU', effectiveFrom: '2016-07-01', transport: 'eur-lex' },
 };
 
 /**
