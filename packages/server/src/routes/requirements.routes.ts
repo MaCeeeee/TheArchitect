@@ -30,7 +30,10 @@ import { loadProjectCandidateElements } from '../services/complianceElements.ser
 import { projectRequirementsToModel } from '../services/requirementProjection.service';
 import { computeComplianceGaps } from '../services/compliance-gaps.service';
 import { getPipelineNorm, derivePipelineAnchorId } from '../services/norm.service';
-import { resolveGovernedRegulations } from '../services/governedRetrieval.service';
+import {
+  resolveGovernedRegulations,
+  tracedResolveGovernedRegulations,
+} from '../services/governedRetrieval.service';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -235,6 +238,7 @@ router.post(
 
     const projectObjectId = new mongoose.Types.ObjectId(projectId);
     let regulationObjectId: mongoose.Types.ObjectId;
+    let normSourceIsCorpus = false;
 
     if (regulationId) {
       if (!mongoose.isValidObjectId(regulationId)) {
@@ -257,7 +261,22 @@ router.post(
         return res.status(404).json({ success: false, error: 'norm not found' });
       }
       regulationObjectId = derivePipelineAnchorId(normId!);
+      normSourceIsCorpus = norm.source === 'corpus';
     }
+
+    // THE-423 (Task 7, DD-1 Option A — mint at CONFIRM): join sectionEId → the
+    // corpus's CURRENT versionHash via the traced wrapper. For CORPUS norms the
+    // section id IS the regulationKey (see the GENERATE handler above); for
+    // legacy regulationId / upload norms there is no corpus concept, so `keys`
+    // is empty and the trace still records (consumed:[]) — best-effort, additive.
+    // No AiTrace exists anywhere in the reqgen flow (DD-5) → llmTraceRef stays unset.
+    const traceKeys =
+      normSourceIsCorpus && parsed.data.sectionEId ? [parsed.data.sectionEId] : [];
+    const { contextTraceId } = await tracedResolveGovernedRegulations({
+      keys: traceKeys,
+      feature: 'reqgen',
+      projectId,
+    });
 
     const ops = parsed.data.requirements.map(r => ({
       updateOne: {
@@ -272,6 +291,7 @@ router.post(
             regulationId: regulationObjectId,
             ...(normId ? { normId } : {}),
             ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
+            contextTraceId,
             sourceParagraph: parsed.data.sourceParagraph,
             title: r.title,
             description: r.description,
