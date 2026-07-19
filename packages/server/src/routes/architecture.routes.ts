@@ -1105,6 +1105,13 @@ router.post(
         confidence: s.confidence,
         aiReason: s.reasoning ?? '',
         cid: uuid(),
+        // THE-423 Task 9 (connection): contextTraceId of the RAG read that
+        // informed this suggestion, stamped straight onto the created edge —
+        // safe here (unlike the other 3 generators) because apply happens in
+        // this SAME handler, not a separate client round-trip. null when no
+        // read happened (RAG unconfigured/failed) — Cypher SET-to-null is a
+        // no-op property removal, so the field is simply absent on the edge.
+        contextTraceId: s.contextTraceId ?? null,
       }));
 
       // Two-step idempotent batch:
@@ -1141,6 +1148,7 @@ router.post(
              MERGE (a)-[r:CONNECTS_TO {type: row.type, sourceElementId: row.sourceId, targetElementId: row.targetId}]->(b)
              ON CREATE SET r.id = row.cid, r.label = '', r.source = 'ai-heal',
                            r.confidence = row.confidence, r.aiReason = row.aiReason,
+                           r.contextTraceId = row.contextTraceId,
                            r.projectId = $projectId, r.createdAt = timestamp(), ${provenanceCoreFragment('r')}
              RETURN r.id AS id, row.sourceId AS sourceId, row.targetId AS targetId, row.type AS type`,
             { rows: newRows, projectId, ...provenanceParams({ provenance: 'ai_generated' }) }

@@ -7,7 +7,7 @@ import {
   type ElementType,
 } from '@thearchitect/shared';
 import { isConfigured as isRagConfigured } from './dataServer.service';
-import { governedQuery } from './governedRetrieval.service';
+import { tracedGovernedQuery } from './governedRetrieval.service';
 
 export interface SuggestionInput {
   id: string;
@@ -39,6 +39,15 @@ export interface Suggestion {
    * runs Capability → Requirement, not the reverse.
    */
   direction: 'outgoing' | 'incoming';
+  /**
+   * THE-423 Task 9 (connection): id of the ContextTrace recorded for the RAG
+   * read that informed this suggestion (undefined when no read happened —
+   * RAG not configured, the call failed, or it returned no chunks). Set here
+   * (not in the apply route) because heal-connections applies suggestions in
+   * the SAME handler as this call, so the id is available without a client
+   * round-trip — see architecture.routes.ts `/heal-connections`.
+   */
+  contextTraceId?: string;
 }
 export interface HealReport {
   elementsAnalyzed: number;
@@ -382,16 +391,24 @@ function pairKey(a: string, b: string): string {
   return a < b ? `${a}|${b}` : `${b}|${a}`;
 }
 
-async function fetchRagContextSafe(projectId: string, query: string): Promise<{ context: string; used: boolean }> {
+async function fetchRagContextSafe(
+  projectId: string,
+  query: string,
+): Promise<{ context: string; used: boolean; contextTraceId?: string }> {
   if (!isRagConfigured()) return { context: '', used: false };
   try {
-    const result = await governedQuery({ projectId, text: query, topK: 3 });
-    if (!result?.chunks?.length) return { context: '', used: false };
+    const { result, contextTraceId } = await tracedGovernedQuery({
+      projectId,
+      text: query,
+      topK: 3,
+      feature: 'connection',
+    });
+    if (!result?.chunks?.length) return { context: '', used: false, contextTraceId };
     const context = result.chunks
       .slice(0, 3)
       .map((c, i) => `[${i + 1}] (score=${c.score.toFixed(2)}) ${c.text.slice(0, 400)}`)
       .join('\n');
-    return { context, used: true };
+    return { context, used: true, contextTraceId };
   } catch {
     // RAG must never block heal; downgrade silently.
     return { context: '', used: false };
@@ -483,7 +500,7 @@ export async function suggestConnectionsForIsolatedElements(
       );
 
       const ragQuery = `${el.name} ${el.description ?? ''}`.trim().slice(0, 500);
-      const { context, used } = await fetchRagContextSafe(opts.projectId, ragQuery);
+      const { context, used, contextTraceId } = await fetchRagContextSafe(opts.projectId, ragQuery);
       if (used) ragContextUsed = true;
 
       let raw: Awaited<ReturnType<LLMReasoner>>;
@@ -537,6 +554,7 @@ export async function suggestConnectionsForIsolatedElements(
             confidence: Number(s.confidence.toFixed(3)),
             reasoning: s.reasoning,
             direction,
+            ...(contextTraceId ? { contextTraceId } : {}),
           };
         })
         .filter((x): x is Suggestion => x !== null)
