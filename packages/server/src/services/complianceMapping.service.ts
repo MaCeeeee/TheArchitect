@@ -23,7 +23,8 @@ import { buildRegulationKey, type RegulationLanguage } from '@thearchitect/share
 import { computeVersionHash } from '../utils/regulationVersion';
 import { log } from '../config/logger';
 import { recordAiTrace } from './aiTrace.service';
-import { tracedResolveGovernedRegulations } from './governedRetrieval.service';
+import { recordContextTrace } from './contextTrace.service';
+import type { ConsumedRef } from '@thearchitect/shared';
 import {
   buildSystemPrompt,
   buildUserPrompt,
@@ -172,20 +173,30 @@ export async function mapRegulationToElements(args: {
   const regulationVersionHash = computeVersionHash(args.regulation.fullText);
 
   // THE-423 (Task 6, AC-6 join): pre-generate ONE id shared by both the
-  // ContextTrace and the AiTrace of this run. The traced corpus read below
-  // happens BEFORE the LLM call, but `recordAiTrace` only runs AFTER — so the
-  // requestId can't be known at read time. Generating it up front and feeding
-  // it as `requestId` into `recordAiTrace` AND as `llmTraceRef` into the
-  // traced read makes `ContextTrace.llmTraceRef === AiTrace.requestId` hold
-  // for the same run. `views` is intentionally unused for the LLM input
-  // (`args.regulation` is already the resolved/governed value the caller
-  // passed in — see compliance.routes.ts) — this call exists to record the
-  // ContextTrace + governance audit trail, not to change mapping behavior.
+  // ContextTrace and the AiTrace of this run. `recordAiTrace` only runs AFTER
+  // the LLM call, so the requestId can't be known at that point. Generating
+  // it up front and feeding it as `requestId` into `recordAiTrace` AND as
+  // `llmTraceRef` into `recordContextTrace` makes
+  // `ContextTrace.llmTraceRef === AiTrace.requestId` hold for the same run.
+  //
+  // `args.regulation` was already resolved by key upstream (see
+  // compliance.routes.ts) — it is the regulation this mapping run actually
+  // consumes, so the ContextTrace is built directly from it (retrievalMethod
+  // 'direct') instead of re-reading the corpus a second time just to mint a
+  // trace. This mirrors the discovery call-site's direct-`recordContextTrace`
+  // pattern (lawDiscovery.service.ts) rather than the wrapper.
   const aiRequestId = randomUUID();
-  const { contextTraceId } = await tracedResolveGovernedRegulations({
-    keys: [regulationKey],
-    projectId: args.projectId,
+  const consumed: ConsumedRef[] = [
+    {
+      regulationKey,
+      versionHash: regulationVersionHash,
+      retrievalMethod: 'direct',
+    },
+  ];
+  const contextTraceId = await recordContextTrace({
     feature: 'mapping',
+    projectId: args.projectId,
+    consumed,
     llmTraceRef: aiRequestId,
   });
 

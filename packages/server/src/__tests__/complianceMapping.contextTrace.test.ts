@@ -117,6 +117,16 @@ describe('mapRegulationToElements() → ContextTrace (THE-423 Task 6, AC-6 join)
     expect(contextTraces[0].llmTraceRef).toBe(aiTraces[0].requestId);
     // And the persisted mapping's contextTraceId points at that same ContextTrace.
     expect(persisted!.contextTraceId).toBe(contextTraces[0].requestId);
+
+    // No redundant corpus round-trip: the trace is built directly from the
+    // regulation already in scope (retrievalMethod 'direct'), not from a
+    // second governed-retrieval read.
+    expect(contextTraces[0].consumed).toHaveLength(1);
+    expect(contextTraces[0].consumed[0]).toMatchObject({
+      regulationKey: aiTraces[0].regulationKey,
+      versionHash: aiTraces[0].regulationVersionHash,
+      retrievalMethod: 'direct',
+    });
   });
 
   it('still maps successfully when context-tracing is disabled (additive, no regression)', async () => {
