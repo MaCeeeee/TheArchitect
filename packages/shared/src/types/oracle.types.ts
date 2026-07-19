@@ -157,4 +157,6 @@ export interface OracleVerdict {
   auditReport?: OracleAuditReport;
   timestamp: string;
   durationMs: number;
+  /** THE-423 AC-4: id of the ContextTrace(feature:'oracle') persisted for this assessment. */
+  contextTraceId?: string;
 }
