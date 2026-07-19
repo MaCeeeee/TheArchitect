@@ -12,6 +12,7 @@ import type { ApplicabilityReport, ConsumedRef, CorpusHit, DiscoveryCandidate, D
 import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
 import { isCorpusConfigured } from './corpusClient.service';
+import { hydeRewrite } from './hyde.service';
 import { buildApplicabilityReport, loadProjectFacts, loadNormWorldState } from './regulationApplicability.service';
 import { judgeCandidate } from './lawJudge.service';
 import { upsertFindings, findExisting, listFindings, type UpsertFindingInput } from './lawDiscoveryFinding.service';
@@ -71,12 +72,26 @@ export function aggregateHitsToCandidates(hits: CorpusHit[]): DiscoveryCandidate
   return candidates;
 }
 
-export async function discoverCandidates(projectId: string): Promise<DiscoveryResult> {
+export interface DiscoverCandidatesOptions {
+  anthropicClient?: Anthropic;
+}
+
+export async function discoverCandidates(projectId: string, opts?: DiscoverCandidatesOptions): Promise<DiscoveryResult> {
   if (!isCorpusConfigured()) {
     return { projectId, corpusConfigured: false, candidates: [], degraded: 'corpus not configured' };
   }
   const profile = await buildUseCaseProfile(projectId);
-  const hits = await governedCorpusSearch({ text: profile.text, topK: TOP_K });
+  const hasProvider = Boolean(opts?.anthropicClient || process.env.ANTHROPIC_API_KEY);
+  let queryText = profile.text;
+  if (hydeEnabled() && hasProvider) {
+    try {
+      queryText = await hydeRewrite(profile.text, { client: opts?.anthropicClient });
+    } catch (err) {
+      log.warn({ err }, '[law-discovery] HyDE rewrite failed — falling back to baseline profile text');
+      queryText = profile.text;
+    }
+  }
+  const hits = await governedCorpusSearch({ text: queryText, topK: TOP_K });
   if (hits.length === 0) {
     return { projectId, corpusConfigured: true, candidates: [], degraded: 'no corpus hits' };
   }
@@ -108,6 +123,13 @@ function maxJudge(): number {
 }
 function defaultJudgeModel(): string {
   return process.env.LAW_DISCOVERY_JUDGE_MODEL || 'claude-haiku-4-5-20251001';
+}
+
+// THE-514 Task 3: dark-by-default gate for the HyDE retrieval stage. PER
+// AUFRUF gelesen (nicht modul-weit gecacht) — gleiches Muster wie
+// judgeThreshold()/maxJudge()/defaultJudgeModel() oben.
+function hydeEnabled(): boolean {
+  return process.env.LAW_DISCOVERY_HYDE === 'true';
 }
 
 /**
@@ -161,7 +183,7 @@ export async function discoverAndJudge(
     loadNormWorldState(projectId),
   ]);
 
-  const discovery = await discoverCandidates(projectId);
+  const discovery = await discoverCandidates(projectId, { anthropicClient: opts.anthropicClient });
   const hasProvider = Boolean(opts.anthropicClient || process.env.ANTHROPIC_API_KEY);
   if (discovery.candidates.length === 0 || !hasProvider) {
     return mergeApplicability(stageA, [], undefined, undefined, world);

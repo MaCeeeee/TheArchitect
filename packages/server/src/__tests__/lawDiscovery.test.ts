@@ -1,9 +1,11 @@
 const mockProfile = jest.fn();
 const mockSearch = jest.fn();
 const mockConfigured = jest.fn();
+const mockHydeRewrite = jest.fn();
 jest.mock('../services/useCaseProfile.service', () => ({ buildUseCaseProfile: (...a: unknown[]) => mockProfile(...a) }));
 jest.mock('../services/governedRetrieval.service', () => ({ governedCorpusSearch: (...a: unknown[]) => mockSearch(...a) }));
 jest.mock('../services/corpusClient.service', () => ({ isCorpusConfigured: () => mockConfigured() }));
+jest.mock('../services/hyde.service', () => ({ hydeRewrite: (...a: unknown[]) => mockHydeRewrite(...a) }));
 
 import { discoverCandidates, gateCandidatesForJudge } from '../services/lawDiscovery.service';
 import type { DiscoveryCandidate } from '@thearchitect/shared';
@@ -38,6 +40,56 @@ describe('discoverCandidates', () => {
     const res = await discoverCandidates('p1');
     expect(res.candidates).toEqual([]);
     expect(res.degraded).toBeTruthy();
+  });
+
+  describe('HyDE flag-gated stage (THE-514 Task 3)', () => {
+    const originalEnv = { ...process.env };
+
+    beforeEach(() => {
+      mockSearch.mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+      process.env = { ...originalEnv };
+    });
+
+    it('flag=true + injected client ⇒ governedCorpusSearch bekommt den HyDE-Text, nicht profile.text', async () => {
+      process.env.LAW_DISCOVERY_HYDE = 'true';
+      mockHydeRewrite.mockResolvedValue('HYPOTHESIS');
+      const client = {} as any;
+      await discoverCandidates('p1', { anthropicClient: client });
+      expect(mockHydeRewrite).toHaveBeenCalledWith('prof', expect.objectContaining({ client }));
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ text: 'HYPOTHESIS' }));
+    });
+
+    it('Flag unset/false (Default) ⇒ profile.text, hydeRewrite wird NICHT gerufen', async () => {
+      delete process.env.LAW_DISCOVERY_HYDE;
+      await discoverCandidates('p1', { anthropicClient: {} as any });
+      expect(mockHydeRewrite).not.toHaveBeenCalled();
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ text: 'prof' }));
+
+      mockSearch.mockClear();
+      mockHydeRewrite.mockClear();
+      process.env.LAW_DISCOVERY_HYDE = 'false';
+      await discoverCandidates('p1', { anthropicClient: {} as any });
+      expect(mockHydeRewrite).not.toHaveBeenCalled();
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ text: 'prof' }));
+    });
+
+    it('flag=true aber KEIN Provider (kein Client, kein ANTHROPIC_API_KEY) ⇒ HyDE übersprungen, profile.text', async () => {
+      process.env.LAW_DISCOVERY_HYDE = 'true';
+      delete process.env.ANTHROPIC_API_KEY;
+      await discoverCandidates('p1');
+      expect(mockHydeRewrite).not.toHaveBeenCalled();
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ text: 'prof' }));
+    });
+
+    it('flag=true, Provider vorhanden, hydeRewrite lehnt ab ⇒ graceful Fallback auf profile.text, kein Throw', async () => {
+      process.env.LAW_DISCOVERY_HYDE = 'true';
+      mockHydeRewrite.mockRejectedValue(new Error('boom'));
+      await expect(discoverCandidates('p1', { anthropicClient: {} as any })).resolves.toBeDefined();
+      expect(mockSearch).toHaveBeenCalledWith(expect.objectContaining({ text: 'prof' }));
+    });
   });
 });
 
