@@ -164,3 +164,126 @@ editiert — Korrekturen erzeugen die nächste Versionsdatei.
   § 2a ergänzt, Adressaten-Test + Regime-Grenze in § 3, Capability-Regel § 2.5.
   Golden-Set `mapping.v1.json` → `mapping.v2.json` (A-Labels nach neuer Regel).
 - **v1:** Erstfassung (THE-379).
+
+---
+
+# Teil B — Klassifizierung einzelner Provisions (Term Typing)
+
+> **Abgrenzung:** Teil A (§ 1–9) beschreibt die **Zuordnungs-Aufgabe** (Gesetzestext → Architektur-Element).
+> Teil B beschreibt eine davon unabhängige Aufgabe: die **Provision selbst** einordnen, ohne Bezug zu
+> irgendeinem Architektur-Modell. Gemeinsam bleiben nur die Verfahrensregeln — Mehrdeutigkeit (§ 4),
+> Doppel-Labeling und das Freeze-Kriterium (§ 7) gelten unverändert auch hier.
+> Golden-Sets: `golden/typing.v1.json`, validiert von `typingGolden.ts`.
+
+## B1. Die Label-Frage
+
+> *„Was für ein Paragraph ist das — unabhängig davon, auf wen er zutrifft?"*
+
+Fünf Achsen, jede unabhängig zu entscheiden. Der Text der Provision ist die einzige Grundlage;
+Modellwissen über das Gesetz „im Allgemeinen" ist ausdrücklich **keine** zulässige Begründung.
+
+## B2. Die drei Zustände (gilt für jede Achse)
+
+| Zustand | Bedeutung | Wann |
+|---|---|---|
+| **offen** (kein Wert) | noch nicht entschieden | Sollte im fertigen Satz die Ausnahme sein. Nutzt der Prüfer, wenn der Text die Achse schlicht nicht hergibt und auch „nicht anwendbar" falsch wäre. |
+| **`null`** — nicht anwendbar | bewusste Entscheidung | Die Achse *hat* auf diese Provision keine sinnvolle Antwort. Beispiel: ein Definitionsartikel trägt keine deontische Kraft → `obligationKind: null`. |
+| **Wert** | gelabelt | Einer der geschlossenen Ontologie-Werte. |
+
+`null` ist eine **Aussage**, kein Auslassen — sie wird in der Auswertung als eigene Klasse gewertet und
+zählt bei der Prüfer-Einigkeit voll mit. Zwei Prüfer, die sich auf „nicht anwendbar" einigen, sind sich einig.
+
+## B3. Entscheidungsregeln je Achse
+
+### `provisionKind` — worum geht es in diesem Paragraphen?
+
+Die Achse mit dem größten Streitpotenzial; hier lohnt die genaueste Lektüre.
+
+| Wert | Kriterium | Typischer Wortlaut |
+|---|---|---|
+| `scope-applicability` | entscheidet, **ob** das Gesetz auf jemanden/etwas anwendbar ist | „Diese Verordnung gilt für…", „Anwendungsbereich", Schwellenwerte, Ausnahmen vom Anwendungsbereich |
+| `definition` | legt die **Bedeutung eines Begriffs** fest | „Im Sinne dieser Verordnung bezeichnet der Ausdruck …" |
+| `obligation` | begründet eine **materielle Pflicht** des Regulierten | „… trifft geeignete Maßnahmen", „… stellt sicher, dass" |
+| `enforcement-supervision` | regelt **Befugnisse oder Handeln der Aufsicht** | Marktüberwachung, Sanktionen, Untersuchungsbefugnisse, Zusammenarbeit der Behörden |
+| `procedural` | regelt das **Wie/Wann** einer bereits bestehenden Pflicht | Fristen, Formvorschriften, Meldewege, Registrierungsverfahren |
+| `other` | Rest | Übergangs- und Schlussbestimmungen, Inkrafttreten, Verweise auf Anhänge |
+
+**Die drei Abgrenzungen, an denen Prüfer auseinandergehen:**
+
+1. **`scope-applicability` vs. `definition`.** Test: *Entscheidet der Text darüber, ob das Gesetz greift,
+   oder legt er nur Vokabular fest?* Eine Definition kann den Anwendungsbereich mittelbar verengen —
+   sie bleibt trotzdem `definition`. Nur wenn der Paragraph selbst die Anwendbarkeit ausspricht, ist es
+   `scope-applicability`.
+2. **`obligation` vs. `procedural`.** Test: *Begründet dieser Paragraph die Pflicht, oder regelt er die
+   Abwicklung einer anderswo begründeten Pflicht?* Eine Meldepflicht ist eine Pflicht (`obligation`);
+   die 72-Stunden-Frist und das Meldeformular dazu sind `procedural`. Steht beides im selben Paragraphen,
+   entscheidet der Schwerpunkt.
+3. **`obligation` vs. `enforcement-supervision`.** Test: *Wer wird adressiert?* Pflichten des Regulierten
+   → `obligation`. Befugnisse oder Pflichten der Behörde → `enforcement-supervision`. Diese Achse läuft
+   fast immer parallel zu `partyRole` — steht dort die Aufsichtsbehörde, ist `obligation` verdächtig.
+
+### `obligationKind` — deontische Kraft
+
+`obligation` (Gebot) · `prohibition` (Verbot) · `permission` (Erlaubnis).
+
+- **`null`**, wenn die Provision niemandem etwas gebietet, verbietet oder erlaubt — bei
+  `scope-applicability`, `definition` und den meisten `other`-Fällen der Normalfall.
+- **Konditionale Formulierungen** („darf nur, wenn…") entscheidet man über den **Ausgangszustand**:
+  Ist die Handlung im Grundsatz untersagt und der Paragraph öffnet eine Tür → `permission`.
+  Ist sie im Grundsatz erlaubt und der Paragraph schließt sie → `prohibition`.
+
+### `partyRole` — Adressat
+
+Der geschlossene Rollenraum (Verantwortlicher, Auftragsverarbeiter, Anbieter, Betreiber, Einführer,
+Händler, bevollmächtigter Vertreter, betroffene Person, Aufsichtsbehörde).
+
+- **`null`**, wenn kein Rollenträger adressiert wird — Definitionen, oder Provisions, die sich an
+  Mitgliedstaaten bzw. den Gesetzgeber selbst richten (dafür gibt es bewusst keine Rolle).
+- Mehrere Adressaten: die Rolle wählen, die der Paragraph **primär** verpflichtet.
+
+### `normKind` und `bindingness` — Eigenschaften der Norm, nicht der Provision
+
+Beide beschreiben das **Dokument**, aus dem die Provision stammt, nicht den einzelnen Paragraphen.
+Innerhalb eines Gesetzes sind sie deshalb über alle Fälle konstant. Erwartete Einigkeit: hoch.
+Weichen zwei Prüfer hier ab, ist meist die Quelle falsch zugeordnet — kein Rubrik-Problem.
+
+## B4. Erwartete Einigkeit — wo Streit normal ist
+
+| Achse | Erwartung | Grund |
+|---|---|---|
+| `normKind`, `bindingness` | sehr hoch | folgen aus der Quelle |
+| `obligationKind` | hoch | dreiwertig, klare Signalwörter |
+| `partyRole` | mittel | Mehrfach-Adressaten, implizite Rollen |
+| `provisionKind` | **am niedrigsten** | die drei Abgrenzungen in B3 |
+
+Fällt die Prüfer-Einigkeit auf einer Achse unter 0,6, ist **B3 zu schärfen** — nicht das Modell zu
+tunen und nicht der Prüfsatz zu beschönigen (§ 7.4 gilt unverändert).
+
+## B5. Doppel-Labeling — die Blindheits-Regel
+
+§ 7 gilt vollständig (zwei Prüfer, dieselben ≥ 20 Fälle, Kappa ≥ 0,6, danach Adjudikation und Freeze).
+Eine **Zusatzregel** ist beim Typing zwingend:
+
+> **Der zweite Prüfer darf den KI-Vorschlag nicht sehen.**
+
+Der erste Durchgang ist bewusst eine *Adjudikation* — der Prüfer bekommt den maschinellen Vorschlag
+vorbefüllt und korrigiert ihn. Bekäme der zweite Prüfer denselben Vorschlag, wären beide auf dieselbe
+Quelle geankert: Sie wären sich einig, **weil sie beide der Maschine gefolgt sind**, nicht weil die
+Aufgabe klar definiert ist. Die gemessene Einigkeit wäre geschönt und das Freeze-Tor wertlos.
+
+Deshalb erzeugt `typing-kappa blind` eine Kopie **ohne** Labels und ohne jede Spur des ersten Durchgangs
+(keine Notizen, kein Bearbeiter, kein Zeitstempel) — nur Gesetzestext und Auswahllisten. Wer diese
+Mechanik später „vereinfacht", macht die Messung wertlos.
+
+## B6. Format
+
+Prüfsätze liegen in `golden/typing.v*.json`, validiert von `typingGolden.ts` (Zod).
+Pro Fall: Provision (Quelle, Paragraphennummer, Volltext, Sprache, Jurisdiktion) + `labels` über die
+fünf Achsen + optional `ambiguous`/`notes`. `ontologyVersion` bindet die Labels an die E6-Version,
+gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob alte Labels noch gelten.
+§ 8 gilt sinngemäß: **ein eingefrorener Satz wird nie editiert**, Korrekturen erzeugen die nächste Version.
+
+## B7. Changelog Teil B
+
+- **B-v1 (2026-07-20):** Erstfassung (THE-421, Slice G-0/G). Fünf Achsen inkl. der neuen
+  `provisionKind`; Abgrenzungsregeln B3; Blindheits-Regel B5.
