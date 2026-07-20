@@ -7,6 +7,19 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.5.0 — 2026-07-20 (THE-421 Slice G-0)
+
+- **provisionKinds** (6, E6) NEU — additiv, keine id geändert/entfernt: `scope-applicability`,
+  `definition`, `obligation`, `enforcement-supervision`, `procedural`, `other`. Fünfte
+  Typing-Achse: "welche Art Vorschrift ist dieser Paragraph?" — orthogonal zu
+  `obligationKinds` (das ist der deontische Gehalt EINER Pflicht-Vorschrift).
+  Zwei Gründe: (a) ein Prod-Befund zeigte, dass der Law-Discovery-Judge nur
+  Enforcement-Paragraphen bekam und nie den Geltungsbereichs-Artikel — Retrieval
+  muss Scope-Vorschriften priorisieren; (b) Requirement-Harmonisierung muss
+  Pflichten mit Pflichten vergleichen, nicht mit Verfahrensvorschriften. Bewusst
+  klein gehalten, `other` als Auffangbecken. Fließt in den OntoLearner-Export
+  (`termTypes.provisionKind`) + `ProvisionKindSchema` / `isProvisionKind`.
+
 ## 1.4.0 — 2026-07-19 (THE-511)
 
 - **normSources** (13, E6) NEU — additiv, keine id geändert/entfernt:

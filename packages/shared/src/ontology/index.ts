@@ -20,6 +20,7 @@ export {
   NormKindSchema,
   BindingnessSchema,
   ObligationKindSchema,
+  ProvisionKindSchema,
   RelationTypeSchema,
   PartyRoleSchema,
   NormSourceSchema,
@@ -31,6 +32,7 @@ export {
 export const NORM_KIND_IDS = NORM_ONTOLOGY.normKinds.map((k) => k.id);
 export const BINDINGNESS_IDS = NORM_ONTOLOGY.bindingness.map((b) => b.id);
 export const OBLIGATION_KIND_IDS = NORM_ONTOLOGY.obligationKinds.map((o) => o.id);
+export const PROVISION_KIND_IDS = NORM_ONTOLOGY.provisionKinds.map((p) => p.id);
 export const RELATION_TYPE_IDS = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 export const PARTY_ROLE_IDS = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
 export const NORM_SOURCE_IDS = NORM_ONTOLOGY.normSources.map((s) => s.id);
@@ -45,16 +47,19 @@ const JURISDICTION_ID_SET = new Set<string>(JURISDICTION_IDS);
 const LANGUAGE_ID_SET = new Set<string>(LANGUAGE_IDS);
 const NORM_KIND_ID_SET = new Set<string>(NORM_KIND_IDS);
 const OBLIGATION_KIND_ID_SET = new Set<string>(OBLIGATION_KIND_IDS);
+const PROVISION_KIND_ID_SET = new Set<string>(PROVISION_KIND_IDS);
 export const isNormSource = (v: string): boolean => NORM_SOURCE_ID_SET.has(v);
 export const isJurisdiction = (v: string): boolean => JURISDICTION_ID_SET.has(v);
 export const isLanguage = (v: string): boolean => LANGUAGE_ID_SET.has(v);
 export const isNormKind = (v: string): boolean => NORM_KIND_ID_SET.has(v);
 export const isObligationKind = (v: string): boolean => OBLIGATION_KIND_ID_SET.has(v);
+export const isProvisionKind = (v: string): boolean => PROVISION_KIND_ID_SET.has(v);
 
 // ─── Derived convenience literal unions (authoring/UI only) ──────────
 export type NormKindId = (typeof NORM_ONTOLOGY.normKinds)[number]['id'];
 export type BindingnessId = (typeof NORM_ONTOLOGY.bindingness)[number]['id'];
 export type ObligationKindId = (typeof NORM_ONTOLOGY.obligationKinds)[number]['id'];
+export type ProvisionKindId = (typeof NORM_ONTOLOGY.provisionKinds)[number]['id'];
 export type RelationTypeId = (typeof NORM_ONTOLOGY.relationTypes)[number]['id'];
 export type PartyRoleId = (typeof NORM_ONTOLOGY.partyRoles)[number]['id'];
 export type NormSourceId = (typeof NORM_ONTOLOGY.normSources)[number]['id'];
@@ -71,6 +76,7 @@ export interface OntoLearnerExport {
     normKind: string[];
     bindingness: string[];
     obligationKind: string[];
+    provisionKind: string[];
     partyRole: string[];
   };
   /** Non-taxonomic relation vocabulary R (paper §4.3). */
@@ -96,6 +102,7 @@ export function exportForOntoLearner(ontology = NORM_ONTOLOGY): OntoLearnerExpor
       normKind: ontology.normKinds.map((k) => k.id),
       bindingness: ontology.bindingness.map((b) => b.id),
       obligationKind: ontology.obligationKinds.map((o) => o.id),
+      provisionKind: ontology.provisionKinds.map((p) => p.id),
       partyRole: ontology.partyRoles.map((p) => p.id),
     },
     nonTaxonomicRelations: ontology.relationTypes.map((r) => r.id),

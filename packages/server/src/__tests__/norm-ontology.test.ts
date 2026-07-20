@@ -20,6 +20,9 @@ import {
   OBLIGATION_KIND_IDS,
   isObligationKind,
   ObligationKindSchema,
+  PROVISION_KIND_IDS,
+  isProvisionKind,
+  ProvisionKindSchema,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -91,7 +94,7 @@ describe('source registry (THE-413)', () => {
   });
 
   it('bumped ontologyVersion for the additive rows', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.5.0');
   });
 
   it('isNormSource accepts ontology rows, rejects everything else', () => {
@@ -128,7 +131,7 @@ describe('languages facet + kind coverage (THE-417)', () => {
     }
   });
   it('bumped to 1.2.0', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.5.0');
   });
 });
 
@@ -150,5 +153,29 @@ describe('obligationKinds facet (THE-430 / THE-432)', () => {
   it('OntoLearner export covers the obligationKind facet', () => {
     const exported = exportForOntoLearner();
     expect(exported.termTypes.obligationKind).toEqual(OBLIGATION_KIND_IDS);
+  });
+});
+
+describe('provisionKinds facet (THE-421 G-0)', () => {
+  it('ships the closed provision-kind space', () => {
+    expect(PROVISION_KIND_IDS).toEqual([
+      'scope-applicability', 'definition', 'obligation',
+      'enforcement-supervision', 'procedural', 'other',
+    ]);
+  });
+  it('accepts in-ontology values and rejects OOV + wrong case', () => {
+    expect(isProvisionKind('scope-applicability')).toBe(true);
+    expect(isProvisionKind('Scope-Applicability')).toBe(false);
+    expect(isProvisionKind('nonsense')).toBe(false);
+  });
+  it('ProvisionKindSchema gates membership', () => {
+    expect(ProvisionKindSchema.safeParse('obligation').success).toBe(true);
+    expect(ProvisionKindSchema.safeParse('obligation ').success).toBe(false);
+  });
+  it('OntoLearner export covers the new facet', () => {
+    expect(exportForOntoLearner().termTypes.provisionKind).toEqual(PROVISION_KIND_IDS);
+  });
+  it('ontology version is bumped', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.5.0');
   });
 });

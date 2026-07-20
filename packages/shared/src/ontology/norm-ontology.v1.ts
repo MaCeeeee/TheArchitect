@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.4.0',
-  updatedAt: '2026-07-12',
+  ontologyVersion: '1.5.0',
+  updatedAt: '2026-07-20',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -53,6 +53,25 @@ export const NORM_ONTOLOGY = {
     { id: 'obligation', label: 'Obligation / Gebot' },
     { id: 'prohibition', label: 'Prohibition / Verbot' },
     { id: 'permission', label: 'Permission / Erlaubnis' },
+  ],
+
+  /**
+   * E6 — what KIND of provision a paragraph is (orthogonal to `obligationKinds`,
+   * which is the deontic force of an obligation-type provision). Exists for two
+   * reasons (THE-421 G-0): (a) a production finding showed the law-discovery
+   * judge was fed only enforcement paragraphs and never the scope article, so
+   * retrieval needs to prioritise scope provisions; (b) requirement
+   * harmonisation must compare obligations with obligations, not with
+   * procedural rules. Deliberately small, with `other` as the catch-all for
+   * transitional/final/miscellaneous provisions.
+   */
+  provisionKinds: [
+    { id: 'scope-applicability', label: 'Scope / Applicability — Geltungsbereich' },
+    { id: 'definition', label: 'Definition — Begriffsbestimmung' },
+    { id: 'obligation', label: 'Obligation — materielle Pflicht' },
+    { id: 'enforcement-supervision', label: 'Enforcement / Supervision — Aufsicht, Sanktion, Marktüberwachung' },
+    { id: 'procedural', label: 'Procedural — Verfahren, Meldung, Fristen, Formalia' },
+    { id: 'other', label: 'Other — Übergangs-, Schluss-, sonstige Bestimmungen' },
   ],
 
   /**
