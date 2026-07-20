@@ -418,8 +418,12 @@ export const normsAPI = {
   applicability: (projectId: string) =>
     api.get(`/projects/${projectId}/norms/applicability`),
   // UC-LAW-002 — corpus-wide discovery (LLM judge). Explicit user action, costs provider money.
+  // Long-running: with LAW_DISCOVERY_HYDE on, a run is one HyDE rewrite + one vector search +
+  // up to LAW_DISCOVERY_MAX_JUDGE sequential judge calls. The default 30s tripped once HyDE
+  // widened the candidate set (server finished fine, browser had already given up → misleading
+  // "Failed to discover from corpus"). Same reasoning as heal-connections above.
   discover: (projectId: string) =>
-    api.post(`/projects/${projectId}/norms/discover`),
+    api.post(`/projects/${projectId}/norms/discover`, undefined, { timeout: 300_000 }),
   discoveryFindings: (projectId: string) =>
     api.get(`/projects/${projectId}/norms/discover/findings`),
   confirmFinding: (projectId: string, family: string, corpusVersionHash: string) =>
