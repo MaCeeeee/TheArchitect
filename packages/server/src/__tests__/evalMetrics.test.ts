@@ -19,6 +19,7 @@ import {
   bootstrapCI,
   mulberry32,
   cohenKappa,
+  cohenKappaMulti,
   concisenessMetrics,
   type CaseOutcome,
   type PairLabel,
@@ -188,6 +189,48 @@ describe('cohenKappa()', () => {
   it('throws on length mismatch and empty input', () => {
     expect(() => cohenKappa([m], [m, n])).toThrow(/differ in length/);
     expect(() => cohenKappa([], [])).toThrow(/empty/);
+  });
+});
+
+// ─── Cohen's Kappa (multi-class) ────────────────────────────────
+
+describe('cohenKappaMulti()', () => {
+  it('returns 1 for perfect agreement across more than two classes', () => {
+    expect(cohenKappaMulti(['a', 'b', 'c', 'a'], ['a', 'b', 'c', 'a'])).toBeCloseTo(1, 6);
+  });
+
+  it('returns near 0 for chance-level agreement', () => {
+    expect(Math.abs(cohenKappaMulti(['a', 'b', 'a', 'b'], ['a', 'b', 'b', 'a']))).toBeLessThan(0.1);
+  });
+
+  it('does not mistake a dominant class for real agreement', () => {
+    const a = [...Array(18).fill('none'), 'x', 'y'];
+    const b = [...Array(18).fill('none'), 'y', 'x'];
+    // 90% raw agreement, but the agreement is almost entirely explained by the skew
+    expect(cohenKappaMulti(a, b)).toBeLessThan(0.5);
+  });
+
+  it('throws on length mismatch and on empty input', () => {
+    expect(() => cohenKappaMulti(['a'], [])).toThrow();
+    expect(() => cohenKappaMulti([], [])).toThrow();
+  });
+
+  it('handles classes appearing in only one annotator\'s vocabulary (asymmetric class support)', () => {
+    // b never uses 'z', a never uses 'w' — the union of classes must still be used
+    // for pe, not just the classes common to both, or pe silently drops probability mass.
+    const a = ['x', 'y', 'z', 'x'];
+    const b = ['x', 'y', 'w', 'x'];
+    const result = cohenKappaMulti(a, b);
+    expect(Number.isFinite(result)).toBe(true);
+    // po = 3/4 = 0.75 (x,y,x agree; z vs w disagree);
+    // pe = p_a(x)p_b(x) + p_a(y)p_b(y) (z,w each 0 in the other annotator)
+    // = (2/4)(2/4) + (1/4)(1/4) = 0.25 + 0.0625 = 0.3125
+    // kappa = (0.75 - 0.3125) / (1 - 0.3125) ≈ 0.636364
+    expect(result).toBeCloseTo(0.63636364, 6);
+  });
+
+  it('returns 1 when both annotators use exactly one, identical class throughout (pe === 1 degenerate case)', () => {
+    expect(cohenKappaMulti(['a', 'a', 'a'], ['a', 'a', 'a'])).toBe(1);
   });
 });
 
