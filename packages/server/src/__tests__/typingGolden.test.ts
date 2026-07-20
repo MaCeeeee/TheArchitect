@@ -8,6 +8,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   TypingGoldenSetSchema,
+  TypingGoldenCaseSchema,
+  TYPING_AXES,
   loadTypingGolden,
   typingGoldenStats,
   findDuplicateCaseIds,
@@ -59,6 +61,37 @@ describe('TypingGoldenSetSchema', () => {
   it('requires ontologyVersion', () => {
     const { ontologyVersion, ...noVer } = validSet;
     expect(TypingGoldenSetSchema.safeParse(noVer).success).toBe(false);
+  });
+});
+
+describe('provisionKind axis', () => {
+  it('accepts provisionKind and rejects out-of-ontology values', () => {
+    const ok = { ...baseCase, labels: { provisionKind: 'scope-applicability' } };
+    expect(TypingGoldenCaseSchema.safeParse(ok).success).toBe(true);
+    const bad = { ...baseCase, labels: { provisionKind: 'not-a-kind' } };
+    expect(TypingGoldenCaseSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it('accepts null on provisionKind (deliberately not applicable)', () => {
+    const naCase = { ...baseCase, labels: { provisionKind: null } };
+    expect(TypingGoldenCaseSchema.safeParse(naCase).success).toBe(true);
+  });
+
+  it('TYPING_AXES contains all five axes', () => {
+    expect(TYPING_AXES).toEqual(['normKind', 'bindingness', 'obligationKind', 'partyRole', 'provisionKind']);
+  });
+
+  it('stats count the fifth axis (labeled and not-applicable)', () => {
+    const set: TypingGoldenSet = {
+      ...validSet,
+      cases: [
+        { ...baseCase, labels: { ...baseCase.labels, provisionKind: 'obligation' } },
+        { ...baseCase, caseId: 'dsgvo-art-4', labels: { normKind: 'legislation', provisionKind: null } },
+      ],
+    };
+    const s = typingGoldenStats(set);
+    expect(s.labeledPerAxis.provisionKind).toBe(1);
+    expect(s.notApplicablePerAxis.provisionKind).toBe(1);
   });
 });
 

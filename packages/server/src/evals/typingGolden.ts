@@ -4,12 +4,13 @@
  * Ein Typing-Case = eine Norm-Provision (Paragraph) + menschlich gelabelte
  * Typ-Achsen gegen die geschlossenen E6-Räume (norm-ontology.v1). Anders als
  * das Mapping-Golden (goldenSet.ts: Regulierung→Element) klassifiziert dieses
- * Golden die Provision SELBST — die vier Achsen aus THE-432:
+ * Golden die Provision SELBST — die Achsen aus THE-432 (+ THE-421):
  *
  *   - normKind        (E6 NORM_KIND_IDS)        — Art der Norm
  *   - bindingness     (E6 BINDINGNESS_IDS)      — Verbindlichkeit
  *   - obligationKind  (E6 OBLIGATION_KIND_IDS)  — deontische Kraft (Gebot/Verbot/Erlaubnis)
  *   - partyRole       (E6 PARTY_ROLE_IDS)       — Adressat
+ *   - provisionKind   (E6 PROVISION_KIND_IDS)   — Vorschriftstyp (Scope/Definition/Obligation/…)
  *
  * `null` auf einer Achse = bewusst NICHT anwendbar (z. B. ein Definitions-/
  * Scope-Paragraph trägt keine deontische Kraft). Das ist eine echte Label-
@@ -28,6 +29,7 @@ import { z } from 'zod';
 import {
   isNormKind,
   isObligationKind,
+  isProvisionKind,
   NORM_KIND_IDS,
   BINDINGNESS_IDS,
   OBLIGATION_KIND_IDS,
@@ -49,17 +51,27 @@ const NormKindLabel = z
 const ObligationKindLabel = z
   .union([z.string(), z.null()])
   .refine((v) => v === null || isObligationKind(v), { message: 'obligationKind not in ontology' });
+const ProvisionKindLabel = z
+  .union([z.string(), z.null()])
+  .refine((v) => v === null || isProvisionKind(v), { message: 'provisionKind not in ontology' });
 
 export const TypingLabelsSchema = z.object({
   normKind: NormKindLabel.optional(),
   bindingness: memberOrNull(BINDINGNESS_IDS, 'bindingness').optional(),
   obligationKind: ObligationKindLabel.optional(),
   partyRole: memberOrNull(PARTY_ROLE_IDS, 'partyRoles').optional(),
+  provisionKind: ProvisionKindLabel.optional(),
 });
 
 export type TypingLabels = z.infer<typeof TypingLabelsSchema>;
 export type TypingAxis = keyof TypingLabels;
-export const TYPING_AXES: readonly TypingAxis[] = ['normKind', 'bindingness', 'obligationKind', 'partyRole'];
+export const TYPING_AXES: readonly TypingAxis[] = [
+  'normKind',
+  'bindingness',
+  'obligationKind',
+  'partyRole',
+  'provisionKind',
+];
 
 export const TypingGoldenCaseSchema = z.object({
   caseId: z.string().min(1),
@@ -151,8 +163,8 @@ export interface TypingGoldenStats {
 export function typingGoldenStats(set: TypingGoldenSet): TypingGoldenStats {
   const bySource: Record<string, number> = {};
   const byLanguage: Record<string, number> = {};
-  const labeledPerAxis = { normKind: 0, bindingness: 0, obligationKind: 0, partyRole: 0 };
-  const notApplicablePerAxis = { normKind: 0, bindingness: 0, obligationKind: 0, partyRole: 0 };
+  const labeledPerAxis = { normKind: 0, bindingness: 0, obligationKind: 0, partyRole: 0, provisionKind: 0 };
+  const notApplicablePerAxis = { normKind: 0, bindingness: 0, obligationKind: 0, partyRole: 0, provisionKind: 0 };
   let ambiguous = 0;
   for (const c of set.cases) {
     bySource[c.source] = (bySource[c.source] ?? 0) + 1;
