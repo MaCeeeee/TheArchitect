@@ -11,6 +11,7 @@ import {
   buildTypingReport,
   type TypingEvalCase,
 } from '../evals/typingMetrics';
+import { TYPING_AXES } from '../evals/typingGolden';
 
 const mk = (over: Partial<TypingEvalCase>): TypingEvalCase => ({
   caseId: 'c',
@@ -126,10 +127,29 @@ describe('buildTypingReport', () => {
     ];
     const r = buildTypingReport(cases);
     expect(r.total).toBe(1);
-    expect(Object.keys(r.axes)).toEqual(['normKind', 'bindingness', 'obligationKind', 'partyRole']);
+    expect(Object.keys(r.axes).sort()).toEqual([...TYPING_AXES].sort());
     expect(r.axes.normKind.accuracy.accuracy).toBe(1);
     expect(r.axes.normKind.byComplexityBand.moderate.accuracy).toBe(1);
     // bindingness war nie gelabelt → labeled 0
     expect(r.axes.bindingness.accuracy.labeled).toBe(0);
+  });
+
+  it('buildTypingReport covers all five axes without any change to typingMetrics.ts', () => {
+    const cases = [
+      mk({
+        gold: { provisionKind: 'obligation' },
+        predicted: { provisionKind: 'obligation' }, // ✓
+      }),
+      mk({
+        gold: { provisionKind: 'scope-applicability' },
+        predicted: { provisionKind: 'obligation' }, // ✗
+      }),
+    ];
+    const r = buildTypingReport(cases);
+    expect(Object.keys(r.axes).sort()).toEqual([...TYPING_AXES].sort());
+    expect(r.axes.provisionKind).toBeDefined();
+    // die fünfte Achse misst tatsächlich: eine korrekte Vorhersage zählt, eine falsche nicht
+    expect(r.axes.provisionKind.accuracy.correct).toBe(1);
+    expect(r.axes.provisionKind.accuracy.labeled).toBe(2);
   });
 });
