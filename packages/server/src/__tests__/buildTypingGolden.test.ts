@@ -51,6 +51,61 @@ describe('buildTypingDraft', () => {
   });
 });
 
+describe('buildTypingDraft — stratified selection (targetSize)', () => {
+  // 3 sources, each with 5 de + 5 en cases (30 total) — enough headroom for
+  // a targetSize=12 stratified pull to spread across sources + languages.
+  const mixedRegulations = ['dsgvo', 'nis2', 'aiact'].flatMap((source) =>
+    ['de', 'en'].flatMap((language) =>
+      Array.from({ length: 5 }, (_, i) => reg(source, `art-${i}`, { language }))
+    )
+  );
+
+  // 5 sources, each with 10 de + 10 en cases (100 total) — headroom for
+  // seed-comparison pulls (targetSize=10) to plausibly differ per seed.
+  const manyRegs = Array.from({ length: 5 }, (_, s) => `src${s}`).flatMap((source) =>
+    ['de', 'en'].flatMap((language) =>
+      Array.from({ length: 10 }, (_, i) => reg(source, `art-${i}`, { language }))
+    )
+  );
+
+  it('stratifies across sources and languages up to a target size', () => {
+    const draft = buildTypingDraft(mixedRegulations, { targetSize: 12 });
+    expect(draft.cases).toHaveLength(12);
+    expect(new Set(draft.cases.map((c) => c.source)).size).toBeGreaterThanOrEqual(3);
+    expect(new Set(draft.cases.map((c) => c.language))).toEqual(new Set(['de', 'en']));
+  });
+
+  it('is deterministic for the same seed', () => {
+    const ids = (o: object) => buildTypingDraft(manyRegs, o).cases.map((c) => c.caseId);
+    expect(ids({ targetSize: 10, seed: 42 })).toEqual(ids({ targetSize: 10, seed: 42 }));
+  });
+
+  it('produces a different selection for a different seed', () => {
+    const ids = (s: number) => buildTypingDraft(manyRegs, { targetSize: 10, seed: s }).cases.map((c) => c.caseId);
+    expect(ids(1)).not.toEqual(ids(2));
+  });
+
+  it('takes everything when no targetSize is given (unchanged behaviour)', () => {
+    const eligible = mixedRegulations.filter((r) => r.fullText.length >= 50).length;
+    expect(buildTypingDraft(mixedRegulations).cases).toHaveLength(eligible);
+  });
+
+  it('does not exceed available cases when targetSize is larger than the input', () => {
+    const draft = buildTypingDraft(mixedRegulations, { targetSize: 9999 });
+    expect(draft.cases.length).toBeLessThanOrEqual(mixedRegulations.length);
+    expect(draft.cases.length).toBe(mixedRegulations.length);
+  });
+
+  it('does not pad with duplicates when the round-robin cannot fill the quota', () => {
+    // Only 2 sources, 3 cases total — asking for 12 must yield exactly those 3,
+    // no repeats.
+    const scarce = [reg('dsgvo', 'art-5'), reg('dsgvo', 'art-6'), reg('nis2', 'art-21', { language: 'en' })];
+    const draft = buildTypingDraft(scarce, { targetSize: 12 });
+    expect(draft.cases).toHaveLength(3);
+    expect(new Set(draft.cases.map((c) => c.caseId)).size).toBe(3);
+  });
+});
+
 describe('renderTypingWorksheet', () => {
   const set: TypingGoldenSet = {
     version: 'v1-draft',
