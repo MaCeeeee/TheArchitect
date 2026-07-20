@@ -4,6 +4,7 @@
  * Run: cd packages/server && npx jest src/__tests__/prelabelTyping.test.ts
  */
 import { buildPrelabelUserPrompt, parsePrelabelLabels } from '../scripts/prelabel-typing';
+import { TYPING_AXES } from '../evals/typingGolden';
 
 describe('buildPrelabelUserPrompt', () => {
   const prov = {
@@ -25,6 +26,16 @@ describe('buildPrelabelUserPrompt', () => {
     expect(p).toContain('controller');
     expect(p).toContain('Personenbezogene Daten müssen');
     expect(p).toContain('"na"');
+  });
+
+  it('lists all five axes in the prompt', () => {
+    const p = buildPrelabelUserPrompt(prov);
+    for (const axis of TYPING_AXES) expect(p).toContain(axis);
+    expect(p).toContain('scope-applicability'); // provisionKind options are present
+  });
+
+  it('does not hardcode an axis count in the prompt text', () => {
+    expect(buildPrelabelUserPrompt(prov)).not.toContain('four axes');
   });
 });
 
@@ -69,5 +80,16 @@ describe('parsePrelabelLabels', () => {
   it('kaputtes/leeres JSON → alle Achsen offen, kein Throw', () => {
     expect(() => parsePrelabelLabels('not json at all')).not.toThrow();
     expect(parsePrelabelLabels('not json').labels).toEqual({});
+  });
+
+  it('drops an out-of-vocabulary provisionKind and leaves the axis open', () => {
+    const { labels, dropped } = parsePrelabelLabels('{"provisionKind":"bogus"}');
+    expect(labels.provisionKind).toBeUndefined();
+    expect(dropped).toContain('provisionKind');
+  });
+
+  it('accepts a valid provisionKind and maps "na" to null', () => {
+    expect(parsePrelabelLabels('{"provisionKind":"obligation"}').labels.provisionKind).toBe('obligation');
+    expect(parsePrelabelLabels('{"provisionKind":"na"}').labels.provisionKind).toBeNull();
   });
 });

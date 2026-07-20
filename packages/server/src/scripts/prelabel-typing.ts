@@ -27,6 +27,7 @@ import {
   NORM_ONTOLOGY,
   isNormKind,
   isObligationKind,
+  isProvisionKind,
   BINDINGNESS_IDS,
   PARTY_ROLE_IDS,
 } from '@thearchitect/shared';
@@ -50,6 +51,7 @@ const AXIS_VALIDATOR: Record<TypingAxis, (v: string) => boolean> = {
   bindingness: (v) => BINDINGNESS_SET.has(v),
   obligationKind: isObligationKind,
   partyRole: (v) => PARTY_ROLE_SET.has(v),
+  provisionKind: isProvisionKind,
 };
 
 // ─── Prompt (rein, testbar) ─────────────────────────────────────
@@ -64,23 +66,40 @@ function axisList(entries: ReadonlyArray<{ id: string; label: string }>): string
   return entries.map((e) => `${e.id} (${e.label})`).join(', ');
 }
 
+// Achse → E6-Facette. Zusammen mit TYPING_AXES (Achsenliste) und AXIS_VALIDATOR
+// (Membership) bilden diese drei Records die komplette Kontrakt-Oberfläche
+// einer Achse — alle drei sind `Record<TypingAxis, …>`, der Compiler zwingt
+// also bei jeder neuen Achse zu allen drei Stellen. Der Prompt unten wird aus
+// TYPING_AXES + dieser Facetten-Map GENERIERT statt Zeile für Zeile
+// handgeschrieben — genau die Parallel-Pflege (vier Achsen im Prosa-Text,
+// fünf im Schema) war der Drift, den dieser Task beheben soll.
+function axisFacetOf(
+  ontology: typeof NORM_ONTOLOGY
+): Record<TypingAxis, ReadonlyArray<{ id: string; label: string }>> {
+  return {
+    normKind: ontology.normKinds,
+    bindingness: ontology.bindingness,
+    obligationKind: ontology.obligationKinds,
+    partyRole: ontology.partyRoles,
+    provisionKind: ontology.provisionKinds,
+  };
+}
+
 /** Baut den User-Prompt mit den geschlossenen E6-Listen + der Provision. Rein. */
 export function buildPrelabelUserPrompt(
   provision: Pick<TypingGoldenCase, 'source' | 'paragraphNumber' | 'title' | 'fullText' | 'language'>,
   ontology = NORM_ONTOLOGY
 ): string {
+  const facet = axisFacetOf(ontology);
   return [
-    'Classify this provision on four axes. Choose ONE id per axis from its list, or "na".',
+    `Classify this provision on ${TYPING_AXES.length} axes. Choose ONE id per axis from its list, or "na".`,
     '',
-    `normKind: ${axisList(ontology.normKinds)}`,
-    `bindingness: ${axisList(ontology.bindingness)}`,
-    `obligationKind: ${axisList(ontology.obligationKinds)}`,
-    `partyRole: ${axisList(ontology.partyRoles)}`,
+    ...TYPING_AXES.map((axis) => `${axis}: ${axisList(facet[axis])}`),
     '',
     `Provision [${provision.source} ${provision.paragraphNumber}${provision.title ? ' — ' + provision.title : ''}] (${provision.language}):`,
     provision.fullText,
     '',
-    'Respond with exactly: {"normKind": "...", "bindingness": "...", "obligationKind": "...", "partyRole": "..."}',
+    `Respond with exactly: {${TYPING_AXES.map((axis) => `"${axis}": "..."`).join(', ')}}`,
   ].join('\n');
 }
 
