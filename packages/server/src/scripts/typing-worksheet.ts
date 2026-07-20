@@ -2,8 +2,8 @@
  * typing-worksheet — erzeugt aus einem Typing-Golden(-Draft) eine EINZELNE,
  * in sich geschlossene HTML-Datei zum Adjudizieren im Browser.
  *
- * Je Provision: Gesetzestext + vier Dropdowns (normKind / bindingness /
- * obligationKind / partyRole) aus den geschlossenen E6-Räumen. Optionen sind
+ * Je Provision: Gesetzestext + fünf Dropdowns (normKind / bindingness /
+ * obligationKind / partyRole / provisionKind) aus den geschlossenen E6-Räumen. Optionen sind
  * auf vorhandene `labels` VORBELEGT (LLM-Vorschlag adjudizieren); "— (offen)"
  * = noch nicht gelabelt, "n/a (nicht anwendbar)" = bewusst kein Wert (→ null).
  * "Export" liefert ein schema-gültiges Typing-Golden-JSON.
@@ -27,6 +27,7 @@ const AXIS_OPTIONS: Record<TypingAxis, ReadonlyArray<{ id: string; label: string
   bindingness: NORM_ONTOLOGY.bindingness.map((b) => ({ id: b.id, label: b.label })),
   obligationKind: NORM_ONTOLOGY.obligationKinds.map((o) => ({ id: o.id, label: o.label })),
   partyRole: NORM_ONTOLOGY.partyRoles.map((p) => ({ id: p.id, label: p.label })),
+  provisionKind: NORM_ONTOLOGY.provisionKinds.map((k) => ({ id: k.id, label: k.label })),
 };
 
 const AXIS_TITLE: Record<TypingAxis, string> = {
@@ -34,6 +35,7 @@ const AXIS_TITLE: Record<TypingAxis, string> = {
   bindingness: 'Bindingness',
   obligationKind: 'Obligation',
   partyRole: 'PartyRole',
+  provisionKind: 'ProvisionKind',
 };
 
 function optionsHtml(axis: TypingAxis, current: string | null | undefined): string {

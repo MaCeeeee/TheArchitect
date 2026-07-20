@@ -70,13 +70,21 @@ describe('renderTypingWorksheet', () => {
     ],
   };
 
-  it('rendert self-contained HTML mit 4 Achsen-Dropdowns', () => {
+  it('rendert self-contained HTML mit 5 Achsen-Dropdowns', () => {
     const html = renderTypingWorksheet(set);
     expect(html).toContain('<!doctype html>');
     expect(html).toContain('ax_0_normKind');
     expect(html).toContain('ax_0_bindingness');
     expect(html).toContain('ax_0_obligationKind');
     expect(html).toContain('ax_0_partyRole');
+    expect(html).toContain('ax_0_provisionKind');
+  });
+
+  it('renders a provisionKind dropdown with the ontology options', () => {
+    const html = renderTypingWorksheet(set);
+    expect(html).toContain('ProvisionKind'); // the axis title
+    expect(html).toContain('scope-applicability'); // an option id
+    expect(html).toContain('enforcement-supervision');
   });
 
   it('belegt vorhandene Labels vor (Adjudikation) + n/a-Option', () => {
