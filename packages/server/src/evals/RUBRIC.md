@@ -287,3 +287,125 @@ gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob al
 
 - **B-v1 (2026-07-20):** Erstfassung (THE-421, Slice G-0/G). Fünf Achsen inkl. der neuen
   `provisionKind`; Abgrenzungsregeln B3; Blindheits-Regel B5.
+
+---
+
+# Teil C — Beziehungen zwischen Normen (Cross-Norm Relations)
+
+> **Abgrenzung:** Teil B klassifiziert eine **einzelne** Provision. Teil C beurteilt ein **Paar** von
+> Provisions aus **zwei verschiedenen Gesetzen**: Steht zwischen ihnen eine Beziehung — und wenn ja,
+> welche und in welche Richtung? Verfahrensregeln aus § 4 (Mehrdeutigkeit) und § 7 (Doppel-Labeling,
+> Freeze) gelten unverändert. Golden-Sets: `golden/relations.v*.json`, validiert von `relationsGolden.ts`.
+
+## C1. Die Label-Frage
+
+> *„Sagt eine dieser beiden Provisions etwas über die andere aus?"*
+
+Nicht gefragt ist, ob beide **inhaltlich ähnlich** sind oder dasselbe Ziel verfolgen. Gefragt ist, ob
+zwischen ihnen ein **normatives Verhältnis** besteht — verdrängt, konkretisiert, setzt einen Parameter,
+erkennt Gleichwertigkeit an, legt aus. Ähnlichkeit ohne solches Verhältnis ist **keine Beziehung**
+(siehe C4 — das ist die wichtigste Regel dieses Teils).
+
+## C2. Die drei Zustände
+
+| Zustand | Bedeutung |
+|---|---|
+| **offen** (kein Wert) | noch nicht entschieden — im fertigen Satz die Ausnahme |
+| **„keine Beziehung"** (`null`) | **geprüft und verneint.** Die Negativ-Klasse ist Pflichtbestandteil: ohne sie lässt sich nicht messen, ob das Verfahren auch richtig ablehnt |
+| **Beziehungsart + Richtung** | gelabelt |
+
+## C3. Die Richtungs-Regel (verbindlich)
+
+Jedes Paar wird intern sortiert gespeichert, damit es eine stabile Identität hat. **Diese Sortierung
+trägt keine juristische Bedeutung.** Die Richtung ist ein eigenes Feld:
+
+- **`a-to-b`** — die Aussage geht **von A aus über B**. Das Label benennt, was A gegenüber B tut.
+- **`b-to-a`** — umgekehrt.
+
+Beispiel: „DORA verdrängt NIS2 für Finanzunternehmen." Steht DORA als A, ist das
+`PREVAILS_OVER` mit `a-to-b`. Steht DORA als B, ist dieselbe Aussage `PREVAILS_OVER` mit `b-to-a` —
+**nicht** die Umkehrart. Nur zwei der acht Arten haben überhaupt eine deklarierte Umkehrung; für die
+übrigen sechs ist das Richtungsfeld der einzige Weg, die Aussage korrekt auszudrücken.
+
+Wer die Richtung nicht sicher bestimmen kann, wählt **„keine Beziehung"** — nicht raten.
+
+## C4. Die entscheidende Abgrenzung: parallele Pflicht ≠ Beziehung
+
+**Das ist der Fall, bei dem am häufigsten falsch gelabelt wird.**
+
+DSGVO Art. 32 („Sicherheit der Verarbeitung") und NIS2 Art. 21 („Risikomanagementmaßnahmen im Bereich
+der Cybersicherheit") verlangen beide technische und organisatorische Sicherheitsmaßnahmen. Es liegt
+nahe, hier eine Beziehung zu sehen. **Das ist falsch.**
+
+Keine der beiden Normen sagt etwas über die andere aus: Keine verdrängt die andere, keine konkretisiert
+die andere, keine erklärt die Erfüllung der einen zur Erfüllung der anderen. Es sind **zwei
+eigenständige Pflichten aus zwei Regimen**, die zufällig dasselbe Schutzziel verfolgen. Korrektes
+Label: **„keine Beziehung"**.
+
+> **Warum das trotzdem wichtig ist:** Dass ein Unternehmen beide Pflichten mit **einer** Maßnahme
+> erfüllen kann, ist richtig — aber das ist eine Aussage über die **Umsetzung**, nicht über das
+> Verhältnis der Normen. Diese Zusammenführung ist Aufgabe der Pflichten-Harmonisierung, die auf
+> diesem Prüfsatz aufbaut. Würden wir „ähnliche Pflicht" hier als Beziehung labeln, vermischten wir
+> zwei Ebenen und der Prüfsatz würde die Harmonisierung nicht mehr absichern, sondern vorwegnehmen.
+
+**Test:** *Verweist eine der beiden Provisions — ausdrücklich oder der Sache nach — auf die andere
+Norm?* Wenn nein: keine Beziehung, egal wie ähnlich die Inhalte sind.
+
+## C5. Entscheidungsregeln je Beziehungsart
+
+Nur die acht **abgeleiteten** Arten stehen zur Wahl. Die vier metadatenbasierten (`AMENDS`,
+`CONSOLIDATES`, `REPEALS`, `CITES`) stammen aus amtlichen Dokument-Metadaten, werden nie aus dem Text
+erschlossen und tauchen hier gar nicht erst als Option auf.
+
+| Art | Kriterium | Erkennungszeichen |
+|---|---|---|
+| `PREVAILS_OVER` / `DEROGATED_BY` | **Verdrängung** (lex specialis): in ihrem Anwendungsbereich tritt die eine Norm an die Stelle der anderen | „gilt nicht, soweit…", „unbeschadet", sektorspezifische Vorrangklauseln |
+| `CONCRETIZES` | die eine Norm **füllt eine allgemeine Pflicht der anderen inhaltlich aus** — die andere gilt weiter | „nähere Bestimmungen zu…", spezielle Regeln innerhalb eines fortbestehenden Rahmens |
+| `SETS_PARAMETER` | die eine Norm **fixiert einen konkreten Wert/Schwellenwert**, den die andere voraussetzt | Fristen, Schwellen, technische Kennzahlen |
+| `RECOGNIZES_EQUIVALENCE` | Erfüllung der einen **gilt als** Erfüllung der anderen | „gilt als erfüllt, wenn…", Anerkennungsklauseln |
+| `INTERPRETS` | die eine Norm **legt einen Begriff der anderen aus** | „im Sinne von Artikel X der Verordnung Y" |
+| `TRANSPOSES` | Umsetzung einer Richtlinie in nationales Recht | nationale Umsetzungsgesetze |
+| `IMPLEMENTS` | Durchführungsrechtsakt zu einem Basisrechtsakt | „Durchführungsverordnung zu…" |
+
+**Die zwei Abgrenzungen, an denen Prüfer auseinandergehen:**
+
+1. **Verdrängung vs. Konkretisierung.** Test: *Gilt die andere Norm danach noch?* Hört sie in diesem
+   Bereich auf zu gelten → Verdrängung. Gilt sie weiter, nur genauer ausgefüllt → `CONCRETIZES`.
+   DORA gegenüber NIS2 für Finanzunternehmen: Verdrängung. ePrivacy gegenüber DSGVO: Konkretisierung
+   (die DSGVO gilt weiter).
+2. **Konkretisierung vs. Parameter.** Test: *Wird ein konkreter Wert festgelegt oder eine Pflicht
+   inhaltlich ausgefüllt?* Eine Zahl, Frist oder Schwelle → `SETS_PARAMETER`. Materielle Ausgestaltung
+   ohne festen Wert → `CONCRETIZES`.
+
+## C6. Erwartete Einigkeit — und warum die Zahlen anders zu lesen sind
+
+Der Satz ist **stark schief**: die große Mehrheit der Paare hat keine Beziehung. Zwei Prüfer, die
+beide meistens „keine Beziehung" sagen, erreichen leicht 90 % Rohübereinstimmung, ohne dass die
+Aufgabe klar definiert wäre. Deshalb:
+
+- Maßgeblich ist das **zufallskorrigierte Maß**, nie die Rohübereinstimmung.
+- Ein **Einzelwert je Beziehungsart** wird nur ab **n ≥ 10** ausgewiesen; darunter ist er statistisch
+  bedeutungslos und der Bericht markiert die Art ausdrücklich als zu dünn. Die Entscheidung trägt
+  dann der Gesamtwert.
+- „Keine Beziehung" ist keine Art und bekommt keinen Einzelwert — zählt aber voll in den Gesamtwert.
+
+Fällt der Gesamtwert unter 0,6, ist **C4/C5 zu schärfen**, nicht das Modell zu tunen (§ 7.4).
+
+## C7. Doppel-Labeling
+
+§ 7 und die Blindheits-Regel aus **B5** gelten unverändert: Der zweite Prüfer sieht **weder** den
+maschinellen Vorschlag **noch** Notizen oder Bearbeiter des ersten Durchgangs. `relations-kappa blind`
+entfernt Beziehungsart, Richtung und jede Spur des ersten Durchgangs und lässt nur die beiden
+Gesetzestexte stehen.
+
+## C8. Format
+
+Pro Fall: zwei Provisions (A und B, sortiert gespeichert, aus **verschiedenen** Gesetzen) + optionale
+Beziehungsart + Richtung + `ambiguous`/`notes`. Die Kopplung ist erzwungen: Richtung nur bei gesetzter
+Art, keine Richtung bei „keine Beziehung". § 8 gilt sinngemäß — **ein eingefrorener Satz wird nie
+editiert**.
+
+## C9. Changelog Teil C
+
+- **C-v1 (2026-07-20):** Erstfassung (THE-421, Slice G). Richtungs-Regel C3; die Parallel-Pflicht-
+  Abgrenzung C4 als Kernregel; Entscheidungsregeln C5; Lesehinweis zur Schieflage C6.
