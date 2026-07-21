@@ -19,7 +19,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-3",
@@ -31,12 +31,12 @@
       "jurisdiction": "EU",
       "labels": {
         "normKind": "legislation",
-        "bindingness": "binding",
+        "bindingness": null,
         "obligationKind": null,
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-2",
@@ -53,7 +53,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-3",
@@ -70,7 +70,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-2",
@@ -87,7 +87,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-3",
@@ -104,7 +104,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-2",
@@ -121,7 +121,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-3",
@@ -138,7 +138,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-2",
@@ -155,7 +155,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-3",
@@ -172,7 +172,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-2",
@@ -189,7 +189,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-3",
@@ -206,7 +206,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-2",
@@ -223,7 +223,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-3",
@@ -237,10 +237,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": null,
-        "partyRole": "controller",
+        "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-2",
@@ -257,7 +257,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-3",
@@ -271,10 +271,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": null,
-        "partyRole": "controller",
+        "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-3",
@@ -288,10 +288,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "controller",
+        "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-2",
@@ -308,7 +308,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-2",
@@ -325,7 +325,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-3",
@@ -339,10 +339,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
+        "partyRole": "deployer",
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-2",
@@ -359,7 +359,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-3",
@@ -373,10 +373,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
-        "provisionKind": "scope-applicability"
+        "partyRole": "deployer",
+        "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-45",
@@ -393,7 +393,7 @@
         "partyRole": null,
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-16",
@@ -410,7 +410,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-22",
@@ -427,7 +427,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-23",
@@ -441,10 +441,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "distributor",
+        "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-16",
@@ -457,11 +457,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": null,
-        "partyRole": null,
-        "provisionKind": "other"
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-11",
@@ -478,7 +478,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-67",
@@ -492,10 +492,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": null,
-        "provisionKind": "other"
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-41",
@@ -512,7 +512,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-41",
@@ -529,7 +529,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-59",
@@ -543,10 +543,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "provider",
-        "provisionKind": "other"
+        "partyRole": "controller",
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-22",
@@ -559,11 +559,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
-        "partyRole": "data_subject",
+        "obligationKind": "obligation",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-9",
@@ -577,10 +577,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-88",
@@ -593,11 +593,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
+        "obligationKind": null,
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-17",
@@ -611,10 +611,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "deployer",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-47",
@@ -628,10 +628,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
+        "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-12",
@@ -648,7 +648,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-44",
@@ -663,9 +663,9 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "procedural"
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-90",
@@ -680,9 +680,9 @@
         "bindingness": "binding",
         "obligationKind": "permission",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-11",
@@ -696,10 +696,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "deployer",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-93",
@@ -713,10 +713,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": null,
-        "partyRole": null,
+        "partyRole": "supervisory_authority",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-47",
@@ -731,9 +731,9 @@
         "bindingness": "binding",
         "obligationKind": "permission",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-57",
@@ -750,7 +750,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-43",
@@ -767,7 +767,7 @@
         "partyRole": null,
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-86",
@@ -780,11 +780,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
-        "partyRole": "deployer",
+        "obligationKind": "permission",
+        "partyRole": "data_subject",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-20",
@@ -796,12 +796,12 @@
       "jurisdiction": "DE",
       "labels": {
         "normKind": "legislation",
-        "bindingness": "binding",
+        "bindingness": "binding-for-agencies",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-68",
@@ -816,9 +816,9 @@
         "bindingness": "binding",
         "obligationKind": null,
         "partyRole": null,
-        "provisionKind": "other"
+        "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-13",
@@ -835,7 +835,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-6",
@@ -849,10 +849,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "provider",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-4",
@@ -869,7 +869,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-51",
@@ -886,7 +886,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-48",
@@ -901,9 +901,9 @@
         "bindingness": "binding",
         "obligationKind": "prohibition",
         "partyRole": "controller",
-        "provisionKind": "obligation"
+        "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-35",
@@ -920,7 +920,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-49",
@@ -937,7 +937,7 @@
         "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-18",
@@ -951,10 +951,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": null,
-        "provisionKind": "procedural"
+        "partyRole": "supervisory_authority",
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-32",
@@ -968,10 +968,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "permission",
-        "partyRole": null,
-        "provisionKind": "other"
+        "partyRole": "provider",
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-14",
@@ -984,11 +984,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
+        "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-60",
@@ -1005,7 +1005,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-27",
@@ -1020,9 +1020,9 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "provider",
-        "provisionKind": "procedural"
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-42",
@@ -1039,7 +1039,7 @@
         "partyRole": "provider",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-75",
@@ -1056,7 +1056,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-26",
@@ -1070,10 +1070,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "deployer",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-56",
@@ -1086,11 +1086,11 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
+        "obligationKind": null,
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-6",
@@ -1104,10 +1104,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "deployer",
+        "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-11",
@@ -1124,7 +1124,7 @@
         "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-30",
@@ -1139,9 +1139,9 @@
         "bindingness": "binding",
         "obligationKind": "permission",
         "partyRole": "supervisory_authority",
-        "provisionKind": "procedural"
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-53",
@@ -1158,7 +1158,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-15",
@@ -1175,7 +1175,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-de-art-15",
@@ -1190,9 +1190,9 @@
         "bindingness": "binding",
         "obligationKind": "permission",
         "partyRole": "provider",
-        "provisionKind": "procedural"
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-de-art-36",
@@ -1206,10 +1206,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": null,
+        "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "cra-en-art-43",
@@ -1223,10 +1223,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
+        "partyRole": "deployer",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-en-art-21",
@@ -1243,7 +1243,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-de-art-55",
@@ -1260,7 +1260,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-en-art-34",
@@ -1277,7 +1277,7 @@
         "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dora-art-1",
@@ -1294,7 +1294,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "dsgvo-art-35",
@@ -1311,7 +1311,7 @@
         "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "nis2-art-39",
@@ -1325,10 +1325,10 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": null,
-        "partyRole": null,
+        "partyRole": "supervisory_authority",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "ai-act-de-art-20",
@@ -1345,7 +1345,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     },
     {
       "caseId": "lksg-16",
@@ -1362,7 +1362,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:claude-opus-4-8"
+      "annotator": "llm-prelabel:claude-haiku-4-5-20251001"
     }
   ]
 }
