@@ -119,3 +119,92 @@ describe('buildPrelabelUserPrompt — Rubrik-Regeln im Prompt', () => {
     expect(p).toContain('not itself a');
   });
 });
+
+// ─── Provider-Unabhängigkeit (THE-421) ──────────────────────────
+//
+// Zweiter Prüfer muss aus einem ANDEREN Modell-Haus kommen, sonst ist der Kappa
+// durch geteilte Trainingsherkunft aufgebläht. Was dabei NICHT variieren darf:
+// der Prompt. Gemessen wird Prüfer-Unabhängigkeit, nicht Prompt-Unterschied.
+import { runTypingPrelabel } from '../scripts/prelabel-typing';
+import type { RaterClient, RaterRequest } from '../evals/raterClient';
+import type { TypingGoldenSet } from '../evals/typingGolden';
+
+function recorder(provider: 'anthropic' | 'openrouter', model: string, reply: string) {
+  const requests: RaterRequest[] = [];
+  const client: RaterClient = {
+    provider,
+    model,
+    async complete(req) {
+      requests.push(req);
+      return { text: reply, inputTokens: 3, outputTokens: 5 };
+    },
+  };
+  return { client, requests };
+}
+
+const draft: TypingGoldenSet = {
+  version: 'v1',
+  frozen: false,
+  ontologyVersion: 'e6-1.6.0',
+  rubricRef: 'RUBRIC.md',
+  cases: [
+    {
+      caseId: 'dsgvo-art-5',
+      source: 'dsgvo',
+      paragraphNumber: 'Art. 5',
+      title: 'Grundsätze',
+      fullText: 'Personenbezogene Daten müssen auf rechtmäßige Weise und in einer für die betroffene Person nachvollziehbaren Weise verarbeitet werden.',
+      language: 'de',
+      jurisdiction: 'eu',
+      labels: {},
+    },
+  ],
+};
+
+describe('runTypingPrelabel — Provider-Austausch ändert den Prompt nicht', () => {
+  it('hands byte-identical system and user prompts to both providers', async () => {
+    const a = recorder('anthropic', 'claude-haiku-4-5-20251001', '{"normKind":"legislation"}');
+    const b = recorder('openrouter', 'openai/gpt-5', '{"normKind":"legislation"}');
+    await runTypingPrelabel(draft, a.client);
+    await runTypingPrelabel(draft, b.client);
+    expect(a.requests).toHaveLength(1);
+    expect(b.requests).toHaveLength(1);
+    expect(a.requests[0].system).toBe(b.requests[0].system);
+    expect(a.requests[0].user).toBe(b.requests[0].user);
+    expect(a.requests[0].maxTokens).toBe(b.requests[0].maxTokens);
+  });
+
+  it('stamps the provider into the annotator so a pass is attributable from the file alone', async () => {
+    const a = recorder('anthropic', 'claude-haiku-4-5-20251001', '{"normKind":"legislation"}');
+    const b = recorder('openrouter', 'openai/gpt-5', '{"normKind":"legislation"}');
+    const ra = await runTypingPrelabel(draft, a.client);
+    const rb = await runTypingPrelabel(draft, b.client);
+    expect(ra.cases[0].annotator).toBe('llm-prelabel:anthropic:claude-haiku-4-5-20251001');
+    expect(rb.cases[0].annotator).toBe('llm-prelabel:openrouter:openai/gpt-5');
+    expect(ra.cases[0].annotator).not.toBe(rb.cases[0].annotator);
+  });
+
+  it('accumulates token usage and OOV drops from the client responses', async () => {
+    const a = recorder('anthropic', 'claude-haiku-4-5-20251001', '{"normKind":"invented"}');
+    const r = await runTypingPrelabel(draft, a.client);
+    expect(r.inputTokens).toBe(3);
+    expect(r.outputTokens).toBe(5);
+    expect(r.droppedTotal).toBe(1);
+  });
+});
+
+// GPT-5 antwortet häufiger in einem Markdown-Codeblock als Claude. Der Parser
+// muss das aushalten — der Prompt wird dafür NICHT aufgeweicht.
+describe('parsePrelabelLabels — OpenAI-typische Antwortformen', () => {
+  it('parses a fenced ```json block', () => {
+    const fenced = '```json\n{"normKind":"legislation","provisionKind":"obligation"}\n```';
+    const r = parsePrelabelLabels(fenced);
+    expect(r.labels.normKind).toBe('legislation');
+    expect(r.labels.provisionKind).toBe('obligation');
+  });
+
+  it('parses a fenced block with prose around it', () => {
+    const wrapped = 'Here is my answer:\n\n```json\n{"normKind":"legislation"}\n```\n\nHope that helps.';
+    expect(parsePrelabelLabels(wrapped).labels.normKind).toBe('legislation');
+  });
+});

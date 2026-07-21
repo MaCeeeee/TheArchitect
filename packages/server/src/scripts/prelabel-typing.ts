@@ -15,6 +15,19 @@
  *                              --out src/evals/golden/typing.dsgvo.prelabeled.json
  *   # optional: ANTHROPIC_MODEL überschreibt das Default (Instruct-Klasse).
  *
+ * ZWEITER PRÜFER AUS EINEM ANDEREN HAUS (THE-421): Regel 1 oben ist nur ein
+ * Caveat, solange beide Durchgänge aus derselben Modell-Familie kommen — für
+ * das Freeze-Gate (Kappa >= 0,6) reicht das nicht, weil geteilte
+ * Trainingsherkunft die Übereinstimmung aufbläht. Zweiter Durchgang deshalb:
+ *
+ *   export OPENROUTER_API_KEY=sk-or-...
+ *   npm run typing:prelabel -- --provider openrouter \
+ *                              --in src/evals/golden/typing.dsgvo.draft.json \
+ *                              --out src/evals/golden/typing.dsgvo.openrouter.json
+ *
+ * Der Prompt ist in beiden Durchgängen Byte-identisch (siehe raterClient) —
+ * gemessen wird Prüfer-Unabhängigkeit, nicht Prompt-Unterschied.
+ *
  * Instruct-Default (nicht Thinking): Paper §5 — Instruct schlägt Thinking bei
  * Term Typing durchgängig (Output-Disziplin > Reasoning).
  *
@@ -22,7 +35,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import Anthropic from '@anthropic-ai/sdk';
+import {
+  annotatorTag,
+  createRaterClient,
+  resolveRaterConfig,
+  type RaterClient,
+} from '../evals/raterClient';
 import {
   NORM_ONTOLOGY,
   isNormKind,
@@ -39,7 +57,8 @@ import {
   type TypingAxis,
 } from '../evals/typingGolden';
 
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+// Modell + Provider kommen aus raterClient (RATER_DEFAULT_MODEL.anthropic ist
+// weiterhin claude-haiku-4-5-20251001) — hier steht bewusst kein zweites Default.
 const MAX_TOKENS = 400;
 
 // ─── Membership pro Achse (O(1), E6 als einzige Quelle) ─────────
@@ -177,10 +196,45 @@ export function parsePrelabelLabels(text: string): ParsedPrelabel {
 
 // ─── API-Glue ───────────────────────────────────────────────────
 
-function getClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY ist nicht gesetzt.');
-  return new Anthropic({ apiKey });
+export interface TypingPrelabelResult {
+  cases: TypingGoldenCase[];
+  inputTokens: number;
+  outputTokens: number;
+  droppedTotal: number;
+}
+
+/**
+ * Der eigentliche Prelabel-Lauf — Client wird HEREINGEREICHT, nicht hier
+ * gebaut. Das trennt zwei Dinge, die vorher verklebt waren: welches Haus
+ * antwortet (Client) und was gefragt wird (dieser Prompt). Der Prompt hier ist
+ * dadurch beweisbar unabhängig vom Provider — genau das prüft der
+ * Prompt-Identitäts-Test, und genau darauf beruht die Aussage, dass der Kappa
+ * Prüfer-Unabhängigkeit misst und nicht Prompt-Unterschiede.
+ */
+export async function runTypingPrelabel(
+  draft: { cases: TypingGoldenCase[] },
+  client: RaterClient,
+  onProgress?: (done: number, total: number) => void
+): Promise<TypingPrelabelResult> {
+  const annotator = annotatorTag({ provider: client.provider, model: client.model });
+  let inputTokens = 0;
+  let outputTokens = 0;
+  let droppedTotal = 0;
+  const cases: TypingGoldenCase[] = [];
+  for (const [i, c] of draft.cases.entries()) {
+    const res = await client.complete({
+      system: PRELABEL_SYSTEM,
+      user: buildPrelabelUserPrompt(c),
+      maxTokens: MAX_TOKENS,
+    });
+    const { labels, dropped } = parsePrelabelLabels(res.text);
+    droppedTotal += dropped.length;
+    inputTokens += res.inputTokens;
+    outputTokens += res.outputTokens;
+    cases.push({ ...c, labels, annotator });
+    onProgress?.(i + 1, draft.cases.length);
+  }
+  return { cases, inputTokens, outputTokens, droppedTotal };
 }
 
 async function main(): Promise<void> {
@@ -191,48 +245,43 @@ async function main(): Promise<void> {
   };
   const inPath = arg('--in');
   if (!inPath) {
-    console.error('Usage: typing:prelabel --in <draft.json> [--out <out.json>]');
+    console.error(
+      'Usage: typing:prelabel --in <draft.json> [--out <out.json>] ' +
+        '[--provider anthropic|openrouter] [--model <id>]'
+    );
     process.exitCode = 2;
     return;
   }
-  const outPath = path.resolve(arg('--out') ?? inPath.replace(/\.json$/, '.prelabeled.json'));
-  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
+  const outPath = path.resolve(arg('--out') || inPath.replace(/\.json$/, '.prelabeled.json'));
+  const cfg = resolveRaterConfig(argv);
 
   const draft = TypingGoldenSetSchema.parse(JSON.parse(fs.readFileSync(path.resolve(inPath), 'utf8')));
-  const client = getClient();
+  const client = createRaterClient(cfg);
 
-  let inTok = 0;
-  let outTok = 0;
-  let droppedTotal = 0;
-  const cases: TypingGoldenCase[] = [];
-  for (const [i, c] of draft.cases.entries()) {
-    const userMessage = buildPrelabelUserPrompt(c);
-    const res = await client.messages.create({
-      model,
-      system: PRELABEL_SYSTEM,
-      messages: [{ role: 'user', content: userMessage }],
-      max_tokens: MAX_TOKENS,
-    });
-    const block = res.content.find((b) => b.type === 'text');
-    const text = block && block.type === 'text' ? block.text : '';
-    const { labels, dropped } = parsePrelabelLabels(text);
-    droppedTotal += dropped.length;
-    const usage = (res as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
-    inTok += usage?.input_tokens ?? 0;
-    outTok += usage?.output_tokens ?? 0;
-    cases.push({ ...c, labels, annotator: `llm-prelabel:${model}` });
-    process.stdout.write(`\r[prelabel] ${i + 1}/${draft.cases.length}`);
-  }
+  const { cases, inputTokens, outputTokens, droppedTotal } = await runTypingPrelabel(
+    draft,
+    client,
+    (done, total) => process.stdout.write(`\r[prelabel] ${done}/${total}`)
+  );
 
   const out = { ...draft, version: draft.version, frozen: false as const, cases };
   TypingGoldenSetSchema.parse(out);
   fs.writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
 
+  // Das Leakage-Caveat gilt nur, wenn der Prüfer aus demselben Haus kommt wie
+  // das später getestete Modell. Bei einem Fremd-Haus-Durchgang wäre der
+  // Hinweis schlicht falsch — deshalb providerabhängig.
+  const caveat =
+    cfg.provider === 'anthropic'
+      ? '[prelabel] LEAKAGE-CAVEAT: gleiche Modell-Klasse labelt+wird getestet — im Report vermerken.'
+      : `[prelabel] CROSS-HOUSE pass (${cfg.provider}) — unabhängig vom getesteten Anthropic-Modell.`;
+
   console.log(
-    `\n[prelabel] ${cases.length} Provisions vorgelabelt (${model})\n` +
-      `[prelabel] Tokens: ${inTok} in / ${outTok} out · OOV-Drops: ${droppedTotal}\n` +
+    `\n[prelabel] ${cases.length} Provisions vorgelabelt (${cfg.provider}/${cfg.model})\n` +
+      `[prelabel] Tokens: ${inputTokens} in / ${outputTokens} out · OOV-Drops: ${droppedTotal}\n` +
+      `[prelabel] annotator: ${annotatorTag(cfg)}\n` +
       `[prelabel] → ${outPath}\n` +
-      `[prelabel] LEAKAGE-CAVEAT: gleiche Modell-Klasse labelt+wird getestet — im Report vermerken.\n` +
+      `${caveat}\n` +
       `[prelabel] NEXT: npm run typing:worksheet -- ${path.relative(process.cwd(), outPath)} /tmp/typing-label.html`
   );
 }

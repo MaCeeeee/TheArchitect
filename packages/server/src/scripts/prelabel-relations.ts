@@ -30,15 +30,31 @@
  *                                  --out src/evals/golden/relations.v1.prelabeled.json
  *   # optional: ANTHROPIC_MODEL überschreibt das Default (Instruct-Klasse).
  *
+ * ZWEITER PRÜFER AUS EINEM ANDEREN HAUS (THE-421): Regel 3 bleibt ein bloßes
+ * Caveat, solange beide Durchgänge aus derselben Familie stammen — für das
+ * Freeze-Gate (Kappa >= 0,6) zu wenig. Zweiter Durchgang deshalb:
+ *
+ *   export OPENROUTER_API_KEY=sk-or-...
+ *   npm run relations:prelabel -- --provider openrouter \
+ *                                  --in src/evals/golden/relations.v1.draft.json \
+ *                                  --out src/evals/golden/relations.v1.openrouter.json
+ *
+ * Der Prompt ist in beiden Durchgängen Byte-identisch (siehe raterClient).
+ *
  * Linear: THE-421 (Task 13) · Modell-Muster: prelabel-typing.ts (THE-430)
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import Anthropic from '@anthropic-ai/sdk';
 import { NORM_ONTOLOGY, isInferredRelation } from '@thearchitect/shared';
+import {
+  annotatorTag,
+  createRaterClient,
+  resolveRaterConfig,
+  type RaterClient,
+} from '../evals/raterClient';
 import { RelationsGoldenSetSchema, type RelationsGoldenCase } from '../evals/relationsGolden';
 
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+// Modell + Provider kommen aus raterClient — hier kein zweites Default.
 const MAX_TOKENS = 200;
 
 // ─── Options-Liste: NUR inferred Relationstypen, aus der Ontologie generiert ──
@@ -190,51 +206,41 @@ export function parseRelationLabel(text: string): ParsedRelationLabel {
 
 // ─── API-Glue ───────────────────────────────────────────────────
 
-function getClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY ist nicht gesetzt.');
-  return new Anthropic({ apiKey });
+export interface RelationsPrelabelResult {
+  cases: RelationsGoldenCase[];
+  inputTokens: number;
+  outputTokens: number;
+  droppedTotal: number;
 }
 
-async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
-  const arg = (flag: string): string | undefined => {
-    const i = argv.indexOf(flag);
-    return i !== -1 ? argv[i + 1] : undefined;
-  };
-  const inPath = arg('--in');
-  if (!inPath) {
-    console.error('Usage: relations:prelabel --in <draft.json> [--out <out.json>]');
-    process.exitCode = 2;
-    return;
-  }
-  const outPath = path.resolve(arg('--out') ?? inPath.replace(/\.json$/, '.prelabeled.json'));
-  const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
-
-  const draft = RelationsGoldenSetSchema.parse(JSON.parse(fs.readFileSync(path.resolve(inPath), 'utf8')));
-  const client = getClient();
-
-  let inTok = 0;
-  let outTok = 0;
+/**
+ * Der eigentliche Prelabel-Lauf — Client wird HEREINGEREICHT (siehe
+ * runTypingPrelabel für die ausführliche Begründung): welches Haus antwortet
+ * und was gefragt wird, sind getrennt, damit die Prompt-Identität über beide
+ * Provider hinweg prüfbar ist.
+ */
+export async function runRelationsPrelabel(
+  draft: { cases: RelationsGoldenCase[] },
+  client: RaterClient,
+  onProgress?: (done: number, total: number) => void
+): Promise<RelationsPrelabelResult> {
+  const annotator = annotatorTag({ provider: client.provider, model: client.model });
+  let inputTokens = 0;
+  let outputTokens = 0;
   let droppedTotal = 0;
   const cases: RelationsGoldenCase[] = [];
   for (const [i, c] of draft.cases.entries()) {
-    const userMessage = buildRelationsPrompt(c);
-    const res = await client.messages.create({
-      model,
+    const res = await client.complete({
       system: RELATIONS_PRELABEL_SYSTEM,
-      messages: [{ role: 'user', content: userMessage }],
-      max_tokens: MAX_TOKENS,
+      user: buildRelationsPrompt(c),
+      maxTokens: MAX_TOKENS,
     });
-    const block = res.content.find((b) => b.type === 'text');
-    const text = block && block.type === 'text' ? block.text : '';
-    const { relation, direction, dropped } = parseRelationLabel(text);
+    const { relation, direction, dropped } = parseRelationLabel(res.text);
     if (dropped) droppedTotal += 1;
-    const usage = (res as { usage?: { input_tokens?: number; output_tokens?: number } }).usage;
-    inTok += usage?.input_tokens ?? 0;
-    outTok += usage?.output_tokens ?? 0;
+    inputTokens += res.inputTokens;
+    outputTokens += res.outputTokens;
 
-    const updated: RelationsGoldenCase = { ...c, annotator: `llm-prelabel:${model}` };
+    const updated: RelationsGoldenCase = { ...c, annotator };
     if (relation === null) {
       updated.relation = null;
       delete updated.direction;
@@ -248,18 +254,54 @@ async function main(): Promise<void> {
       delete updated.direction;
     }
     cases.push(updated);
-    process.stdout.write(`\r[prelabel] ${i + 1}/${draft.cases.length}`);
+    onProgress?.(i + 1, draft.cases.length);
   }
+  return { cases, inputTokens, outputTokens, droppedTotal };
+}
+
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const arg = (flag: string): string | undefined => {
+    const i = argv.indexOf(flag);
+    return i !== -1 ? argv[i + 1] : undefined;
+  };
+  const inPath = arg('--in');
+  if (!inPath) {
+    console.error(
+      'Usage: relations:prelabel --in <draft.json> [--out <out.json>] ' +
+        '[--provider anthropic|openrouter] [--model <id>]'
+    );
+    process.exitCode = 2;
+    return;
+  }
+  const outPath = path.resolve(arg('--out') || inPath.replace(/\.json$/, '.prelabeled.json'));
+  const cfg = resolveRaterConfig(argv);
+
+  const draft = RelationsGoldenSetSchema.parse(JSON.parse(fs.readFileSync(path.resolve(inPath), 'utf8')));
+  const client = createRaterClient(cfg);
+
+  const { cases, inputTokens, outputTokens, droppedTotal } = await runRelationsPrelabel(
+    draft,
+    client,
+    (done, total) => process.stdout.write(`\r[prelabel] ${done}/${total}`)
+  );
 
   const out = { ...draft, version: draft.version, frozen: false as const, cases };
   RelationsGoldenSetSchema.parse(out);
   fs.writeFileSync(outPath, JSON.stringify(out, null, 2) + '\n');
 
+  // Regel 3 (LEAKAGE) greift nur beim Durchgang aus demselben Haus.
+  const caveat =
+    cfg.provider === 'anthropic'
+      ? '[prelabel] LEAKAGE-CAVEAT: gleiche Modell-Klasse labelt+wird getestet — im Report vermerken.'
+      : `[prelabel] CROSS-HOUSE pass (${cfg.provider}) — unabhängig vom getesteten Anthropic-Modell.`;
+
   console.log(
-    `\n[prelabel] ${cases.length} Paare vorgelabelt (${model})\n` +
-      `[prelabel] Tokens: ${inTok} in / ${outTok} out · Drops (Metadata/OOV/fehlende Richtung): ${droppedTotal}\n` +
+    `\n[prelabel] ${cases.length} Paare vorgelabelt (${cfg.provider}/${cfg.model})\n` +
+      `[prelabel] Tokens: ${inputTokens} in / ${outputTokens} out · Drops (Metadata/OOV/fehlende Richtung): ${droppedTotal}\n` +
+      `[prelabel] annotator: ${annotatorTag(cfg)}\n` +
       `[prelabel] → ${outPath}\n` +
-      `[prelabel] LEAKAGE-CAVEAT: gleiche Modell-Klasse labelt+wird getestet — im Report vermerken.\n` +
+      `${caveat}\n` +
       `[prelabel] NEXT: npm run relations:worksheet -- ${path.relative(process.cwd(), outPath)} /tmp/relations-label.html`
   );
 }

@@ -146,3 +146,73 @@ describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
     expect(p).not.toContain('REPEALS');
   });
 });
+
+// ─── Provider-Unabhängigkeit (THE-421) ──────────────────────────
+//
+// Gleiche Begründung wie im Typing-Prüfsatz: der zweite Prüfer muss aus einem
+// anderen Modell-Haus kommen, der Prompt darf sich dabei NICHT ändern.
+import { runRelationsPrelabel } from '../scripts/prelabel-relations';
+import type { RaterClient, RaterRequest } from '../evals/raterClient';
+import type { RelationsGoldenSet } from '../evals/relationsGolden';
+
+function recorder(provider: 'anthropic' | 'openrouter', model: string, reply: string) {
+  const requests: RaterRequest[] = [];
+  const client: RaterClient = {
+    provider,
+    model,
+    async complete(req) {
+      requests.push(req);
+      return { text: reply, inputTokens: 7, outputTokens: 2 };
+    },
+  };
+  return { client, requests };
+}
+
+const relDraft: RelationsGoldenSet = {
+  version: 'v1',
+  frozen: false,
+  ontologyVersion: 'e6-1.6.0',
+  rubricRef: 'RUBRIC.md',
+  cases: [pairCase],
+} as RelationsGoldenSet;
+
+describe('runRelationsPrelabel — Provider-Austausch ändert den Prompt nicht', () => {
+  it('hands byte-identical system and user prompts to both providers', async () => {
+    const a = recorder('anthropic', 'claude-haiku-4-5-20251001', '{"relation":"none"}');
+    const b = recorder('openrouter', 'openai/gpt-5', '{"relation":"none"}');
+    await runRelationsPrelabel(relDraft, a.client);
+    await runRelationsPrelabel(relDraft, b.client);
+    expect(a.requests[0].system).toBe(b.requests[0].system);
+    expect(a.requests[0].user).toBe(b.requests[0].user);
+    expect(a.requests[0].maxTokens).toBe(b.requests[0].maxTokens);
+  });
+
+  it('stamps the provider into the annotator', async () => {
+    const b = recorder('openrouter', 'openai/gpt-5', '{"relation":"none"}');
+    const r = await runRelationsPrelabel(relDraft, b.client);
+    expect(r.cases[0].annotator).toBe('llm-prelabel:openrouter:openai/gpt-5');
+    expect(r.cases[0].relation).toBeNull();
+  });
+
+  it('counts drops and tokens from the client responses', async () => {
+    const a = recorder('anthropic', 'claude-haiku-4-5-20251001', '{"relation":"AMENDS","direction":"a-to-b"}');
+    const r = await runRelationsPrelabel(relDraft, a.client);
+    expect(r.droppedTotal).toBe(1);
+    expect(r.inputTokens).toBe(7);
+    expect(r.outputTokens).toBe(2);
+  });
+});
+
+describe('parseRelationLabel — OpenAI-typische Antwortformen', () => {
+  it('parses a fenced ```json block', () => {
+    const r = parseRelationLabel('```json\n{"relation":"CONCRETIZES","direction":"a-to-b"}\n```');
+    expect(r.relation).toBe('CONCRETIZES');
+    expect(r.direction).toBe('a-to-b');
+    expect(r.dropped).toBe(false);
+  });
+
+  it('parses a fenced block surrounded by prose', () => {
+    const r = parseRelationLabel('My assessment:\n```json\n{"relation":"none"}\n```\nThat is all.');
+    expect(r.relation).toBeNull();
+  });
+});
