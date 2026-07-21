@@ -6,6 +6,9 @@
 import {
   rankCandidatePairs,
   selectCandidates,
+  referencesLaw,
+  detectPairReference,
+  selectCandidatesWithReferences,
   type CandidateParagraph,
   type RankedPair,
 } from '../evals/relationsCandidates';
@@ -174,5 +177,236 @@ describe('selectCandidates', () => {
     });
     expect(sel).toHaveLength(1);
     expect(sel[0].bucket).toBe('anchor');
+  });
+});
+
+// ─── Referenz-getriebene Auswahl (THE-433) ───────────────────────────
+//
+// Hintergrund für alles hier drunter: Ein Zwei-Rater-Lauf auf einem rein
+// similarity-gezogenen Set ergab 94% Rohübereinstimmung, aber Kappa 0,212 —
+// 111 von 120 Paaren waren „keine Beziehung". Das ist kein Rater-Problem,
+// sondern ein Auswahl-Problem: Similarity findet THEMENZWILLINGE, und ein
+// Themenzwilling ist nach RUBRIC.md C4 ausdrücklich KEINE Beziehung. Echte
+// Beziehungen stehen dort, wo eine Norm die andere im Text ADRESSIERT.
+// Diese Tests halten genau diese Unterscheidung fest.
+
+function paraWithText(
+  regulationKey: string,
+  source: string,
+  angleDeg: number,
+  fullText: string,
+): CandidateParagraph {
+  return { ...para(regulationKey, source, angleDeg), fullText };
+}
+
+describe('referencesLaw', () => {
+  it('detects a German citation of the GDPR by its regulation number', () => {
+    const hits = referencesLaw(
+      'Diese Verarbeitung erfolgt unbeschadet der Verordnung (EU) 2016/679 des Europäischen Parlaments.',
+      'dsgvo',
+    );
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
+  it('detects the GDPR under its english source variant too (patterns are per law, not per language file)', () => {
+    const hits = referencesLaw('without prejudice to Regulation (EU) 2016/679', 'dsgvo-en');
+    expect(hits.length).toBeGreaterThan(0);
+  });
+
+  it('detects the GDPR by its common name and abbreviation, not only by number', () => {
+    expect(referencesLaw('im Sinne der Datenschutz-Grundverordnung', 'dsgvo').length).toBeGreaterThan(0);
+    expect(referencesLaw('Artikel 6 DSGVO bleibt unberührt', 'dsgvo').length).toBeGreaterThan(0);
+    expect(referencesLaw('as defined in the GDPR', 'dsgvo-en').length).toBeGreaterThan(0);
+  });
+
+  it('does not detect a reference in a text that merely shares the topic', () => {
+    expect(
+      referencesLaw(
+        'Der Verantwortliche trifft geeignete technische und organisatorische Maßnahmen, um ein angemessenes Schutzniveau zu gewährleisten.',
+        'nis2',
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('extracts the pinpointed article from "Article N of Directive (EU) 2022/2555"', () => {
+    const hits = referencesLaw(
+      'means a network and information system as defined in Article 6, point 1, of Directive (EU) 2022/2555;',
+      'nis2',
+    );
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.flatMap((h) => h.articleHints)).toContain('6');
+  });
+
+  it('returns no hits for a source without registered reference patterns', () => {
+    expect(referencesLaw('Verordnung (EU) 2016/679', 'does-not-exist')).toHaveLength(0);
+  });
+});
+
+describe('detectPairReference', () => {
+  const dsgvo32 = paraWithText(
+    'dsgvo:art-32',
+    'dsgvo',
+    10,
+    'Der Verantwortliche und der Auftragsverarbeiter treffen geeignete technische und organisatorische Maßnahmen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten.',
+  );
+  const nis221 = paraWithText(
+    'nis2-de:art-21',
+    'nis2-de',
+    10, // identischer Winkel → Cosine 1.0: maximal ähnlich
+    'Die Mitgliedstaaten stellen sicher, dass wesentliche und wichtige Einrichtungen geeignete technische und organisatorische Risikomanagementmaßnahmen im Bereich der Cybersicherheit ergreifen.',
+  );
+  const doraArt1 = paraWithText(
+    'dora:art-1',
+    'dora',
+    5,
+    'In relation to financial entities identified as essential or important entities pursuant to national rules transposing Article 3 of Directive (EU) 2022/2555, this Regulation shall be considered a sector-specific Union legal act.',
+  );
+  const nis2Art4 = paraWithText(
+    'nis2:art-4',
+    'nis2',
+    170, // bewusst UNÄHNLICH zu dora:art-1
+    'Where sector-specific Union legal acts require essential or important entities to adopt cybersecurity risk-management measures, those provisions shall apply.',
+  );
+
+  function pairOf(a: CandidateParagraph, b: CandidateParagraph): RankedPair {
+    const [x, y] = a.regulationKey < b.regulationKey ? [a, b] : [b, a];
+    return { a: x, b: y, score: 0.5 };
+  }
+
+  // DAS ist der Kern: RUBRIC.md C4. DSGVO Art. 32 und NIS2 Art. 21 sind maximal
+  // ähnlich und stehen in KEINER Beziehung — keine sagt etwas über die andere.
+  it('does NOT mark the GDPR Art. 32 / NIS2 Art. 21 topical twin as reference-linked despite maximal similarity', () => {
+    const twin = pairOf(dsgvo32, nis221);
+    expect(twin.a.embedding).toEqual(twin.b.embedding); // maximal ähnlich, per Konstruktion
+    expect(detectPairReference(twin)).toBeUndefined();
+  });
+
+  it('marks a pair as reference-linked and records which side did the referencing', () => {
+    const ev = detectPairReference(pairOf(doraArt1, nis2Art4));
+    expect(ev).toBeDefined();
+    // dora:art-1 < nis2:art-4 → dora ist Seite a und zitiert NIS2.
+    expect(ev?.aReferencesB).toBe(true);
+    expect(ev?.bReferencesA).toBe(false);
+    expect(ev?.side).toBe('a');
+  });
+
+  it('records side "both" when each provision references the other law', () => {
+    const mutualA = paraWithText(
+      'dora:art-9',
+      'dora',
+      20,
+      'This Regulation applies without prejudice to Directive (EU) 2022/2555 as regards incident reporting.',
+    );
+    const mutualB = paraWithText(
+      'nis2:art-9',
+      'nis2',
+      160,
+      'This Directive shall not apply to entities covered by Regulation (EU) 2022/2554 in respect of ICT risk management.',
+    );
+    const ev = detectPairReference(pairOf(mutualA, mutualB));
+    expect(ev?.aReferencesB).toBe(true);
+    expect(ev?.bReferencesA).toBe(true);
+    expect(ev?.side).toBe('both');
+  });
+
+  it('flags a pinpoint when the citation names exactly the other provision', () => {
+    const nis2Art3 = paraWithText(
+      'nis2:art-3',
+      'nis2',
+      170,
+      'Member States shall by 17 April 2025 establish a list of essential and important entities.',
+    );
+    const pinpointed = detectPairReference(pairOf(doraArt1, nis2Art3));
+    expect(pinpointed?.pinpoint).toBe(true); // "Article 3 of Directive (EU) 2022/2555"
+    const generic = detectPairReference(pairOf(doraArt1, nis2Art4));
+    expect(generic?.pinpoint).toBe(false); // zitiert NIS2, aber nicht dessen Art. 4
+  });
+});
+
+describe('selectCandidatesWithReferences', () => {
+  // Ein Referenz-Paar mit ABSICHTLICH niedriger Similarity, damit der Test
+  // beweist: es überlebt die Auswahl, obwohl das reine Similarity-Ranking es
+  // ans Ende sortiert hätte.
+  const doraRef = paraWithText(
+    'dora:art-1',
+    'dora',
+    5,
+    'Pursuant to Article 3 of Directive (EU) 2022/2555, this Regulation shall be considered a sector-specific Union legal act.',
+  );
+  const doraPlain = lawAParas.slice(1);
+  const nis2All = lawBParas;
+
+  const rankedRef = rankCandidatePairs([doraRef, ...doraPlain], nis2All);
+
+  it('selects reference-linked pairs even when their similarity is low', () => {
+    const { pairs, stats } = selectCandidatesWithReferences(rankedRef, {
+      targetSize: 8,
+      negativeShare: 0.3,
+      seed: 42,
+    });
+    expect(stats.reference).toBeGreaterThan(0);
+    const refPairs = pairs.filter((p) => p.bucket === 'reference');
+    expect(refPairs.length).toBe(stats.reference);
+    // dora:art-1 zitiert NIS2 → jedes seiner Paare ist referenz-verknüpft,
+    // auch das mit der schlechtesten Similarity der ganzen Rangliste.
+    const worst = [...rankedRef].reverse().find((p) => p.a.regulationKey === 'dora:art-1');
+    expect(worst).toBeDefined();
+    const worstIsSelectable = rankedRef
+      .filter((p) => p.a.regulationKey === 'dora:art-1' || p.b.regulationKey === 'dora:art-1')
+      .every((p) => detectPairReference(p) !== undefined);
+    expect(worstIsSelectable).toBe(true);
+  });
+
+  it('reports a composition of reference-linked pairs plus similarity negatives', () => {
+    const { pairs, stats } = selectCandidatesWithReferences(rankedRef, {
+      targetSize: 10,
+      negativeShare: 0.3,
+      seed: 42,
+    });
+    expect(stats.reference + stats.negative + stats.anchor + stats.similar).toBe(pairs.length);
+    expect(stats.negative).toBeGreaterThan(0);
+    const neg = pairs.filter((p) => p.bucket === 'negative');
+    expect(neg).toHaveLength(stats.negative);
+  });
+
+  it('always includes configured anchors', () => {
+    const { pairs } = selectCandidatesWithReferences(rankedRef, {
+      targetSize: 3,
+      anchors: [['dora:art-6', 'nis2:art-2']],
+      seed: 42,
+    });
+    const anchor = pairs.find((p) => p.a.regulationKey === 'dora:art-6' && p.b.regulationKey === 'nis2:art-2');
+    expect(anchor).toBeDefined();
+    expect(anchor?.bucket).toBe('anchor');
+  });
+
+  it('throws when a configured anchor pair is not present among the ranked candidates', () => {
+    expect(() =>
+      selectCandidatesWithReferences(rankedRef, { targetSize: 5, anchors: [['dora:art-99', 'nis2:art-1']] }),
+    ).toThrow(/dora:art-99/);
+  });
+
+  it('is deterministic for the same seed and differs for another', () => {
+    const a1 = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
+    const a2 = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
+    const b = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 7 }).pairs.map(pairKey);
+    expect(a1).toEqual(a2);
+    expect(a1).not.toEqual(b);
+  });
+
+  it('never returns duplicate pairs', () => {
+    const { pairs } = selectCandidatesWithReferences(rankedRef, {
+      targetSize: 30,
+      anchors: [['dora:art-6', 'nis2:art-2']],
+      seed: 42,
+    });
+    expect(new Set(pairs.map(pairKey)).size).toBe(pairs.length);
+  });
+
+  it('carries the reference evidence on the selected pair so raters see WHY it was picked', () => {
+    const { pairs } = selectCandidatesWithReferences(rankedRef, { targetSize: 8, seed: 42 });
+    const ref = pairs.find((p) => p.bucket === 'reference');
+    expect(ref?.reference).toBeDefined();
+    expect(['a', 'b', 'both']).toContain(ref?.reference?.side);
   });
 });

@@ -44,7 +44,8 @@ import { NORM_ONTOLOGY, buildRegulationKey } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import {
   rankCandidatePairs,
-  selectCandidates,
+  selectCandidatesWithReferences,
+  hasReferencePatterns,
   type CandidateParagraph,
   type RankedPair,
 } from '../evals/relationsCandidates';
@@ -415,10 +416,34 @@ async function main(): Promise<void> {
       const lawBParas = paragraphsBySource.get(lawB) ?? [];
       const ranked = rankCandidatePairs(lawAParas, lawBParas);
       const anchors = anchorsForPair(lawA, lawB);
+
+      // Ein Gesetz ohne Referenz-Muster (relationsCandidates.ts) ist für die
+      // referenz-getriebene Auswahl unsichtbar und fiele still auf reine
+      // Similarity zurück — also auf genau die Quelle, die das Set unbrauchbar
+      // gemacht hat. Deshalb laut melden statt schweigen.
+      for (const s of [lawA, lawB]) {
+        if (!hasReferencePatterns(s)) {
+          console.warn(
+            `[relations-build] ⚠️ ${s}: keine Referenz-Muster registriert — ` +
+              `Paare mit dieser Quelle können nicht referenz-verknüpft werden ` +
+              `(LAW_FAMILY_PATTERNS/SOURCE_TO_FAMILY in evals/relationsCandidates.ts ergänzen)`,
+          );
+        }
+      }
+
       try {
-        const selected = selectCandidates(ranked, { targetSize, negativeShare, anchors, seed });
+        const { pairs: selected, stats } = selectCandidatesWithReferences(ranked, {
+          targetSize,
+          negativeShare,
+          anchors,
+          seed,
+        });
         allSelected.push(...selected);
-        console.log(`[relations-build] ${lawA}×${lawB}: ${selected.length} candidates selected`);
+        console.log(
+          `[relations-build] ${lawA}×${lawB}: ${selected.length} candidates selected ` +
+            `(reference ${stats.reference}, negative ${stats.negative}, anchor ${stats.anchor}, similar ${stats.similar}) · ` +
+            `referenz-verknüpft verfügbar: ${stats.referenceAvailable}, davon Pinpoint: ${stats.referencePinpoint}`,
+        );
       } catch (err) {
         // Anchor missing among ranked candidates — fail loudly, name the pair, do not swallow.
         throw new Error(
