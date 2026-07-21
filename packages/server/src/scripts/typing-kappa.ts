@@ -40,6 +40,21 @@ export interface AxisKappaResult {
   skipped: number;
   agreementRate: number;
   kappa: number;
+  /**
+   * Wahr, wenn mindestens ein Annotator über ALLE verglichenen Paare nur EINE
+   * Klasse vergeben hat. Dann ist Kappa rechnerisch festgenagelt und trägt
+   * keine Aussage: die erwartete Zufallsübereinstimmung wird gleich der
+   * beobachteten, Kappa fällt auf 0 — auch bei 95 % Rohübereinstimmung.
+   *
+   * Das ist KEINE Uneinigkeit, sondern ein Messartefakt (Prävalenz-Paradox).
+   * Auf einem Korpus aus unmittelbar geltenden Gesetzgebungsakten sind
+   * `normKind` und `bindingness` konstruktionsbedingt konstant — die Achse hat
+   * auf diesem Material schlicht keine Varianz. Darauf mit „Rubrik schärfen"
+   * zu reagieren, würde eine funktionierende Rubrik für ein Problem umbauen,
+   * das sie nicht hat. Solche Achsen werden daher ausgewiesen und vom
+   * Freeze-Tor ausgenommen, statt es fälschlich zu reißen.
+   */
+  degenerate: boolean;
 }
 
 export interface TypingKappaComparison {
@@ -112,7 +127,7 @@ export function compareTypingSets(a: TypingGoldenSet, b: TypingGoldenSet): Typin
     if (pairs === 0) {
       // Beide Annotatoren haben die Achse überall offen gelassen (oder nur
       // Skips) — kein Signal, kein Absturz: neutraler Nullwert statt NaN.
-      perAxis[axis] = { pairs: 0, skipped, agreementRate: 0, kappa: 0 };
+      perAxis[axis] = { pairs: 0, skipped, agreementRate: 0, kappa: 0, degenerate: false };
       continue;
     }
     const agree = la.filter((v, i) => v === lb[i]).length;
@@ -121,6 +136,7 @@ export function compareTypingSets(a: TypingGoldenSet, b: TypingGoldenSet): Typin
       skipped,
       agreementRate: agree / pairs,
       kappa: cohenKappaMulti(la, lb),
+      degenerate: new Set(la).size === 1 || new Set(lb).size === 1,
     };
   }
 
@@ -191,7 +207,8 @@ function main(): void {
       const ax = r.perAxis[axis];
       console.log(
         `[typing-kappa] ${axis}: pairs=${ax.pairs} skipped=${ax.skipped} ` +
-          `agreement=${(ax.agreementRate * 100).toFixed(1)}% kappa=${ax.kappa.toFixed(3)}`,
+          `agreement=${(ax.agreementRate * 100).toFixed(1)}% kappa=${ax.kappa.toFixed(3)}` +
+          (ax.degenerate ? '  ⚠️ KONSTANT (nur eine Klasse vergeben — Kappa ohne Aussage)' : ''),
       );
     }
     if (r.unmatchedCaseIds.length > 0) {
@@ -206,7 +223,21 @@ function main(): void {
       }
     }
 
-    const failing = TYPING_AXES.filter((ax) => r.perAxis[ax].pairs > 0 && r.perAxis[ax].kappa < 0.6);
+    // Konstante Achsen sind vom Tor ausgenommen: ihr Kappa ist ein Artefakt,
+    // kein Uneinigkeits-Signal (siehe AxisKappaResult.degenerate). Sie werden
+    // aber ausdrücklich ausgewiesen, damit die Ausnahme sichtbar bleibt und
+    // niemand sie später für ein bestandenes Tor hält.
+    const degenerate = TYPING_AXES.filter((ax) => r.perAxis[ax].pairs > 0 && r.perAxis[ax].degenerate);
+    if (degenerate.length) {
+      console.log(
+        `\n[kappa] ℹ️ Konstante Achsen (vom Tor ausgenommen): ${degenerate.join(', ')} — ` +
+          `auf diesem Korpus ohne Varianz. Rohübereinstimmung berichten, Kappa nicht interpretieren.`,
+      );
+    }
+
+    const failing = TYPING_AXES.filter(
+      (ax) => r.perAxis[ax].pairs > 0 && !r.perAxis[ax].degenerate && r.perAxis[ax].kappa < 0.6,
+    );
     if (failing.length) {
       console.log(`\n[kappa] ⚠️ Kappa < 0.6 auf: ${failing.join(', ')} — Rubrik schärfen, nicht das Modell tunen.`);
       process.exitCode = 1;

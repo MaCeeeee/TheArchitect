@@ -135,6 +135,37 @@ describe('compareTypingSets()', () => {
     expect(r.perAxis.partyRole.skipped).toBe(0);
   });
 
+  // Prävalenz-Paradox: auf einem Korpus aus unmittelbar geltenden Gesetzgebungs-
+  // akten ist normKind konstruktionsbedingt konstant. Kappa fällt dann auf 0,
+  // OBWOHL die Rohübereinstimmung sehr hoch ist. Wer diese 0 für Uneinigkeit
+  // hält, baut eine funktionierende Rubrik für ein Problem um, das sie nicht hat.
+  it('flags an axis as degenerate when one annotator used only a single class', () => {
+    const row = (caseId: string, norm: string) => ({
+      caseId,
+      normKind: norm,
+      bindingness: 'binding',
+      obligationKind: 'obligation',
+      partyRole: 'controller',
+      provisionKind: 'obligation',
+    });
+    const constantA = set(Array.from({ length: 20 }, (_, i) => row(`case-${i}`, 'legislation')));
+    const mostlySameB = set(
+      Array.from({ length: 20 }, (_, i) => row(`case-${i}`, i === 0 ? 'guideline' : 'legislation'))
+    );
+    const r = compareTypingSets(constantA, mostlySameB);
+    expect(r.perAxis.normKind.degenerate).toBe(true);
+    expect(r.perAxis.normKind.agreementRate).toBeCloseTo(0.95, 6);
+    expect(r.perAxis.normKind.kappa).toBeCloseTo(0, 6);
+  });
+
+  it('does not flag an axis as degenerate when both annotators used several classes', () => {
+    const setA = set([
+      { caseId: 'case-1', normKind: 'legislation', bindingness: 'binding', obligationKind: 'obligation', partyRole: 'controller', provisionKind: 'obligation' },
+      { caseId: 'case-2', normKind: 'guideline', bindingness: 'persuasive', obligationKind: 'permission', partyRole: 'processor', provisionKind: 'definition' },
+    ]);
+    expect(compareTypingSets(setA, setA).perAxis.normKind.degenerate).toBe(false);
+  });
+
   it('reports cases present in only one of the two files', () => {
     const setA = set([
       { caseId: 'case-1', normKind: 'legislation', bindingness: 'binding', obligationKind: 'obligation', partyRole: 'controller', provisionKind: 'obligation' },
