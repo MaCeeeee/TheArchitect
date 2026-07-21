@@ -275,6 +275,13 @@ Werte anbietet. Richtet sich eine Provision an die **Mitgliedstaaten** — in EU
 etwa bei Umsetzungs-, Benennungs- und Sanktionsregelungspflichten —, ist der Wert `member_state`, nicht
 `supervisory_authority`; letzteres meint die handelnde Behörde selbst.
 
+> **Bewusste Umkehr einer früheren Festlegung:** Bis E6 1.5.0 stand hier, Mitgliedstaaten bekämen
+> absichtlich **keine** Rolle, weil die Achse den *Regulierten* meine. Diese Begründung trug schon
+> vorher nicht: `supervisory_authority` ist ebenfalls kein Regulierter und war trotzdem ein eigener
+> Wert. Die Achse beantwortet seit jeher „an wen richtet sich der Satz", nicht „wer wird reguliert".
+> `member_state` stellt die Konsistenz her; `n/a` bleibt dem Fall vorbehalten, dass sich der Satz an
+> **niemanden** richtet (Regel 1), statt zwei verschiedene Sachverhalte zu bündeln.
+
 - **`n/a`**, wenn kein Rollenträger adressiert wird — neben Regel 1 auch dort, wo sich der Text an den
   Gesetzgeber selbst richtet.
 - Mehrere Adressaten: die Rolle wählen, die der Paragraph **primär** verpflichtet.
