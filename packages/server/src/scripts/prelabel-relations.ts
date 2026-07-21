@@ -49,7 +49,9 @@ import { NORM_ONTOLOGY, isInferredRelation } from '@thearchitect/shared';
 import {
   annotatorTag,
   createRaterClient,
+  isEmptyRaterText,
   resolveRaterConfig,
+  EMPTY_RESPONSE_MAX_ATTEMPTS,
   type RaterClient,
 } from '../evals/raterClient';
 import { RelationsGoldenSetSchema, type RelationsGoldenCase } from '../evals/relationsGolden';
@@ -211,6 +213,14 @@ export interface RelationsPrelabelResult {
   inputTokens: number;
   outputTokens: number;
   droppedTotal: number;
+  /**
+   * Fälle, für die der Prüfer auch nach allen Wiederholungen NICHTS geliefert
+   * hat — fehlgeschlagene Messungen. Eigener Zähler neben `droppedTotal`: ein
+   * Drop ist eine verworfene Aussage, ein Ausfall ist gar keine Aussage.
+   */
+  noResponseTotal: number;
+  /** caseIds der Ausfälle — damit sie gezielt nachgefahren werden können. */
+  noResponseCaseIds: string[];
 }
 
 /**
@@ -228,6 +238,7 @@ export async function runRelationsPrelabel(
   let inputTokens = 0;
   let outputTokens = 0;
   let droppedTotal = 0;
+  const noResponseCaseIds: string[] = [];
   const cases: RelationsGoldenCase[] = [];
   for (const [i, c] of draft.cases.entries()) {
     const res = await client.complete({
@@ -235,10 +246,26 @@ export async function runRelationsPrelabel(
       user: buildRelationsPrompt(c),
       maxTokens: MAX_TOKENS,
     });
-    const { relation, direction, dropped } = parseRelationLabel(res.text);
-    if (dropped) droppedTotal += 1;
     inputTokens += res.inputTokens;
     outputTokens += res.outputTokens;
+
+    // Leerer Text = keine Antwort (der Client hat bereits wiederholt). Gar
+    // nicht erst parsen: der Parser würde daraus korrekt „offen" machen, und
+    // danach wäre der Ausfall von der bewussten Nicht-Aussage des Prüfers nicht
+    // mehr zu trennen. Auf DIESER Achse wiegt das doppelt — „none" ist hier
+    // eine echte Klasse; ein Ausfall darf dort niemals landen.
+    if (isEmptyRaterText(res.text)) {
+      noResponseCaseIds.push(c.caseId);
+      const failed: RelationsGoldenCase = { ...c, annotator, measurementFailed: true };
+      delete failed.relation;
+      delete failed.direction;
+      cases.push(failed);
+      onProgress?.(i + 1, draft.cases.length);
+      continue;
+    }
+
+    const { relation, direction, dropped } = parseRelationLabel(res.text);
+    if (dropped) droppedTotal += 1;
 
     const updated: RelationsGoldenCase = { ...c, annotator };
     if (relation === null) {
@@ -256,7 +283,14 @@ export async function runRelationsPrelabel(
     cases.push(updated);
     onProgress?.(i + 1, draft.cases.length);
   }
-  return { cases, inputTokens, outputTokens, droppedTotal };
+  return {
+    cases,
+    inputTokens,
+    outputTokens,
+    droppedTotal,
+    noResponseTotal: noResponseCaseIds.length,
+    noResponseCaseIds,
+  };
 }
 
 async function main(): Promise<void> {
@@ -280,11 +314,10 @@ async function main(): Promise<void> {
   const draft = RelationsGoldenSetSchema.parse(JSON.parse(fs.readFileSync(path.resolve(inPath), 'utf8')));
   const client = createRaterClient(cfg);
 
-  const { cases, inputTokens, outputTokens, droppedTotal } = await runRelationsPrelabel(
-    draft,
-    client,
-    (done, total) => process.stdout.write(`\r[prelabel] ${done}/${total}`)
-  );
+  const { cases, inputTokens, outputTokens, droppedTotal, noResponseTotal, noResponseCaseIds } =
+    await runRelationsPrelabel(draft, client, (done, total) =>
+      process.stdout.write(`\r[prelabel] ${done}/${total}`)
+    );
 
   const out = { ...draft, version: draft.version, frozen: false as const, cases };
   RelationsGoldenSetSchema.parse(out);
@@ -298,12 +331,28 @@ async function main(): Promise<void> {
 
   console.log(
     `\n[prelabel] ${cases.length} Paare vorgelabelt (${cfg.provider}/${cfg.model})\n` +
-      `[prelabel] Tokens: ${inputTokens} in / ${outputTokens} out · Drops (Metadata/OOV/fehlende Richtung): ${droppedTotal}\n` +
+      `[prelabel] Tokens: ${inputTokens} in / ${outputTokens} out · Drops (Metadata/OOV/fehlende Richtung): ${droppedTotal} · ` +
+      `no response: ${noResponseTotal}\n` +
       `[prelabel] annotator: ${annotatorTag(cfg)}\n` +
       `[prelabel] → ${outPath}\n` +
       `${caveat}\n` +
       `[prelabel] NEXT: npm run relations:worksheet -- ${path.relative(process.cwd(), outPath)} /tmp/relations-label.html`
   );
+
+  // Unübersehbar ganz zum Schluss + Exit-Code: Ausfälle fallen später als
+  // „offen" aus dem Kappa und schönen die Zahl, ohne dass es jemand bemerkt.
+  if (noResponseTotal > 0) {
+    console.error(
+      `\n[prelabel] ⚠️  FAILED MEASUREMENTS: ${noResponseTotal} case(s) produced NO response after ` +
+        `${EMPTY_RESPONSE_MAX_ATTEMPTS} attempts.\n` +
+        `[prelabel] These are missing data, NOT rater abstentions — in particular they are NOT "none". ` +
+        `They are marked with "measurementFailed": true in the output file and would otherwise be ` +
+        `silently excluded from kappa as "open", which INVALIDATES this pass as a measurement until ` +
+        `they are re-run.\n` +
+        `[prelabel] Affected caseIds: ${noResponseCaseIds.join(', ')}`
+    );
+    process.exitCode = 1;
+  }
 }
 
 if (require.main === module) {

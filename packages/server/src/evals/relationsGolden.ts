@@ -82,6 +82,16 @@ export const RelationsGoldenCaseSchema = z
     notes: z.string().optional(),
     annotator: z.string().optional(),
     labeledAt: z.string().optional(),
+    /**
+     * `true` = der Prüfer hat für diesen Fall GAR KEINE Antwort geliefert (auch
+     * nach Wiederholungen leer) — eine FEHLGESCHLAGENE MESSUNG, keine Label-
+     * Entscheidung. Auf dieser Achse ist die Verwechslungsgefahr am größten:
+     * `null` ist hier die bewusste Negativ-KLASSE ("keine Relation"), ohne die
+     * Precision nicht messbar wäre. Ein Ausfall darf niemals dorthin rutschen —
+     * er bleibt offen (`relation` fehlt) und wird HIER als Ausfall kenntlich
+     * gemacht. Rein additiv und optional; Kappa-Werkzeuge lesen es nicht.
+     */
+    measurementFailed: z.boolean().optional(),
   })
   .refine((c) => !(typeof c.relation === 'string' && c.direction === undefined), {
     message: 'direction is required when relation is set to a relation type id',

@@ -126,8 +126,8 @@ describe('buildPrelabelUserPrompt — Rubrik-Regeln im Prompt', () => {
 // durch geteilte Trainingsherkunft aufgebläht. Was dabei NICHT variieren darf:
 // der Prompt. Gemessen wird Prüfer-Unabhängigkeit, nicht Prompt-Unterschied.
 import { runTypingPrelabel } from '../scripts/prelabel-typing';
-import type { RaterClient, RaterRequest } from '../evals/raterClient';
-import type { TypingGoldenSet } from '../evals/typingGolden';
+import { withEmptyResponseRetry, type RaterClient, type RaterRequest } from '../evals/raterClient';
+import { TypingGoldenSetSchema, type TypingGoldenSet } from '../evals/typingGolden';
 
 function recorder(provider: 'anthropic' | 'openrouter', model: string, reply: string) {
   const requests: RaterRequest[] = [];
@@ -190,6 +190,60 @@ describe('runTypingPrelabel — Provider-Austausch ändert den Prompt nicht', ()
     expect(r.inputTokens).toBe(3);
     expect(r.outputTokens).toBe(5);
     expect(r.droppedTotal).toBe(1);
+  });
+});
+
+// ─── Fehlgeschlagene Messung ≠ Enthaltung (THE-421) ─────────────
+//
+// 18 von 100 Fällen kamen im Live-Lauf leer zurück und verschwanden lautlos
+// als "offen" aus dem Kappa. Der Lauf muss sie deshalb als AUSFALL zählen und
+// im Artefakt markieren — sonst ist ein Messfehler von einer bewussten
+// Nicht-Aussage des Prüfers nicht mehr zu unterscheiden.
+describe('runTypingPrelabel — leere Antwort zählt als Ausfall, nicht als offen', () => {
+  it('counts an exhausted case as a failed measurement and marks it in the case', async () => {
+    const a = recorder('openrouter', 'openai/gpt-5', '');
+    const r = await runTypingPrelabel(draft, a.client);
+    expect(r.noResponseTotal).toBe(1);
+    expect(r.noResponseCaseIds).toEqual(['dsgvo-art-5']);
+    expect(r.cases[0].measurementFailed).toBe(true);
+    // Kein Ersatz-Label, kein Default — die Achsen bleiben leer.
+    expect(r.cases[0].labels).toEqual({});
+    // Ein Ausfall ist KEIN OOV-Drop; die beiden Zähler dürfen sich nicht mischen.
+    expect(r.droppedTotal).toBe(0);
+  });
+
+  it('does not mark a genuine "na" answer as a failure — that is a real label', async () => {
+    const a = recorder('openrouter', 'openai/gpt-5', '{"obligationKind":"na"}');
+    const r = await runTypingPrelabel(draft, a.client);
+    expect(r.noResponseTotal).toBe(0);
+    expect(r.cases[0].measurementFailed).toBeUndefined();
+    expect(r.cases[0].labels.obligationKind).toBeNull();
+  });
+
+  it('a case rescued by the client retry is a normal labeled case, not a failure', async () => {
+    const replies = ['', '{"normKind":"legislation"}'];
+    let n = 0;
+    const client: RaterClient = {
+      provider: 'openrouter',
+      model: 'openai/gpt-5',
+      async complete() {
+        const text = replies[Math.min(n++, replies.length - 1)];
+        return { text, inputTokens: 1, outputTokens: 1 };
+      },
+    };
+    const r = await runTypingPrelabel(draft, withEmptyResponseRetry(client, { sleep: async () => {} }));
+    expect(r.noResponseTotal).toBe(0);
+    expect(r.cases[0].measurementFailed).toBeUndefined();
+    expect(r.cases[0].labels.normKind).toBe('legislation');
+  });
+
+  it('a failed case survives schema validation so the marker reaches the artifact', () => {
+    const out = {
+      ...draft,
+      cases: [{ ...draft.cases[0], labels: {}, measurementFailed: true }],
+    };
+    const parsed = TypingGoldenSetSchema.parse(out);
+    expect(parsed.cases[0].measurementFailed).toBe(true);
   });
 });
 

@@ -18,6 +18,9 @@ import {
   resolveRaterConfig,
   createRaterClient,
   annotatorTag,
+  isEmptyRaterText,
+  withEmptyResponseRetry,
+  EMPTY_RESPONSE_MAX_ATTEMPTS,
   RATER_DEFAULT_MODEL,
   type RaterClient,
   type RaterRequest,
@@ -140,6 +143,137 @@ describe('annotatorTag — der Provider muss aus der Datei allein erkennbar sein
     expect(a).not.toBe(b);
     expect(a).toContain('anthropic');
     expect(b).toContain('openrouter');
+  });
+});
+
+// ─── Leere Antwort = fehlgeschlagene Messung, keine Enthaltung ──────
+//
+// WARUM DIESE TESTS EXISTIEREN: Im Live-Lauf gegen openai/gpt-5 kamen 18 von
+// 100 Fällen mit einem LEEREN Antwort-String zurück. Der Parser macht daraus
+// korrekt "offen", das Kappa-Werkzeug schließt "offen" korrekt als `skipped`
+// aus — und genau dadurch verschwanden 18 Messungen lautlos aus der Zahl. Sie
+// waren keine Enthaltungen: bei 13 von ihnen hatte der andere Prüfer sehr wohl
+// gelabelt, die Ausfälle häuften sich also exakt auf den strittigen Fällen.
+// Ein Nach-Test ergab bei drei von vier Fällen sofort gültiges JSON — es war
+// ein Budget-Artefakt (Reasoning-Tokens fressen das Ausgabe-Budget), kein
+// Urteil. Ein Messfehler darf nie wie eine Prüfer-Meinung aussehen.
+//
+// Der Retry sitzt bewusst in der CLIENT-Schicht: nur hier lässt sich das
+// Budget anheben, ohne den Prompt anzufassen — und der Prompt ist das, was
+// über beide Prüfer hinweg Byte für Byte gleich bleiben MUSS.
+describe('isEmptyRaterText — was als Ausfall zählt', () => {
+  it('treats an empty and a whitespace-only response as no response at all', () => {
+    expect(isEmptyRaterText('')).toBe(true);
+    expect(isEmptyRaterText('   \n\t ')).toBe(true);
+  });
+
+  it('treats any real content as an answer — including a deliberate no-opinion', () => {
+    expect(isEmptyRaterText('{"relation":"none"}')).toBe(false);
+    expect(isEmptyRaterText('{"normKind":"na"}')).toBe(false);
+    expect(isEmptyRaterText('I decline to answer.')).toBe(false);
+  });
+});
+
+/** Fake-Client mit vorgegebener Antwortfolge; zeichnet jeden Request auf. */
+function scripted(replies: string[]) {
+  const requests: RaterRequest[] = [];
+  const client: RaterClient = {
+    provider: 'openrouter',
+    model: 'openai/gpt-5',
+    async complete(req) {
+      requests.push(req);
+      const text = replies[Math.min(requests.length - 1, replies.length - 1)];
+      return { text, inputTokens: 10, outputTokens: 4 };
+    },
+  };
+  return { client, requests };
+}
+
+/** Kein echtes Warten im Test — der Backoff ist Produktions-Verhalten, nicht Testgegenstand. */
+const noSleep = async () => {};
+
+describe('withEmptyResponseRetry', () => {
+  it('retries an empty response and returns the valid answer from the retry', async () => {
+    const { client, requests } = scripted(['', '{"relation":"none"}']);
+    const res = await withEmptyResponseRetry(client, { sleep: noSleep }).complete({
+      system: 'S',
+      user: 'U',
+      maxTokens: 200,
+    });
+    expect(res.text).toBe('{"relation":"none"}');
+    expect(requests).toHaveLength(2);
+    expect(res.attempts).toBe(2);
+  });
+
+  it('does not retry a response that has content (a decline is an answer)', async () => {
+    const { client, requests } = scripted(['{"relation":"none"}']);
+    const res = await withEmptyResponseRetry(client, { sleep: noSleep }).complete({
+      system: 'S',
+      user: 'U',
+      maxTokens: 200,
+    });
+    expect(requests).toHaveLength(1);
+    expect(res.attempts).toBe(1);
+    expect(res.text).toBe('{"relation":"none"}');
+  });
+
+  it('gives up after the configured number of attempts and reports an empty text', async () => {
+    const { client, requests } = scripted(['']);
+    const res = await withEmptyResponseRetry(client, { sleep: noSleep }).complete({
+      system: 'S',
+      user: 'U',
+      maxTokens: 200,
+    });
+    expect(requests).toHaveLength(EMPTY_RESPONSE_MAX_ATTEMPTS);
+    expect(res.attempts).toBe(EMPTY_RESPONSE_MAX_ATTEMPTS);
+    expect(isEmptyRaterText(res.text)).toBe(true);
+  });
+
+  // Das ist der load-bearing Test: der Wiederholungsversuch darf das BUDGET
+  // anheben (die vermutete Ursache), aber niemals den PROMPT verändern —
+  // sonst misst der Kappa Prompt-Unterschiede statt Prüfer-Unabhängigkeit.
+  it('keeps system and user prompts byte-identical across every attempt', async () => {
+    const { client, requests } = scripted(['']);
+    const system = 'You are a legal-informatics classifier.';
+    const user = 'Classify this provision.\n\nWith a newline and "quotes".';
+    await withEmptyResponseRetry(client, { sleep: noSleep }).complete({ system, user, maxTokens: 200 });
+    expect(requests).toHaveLength(EMPTY_RESPONSE_MAX_ATTEMPTS);
+    for (const req of requests) {
+      expect(req.system).toBe(system);
+      expect(req.user).toBe(user);
+    }
+  });
+
+  it('raises the output budget on retry (the suspected cause is budget exhaustion)', async () => {
+    const { client, requests } = scripted(['']);
+    await withEmptyResponseRetry(client, { sleep: noSleep }).complete({
+      system: 'S',
+      user: 'U',
+      maxTokens: 200,
+    });
+    expect(requests[0].maxTokens).toBe(200);
+    expect(requests[1].maxTokens).toBeGreaterThan(requests[0].maxTokens);
+    expect(requests[2].maxTokens).toBeGreaterThan(requests[1].maxTokens);
+  });
+
+  // Fehlversuche kosten echtes Geld — sie fallen aus der Kostenrechnung, wenn
+  // nur der letzte Versuch gezählt wird.
+  it('accumulates token usage over all attempts, not just the last one', async () => {
+    const { client } = scripted(['', '{"relation":"none"}']);
+    const res = await withEmptyResponseRetry(client, { sleep: noSleep }).complete({
+      system: 'S',
+      user: 'U',
+      maxTokens: 200,
+    });
+    expect(res.inputTokens).toBe(20);
+    expect(res.outputTokens).toBe(8);
+  });
+
+  it('passes provider and model through unchanged', () => {
+    const { client } = scripted(['x']);
+    const wrapped = withEmptyResponseRetry(client, { sleep: noSleep });
+    expect(wrapped.provider).toBe(client.provider);
+    expect(wrapped.model).toBe(client.model);
   });
 });
 

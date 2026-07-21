@@ -177,6 +177,10 @@ export function makeBlindTypingCopy(set: TypingGoldenSet): TypingGoldenSet {
       notes: undefined,
       annotator: undefined,
       labeledAt: undefined,
+      // Auch ein Ausfall-Vermerk ist eine Spur des ersten Durchgangs („hier
+      // hat A nichts geliefert") und damit ein Anker — er gehört in A's Datei,
+      // nicht in B's blinde Kopie.
+      measurementFailed: undefined,
     })),
   };
 }

@@ -189,6 +189,9 @@ export function makeBlindRelationsCopy(set: RelationsGoldenSet): RelationsGolden
         notes: undefined,
         annotator: undefined,
         labeledAt: undefined,
+        // Auch ein Ausfall-Vermerk ist eine Spur des ersten Durchgangs und
+        // damit ein Anker — er gehört in A's Datei, nicht in B's blinde Kopie.
+        measurementFailed: undefined,
       }),
     ),
   };

@@ -86,6 +86,18 @@ export const TypingGoldenCaseSchema = z.object({
   notes: z.string().optional(),
   annotator: z.string().optional(),
   labeledAt: z.string().optional(),
+  /**
+   * `true` = der Prüfer hat für diesen Fall GAR KEINE Antwort geliefert (auch
+   * nach Wiederholungen leer) — eine FEHLGESCHLAGENE MESSUNG, keine Label-
+   * Entscheidung. Ohne diese Markierung ist ein Ausfall im Artefakt nicht mehr
+   * von einer bewusst offen gelassenen Achse zu unterscheiden; genau diese
+   * Verwechslung hat einmal 18 von 100 Fällen lautlos aus einem Kappa fallen
+   * lassen und die Zahl geschönt. Rein additiv und optional: Altbestände bleiben
+   * gültig, Kappa-Werkzeuge lesen es nicht (ein Ausfall bleibt korrekt „offen"
+   * und damit `skipped`) — es ist die Spur, die im Artefakt bleibt, wenn das
+   * Terminal längst weggescrollt ist.
+   */
+  measurementFailed: z.boolean().optional(),
 });
 
 export const TypingGoldenSetSchema = z.object({

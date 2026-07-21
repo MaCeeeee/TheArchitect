@@ -57,6 +57,12 @@ export interface RaterResponse {
   text: string;
   inputTokens: number;
   outputTokens: number;
+  /**
+   * Wie viele Anläufe dieser Fall gebraucht hat (1 = beim ersten Mal geantwortet).
+   * Optional, damit Fakes in Prüfsätzen weiterhin nur `{ text, …Tokens }` liefern
+   * dürfen — gesetzt wird es von `withEmptyResponseRetry`.
+   */
+  attempts?: number;
 }
 
 export interface RaterClient {
@@ -183,6 +189,108 @@ function createOpenRouterClient(model: string, env: Env): RaterClient {
   };
 }
 
+// ─── Leere Antwort = fehlgeschlagene Messung ────────────────────────
+//
+// BEFUND AUS DEM LIVE-LAUF (openai/gpt-5, 100 Fälle): 18 Fälle kamen mit einem
+// LEEREN Antwort-String zurück. Der Parser macht daraus korrekt „offen", das
+// Kappa-Werkzeug schließt „offen" korrekt als `skipped` aus — und genau in
+// dieser Kette verschwanden 18 Messungen lautlos aus der Zahl. Sie waren keine
+// Enthaltungen: bei 13 von ihnen hatte der ANDERE Prüfer sehr wohl gelabelt,
+// die Ausfälle häuften sich also exakt auf den strittigen, schweren Fällen.
+// Genau die Uneinigkeiten, die den Kappa gedrückt hätten, fielen heraus — die
+// berichteten 0,572 waren dadurch zu optimistisch. Ein Nach-Test lieferte bei
+// drei von vier Fällen sofort gültiges JSON: ein Budget-Artefakt, kein Urteil.
+//
+// LEITSATZ: Eine fehlgeschlagene Messung darf nie so aussehen wie die bewusste
+// Nicht-Aussage eines Prüfers. Das eine sind fehlende Daten, das andere ist ein
+// Datenpunkt.
+//
+// WARUM DER RETRY HIER SITZT UND NICHT IM PARSER: Nur diese Schicht kann das
+// Ausgabe-Budget anheben (die vermutete Ursache), ohne den Prompt anzufassen.
+// Der Prompt bleibt über alle Anläufe und beide Provider Byte für Byte
+// identisch — er ist die Grundlage der Aussage, dass der Kappa
+// Prüfer-Unabhängigkeit misst; ein Prüfsatz nagelt das fest.
+
+/** Gesamtzahl der Anläufe je Fall (1 Erstversuch + 2 Wiederholungen). */
+export const EMPTY_RESPONSE_MAX_ATTEMPTS = 3;
+
+/** Kurzer, linear wachsender Backoff — transiente Ausfälle, keine Rate-Limit-Sturm-Abwehr. */
+const EMPTY_RESPONSE_BACKOFF_MS = 500;
+
+/**
+ * Budget-Faktor je Wiederholung. Verdopplung ist absichtlich moderat: bliebe das
+ * Budget gleich, würde ein Retry bei Budget-Erschöpfung nur denselben Ausfall
+ * reproduzieren; ein zu großer Sprung würde die Kosten eines Ausfalls unnötig
+ * vervielfachen.
+ */
+const EMPTY_RESPONSE_BUDGET_FACTOR = 2;
+
+/**
+ * Leer ODER nur Whitespace zählt als „gar keine Antwort". Alles andere ist eine
+ * Antwort — auch eine, in der sich das Modell bewusst nicht festlegt („na",
+ * „none"). Diese Grenze ist der ganze Punkt: sie trennt Messfehler von Meinung.
+ */
+export function isEmptyRaterText(text: string): boolean {
+  return text.trim().length === 0;
+}
+
+export interface EmptyResponseRetryOptions {
+  maxAttempts?: number;
+  backoffMs?: number;
+  budgetFactor?: number;
+  /** Injizierbar, damit Prüfsätze nicht real warten. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+const realSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Dekoriert einen Client so, dass eine leere Antwort wiederholt wird — mit
+ * höherem Budget, aber UNVERÄNDERTEM Prompt.
+ *
+ * Sind alle Anläufe leer, wird NICHT geworfen und NICHTS ersetzt: der Aufrufer
+ * bekommt einen leeren Text zurück und erkennt daran (über `isEmptyRaterText`)
+ * eine fehlgeschlagene Messung, die er als solche zählen und markieren muss.
+ * Ein Ersatz-Label wäre schlimmer als der ursprüngliche Fehler — es würde einen
+ * Ausfall in einen erfundenen Datenpunkt verwandeln.
+ *
+ * Token-Verbrauch wird über ALLE Anläufe summiert: Fehlversuche kosten echtes
+ * Geld und dürfen aus der Kostenrechnung nicht herausfallen.
+ */
+export function withEmptyResponseRetry(
+  inner: RaterClient,
+  opts: EmptyResponseRetryOptions = {}
+): RaterClient {
+  const maxAttempts = opts.maxAttempts ?? EMPTY_RESPONSE_MAX_ATTEMPTS;
+  const backoffMs = opts.backoffMs ?? EMPTY_RESPONSE_BACKOFF_MS;
+  const budgetFactor = opts.budgetFactor ?? EMPTY_RESPONSE_BUDGET_FACTOR;
+  const sleep = opts.sleep ?? realSleep;
+
+  return {
+    provider: inner.provider,
+    model: inner.model,
+    async complete({ system, user, maxTokens }) {
+      let inputTokens = 0;
+      let outputTokens = 0;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const res = await inner.complete({
+          // system/user werden UNVERÄNDERT durchgereicht — nur maxTokens steigt.
+          system,
+          user,
+          maxTokens: maxTokens * budgetFactor ** (attempt - 1),
+        });
+        inputTokens += res.inputTokens;
+        outputTokens += res.outputTokens;
+        if (!isEmptyRaterText(res.text)) {
+          return { ...res, inputTokens, outputTokens, attempts: attempt };
+        }
+        if (attempt < maxAttempts) await sleep(backoffMs * attempt);
+      }
+      return { text: '', inputTokens, outputTokens, attempts: maxAttempts };
+    },
+  };
+}
+
 /**
  * Baut den Client für die aufgelöste Konfiguration. Scheitert LAUT und sofort,
  * wenn der Schlüssel des gewählten Hauses fehlt oder leer ist — ein halber
@@ -190,7 +298,13 @@ function createOpenRouterClient(model: string, env: Env): RaterClient {
  * Abbruch.
  */
 export function createRaterClient(cfg: RaterConfig, env: Env = process.env): RaterClient {
-  return cfg.provider === 'openrouter'
-    ? createOpenRouterClient(cfg.model, env)
-    : createAnthropicClient(cfg.model, env);
+  const base =
+    cfg.provider === 'openrouter'
+      ? createOpenRouterClient(cfg.model, env)
+      : createAnthropicClient(cfg.model, env);
+  // Retry gilt für BEIDE Häuser. Beobachtet wurde der Ausfall bisher nur bei
+  // gpt-5, aber „leere Antwort" ist auf keiner Seite ein Urteil — und ein
+  // Prüfer, der nur auf einer Seite wiederholt wird, wäre selbst wieder eine
+  // Asymmetrie zwischen den beiden Durchgängen.
+  return withEmptyResponseRetry(base);
 }

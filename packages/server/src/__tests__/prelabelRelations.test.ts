@@ -152,8 +152,8 @@ describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
 // Gleiche Begründung wie im Typing-Prüfsatz: der zweite Prüfer muss aus einem
 // anderen Modell-Haus kommen, der Prompt darf sich dabei NICHT ändern.
 import { runRelationsPrelabel } from '../scripts/prelabel-relations';
-import type { RaterClient, RaterRequest } from '../evals/raterClient';
-import type { RelationsGoldenSet } from '../evals/relationsGolden';
+import { withEmptyResponseRetry, type RaterClient, type RaterRequest } from '../evals/raterClient';
+import { RelationsGoldenSetSchema, type RelationsGoldenSet } from '../evals/relationsGolden';
 
 function recorder(provider: 'anthropic' | 'openrouter', model: string, reply: string) {
   const requests: RaterRequest[] = [];
@@ -200,6 +200,59 @@ describe('runRelationsPrelabel — Provider-Austausch ändert den Prompt nicht',
     expect(r.droppedTotal).toBe(1);
     expect(r.inputTokens).toBe(7);
     expect(r.outputTokens).toBe(2);
+  });
+});
+
+// ─── Fehlgeschlagene Messung ≠ "keine Relation" (THE-421) ───────
+//
+// Hier ist die Verwechslungsgefahr am größten: "none" ist auf dieser Achse die
+// Negativ-KLASSE (ohne die Precision nicht messbar wäre), ein Ausfall ist
+// dagegen gar keine Aussage. Würde ein leerer Antwort-String zu "none", wäre
+// ein Messfehler direkt in ein Datum verwandelt.
+describe('runRelationsPrelabel — leere Antwort zählt als Ausfall, nicht als "none"', () => {
+  it('counts an exhausted case as a failed measurement and marks it in the case', async () => {
+    const a = recorder('openrouter', 'openai/gpt-5', '');
+    const r = await runRelationsPrelabel(relDraft, a.client);
+    expect(r.noResponseTotal).toBe(1);
+    expect(r.noResponseCaseIds).toEqual(['case-1']);
+    expect(r.cases[0].measurementFailed).toBe(true);
+    // NIEMALS als Negativ-Klasse durchgehen lassen.
+    expect(r.cases[0].relation).toBeUndefined();
+    expect(r.cases[0].direction).toBeUndefined();
+    expect(r.droppedTotal).toBe(0);
+  });
+
+  it('does not mark a genuine "none" answer as a failure — that is the negative class', async () => {
+    const a = recorder('openrouter', 'openai/gpt-5', '{"relation":"none"}');
+    const r = await runRelationsPrelabel(relDraft, a.client);
+    expect(r.noResponseTotal).toBe(0);
+    expect(r.cases[0].measurementFailed).toBeUndefined();
+    expect(r.cases[0].relation).toBeNull();
+  });
+
+  it('a case rescued by the client retry is a normal labeled case, not a failure', async () => {
+    const replies = ['', '{"relation":"CONCRETIZES","direction":"a-to-b"}'];
+    let n = 0;
+    const client: RaterClient = {
+      provider: 'openrouter',
+      model: 'openai/gpt-5',
+      async complete() {
+        return { text: replies[Math.min(n++, replies.length - 1)], inputTokens: 1, outputTokens: 1 };
+      },
+    };
+    const r = await runRelationsPrelabel(relDraft, withEmptyResponseRetry(client, { sleep: async () => {} }));
+    expect(r.noResponseTotal).toBe(0);
+    expect(r.cases[0].measurementFailed).toBeUndefined();
+    expect(r.cases[0].relation).toBe('CONCRETIZES');
+  });
+
+  it('a failed case survives schema validation so the marker reaches the artifact', () => {
+    const out = {
+      ...relDraft,
+      cases: [{ ...relDraft.cases[0], relation: undefined, direction: undefined, measurementFailed: true }],
+    };
+    const parsed = RelationsGoldenSetSchema.parse(out);
+    expect(parsed.cases[0].measurementFailed).toBe(true);
   });
 });
 
