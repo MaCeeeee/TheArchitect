@@ -43,7 +43,14 @@
  *  - Ties in der Similarity dürfen `rankCandidatePairs` nicht non-
  *    deterministisch machen — Tie-Break auf dem stabilen Pair-Key.
  *
- * Linear: THE-421 (Task 12a)
+ * NACHTRAG (THE-433): Quelle 1 („similar") trägt kein Kappa — Similarity findet
+ * Themenzwillinge, und die sind nach RUBRIC.md ausdrücklich KEINE Beziehung.
+ * Die Positiv-Quelle ist seither die artikelscharfe Zitierung („pinpoint",
+ * siehe `selectCandidatesWithPinpoints`); Similarity bleibt für die Negativen.
+ * `selectCandidates` steht unverändert daneben und dokumentiert den alten,
+ * rein similarity-getriebenen Weg.
+ *
+ * Linear: THE-421 (Task 12a) · THE-433
  */
 import { mulberry32 } from './metrics';
 
@@ -61,8 +68,8 @@ export interface RankedPair {
   a: CandidateParagraph;
   b: CandidateParagraph; // sorted: a.regulationKey < b.regulationKey
   score: number; // cosine similarity
-  bucket?: 'similar' | 'negative' | 'anchor' | 'reference';
-  /** Nur bei bucket 'reference' gesetzt: WARUM das Paar gezogen wurde (siehe ReferenceEvidence). */
+  bucket?: 'similar' | 'negative' | 'anchor' | 'pinpoint';
+  /** Nur bei bucket 'pinpoint' gesetzt: WARUM das Paar gezogen wurde (siehe ReferenceEvidence). */
   reference?: ReferenceEvidence;
 }
 
@@ -223,8 +230,31 @@ export function hasReferencePatterns(source: string): boolean {
 // Directive (EU) 2022/2555" nennt Art. 20 des ZITIERENDEN Gesetzes, nicht des
 // zitierten. Ein enges Fenster trifft „Article 6, point 1, of Directive (EU)
 // 2022/2555" und lässt den weit entfernten Fehlbezug liegen. Heuristik, kein
-// Parser — der Pinpoint ist reine RANGFOLGE-Präferenz, nie ein Label.
+// Parser.
+//
+// Der Pinpoint ist seit THE-433 (Nachschärfung) kein bloßer Sortier-Hinweis
+// mehr, sondern entscheidet, MIT WELCHER Gegen-Provision ein Paar überhaupt
+// gebildet wird — siehe die Begründung über `selectCandidatesWithPinpoints`.
+// Ein Label ist er weiterhin NIE: welcher Beziehungstyp vorliegt, entscheiden
+// die Rater.
 const PINPOINT_WINDOW = 120;
+
+// Formulierungen, die eine davor stehende Artikelnummer ausdrücklich dem
+// ZITIERENDEN Gesetz zuschlagen. Steht so etwas zwischen dem Artikel-Hinweis
+// und der Zitierung, gehört die Nummer nicht zur zitierten Norm.
+//
+// Belegt am echten Korpus: CRA Art. 12 Absatz 3 schreibt „… den
+// Konformitätsbewertungsverfahren gemäß Artikel 32 Absatz 3 DER VORLIEGENDEN
+// VERORDNUNG unterliegen, und auch nach Artikel 6 der Verordnung (EU)
+// 2024/1689 …". Ohne diesen Filter zieht das Fenster „32" mit — und CRA Art. 12
+// wird fälschlich mit AI-Act Art. 32 verknüpft, einer Vorschrift, die im Text
+// nie gemeint war. Genau die Sorte willkürliches Paar, auf der die Rater
+// auseinanderlaufen.
+//
+// „der genannten Verordnung" ist bewusst NICHT dabei: das verweist auf die
+// zuvor zitierte FREMDE Norm, ist also ein echter Pinpoint.
+const CITING_LAW_MARKERS =
+  /(?:vorliegenden|dieser|diesem|jener)\s+(?:Verordnung|Richtlinie|Gesetzes?)|this\s+(?:Regulation|Directive|Act)/i;
 
 /**
  * Findet alle Stellen, an denen `text` auf das Gesetz hinter `targetSource`
@@ -245,7 +275,18 @@ export function referencesLaw(text: string, targetSource: string): LawReferenceM
       const articleHints: string[] = [];
       const artRe = /\b(?:Artikel|Article|Art\.)\s*(\d+[a-z]?)/gi;
       let a: RegExpExecArray | null;
-      while ((a = artRe.exec(before)) !== null) articleHints.push(a[1]);
+      while ((a = artRe.exec(before)) !== null) {
+        // Zwischen Artikel-Hinweis und Zitierung nachsehen: „… Artikel 32 der
+        // VORLIEGENDEN Verordnung … Verordnung (EU) 2024/1689" nennt Art. 32
+        // des zitierenden, nicht des zitierten Gesetzes.
+        if (CITING_LAW_MARKERS.test(before.slice(a.index + a[0].length))) continue;
+        // Sofort normalisieren: der Hinweis wird gleich gegen ein
+        // `paragraphNumber` aus dem Korpus verglichen, und zwei
+        // Schreibweisen, die nie zueinander finden, wären eine still
+        // verpuffende Auswahl-Regel.
+        const n = normalizeArticleNumber(a[1]);
+        if (n) articleHints.push(n);
+      }
       out.push({ matched: m[0], articleHints });
       if (m.index === re.lastIndex) re.lastIndex++; // Schutz vor Null-Length-Endlosschleife
     }
@@ -260,14 +301,44 @@ export interface ReferenceEvidence {
   bReferencesA: boolean;
   aMatches: string[];
   bMatches: string[];
-  /** Die Zitierung benennt genau die Gegen-Provision (Artikelnummer passt) — stärkstes Signal. */
+  /**
+   * Die Zitierung benennt genau die Gegen-Provision (Artikelnummer passt).
+   * Seit THE-433 (Nachschärfung) das ENTSCHEIDENDE Kriterium: nur solche Paare
+   * sind Positiv-Kandidaten. `false` heißt „nennt zwar das Gesetz, aber nicht
+   * diese Provision" — nach RUBRIC.md RULE 1 keine Beziehung.
+   */
   pinpoint: boolean;
+  /** Welche Artikelnummer(n) die Zitierung benannt hat, die zur Gegenseite passen — Beleg für den Rater. */
+  pinpointArticles: string[];
 }
 
-/** Extrahiert die reine Artikelnummer aus einem paragraphNumber wie "Art. 32" / "Artikel 32". */
-function articleNumberOf(paragraphNumber: string): string | undefined {
-  const m = /(\d+[a-z]?)/i.exec(paragraphNumber ?? '');
-  return m ? m[1] : undefined;
+/**
+ * Bringt beide Seiten des Pinpoint-Vergleichs auf dieselbe Schreibweise: links
+ * ein aus Fließtext gefischter Hinweis („Artikel 15", „Article 15"), rechts ein
+ * Korpus-Feld `paragraphNumber` („Art. 15", bei LkSG „§ 3"). Ohne diese
+ * Normalisierung würde die Pinpoint-Regel still nie greifen.
+ *
+ * BEWUSST KONSERVATIV: ein Fehltreffer erzeugt ein falsches Positiv im
+ * Prüfsatz und damit genau den Schaden, den diese Änderung behebt — ein
+ * verpasster Treffer kostet nur einen Kandidaten. Deshalb nur führende
+ * Nummer (+ optionaler Buchstaben-Suffix, weil Art. 15 und Art. 15a
+ * verschiedene Vorschriften sind) nach einem bekannten Präfix; alles andere
+ * („Anhang III", „Annex I") ergibt `undefined` statt einer geratenen Zahl.
+ */
+export function normalizeArticleNumber(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  // Trennzeichen bewusst breit (Leerzeichen, Punkt, Bindestrich): dasselbe
+  // Feld begegnet uns als „Art. 15" (Korpus-paragraphNumber), als „art-15"
+  // (slugifizierter regulationKey) und als „Artikel 15" (Fließtext-Hinweis).
+  const stripped = raw
+    .trim()
+    .replace(/^(?:Artikel|Article|Art|Section|Sec|§)\.?[\s\-–_]*/i, '')
+    .trim();
+  const m = /^(\d+)\s*([a-z])?\b/i.exec(stripped);
+  if (!m) return undefined;
+  // Führende Nullen weg: „Art. 06" und „Article 6" sind dieselbe Vorschrift.
+  const num = String(parseInt(m[1], 10));
+  return m[2] ? `${num}${m[2].toLowerCase()}` : num;
 }
 
 /**
@@ -288,11 +359,18 @@ export function detectPairReference(pair: RankedPair): ReferenceEvidence | undef
   const aReferencesB = aHits.length > 0;
   const bReferencesA = bHits.length > 0;
 
-  const bArticle = articleNumberOf(pair.b.paragraphNumber);
-  const aArticle = articleNumberOf(pair.a.paragraphNumber);
-  const pinpoint =
-    (bArticle !== undefined && aHits.some((h) => h.articleHints.includes(bArticle))) ||
-    (aArticle !== undefined && bHits.some((h) => h.articleHints.includes(aArticle)));
+  // Der Pinpoint prüft NICHT „nennt A das Gesetz B", sondern „nennt A GENAU
+  // DIESE Vorschrift von B". Das ist der Unterschied zwischen einer 1:1- und
+  // einer 1:N-Verknüpfung (siehe selectCandidatesWithPinpoints).
+  const bArticle = normalizeArticleNumber(pair.b.paragraphNumber);
+  const aArticle = normalizeArticleNumber(pair.a.paragraphNumber);
+  const pinpointArticles: string[] = [];
+  if (bArticle !== undefined && aHits.some((h) => h.articleHints.includes(bArticle))) {
+    pinpointArticles.push(bArticle);
+  }
+  if (aArticle !== undefined && bHits.some((h) => h.articleHints.includes(aArticle))) {
+    pinpointArticles.push(aArticle);
+  }
 
   return {
     side: aReferencesB && bReferencesA ? 'both' : aReferencesB ? 'a' : 'b',
@@ -300,7 +378,8 @@ export function detectPairReference(pair: RankedPair): ReferenceEvidence | undef
     bReferencesA,
     aMatches: aHits.map((h) => h.matched),
     bMatches: bHits.map((h) => h.matched),
-    pinpoint,
+    pinpoint: pinpointArticles.length > 0,
+    pinpointArticles,
   };
 }
 
@@ -360,37 +439,55 @@ export function selectCandidates(ranked: RankedPair[], opts: SelectOptions): Ran
 
 export interface SelectionComposition {
   anchor: number;
-  reference: number;
-  similar: number;
+  /** Ausgewählte Pinpoint-Positive — die einzige Positiv-Quelle. */
+  pinpoint: number;
   negative: number;
-  /** Wie viele referenz-verknüpfte Paare es insgesamt GAB (vor dem Budget-Schnitt). */
-  referenceAvailable: number;
-  /** Davon mit passender Artikel-Zitierung — die stärksten Positiv-Kandidaten. */
-  referencePinpoint: number;
+  /** Wie viele Pinpoint-Paare es insgesamt GAB (vor dem Budget-Schnitt). */
+  pinpointAvailable: number;
+  /** Wie viele Plätze für Positive zur Verfügung standen. `available < budget` = echter Positiv-Mangel. */
+  pinpointBudget: number;
+  /**
+   * Paare, in denen eine Seite nur das andere GESETZ nennt, nicht diese
+   * Vorschrift. Ausdrücklich KEINE Positive (RULE 1) — hier nur ausgewiesen,
+   * damit sichtbar bleibt, wie viel Material die alte Law-Level-Regel
+   * fälschlich als Positive geführt hätte.
+   */
+  lawLevelMentions: number;
+  /** targetSize minus tatsächlich gelieferte Paare. > 0 = Ziel war aus dem Pool nicht erreichbar. */
+  shortfall: number;
 }
 
 /**
- * Referenz-getriebene Auswahl (THE-433) — Nachfolger von `selectCandidates`
- * für Sets, die ein Kappa tragen sollen.
+ * Pinpoint-getriebene Auswahl (THE-433, Nachschärfung) — Nachfolger von
+ * `selectCandidates` und der ersten, law-level arbeitenden Referenz-Auswahl.
+ *
+ * WARUM DIE NACHSCHÄRFUNG: Die erste Fassung verknüpfte auf GESETZES-Ebene.
+ * Zitierte Vorschrift A das Gesetz B, galt A als verknüpft mit JEDER Vorschrift
+ * von B — eine 1:N-Explosion. Gemessen am echten Korpus: CRA Art. 12 benennt
+ * AI-Act Art. 6 und Art. 15, landete im Set aber mit ZEHN AI-Act-Artikeln
+ * (6, 15, 16, 20, 23, 32, 42, 43, 47, 57). Auf dem richtigen Paar waren sich
+ * beide Rater einig; die Uneinigkeit saß vollständig auf den willkürlichen
+ * Paaren — ein Rater sagte korrekt „keine Beziehung", der andere griff zum
+ * vagesten verfügbaren Typ. CONCRETIZES landete dadurch bei Kappa −0,035
+ * (n=11), also auf Zufallsniveau, als Auffangtyp für Paare, die gar keine
+ * Positive hätten sein dürfen. Gesamt-Kappa 0,582 gegen ein 0,6-Tor.
  *
  * Reihenfolge der Quellen, und warum:
- *  1. anchors    — wie bisher, immer drin, fehlende schlagen laut fehl.
- *  2. reference  — alle Paare, in denen eine Seite die andere Norm im TEXT
- *     adressiert. Hier liegen echte Beziehungen; das ist die Positiv-Quelle.
- *     Reichen sie über das Budget hinaus, wird sortiert: Pinpoint zuerst
- *     (die Zitierung nennt genau die Gegen-Provision), dann Similarity als
- *     Tiebreaker — unter bereits referenz-verknüpften Paaren ist Ähnlichkeit
- *     ein brauchbarer Hinweis darauf, WELCHE Provision gemeint war.
- *  3. negative   — vom UNÄHNLICHEN Ende, wie bisher. `negativeShare` wirkt als
- *     Mindestanteil: Precision bleibt messbar.
- *  4. similar    — nur noch Auffüllung, falls Referenzen UND Negative das Ziel
- *     nicht füllen. Similarity ist nach C4 kein Positiv-Indikator mehr.
+ *  1. anchors  — wie bisher, immer drin, fehlende schlagen laut fehl.
+ *  2. pinpoint — nur Paare, in denen die Zitierung GENAU die Gegen-Vorschrift
+ *     benennt. Das ist die einzige Positiv-Quelle. Eine bloße Gesetzes-
+ *     Erwähnung ist nach RUBRIC.md RULE 1 keine Beziehung („verweist eine
+ *     Vorschrift auf die ANDERE NORM?"), also auch kein Positiv-Kandidat.
+ *  3. negative — vom UNÄHNLICHEN Ende, wie bisher. Precision bleibt messbar.
  *
- * Die Zusammensetzung wird zurückgegeben statt nur intern verrechnet: ein Set,
- * dessen Positiv-Anteil sich still ändert, ist genau die Falle, aus der dieses
- * Modul kommt.
+ * KEIN 4. Auffüllen mit „similar" oder mit Law-Level-Erwähnungen. Der Positiv-
+ * Pool ist auf diesem Korpus klein (Größenordnung 23 artikelscharfe
+ * Querverweise insgesamt), und das ist die ehrliche Zahl. Ein aufgefüllter Pool
+ * ist genau die Falle, aus der dieses Modul kommt: er sieht groß aus und trägt
+ * trotzdem kein Kappa. Deshalb meldet `stats` `pinpointAvailable` gegen
+ * `pinpointBudget` und einen `shortfall`, statt die Lücke zu kaschieren.
  */
-export function selectCandidatesWithReferences(
+export function selectCandidatesWithPinpoints(
   ranked: RankedPair[],
   opts: SelectOptions,
 ): { pairs: RankedPair[]; stats: SelectionComposition } {
@@ -413,24 +510,30 @@ export function selectCandidatesWithReferences(
   }
   if (missing.length > 0) {
     throw new Error(
-      `selectCandidatesWithReferences: anchor pair(s) not found among ranked candidates: ${missing.join(', ')}`,
+      `selectCandidatesWithPinpoints: anchor pair(s) not found among ranked candidates: ${missing.join(', ')}`,
     );
   }
 
   const pool = ranked.filter((p) => !selected.has(keyOf(p)));
 
-  // Referenz-Kandidaten annotieren. `ranked` ist bereits score-absteigend
+  // Pool in drei Klassen trennen. `ranked` ist bereits score-absteigend
   // sortiert, der Sort unten ist daher stabil genug; der Pair-Key als letzter
   // Tiebreaker hält ihn auch bei Score-Gleichstand deterministisch.
-  const referenceLinked: RankedPair[] = [];
+  const pinpointLinked: RankedPair[] = [];
+  let lawLevelMentions = 0;
   for (const p of pool) {
     const evidence = detectPairReference(p);
-    if (evidence) referenceLinked.push({ ...p, bucket: 'reference', reference: evidence });
+    if (!evidence) continue; // gar keine Bezugnahme → gewöhnliches Material
+    if (evidence.pinpoint) {
+      pinpointLinked.push({ ...p, bucket: 'pinpoint', reference: evidence });
+    } else {
+      // Nennt das Gesetz, aber nicht diese Vorschrift: KEIN Positiv-Kandidat.
+      // Das Paar bleibt im Pool und darf als gewöhnliches Negativ gezogen
+      // werden — es wird nur nirgends als Positiv geführt.
+      lawLevelMentions++;
+    }
   }
-  referenceLinked.sort((p, q) => {
-    const pp = p.reference?.pinpoint ? 1 : 0;
-    const qp = q.reference?.pinpoint ? 1 : 0;
-    if (pp !== qp) return qp - pp;
+  pinpointLinked.sort((p, q) => {
     if (q.score !== p.score) return q.score - p.score;
     return keyOf(p).localeCompare(keyOf(q));
   });
@@ -438,31 +541,35 @@ export function selectCandidatesWithReferences(
   const remaining = Math.max(0, targetSize - selected.size);
   const totalToPick = Math.min(remaining, pool.length);
   const negativeQuota = Math.min(Math.round(totalToPick * negativeShare), totalToPick);
-  const referenceBudget = totalToPick - negativeQuota;
+  const pinpointBudget = totalToPick - negativeQuota;
 
-  const referenceTaken = referenceLinked.slice(0, referenceBudget);
-  for (const p of referenceTaken) selected.set(keyOf(p), p);
+  const pinpointTaken = pinpointLinked.slice(0, pinpointBudget);
+  for (const p of pinpointTaken) selected.set(keyOf(p), p);
 
-  // Was die Referenzen vom Budget übrig lassen, geht an die Negative — nicht
-  // an „similar". Similarity-Positive sind genau das, was das Set kaputt
-  // gemacht hat; unähnliche Paare sind wenigstens ehrliche Negative.
-  const refKeys = new Set(referenceTaken.map(keyOf));
-  const negativePool = pool.filter((p) => !refKeys.has(keyOf(p)));
-  const negativeCount = Math.min(totalToPick - referenceTaken.length, negativePool.length);
+  // Was die Positive vom Budget übrig lassen, geht an die Negative — nicht an
+  // „similar" und ausdrücklich nicht an Law-Level-Erwähnungen, die als Positive
+  // umetikettiert würden. Unähnliche Paare sind wenigstens ehrliche Negative.
+  // Dass der Positiv-Anteil dadurch klein bleibt, ist die Aussage, nicht der
+  // Fehler: `stats` weist es aus.
+  const takenKeys = new Set(pinpointTaken.map(keyOf));
+  const negativePool = pool.filter((p) => !takenKeys.has(keyOf(p)));
+  const negativeCount = Math.min(totalToPick - pinpointTaken.length, negativePool.length);
   for (const p of negativePool.slice(negativePool.length - negativeCount)) {
     selected.set(keyOf(p), { ...p, bucket: 'negative' });
   }
 
+  const pairs = shuffleDeterministic([...selected.values()], seed);
   const stats: SelectionComposition = {
-    anchor: [...selected.values()].filter((p) => p.bucket === 'anchor').length,
-    reference: referenceTaken.length,
-    similar: 0,
+    anchor: pairs.filter((p) => p.bucket === 'anchor').length,
+    pinpoint: pinpointTaken.length,
     negative: negativeCount,
-    referenceAvailable: referenceLinked.length,
-    referencePinpoint: referenceLinked.filter((p) => p.reference?.pinpoint).length,
+    pinpointAvailable: pinpointLinked.length,
+    pinpointBudget,
+    lawLevelMentions,
+    shortfall: Math.max(0, targetSize - pairs.length),
   };
 
-  return { pairs: shuffleDeterministic([...selected.values()], seed), stats };
+  return { pairs, stats };
 }
 
 /** Fisher–Yates shuffle driven by mulberry32 — deterministic per seed, differs across seeds. */

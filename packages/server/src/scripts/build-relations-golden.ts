@@ -44,7 +44,7 @@ import { NORM_ONTOLOGY, buildRegulationKey } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import {
   rankCandidatePairs,
-  selectCandidatesWithReferences,
+  selectCandidatesWithPinpoints,
   hasReferencePatterns,
   type CandidateParagraph,
   type RankedPair,
@@ -432,7 +432,7 @@ async function main(): Promise<void> {
       }
 
       try {
-        const { pairs: selected, stats } = selectCandidatesWithReferences(ranked, {
+        const { pairs: selected, stats } = selectCandidatesWithPinpoints(ranked, {
           targetSize,
           negativeShare,
           anchors,
@@ -441,9 +441,28 @@ async function main(): Promise<void> {
         allSelected.push(...selected);
         console.log(
           `[relations-build] ${lawA}×${lawB}: ${selected.length} candidates selected ` +
-            `(reference ${stats.reference}, negative ${stats.negative}, anchor ${stats.anchor}, similar ${stats.similar}) · ` +
-            `referenz-verknüpft verfügbar: ${stats.referenceAvailable}, davon Pinpoint: ${stats.referencePinpoint}`,
+            `(pinpoint ${stats.pinpoint}, negative ${stats.negative}, anchor ${stats.anchor}) · ` +
+            `pinpoint available ${stats.pinpointAvailable}/${stats.pinpointBudget} budget · ` +
+            `law-level mentions rejected as positives: ${stats.lawLevelMentions}`,
         );
+        // Der Positiv-Mangel ist die eigentliche Aussage dieses Laufs — er darf
+        // nicht in einer Zeile Statistik untergehen. Lieber eine Warnung zu
+        // viel als ein Prüfsatz, dessen dünner Positiv-Anteil erst nach zwei
+        // Rater-Läufen auffällt.
+        if (stats.pinpointAvailable < stats.pinpointBudget) {
+          console.warn(
+            `[relations-build] ⚠️ ${lawA}×${lawB}: only ${stats.pinpointAvailable} genuine (pinpoint) positive(s) ` +
+              `exist for ${stats.pinpointBudget} positive slot(s) — the remainder was filled with negatives, ` +
+              `NOT padded with law-level mentions. A thin positive pool cannot carry a kappa; ` +
+              `crawl more laws rather than loosening the pinpoint rule.`,
+          );
+        }
+        if (stats.shortfall > 0) {
+          console.warn(
+            `[relations-build] ⚠️ ${lawA}×${lawB}: target size ${targetSize} not reachable — ` +
+              `${stats.shortfall} pair(s) short (candidate pool exhausted).`,
+          );
+        }
       } catch (err) {
         // Anchor missing among ranked candidates — fail loudly, name the pair, do not swallow.
         throw new Error(

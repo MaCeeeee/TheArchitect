@@ -8,7 +8,8 @@ import {
   selectCandidates,
   referencesLaw,
   detectPairReference,
-  selectCandidatesWithReferences,
+  normalizeArticleNumber,
+  selectCandidatesWithPinpoints,
   type CandidateParagraph,
   type RankedPair,
 } from '../evals/relationsCandidates';
@@ -237,8 +238,73 @@ describe('referencesLaw', () => {
     expect(hits.flatMap((h) => h.articleHints)).toContain('6');
   });
 
+  // Verifiziert am echten CRA-Art.-12-Text: dort steht „… gemäß Artikel 32
+  // Absatz 3 der vorliegenden Verordnung unterliegen, und auch nach Artikel 6
+  // der Verordnung (EU) 2024/1689 …". Die 32 gehört dem ZITIERENDEN Gesetz.
+  // Ohne diesen Filter wurde CRA Art. 12 mit AI-Act Art. 32 verknüpft — ein
+  // Paar, das der Text nie behauptet.
+  it('ignores an article number that the text assigns to the citing law itself', () => {
+    const hits = referencesLaw(
+      'Produkte, die den Konformitätsbewertungsverfahren gemäß Artikel 32 Absatz 3 der vorliegenden Verordnung unterliegen, und auch nach Artikel 6 der Verordnung (EU) 2024/1689 als Hochrisiko-KI-Systeme eingestuft sind',
+      'ai-act-de',
+    );
+    const hints = hits.flatMap((h) => h.articleHints);
+    expect(hints).toContain('6'); // gehört zur zitierten Norm
+    expect(hints).not.toContain('32'); // gehört zur zitierenden Norm
+  });
+
+  it('applies the same filter to the english "of this Regulation" phrasing', () => {
+    const hits = referencesLaw(
+      'entities subject to Article 20 of this Regulation shall also comply with Directive (EU) 2022/2555',
+      'nis2',
+    );
+    expect(hits.flatMap((h) => h.articleHints)).not.toContain('20');
+  });
+
+  it('keeps "der genannten Verordnung", which points at the foreign norm, not at the citing one', () => {
+    const hits = referencesLaw(
+      'gemäß Artikel 43 der genannten Verordnung gilt das Verfahren der Verordnung (EU) 2024/1689',
+      'ai-act-de',
+    );
+    expect(hits.flatMap((h) => h.articleHints)).toContain('43');
+  });
+
   it('returns no hits for a source without registered reference patterns', () => {
     expect(referencesLaw('Verordnung (EU) 2016/679', 'does-not-exist')).toHaveLength(0);
+  });
+});
+
+// Die Normalisierung ist der Angelpunkt der Pinpoint-Auswahl: links steht ein
+// aus Fließtext gefischter Hinweis („Artikel 15"), rechts ein Korpus-Feld
+// („Art. 15"). Passen die beiden Schreibweisen nicht zusammen, verpufft die
+// ganze Pinpoint-Logik still — deshalb hat der Helfer eigene Tests.
+describe('normalizeArticleNumber', () => {
+  it('normalises every spelling the two sides can arrive in to the bare number', () => {
+    expect(normalizeArticleNumber('15')).toBe('15');
+    expect(normalizeArticleNumber('Article 15')).toBe('15');
+    expect(normalizeArticleNumber('Artikel 15')).toBe('15');
+    expect(normalizeArticleNumber('Art. 15')).toBe('15');
+    expect(normalizeArticleNumber('art 15')).toBe('15');
+    expect(normalizeArticleNumber('§ 3')).toBe('3'); // LkSG-Schreibweise
+    expect(normalizeArticleNumber('§3')).toBe('3');
+    expect(normalizeArticleNumber('art-15')).toBe('15'); // slugifizierter regulationKey-Teil
+  });
+
+  it('keeps a letter suffix, because Art. 15 and Art. 15a are different provisions', () => {
+    expect(normalizeArticleNumber('Art. 15a')).toBe('15a');
+    expect(normalizeArticleNumber('Artikel 15a')).toBe('15a');
+    expect(normalizeArticleNumber('Art. 15a')).not.toBe(normalizeArticleNumber('Art. 15'));
+  });
+
+  it('does not invent a number where there is none — ein Fehltreffer wiegt schwerer als ein verpasster Treffer', () => {
+    expect(normalizeArticleNumber('')).toBeUndefined();
+    expect(normalizeArticleNumber('Anhang III')).toBeUndefined();
+    expect(normalizeArticleNumber('Annex I')).toBeUndefined();
+    expect(normalizeArticleNumber('Erwägungsgrund')).toBeUndefined();
+  });
+
+  it('ignores leading zeros so "Art. 06" and "Article 6" are the same provision', () => {
+    expect(normalizeArticleNumber('Art. 06')).toBe('6');
   });
 });
 
@@ -323,54 +389,154 @@ describe('detectPairReference', () => {
   });
 });
 
-describe('selectCandidatesWithReferences', () => {
-  // Ein Referenz-Paar mit ABSICHTLICH niedriger Similarity, damit der Test
-  // beweist: es überlebt die Auswahl, obwohl das reine Similarity-Ranking es
-  // ans Ende sortiert hätte.
+
+// ─── Pinpoint-getriebene Auswahl (THE-433, Nachschärfung) ────────────
+//
+// Der erste referenz-getriebene Wurf hat auf LAW-Ebene verknüpft: zitiert
+// Provision A das Gesetz B, galt A als verknüpft mit JEDER Provision von B.
+// Das ist eine 1:N-Explosion. Gemessene Folge im echten Set: CRA Art. 12 nennt
+// AI-Act Art. 6 und 15 — im Set stand es mit ZEHN AI-Act-Artikeln. Auf dem
+// richtigen Paar waren sich beide Rater einig; die Uneinigkeit saß komplett auf
+// den willkürlichen Paaren, wo ein Rater korrekt „keine Beziehung" sagte und der
+// andere zum vagesten verfügbaren Typ griff. CONCRETIZES kam dadurch auf Kappa
+// −0,035 (n=11), also Zufallsniveau, weil es als Auffangtyp für Paare diente,
+// die gar keine Positive hätten sein dürfen.
+//
+// Konsequenz: Eine Zitierung, die einen Artikel BENENNT, verknüpft nur mit
+// GENAU diesem Artikel. Eine Zitierung ohne Artikelnummer (law-level mention)
+// ist nach RUBRIC.md RULE 1 („verweist eine Provision auf die ANDERE NORM?")
+// kein Positiv-Kandidat und darf auch nicht als einer gezählt werden.
+
+describe('pinpoint linking — CRA Art. 12 → AI Act Art. 15 (real corpus case)', () => {
+  // Der reale Fall, der den Fehler sichtbar gemacht hat. Der Fixture-Text nennt
+  // ausschließlich Artikel 15 — genau ein Gegenüber darf verknüpft sein.
+  const cra12 = paraWithText(
+    'cra-de:art-12',
+    'cra-de',
+    30,
+    'Produkte mit digitalen Elementen, die als Hochrisiko-KI-Systeme eingestuft werden, gelten als konform mit den Cybersicherheitsanforderungen nach Artikel 15 der Verordnung (EU) 2024/1689, sofern sie die grundlegenden Anforderungen dieses Anhangs erfüllen.',
+  );
+  const aiAct = (n: string, angle: number) =>
+    paraWithText(
+      `ai-act-de:art-${n}`,
+      'ai-act-de',
+      angle,
+      `Text des Artikels ${n} der KI-Verordnung, lang genug um realistisch zu sein und ohne Zitat eines anderen Gesetzes.`,
+    );
+
+  const counterparts = [aiAct('6', 31), aiAct('15', 120), aiAct('16', 32), aiAct('42', 33), aiAct('47', 34)];
+
+  function pairWith(counterpart: CandidateParagraph): RankedPair {
+    const [a, b] = cra12.regulationKey < counterpart.regulationKey ? [cra12, counterpart] : [counterpart, cra12];
+    return { a, b, score: 0.5 };
+  }
+
+  it('marks only the named article as pinpoint-linked, not every article of the cited law', () => {
+    const art15 = detectPairReference(pairWith(counterparts[1]));
+    expect(art15?.pinpoint).toBe(true);
+
+    for (const other of [counterparts[0], counterparts[2], counterparts[3], counterparts[4]]) {
+      const ev = detectPairReference(pairWith(other));
+      // Die Zitierung wird weiterhin gesehen (das Gesetz IST genannt) …
+      expect(ev).toBeDefined();
+      // … aber sie benennt diese Provision nicht: kein Positiv-Kandidat.
+      expect(ev?.pinpoint).toBe(false);
+    }
+  });
+
+  it('records which article the citation pinpointed, so a rater can check the claim', () => {
+    const ev = detectPairReference(pairWith(counterparts[1]));
+    expect(ev?.pinpointArticles).toEqual(['15']);
+  });
+
+  it('puts only Art. 15 into the positive pool — the other four never become positives', () => {
+    const ranked = [...counterparts].map(pairWith);
+    const { pairs, stats } = selectCandidatesWithPinpoints(ranked, {
+      targetSize: 5,
+      negativeShare: 0,
+      seed: 42,
+    });
+    expect(stats.pinpointAvailable).toBe(1);
+    expect(stats.lawLevelMentions).toBe(4);
+    const positives = pairs.filter((p) => p.bucket === 'pinpoint');
+    expect(positives).toHaveLength(1);
+    expect(positives[0].a.regulationKey === 'ai-act-de:art-15' || positives[0].b.regulationKey === 'ai-act-de:art-15').toBe(
+      true,
+    );
+  });
+});
+
+describe('selectCandidatesWithPinpoints', () => {
+  // Ein Pinpoint-Paar mit ABSICHTLICH niedriger Similarity: der Test beweist,
+  // dass es die Auswahl überlebt, obwohl reines Similarity-Ranking es ans Ende
+  // sortiert hätte. dora:art-1 nennt „Article 3 of Directive (EU) 2022/2555" —
+  // also ist GENAU nis2:art-3 verknüpft, die übrigen fünf NIS2-Artikel nicht.
   const doraRef = paraWithText(
     'dora:art-1',
     'dora',
     5,
     'Pursuant to Article 3 of Directive (EU) 2022/2555, this Regulation shall be considered a sector-specific Union legal act.',
   );
-  const doraPlain = lawAParas.slice(1);
-  const nis2All = lawBParas;
+  const rankedRef = rankCandidatePairs([doraRef, ...lawAParas.slice(1)], lawBParas);
 
-  const rankedRef = rankCandidatePairs([doraRef, ...doraPlain], nis2All);
-
-  it('selects reference-linked pairs even when their similarity is low', () => {
-    const { pairs, stats } = selectCandidatesWithReferences(rankedRef, {
-      targetSize: 8,
+  it('links the citing provision to the named article only, not to the whole cited law', () => {
+    const { pairs, stats } = selectCandidatesWithPinpoints(rankedRef, {
+      targetSize: 12,
       negativeShare: 0.3,
       seed: 42,
     });
-    expect(stats.reference).toBeGreaterThan(0);
-    const refPairs = pairs.filter((p) => p.bucket === 'reference');
-    expect(refPairs.length).toBe(stats.reference);
-    // dora:art-1 zitiert NIS2 → jedes seiner Paare ist referenz-verknüpft,
-    // auch das mit der schlechtesten Similarity der ganzen Rangliste.
-    const worst = [...rankedRef].reverse().find((p) => p.a.regulationKey === 'dora:art-1');
-    expect(worst).toBeDefined();
-    const worstIsSelectable = rankedRef
-      .filter((p) => p.a.regulationKey === 'dora:art-1' || p.b.regulationKey === 'dora:art-1')
-      .every((p) => detectPairReference(p) !== undefined);
-    expect(worstIsSelectable).toBe(true);
+    expect(stats.pinpointAvailable).toBe(1);
+    expect(stats.lawLevelMentions).toBe(5); // dora:art-1 × die fünf übrigen NIS2-Artikel
+    const positives = pairs.filter((p) => p.bucket === 'pinpoint');
+    expect(positives).toHaveLength(1);
+    expect(positives[0].a.regulationKey).toBe('dora:art-1');
+    expect(positives[0].b.regulationKey).toBe('nis2:art-3');
   });
 
-  it('reports a composition of reference-linked pairs plus similarity negatives', () => {
-    const { pairs, stats } = selectCandidatesWithReferences(rankedRef, {
+  it('never turns a law-level mention into a positive candidate', () => {
+    const { pairs } = selectCandidatesWithPinpoints(rankedRef, { targetSize: 30, seed: 42 });
+    const lawLevelOnly = pairs.filter((p) => {
+      const ev = detectPairReference(p);
+      return ev !== undefined && !ev.pinpoint;
+    });
+    expect(lawLevelOnly.length).toBeGreaterThan(0); // sie sind im Set …
+    for (const p of lawLevelOnly) expect(p.bucket).not.toBe('pinpoint'); // … aber nie als Positive
+  });
+
+  it('reports a composition of pinpoint positives plus similarity negatives', () => {
+    const { pairs, stats } = selectCandidatesWithPinpoints(rankedRef, {
       targetSize: 10,
       negativeShare: 0.3,
       seed: 42,
     });
-    expect(stats.reference + stats.negative + stats.anchor + stats.similar).toBe(pairs.length);
+    expect(stats.anchor + stats.pinpoint + stats.negative).toBe(pairs.length);
+    expect(pairs.filter((p) => p.bucket === 'pinpoint')).toHaveLength(stats.pinpoint);
+    expect(pairs.filter((p) => p.bucket === 'negative')).toHaveLength(stats.negative);
+    expect(pairs.filter((p) => p.bucket === 'anchor')).toHaveLength(stats.anchor);
     expect(stats.negative).toBeGreaterThan(0);
-    const neg = pairs.filter((p) => p.bucket === 'negative');
-    expect(neg).toHaveLength(stats.negative);
+  });
+
+  it('reports how many pinpoint pairs EXISTED versus how much budget they had', () => {
+    const { stats } = selectCandidatesWithPinpoints(rankedRef, {
+      targetSize: 10,
+      negativeShare: 0.3,
+      seed: 42,
+    });
+    // 10 Plätze, 30% Negativ-Quote → 7 Plätze für Positive, aber nur 1 echtes
+    // Pinpoint-Paar existiert. Genau diese Lücke muss sichtbar sein.
+    expect(stats.pinpointBudget).toBe(7);
+    expect(stats.pinpointAvailable).toBe(1);
+    expect(stats.pinpoint).toBe(1);
+  });
+
+  it('reports a shortfall instead of padding when the pool cannot fill the target', () => {
+    const { pairs, stats } = selectCandidatesWithPinpoints(rankedRef, { targetSize: 500, seed: 42 });
+    expect(pairs).toHaveLength(rankedRef.length);
+    expect(stats.shortfall).toBe(500 - rankedRef.length);
   });
 
   it('always includes configured anchors', () => {
-    const { pairs } = selectCandidatesWithReferences(rankedRef, {
+    const { pairs } = selectCandidatesWithPinpoints(rankedRef, {
       targetSize: 3,
       anchors: [['dora:art-6', 'nis2:art-2']],
       seed: 42,
@@ -382,20 +548,20 @@ describe('selectCandidatesWithReferences', () => {
 
   it('throws when a configured anchor pair is not present among the ranked candidates', () => {
     expect(() =>
-      selectCandidatesWithReferences(rankedRef, { targetSize: 5, anchors: [['dora:art-99', 'nis2:art-1']] }),
+      selectCandidatesWithPinpoints(rankedRef, { targetSize: 5, anchors: [['dora:art-99', 'nis2:art-1']] }),
     ).toThrow(/dora:art-99/);
   });
 
   it('is deterministic for the same seed and differs for another', () => {
-    const a1 = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
-    const a2 = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
-    const b = selectCandidatesWithReferences(rankedRef, { targetSize: 12, seed: 7 }).pairs.map(pairKey);
+    const a1 = selectCandidatesWithPinpoints(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
+    const a2 = selectCandidatesWithPinpoints(rankedRef, { targetSize: 12, seed: 42 }).pairs.map(pairKey);
+    const b = selectCandidatesWithPinpoints(rankedRef, { targetSize: 12, seed: 7 }).pairs.map(pairKey);
     expect(a1).toEqual(a2);
     expect(a1).not.toEqual(b);
   });
 
   it('never returns duplicate pairs', () => {
-    const { pairs } = selectCandidatesWithReferences(rankedRef, {
+    const { pairs } = selectCandidatesWithPinpoints(rankedRef, {
       targetSize: 30,
       anchors: [['dora:art-6', 'nis2:art-2']],
       seed: 42,
@@ -403,10 +569,11 @@ describe('selectCandidatesWithReferences', () => {
     expect(new Set(pairs.map(pairKey)).size).toBe(pairs.length);
   });
 
-  it('carries the reference evidence on the selected pair so raters see WHY it was picked', () => {
-    const { pairs } = selectCandidatesWithReferences(rankedRef, { targetSize: 8, seed: 42 });
-    const ref = pairs.find((p) => p.bucket === 'reference');
+  it('carries the reference evidence on the selected positive so raters see WHY it was picked', () => {
+    const { pairs } = selectCandidatesWithPinpoints(rankedRef, { targetSize: 8, seed: 42 });
+    const ref = pairs.find((p) => p.bucket === 'pinpoint');
     expect(ref?.reference).toBeDefined();
+    expect(ref?.reference?.pinpoint).toBe(true);
     expect(['a', 'b', 'both']).toContain(ref?.reference?.side);
   });
 });
