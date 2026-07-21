@@ -96,6 +96,40 @@ describe('buildTypingDraft — stratified selection (targetSize)', () => {
     expect(draft.cases.length).toBe(mixedRegulations.length);
   });
 
+  // mustInclude: bewusste Über-Abtastung seltener, aber wichtiger Klassen. Die
+  // Stratifikation bildet die natürliche Korpus-Verteilung ab, in der Geltungs-
+  // bereichs- und Definitions-Provisions eine Handvoll gegenüber Dutzenden
+  // Pflichten-Artikeln sind — zu dünn, um eine Kappa-Zahl zu tragen. Pflicht-
+  // Fälle müssen daher jeden Seed überleben und Quote verbrauchen, statt den
+  // Satz über targetSize hinaus aufzublähen.
+  it('always includes forced cases regardless of seed', () => {
+    const forced = ['src0-art-0', 'src4-art-9'];
+    for (const seed of [1, 2, 7, 42]) {
+      const ids = buildTypingDraft(manyRegs, {
+        targetSize: 10,
+        seed,
+        mustInclude: forced,
+      }).cases.map((c) => c.caseId);
+      expect(ids).toEqual(expect.arrayContaining(forced));
+    }
+  });
+
+  it('counts forced cases against the target size and never duplicates them', () => {
+    const forced = ['src0-art-0', 'src1-art-0', 'src2-art-0'];
+    const draft = buildTypingDraft(manyRegs, { targetSize: 10, seed: 42, mustInclude: forced });
+    expect(draft.cases).toHaveLength(10);
+    expect(new Set(draft.cases.map((c) => c.caseId)).size).toBe(10);
+  });
+
+  it('ignores forced ids that are not present in the input', () => {
+    const draft = buildTypingDraft(manyRegs, {
+      targetSize: 10,
+      seed: 42,
+      mustInclude: ['does-not-exist'],
+    });
+    expect(draft.cases).toHaveLength(10);
+  });
+
   it('does not pad with duplicates when the round-robin cannot fill the quota', () => {
     // Only 2 sources, 3 cases total — asking for 12 must yield exactly those 3,
     // no repeats.

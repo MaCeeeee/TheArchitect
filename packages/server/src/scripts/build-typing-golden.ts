@@ -58,6 +58,24 @@ export interface BuildTypingDraftOptions {
   targetSize?: number;
   /** Seed für den deterministischen PRNG (mulberry32) hinter der Stratifikation. */
   seed?: number;
+  /**
+   * caseIds, die IMMER enthalten sein müssen, unabhängig von der Stratifikation.
+   *
+   * Warum: die Stratifikation streut über Quelle und Sprache und bildet damit die
+   * NATÜRLICHE Verteilung des Korpus ab. Geltungsbereichs- und Definitions-
+   * Provisions sind darin naturgemäß selten (ein Gesetz hat ein bis zwei davon
+   * gegenüber Dutzenden Pflichten-Artikeln) — im ersten 70er-Entwurf kamen sie auf
+   * 5 bzw. 2 Fälle. Für die Messung sind sie aber die WICHTIGSTEN Klassen: die
+   * Priorisierung von Geltungsbereichs-Provisions im Retrieval ist der Grund,
+   * warum die Achse überhaupt existiert. Eine Aussage über fünf Fälle trägt nicht.
+   *
+   * Diese Liste erzwingt daher gezielte Über-Abtastung seltener, aber wichtiger
+   * Klassen — dasselbe Prinzip wie der Pflichtanteil an Negativ-Fällen in der
+   * Zuordnungs-Rubrik (§ 5). Die Auswahl bleibt label-UNABHÄNGIG: gewählt wird
+   * über die Artikel-Position (Art. 1-3 sind praktisch immer Gegenstand,
+   * Anwendungsbereich, Begriffsbestimmungen), nicht über ein vermutetes Label.
+   */
+  mustInclude?: string[];
 }
 
 /**
@@ -69,8 +87,23 @@ export interface BuildTypingDraftOptions {
  * unterschiedlichem Seed. Kann die Quote nicht gefüllt werden (zu wenig
  * Material), werden NIE Duplikate nachgefüllt — es wird einfach das gegeben.
  */
-function stratifiedSelect(allCases: TypingGoldenCase[], targetSize: number, seed: number): TypingGoldenCase[] {
+function stratifiedSelect(
+  allCases: TypingGoldenCase[],
+  targetSize: number,
+  seed: number,
+  mustInclude: string[] = []
+): TypingGoldenCase[] {
   if (allCases.length <= targetSize) return allCases;
+
+  // Pflicht-Fälle vorab herausnehmen: sie sind gesetzt und belegen Quote.
+  // Der Rest wird wie bisher stratifiziert über die verbleibenden Plätze.
+  const forcedIds = new Set(mustInclude);
+  const forced = allCases.filter((c) => forcedIds.has(c.caseId));
+  const remaining = allCases.filter((c) => !forcedIds.has(c.caseId));
+  const slotsLeft = targetSize - forced.length;
+  if (slotsLeft <= 0) return forced.slice(0, targetSize);
+  allCases = remaining;
+  targetSize = slotsLeft;
 
   const rand = mulberry32(seed);
   const shuffle = <T>(arr: T[]): T[] => {
@@ -138,7 +171,8 @@ function stratifiedSelect(allCases: TypingGoldenCase[], targetSize: number, seed
     }
   }
 
-  return selected;
+  // Pflicht-Fälle zuerst, danach die stratifizierte Auswahl.
+  return [...forced, ...selected];
 }
 
 /** Ein Case je Provision, `labels` LEER (undefined-Achsen) — der Labeler/Prelabel füllt. */
@@ -172,7 +206,8 @@ export function buildTypingDraft(
     });
   }
 
-  const cases = targetSize === undefined ? allCases : stratifiedSelect(allCases, targetSize, seed);
+  const cases =
+    targetSize === undefined ? allCases : stratifiedSelect(allCases, targetSize, seed, opts.mustInclude ?? []);
 
   return { version, frozen: false, ontologyVersion, rubricRef: '../RUBRIC.md', cases };
 }
@@ -209,25 +244,79 @@ async function main(): Promise<void> {
       : path.join(__dirname, '..', 'evals', 'golden', `typing.${sources.join('-')}.draft.json`)
   );
 
-  const api = process.env.TA_API || 'http://localhost:3000/api';
-  const key = process.env.TA_KEY;
-  const projectId = process.env.TA_PROJECT;
-  if (!key || !projectId) {
-    console.error('TA_KEY und TA_PROJECT müssen gesetzt sein.');
-    process.exitCode = 2;
-    return;
-  }
-  const headers = { 'X-API-Key': key };
+  // Zwei Beschaffungswege:
+  //
+  //   --from-file <pool.json>   Provisions aus einer lokalen Datei (Array von
+  //                             ApiRegulation-Objekten). Gedacht für einen
+  //                             KORPUS-weiten Prüfsatz: der projekt-bezogene
+  //                             Endpunkt unten liefert nur die Regulierungen,
+  //                             die einem Projekt zugeordnet sind — für ein
+  //                             Demo-Projekt sind das eine Handvoll, nicht die
+  //                             ~1500 Paragraphen des Korpus. Den Pool zieht man
+  //                             read-only aus der Korpus-Datenbank; so muss für
+  //                             einen Prüfsatz nichts in ein Projekt importiert
+  //                             (und damit verändert) werden.
+  //   ohne Flag                 wie bisher über die Projekt-API (TA_*).
+  const fromFileArg = argValue(argv, '--from-file');
 
   const regulations: ApiRegulation[] = [];
-  for (const source of sources) {
-    const regRes = await fetch(`${api}/projects/${projectId}/regulations?source=${source}&limit=300`, { headers });
-    if (!regRes.ok) throw new Error(`GET regulations (${source}): HTTP ${regRes.status}`);
-    const items = ((await regRes.json()) as { data: { items: ApiRegulation[] } }).data.items;
-    regulations.push(...items);
+  if (fromFileArg) {
+    const poolPath = path.resolve(fromFileArg);
+    const pool = JSON.parse(fs.readFileSync(poolPath, 'utf8')) as ApiRegulation[];
+    if (!Array.isArray(pool)) throw new Error(`--from-file: ${poolPath} enthält kein Array`);
+    const wanted = new Set(sources);
+    regulations.push(...pool.filter((r) => wanted.has(r.source)));
+    if (regulations.length === 0) {
+      console.error(
+        `--from-file: keine Provisions für ${sources.join(',')} in ${poolPath} ` +
+          `(vorhandene Quellen: ${[...new Set(pool.map((r) => r.source))].sort().join(', ')})`
+      );
+      process.exitCode = 2;
+      return;
+    }
+  } else {
+    const api = process.env.TA_API || 'http://localhost:3000/api';
+    const key = process.env.TA_KEY;
+    const projectId = process.env.TA_PROJECT;
+    if (!key || !projectId) {
+      console.error('TA_KEY und TA_PROJECT müssen gesetzt sein (oder --from-file benutzen).');
+      process.exitCode = 2;
+      return;
+    }
+    const headers = { 'X-API-Key': key };
+    for (const source of sources) {
+      const regRes = await fetch(`${api}/projects/${projectId}/regulations?source=${source}&limit=300`, { headers });
+      if (!regRes.ok) throw new Error(`GET regulations (${source}): HTTP ${regRes.status}`);
+      const items = ((await regRes.json()) as { data: { items: ApiRegulation[] } }).data.items;
+      regulations.push(...items);
+    }
   }
 
-  const draft = buildTypingDraft(regulations, { targetSize, seed });
+  // --must-include-paragraphs 1,2,3  erzwingt bestimmte Artikel-Nummern JE QUELLE
+  // in der Auswahl. Angegeben werden Paragraphen-Nummern (nicht caseIds), weil das
+  // die fachliche Absicht ist: „Art. 1-3 jedes Gesetzes sind Gegenstand,
+  // Anwendungsbereich und Begriffsbestimmungen". Die caseId-Bildung ist ein
+  // internes Detail und wird hier über dieselbe Slugify-Regel aufgelöst wie im
+  // Aufbau, damit beide Seiten nicht auseinanderlaufen können.
+  const mustIncludeArg = argValue(argv, '--must-include-paragraphs');
+  let mustInclude: string[] | undefined;
+  if (mustIncludeArg) {
+    const wanted = new Set(
+      mustIncludeArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    mustInclude = regulations
+      .filter((r) => wanted.has(r.paragraphNumber))
+      .map((r) => slugifyCaseId(r.source, r.paragraphNumber));
+    console.log(
+      `[typing-build] Pflicht-Einschluss: ${mustInclude.length} Fälle ` +
+        `(Paragraphen ${[...wanted].join(',')} je Quelle)`
+    );
+  }
+
+  const draft = buildTypingDraft(regulations, { targetSize, seed, mustInclude });
   // Schema-Validierung vor dem Schreiben (fängt kaputte Cases sofort).
   TypingGoldenSetSchema.parse(draft);
 
