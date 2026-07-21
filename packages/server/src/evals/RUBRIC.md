@@ -259,6 +259,35 @@ Weichen zwei Prüfer hier ab, ist meist die Quelle falsch zugeordnet — kein Ru
 Fällt die Prüfer-Einigkeit auf einer Achse unter 0,6, ist **B3 zu schärfen** — nicht das Modell zu
 tunen und nicht der Prüfsatz zu beschönigen (§ 7.4 gilt unverändert).
 
+### B4a. Die Ausnahme: konstante Achsen (Prävalenz-Paradox)
+
+Diese Regel hat **eine** Ausnahme, und sie ist beim ersten Zwei-Prüfer-Lauf sofort aufgetreten:
+
+> `normKind` 95 % Rohübereinstimmung — Kappa **0,000**.
+> `bindingness` 95 % Rohübereinstimmung — Kappa **0,000**.
+
+Das ist keine Uneinigkeit. Kappa misst Übereinstimmung **über den Zufall hinaus**. Vergibt ein Prüfer
+über alle Fälle nur *eine* Klasse — weil die Achse auf diesem Material gar keine Varianz hat —, dann ist
+die erwartete Zufallsübereinstimmung genauso hoch wie die beobachtete, und Kappa fällt rechnerisch auf
+null. Genau das passiert hier: Der Korpus besteht ausschließlich aus unmittelbar geltenden
+Gesetzgebungsakten, also ist jede Provision `legislation` und `binding`. Die Achse ist
+**konstruktionsbedingt konstant** (siehe B3, letzter Abschnitt: beide beschreiben das Dokument, nicht
+die Provision).
+
+**Was daraus folgt:**
+
+1. Auf eine konstante Achse mit „B3 schärfen" zu reagieren, würde eine funktionierende Rubrik für ein
+   Problem umbauen, das sie nicht hat. **Nicht tun.**
+2. `typing-kappa compare` weist solche Achsen als **KONSTANT** aus und nimmt sie vom Exit-1-Tor aus.
+   Die Ausnahme wird ausdrücklich gedruckt, damit niemand sie später für ein bestandenes Tor hält.
+3. Berichtet wird für konstante Achsen die **Rohübereinstimmung**, nicht der Kappa-Wert.
+4. Die Achse bleibt trotzdem im Prüfsatz: Sie wird aussagekräftig, sobald Material mit Varianz dazukommt
+   (delegierte Rechtsakte, Leitlinien, Normen). Erst dann ist ihr Kappa zu interpretieren.
+
+Die Abweichungen auf diesen beiden Achsen sind entsprechend zu lesen: Sie sind **Einzelfehler**, keine
+Definitionsstreitigkeiten. Typisch ist die Verwechslung „Artikel *ermächtigt zu* delegierten Rechtsakten"
+mit „Artikel *ist* ein delegierter Rechtsakt" — das Label folgt der Quelle, nicht dem Gegenstand.
+
 ## B5. Doppel-Labeling — die Blindheits-Regel
 
 § 7 gilt vollständig (zwei Prüfer, dieselben ≥ 20 Fälle, Kappa ≥ 0,6, danach Adjudikation und Freeze).
@@ -287,6 +316,9 @@ gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob al
 
 - **B-v1 (2026-07-20):** Erstfassung (THE-421, Slice G-0/G). Fünf Achsen inkl. der neuen
   `provisionKind`; Abgrenzungsregeln B3; Blindheits-Regel B5.
+- **B-v1.1 (2026-07-21):** B4a ergänzt — konstante Achsen (Prävalenz-Paradox) sind vom Tor ausgenommen,
+  Rohübereinstimmung statt Kappa berichten. Anlass: erster Zwei-Prüfer-Lauf, `normKind`/`bindingness`
+  95 % Übereinstimmung bei Kappa 0,000.
 
 ---
 
