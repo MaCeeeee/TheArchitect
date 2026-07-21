@@ -117,3 +117,32 @@ describe('parseRelationLabel', () => {
     expect(r.dropped).toBe(true);
   });
 });
+
+// Der erste Zwei-Prüfer-Lauf ohne Rubrik-Regeln kam auf Kappa 0,265: beide
+// Prüfer bekamen nur die Namensliste der Beziehungsarten. Ein Kappa misst nur
+// dann eine unklare Aufgabendefinition, wenn die Prüfer sie auch bekommen haben.
+describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
+  const anyCase = {
+    caseId: 'x__y',
+    a: { source: 'dsgvo', paragraphNumber: 'Art. 32', regulationKey: 'dsgvo:art-32', fullText: 'A'.repeat(60), language: 'de' as const },
+    b: { source: 'nis2-de', paragraphNumber: 'Art. 21', regulationKey: 'nis2-de:art-21', fullText: 'B'.repeat(60), language: 'de' as const },
+  };
+
+  it('carries the decisive C4 rule (parallel obligation is not a relation)', () => {
+    const p = buildRelationsPrompt(anyCase as never);
+    expect(p).toContain('parallel obligation is NOT a relation');
+    expect(p).toContain('OTHER NORM');
+  });
+
+  it('carries the displacement-vs-concretisation test from C5', () => {
+    const p = buildRelationsPrompt(anyCase as never);
+    expect(p).toContain('PREVAILS_OVER');
+    expect(p).toContain('CONCRETIZES');
+  });
+
+  it('still lists only inferred relation types (metadata types stay out)', () => {
+    const p = buildRelationsPrompt(anyCase as never);
+    expect(p).not.toContain('AMENDS');
+    expect(p).not.toContain('REPEALS');
+  });
+});

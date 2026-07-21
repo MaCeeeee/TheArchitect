@@ -93,3 +93,29 @@ describe('parsePrelabelLabels', () => {
     expect(parsePrelabelLabels('{"provisionKind":"na"}').labels.provisionKind).toBeNull();
   });
 });
+
+// Gleiche Lehre wie beim Beziehungs-Prüfsatz: die Abgrenzungsregeln standen nur
+// in der Rubrik, die kein Prüfer zu sehen bekam. Ein Kappa misst nur dann eine
+// unklare Aufgabendefinition, wenn die Prüfer die Definition auch bekommen haben.
+describe('buildPrelabelUserPrompt — Rubrik-Regeln im Prompt', () => {
+  const provision = {
+    source: 'dsgvo',
+    paragraphNumber: 'Art. 2',
+    title: 'Anwendungsbereich',
+    fullText: 'x'.repeat(60),
+    language: 'de',
+  } as never;
+
+  it('carries all three contentious distinctions from B3', () => {
+    const p = buildPrelabelUserPrompt(provision);
+    expect(p).toContain('scope-applicability vs. definition');
+    expect(p).toContain('obligation vs. procedural');
+    expect(p).toContain('obligation vs. enforcement-supervision');
+  });
+
+  it('states that normKind/bindingness follow the source document, not the provision', () => {
+    const p = buildPrelabelUserPrompt(provision);
+    expect(p).toContain('describe the DOCUMENT');
+    expect(p).toContain('not itself a');
+  });
+});

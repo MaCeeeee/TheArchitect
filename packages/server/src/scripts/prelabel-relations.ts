@@ -67,12 +67,60 @@ function renderSide(label: 'A' | 'B', side: RelationsGoldenCase['a']): string {
   ].join('\n');
 }
 
+/**
+ * Die Entscheidungsregeln aus RUBRIC.md Teil C, verdichtet für den Prompt.
+ *
+ * WARUM DAS HIER STEHEN MUSS: Der erste Zwei-Prüfer-Lauf ohne diese Regeln kam
+ * auf Gesamt-Kappa 0,265 bei 81,7 % Rohübereinstimmung. Die Analyse der
+ * Abweichungen war eindeutig — nahezu alle waren Fälle von C4 (paralleles
+ * Schutzziel als Beziehung gelabelt) oder der Abgrenzung Verdrängung vs.
+ * Konkretisierung aus C5. Beide Prüfer bekamen nur die Namensliste der
+ * Beziehungsarten; die Rubrik hatten sie nie gesehen.
+ *
+ * Das entscheidet, wie die Zahl zu lesen ist: Ein niedriger Kappa misst nur
+ * dann eine unklare Aufgabendefinition, wenn die Prüfer die Definition auch
+ * bekommen haben. Sonst misst er die Lücke im Prompt. Deshalb wandert die
+ * Rubrik in den Prompt — und deshalb ist das KEIN Modell-Tuning im Sinne von
+ * § 7.4: es wird nichts an den Labels gedreht, sondern die Aufgabenstellung
+ * überhaupt erst mitgeliefert.
+ *
+ * Bei Änderungen an RUBRIC.md Teil C ist dieser Text nachzuziehen — er ist
+ * bewusst eine Verdichtung, keine zweite Quelle der Wahrheit.
+ */
+export const RELATIONS_RUBRIC_RULES = [
+  'DECISION RULES (from RUBRIC.md part C — apply them strictly):',
+  '',
+  'RULE 1 — a parallel obligation is NOT a relation. This is the most common labeling error.',
+  'Two provisions from different regimes may pursue the same protective goal (e.g. GDPR Art. 32 and',
+  'NIS2 Art. 21 both require technical and organisational security measures) without either saying',
+  'anything ABOUT the other. Neither displaces, concretises, or substitutes for the other. Correct',
+  'label: "none". Test: does one of the two provisions refer — expressly or in substance — to the',
+  'OTHER NORM? If not, answer "none", no matter how similar the subject matter is.',
+  '',
+  'RULE 2 — displacement vs. concretisation. Test: after applying the one, does the other still',
+  'apply? If it stops applying in that area → PREVAILS_OVER / DEROGATED_BY (lex specialis; markers:',
+  '"shall not apply to the extent that", "without prejudice to", sector-specific priority clauses).',
+  'If it keeps applying and is merely filled in more precisely → CONCRETIZES.',
+  '',
+  'RULE 3 — concretisation vs. parameter. A concrete value, deadline or threshold → SETS_PARAMETER.',
+  'Substantive elaboration without a fixed value → CONCRETIZES.',
+  '',
+  'RULE 4 — RECOGNIZES_EQUIVALENCE requires an actual recognition clause ("shall be deemed to',
+  'satisfy…"). IMPLEMENTS requires an implementing act referring to a basic act ("implementing',
+  'regulation pursuant to…"). INTERPRETS requires the one to define a term OF the other ("within the',
+  'meaning of Article X of Regulation Y"). Do not use these merely because the topics overlap.',
+  '',
+  'When in doubt between "none" and a relation, answer "none" — the set is conservative by design.',
+].join('\n');
+
 /** Baut den User-Prompt mit der geschlossenen inferred-Relations-Liste + dem Paar. Rein. */
 export function buildRelationsPrompt(c: RelationsGoldenCase): string {
   return [
     'Decide whether a cross-norm relation holds between paragraph A and paragraph B below, and if so, which one.',
     '',
     `relation: ${relationOptionsList()}, or "none" if no relation holds.`,
+    '',
+    RELATIONS_RUBRIC_RULES,
     '',
     renderSide('A', c.a),
     '',

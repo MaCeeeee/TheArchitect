@@ -193,6 +193,16 @@ export const ANCHORS: Record<string, Array<[string, string]>> = {
   // directive's own subject-matter/scope article defining the relationship.
   // ePrivacy has no bare source → use the DE variant to match dsgvo. ✔ verified.
   'dsgvo:eprivacy-de': [['dsgvo:art-95', 'eprivacy-de:art-1']],
+  // AI Act Art. 10 (Daten und Daten-Governance) erlaubt in Absatz 5 die
+  // Verarbeitung besonderer Kategorien personenbezogener Daten zur Erkennung
+  // und Korrektur von Verzerrungen — unter Schutzvorkehrungen und ausdrücklich
+  // im Verhältnis zu DSGVO Art. 9, der genau diese Verarbeitung grundsätzlich
+  // untersagt. Beide DE. ✔ Texte im Korpus geprüft.
+  //
+  // Anlass: ePrivacy ist im Korpus (Stand 2026-07-21) NICHT vorhanden — das
+  // Paar oben bleibt für projekt-gebundene Korpora gültig, taugt aber nicht
+  // als drittes Paar für den korpus-weiten Prüfsatz. Dieses ersetzt es dort.
+  'dsgvo:ai-act-de': [['dsgvo:art-9', 'ai-act-de:art-10']],
 };
 
 function anchorsForPair(lawA: string, lawB: string): Array<[string, string]> {
@@ -289,6 +299,55 @@ async function fetchCandidateParagraphs(
   return out;
 }
 
+/**
+ * Dritter Beschaffungsweg: ein lokaler Pool, der Text UND Vektor mitbringt.
+ *
+ * WARUM: Die beiden Wege oben setzen ein Projekt voraus, dem die Gesetze
+ * zugeordnet sind, plus direkten Mongo-Zugriff auf dieselbe Datenbank. Für
+ * einen KORPUS-weiten Prüfsatz trifft beides nicht zu — der Korpus ist gerade
+ * nicht projekt-gebunden, und ein Prüfsatz darf keinen Import in ein fremdes
+ * Projekt auslösen (das würde hunderte Dokumente in das Modell eines Nutzers
+ * schreiben). Derselbe Grund wie bei `--from-file` in build-typing-golden.ts.
+ *
+ * Der Pool wird read-only aus dem Korpus gezogen und die Vektoren werden mit
+ * DEMSELBEN Einbetter erzeugt, den die Pipeline benutzt (Sidecar,
+ * all-mpnet-base-v2). Ein anderer Einbetter würde die Paar-Auswahl in Richtung
+ * dessen verschieben, was ER ähnlich findet — der Prüfsatz misst dann eine
+ * andere Nachbarschaft als die, in der die Pipeline arbeitet.
+ */
+export function loadCandidatesFromPool(
+  pool: Array<ApiRegulation & { embedding?: number[] }>,
+  sources: string[],
+): Map<string, CandidateParagraph[]> {
+  const wanted = new Set(sources);
+  const bySource = new Map<string, CandidateParagraph[]>();
+  const missingBySource = new Map<string, number>();
+
+  for (const r of pool) {
+    if (!wanted.has(r.source)) continue;
+    if (!Array.isArray(r.embedding) || r.embedding.length === 0) {
+      missingBySource.set(r.source, (missingBySource.get(r.source) ?? 0) + 1);
+      continue; // ohne Vektor nicht rankbar — ausgeschlossen, nicht stillschweigend als unähnlich gewertet.
+    }
+    const list = bySource.get(r.source) ?? [];
+    list.push({
+      regulationKey: buildRegulationKey(r.source, r.paragraphNumber),
+      source: r.source,
+      paragraphNumber: r.paragraphNumber,
+      title: r.title,
+      fullText: r.fullText,
+      language: r.language === 'en' ? 'en' : 'de',
+      embedding: r.embedding,
+    });
+    bySource.set(r.source, list);
+  }
+
+  for (const [source, n] of missingBySource) {
+    console.warn(`[relations-build] ${source}: ${n} provision(s) skipped — kein Vektor im Pool`);
+  }
+  return bySource;
+}
+
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const pairsArg = argValue(argv, '--pairs');
@@ -302,29 +361,53 @@ async function main(): Promise<void> {
   const negativeShare = negativeShareArg !== undefined ? Number(negativeShareArg) : 0.3;
   const seed = seedArg !== undefined ? Number(seedArg) : 42;
 
-  const api = process.env.TA_API || 'http://localhost:3000/api';
-  const key = process.env.TA_KEY;
-  const projectId = process.env.TA_PROJECT;
-  const mongoUri = process.env.MONGODB_URI;
-  if (!key || !projectId) {
-    console.error('TA_KEY und TA_PROJECT müssen gesetzt sein.');
-    process.exitCode = 2;
-    return;
-  }
-  if (!mongoUri) {
-    console.error('MONGODB_URI muss gesetzt sein (Embeddings kommen nicht über TA_API — siehe Skript-Kopf).');
-    process.exitCode = 2;
-    return;
-  }
+  const allSources = [...new Set(pairs.flatMap(([a, b]) => [a, b]))];
 
-  await mongoose.connect(mongoUri);
+  // --from-file <pool.json>: Text + Vektor kommen aus einer lokalen Datei
+  // (siehe loadCandidatesFromPool). Weder Projekt-API noch Mongo nötig.
+  const fromFileArg = argValue(argv, '--from-file');
 
-  try {
-    const paragraphsBySource = new Map<string, CandidateParagraph[]>();
-    const allSources = [...new Set(pairs.flatMap(([a, b]) => [a, b]))];
+  let paragraphsBySource: Map<string, CandidateParagraph[]>;
+  let connected = false;
+
+  if (fromFileArg) {
+    const poolPath = path.resolve(fromFileArg);
+    const pool = JSON.parse(fs.readFileSync(poolPath, 'utf8'));
+    if (!Array.isArray(pool)) throw new Error(`--from-file: ${poolPath} enthält kein Array`);
+    paragraphsBySource = loadCandidatesFromPool(pool, allSources);
+    const empty = allSources.filter((s) => (paragraphsBySource.get(s) ?? []).length === 0);
+    if (empty.length) {
+      console.error(
+        `--from-file: keine Provisions mit Vektor für ${empty.join(', ')} in ${poolPath} ` +
+          `(vorhandene Quellen: ${[...new Set(pool.map((r: ApiRegulation) => r.source))].sort().join(', ')})`,
+      );
+      process.exitCode = 2;
+      return;
+    }
+  } else {
+    const api = process.env.TA_API || 'http://localhost:3000/api';
+    const key = process.env.TA_KEY;
+    const projectId = process.env.TA_PROJECT;
+    const mongoUri = process.env.MONGODB_URI;
+    if (!key || !projectId) {
+      console.error('TA_KEY und TA_PROJECT müssen gesetzt sein (oder --from-file benutzen).');
+      process.exitCode = 2;
+      return;
+    }
+    if (!mongoUri) {
+      console.error('MONGODB_URI muss gesetzt sein (Embeddings kommen nicht über TA_API — siehe Skript-Kopf).');
+      process.exitCode = 2;
+      return;
+    }
+    await mongoose.connect(mongoUri);
+    connected = true;
+    paragraphsBySource = new Map<string, CandidateParagraph[]>();
     for (const source of allSources) {
       paragraphsBySource.set(source, await fetchCandidateParagraphs(api, key, projectId, source));
     }
+  }
+
+  try {
 
     const allSelected: RankedPair[] = [];
     for (const [lawA, lawB] of pairs) {
@@ -365,7 +448,9 @@ async function main(): Promise<void> {
         `[relations-build] → ${outPath}`,
     );
   } finally {
-    await mongoose.disconnect();
+    // Auf dem --from-file-Weg wurde nie verbunden — ein disconnect() darauf
+    // wäre folgenlos, aber irreführend zu lesen.
+    if (connected) await mongoose.disconnect();
   }
 }
 

@@ -85,6 +85,39 @@ function axisFacetOf(
   };
 }
 
+/**
+ * Die drei strittigen Abgrenzungen aus RUBRIC.md B3, verdichtet für den Prompt.
+ *
+ * Gleiche Begründung wie bei den Beziehungs-Regeln: Ein Kappa misst nur dann
+ * eine unklare Aufgabendefinition, wenn die Prüfer die Definition bekommen
+ * haben. Vorher enthielt der Prompt nur die Wertelisten der Ontologie — die
+ * Abgrenzungsregeln, an denen Prüfer erfahrungsgemäß auseinandergehen, standen
+ * ausschließlich in der Rubrik, die kein Prüfer zu sehen bekam.
+ *
+ * Bei Änderungen an RUBRIC.md B3 ist dieser Text nachzuziehen — Verdichtung,
+ * keine zweite Quelle der Wahrheit.
+ */
+export const TYPING_RUBRIC_RULES = [
+  'DECISION RULES (from RUBRIC.md B3 — the three distinctions annotators disagree on):',
+  '',
+  '1. scope-applicability vs. definition. Test: does the text decide WHETHER the law applies, or does',
+  '   it merely fix vocabulary? A definition may narrow the scope indirectly — it still stays',
+  '   "definition". Only where the provision itself states applicability is it "scope-applicability".',
+  '',
+  '2. obligation vs. procedural. Test: does this provision CREATE the duty, or regulate the handling of',
+  '   a duty created elsewhere? A duty to notify is "obligation"; the 72-hour deadline and the',
+  '   notification form for it are "procedural". If both are in one provision, the centre of gravity',
+  '   decides.',
+  '',
+  '3. obligation vs. enforcement-supervision. Test: who is addressed? Duties of the regulated party →',
+  '   "obligation". Powers or duties of the authority → "enforcement-supervision". This axis almost',
+  '   always runs parallel to partyRole — if that is a supervisory authority, "obligation" is suspect.',
+  '',
+  'normKind and bindingness describe the DOCUMENT the provision comes from, not the individual',
+  'provision. A provision that EMPOWERS the Commission to adopt delegated acts is not itself a',
+  'delegated act — the label follows the source.',
+].join('\n');
+
 /** Baut den User-Prompt mit den geschlossenen E6-Listen + der Provision. Rein. */
 export function buildPrelabelUserPrompt(
   provision: Pick<TypingGoldenCase, 'source' | 'paragraphNumber' | 'title' | 'fullText' | 'language'>,
@@ -95,6 +128,8 @@ export function buildPrelabelUserPrompt(
     `Classify this provision on ${TYPING_AXES.length} axes. Choose ONE id per axis from its list, or "na".`,
     '',
     ...TYPING_AXES.map((axis) => `${axis}: ${axisList(facet[axis])}`),
+    '',
+    TYPING_RUBRIC_RULES,
     '',
     `Provision [${provision.source} ${provision.paragraphNumber}${provision.title ? ' — ' + provision.title : ''}] (${provision.language}):`,
     provision.fullText,
