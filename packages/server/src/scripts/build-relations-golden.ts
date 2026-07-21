@@ -161,26 +161,38 @@ export function buildRelationsDraft(
 // or a genuinely wrong regulationKey fails LOUDLY (selectCandidates throws)
 // instead of silently vanishing into "no anchors for this pair".
 //
-// regulationKey format is `buildRegulationKey(source, paragraphNumber)` —
-// depends on the EXACT paragraphNumber strings the corpus stores for that
-// law. These are best-effort based on the known legal cross-references
-// (module doc of relationsCandidates.ts + this task's spec); verify against
-// the actual corpus content before a real run and expect a thrown error
-// naming the pair if a key does not match what is stored.
+// regulationKey format is `buildRegulationKey(source, paragraphNumber)`.
+//
+// ⚠️ SOURCE NAMING IS NOT UNIFORM — verified against the live corpus 2026-07-20.
+// The first crawled language of a law got the BARE source name, the second got a
+// language suffix. Which language is bare therefore differs per law:
+//
+//   dora      → EN   (german variant: dora-de)
+//   nis2      → EN   (german variant: nis2-de)
+//   dsgvo     → DE   (english variant: dsgvo-en)
+//   ePrivacy  → has NO bare name at all: only eprivacy-de / eprivacy-en
+//
+// So `eprivacy:art-1` does not exist and would make selectCandidates throw.
+// Anchors below use keys CONFIRMED present in the corpus. When choosing --pairs,
+// prefer language-consistent combinations (see the doc block at the top of this
+// file) so a labeler compares two texts in one language.
 export const ANCHORS: Record<string, Array<[string, string]>> = {
   // DORA Art. 1(2): DORA is lex specialis vis-à-vis NIS2 for the financial
   // sector; NIS2 Art. 4 ("Sector-specific Union legal acts") is the mirror
   // provision on the NIS2 side that yields to sector-specific acts like DORA.
+  // Both bare names → both EN. ✔ verified present.
   'dora:nis2': [['dora:art-1', 'nis2:art-4']],
   // GDPR Art. 32 (security of processing) and NIS2 Art. 21 (cybersecurity
   // risk-management measures) both mandate technical/organisational security
   // measures for overlapping populations of controllers/entities.
-  'dsgvo:nis2': [['dsgvo:art-32', 'nis2:art-21']],
+  // dsgvo is DE, so pair it with the DE variant of NIS2. ✔ verified present.
+  'dsgvo:nis2-de': [['dsgvo:art-32', 'nis2-de:art-21']],
   // GDPR Art. 95 is the explicit GDPR/ePrivacy interface article (GDPR does
   // not impose additional obligations where the ePrivacy regime already sets
   // specific obligations with the same objective); ePrivacy Art. 1 is that
   // directive's own subject-matter/scope article defining the relationship.
-  'dsgvo:eprivacy': [['dsgvo:art-95', 'eprivacy:art-1']],
+  // ePrivacy has no bare source → use the DE variant to match dsgvo. ✔ verified.
+  'dsgvo:eprivacy-de': [['dsgvo:art-95', 'eprivacy-de:art-1']],
 };
 
 function anchorsForPair(lawA: string, lawB: string): Array<[string, string]> {
