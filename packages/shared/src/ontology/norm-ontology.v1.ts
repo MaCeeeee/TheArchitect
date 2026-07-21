@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.5.0',
-  updatedAt: '2026-07-20',
+  ontologyVersion: '1.6.0',
+  updatedAt: '2026-07-21',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -96,7 +96,27 @@ export const NORM_ONTOLOGY = {
     { id: 'INTERPRETS', label: 'interprets', derivation: 'inferred', directed: true },
   ],
 
-  /** E8 — addressee roles (GDPR / AI Act et al.). */
+  /**
+   * E8 — addressee roles (GDPR / AI Act et al.).
+   *
+   * WARUM die Zeilen ab `essential_important_entity` existieren (THE-421 / THE-430,
+   * v1.6.0 — bitte nicht "aufräumen"): Der Zwei-Prüfer-Lauf auf dem Typing-Golden
+   * ergab auf der Achse `partyRole` Kappa 0,597 und verfehlte damit das Freeze-Tor
+   * von 0,6. Die Analyse der 24 Abweichungen zeigte KEINE unklare Rubrik, sondern
+   * eine Lücke im Werteraum: Die Facette mischte DSGVO-Rollen mit KI-VO-Produkt-
+   * rollen; für eine NIS2- oder DORA-Vorschrift passte keines von beidem. Die
+   * Prüfer griffen daraufhin zu beliebig verschiedenen Ersatzrollen (`controller`
+   * vs. `provider` vs. `deployer` auf DERSELBEN Vorschrift). Eine Rubrik kann keine
+   * Klasse schärfen, die es nicht gibt — deshalb neue Klassen statt neuer Prosa.
+   *
+   * Jede der sechs Zeilen wurde vorher gegen die tatsächlichen Korpustexte belegt:
+   * „wesentliche und wichtige Einrichtungen" 11 DE / 18 EN · „Finanzunternehmen" 42 ·
+   * „IKT-Drittdienstleister" 31 · „Hersteller"/„manufacturer" 35/39 ·
+   * „Mitgliedstaaten" 156 · LkSG-„Unternehmen". Kein Vorrats-Vokabular.
+   *
+   * Reihenfolge ist bedeutungstragend: erst die regime-spezifischen Rollen nach
+   * Gesetz gruppiert, danach die regime-übergreifenden (`origin: 'cross'`) am Ende.
+   */
   partyRoles: [
     { id: 'controller', label: 'Controller / Verantwortlicher', origin: 'gdpr' },
     { id: 'processor', label: 'Processor / Auftragsverarbeiter', origin: 'gdpr' },
@@ -106,6 +126,12 @@ export const NORM_ONTOLOGY = {
     { id: 'importer', label: 'Importer / Einführer', origin: 'ai-act' },
     { id: 'distributor', label: 'Distributor / Händler', origin: 'ai-act' },
     { id: 'authorized_representative', label: 'Authorized Representative', origin: 'ai-act' },
+    { id: 'essential_important_entity', label: 'Essential / Important Entity — wesentliche und wichtige Einrichtung', origin: 'nis2' },
+    { id: 'financial_entity', label: 'Financial Entity — Finanzunternehmen', origin: 'dora' },
+    { id: 'ict_third_party_provider', label: 'ICT Third-Party Service Provider — IKT-Drittdienstleister', origin: 'dora' },
+    { id: 'manufacturer', label: 'Manufacturer — Hersteller', origin: 'cra' },
+    { id: 'obligated_enterprise', label: 'Obligated Enterprise — verpflichtetes Unternehmen', origin: 'lksg' },
+    { id: 'member_state', label: 'Member State — Mitgliedstaat', origin: 'cross' },
     { id: 'supervisory_authority', label: 'Supervisory Authority / Aufsichtsbehörde', origin: 'cross' },
   ],
 

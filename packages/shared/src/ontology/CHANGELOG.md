@@ -7,6 +7,35 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.6.0 — 2026-07-21 (THE-421 / THE-430, Gate 1)
+
+- **partyRoles** (9 → 15) ERWEITERT — additiv, keine id geändert/entfernt:
+  `essential_important_entity` (nis2), `financial_entity` + `ict_third_party_provider`
+  (dora), `manufacturer` (cra), `obligated_enterprise` (lksg), `member_state` (cross).
+  Anlass ist eine **Messung**, keine Meinung: Der Zwei-Prüfer-Lauf auf dem
+  Typing-Golden ergab auf der Achse `partyRole` Kappa **0,597** — knapp unter dem
+  Freeze-Tor 0,6. Die Analyse der 24 Abweichungen zeigte, dass die Rubrik nicht
+  unklar war, sondern der **Werteraum unvollständig**: Die Facette kannte nur
+  DSGVO-Rollen (controller/processor/data_subject) und KI-VO-Produktrollen
+  (provider/deployer/importer/…). Für eine NIS2- oder DORA-Vorschrift passte
+  keine davon, also wählten die Prüfer beliebig verschiedene Ersatzrollen auf
+  derselben Vorschrift. Eine fehlende Klasse lässt sich nicht durch schärfere
+  Prosa heilen. Alle sechs Werte sind vorher am Korpus belegt worden
+  (wesentliche/wichtige Einrichtung 11 DE + 18 EN, Finanzunternehmen 42,
+  IKT-Drittdienstleister 31, Hersteller/manufacturer 35/39, Mitgliedstaaten 156,
+  LkSG-Unternehmen) — kein Vorratsvokabular.
+  Reihenfolge: regime-spezifische Rollen nach Gesetz gruppiert, `origin: 'cross'`
+  (`member_state`, `supervisory_authority`) am Ende. Fließt über die abgeleiteten
+  Sets automatisch in `PARTY_ROLE_IDS`, `PartyRoleSchema` und den
+  OntoLearner-Export (`termTypes.partyRole`).
+  Begleitend in `packages/server/src/evals/RUBRIC.md` (B-v1.2): Definitions- und
+  Geltungsbereichs-Provisions bekommen `n/a`, und das Vokabular des jeweiligen
+  Gesetzes hat Vorrang vor einer fremden Ersatzrolle.
+  **Hinweis für alte Labels:** Eingefrorene Golden-Sets tragen weiterhin
+  `ontologyVersion: "1.5.0"` (§ B6 — die Version bindet das Label an den Raum,
+  gegen den gelabelt wurde). Sie bleiben gültig, weil die Änderung rein additiv ist;
+  neu gelabelt wird gegen 1.6.0.
+
 ## 1.5.0 — 2026-07-20 (THE-421 Slice G-0)
 
 - **provisionKinds** (6, E6) NEU — additiv, keine id geändert/entfernt: `scope-applicability`,

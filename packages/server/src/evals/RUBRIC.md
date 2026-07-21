@@ -234,11 +234,49 @@ Die Achse mit dem größten Streitpotenzial; hier lohnt die genaueste Lektüre.
 
 ### `partyRole` — Adressat
 
-Der geschlossene Rollenraum (Verantwortlicher, Auftragsverarbeiter, Anbieter, Betreiber, Einführer,
-Händler, bevollmächtigter Vertreter, betroffene Person, Aufsichtsbehörde).
+Der geschlossene Rollenraum, nach Regime gruppiert:
 
-- **`null`**, wenn kein Rollenträger adressiert wird — Definitionen, oder Provisions, die sich an
-  Mitgliedstaaten bzw. den Gesetzgeber selbst richten (dafür gibt es bewusst keine Rolle).
+| Regime | Rollen |
+|---|---|
+| DSGVO | Verantwortlicher, Auftragsverarbeiter, betroffene Person |
+| KI-VO | Anbieter, Betreiber, Einführer, Händler, bevollmächtigter Vertreter |
+| NIS2 | wesentliche und wichtige Einrichtung |
+| DORA | Finanzunternehmen, IKT-Drittdienstleister |
+| CRA | Hersteller (dazu Einführer und Händler aus der Zeile darüber) |
+| LkSG | verpflichtetes Unternehmen |
+| übergreifend | Mitgliedstaat, Aufsichtsbehörde |
+
+Die sechs zuletzt genannten Rollen (NIS2 bis Mitgliedstaat) sind mit E6 1.6.0 hinzugekommen, und zwar
+**wegen einer Messung**: Der erste Zwei-Prüfer-Lauf ergab auf dieser Achse Kappa 0,597 — knapp unter dem
+Tor von 0,6. Die Durchsicht der Abweichungen zeigte keine unklare Rubrik, sondern eine **fehlende
+Klasse**: Für eine NIS2- oder DORA-Vorschrift gab es schlicht keinen passenden Wert, also griffen die
+beiden Prüfer auf derselben Vorschrift zu unterschiedlichen Ersatzrollen. Daraus folgen zwei Regeln.
+
+**1. Definitions- und Geltungsbereichs-Provisions haben keinen Adressaten.**
+Eine Provision, die nur Vokabular festlegt (`definition`) oder die Anwendbarkeit ausspricht
+(`scope-applicability`), verpflichtet niemanden — sie beschreibt. Solche Fälle bekommen **`n/a`** (den
+bewussten „nicht anwendbar"-Zustand), **keine geratene Rolle**. Das war eine konkrete Streitquelle: Bei
+Artikel 3 mehrerer Gesetze vergab ein Prüfer eine Rolle, der andere `n/a`. Prüffrage: *Wer wird hier
+verpflichtet?* Lautet die ehrliche Antwort „niemand, hier wird etwas erklärt" → `n/a`.
+
+**2. Das Vokabular des jeweiligen Gesetzes hat Vorrang.**
+Gewählt wird die Rolle, mit der **das Gesetz selbst** seinen Adressaten benennt — nicht die
+nächstähnliche Rolle aus einem fremden Regime:
+
+- NIS2 → `essential_important_entity`
+- DORA → `financial_entity` bzw. `ict_third_party_provider`
+- CRA → `manufacturer` (daneben `importer` / `distributor`)
+- LkSG → `obligated_enterprise`
+- DSGVO → `controller` / `processor` / `data_subject`
+- KI-VO → `provider` / `deployer` / `importer` / `distributor` / `authorized_representative`
+
+Eine NIS2-Einrichtung wird **nie** auf `controller` oder `provider` abgebildet, nur weil die Liste diese
+Werte anbietet. Richtet sich eine Provision an die **Mitgliedstaaten** — in EU-Rechtsakten sehr häufig,
+etwa bei Umsetzungs-, Benennungs- und Sanktionsregelungspflichten —, ist der Wert `member_state`, nicht
+`supervisory_authority`; letzteres meint die handelnde Behörde selbst.
+
+- **`n/a`**, wenn kein Rollenträger adressiert wird — neben Regel 1 auch dort, wo sich der Text an den
+  Gesetzgeber selbst richtet.
 - Mehrere Adressaten: die Rolle wählen, die der Paragraph **primär** verpflichtet.
 
 ### `normKind` und `bindingness` — Eigenschaften der Norm, nicht der Provision
@@ -319,6 +357,11 @@ gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob al
 - **B-v1.1 (2026-07-21):** B4a ergänzt — konstante Achsen (Prävalenz-Paradox) sind vom Tor ausgenommen,
   Rohübereinstimmung statt Kappa berichten. Anlass: erster Zwei-Prüfer-Lauf, `normKind`/`bindingness`
   95 % Übereinstimmung bei Kappa 0,000.
+- **B-v1.2 (2026-07-21):** `partyRole` in B3 geschärft — zwei Entscheidungsregeln: (1) Definitions- und
+  Geltungsbereichs-Provisions bekommen `n/a` statt einer geratenen Rolle, (2) das Vokabular des
+  jeweiligen Gesetzes hat Vorrang (NIS2/DORA/CRA/LkSG-Rollen statt fremder Ersatzrollen; Mitgliedstaaten
+  → `member_state`). Anlass: Kappa 0,597 auf dieser Achse, Ursache war eine fehlende Klasse, nicht eine
+  unklare Rubrik — der Rollenraum ist dafür auf E6 1.6.0 erweitert worden.
 
 ---
 
