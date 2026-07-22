@@ -20,6 +20,11 @@ import {
   OBLIGATION_KIND_IDS,
   isObligationKind,
   ObligationKindSchema,
+  PROVISION_KIND_IDS,
+  isProvisionKind,
+  ProvisionKindSchema,
+  PARTY_ROLE_IDS,
+  PartyRoleSchema,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -90,8 +95,12 @@ describe('source registry (THE-413)', () => {
     }
   });
 
+  // Versions-agnostisch: der Test prüft, DASS die additiven Zeilen einen Bump
+  // hinter sich haben, nicht WELCHE Version gerade ausgeliefert wird. Die eine
+  // bewusste Festlegung auf die aktuelle Version steht unten (partyRoles-Block).
   it('bumped ontologyVersion for the additive rows', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(NORM_ONTOLOGY.ontologyVersion).not.toBe('1.0.0');
   });
 
   it('isNormSource accepts ontology rows, rejects everything else', () => {
@@ -127,8 +136,11 @@ describe('languages facet + kind coverage (THE-417)', () => {
       expect(isNormKind(k)).toBe(true);
     }
   });
-  it('bumped to 1.2.0', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.3.0');
+  // Versions-agnostisch (siehe oben): die Facette muss existieren, die konkrete
+  // Versionsnummer ist hier nicht der Prüfgegenstand.
+  it('bumped past the version that introduced the languages facet', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(NORM_ONTOLOGY.ontologyVersion).not.toBe('1.1.0');
   });
 });
 
@@ -150,5 +162,86 @@ describe('obligationKinds facet (THE-430 / THE-432)', () => {
   it('OntoLearner export covers the obligationKind facet', () => {
     const exported = exportForOntoLearner();
     expect(exported.termTypes.obligationKind).toEqual(OBLIGATION_KIND_IDS);
+  });
+});
+
+describe('provisionKinds facet (THE-421 G-0)', () => {
+  it('ships the closed provision-kind space', () => {
+    expect(PROVISION_KIND_IDS).toEqual([
+      'scope-applicability', 'definition', 'obligation',
+      'enforcement-supervision', 'procedural', 'other',
+    ]);
+  });
+  it('accepts in-ontology values and rejects OOV + wrong case', () => {
+    expect(isProvisionKind('scope-applicability')).toBe(true);
+    expect(isProvisionKind('Scope-Applicability')).toBe(false);
+    expect(isProvisionKind('nonsense')).toBe(false);
+  });
+  it('ProvisionKindSchema gates membership', () => {
+    expect(ProvisionKindSchema.safeParse('obligation').success).toBe(true);
+    expect(ProvisionKindSchema.safeParse('obligation ').success).toBe(false);
+  });
+  it('OntoLearner export covers the new facet', () => {
+    expect(exportForOntoLearner().termTypes.provisionKind).toEqual(PROVISION_KIND_IDS);
+  });
+  // Versions-agnostisch (siehe „source registry"): geprüft wird der Bump, nicht
+  // die Nummer.
+  it('ontology version is bumped', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(NORM_ONTOLOGY.ontologyVersion).not.toBe('1.4.0');
+  });
+});
+
+/**
+ * THE-421 / THE-430 — Regime-Erweiterung der `partyRole`-Facette.
+ *
+ * Anlass: Der Zwei-Prüfer-Lauf ergab auf `partyRole` Kappa 0,597 (Tor: 0,6). Die
+ * Analyse der 24 Abweichungen zeigte KEINE unklare Rubrik, sondern eine Lücke im
+ * Werteraum: Für eine NIS2- oder DORA-Vorschrift passte weder das DSGVO- noch das
+ * KI-VO-Vokabular, also griffen die Prüfer zu beliebig verschiedenen Ersatzrollen.
+ * Diese Tests halten den erweiterten Raum + seine Reihenfolge fest.
+ */
+describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430)', () => {
+  it('ships one addressee role per regulated regime, cross-regime roles last', () => {
+    expect(PARTY_ROLE_IDS).toEqual([
+      // DSGVO
+      'controller', 'processor', 'data_subject',
+      // KI-VO
+      'provider', 'deployer', 'importer', 'distributor', 'authorized_representative',
+      // NIS2 / DORA / CRA / LkSG
+      'essential_important_entity', 'financial_entity', 'ict_third_party_provider',
+      'manufacturer', 'obligated_enterprise',
+      // regime-übergreifend
+      'member_state', 'supervisory_authority',
+    ]);
+  });
+
+  it('tags every role with its origin regime and groups cross-regime roles at the end', () => {
+    const origins = NORM_ONTOLOGY.partyRoles.map((p) => p.origin);
+    for (const o of origins) expect(o.length).toBeGreaterThan(0);
+    // 'cross' darf nur am Ende stehen — sonst zerfällt die Lesbarkeit der Liste.
+    const firstCross = origins.indexOf('cross');
+    expect(origins.slice(firstCross).every((o) => o === 'cross')).toBe(true);
+    expect(NORM_ONTOLOGY.partyRoles.map((p) => p.origin)).toEqual(
+      expect.arrayContaining(['gdpr', 'ai-act', 'nis2', 'dora', 'cra', 'lksg', 'cross'])
+    );
+  });
+
+  it('PartyRoleSchema gates the new ids (membership + exact case)', () => {
+    expect(PartyRoleSchema.safeParse('essential_important_entity').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('ict_third_party_provider').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('obligated_enterprise').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('member_state').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('Member_State').success).toBe(false);
+    expect(PartyRoleSchema.safeParse('essential_entity').success).toBe(false);
+  });
+
+  it('derives the OntoLearner partyRole facet from the data (no parallel list)', () => {
+    expect(exportForOntoLearner().termTypes.partyRole).toEqual(PARTY_ROLE_IDS);
+    expect(PARTY_ROLE_IDS).toEqual(NORM_ONTOLOGY.partyRoles.map((p) => p.id));
+  });
+
+  it('pins the shipped ontology version (deliberate gate, mirrors the CHANGELOG)', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.6.0');
   });
 });

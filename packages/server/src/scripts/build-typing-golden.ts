@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { NORM_ONTOLOGY } from '@thearchitect/shared';
 import { TypingGoldenSetSchema, type TypingGoldenCase } from '../evals/typingGolden';
+import { mulberry32 } from '../evals/metrics';
 
 // ─── Reine Transformation (ohne I/O — testbar) ──────────────────
 
@@ -50,20 +51,150 @@ export interface TypingDraft {
   cases: TypingGoldenCase[];
 }
 
+export interface BuildTypingDraftOptions {
+  ontologyVersion?: string;
+  version?: string;
+  /** Ziel-Case-Zahl; weggelassen → altes Verhalten (alle eligiblen Provisions). */
+  targetSize?: number;
+  /** Seed für den deterministischen PRNG (mulberry32) hinter der Stratifikation. */
+  seed?: number;
+  /**
+   * caseIds, die IMMER enthalten sein müssen, unabhängig von der Stratifikation.
+   *
+   * Warum: die Stratifikation streut über Quelle und Sprache und bildet damit die
+   * NATÜRLICHE Verteilung des Korpus ab. Geltungsbereichs- und Definitions-
+   * Provisions sind darin naturgemäß selten (ein Gesetz hat ein bis zwei davon
+   * gegenüber Dutzenden Pflichten-Artikeln) — im ersten 70er-Entwurf kamen sie auf
+   * 5 bzw. 2 Fälle. Für die Messung sind sie aber die WICHTIGSTEN Klassen: die
+   * Priorisierung von Geltungsbereichs-Provisions im Retrieval ist der Grund,
+   * warum die Achse überhaupt existiert. Eine Aussage über fünf Fälle trägt nicht.
+   *
+   * Diese Liste erzwingt daher gezielte Über-Abtastung seltener, aber wichtiger
+   * Klassen — dasselbe Prinzip wie der Pflichtanteil an Negativ-Fällen in der
+   * Zuordnungs-Rubrik (§ 5). Die Auswahl bleibt label-UNABHÄNGIG: gewählt wird
+   * über die Artikel-Position (Art. 1-3 sind praktisch immer Gegenstand,
+   * Anwendungsbereich, Begriffsbestimmungen), nicht über ein vermutetes Label.
+   */
+  mustInclude?: string[];
+}
+
+/**
+ * Deterministische Stratifikation: Round-Robin über `source`, innerhalb einer
+ * Quelle alternierend über die vorhandenen Sprachen — damit ein Quoten-Pull
+ * nicht ein einzelnes Gesetz leerzieht, bevor andere überhaupt drankommen.
+ * Reihenfolge von Quellen/Sprachen/Cases wird per Seed gemischt (Fisher-Yates),
+ * also reproduzierbar bei gleichem (cases, seed) und unterschiedlich bei
+ * unterschiedlichem Seed. Kann die Quote nicht gefüllt werden (zu wenig
+ * Material), werden NIE Duplikate nachgefüllt — es wird einfach das gegeben.
+ */
+function stratifiedSelect(
+  allCases: TypingGoldenCase[],
+  targetSize: number,
+  seed: number,
+  mustInclude: string[] = []
+): TypingGoldenCase[] {
+  if (allCases.length <= targetSize) return allCases;
+
+  // Pflicht-Fälle vorab herausnehmen: sie sind gesetzt und belegen Quote.
+  // Der Rest wird wie bisher stratifiziert über die verbleibenden Plätze.
+  const forcedIds = new Set(mustInclude);
+  const forced = allCases.filter((c) => forcedIds.has(c.caseId));
+  const remaining = allCases.filter((c) => !forcedIds.has(c.caseId));
+  const slotsLeft = targetSize - forced.length;
+  if (slotsLeft <= 0) return forced.slice(0, targetSize);
+  allCases = remaining;
+  targetSize = slotsLeft;
+
+  const rand = mulberry32(seed);
+  const shuffle = <T>(arr: T[]): T[] => {
+    const out = [...arr];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+
+  // source -> language -> cases (sortierte Keys vor dem Mischen: rand-Verbrauch
+  // hängt so nur von den Daten ab, nie von Map-Iterationsreihenfolge).
+  const bySource = new Map<string, Map<string, TypingGoldenCase[]>>();
+  for (const c of allCases) {
+    let langs = bySource.get(c.source);
+    if (!langs) {
+      langs = new Map();
+      bySource.set(c.source, langs);
+    }
+    const list = langs.get(c.language) ?? [];
+    list.push(c);
+    langs.set(c.language, list);
+  }
+
+  const sources = shuffle([...bySource.keys()].sort());
+
+  // Pro Quelle eine Warteschlange, die die Sprachen im Round-Robin alterniert.
+  const queues = new Map<string, TypingGoldenCase[]>();
+  for (const source of sources) {
+    const langs = bySource.get(source)!;
+    const langKeys = shuffle([...langs.keys()].sort());
+    const shuffledByLang = new Map(langKeys.map((l) => [l, shuffle(langs.get(l)!)]));
+    const queue: TypingGoldenCase[] = [];
+    const idx = Object.fromEntries(langKeys.map((l) => [l, 0])) as Record<string, number>;
+    let more = true;
+    while (more) {
+      more = false;
+      for (const l of langKeys) {
+        const list = shuffledByLang.get(l)!;
+        if (idx[l] < list.length) {
+          queue.push(list[idx[l]]);
+          idx[l]++;
+          more = true;
+        }
+      }
+    }
+    queues.set(source, queue);
+  }
+
+  // Round-Robin über Quellen bis targetSize erreicht oder alles erschöpft ist.
+  const selected: TypingGoldenCase[] = [];
+  const srcIdx = Object.fromEntries(sources.map((s) => [s, 0])) as Record<string, number>;
+  let more = true;
+  while (selected.length < targetSize && more) {
+    more = false;
+    for (const source of sources) {
+      if (selected.length >= targetSize) break;
+      const queue = queues.get(source)!;
+      if (srcIdx[source] < queue.length) {
+        selected.push(queue[srcIdx[source]]);
+        srcIdx[source]++;
+        more = true;
+      }
+    }
+  }
+
+  // Pflicht-Fälle zuerst, danach die stratifizierte Auswahl.
+  return [...forced, ...selected];
+}
+
 /** Ein Case je Provision, `labels` LEER (undefined-Achsen) — der Labeler/Prelabel füllt. */
 export function buildTypingDraft(
   regulations: ApiRegulation[],
-  ontologyVersion: string = NORM_ONTOLOGY.ontologyVersion,
-  version = 'v1-draft'
+  opts: BuildTypingDraftOptions = {}
 ): TypingDraft {
+  const {
+    ontologyVersion = NORM_ONTOLOGY.ontologyVersion,
+    version = 'v1-draft',
+    targetSize,
+    seed = 42,
+  } = opts;
+
   const seen = new Set<string>();
-  const cases: TypingGoldenCase[] = [];
+  const allCases: TypingGoldenCase[] = [];
   for (const r of regulations) {
     if (!r.fullText || r.fullText.length < 50) continue;
     let caseId = slugifyCaseId(r.source, r.paragraphNumber);
     while (seen.has(caseId)) caseId = `${caseId}-x`;
     seen.add(caseId);
-    cases.push({
+    allCases.push({
       caseId,
       source: r.source,
       paragraphNumber: r.paragraphNumber,
@@ -74,37 +205,118 @@ export function buildTypingDraft(
       labels: {}, // alle Achsen offen — bewusst kein Default-Label
     });
   }
+
+  const cases =
+    targetSize === undefined ? allCases : stratifiedSelect(allCases, targetSize, seed, opts.mustInclude ?? []);
+
   return { version, frozen: false, ontologyVersion, rubricRef: '../RUBRIC.md', cases };
 }
 
 // ─── API-Glue ───────────────────────────────────────────────────
 
+function argValue(argv: string[], flag: string): string | undefined {
+  const idx = argv.indexOf(flag);
+  return idx !== -1 && argv[idx + 1] ? argv[idx + 1] : undefined;
+}
+
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
-  const outIdx = argv.indexOf('--out');
-  const srcIdx = argv.indexOf('--source');
-  const source = srcIdx !== -1 && argv[srcIdx + 1] ? argv[srcIdx + 1] : 'dsgvo';
+  const outArg = argValue(argv, '--out');
+  const sourceArg = argValue(argv, '--source');
+  const sourcesArg = argValue(argv, '--sources');
+  const targetSizeArg = argValue(argv, '--target-size');
+  const seedArg = argValue(argv, '--seed');
+
+  // --sources a,b,c stratifiziert über mehrere Gesetze; --source bleibt der
+  // Ein-Gesetz-Kurzweg (Default 'dsgvo', unverändertes Verhalten).
+  const sources = sourcesArg
+    ? sourcesArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [sourceArg || 'dsgvo'];
+  const targetSize = targetSizeArg !== undefined ? Number(targetSizeArg) : undefined;
+  const seed = seedArg !== undefined ? Number(seedArg) : undefined;
+
   const outPath = path.resolve(
-    outIdx !== -1 && argv[outIdx + 1]
-      ? argv[outIdx + 1]
-      : path.join(__dirname, '..', 'evals', 'golden', `typing.${source}.draft.json`)
+    outArg
+      ? outArg
+      : path.join(__dirname, '..', 'evals', 'golden', `typing.${sources.join('-')}.draft.json`)
   );
 
-  const api = process.env.TA_API || 'http://localhost:3000/api';
-  const key = process.env.TA_KEY;
-  const projectId = process.env.TA_PROJECT;
-  if (!key || !projectId) {
-    console.error('TA_KEY und TA_PROJECT müssen gesetzt sein.');
-    process.exitCode = 2;
-    return;
+  // Zwei Beschaffungswege:
+  //
+  //   --from-file <pool.json>   Provisions aus einer lokalen Datei (Array von
+  //                             ApiRegulation-Objekten). Gedacht für einen
+  //                             KORPUS-weiten Prüfsatz: der projekt-bezogene
+  //                             Endpunkt unten liefert nur die Regulierungen,
+  //                             die einem Projekt zugeordnet sind — für ein
+  //                             Demo-Projekt sind das eine Handvoll, nicht die
+  //                             ~1500 Paragraphen des Korpus. Den Pool zieht man
+  //                             read-only aus der Korpus-Datenbank; so muss für
+  //                             einen Prüfsatz nichts in ein Projekt importiert
+  //                             (und damit verändert) werden.
+  //   ohne Flag                 wie bisher über die Projekt-API (TA_*).
+  const fromFileArg = argValue(argv, '--from-file');
+
+  const regulations: ApiRegulation[] = [];
+  if (fromFileArg) {
+    const poolPath = path.resolve(fromFileArg);
+    const pool = JSON.parse(fs.readFileSync(poolPath, 'utf8')) as ApiRegulation[];
+    if (!Array.isArray(pool)) throw new Error(`--from-file: ${poolPath} enthält kein Array`);
+    const wanted = new Set(sources);
+    regulations.push(...pool.filter((r) => wanted.has(r.source)));
+    if (regulations.length === 0) {
+      console.error(
+        `--from-file: keine Provisions für ${sources.join(',')} in ${poolPath} ` +
+          `(vorhandene Quellen: ${[...new Set(pool.map((r) => r.source))].sort().join(', ')})`
+      );
+      process.exitCode = 2;
+      return;
+    }
+  } else {
+    const api = process.env.TA_API || 'http://localhost:3000/api';
+    const key = process.env.TA_KEY;
+    const projectId = process.env.TA_PROJECT;
+    if (!key || !projectId) {
+      console.error('TA_KEY und TA_PROJECT müssen gesetzt sein (oder --from-file benutzen).');
+      process.exitCode = 2;
+      return;
+    }
+    const headers = { 'X-API-Key': key };
+    for (const source of sources) {
+      const regRes = await fetch(`${api}/projects/${projectId}/regulations?source=${source}&limit=300`, { headers });
+      if (!regRes.ok) throw new Error(`GET regulations (${source}): HTTP ${regRes.status}`);
+      const items = ((await regRes.json()) as { data: { items: ApiRegulation[] } }).data.items;
+      regulations.push(...items);
+    }
   }
-  const headers = { 'X-API-Key': key };
 
-  const regRes = await fetch(`${api}/projects/${projectId}/regulations?source=${source}&limit=300`, { headers });
-  if (!regRes.ok) throw new Error(`GET regulations: HTTP ${regRes.status}`);
-  const regulations = ((await regRes.json()) as { data: { items: ApiRegulation[] } }).data.items;
+  // --must-include-paragraphs 1,2,3  erzwingt bestimmte Artikel-Nummern JE QUELLE
+  // in der Auswahl. Angegeben werden Paragraphen-Nummern (nicht caseIds), weil das
+  // die fachliche Absicht ist: „Art. 1-3 jedes Gesetzes sind Gegenstand,
+  // Anwendungsbereich und Begriffsbestimmungen". Die caseId-Bildung ist ein
+  // internes Detail und wird hier über dieselbe Slugify-Regel aufgelöst wie im
+  // Aufbau, damit beide Seiten nicht auseinanderlaufen können.
+  const mustIncludeArg = argValue(argv, '--must-include-paragraphs');
+  let mustInclude: string[] | undefined;
+  if (mustIncludeArg) {
+    const wanted = new Set(
+      mustIncludeArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    mustInclude = regulations
+      .filter((r) => wanted.has(r.paragraphNumber))
+      .map((r) => slugifyCaseId(r.source, r.paragraphNumber));
+    console.log(
+      `[typing-build] Pflicht-Einschluss: ${mustInclude.length} Fälle ` +
+        `(Paragraphen ${[...wanted].join(',')} je Quelle)`
+    );
+  }
 
-  const draft = buildTypingDraft(regulations);
+  const draft = buildTypingDraft(regulations, { targetSize, seed, mustInclude });
   // Schema-Validierung vor dem Schreiben (fängt kaputte Cases sofort).
   TypingGoldenSetSchema.parse(draft);
 
@@ -112,7 +324,7 @@ async function main(): Promise<void> {
   fs.writeFileSync(outPath, JSON.stringify(draft, null, 2) + '\n');
 
   console.log(
-    `[typing-build] ${draft.cases.length} Provisions (${source}) · E6 ${draft.ontologyVersion}\n` +
+    `[typing-build] ${draft.cases.length} Provisions (${sources.join(',')}) · E6 ${draft.ontologyVersion}\n` +
       `[typing-build] → ${outPath}\n` +
       `[typing-build] NEXT: npm run typing:worksheet -- ${path.relative(process.cwd(), outPath)} /tmp/typing-label.html`
   );

@@ -31,6 +31,13 @@
     "typing:prelabel": "ts-node src/scripts/prelabel-typing.ts",
     "typing:worksheet": "ts-node src/scripts/typing-worksheet.ts",
     "typing:eval": "ts-node src/evals/runTypingEval.ts",
+    "typing:blind": "ts-node src/scripts/typing-kappa.ts blind",
+    "typing:kappa": "ts-node src/scripts/typing-kappa.ts compare",
+    "relations:build": "ts-node src/scripts/build-relations-golden.ts",
+    "relations:prelabel": "ts-node src/scripts/prelabel-relations.ts",
+    "relations:worksheet": "ts-node src/scripts/relations-worksheet.ts",
+    "relations:blind": "ts-node src/scripts/relations-kappa.ts blind",
+    "relations:kappa": "ts-node src/scripts/relations-kappa.ts compare",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
     "migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"
   },

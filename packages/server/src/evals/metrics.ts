@@ -285,6 +285,47 @@ export function cohenKappa(a: PairLabel[], b: PairLabel[]): number {
   return (po - pe) / (1 - pe);
 }
 
+/**
+ * Cohen's Kappa für zwei Annotatoren über beliebig viele Klassen. `cohenKappa`
+ * (oben) bleibt bewusst binär erhalten — bestehende Mapping/Requirements-
+ * Eval-Pfade hängen an ihrer 2×2-Semantik. Diese Variante ist für Achsen mit
+ * geschlossenem Vokabular gedacht: die Typing-Achsen (bis zu zehn Werte) und
+ * den kommenden Relations-Klassenraum (neun Klassen).
+ *
+ * pe = Σ_über_Klassen p_a(class) · p_b(class) — die Vereinigung der von BEIDEN
+ * Annotatoren tatsächlich benutzten Klassen zählt, nicht nur die gemeinsamen;
+ * eine Klasse, die nur bei einem Annotator vorkommt, geht mit Anteil 0 beim
+ * jeweils anderen ein (trägt also 0 zu pe bei, senkt aber nicht fälschlich die
+ * Grundgesamtheit).
+ */
+export function cohenKappaMulti(a: string[], b: string[]): number {
+  if (a.length !== b.length) {
+    throw new Error(`cohenKappaMulti: label arrays differ in length (${a.length} vs ${b.length})`);
+  }
+  const n = a.length;
+  if (n === 0) throw new Error('cohenKappaMulti: empty label arrays');
+
+  let agree = 0;
+  const countsA = new Map<string, number>();
+  const countsB = new Map<string, number>();
+  for (let i = 0; i < n; i++) {
+    if (a[i] === b[i]) agree++;
+    countsA.set(a[i], (countsA.get(a[i]) ?? 0) + 1);
+    countsB.set(b[i], (countsB.get(b[i]) ?? 0) + 1);
+  }
+  const po = agree / n;
+
+  const classes = new Set([...countsA.keys(), ...countsB.keys()]);
+  let pe = 0;
+  for (const c of classes) {
+    const pa = (countsA.get(c) ?? 0) / n;
+    const pb = (countsB.get(c) ?? 0) / n;
+    pe += pa * pb;
+  }
+  if (pe === 1) return 1; // beide Annotatoren durchgehend dieselbe einzige Klasse → Division durch 0 vermeiden
+  return (po - pe) / (1 - pe);
+}
+
 // ─── Kalibrierung: Expected Calibration Error (ECE) ──────────────
 //
 // THE-430 (OL-Eval-Suite) AC-2: F1 allein ist blind für den Fall "konfident
