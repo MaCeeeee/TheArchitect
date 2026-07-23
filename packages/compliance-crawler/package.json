@@ -11,9 +11,11 @@
     "clean": "rm -rf dist",
     "lint": "eslint src/",
     "test": "jest",
-    "crawl:nis2:live": "ts-node-dev --transpile-only src/cli/crawl-live.ts nis2"
+    "crawl:nis2:live": "ts-node-dev --transpile-only src/cli/crawl-live.ts nis2",
+    "typing:batch": "ts-node-dev --transpile-only src/cli/typing-batch.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@fastify/sensible": "^6.0.1",
     "@qdrant/js-client-rest": "^1.18.0",
     "@thearchitect/shared": "*",
