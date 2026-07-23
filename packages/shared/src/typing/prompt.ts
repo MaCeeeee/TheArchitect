@@ -27,7 +27,7 @@ import {
 } from '../ontology';
 
 /** Bump bei JEDER inhaltlichen Änderung an System/Rules/Template — Teil der Provenance (AC-1) und der Batch-Idempotenz (THE-432). */
-export const TYPING_PROMPT_VERSION = 'tp-1';
+export const TYPING_PROMPT_VERSION = 'tp-2';
 
 // ─── Achsen (Kontrakt-Oberfläche, siehe axisFacetOf) ────────────
 export const TYPING_AXES = [
@@ -91,16 +91,22 @@ export function axisFacetOf(
 }
 
 /**
- * Die drei strittigen Abgrenzungen aus RUBRIC.md B3, verdichtet für den Prompt.
+ * Die strittigen Abgrenzungen aus RUBRIC.md B3 PLUS die adjudizierten
+ * Präzedenzen aus RUBRIC.md B3a (42 Streitfälle, Architekten-Entscheid
+ * 2026-07-22), verdichtet für den Prompt.
  *
  * Gleiche Begründung wie bei den Beziehungs-Regeln: Ein Kappa misst nur dann
  * eine unklare Aufgabendefinition, wenn die Prüfer die Definition bekommen
  * haben. Vorher enthielt der Prompt nur die Wertelisten der Ontologie — die
  * Abgrenzungsregeln, an denen Prüfer erfahrungsgemäß auseinandergehen, standen
- * ausschließlich in der Rubrik, die kein Prüfer zu sehen bekam.
+ * ausschließlich in der Rubrik, die kein Prüfer zu sehen bekam. Die Baseline
+ * (tp-1) zeigte das Modell genau auf adjudiziertem Terrain scheiternd
+ * (provisionKind 73,8 % · other-Recall 0,17) — deshalb tragen die Regeln seit
+ * tp-2 auch den B3a-Katalog.
  *
- * Bei Änderungen an RUBRIC.md B3 ist dieser Text nachzuziehen — Verdichtung,
- * keine zweite Quelle der Wahrheit.
+ * Bei Änderungen an RUBRIC.md B3 ODER B3a ist dieser Text nachzuziehen —
+ * Verdichtung, keine zweite Quelle der Wahrheit. Jede inhaltliche Änderung
+ * bumpt TYPING_PROMPT_VERSION.
  */
 export const TYPING_RUBRIC_RULES = [
   'DECISION RULES (from RUBRIC.md B3 — the three distinctions annotators disagree on):',
@@ -117,6 +123,48 @@ export const TYPING_RUBRIC_RULES = [
   '3. obligation vs. enforcement-supervision. Test: who is addressed? Duties of the regulated party →',
   '   "obligation". Powers or duties of the authority → "enforcement-supervision". This axis almost',
   '   always runs parallel to partyRole — if that is a supervisory authority, "obligation" is suspect.',
+  '',
+  'PRECEDENTS (from RUBRIC.md B3a — adjudicated 2026-07-22, binding for like cases):',
+  '',
+  '4. Scope and definition articles (the Art. 1-3 pattern: "This Regulation applies to...") NAME roles',
+  '   without obligating them → partyRole "na" AND obligationKind "na"; the duties live in later',
+  '   articles. A classification article WITH a regime consequence (sorting entities into classes',
+  '   that face different supervision intensity) → "scope-applicability", not "definition". So is an',
+  '   exemption article that switches OFF other duties ("Articles 15 to 20 shall not apply..."):',
+  '   "is not obliged to" is the opposite of an obligation → "scope-applicability".',
+  '',
+  '5. Authority activity splits. Genuine supervisory, investigative or sanctioning powers (market',
+  '   surveillance, CSIRT operations, a sanctions regime Member States must enact) →',
+  '   "enforcement-supervision" — the value is RESERVED for these. Administrative mechanics performed',
+  '   by an authority (assigning identification numbers, notification procedures between authorities,',
+  '   reporting formats and technical standards, keeping registers, biennial reports) → "procedural".',
+  '   Comitology articles ("The Commission shall be assisted by a committee") obligate no company →',
+  '   obligationKind "na".',
+  '',
+  '6. Founding or establishing an institution (an advisory forum, a cooperation network) →',
+  '   provisionKind "other"; for an inter-state network partyRole is "member_state". But a genuine',
+  '   duty of conduct stays "obligation" no matter WHO carries it (e.g. professional secrecy binding',
+  '   authority staff) — the carrier belongs in partyRole, not in provisionKind.',
+  '',
+  '7. Doors, not duties (obligationKind). An authority empowerment ("the competent authority may',
+  '   order / shall take appropriate measures") → "permission": for authorities the default state is',
+  '   "forbidden unless empowered" (Gesetzesvorbehalt) — the provision opens a door. A market-access',
+  '   clause of the form "shall be made available only where..." → "prohibition" (a closed door with',
+  '   conditional permission), not "obligation" — the substantive manufacturer duties live in their',
+  '   own article. Likewise an exclusion from public procurement → "prohibition", addressed to the',
+  '   excluded enterprise. A presumption or evidence rule ("shall be deemed to satisfy...") →',
+  '   obligationKind "na" and provisionKind "procedural".',
+  '',
+  '8. partyRole is where the duty ENDS. Data-subject-rights articles ("The data subject shall have',
+  '   the right to...") → partyRole is the bearer of the MIRROR DUTY (the controller),',
+  '   not the right-holder. In the directive two-step ("Member States shall require entities to X") →',
+  '   partyRole is whoever the duty ends with (the entity); where it ends at the state itself (enact',
+  '   sanctions rules) → "member_state". An actor with no fitting role in the closed list (e.g.',
+  '   notified bodies / conformity assessment bodies) → "na" — NEVER borrow a neighboring role.',
+  '',
+  '9. Master-data registration (a register of entities; submitting name, address, contact details,',
+  '   IP ranges) → "procedural"; an EVENT-driven notification duty (report an incident) stays',
+  '   "obligation".',
   '',
   'normKind and bindingness describe the DOCUMENT the provision comes from, not the individual',
   'provision. A provision that EMPOWERS the Commission to adopt delegated acts is not itself a',
