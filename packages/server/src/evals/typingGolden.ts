@@ -34,7 +34,17 @@ import {
   BINDINGNESS_IDS,
   OBLIGATION_KIND_IDS,
   PARTY_ROLE_IDS,
+  TYPING_AXES,
+  type TypingAxis,
 } from '@thearchitect/shared';
+
+// Achsenliste + Achsen-Typ leben seit THE-432 (Slice T) in shared
+// (typing/prompt.ts), damit Batch und Eval denselben Kontrakt teilen.
+// Re-Export, damit bestehende Importe (typingMetrics, Kappa-/Worksheet-
+// Skripte, Tests) unverändert weiterlaufen. Die Zod-Schemata unten bleiben
+// bewusst HIER — der Crawler braucht sie nicht.
+export { TYPING_AXES } from '@thearchitect/shared';
+export type { TypingAxis } from '@thearchitect/shared';
 
 /** Membership-Check gegen eine E6-Facette (Set für O(1)); null bleibt erlaubt. */
 const memberOrNull = (ids: readonly string[], facet: string) => {
@@ -63,15 +73,16 @@ export const TypingLabelsSchema = z.object({
   provisionKind: ProvisionKindLabel.optional(),
 });
 
+// Zod-inferiert (Validierungs-Sicht); strukturell identisch mit dem plainen
+// `TypingLabels` in shared. Die Schema-Keys oben MÜSSEN TYPING_AXES spiegeln —
+// der Compile-Check darunter erzwingt das in beide Richtungen.
 export type TypingLabels = z.infer<typeof TypingLabelsSchema>;
-export type TypingAxis = keyof TypingLabels;
-export const TYPING_AXES: readonly TypingAxis[] = [
-  'normKind',
-  'bindingness',
-  'obligationKind',
-  'partyRole',
-  'provisionKind',
-];
+
+// Beide Richtungen: jede Achse ist Schema-Key, jeder Schema-Key ist Achse.
+type _AxesCoverSchema = keyof TypingLabels extends TypingAxis ? true : never;
+type _SchemaCoversAxes = TypingAxis extends keyof TypingLabels ? true : never;
+const _typingAxesInSync: _AxesCoverSchema & _SchemaCoversAxes = true;
+void _typingAxesInSync;
 
 export const TypingGoldenCaseSchema = z.object({
   caseId: z.string().min(1),
