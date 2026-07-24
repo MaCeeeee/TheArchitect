@@ -1,0 +1,338 @@
+{
+  "version": "gv2-audit",
+  "frozen": true,
+  "ontologyVersion": "1.6.0",
+  "rubricRef": "../RUBRIC.md",
+  "cases": [
+    {
+      "caseId": "ai-act-en-art-96",
+      "source": "ai-act-en",
+      "paragraphNumber": "Art. 96",
+      "title": "Guidelines from the Commission on the implementation of this Regulation",
+      "fullText": "1. The Commission shall develop guidelines on the practical implementation of this Regulation, and in particular on: (a) the application of the requirements and obligations referred to in Articles 8 to 15 and in Article 25; (b) the prohibited practices referred to in Article 5; (c) the practical implementation of the provisions related to substantial modification; (d) the practical implementation of transparency obligations laid down in Article 50; (e) detailed information on the relationship of this Regulation with the Union harmonisation legislation listed in Annex I, as well as with other relevant Union law, including as regards consistency in their enforcement; (f) the application of the definition of an AI system as set out in Article 3, point (1). When issuing such guidelines, the Commission shall pay particular attention to the needs of SMEs including start-ups, of local public authorities and of the sectors most likely to be affected by this Regulation. The guidelines referred to in the first subparagraph of this paragraph shall take due account of the generally acknowledged state of the art on AI, as well as of relevant harmonised standards and common specifications that are referred to in Articles 40 and 41, or of those harmonised standards or technical specifications that are set out pursuant to Union harmonisation law. 2. At the request of the Member States or the AI Office, or on its own initiative, the Commission shall update guidelines previously adopted when deemed necessary. CHAPTER XI DELEGATION OF POWER AND COMMITTEE PROCEDURE",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:binding-for-agencies → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "ai-act-en-art-106",
+      "source": "ai-act-en",
+      "paragraphNumber": "Art. 106",
+      "title": "Amendment to Directive (EU) 2016/797",
+      "fullText": "In Article 5 of Directive (EU) 2016/797, the following paragraph is added: ‘12. When adopting delegated acts pursuant to paragraph 1 and implementing acts pursuant to paragraph 11 concerning Artificial Intelligence systems which are safety components within the meaning of Regulation (EU) 2024/1689 of the European Parliament and of the Council [(\\*)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689#ntr*-L_202401689EN.000101-E0062), the requirements set out in Chapter III, Section 2, of that Regulation shall be taken into account.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "ai-act-de-art-95",
+      "source": "ai-act-de",
+      "paragraphNumber": "Art. 95",
+      "title": "Verhaltenskodizes für die freiwillige Anwendung bestimmter Anforderungen",
+      "fullText": "(1) Das Büro für Künstliche Intelligenz und die Mitgliedstaaten fördern und erleichtern die Aufstellung von Verhaltenskodizes, einschließlich damit zusammenhängender Governance-Mechanismen, mit denen die freiwillige Anwendung einiger oder aller der in Kapitel III Abschnitt 2 genannten Anforderungen auf KI-Systeme, die kein hohes Risiko bergen, gefördert werden soll, wobei den verfügbaren technischen Lösungen und bewährten Verfahren der Branche, die die Anwendung dieser Anforderungen ermöglichen, Rechnung zu tragen ist. (2) Das Büro für Künstliche Intelligenz und die Mitgliedstaaten erleichtern die Aufstellung von Verhaltenskodizes in Bezug auf die freiwillige Anwendung spezifischer Anforderungen auf alle KI-Systeme, einschließlich durch Betreiber, auf der Grundlage klarer Zielsetzungen sowie wesentlicher Leistungsindikatoren zur Messung der Erfüllung dieser Zielsetzungen, einschließlich unter anderem folgender Elemente: a) in den Ethik-Leitlinien der Union für eine vertrauenswürdige KI enthaltene anwendbare Elemente; b) Beurteilung und Minimierung der Auswirkungen von KI-Systemen auf die ökologische Nachhaltigkeit, einschließlich im Hinblick auf energieeffizientes Programmieren, und Techniken, um KI effizient zu gestalten, zu trainieren und zu nutzen; c) Förderung der KI-Kompetenz, insbesondere der von Personen, die mit der Entwicklung, dem Betrieb und der Nutzung von KI befasst sind; d) Erleichterung einer inklusiven und vielfältigen Gestaltung von KI-Systemen, unter anderem durch die Einsetzung inklusiver und vielfältiger Entwicklungsteams und die Förderung der Beteiligung der Interessenträger an diesem Prozess; e) Bewertung und Verhinderung der negativen Auswirkungen von KI-Systemen auf schutzbedürftige Personen oder Gruppen schutzbedürftiger Personen, einschließlich im Hinblick auf die Barrierefreiheit für Personen mit Behinderungen, sowie auf die Gleichstellung der Geschlechter. (3) Verhaltenskodizes können von einzelnen KI-System-Anbietern oder -Betreibern oder von Interessenvertretungen dieser Anbieter oder Betreiber oder von beiden aufgestellt werden, auch unter Einbeziehung von Interessenträgern sowie deren Interessenvertretungen einschließlich Organisationen der Zivilgesellschaft und Hochschulen. Verhaltenskodizes können sich auf ein oder mehrere KI-Systeme erstrecken, um ähnlichen Zweckbestimmungen der jeweiligen Systeme Rechnung zu tragen. (4) Das Büro für Künstliche Intelligenz und die Mitgliedstaaten berücksichtigen die besonderen Interessen und Bedürfnisse von KMU, einschließlich Startups, bei der Förderung und Erleichterung der Aufstellung von Verhaltenskodizes.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:voluntary-de-facto → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "ai-act-de-art-96",
+      "source": "ai-act-de",
+      "paragraphNumber": "Art. 96",
+      "title": "Leitlinien der Kommission zur Durchführung dieser Verordnung",
+      "fullText": "(1) Die Kommission erarbeitet Leitlinien für die praktische Umsetzung dieser Verordnung, die sich insbesondere auf Folgendes beziehen: a) die Anwendung der in den Artikeln 8 bis 15 und in Artikel 25 genannten Anforderungen und Pflichten; b) die in Artikel 5 genannten verbotenen Praktiken; c) die praktische Durchführung der Bestimmungen über wesentliche Veränderungen; d) die praktische Umsetzung der Transparenzpflichten gemäß Artikel 50; e) detaillierte Informationen über das Verhältnis dieser Verordnung zu den in Anhang I aufgeführten Harmonisierungsrechtsvorschriften der Union sowie zu anderen einschlägigen Rechtsvorschriften der Union, auch in Bezug auf deren kohärente Durchsetzung; f) die Anwendung der Definition eines KI-Systems gemäß Artikel 3 Nummer 1. Wenn die Kommission solche Leitlinien herausgibt, widmet sie den Bedürfnissen von KMU einschließlich Start-up-Unternehmen, von lokalen Behörden und von den am wahrscheinlichsten von dieser Verordnung betroffenen Sektoren besondere Aufmerksamkeit. Die Leitlinien gemäß Unterabsatz 1 dieses Absatzes tragen dem allgemein anerkannten Stand der Technik im Bereich KI sowie den einschlägigen harmonisierten Normen und gemeinsamen Spezifikationen, auf die in den Artikeln 40 und 41 Bezug genommen wird, oder den harmonisierten Normen oder technischen Spezifikationen, die gemäß den Harmonisierungsrechtsvorschriften der Union festgelegt wurden, gebührend Rechnung. (2) Auf Ersuchen der Mitgliedstaaten oder des Büros für Künstliche Intelligenz oder von sich aus aktualisiert die Kommission früher verabschiedete Leitlinien, wenn es als notwendig erachtet wird. KAPITEL XI BEFUGNISÜBERTRAGUNG UND AUSSCHUSSVERFAHREN",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:persuasive → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "cra-en-art-26",
+      "source": "cra-en",
+      "paragraphNumber": "Art. 26",
+      "title": "Guidance",
+      "fullText": "1. In order to facilitate implementation and ensure the consistency of such implementation, the Commission shall publish guidance to assist economic operators in applying this Regulation, with a particular focus on facilitating compliance by microenterprises and small and medium-sized enterprises. 2. Where it intends to provide guidance as referred to in paragraph 1, the Commission shall address at least the following aspects: (a) the scope of this Regulation, with a particular focus on remote data processing solutions and free and open-source software; (b) the application of support periods in relation to particular categories of products with digital elements; (c) guidance targeted at manufacturers subject to this Regulation that are also subject to Union harmonisation legislation other than this Regulation or to other related Union legal acts; (d) the concept of substantial modification. The Commission shall also maintain an easy-to-access list of the delegated and implementing acts adopted pursuant to this Regulation. 3. When preparing the guidance pursuant to this Article, the Commission shall consult relevant stakeholders. CHAPTER III CONFORMITY OF THE PRODUCT WITH DIGITAL ELEMENTS",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:binding-for-agencies → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "cra-en-art-66",
+      "source": "cra-en",
+      "paragraphNumber": "Art. 66",
+      "title": "Amendment to Regulation (EU) 2019/1020",
+      "fullText": "In Annex I to Regulation (EU) 2019/1020, the following point is added: ‘72. Regulation (EU) 2024/2847 of the European Parliament and of the Council [(\\*1)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2847#ntr*1-L_202402847EN.000101-E0038).",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "cra-en-art-67",
+      "source": "cra-en",
+      "paragraphNumber": "Art. 67",
+      "title": "Amendment to Directive (EU) 2020/1828",
+      "fullText": "In Annex I to Directive (EU) 2020/1828, the following point is added: ‘69. Regulation (EU) 2024/2847 of the European Parliament and of the Council [(\\*2)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2847#ntr*2-L_202402847EN.000101-E0039).",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "nis2-de-art-38",
+      "source": "nis2-de",
+      "paragraphNumber": "Art. 38",
+      "title": "Ausübung der Befugnisübertragung",
+      "fullText": "(1) Die Befugnis zum Erlass delegierter Rechtsakte wird der Kommission unter den in diesem Artikel festgelegten Bedingungen übertragen. (2) Die Befugnis zum Erlass delegierter Rechtsakte gemäß Artikel 24 Absatz 2 wird der Kommission für einen Zeitraum von fünf Jahren ab dem 16. Januar 2023 übertragen. (3) Die Befugnisübertragung gemäß Artikel 24 Absatz 2 kann vom Europäischen Parlament oder vom Rat jederzeit widerrufen werden. Der Beschluss über den Widerruf beendet die Übertragung der in diesem Beschluss angegebenen Befugnis. Er wird am Tag nach seiner Veröffentlichung im Amtsblatt der Europäischen Union oder zu einem im Beschluss über den Widerruf angegebenen späteren Zeitpunkt wirksam. Die Gültigkeit von delegierten Rechtsakten, die bereits in Kraft sind, wird von dem Beschluss über den Widerruf nicht berührt. (4) Vor dem Erlass eines delegierten Rechtsakts konsultiert die Kommission die von den einzelnen Mitgliedstaaten benannten Sachverständigen, im Einklang mit den in der Interinstitutionellen Vereinbarung vom 13. April 2016 über bessere Rechtsetzung enthaltenen Grundsätzen. (5) Sobald die Kommission einen delegierten Rechtsakt erlässt, übermittelt sie ihn gleichzeitig dem Europäischen Parlament und dem Rat. (6) Ein delegierter Rechtsakt, der gemäß Artikel 24 Absatz 2 erlassen wurde, tritt nur in Kraft, wenn weder das Europäische Parlament noch der Rat innerhalb einer Frist von zwei Monaten nach Übermittlung dieses Rechtsakts an das Europäische Parlament und den Rat Einwände erhoben haben oder wenn vor Ablauf dieser Frist das Europäische Parlament und der Rat beide der Kommission mitgeteilt haben, dass sie keine Einwände erheben werden. Auf Initiative des Europäischen Parlaments oder des Rates wird diese Frist um zwei Monate verlängert.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "dora-art-45",
+      "source": "dora",
+      "paragraphNumber": "Art. 45",
+      "title": "|     |     |",
+      "fullText": "(1) paragraph 1 is replaced by the following:<br>‘1. A CSD shall identify sources of operational risk, both internal and external, and minimise their impact also through the deployment of appropriate ICT tools, processes and policies set up and managed in accordance with Regulation (EU) 2022/2554 of the European Parliament and of the Council [(\\*3)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554#ntr*3-L_2022333EN.01000101-E0042), as well as through any other relevant appropriate tools, controls and procedures for other types of operational risk, including for all the securities settlement systems it operates.<br>[(\\*3)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554#ntc*3-L_2022333EN.01000101-E0042) Regulation (EU) 2022/2554 of the European Parliament and of the Council of 14 December 2022 on digital operational resilience for the financial sector and amending Regulations (EC) No 1060/2009, (EU) No 648/2012, (EU) No 600/2014, (EU) No 909/2014 and (EU) 2016/1011 ( [OJ L 333, 27.12.2022, p. 1](https://eur-lex.europa.eu/legal-content/EN/AUTO/?uri=OJ:L:2022:333:TOC)).’;\" (2) paragraph 2 is deleted; (3) paragraphs 3 and 4 are replaced by the following:<br>‘3. For services that it provides as well as for each securities settlement system that it operates, a CSD shall establish, implement and maintain an adequate business continuity policy and disaster recovery plan, including ICT business continuity policy and ICT response and recovery plans established in accordance with Regulation (EU) 2022/2554, to ensure the preservation of its services, the timely recovery of operations and the fulfilment of the CSD’s obligations in the case of events that pose a significant risk to disrupting operations.<br>4. The plan referred to in paragraph 3 shall provide for the recovery of all transactions and participants’ positions at the time of disruption to allow the participants of a CSD to continue to operate with certainty and to complete settlement on the scheduled date, including by ensuring that critical IT systems can resume operations from the time of disruption as provided for in Article 12(5) and (7) of Regulation (EU) 2022/2554.’; (4) paragraph 6 is replaced by the following:<br>‘6. A CSD shall identify, monitor and manage the risks that key participants in the securities settlement systems it operates, as well as service and utility providers, and other CSDs or other market infrastructures might pose to its operations. It shall, upon request, provide competent and relevant authorities with information on any such risk identified. It shall also inform the competent authority and relevant authorities without delay of any operational incidents, other than in relation to ICT risk, resulting from such risks.’; (5) in paragraph 7, the first subparagraph is replaced by the following:<br>‘7. ESMA shall, in close cooperation with the members of the ESCB, develop draft regulatory technical standards to specify the operational risks referred to in paragraphs 1 and 6, other than ICT risk, and the methods to test, to address or to minimise those risks, including the business continuity policies and disaster recovery plans referred to in paragraphs 3 and 4 and the methods of assessment thereof.’.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "dora-de-art-57",
+      "source": "dora-de",
+      "paragraphNumber": "Art. 57",
+      "title": "Ausübung der Befugnisübertragung",
+      "fullText": "(1) Die Befugnis zum Erlass delegierter Rechtsakte wird der Kommission unter den in diesem Artikel festgelegten Bedingungen übertragen. (2) Die Befugnis zum Erlass delegierter Rechtsakte gemäß Artikel 31 Absatz 6 und Artikel 43 Absatz 2 wird der Kommission für einen Zeitraum von fünf Jahren ab dem 17. Januar 2024 übertragen. Die Kommission erstellt spätestens neun Monate vor Ablauf des Zeitraums von fünf Jahren einen Bericht über die Befugnisübertragung. Die Befugnisübertragung verlängert sich stillschweigend um Zeiträume gleicher Länge, es sei denn, das Europäische Parlament oder der Rat widersprechen einer solchen Verlängerung spätestens drei Monate vor Ablauf des jeweiligen Zeitraums. (3) Die Befugnisübertragung gemäß Artikel 31 Absatz 6 und Artikel 43 Absatz 2 kann vom Europäischen Parlament oder vom Rat jederzeit widerrufen werden. Der Beschluss über den Widerruf beendet die Übertragung der in diesem Beschluss angegebenen Befugnis. Er wird am Tag nach seiner Veröffentlichung im Amtsblatt der Europäischen Union oder zu einem im Beschluss über den Widerruf angegebenen späteren Zeitpunkt wirksam. Die Gültigkeit von delegierten Rechtsakten, die bereits in Kraft sind, wird von dem Beschluss über den Widerruf nicht berührt. (4) Vor dem Erlass eines delegierten Rechtsakts konsultiert die Kommission die von den einzelnen Mitgliedstaaten benannten Sachverständigen, im Einklang mit den in der Interinstitutionellen Vereinbarung vom 13. April 2016 über bessere Rechtsetzung enthaltenen Grundsätzen. (5) Sobald die Kommission einen delegierten Rechtsakt erlässt, übermittelt sie ihn gleichzeitig dem Europäischen Parlament und dem Rat. (6) Ein delegierter Rechtsakt, der gemäß Artikel 31 Absatz 6 und Artikel 43 Absatz 2 erlassen wurde, tritt nur in Kraft, wenn weder das Europäische Parlament noch der Rat innerhalb einer Frist von drei Monaten nach Übermittlung dieses Rechtsakts an das Europäische Parlament und den Rat Einwände erhoben haben oder wenn vor Ablauf dieser Frist sowohl das Europäische Parlament als auch der Rat der Kommission mitgeteilt haben, dass sie keine Einwände erheben werden. Auf Initiative des Europäischen Parlaments oder des Rates wird diese Frist um drei Monate verlängert. KAPITEL IX Übergangs- und Schlussbestimmungen Abschnitt I",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "dora-de-art-59",
+      "source": "dora-de",
+      "paragraphNumber": "Art. 59",
+      "title": "Änderungen der Verordnung (EG) Nr. 1060/2009",
+      "fullText": "Die Verordnung (EG) Nr. 1060/2009 wird wie folgt geändert: 1. Anhang I Abschnitt A Nummer 4 Unterabsatz 1 erhält folgende Fassung:<br>„Eine Ratingagentur verfügt über eine solide Verwaltung und Rechnungslegung, interne Kontrollmechanismen, effiziente Verfahren für die Risikobewertung sowie wirksame Kontroll- und Sicherheitsmechanismen für den Betrieb von IKT-Systemen gemäß der Verordnung (EU) 2022/2554 des Europäischen Parlaments und des Rates [(\\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntr*1-L_2022333DE.01000101-E0040).<br>[(\\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntc*1-L_2022333DE.01000101-E0040) Verordnung (EU) 2022/2554 des Europäischen Parlaments und des Rates vom 14. Dezember 2022 über die digitale operationale Resilienz im Finanzsektor und zur Änderung der Verordnungen (EG) Nr. 1060/2009, (EU) Nr. 648/2012, (EU) Nr. 600/2014, (EU) Nr. 909/2014 und (EU) 2016/1011 ( [ABl. L 333 vom 27.12.2022, S. 1](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:L:2022:333:TOC)).“<br>\" 2. Anhang III Nummer 12 erhält folgende Fassung: „12. Die Ratingagentur verstößt gegen Artikel 6 Absatz 2 in Verbindung mit Anhang I Abschnitt A Nummer 4, wenn sie über keine solide Verwaltung und Rechnungslegung, keine internen Kontrollmechanismen, keine effizienten Verfahren für die Risikobewertung oder keine wirksamen Kontroll- und Sicherheitsmechanismen für den Betrieb von IKT-Systemen gemäß der Verordnung (EU) 2022/2554 verfügt oder wenn sie keine Entscheidungsprozesse oder keine Organisationsstruktur nach Maßgabe jener Nummer schafft oder unterhält.“",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "dora-de-art-60",
+      "source": "dora-de",
+      "paragraphNumber": "Art. 60",
+      "title": "Änderungen der Verordnung (EU) Nr. 648/2012",
+      "fullText": "Die Verordnung (EU) Nr. 648/2012 wird wie folgt geändert: 1. Artikel 26 wird wie folgt geändert: a) Absatz 3 erhält folgende Fassung:<br>„(3) Eine CCP muss dauerhaft über eine Organisationsstruktur verfügen, die Kontinuität und ein ordnungsgemäßes Funktionieren im Hinblick auf die Erbringung ihrer Dienstleistungen und Ausübung ihrer Tätigkeiten gewährleistet. Sie muss angemessene und verhältnismäßige Systeme, Ressourcen und Verfahren einsetzen, einschließlich IKT-Systemen, die gemäß der Verordnung (EU) 2022/2554 des Europäischen Parlaments und des Rates [(\\*2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntr*2-L_2022333DE.01000101-E0041) betrieben werden.<br>[(\\*2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntc*2-L_2022333DE.01000101-E0041) Verordnung (EU) 2022/2554 des Europäischen Parlaments und des Rates vom 14. Dezember 2022 über die digitale operationale Resilienz im Finanzsektor und zur Änderung der Verordnungen (EG) Nr. 1060/2009, (EU) Nr. 648/2012, (EU) Nr. 600/2014, (EU) Nr. 909/2014 und (EU) 2016/1011 ( [ABl. L 333 vom 27.12.2022, S. 1](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:L:2022:333:TOC)).“<br>\" b) Absatz 6 wird gestrichen; 2. Artikel 34 wird wie folgt geändert: a) Absatz 1 erhält folgende Fassung:<br>„(1) Eine CCP hat eine angemessene Geschäftsfortführungsleitlinie sowie einen Notfallwiederherstellungsplan — der eine IKT-Geschäftsfortführungsleitlinie und IKT- Reaktions- und Wiederherstellungspläne umfasst, die nach der Verordnung (EU) 2022/2554 aufgestellt und umgesetzt werden — festzulegen, umzusetzen und zu befolgen, mit dem Ziel eine Aufrechterhaltung der Funktionen der CCP, eine rechtzeitige Wiederherstellung des Geschäftsbetriebs sowie eine Erfüllung der Pflichten der CCP zu gewährleisten.“ b) Absatz 3 Unterabsatz 1 erhält folgende Fassung:<br>„(3) Um die einheitliche Anwendung dieses Artikels zu gewährleisten, erarbeitet die ESMA nach Anhörung der Mitglieder des ESZB Entwürfe für technische Regulierungsstandards, in denen der Mindestinhalt und die Anforderungen an die Geschäftsfortführungsleitlinie und an den Notfallwiederherstellungsplan, unter Ausschluss der IKT-Geschäftsfortführungsleitlinie und der Pläne für Notfallwiederherstellung, festgelegt werden.“ 3. Artikel 56 Absatz 3 Unterabsatz 1 erhält folgende Fassung:<br>„(3) Um die einheitliche Anwendung dieses Artikels zu gewährleisten, erarbeitet die ESMA Entwürfe für technische Regulierungsstandards, in denen die Einzelheiten des in Absatz 1 genannten Antrags auf Registrierung festgelegt werden, mit Ausnahme der Anforderungen im Zusammenhang mit dem IKT-Risikomanagement.“ 4. Artikel 79 Absätze 1 und 2 erhält folgende Fassung:<br>„(1) Ein Transaktionsregister ermittelt Quellen operationeller Risiken und minimiert diese Risiken durch die Entwicklung angemessener Systeme, Kontrollen und Verfahren, einschließlich IKT-Systemen, die gemäß der Verordnung (EU) 2022/2554 betrieben werden.<br>(2) Ein Transaktionsregister hat eine angemessene Geschäftsfortführungsleitlinie und einen Notfallwiederherstellungsplan — einschließlich einer IKT-Geschäftsfortführungsleitlinie und IKT-Reaktions- und Wiederherstellungsplänen, die nach der Verordnung (EU) 2022/2554 eingerichtet werden — festzulegen, umzusetzen und zu befolgen, mit dem Ziel, die Aufrechterhaltung der Funktionen des Transaktionsregisters, die rechtzeitige Wiederherstellung des Geschäftsbetriebs sowie die Erfüllung der Pflichten des Transaktionsregisters zu gewährleisten.“ 5. Artikel 80 Absatz 1 wird gestrichen; 6. Anhang I Abschnitt II wird wie folgt geändert: a) Die Buchstaben a und b erhalten folgende Fassung: „a) Ein Transaktionsregister verstößt gegen Artikel 79 Absatz 1, wenn es nicht die Quellen betrieblicher Risiken ermittelt bzw. diese Risiken nicht durch die Entwicklung angemessener Systeme, Kontrollen und Verfahren, einschließlich IKT-Systemen, die gemäß der Verordnung (EU) 2022/2554 betrieben werden, minimiert. b) Ein Transaktionsregister verstößt gegen Artikel 79 Absatz 2, wenn es nicht eine angemessene Geschäftsfortführungsleitlinie und einen Notfallwiederherstellungsplan, die nach der Verordnung (EU) 2022/2554 eingerichtet werden, festlegt, umsetzt oder aufrechterhält, mit dem Ziel, die Aufrechterhaltung der Funktionen des Transaktionsregisters, die zeitnahe Wiederherstellung des Geschäftsbetriebs sowie die Erfüllung der Pflichten des Transaktionsregisters zu gewährleisten.“ b) Buchstabe c wird gestrichen; 7. Anhang III wird wie folgt geändert: a) Abschnitt II wird wie folgt geändert: i) Buchstabe c erhält folgende Fassung: „c) eine Tier 2-CCP verstößt gegen Artikel 26 Absatz 3, wenn sie nicht dauerhaft über eine Organisationsstruktur verfügt, die Kontinuität und ein ordnungsgemäßes Funktionieren im Hinblick auf die Erbringung ihrer Dienstleistungen und Ausübung ihrer Tätigkeiten gewährleistet, oder wenn sie keine angemessenen und geeigneten Systeme, Ressourcen und Verfahren einsetzt, einschließlich IKT-Systemen, die gemäß der Verordnung (EU) 2022/2554 (DORA) betrieben werden;“ ii) Buchstabe f wird gestrichen. b) in Abschnitt III erhält Buchstabe a folgende Fassung: „a) eine Tier 2-CCP verstößt gegen Artikel 34 Absatz 1, wenn sie keine angemessene Geschäftsfortführungsleitlinie und keinen Reaktions- und Wiederherstellungsplan, die nach der Verordnung (EU) 2022/2554 eingerichtet werden, festlegt, umsetzt und befolgt, mit dem Ziel, eine Aufrechterhaltung der Funktionen der CCP, eine rechtzeitige Wiederherstellung des Geschäftsbetriebs sowie eine Erfüllung der Pflichten der CCP zu gewährleisten, wobei ein solcher Plan zumindest eine Wiederherstellung aller Transaktionen zum Zeitpunkt der Störung ermöglichen muss, sodass die CCP weiterhin zuverlässig arbeiten und die Abwicklung zum geplanten Termin vornehmen kann;“",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "dora-de-art-63",
+      "source": "dora-de",
+      "paragraphNumber": "Art. 63",
+      "title": "Änderungen der Verordnung (EU) 2016/1011",
+      "fullText": "In Artikel 6 der Verordnung (EU) 2016/1011 wird folgender Absatz angefügt: „(6) Für kritische Referenzwerte verfügt ein Administrator über eine solide Verwaltung und Rechnungslegung, interne Kontrollmechanismen, effiziente Verfahren für die Risikobewertung sowie wirksame Kontroll- und Sicherheitsmechanismen für den Betrieb von IKT-Systemen gemäß der Verordnung (EU) 2022/2554 des Europäischen Parlaments und des Rates [(\\*5)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntr*5-L_2022333DE.01000101-E0044).",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "lksg-20",
+      "source": "lksg",
+      "paragraphNumber": "§ 20",
+      "title": "Handreichungen",
+      "fullText": "Die zuständige Behörde veröffentlicht branchenübergreifende oder branchenspezifische Informationen, Hilfestellungen und Empfehlungen zur Einhaltung dieses Gesetzes und stimmt sich dabei mit den fachlich betroffenen Behörden ab. Die Informationen, Hilfestellungen oder Empfehlungen bedürfen vor Veröffentlichung der Zustimmung des Auswärtigen Amtes, insofern außenpolitische Belange davon berührt sind.",
+      "language": "de",
+      "jurisdiction": "DE",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:binding-for-agencies → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "cra-de-art-26",
+      "source": "cra-de",
+      "paragraphNumber": "Art. 26",
+      "title": "Leitlinien",
+      "fullText": "(1) Um die Durchführung zu erleichtern und ihre Kohärenz sicherzustellen, veröffentlicht die Kommission Leitlinien, um die Wirtschaftsakteure bei der Anwendung dieser Verordnung zu unterstützen, wobei ein besonderer Schwerpunkt auf der Erleichterung der Einhaltung durch Kleinstunternehmen und kleine und mittlere Unternehmen liegt. (2) Beabsichtigt die Kommission, Leitlinien gemäß Absatz 1 bereitzustellen, so geht sie mindestens auf folgende Aspekte ein: a) den Anwendungsbereich dieser Verordnung mit besonderem Schwerpunkt auf Datenfernverarbeitungslösungen und freier und quelloffener Software, b) die Anwendung von Unterstützungszeiträumen in Bezug auf bestimmte Kategorien von Produkten mit digitalen Elementen; c) Leitlinien für Hersteller, die dieser Verordnung unterliegen und auch anderen Harmonisierungsrechtsvorschriften der Union als dieser Verordnung oder anderen damit zusammenhängenden Rechtsakten der Union unterliegen; d) den Begriff der wesentlichen Änderung. Die Kommission führt ferner eine leicht zugängliche Liste der gemäß dieser Verordnung erlassenen delegierten Rechtsakte und Durchführungsrechtsakte. (3) Bei der Ausarbeitung der Leitlinien gemäß diesem Artikel konsultiert die Kommission die einschlägigen Interessenträger. KAPITEL III KONFORMITÄT DES PRODUKTS MIT DIGITALEN ELEMENTEN",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:legislation/bindingness:binding-for-agencies → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "mdr-en-art-116",
+      "source": "mdr-en",
+      "paragraphNumber": "Art. 116",
+      "title": "Separate delegated acts for different delegated powers",
+      "fullText": "The Commission shall adopt a separate delegated act in respect of each power delegated to it pursuant to this Regulation.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "mdr-en-art-117",
+      "source": "mdr-en",
+      "paragraphNumber": "Art. 117",
+      "title": "Amendment to Directive 2001/83/EC",
+      "fullText": "In Annex I to Directive 2001/83/EC, point 12 of Section 3.2. is replaced by the following: ‘(12) Where, in accordance with the second subparagraph of Article 1(8) or the second subparagraph of Article 1(9) of Regulation (EU) 2017/745 of the European Parliament and of the Council [(\\*1)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32017R0745#ntr*1-L_2017117EN.01000101-E0038), a product is governed by this Directive, the marketing authorisation dossier shall include, where available, the results of the assessment of the conformity of the device part with the relevant general safety and performance requirements set out in Annex I to that Regulation contained in the manufacturer's EU declaration of conformity or the relevant certificate issued by a notified body allowing the manufacturer to affix a CE marking to the medical device.<br>If the dossier does not include the results of the conformity assessment referred to in the first subparagraph and where for the conformity assessment of the device, if used separately, the involvement of a notified body is required in accordance with Regulation (EU) 2017/745, the authority shall require the applicant to provide an opinion on the conformity of the device part with the relevant general safety and performance requirements set out in Annex I to that Regulation issued by a notified body designated in accordance with that Regulation for the type of device in question.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "mdr-de-art-117",
+      "source": "mdr-de",
+      "paragraphNumber": "Art. 117",
+      "title": "Änderung der Richtlinie 2001/83/EG",
+      "fullText": "Anhang I Abschnitt 3.2 Nummer 12 der Richtlinie 2001/83/EG erhält folgende Fassung: „(12) Fällt ein Produkt gemäß Artikel 1 Absatz 8 UnterAbsatz 2 oder Absatz 9 UnterAbsatz 2 der Verordnung (EU) 2017/745 des Europäischen Parlaments und des Rates [(\\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32017R0745#ntr*1-L_2017117DE.01000101-E0038) in den Geltungsbereich dieser Richtlinie, enthält der Zulassungsantrag, sofern verfügbar, die Ergebnisse der Bewertung der Konformität des Medizinprodukt-Teils mit den grundlegenden Sicherheits- und Leistungsanforderungen gemäß Anhang I der genannten Verordnung, die in der EU-Konformitätserklärung des Herstellers oder in der von einer Benannten Stelle ausgestellten einschlägigen Bescheinigung, die es dem Hersteller erlaubt, das Medizinprodukt mit der CE-Kennzeichnung zu versehen, enthalten sind.<br>Enthält der Antrag die Ergebnisse der in Absatz 1 genannten Konformitätsbewertung nicht und müsste gemäß der Verordnung (EU) 2017/745 an der Konformitätsbewertung des Produkts für sich allein genommen eine Benannte Stelle mitwirken, verlangt die Behörde vom Antragsteller eine Stellungnahme zur Konformität des Produkt-Teils mit den grundlegenden Sicherheits- und Leistungsanforderungen gemäß Anhang I der genannten Verordnung, die von einer Benannten Stelle ausgestellt ist, die gemäß der genannten Verordnung für die betreffende Art von Produkt benannt wurde.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "psd2-en-art-104",
+      "source": "psd2-en",
+      "paragraphNumber": "Art. 104",
+      "title": "Delegated acts",
+      "fullText": "The Commission shall be empowered to adopt delegated acts in accordance with Article 105 concerning: (a) adapting the reference to Recommendation 2003/361/EC in point (36) of Article 4 of this Directive where that Recommendation is amended; (b) updating the amounts specified in Article 32(1) and Article 74(1) to take account of inflation.",
+      "language": "en",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "psd2-de-art-104",
+      "source": "psd2-de",
+      "paragraphNumber": "Art. 104",
+      "title": "Delegierte Rechtsakte",
+      "fullText": "Der Kommission wird die Befugnis übertragen, gemäß Artikel 105 delegierte Rechtsakte zu erlassen, um Folgendes festzulegen: a) die Anpassung des Verweises auf die Empfehlung 2003/361/EG in Artikel 4 Nummer 36, wenn diese Empfehlung geändert wird; b) die Anpassung der in Artikel 32 Absatz 1 und in Artikel 74 Absatz 1 genannten Beträge, um der Inflation Rechnung zu tragen.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "psd2-de-art-111",
+      "source": "psd2-de",
+      "paragraphNumber": "Art. 111",
+      "title": "Änderungen der Richtlinie 2009/110/EG",
+      "fullText": "Richtlinie 2009/110/EG wird wie folgt geändert: 1. Artikel 3 wird wie folgt geändert: a) Absatz 1 erhält folgende Fassung:<br>„(1) Unbeschadet der vorliegenden Richtlinie gelten Artikel 5, die Artikel 11 bis 17, Artikel 19 Absätze 5 und 6 sowie die Artikel 20 bis 31 der Richtlinie (EU) 2015/2366 des Europäischen Parlaments und des Rates [(\\*2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntr*2-L_2015337DE.01003501-E0037) einschließlich der nach Artikel 15 Absatz 4, Artikel 28 Absatz 5 und Artikel 29 Absatz 7 angenommenen delegierten Rechtsakte für E-Geld-Institute entsprechend.<br>[(\\*2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntc*2-L_2015337DE.01003501-E0037) Richtlinie (EU) 2015/2366 des Europäischen Parlaments und des Rates vom 25. November 2015 über Zahlungsdienste im Binnenmarkt, zur Änderung der Richtlinien 2002/65/EG, 2009/110/EG, 2013/36/EU und der Verordnung (EU) Nr. 1093/2010 sowie zur Aufhebung der Richtlinie 2007/64/EG ( [ABl. L 337 vom 23.12.2015, S. 35](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:L:2015:337:TOC)).“<br>\" b) Absätze 4 und 5 erhalten folgende Fassung:<br>„(4) Die Mitgliedstaaten erlauben E-Geld-Instituten den Vertrieb und den Rücktausch von E-Geld über natürliche oder juristische Personen, die in ihrem Namen tätig sind. Vertreibt ein E-Geld-Institut in einem anderen Mitgliedstaat unter Inanspruchnahme einer solchen natürlichen oder juristischen Person E-Geld, so gelten die Artikel 27 bis 31, mit Ausnahme des Artikels 29 Absätze 4 und 5, der Richtlinie (EU) 2015/2366, einschließlich der nach Artikel 28 Absatz 5und Artikel 29 Absatz 7 angenommenen delegierten Rechtsakte, für ein solches E-Geld-Institut entsprechend.<br>(5) Ungeachtet des Absatzes 4 des vorliegenden Artikels emittieren E-Geld-Institute elektronisches Geld nicht über Agenten. E-Geld-Institute sind befugt, Zahlungsdienste gemäß Artikel 6 Absatz 1 Buchstabe a der vorliegenden Richtlinie über Agenten zu erbringen, wenn die Voraussetzungen des Artikels 19 der Richtlinie (EU) 2015/2366 erfüllt sind.“ 2. In Artikel 18 wird folgender Absatz angefügt:<br>„(4) Die Mitgliedstaaten gestatten E-Geld-Instituten, die vor dem Erlass der Richtlinie … im Mitgliedstaat ihres Sitzes vor dem 13. Januar 2018 Tätigkeiten gemäß der vorliegenden Richtlinie und der Richtlinie 2007/64/EG aufgenommen haben, diese Tätigkeiten in dem betreffenden Mitgliedstaat oder in einem anderen Mitgliedstaat bis 13. Juli 2018 fortzusetzen, ohne eine Zulassung gemäß Artikel 3 der vorliegenden Richtlinie beantragen und ohne die anderen Bestimmungen des Titels II der vorliegenden Richtlinie oder die dort genannten Bestimmungen einhalten zu müssen.<br>Die Mitgliedstaaten schreiben vor, dass E-Geld-Institute nach Unterabsatz 1 den zuständigen Behörden alle sachdienlichen Informationen übermitteln, damit diese bis zum 13. Juli 2018 beurteilen können, ob die betreffenden E-Geld-Institute die Anforderungen des Titels II erfüllen und welche Maßnahmen andernfalls zu ergreifen sind, um das sicherzustellen, oder ob die Zulassung entzogen werden muss.<br>Die E-Geld-Institute nach Unterabsatz 1, die nach Überprüfung durch die zuständigen Behörden die Anforderungen des Titels II erfüllen, erhalten eine Zulassung und werden in das Register eingetragen. Erfüllen die E-Geld-Institute die Anforderungen des Titels II nicht bis zum 13. Juli 2018, so wird ihnen die Ausgabe von E-Geld untersagt.“",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:implementing_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    },
+    {
+      "caseId": "eidas-de-art-47",
+      "source": "eidas-de",
+      "paragraphNumber": "Art. 47",
+      "title": "Ausübung der Befugnisübertragung",
+      "fullText": "(1) Die Befugnis zum Erlass delegierter Rechtsakte wird der Kommission unter den in diesem Artikel festgelegten Bedingungen übertragen. (2) Die Befugnis zum Erlass delegierter Rechtsakte gemäß Artikel 30 Absatz 4 wird der Kommission auf unbestimmte Zeit ab dem 17. September 2014 übertragen. (3) Die Befugnisübertragung gemäß Artikel 30 Absatz 4 kann vom Europäischen Parlament oder vom Rat jederzeit widerrufen werden. Der Beschluss über den Widerruf beendet die Übertragung der in diesem Beschluss angegebenen Befugnis. Er wird am Tag nach seiner Veröffentlichung im Amtsblatt der Europäischen Union oder zu einem darin angegebenen späteren Zeitpunkt wirksam. Die Gültigkeit von delegierten Rechtsakten, die bereits in Kraft sind, wird von dem Beschluss über den Widerruf nicht berührt. (4) Sobald die Kommission einen delegierten Rechtsakt erlässt, übermittelt sie ihn gleichzeitig dem Europäischen Parlament und dem Rat. (5) Ein delegierter Rechtsakt, der gemäß Artikel 30 Absatz 4 erlassen wurde, tritt nur in Kraft, wenn weder das Europäische Parlament noch der Rat innerhalb einer Frist von zwei Monaten nach Übermittlung dieses Rechtsakts an das Europäische Parlament und den Rat Einwände erhoben haben oder wenn vor Ablauf dieser Frist das Europäische Parlament und der Rat beide der Kommission mitgeteilt haben, dass sie keine Einwände erheben werden. Auf Initiative des Europäischen Parlaments oder des Rates wird diese Frist um zwei Monate verlängert.",
+      "language": "de",
+      "jurisdiction": "EU",
+      "labels": {
+        "normKind": "legislation",
+        "bindingness": "binding"
+      },
+      "annotator": "architect-audit-2026-07-24 (unanimous opus+gpt5 overturn haiku)",
+      "notes": "AUDIT: Haiku=normKind:delegated_act/bindingness:binding → Wahrheit legislation/binding. Ermächtigungs-/Änderungs-/Leitlinien-Falle (RUBRIC B3a normKind/bindingness folgen dem Quell-Dokument)."
+    }
+  ]
+}
