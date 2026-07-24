@@ -4,6 +4,7 @@
  * Run: cd packages/server && npx jest src/__tests__/prelabelTyping.test.ts
  */
 import { buildPrelabelUserPrompt, parsePrelabelLabels } from '../scripts/prelabel-typing';
+import { TYPING_PROMPT_VERSION } from '@thearchitect/shared';
 import { TYPING_AXES } from '../evals/typingGolden';
 
 describe('buildPrelabelUserPrompt', () => {
@@ -117,6 +118,71 @@ describe('buildPrelabelUserPrompt — Rubrik-Regeln im Prompt', () => {
     const p = buildPrelabelUserPrompt(provision);
     expect(p).toContain('describe the DOCUMENT');
     expect(p).toContain('not itself a');
+  });
+});
+
+// ─── B3a-Präzedenzen im Prompt (THE-432, tp-2) ──────────────────
+//
+// Die Adjudikation vom 2026-07-22 hat 42 Streitfälle in verbindliche Präzedenzen
+// überführt (RUBRIC.md B3a). Die Baseline-Messung zeigte das Modell GENAU auf
+// diesem Terrain scheiternd (provisionKind 73,8 %, other-Recall 0,17) — der
+// Prompt hinkte der Rubrik hinterher. Diese Assertions verankern die
+// Verdichtungs-Pflicht: Wer B3a ändert, ohne den Prompt nachzuziehen, bricht hier.
+describe('buildPrelabelUserPrompt — B3a-Präzedenzen im Prompt (tp-2)', () => {
+  const provision = {
+    source: 'nis2-de',
+    paragraphNumber: 'Art. 27',
+    title: 'Registry of entities',
+    fullText: 'x'.repeat(60),
+    language: 'de',
+  } as never;
+  const p = buildPrelabelUserPrompt(provision);
+
+  it('carries the institution-founding precedent → "other"', () => {
+    expect(p).toContain('Founding or establishing an institution');
+    expect(p).toContain('"other"');
+  });
+
+  it('carries the presumption/evidence-rule precedent → obligationKind na + procedural', () => {
+    expect(p).toContain('shall be deemed to satisfy');
+  });
+
+  it('carries the mirror-duty precedent for data-subject rights → controller', () => {
+    expect(p).toContain('MIRROR DUTY');
+    expect(p).toContain('not the right-holder');
+  });
+
+  it('carries the market-access precedent: "only where" → prohibition, not obligation', () => {
+    expect(p).toContain('only where');
+    expect(p).toContain('closed door');
+  });
+
+  it('carries the authority-empowerment precedent → permission (Gesetzesvorbehalt)', () => {
+    expect(p).toContain('Gesetzesvorbehalt');
+    expect(p).toContain('forbidden unless empowered');
+  });
+
+  it('splits master-data registration (procedural) from event-driven notification (obligation)', () => {
+    expect(p).toContain('Master-data registration');
+    expect(p).toContain('EVENT-driven notification');
+  });
+
+  it('forbids borrowing a neighboring role for actors outside the closed list', () => {
+    expect(p).toContain('NEVER borrow a neighboring role');
+  });
+
+  it('names B3a as source so the sync mechanism is auditable from the prompt alone', () => {
+    expect(p).toContain('B3a');
+  });
+});
+
+// Bump-Disziplin: TYPING_PROMPT_VERSION ist Teil der Provenance (AC-1) und der
+// Batch-Idempotenz — JEDE inhaltliche Prompt-Änderung MUSS die Version erhöhen,
+// sonst überspringt der Batch bereits klassifizierte Dokumente mit dem alten
+// Prompt und die Eval misst ein anderes System als das produktive.
+describe('TYPING_PROMPT_VERSION', () => {
+  it('is tp-2 after the B3a precedent sync', () => {
+    expect(TYPING_PROMPT_VERSION).toBe('tp-2');
   });
 });
 

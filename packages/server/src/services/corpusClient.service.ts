@@ -28,6 +28,36 @@ export interface ICorpusRegulation extends Document {
   language: string;
   version: number;
   crawledAt: Date;
+  /**
+   * Typisierungs-VORSCHLAG (THE-432 Slice T) — geschrieben vom Batch im
+   * compliance-crawler (Server B, dort liegt der Schreibzugriff), hier nur
+   * GELESEN. `null` = Achse bewusst „nicht anwendbar", fehlend = offen.
+   * Konsumenten (z. B. scope-applicability-Priorisierung im Discovery) sind
+   * hinter Gate 2 + Feature-Flag — kein Code liest dieses Feld ungemessen.
+   * Feldnamen müssen mit compliance-crawler/src/db/regulation.model.ts
+   * identisch bleiben.
+   */
+  typing?: {
+    normKind?: string | null;
+    bindingness?: string | null;
+    obligationKind?: string | null;
+    partyRole?: string | null;
+    provisionKind?: string | null;
+    modelId: string;
+    promptVersion: string;
+    ontologyVersion: string;
+    /**
+     * Review-Fix 1 (THE-432): Anker an die TEXT-Version (sha256 von fullText),
+     * die dieses Label beschreibt. Bei einer Novelle aktualisiert die
+     * Crawl-Route das Dokument in place mit neuem versionHash — weicht
+     * doc.versionHash von typing.versionHash ab, beschreibt das Label einen
+     * ALTEN Text-Stand und darf nicht als aktuell konsumiert werden.
+     */
+    versionHash: string;
+    typedAt: Date;
+    status: 'suggested' | 'confirmed' | 'rejected';
+    droppedAxes?: string[];
+  };
 }
 
 export const corpusRegulationSchema = new Schema<ICorpusRegulation>(
@@ -45,6 +75,27 @@ export const corpusRegulationSchema = new Schema<ICorpusRegulation>(
     language: { type: String, required: true },
     version: { type: Number, default: 1 },
     crawledAt: { type: Date, default: Date.now },
+    // Leseseite des typing-Subdokuments (Schreiber: compliance-crawler-Batch).
+    // `type: String` ohne Validator/Default: null muss den Cast überleben
+    // (bewusstes „nicht anwendbar"), fehlend bleibt fehlend.
+    typing: {
+      type: {
+        normKind: { type: String, default: undefined },
+        bindingness: { type: String, default: undefined },
+        obligationKind: { type: String, default: undefined },
+        partyRole: { type: String, default: undefined },
+        provisionKind: { type: String, default: undefined },
+        modelId: { type: String },
+        promptVersion: { type: String },
+        ontologyVersion: { type: String },
+        versionHash: { type: String }, // Review-Fix 1: Text-Anker (Feldname identisch zum Crawler-Schema)
+        typedAt: { type: Date },
+        status: { type: String, enum: ['suggested', 'confirmed', 'rejected'] },
+        droppedAxes: { type: [String], default: undefined },
+      },
+      _id: false,
+      default: undefined,
+    },
   },
   { timestamps: true, collection: 'regulations' },
 );

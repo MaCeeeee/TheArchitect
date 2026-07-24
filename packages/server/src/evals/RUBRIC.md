@@ -217,7 +217,11 @@ Die Achse mit dem größten Streitpotenzial; hier lohnt die genaueste Lektüre.
 2. **`obligation` vs. `procedural`.** Test: *Begründet dieser Paragraph die Pflicht, oder regelt er die
    Abwicklung einer anderswo begründeten Pflicht?* Eine Meldepflicht ist eine Pflicht (`obligation`);
    die 72-Stunden-Frist und das Meldeformular dazu sind `procedural`. Steht beides im selben Paragraphen,
-   entscheidet der Schwerpunkt.
+   entscheidet der Schwerpunkt. **Präzisierung (Adjudikation 2026-07-22):** *anlassbezogene* Meldung
+   eines Ereignisses (Sicherheitsvorfall melden) begründet eine Pflicht → `obligation`; *Stammdaten*-
+   Registrierung und Register-Führung (wer ist wer, Kontaktdaten, IP-Bereiche — Titel-Indiz „Register")
+   sind Verwaltungsmechanik → `procedural` (B3a, NIS2 Art. 27). Das löst den früheren Widerspruch
+   zwischen diesem Beispiel und der Nennung von „Registrierungsverfahren" in der Kategorien-Tabelle auf.
 3. **`obligation` vs. `enforcement-supervision`.** Test: *Wer wird adressiert?* Pflichten des Regulierten
    → `obligation`. Befugnisse oder Pflichten der Behörde → `enforcement-supervision`. Diese Achse läuft
    fast immer parallel zu `partyRole` — steht dort die Aufsichtsbehörde, ist `obligation` verdächtig.
@@ -291,6 +295,33 @@ etwa bei Umsetzungs-, Benennungs- und Sanktionsregelungspflichten —, ist der W
 Beide beschreiben das **Dokument**, aus dem die Provision stammt, nicht den einzelnen Paragraphen.
 Innerhalb eines Gesetzes sind sie deshalb über alle Fälle konstant. Erwartete Einigkeit: hoch.
 Weichen zwei Prüfer hier ab, ist meist die Quelle falsch zugeordnet — kein Rubrik-Problem.
+
+### B3a. Präzedenzkatalog aus der Adjudikation (2026-07-22)
+
+42 Streitfälle (Prüfer A: Opus · Prüfer B: GPT-5/OpenRouter) wurden vom Architekten in fünf
+Regel-Blöcken durchentschieden. Diese Präzedenzen sind verbindlich — künftige gleichartige Fälle werden
+gleich gelabelt; sie sind zugleich Material für Judge-Prompts (§ 7.5). Volle Begründungen je Fall:
+`notes` in `golden/typing.v1.json` + `docs/superpowers/2026-07-22-the-421-adjudication-packet.md`.
+
+| Muster (Beispielfall) | Entscheidung |
+|---|---|
+| Geltungsbereichs-/Definitions-Artikel (Art. 1–3 aller Gesetze) | `partyRole` **n/a**, `obligationKind` **null** — benennt Rollen, verpflichtet sie nicht |
+| Einstufungs-Artikel mit Regime-Folge (NIS2 Art. 3 wesentlich/wichtig) | `provisionKind` **scope-applicability**, nicht definition |
+| Befreiungs-Artikel, der Pflichten abschaltet (DSGVO Art. 11: „Art. 15–20 finden keine Anwendung") | `provisionKind` **scope-applicability** |
+| Komitologie/Ausschussverfahren (DSGVO Art. 93, NIS2 Art. 39) | `obligationKind` **null** |
+| Sanktionsregime, das Mitgliedstaaten erlassen (NIS2 Art. 36) | `provisionKind` **enforcement-supervision** — die Pflicht endet beim Staat |
+| Behörde/CSIRT handelt (NIS2 Art. 12/13) | `provisionKind` **enforcement-supervision** |
+| Verwaltungsmechanik durch Behörde (RTS-Formate DORA Art. 41, Kennnummern CRA Art. 44, Notifizierungsverfahren CRA Art. 43, ENISA-Bericht NIS2 Art. 18) | `provisionKind` **procedural** — enforcement-supervision bleibt echten Aufsichts-/Untersuchungs-/Sanktionsbefugnissen vorbehalten |
+| Gründung einer Institution (KI-VO Art. 67 Beirat, NIS2 Art. 16 EU-CyCLONe) | `provisionKind` **other**; zwischenstaatliches Netzwerk → `partyRole` **member_state** |
+| Echte Verhaltenspflicht auf Behördenseite (DORA Art. 55 Berufsgeheimnis) | `provisionKind` **obligation** — eine Pflicht bleibt Pflicht, der Träger gehört in `partyRole` |
+| Behörden-Ermächtigung (LkSG §§ 14/15) | `obligationKind` **permission** — Gesetzesvorbehalt: für Behörden ist der Ausgangszustand „verboten", die Norm öffnet die Tür |
+| Verbot mit Erlaubnisvorbehalt (CRA Art. 6 „only where") | `obligationKind` **prohibition** — Markttür zu, außer Anforderungen erfüllt; Herstellerpflichten sitzen in Art. 13 |
+| Vergabe-Ausschluss (LkSG § 22) | `obligationKind` **prohibition** + `partyRole` **obligated_enterprise** — dem Unternehmen wird die Teilnahme verschlossen |
+| Vermutungs-/Beweisregel (KI-VO Art. 32 Konformitätsvermutung) | `obligationKind` **null**, `provisionKind` **procedural** |
+| Betroffenenrechte (DSGVO Art. 15–22) | `partyRole` **controller** — Adressat ist der Träger der Spiegelpflicht, nicht der Rechte-Inhaber |
+| Richtlinien-Zweischritt („MS verlangen von Einrichtungen, dass sie…", NIS2 Art. 27) | `partyRole` = **bei wem die Pflicht endet** (die Einrichtung); Gegenprobe Art. 36: endet sie beim Staat → member_state-Seite |
+| Stammdaten-Registrierung (NIS2 Art. 27 „Register der Einrichtungen") | `provisionKind` **procedural**; anlassbezogene Vorfalls-Meldung bleibt obligation |
+| Akteur ohne Rolle im Werteraum (notifizierte Stellen, CRA Art. 42/47) | `partyRole` **n/a** — nie eine fremde Rolle borgen; Merker: Kandidat für Facetten-Erweiterung |
 
 ## B4. Erwartete Einigkeit — wo Streit normal ist
 
@@ -369,6 +400,11 @@ gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob al
   jeweiligen Gesetzes hat Vorrang (NIS2/DORA/CRA/LkSG-Rollen statt fremder Ersatzrollen; Mitgliedstaaten
   → `member_state`). Anlass: Kappa 0,597 auf dieser Achse, Ursache war eine fehlende Klasse, nicht eine
   unklare Rubrik — der Rollenraum ist dafür auf E6 1.6.0 erweitert worden.
+- **B-v1.3 (2026-07-22):** B3a Präzedenzkatalog aus der Adjudikation (42 Fälle, 5 Regel-Blöcke,
+  Architekten-Entscheid); Präzisierung obligation vs. procedural (anlassbezogene Meldung vs.
+  Stammdaten-Registrierung) — interner Widerspruch aufgelöst. Klassifizierungs-Prüfsatz eingefroren
+  (`typing.v1.json`, E6 1.6.0, Cross-House-Kappa obligationKind 0,815 · provisionKind 0,748 ·
+  partyRole 0,742).
 
 ---
 

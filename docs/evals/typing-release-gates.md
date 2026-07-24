@@ -27,11 +27,31 @@ nach C_score-Band stratifiziert, mit Kalibrierungs-Ausweis.
 | normKind | ≥ 0.90 | ≥ 0.85 | norm-level, hohe Deckung erwartbar |
 | bindingness | ≥ 0.85 | ≥ 0.80 | — |
 | obligationKind | ≥ 0.80 | ≥ 0.75 | deontisches Tripel; `__na__` als eigene Klasse gewertet |
-| partyRole | ≥ 0.75 | ≥ 0.70 | dünnbesetzte Klassen → macro-F1 kritisch |
+| partyRole | ≥ 0.75 | ≥ 0.70 | macro-F1 **über Klassen mit n ≥ 3** — Klassen mit 1–2 Fällen werden im Report ausgewiesen, aber nicht eingerechnet (ein verfehlter Einzelfall = 0,00 für die Klasse, das misst Stichprobengröße, nicht Fähigkeit) |
+| provisionKind | ≥ 0.75 | ≥ 0.70 | fünfte Achse (E6 1.5.0+); die Gate-2-Freigabe hängt zusätzlich an der Klassen-Regel unten |
 
 Schwellen sind **Slice-1-Startwerte** (kein Paper-Import — die Law-Domäne war im
 OntoLearner-Benchmark nicht getestet). Nach dem ersten echten Baseline werden sie
 mit den beobachteten Bootstrap-CIs kalibriert, nicht vorab pauschal gesetzt.
+
+## Gate 2 — klassen-spezifische Freigabe der Discovery-Priorisierung (O-2, fixiert 2026-07-22)
+
+Der Gate-2-Konsument (scope-applicability-Priorisierung im Discovery-Retrieval, THE-423-belegter
+Hebel) hängt an **einer** Klasse, nicht am Achsen-Durchschnitt. Deshalb:
+
+> **Gate 2 gilt als bestanden, wenn `scope-applicability` am frozen Golden F1 ≥ 0,80 hält.**
+> Der Achsen-Durchschnitt (Tabelle oben) steuert die breite Default-Freigabe der Typing-Vorschläge,
+> nicht dieses Feature.
+
+Messstand: Baseline tp-1 (2026-07-22): F1 0,86 · nach Prompt-Sync tp-2: **F1 0,92, Recall 1,00** ✅.
+
+## In-Sample-Regel (stehend)
+
+Werden Rubrik-Regeln aus adjudizierten Golden-Fällen gewonnen (B3a-Präzedenzen) und der Prompt
+nachgezogen, sind Re-Eval-Zahlen **auf demselben Golden** als *in-sample* zu kennzeichnen — sie sind
+keine unabhängige Bestätigung. Die unabhängige Bestätigung liefert der nächste Golden-Ausbau
+(neue Fälle, die die Regeln nie „gesehen" haben). Messstand tp-2 (in-sample): obligationKind
+88,8 %/0,869 · partyRole 95,0 %/0,845 · provisionKind 87,5 %/0,883 — alle Achsen über den Schwellen.
 
 ## C_score-Band-Kopplung (THE-431)
 
