@@ -76,6 +76,53 @@ export interface BuildTypingDraftOptions {
    * Anwendungsbereich, Begriffsbestimmungen), nicht über ein vermutetes Label.
    */
   mustInclude?: string[];
+  /**
+   * caseIds, die aus dem Kandidaten-Pool entfernt werden, BEVOR stratifiziert
+   * wird (Golden v2: Disjunktheit zu v1). Siehe `excludeCases` für das Warum.
+   */
+  excludeCaseIds?: string[];
+  /**
+   * Exakt diese caseIds wählen (Audit-Topf) — Positivliste statt Stichprobe,
+   * daher nicht mit targetSize/mustInclude kombinierbar. Siehe `pickOnlyCases`.
+   */
+  onlyCaseIds?: string[];
+}
+
+/**
+ * Entfernt Fälle, deren caseId in `excludeIds` steht — und zwar VOR der
+ * Stratifikation, nicht danach.
+ *
+ * Warum: v2 muss DISJUNKT zu v1 sein (Out-of-Sample-Garantie). Würden
+ * v1-Fälle erst nach der Auswahl gestrichen, hätte die Stratifikation ihre
+ * Quote teilweise mit später verworfenem Material gefüllt — der Satz
+ * schrumpfte still unter die Zielgröße. So sieht der Stratifizierer die
+ * v1-Fälle nie und füllt die Quote aus genuin frischem Material.
+ */
+export function excludeCases(cases: TypingGoldenCase[], excludeIds: string[]): TypingGoldenCase[] {
+  const excluded = new Set(excludeIds);
+  return cases.filter((c) => !excluded.has(c.caseId));
+}
+
+/**
+ * Wählt EXAKT die angeforderten caseIds, in der Reihenfolge der Id-Liste —
+ * der Audit-Topf ist eine Positivliste (z. B. 22 Verdachtsfälle), keine
+ * Stichprobe: keine Stratifikation, keine Zielgröße.
+ *
+ * Fehlt auch nur eine Id im Pool, ist das ein HARTER Fehler mit allen
+ * fehlenden Ids in der Meldung. Ein Audit-Satz, der fehlende Fälle still
+ * verschluckt, würde Vollständigkeit vortäuschen: die Fehlerquote der
+ * Verdachtsfälle würde über einen kleineren Nenner gemessen und sähe besser
+ * aus, als sie ist.
+ */
+export function pickOnlyCases(cases: TypingGoldenCase[], onlyIds: string[]): TypingGoldenCase[] {
+  const byId = new Map(cases.map((c) => [c.caseId, c]));
+  const missing = onlyIds.filter((id) => !byId.has(id));
+  if (missing.length > 0) {
+    throw new Error(
+      `--only-cases: ${missing.length} caseId(s) nicht im Pool: ${missing.join(', ')}`
+    );
+  }
+  return onlyIds.map((id) => byId.get(id)!);
 }
 
 /**
@@ -187,6 +234,14 @@ export function buildTypingDraft(
     seed = 42,
   } = opts;
 
+  // Positivliste und Stichproben-Parameter schließen sich aus: eine "Quote"
+  // oder ein "Pflichtanteil" über einer festen Liste wäre widersprüchlich.
+  if (opts.onlyCaseIds && (targetSize !== undefined || opts.mustInclude)) {
+    throw new Error(
+      'onlyCaseIds ist nicht mit targetSize/mustInclude kombinierbar: der Audit-Topf ist eine feste Positivliste, keine Stichprobe.'
+    );
+  }
+
   const seen = new Set<string>();
   const allCases: TypingGoldenCase[] = [];
   for (const r of regulations) {
@@ -206,8 +261,14 @@ export function buildTypingDraft(
     });
   }
 
-  const cases =
-    targetSize === undefined ? allCases : stratifiedSelect(allCases, targetSize, seed, opts.mustInclude ?? []);
+  // Ausschluss VOR jeder Auswahl — siehe excludeCases (Disjunktheits-Garantie).
+  const candidates = opts.excludeCaseIds ? excludeCases(allCases, opts.excludeCaseIds) : allCases;
+
+  const cases = opts.onlyCaseIds
+    ? pickOnlyCases(candidates, opts.onlyCaseIds)
+    : targetSize === undefined
+      ? candidates
+      : stratifiedSelect(candidates, targetSize, seed, opts.mustInclude ?? []);
 
   return { version, frozen: false, ontologyVersion, rubricRef: '../RUBRIC.md', cases };
 }
@@ -226,6 +287,19 @@ async function main(): Promise<void> {
   const sourcesArg = argValue(argv, '--sources');
   const targetSizeArg = argValue(argv, '--target-size');
   const seedArg = argValue(argv, '--seed');
+  const excludeFileArg = argValue(argv, '--exclude-file');
+  const onlyCasesArg = argValue(argv, '--only-cases');
+
+  // --only-cases (Audit-Topf) ist eine feste Positivliste — Stichproben-Flags
+  // daneben wären widersprüchlich und werden hart abgewiesen statt ignoriert.
+  if (onlyCasesArg && (targetSizeArg !== undefined || seedArg !== undefined || argValue(argv, '--must-include-paragraphs'))) {
+    console.error(
+      '--only-cases ist nicht mit --target-size/--seed/--must-include-paragraphs kombinierbar: ' +
+        'der Audit-Topf ist eine feste Positivliste, keine Stichprobe.'
+    );
+    process.exitCode = 2;
+    return;
+  }
 
   // --sources a,b,c stratifiziert über mehrere Gesetze; --source bleibt der
   // Ein-Gesetz-Kurzweg (Default 'dsgvo', unverändertes Verhalten).
@@ -265,7 +339,10 @@ async function main(): Promise<void> {
     const pool = JSON.parse(fs.readFileSync(poolPath, 'utf8')) as ApiRegulation[];
     if (!Array.isArray(pool)) throw new Error(`--from-file: ${poolPath} enthält kein Array`);
     const wanted = new Set(sources);
-    regulations.push(...pool.filter((r) => wanted.has(r.source)));
+    // Bei --only-cases bestimmt allein die Id-Liste die Auswahl — ein
+    // Quellen-Filter davor würde Ids quer über Gesetze künstlich „fehlen"
+    // lassen und den harten Vollständigkeits-Check grundlos auslösen.
+    regulations.push(...(onlyCasesArg ? pool : pool.filter((r) => wanted.has(r.source))));
     if (regulations.length === 0) {
       console.error(
         `--from-file: keine Provisions für ${sources.join(',')} in ${poolPath} ` +
@@ -316,7 +393,70 @@ async function main(): Promise<void> {
     );
   }
 
-  const draft = buildTypingDraft(regulations, { targetSize, seed, mustInclude });
+  // --exclude-file <golden.json>  entfernt die caseIds eines bestehenden
+  // Golden/Drafts aus dem Kandidaten-Pool, BEVOR stratifiziert wird — v2 muss
+  // disjunkt zu v1 sein (Out-of-Sample). Lesefehler sind HART (exit 2): ein
+  // stiller Fallback ohne die v1-Ids würde die Disjunktheits-Garantie lautlos
+  // brechen und der Prüfsatz wäre wertlos, ohne dass es jemand merkt.
+  let excludeCaseIds: string[] | undefined;
+  if (excludeFileArg) {
+    const excludePath = path.resolve(excludeFileArg);
+    try {
+      const parsed = JSON.parse(fs.readFileSync(excludePath, 'utf8')) as {
+        cases?: { caseId?: string }[];
+      };
+      if (!Array.isArray(parsed.cases)) throw new Error('enthält keine cases[]-Liste');
+      excludeCaseIds = parsed.cases
+        .map((c) => c.caseId)
+        .filter((id): id is string => typeof id === 'string');
+    } catch (err) {
+      console.error(
+        `--exclude-file: ${excludePath} nicht lesbar/parsebar: ${err instanceof Error ? err.message : err}`
+      );
+      process.exitCode = 2;
+      return;
+    }
+    const excludeSet = new Set(excludeCaseIds);
+    const matched = regulations.filter((r) =>
+      excludeSet.has(slugifyCaseId(r.source, r.paragraphNumber))
+    ).length;
+    console.log(
+      `[typing-build] Disjunktheit: ${matched} Pool-Fälle ausgeschlossen ` +
+        `(${excludeCaseIds.length} Ids aus ${path.basename(excludePath)})`
+    );
+  }
+
+  // --only-cases <ids.json>  wählt exakt die gelisteten caseIds (Audit-Topf).
+  // Datei = JSON-Array von caseId-Strings; Reihenfolge wird übernommen.
+  let onlyCaseIds: string[] | undefined;
+  if (onlyCasesArg) {
+    const onlyPath = path.resolve(onlyCasesArg);
+    try {
+      const parsed = JSON.parse(fs.readFileSync(onlyPath, 'utf8')) as unknown;
+      if (!Array.isArray(parsed) || !parsed.every((id) => typeof id === 'string')) {
+        throw new Error('erwartet ein JSON-Array von caseId-Strings');
+      }
+      onlyCaseIds = parsed as string[];
+    } catch (err) {
+      console.error(
+        `--only-cases: ${onlyPath} nicht lesbar/parsebar: ${err instanceof Error ? err.message : err}`
+      );
+      process.exitCode = 2;
+      return;
+    }
+  }
+
+  let draft: TypingDraft;
+  try {
+    draft = buildTypingDraft(regulations, { targetSize, seed, mustInclude, excludeCaseIds, onlyCaseIds });
+  } catch (err) {
+    // Daten-Probleme (z. B. fehlende Audit-Ids im Pool) sind exit 2 wie die
+    // anderen Eingabe-Fehler oben — kein Crash-Exit 1, damit Skripte den
+    // Unterschied zwischen "kaputt" und "falsche Eingabe" sehen.
+    console.error(`[typing-build] ${err instanceof Error ? err.message : err}`);
+    process.exitCode = 2;
+    return;
+  }
   // Schema-Validierung vor dem Schreiben (fängt kaputte Cases sofort).
   TypingGoldenSetSchema.parse(draft);
 
