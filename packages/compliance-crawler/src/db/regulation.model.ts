@@ -18,6 +18,35 @@ import type {
 import { isNormSource, isJurisdiction, isLanguage } from '@thearchitect/shared';
 import type { Provenance } from '../sources/types';
 
+/**
+ * THE-432 (Slice T): 5-Achsen-Typing-VORSCHLAG auf dem Korpus-Paragraphen.
+ * null = das Modell hat bewusst "na" (nicht anwendbar) gesagt — ein echtes
+ * Label; abwesend = Achse offen (nie beantwortet oder OOV-verworfen).
+ */
+export interface IRegulationTyping {
+  normKind?: string | null;
+  bindingness?: string | null;
+  obligationKind?: string | null;
+  partyRole?: string | null;
+  provisionKind?: string | null;
+  /** Provenance (AC-1): wer hat wann mit welchem Prompt-/Ontologie-Stand vorgeschlagen. */
+  modelId: string;
+  promptVersion: string;
+  ontologyVersion: string;
+  /**
+   * Review-Fix 1: Anker an die TEXT-Version (sha256 von fullText), die dieses
+   * Label beschreibt. Die Crawl-Route aktualisiert Dokumente bei einer Novelle
+   * IN PLACE mit neuem versionHash — typing überlebt das; ohne Anker sähe ein
+   * Label zum alten Text danach wie "up-to-date" aus.
+   */
+  versionHash: string;
+  typedAt: Date;
+  /** 'suggested' schreibt der Batch; confirmed/rejected setzt NUR ein Mensch (AC-4). */
+  status: 'suggested' | 'confirmed' | 'rejected';
+  /** Telemetrie (AC-2): Achsen mit OOV-verworfenem Modell-Wert — nur wenn nicht leer. */
+  droppedAxes?: string[];
+}
+
 export interface IRegulation extends Document {
   /** Stable, project-independent identity, e.g. "nis2:art-23" (ADR-0001). */
   regulationKey: string;
@@ -44,9 +73,52 @@ export interface IRegulation extends Document {
   provenance?: Provenance;
   /** THE-417 AC-2: the NORM_ONTOLOGY version that validated this write. Optional — existing docs predate the stamp. */
   ontologyVersion?: string;
+  /** THE-432 (Slice T): typing suggestion — absent on untyped docs. */
+  typing?: IRegulationTyping;
   createdAt: Date;
   updatedAt: Date;
 }
+
+/**
+ * THE-432 (Slice T): typing-Subdokument.
+ *
+ * WARUM das Feld im Schema stehen MUSS: mongoose strict (Default) streicht
+ * unbekannte Pfade bei $set kommentarlos — ohne Schema-Feld wäre jeder
+ * Batch-Write ein stilles No-op.
+ *
+ * null-vs-fehlend-Semantik: null = bewusstes "nicht anwendbar" (echtes Label),
+ * abwesend = Achse offen. Plain `type: String` genügt dafür: mongoose castet
+ * null auf optionalen Pfaden NICHT (null umgeht Cast + Setter) und persistiert
+ * es; `default: undefined` hält fehlende Achsen fehlend (kein Auto-null) —
+ * Mixed ist nicht nötig. Beweis auf Dokument-Ebene in
+ * src/__tests__/typingBatch.test.ts (die Crawler-Suite hat kein Live-Mongo).
+ *
+ * BEWUSST kein Ontologie-Validator auf den Achsen (anders als source/language
+ * oben): die Werte sind beim Parsen bereits gegen E6 validiert
+ * (parsePrelabelLabels, OOV → drop). Ein zweiter Validator hier wäre eine
+ * zweite Quelle der Wahrheit, die nach einem Ontologie-Bump alte, korrekt
+ * gestempelte Vorschläge unschreibbar machte — die ontologyVersion im Stempel
+ * sagt, gegen welchen Stand validiert wurde.
+ */
+const typingSchema = new Schema<IRegulationTyping>(
+  {
+    normKind: { type: String, default: undefined },
+    bindingness: { type: String, default: undefined },
+    obligationKind: { type: String, default: undefined },
+    partyRole: { type: String, default: undefined },
+    provisionKind: { type: String, default: undefined },
+    modelId: { type: String, required: true },
+    promptVersion: { type: String, required: true },
+    ontologyVersion: { type: String, required: true },
+    // Review-Fix 1: Text-Anker ist Pflicht-Provenance — ein Label ohne
+    // Aussage, WELCHEN Text es beschreibt, ist nicht interpretierbar.
+    versionHash: { type: String, required: true },
+    typedAt: { type: Date, required: true },
+    status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
+    droppedAxes: { type: [String], default: undefined },
+  },
+  { _id: false }
+);
 
 const regulationSchema = new Schema<IRegulation>(
   {
@@ -119,6 +191,7 @@ const regulationSchema = new Schema<IRegulation>(
       required: false,
     },
     ontologyVersion: { type: String, trim: true },
+    typing: { type: typingSchema, required: false },
   },
   { timestamps: true }
 );
