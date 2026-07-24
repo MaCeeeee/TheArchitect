@@ -46,6 +46,14 @@ export interface ICorpusRegulation extends Document {
     modelId: string;
     promptVersion: string;
     ontologyVersion: string;
+    /**
+     * Review-Fix 1 (THE-432): Anker an die TEXT-Version (sha256 von fullText),
+     * die dieses Label beschreibt. Bei einer Novelle aktualisiert die
+     * Crawl-Route das Dokument in place mit neuem versionHash — weicht
+     * doc.versionHash von typing.versionHash ab, beschreibt das Label einen
+     * ALTEN Text-Stand und darf nicht als aktuell konsumiert werden.
+     */
+    versionHash: string;
     typedAt: Date;
     status: 'suggested' | 'confirmed' | 'rejected';
     droppedAxes?: string[];
@@ -80,6 +88,7 @@ export const corpusRegulationSchema = new Schema<ICorpusRegulation>(
         modelId: { type: String },
         promptVersion: { type: String },
         ontologyVersion: { type: String },
+        versionHash: { type: String }, // Review-Fix 1: Text-Anker (Feldname identisch zum Crawler-Schema)
         typedAt: { type: Date },
         status: { type: String, enum: ['suggested', 'confirmed', 'rejected'] },
         droppedAxes: { type: [String], default: undefined },

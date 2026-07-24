@@ -33,6 +33,13 @@ export interface IRegulationTyping {
   modelId: string;
   promptVersion: string;
   ontologyVersion: string;
+  /**
+   * Review-Fix 1: Anker an die TEXT-Version (sha256 von fullText), die dieses
+   * Label beschreibt. Die Crawl-Route aktualisiert Dokumente bei einer Novelle
+   * IN PLACE mit neuem versionHash — typing überlebt das; ohne Anker sähe ein
+   * Label zum alten Text danach wie "up-to-date" aus.
+   */
+  versionHash: string;
   typedAt: Date;
   /** 'suggested' schreibt der Batch; confirmed/rejected setzt NUR ein Mensch (AC-4). */
   status: 'suggested' | 'confirmed' | 'rejected';
@@ -103,6 +110,9 @@ const typingSchema = new Schema<IRegulationTyping>(
     modelId: { type: String, required: true },
     promptVersion: { type: String, required: true },
     ontologyVersion: { type: String, required: true },
+    // Review-Fix 1: Text-Anker ist Pflicht-Provenance — ein Label ohne
+    // Aussage, WELCHEN Text es beschreibt, ist nicht interpretierbar.
+    versionHash: { type: String, required: true },
     typedAt: { type: Date, required: true },
     status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
     droppedAxes: { type: [String], default: undefined },

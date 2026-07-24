@@ -135,7 +135,7 @@ export function assembleTypingSuggestion(parsed: { labels: TypingLabels; dropped
 
 - [ ] **Voraussetzung: PR #89 gemerged** (Coolify deployt von master)
 - [ ] 🧑 Coolify: Crawler-Service redeployen; `ANTHROPIC_API_KEY` in der Service-Env prüfen/setzen
-- [ ] 🧑 Im Crawler-Container: `npm run typing:batch -- --limit 20` (Probelauf) → Summary prüfen → voller Lauf (~1532 §§, ≈3–5 $)
+- [ ] 🧑 Im Crawler-Container: `npm run typing:batch:prod -- --limit 20` (Probelauf) → Summary prüfen → voller Lauf (~1532 §§, ≈3–5 $). WICHTIG: das Prod-Image enthält nur `dist/` (kein `src/`, kein ts-node-dev) — `typing:batch` (ts-node-dev) existiert dort nicht, `typing:batch:prod` läuft auf `dist/cli/typing-batch.js`.
 - [ ] Controller: Verifikation read-only — Anzahl typisierter Docs = Korpusgröße − Fehlliste; Stichprobe 5 Docs (Provenance vollständig, Status suggested)
 - [ ] Controller: Gate-2-Entscheid dokumentieren (`docs/superpowers/2026-07-XX-the-432-gate2-evidence.md`), Linear THE-432/421/430 aktualisieren
 - [ ] Final-Review über den Branch-Zuwachs
