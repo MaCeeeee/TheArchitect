@@ -3,7 +3,7 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/buildTypingGolden.test.ts
  */
-import { buildTypingDraft, slugifyCaseId } from '../scripts/build-typing-golden';
+import { buildTypingDraft, excludeCases, pickOnlyCases, slugifyCaseId } from '../scripts/build-typing-golden';
 import { renderTypingWorksheet } from '../scripts/typing-worksheet';
 import { TypingGoldenSetSchema, type TypingGoldenSet } from '../evals/typingGolden';
 
@@ -137,6 +137,83 @@ describe('buildTypingDraft — stratified selection (targetSize)', () => {
     const draft = buildTypingDraft(scarce, { targetSize: 12 });
     expect(draft.cases).toHaveLength(3);
     expect(new Set(draft.cases.map((c) => c.caseId)).size).toBe(3);
+  });
+});
+
+// Golden v2 (THE-430): --exclude-file erzwingt Disjunktheit zu v1 (Out-of-
+// Sample-Garantie), --only-cases baut den Audit-Topf aus einer festen
+// Positivliste. Beides läuft über reine Kernfunktionen, damit die Garantien
+// hier ohne I/O beweisbar sind.
+describe('excludeCases — Disjunktheit v1/v2', () => {
+  const pool = buildTypingDraft([
+    reg('dsgvo', 'art-1'),
+    reg('dsgvo', 'art-2'),
+    reg('nis2', 'art-1', { language: 'en' }),
+    reg('aiact', 'art-9'),
+  ]).cases;
+
+  it('entfernt exakt die passenden caseIds und erhält Reihenfolge/Rest', () => {
+    const out = excludeCases(pool, ['dsgvo-art-1', 'aiact-art-9']);
+    expect(out.map((c) => c.caseId)).toEqual(['dsgvo-art-2', 'nis2-art-1']);
+  });
+
+  it('ist ein No-Op bei leerer Liste oder unbekannten Ids', () => {
+    expect(excludeCases(pool, [])).toEqual(pool);
+    expect(excludeCases(pool, ['gibt-es-nicht'])).toEqual(pool);
+  });
+
+  it('end-to-end: stratifizierter Draft enthält NIE eine ausgeschlossene Id', () => {
+    // 5 Quellen × 2 Sprachen × 10 Artikel — genug Material, dass die Quote
+    // trotz Ausschluss aus frischem Material gefüllt wird.
+    const manyRegs = Array.from({ length: 5 }, (_, s) => `src${s}`).flatMap((source) =>
+      ['de', 'en'].flatMap((language) =>
+        Array.from({ length: 10 }, (_, i) => reg(source, `art-${i}`, { language }))
+      )
+    );
+    const excluded = ['src0-art-0', 'src1-art-1', 'src2-art-2', 'src3-art-3'];
+    for (const seed of [1, 7, 42]) {
+      const draft = buildTypingDraft(manyRegs, { targetSize: 20, seed, excludeCaseIds: excluded });
+      expect(draft.cases).toHaveLength(20);
+      const ids = new Set(draft.cases.map((c) => c.caseId));
+      for (const id of excluded) expect(ids.has(id)).toBe(false);
+    }
+  });
+});
+
+describe('pickOnlyCases — Audit-Topf', () => {
+  const pool = buildTypingDraft([
+    reg('dsgvo', 'art-1'),
+    reg('dsgvo', 'art-2'),
+    reg('nis2', 'art-1', { language: 'en' }),
+    reg('aiact', 'art-9'),
+  ]).cases;
+
+  it('liefert exakt und nur die angeforderten Ids, in Reihenfolge der Id-Datei', () => {
+    const out = pickOnlyCases(pool, ['aiact-art-9', 'dsgvo-art-1']);
+    expect(out.map((c) => c.caseId)).toEqual(['aiact-art-9', 'dsgvo-art-1']);
+  });
+
+  it('wirft bei fehlenden Ids und nennt sie in der Meldung', () => {
+    expect(() => pickOnlyCases(pool, ['dsgvo-art-1', 'fehlt-1', 'fehlt-2'])).toThrow(
+      /fehlt-1.*fehlt-2/
+    );
+  });
+
+  it('buildTypingDraft mit onlyCaseIds wählt exakt diese Fälle, keine Stratifikation', () => {
+    const draft = buildTypingDraft(
+      [reg('dsgvo', 'art-1'), reg('dsgvo', 'art-2'), reg('nis2', 'art-1', { language: 'en' })],
+      { onlyCaseIds: ['nis2-art-1', 'dsgvo-art-2'] }
+    );
+    expect(draft.cases.map((c) => c.caseId)).toEqual(['nis2-art-1', 'dsgvo-art-2']);
+    expect(TypingGoldenSetSchema.safeParse(draft).success).toBe(true);
+  });
+
+  it('onlyCaseIds ist mit targetSize/mustInclude nicht kombinierbar', () => {
+    const regs = [reg('dsgvo', 'art-1'), reg('dsgvo', 'art-2')];
+    expect(() => buildTypingDraft(regs, { onlyCaseIds: ['dsgvo-art-1'], targetSize: 1 })).toThrow();
+    expect(() =>
+      buildTypingDraft(regs, { onlyCaseIds: ['dsgvo-art-1'], mustInclude: ['dsgvo-art-2'] })
+    ).toThrow();
   });
 });
 
