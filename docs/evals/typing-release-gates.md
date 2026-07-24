@@ -45,13 +45,27 @@ Hebel) hängt an **einer** Klasse, nicht am Achsen-Durchschnitt. Deshalb:
 
 Messstand: Baseline tp-1 (2026-07-22): F1 0,86 · nach Prompt-Sync tp-2: **F1 0,92, Recall 1,00** ✅.
 
-## In-Sample-Regel (stehend)
+## In-Sample-Regel (stehend) — für tp-2 AUFGELÖST durch Golden v2 (2026-07-24)
 
 Werden Rubrik-Regeln aus adjudizierten Golden-Fällen gewonnen (B3a-Präzedenzen) und der Prompt
 nachgezogen, sind Re-Eval-Zahlen **auf demselben Golden** als *in-sample* zu kennzeichnen — sie sind
 keine unabhängige Bestätigung. Die unabhängige Bestätigung liefert der nächste Golden-Ausbau
-(neue Fälle, die die Regeln nie „gesehen" haben). Messstand tp-2 (in-sample): obligationKind
-88,8 %/0,869 · partyRole 95,0 %/0,845 · provisionKind 87,5 %/0,883 — alle Achsen über den Schwellen.
+(neue Fälle, die die Regeln nie „gesehen" haben).
+
+**Für tp-2 erbracht** (`typing.gv2.json`, 70 Fälle, 47 % aus v1-fremden Gesetzen — Nachweis
+`docs/superpowers/2026-07-24-the-430-golden-v2-evidence.md`):
+
+| Achse | in-sample (v1) | out-of-sample (v2) |
+|---|---|---|
+| provisionKind | 87,5 %/0,883 | **85,7 %/0,873** ✅ generalisiert |
+| scope-applicability (Gate-2-Klasse) | F1 0,92 | **F1 0,90** ✅ über 0,80 |
+| obligationKind | 88,8 %/0,869 | **80,0 %/0,689** ✅ über 0,6 |
+| partyRole | 95,0 %/0,845 | **72,9 %/0,668** ⚠️ Rollenraum-Lücke → 1.7.0 |
+| normKind / bindingness | 100 % / 97,5 % | **98,6 % / 100 %** |
+
+Die Discovery-relevante Klasse hält out-of-sample; `partyRole` fällt erwartungsgemäß durch fehlende
+Rollen für neue Gesetze (Data-Act-Dateninhaber, ePrivacy-ECS-Anbieter → 1.7.0). Vorbehalt ehrlich
+beantwortet, nicht mehr offen.
 
 ## C_score-Band-Kopplung (THE-431)
 
