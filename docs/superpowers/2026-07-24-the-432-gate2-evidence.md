@@ -74,19 +74,28 @@ zeigt die Wirkung der Adjudikation, nicht die Feld-Genauigkeit.
 **Produktsignal:** 236 `scope-applicability`-Provisions über den ganzen Korpus — die Menge, aus der die
 Discovery-Priorisierung schöpfen wird. Ausreichende Dichte (je EU-Gesetz Art. 1/2 + Ausnahmen).
 
-## 4. Nebenbefund A — die „konstanten" Achsen sind auf dem Voll-Korpus NICHT konstant
+## 4. Nebenbefund A — 22 abweichende Labels auf den „konstanten" Achsen: Verdachtsfälle, keine Varianz
 
-Auf dem 80er-Golden waren `normKind` und `bindingness` konstant (alles `legislation`/`binding`) →
-Prävalenz-Paradox, vom Kappa-Tor ausgenommen (RUBRIC B4a). Der Voll-Korpus zeigt aber Varianz:
+> **KORRIGIERT am 24.07. (abends), im Zuge des Golden-v2-Pre-Flights.** Die ursprüngliche Fassung dieses
+> Abschnitts las die Abweichungen als „der Korpus zeigt Varianz, der Golden hat sie nur nicht getroffen".
+> Diese Lesart war voreilig — der Pre-Flight hat sie falsifiziert.
+
+Der Voll-Korpus-Lauf zeigt auf den zwei am Golden konstanten Achsen 22 abweichende Labels:
 
 - `normKind`: 1516 legislation · **9 implementing_act · 7 delegated_act**
 - `bindingness`: 1524 binding · **4 binding-for-agencies · 1 voluntary-de-facto · 1 persuasive**
 
-Das ist keine Regression, sondern eine **Sampling-Erkenntnis**: Der Golden hat diese 16 bzw. 6 seltenen
-Fälle schlicht nicht getroffen. Beide Achsen tragen im Produktivbetrieb reales Signal — genau wie bei der
-B4a-Entscheidung vorhergesagt („werden aussagekräftig, sobald Material mit Varianz dazukommt"). **Folge
-für Golden v2:** gezielt einige Durchführungs-/delegierte Rechtsakte einschließen (Pflicht-Einschluss wie
-bei den seltenen provisionKind-Klassen), damit diese beiden Achsen erstmals messbar werden.
+**Prüfung gegen die Quellen-Registry:** Alle 21 gecrawlten Korpus-Quellen sind unmittelbar geltende
+Rechtsakte (EU-Verordnungen/-Richtlinien, deutsche Gesetze). Es gibt **keinen** Durchführungs- oder
+delegierten Rechtsakt als Quelle. Da `normKind`/`bindingness` per Rubrik-Regel **dem Quell-Dokument
+folgen**, müssten alle 1532 Labels `legislation`/`binding` sein.
+
+Die 22 Abweichungen sind damit **Verdachtsfälle auf Modellfehler** — mutmaßlich exakt die in der Rubrik
+benannte Falle: *ein Artikel, der zu delegierten Rechtsakten ermächtigt, ist nicht selbst ein delegierter
+Rechtsakt*. **Folge für Golden v2:** Die 22 Fälle gehen als eigener **Audit-Topf** in die Adjudikation
+(getrennt vom Generalisierungs-Sample, weil über die Modell-Ausgabe selbst selektiert). Ergebnis ist
+entweder der erste echte Fehler-Befund auf diesen Achsen — oder der Beleg echter Varianz. Beides ist
+ein Gewinn; die bisherige Formulierung war keine belastbare Aussage.
 
 ## 5. Nebenbefund B — die Facetten-Erweiterung war belegt richtig
 
@@ -118,8 +127,9 @@ Flag. Der In-Sample-Vorbehalt bleibt bis zum erweiterten Golden bestehen.
 
 ## 8. Nächste Schritte
 
-1. Golden v2 mit Pflicht-Einschluss von Durchführungs-/delegierten Rechtsakten (macht normKind/bindingness
-   messbar) + unabhängige Generalisierungs-Messung (hebt den In-Sample-Vorbehalt).
+1. Golden v2: frisches, gestreutes Out-of-Sample-Sample über ALLE Quellen (auch MDR/PSD2/eIDAS/ePrivacy/
+   Data Act, die v1 nie sah) → hebt den In-Sample-Vorbehalt; plus Audit-Topf mit den 22 Verdachtsfällen
+   (Nebenbefund A) → erster Fehler-Befund bzw. Varianz-Beleg auf normKind/bindingness.
 2. Discovery-`scope-applicability`-Priorisierung bauen (dark, flag-gated) — der eigentliche Konsument.
 3. Wiederkehrender Batch: neu gecrawlte §§ nachtypisieren (O-5, Scheduler — noch offen).
 4. Slice K (Beziehungs-Pipeline) bleibt hinter der Korpus-Verbreiterung (getrennter Track).
