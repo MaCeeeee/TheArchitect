@@ -273,6 +273,49 @@ export function buildTypingDraft(
   return { version, frozen: false, ontologyVersion, rubricRef: '../RUBRIC.md', cases };
 }
 
+/**
+ * Vereinigt die BEIDEN Pflicht-Quellen zu einer deduplizierten Liste:
+ * `--must-include-paragraphs` (Artikel-Nummern → caseIds je Quelle) und
+ * `--must-include-cases` (fertige caseId-Liste). Beide füttern denselben
+ * `mustInclude`-Topf; die Reihenfolge ist Paragraphen-Herkunft zuerst, danach
+ * die Fall-Liste, jede Id nur einmal (doppelte Ids würden sonst Quote doppelt
+ * verbrauchen).
+ *
+ * Warum überhaupt eine zweite Quelle: Der Stratifizierer schneidet nach
+ * Quelle × Sprache und bildet damit die natürliche Korpus-Verteilung ab. Für
+ * SELTENE Klassen ist das der falsche Schnitt — sie kämen mit ein, zwei Fällen
+ * an und die Messung trüge nichts (derselbe Fehler wie einst bei
+ * `provisionKind` mit 5 bzw. 2 Fällen). OntoLearner (arXiv:2607.01977, P1)
+ * baut Splits deshalb „based on the least frequent associated type of each
+ * term". Über Artikel-Nummern ist ein ADRESSAT nicht adressierbar; nur über
+ * eine vorab label-unabhängig (Volltext-Begriff) ermittelte Fall-Liste.
+ *
+ * `missing` meldet Ids der Fall-Liste, die es im Pool nicht gibt — sie bleiben
+ * bewusst in `forced` (der Kern ignoriert unbekannte Pflicht-Ids ohnehin) und
+ * werden vom Aufrufer nur gewarnt, siehe Begründung an der CLI-Flag.
+ */
+export interface ForcedCaseResolution {
+  forced: string[];
+  missing: string[];
+}
+
+export function resolveForcedCaseIds(
+  fromParagraphs: string[],
+  fromCaseFile: string[],
+  poolCaseIds: string[]
+): ForcedCaseResolution {
+  const pool = new Set(poolCaseIds);
+  const seen = new Set<string>();
+  const forced: string[] = [];
+  for (const id of [...fromParagraphs, ...fromCaseFile]) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    forced.push(id);
+  }
+  const missing = [...new Set(fromCaseFile)].filter((id) => !pool.has(id));
+  return { forced, missing };
+}
+
 // ─── API-Glue ───────────────────────────────────────────────────
 
 function argValue(argv: string[], flag: string): string | undefined {
@@ -280,8 +323,11 @@ function argValue(argv: string[], flag: string): string | undefined {
   return idx !== -1 && argv[idx + 1] ? argv[idx + 1] : undefined;
 }
 
-async function main(): Promise<void> {
-  const argv = process.argv.slice(2);
+/**
+ * CLI-Rumpf mit explizitem argv statt `process.argv` — so sind die
+ * Eingabe-Fehlerpfade (exit 2) testbar, ohne einen Kindprozess zu starten.
+ */
+export async function runCli(argv: string[]): Promise<void> {
   const outArg = argValue(argv, '--out');
   const sourceArg = argValue(argv, '--source');
   const sourcesArg = argValue(argv, '--sources');
@@ -292,10 +338,20 @@ async function main(): Promise<void> {
 
   // --only-cases (Audit-Topf) ist eine feste Positivliste — Stichproben-Flags
   // daneben wären widersprüchlich und werden hart abgewiesen statt ignoriert.
-  if (onlyCasesArg && (targetSizeArg !== undefined || seedArg !== undefined || argValue(argv, '--must-include-paragraphs'))) {
+  // Auch --must-include-cases gehört dazu: --only-cases IST bereits die
+  // gesamte Auswahl, ein Pflicht-Einschluss obendrauf ist bedeutungslos und
+  // würde einen Denkfehler still überdecken (die Ids sind entweder schon
+  // drin oder sie sollen gar nicht in den Audit-Topf).
+  if (
+    onlyCasesArg &&
+    (targetSizeArg !== undefined ||
+      seedArg !== undefined ||
+      argValue(argv, '--must-include-paragraphs') ||
+      argValue(argv, '--must-include-cases'))
+  ) {
     console.error(
-      '--only-cases ist nicht mit --target-size/--seed/--must-include-paragraphs kombinierbar: ' +
-        'der Audit-Topf ist eine feste Positivliste, keine Stichprobe.'
+      '--only-cases ist nicht mit --target-size/--seed/--must-include-paragraphs/--must-include-cases ' +
+        'kombinierbar: der Audit-Topf ist eine feste Positivliste, keine Stichprobe.'
     );
     process.exitCode = 2;
     return;
@@ -376,7 +432,7 @@ async function main(): Promise<void> {
   // internes Detail und wird hier über dieselbe Slugify-Regel aufgelöst wie im
   // Aufbau, damit beide Seiten nicht auseinanderlaufen können.
   const mustIncludeArg = argValue(argv, '--must-include-paragraphs');
-  let mustInclude: string[] | undefined;
+  let mustIncludeFromParagraphs: string[] = [];
   if (mustIncludeArg) {
     const wanted = new Set(
       mustIncludeArg
@@ -384,14 +440,74 @@ async function main(): Promise<void> {
         .map((s) => s.trim())
         .filter(Boolean)
     );
-    mustInclude = regulations
+    mustIncludeFromParagraphs = regulations
       .filter((r) => wanted.has(r.paragraphNumber))
       .map((r) => slugifyCaseId(r.source, r.paragraphNumber));
     console.log(
-      `[typing-build] Pflicht-Einschluss: ${mustInclude.length} Fälle ` +
+      `[typing-build] Pflicht-Einschluss: ${mustIncludeFromParagraphs.length} Fälle ` +
         `(Paragraphen ${[...wanted].join(',')} je Quelle)`
     );
   }
+
+  // --must-include-cases <ids.json>  erzwingt eine vorab ermittelte FALL-Liste
+  // (JSON-Array von caseIds) in der Auswahl. Gedacht für die Über-Abtastung
+  // seltener Klassen: der Stratifizierer schneidet nach Quelle × Sprache, ein
+  // seltener Adressat (z. B. die vier neuen partyRole-Werte) käme darin mit ein
+  // bis zwei Fällen an — eine Kappa-Zahl darüber trüge nichts. OntoLearner
+  // stratifiziert genau deshalb nach der SELTENSTEN zugehörigen Klasse (P1).
+  // Über Artikel-Nummern ist ein Akteur nicht adressierbar, daher diese zweite
+  // Quelle neben --must-include-paragraphs; beide fließen VEREINIGT (dedupliziert)
+  // in denselben mustInclude-Topf, siehe resolveForcedCaseIds.
+  //
+  // Lesefehler sind HART (exit 2): eine still ignorierte Pflicht-Liste würde
+  // genau den Zweck der Flag aushebeln — der Satz sähe gebaut aus, hätte die
+  // seltenen Klassen aber nicht drin.
+  const mustIncludeCasesArg = argValue(argv, '--must-include-cases');
+  let mustIncludeFromCases: string[] = [];
+  if (mustIncludeCasesArg) {
+    const casesPath = path.resolve(mustIncludeCasesArg);
+    try {
+      const parsed = JSON.parse(fs.readFileSync(casesPath, 'utf8')) as unknown;
+      if (!Array.isArray(parsed) || !parsed.every((id) => typeof id === 'string')) {
+        throw new Error('erwartet ein JSON-Array von caseId-Strings');
+      }
+      mustIncludeFromCases = parsed as string[];
+    } catch (err) {
+      console.error(
+        `--must-include-cases: ${casesPath} nicht lesbar/parsebar: ${err instanceof Error ? err.message : err}`
+      );
+      process.exitCode = 2;
+      return;
+    }
+  }
+
+  const { forced, missing } = resolveForcedCaseIds(
+    mustIncludeFromParagraphs,
+    mustIncludeFromCases,
+    regulations.map((r) => slugifyCaseId(r.source, r.paragraphNumber))
+  );
+  if (mustIncludeCasesArg) {
+    console.log(
+      `[typing-build] Pflicht-Einschluss (Fall-Liste): ` +
+        `${mustIncludeFromCases.length - missing.length}/${mustIncludeFromCases.length} Ids im Pool gefunden`
+    );
+  }
+  if (missing.length > 0) {
+    // WARNEN, nicht abbrechen — anders als bei --only-cases. Dort trägt die
+    // Vollständigkeit die Aussage: der Audit-Topf misst eine Fehlerquote über
+    // einem festen Nenner, eine fehlende Id würde diesen Nenner verkleinern und
+    // die Quote geschönt aussehen lassen. Hier ist die Liste eine Über-Abtastung
+    // seltener Klassen — eine fehlende Id verkleinert nur diese Über-Abtastung,
+    // verfälscht aber keine Kennzahl. Ein harter Abbruch wäre also unangemessen
+    // streng; verschweigen darf man es trotzdem nicht.
+    console.warn(
+      `[typing-build] WARN: ${missing.length} erzwungene caseId(s) nicht im Pool ` +
+        `(Über-Abtastung entsprechend kleiner): ${missing.join(', ')}`
+    );
+  }
+  // Leer bleibt undefined: eine leere Pflichtliste ist KEIN Pflicht-Einschluss
+  // (und würde in buildTypingDraft fälschlich als Konflikt mit onlyCaseIds gelten).
+  const mustInclude = forced.length > 0 ? forced : undefined;
 
   // --exclude-file <golden.json>  entfernt die caseIds eines bestehenden
   // Golden/Drafts aus dem Kandidaten-Pool, BEVOR stratifiziert wird — v2 muss
@@ -471,7 +587,7 @@ async function main(): Promise<void> {
 }
 
 if (require.main === module) {
-  main().catch((err) => {
+  runCli(process.argv.slice(2)).catch((err) => {
     console.error('[typing-build] FAILED:', err instanceof Error ? err.message : err);
     process.exit(1);
   });

@@ -176,13 +176,59 @@ describe('buildPrelabelUserPrompt — B3a-Präzedenzen im Prompt (tp-2)', () => 
   });
 });
 
+// ─── Rollenraum 1.7.0 im Prompt (THE-515, tp-3) ─────────────────
+//
+// Vier Adressaten-Rollen sind in E6 1.7.0 dazugekommen, weil eine MESSUNG sie
+// verlangt hat (partyRole out-of-sample 0,668, Golden v2). Drei davon kehren
+// eine frühere Präzedenz um: Konformitätsbewertungsstellen, Dateninhaber und
+// ECS-Anbieter standen bisher auf `n/a`. Diese Assertions sichern zweierlei:
+// (1) die Werteliste kommt tatsächlich aus der Ontologie im Prompt an (Verdrahtung),
+// (2) die Terminologie-Falle steht im Regeltext — derselbe Akteur trägt drei
+// deutsche Namen, und ohne alle drei ordnet das Modell nach Wortlaut statt nach
+// Akteur zu.
+describe('buildPrelabelUserPrompt — Rollenraum 1.7.0 (tp-3)', () => {
+  const provision = {
+    source: 'eidas-de',
+    paragraphNumber: 'Art. 20',
+    title: 'Überprüfung qualifizierter Vertrauensdiensteanbieter',
+    fullText: 'x'.repeat(60),
+    language: 'de',
+  } as never;
+  const p = buildPrelabelUserPrompt(provision);
+
+  it('bietet die vier neuen Rollen-Ids als Auswahlwerte an (Facetten-Verdrahtung)', () => {
+    for (const id of ['conformity_assessment_body', 'trust_service_provider', 'data_holder', 'ecs_provider']) {
+      expect(p).toContain(id);
+    }
+  });
+
+  it('nennt alle drei deutschen Bezeichnungen desselben Akteurs (Terminologie-Falle)', () => {
+    expect(p).toContain('Konformitätsbewertungsstelle');
+    expect(p).toContain('notifizierte Stelle');
+    expect(p).toContain('Benannte Stelle');
+    expect(p).toContain('notified body');
+  });
+
+  it('hält die Gegenregel fest: PSD2-Zahlungsinstitute → financial_entity, keine neue Rolle', () => {
+    expect(p).toContain('PSD2');
+    expect(p).toMatch(/PSD2[\s\S]{0,120}financial_entity/);
+  });
+
+  it('behält die Borg-Verbot-Regel für Akteure, die WEITERHIN keinen Wert haben', () => {
+    expect(p).toContain('NEVER borrow a neighboring role');
+  });
+});
+
 // Bump-Disziplin: TYPING_PROMPT_VERSION ist Teil der Provenance (AC-1) und der
 // Batch-Idempotenz — JEDE inhaltliche Prompt-Änderung MUSS die Version erhöhen,
 // sonst überspringt der Batch bereits klassifizierte Dokumente mit dem alten
-// Prompt und die Eval misst ein anderes System als das produktive.
+// Prompt und die Eval misst ein anderes System als das produktive. Der Wechsel
+// tp-2 → tp-3 trägt genau diese Last: Ontologie 1.7.0 + die drei umgekehrten
+// B3a-Präzedenzen ändern die Klassifizierung, also MUSS der Korpus-Re-Batch
+// (`--force`) sie neu sehen statt sie als „schon getypt" zu überspringen.
 describe('TYPING_PROMPT_VERSION', () => {
-  it('is tp-2 after the B3a precedent sync', () => {
-    expect(TYPING_PROMPT_VERSION).toBe('tp-2');
+  it('is tp-3 after the 1.7.0 role-space sync', () => {
+    expect(TYPING_PROMPT_VERSION).toBe('tp-3');
   });
 });
 

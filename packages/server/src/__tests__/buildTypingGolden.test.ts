@@ -3,7 +3,17 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/buildTypingGolden.test.ts
  */
-import { buildTypingDraft, excludeCases, pickOnlyCases, slugifyCaseId } from '../scripts/build-typing-golden';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  buildTypingDraft,
+  excludeCases,
+  pickOnlyCases,
+  resolveForcedCaseIds,
+  runCli,
+  slugifyCaseId,
+} from '../scripts/build-typing-golden';
 import { renderTypingWorksheet } from '../scripts/typing-worksheet';
 import { TypingGoldenSetSchema, type TypingGoldenSet } from '../evals/typingGolden';
 
@@ -214,6 +224,170 @@ describe('pickOnlyCases — Audit-Topf', () => {
     expect(() =>
       buildTypingDraft(regs, { onlyCaseIds: ['dsgvo-art-1'], mustInclude: ['dsgvo-art-2'] })
     ).toThrow();
+  });
+});
+
+// Golden v3 (THE-515): --must-include-cases erzwingt Fälle über eine caseId-
+// Liste. Warum eine zweite Pflicht-Quelle neben --must-include-paragraphs:
+// Der Stratifizierer schneidet nach Quelle × Sprache. Für SELTENE Klassen (die
+// vier neuen partyRole-Werte) ist das der falsche Schnitt — sie kämen mit ein
+// bis zwei Fällen an und die Messung sagte nichts (derselbe Fehler wie einst
+// bei provisionKind). Das Paper (OntoLearner, P1) stratifiziert deshalb nach
+// der SELTENSTEN zugehörigen Klasse. Über Artikel-Nummern (Paragraphen-Flag)
+// ist ein Akteur nicht adressierbar — nur über eine vorab textuell ermittelte
+// Fall-Liste.
+describe('resolveForcedCaseIds — Vereinigung der beiden Pflicht-Quellen', () => {
+  const pool = ['a-art-1', 'a-art-2', 'b-art-1', 'b-art-9'];
+
+  it('vereinigt Paragraphen- und Fall-Herkunft dedupliziert, Reihenfolge stabil', () => {
+    const { forced } = resolveForcedCaseIds(['a-art-1', 'b-art-1'], ['b-art-1', 'b-art-9'], pool);
+    expect(forced).toEqual(['a-art-1', 'b-art-1', 'b-art-9']);
+  });
+
+  it('meldet fehlende Ids der Fall-Liste, ohne sie zu verschlucken', () => {
+    const { forced, missing } = resolveForcedCaseIds([], ['a-art-2', 'gibt-es-nicht'], pool);
+    expect(missing).toEqual(['gibt-es-nicht']);
+    // Fehlende Ids bleiben in der Liste: der Kern ignoriert unbekannte Pflicht-
+    // Ids ohnehin, und ein stilles Herausfiltern würde die Warnung entwerten.
+    expect(forced).toEqual(['a-art-2', 'gibt-es-nicht']);
+  });
+
+  it('ist ein No-Op ohne Eingaben', () => {
+    expect(resolveForcedCaseIds([], [], pool)).toEqual({ forced: [], missing: [] });
+  });
+});
+
+describe('CLI --must-include-cases', () => {
+  let dir: string;
+  const poolRegs = ['src0', 'src1', 'src2'].flatMap((source) =>
+    Array.from({ length: 6 }, (_, i) =>
+      reg(source, `art-${i}`, { language: i % 2 === 0 ? 'de' : 'en' })
+    )
+  );
+  const file = (name: string, data: unknown): string => {
+    const p = path.join(dir, name);
+    fs.writeFileSync(p, JSON.stringify(data));
+    return p;
+  };
+  const readOut = (p: string) =>
+    (JSON.parse(fs.readFileSync(p, 'utf8')) as { cases: { caseId: string }[] }).cases.map(
+      (c) => c.caseId
+    );
+
+  let poolPath: string;
+  let outPath: string;
+  let logs: string[];
+  let warns: string[];
+  let errors: string[];
+  const spies: jest.SpyInstance[] = [];
+
+  beforeAll(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'typing-cli-'));
+    poolPath = file('pool.json', poolRegs);
+  });
+  afterAll(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  beforeEach(() => {
+    process.exitCode = undefined;
+    outPath = path.join(dir, `out-${Math.random().toString(36).slice(2)}.json`);
+    logs = [];
+    warns = [];
+    errors = [];
+    spies.push(
+      jest.spyOn(console, 'log').mockImplementation((...a) => logs.push(a.join(' '))),
+      jest.spyOn(console, 'warn').mockImplementation((...a) => warns.push(a.join(' '))),
+      jest.spyOn(console, 'error').mockImplementation((...a) => errors.push(a.join(' ')))
+    );
+  });
+  afterEach(() => {
+    spies.splice(0).forEach((s) => s.mockRestore());
+    process.exitCode = undefined;
+  });
+
+  const base = (): string[] => [
+    '--from-file',
+    poolPath,
+    '--sources',
+    'src0,src1,src2',
+    '--out',
+    outPath,
+  ];
+
+  it('reicht die Ids durch — Pflicht-Fälle überleben jeden Seed', async () => {
+    const forced = ['src0-art-0', 'src2-art-5'];
+    const idsPath = file('forced.json', forced);
+    for (const seed of ['1', '2', '7']) {
+      outPath = path.join(dir, `out-seed-${seed}.json`);
+      await runCli([...base(), '--target-size', '5', '--seed', seed, '--must-include-cases', idsPath]);
+      expect(process.exitCode).toBeUndefined();
+      const ids = readOut(outPath);
+      expect(ids).toHaveLength(5);
+      expect(ids).toEqual(expect.arrayContaining(forced));
+    }
+  });
+
+  it('vereinigt sich mit --must-include-paragraphs, ohne zu duplizieren', async () => {
+    // 'art-0' liefert je Quelle einen Pflicht-Fall (src0/1/2-art-0); die Fall-
+    // Liste nennt einen davon nochmals plus einen weiteren.
+    const idsPath = file('union.json', ['src0-art-0', 'src1-art-3']);
+    await runCli([
+      ...base(),
+      '--target-size', '6',
+      '--seed', '5',
+      '--must-include-paragraphs', 'art-0',
+      '--must-include-cases', idsPath,
+    ]);
+    const ids = readOut(outPath);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual(
+      expect.arrayContaining(['src0-art-0', 'src1-art-0', 'src2-art-0', 'src1-art-3'])
+    );
+  });
+
+  it('ist nicht mit --only-cases kombinierbar → exit 2', async () => {
+    const idsPath = file('forced2.json', ['src0-art-0']);
+    const onlyPath = file('only.json', ['src1-art-1']);
+    await runCli([...base(), '--only-cases', onlyPath, '--must-include-cases', idsPath]);
+    expect(process.exitCode).toBe(2);
+    expect(errors.join('\n')).toContain('--must-include-cases');
+    expect(fs.existsSync(outPath)).toBe(false);
+  });
+
+  // Bewusster Unterschied zu --only-cases: dort trägt die VOLLSTÄNDIGKEIT die
+  // Aussage (Audit-Topf über festem Nenner), hier ist es eine Über-Abtastung
+  // seltener Klassen — eine fehlende Id verkleinert nur die Über-Abtastung,
+  // verfälscht aber keine Kennzahl. Also warnen, nicht abbrechen.
+  it('warnt bei fehlender Id, baut aber weiter (übrige Pflicht-Ids bleiben)', async () => {
+    const idsPath = file('partly-missing.json', ['src0-art-0', 'gibt-es-nicht']);
+    await runCli([...base(), '--target-size', '5', '--seed', '3', '--must-include-cases', idsPath]);
+    expect(process.exitCode).toBeUndefined();
+    expect(warns.join('\n')).toMatch(/gibt-es-nicht/);
+    expect(readOut(outPath)).toContain('src0-art-0');
+  });
+
+  it('bricht bei unlesbarer Datei ab (exit 2) statt still ohne Pflicht-Fälle zu bauen', async () => {
+    await runCli([
+      ...base(),
+      '--target-size', '5',
+      '--must-include-cases', path.join(dir, 'gibt-es-nicht.json'),
+    ]);
+    expect(process.exitCode).toBe(2);
+    expect(errors.join('\n')).toContain('--must-include-cases');
+    expect(fs.existsSync(outPath)).toBe(false);
+  });
+
+  it('bricht ab, wenn die Datei kein Array von caseId-Strings ist', async () => {
+    const badPath = file('bad.json', { cases: ['src0-art-0'] });
+    await runCli([...base(), '--target-size', '5', '--must-include-cases', badPath]);
+    expect(process.exitCode).toBe(2);
+  });
+
+  it('Bestandsverhalten: ohne die Flag baut die CLI unverändert', async () => {
+    await runCli([...base(), '--target-size', '4', '--seed', '9']);
+    expect(process.exitCode).toBeUndefined();
+    expect(readOut(outPath)).toHaveLength(4);
   });
 });
 

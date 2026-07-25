@@ -200,9 +200,13 @@ describe('provisionKinds facet (THE-421 G-0)', () => {
  * Werteraum: Für eine NIS2- oder DORA-Vorschrift passte weder das DSGVO- noch das
  * KI-VO-Vokabular, also griffen die Prüfer zu beliebig verschiedenen Ersatzrollen.
  * Diese Tests halten den erweiterten Raum + seine Reihenfolge fest.
+ *
+ * THE-515 (1.7.0) setzt das fort: vier weitere belegte Adressaten, weil `partyRole`
+ * out-of-sample auf 0,668 fiel (Golden v2) — wieder eine Lücke im Werteraum, keine
+ * Modellschwäche.
  */
-describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430)', () => {
-  it('ships one addressee role per regulated regime, cross-regime roles last', () => {
+describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430 / THE-515)', () => {
+  it('ships one addressee role per regulated regime, in the documented order', () => {
     expect(PARTY_ROLE_IDS).toEqual([
       // DSGVO
       'controller', 'processor', 'data_subject',
@@ -211,20 +215,62 @@ describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430)', () => {
       // NIS2 / DORA / CRA / LkSG
       'essential_important_entity', 'financial_entity', 'ict_third_party_provider',
       'manufacturer', 'obligated_enterprise',
-      // regime-übergreifend
+      // THE-515 — vier belegte Adressaten (CAB ist regime-übergreifend, aber regulierter Akteur)
+      'conformity_assessment_body', 'trust_service_provider', 'data_holder', 'ecs_provider',
+      // Nicht-Regulierte (regime-übergreifend) — bleiben die letzten zwei
       'member_state', 'supervisory_authority',
     ]);
+    expect(PARTY_ROLE_IDS).toHaveLength(19);
   });
 
-  it('tags every role with its origin regime and groups cross-regime roles at the end', () => {
+  // Die ECHTE Positions-Invariante (seit 1.6.0): die beiden NICHT-regulierten
+  // Akteure schließen die Liste ab. Sie lautet NICHT „alle origin:'cross' zuletzt" —
+  // siehe den Test darunter.
+  it('keeps member_state and supervisory_authority as the LAST TWO entries', () => {
+    expect(PARTY_ROLE_IDS.slice(-2)).toEqual(['member_state', 'supervisory_authority']);
+  });
+
+  // Bewusste Ausnahme (THE-515): `conformity_assessment_body` trägt origin 'cross',
+  // weil der Akteur in vier Rechtsakten vorkommt — er ist aber ein REGULIERTER
+  // Akteur und gehört deshalb zu den Regime-Rollen, nicht ans Listenende. Wer die
+  // Sortierung „aufräumt", bricht die Semantik.
+  it('places conformity_assessment_body among the regulated roles although its origin is cross', () => {
+    const cab = NORM_ONTOLOGY.partyRoles.find((p) => p.id === 'conformity_assessment_body');
+    expect(cab?.origin).toBe('cross');
+    expect(PARTY_ROLE_IDS.indexOf('conformity_assessment_body')).toBeLessThan(
+      PARTY_ROLE_IDS.indexOf('member_state')
+    );
+    expect(PARTY_ROLE_IDS[PARTY_ROLE_IDS.length - 1]).not.toBe('conformity_assessment_body');
+  });
+
+  it('tags every role with its origin regime', () => {
     const origins = NORM_ONTOLOGY.partyRoles.map((p) => p.origin);
     for (const o of origins) expect(o.length).toBeGreaterThan(0);
-    // 'cross' darf nur am Ende stehen — sonst zerfällt die Lesbarkeit der Liste.
-    const firstCross = origins.indexOf('cross');
-    expect(origins.slice(firstCross).every((o) => o === 'cross')).toBe(true);
-    expect(NORM_ONTOLOGY.partyRoles.map((p) => p.origin)).toEqual(
-      expect.arrayContaining(['gdpr', 'ai-act', 'nis2', 'dora', 'cra', 'lksg', 'cross'])
+    expect(origins).toEqual(
+      expect.arrayContaining([
+        'gdpr', 'ai-act', 'nis2', 'dora', 'cra', 'lksg', 'cross',
+        'eidas', 'data-act', 'eprivacy',
+      ])
     );
+  });
+
+  it('tags the four THE-515 roles with their measured regime of origin', () => {
+    const byId = new Map(NORM_ONTOLOGY.partyRoles.map((p) => [p.id as string, p]));
+    expect(byId.get('conformity_assessment_body')?.origin).toBe('cross');
+    expect(byId.get('trust_service_provider')?.origin).toBe('eidas');
+    expect(byId.get('data_holder')?.origin).toBe('data-act');
+    expect(byId.get('ecs_provider')?.origin).toBe('eprivacy');
+  });
+
+  // Terminologie-Falle: derselbe Akteur heißt je Rechtsakt „Benannte Stelle",
+  // „notifizierte Stelle" oder „Konformitätsbewertungsstelle". Das Label muss alle
+  // Varianten nennen, sonst ordnet das Modell nach Wortlaut statt nach Akteur zu.
+  it('names all terminology variants of the conformity assessment body in its label', () => {
+    const cab = NORM_ONTOLOGY.partyRoles.find((p) => p.id === 'conformity_assessment_body');
+    expect(cab?.label).toContain('Notified Body');
+    expect(cab?.label).toContain('Konformitätsbewertungsstelle');
+    expect(cab?.label).toContain('notifizierte');
+    expect(cab?.label).toContain('Benannte Stelle');
   });
 
   it('PartyRoleSchema gates the new ids (membership + exact case)', () => {
@@ -236,12 +282,33 @@ describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430)', () => {
     expect(PartyRoleSchema.safeParse('essential_entity').success).toBe(false);
   });
 
+  it('PartyRoleSchema accepts the four THE-515 ids and rejects fantasy/wrong-case ones', () => {
+    expect(PartyRoleSchema.safeParse('conformity_assessment_body').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('trust_service_provider').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('data_holder').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('ecs_provider').success).toBe(true);
+    expect(PartyRoleSchema.safeParse('notified_body').success).toBe(false);
+    expect(PartyRoleSchema.safeParse('payment_institution').success).toBe(false);
+    expect(PartyRoleSchema.safeParse('Data_Holder').success).toBe(false);
+    expect(PartyRoleSchema.safeParse('data_holder ').success).toBe(false);
+  });
+
   it('derives the OntoLearner partyRole facet from the data (no parallel list)', () => {
     expect(exportForOntoLearner().termTypes.partyRole).toEqual(PARTY_ROLE_IDS);
     expect(PARTY_ROLE_IDS).toEqual(NORM_ONTOLOGY.partyRoles.map((p) => p.id));
   });
 
+  it('exports all 19 roles incl. the four new ones to OntoLearner', () => {
+    const partyRole = exportForOntoLearner().termTypes.partyRole;
+    expect(partyRole).toHaveLength(19);
+    expect(partyRole).toEqual(
+      expect.arrayContaining([
+        'conformity_assessment_body', 'trust_service_provider', 'data_holder', 'ecs_provider',
+      ])
+    );
+  });
+
   it('pins the shipped ontology version (deliberate gate, mirrors the CHANGELOG)', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.6.0');
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.7.0');
   });
 });

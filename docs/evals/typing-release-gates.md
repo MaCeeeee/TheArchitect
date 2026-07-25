@@ -27,8 +27,23 @@ nach C_score-Band stratifiziert, mit Kalibrierungs-Ausweis.
 | normKind | ≥ 0.90 | ≥ 0.85 | norm-level, hohe Deckung erwartbar |
 | bindingness | ≥ 0.85 | ≥ 0.80 | — |
 | obligationKind | ≥ 0.80 | ≥ 0.75 | deontisches Tripel; `__na__` als eigene Klasse gewertet |
-| partyRole | ≥ 0.75 | ≥ 0.70 | macro-F1 **über Klassen mit n ≥ 3** — Klassen mit 1–2 Fällen werden im Report ausgewiesen, aber nicht eingerechnet (ein verfehlter Einzelfall = 0,00 für die Klasse, das misst Stichprobengröße, nicht Fähigkeit) |
+| partyRole | ≥ 0.75 | ≥ 0.70 | Rollenraum-Version im Report ausweisen (E6 1.6.0 vs. 1.7.0 sind nicht vergleichbar) |
 | provisionKind | ≥ 0.75 | ≥ 0.70 | fünfte Achse (E6 1.5.0+); die Gate-2-Freigabe hängt zusätzlich an der Klassen-Regel unten |
+
+### Klassen-Regel n ≥ 3 (gilt für ALLE Achsen, verallgemeinert 2026-07-25)
+
+> **macro-F1 wird über Klassen mit n ≥ 3 gerechnet.** Klassen mit 1–2 Fällen werden im Report
+> ausgewiesen, aber nicht eingerechnet.
+
+Begründung: macro-F1 mittelt über Klassen, nicht über Fälle. Ein einziger verfehlter Fall in einer
+n=1-Klasse zieht deren F1 auf 0,00 und den Achsenwert um bis zu 0,18 — das misst Stichprobengröße,
+nicht Fähigkeit. Ursprünglich nur für `partyRole` formuliert (Gate 1: `deployer`,
+`essential_important_entity` je n=1); bei THE-515 zum zweiten Mal aufgetreten (`provisionKind`
+`definition` n=1 → scheinbarer Einbruch 0,873 → 0,688, über n ≥ 3 tatsächlich **0,826**). Zwei
+unabhängige Vorfälle = Struktur-Merkmal kleiner Prüfsätze, keine Achsen-Eigenheit.
+
+**Umgekehrt gilt:** Ein Rückgang, bei dem *alle* Klassen n ≥ 3 haben, ist echt und wird nicht
+weggerechnet (THE-515: `obligationKind` 0,689 → 0,579).
 
 Schwellen sind **Slice-1-Startwerte** (kein Paper-Import — die Law-Domäne war im
 OntoLearner-Benchmark nicht getestet). Nach dem ersten echten Baseline werden sie
@@ -66,6 +81,27 @@ keine unabhängige Bestätigung. Die unabhängige Bestätigung liefert der näch
 Die Discovery-relevante Klasse hält out-of-sample; `partyRole` fällt erwartungsgemäß durch fehlende
 Rollen für neue Gesetze (Data-Act-Dateninhaber, ePrivacy-ECS-Anbieter → 1.7.0). Vorbehalt ehrlich
 beantwortet, nicht mehr offen.
+
+## Messstand E6 1.7.0 / tp-3 (THE-515, 2026-07-25)
+
+Frozen `typing.gv3.json` (70 Fälle, out-of-sample, 33 adjudiziert) — Nachweis
+`docs/superpowers/2026-07-25-the-515-evidence.md`:
+
+| Achse | gv2 (1.6.0 / tp-2) | **gv3 (1.7.0 / tp-3)** | Urteil |
+|---|---|---|---|
+| **partyRole** | 72,9 %/0,668 | **71,4 %/0,785** | ✅ Schwelle 0,70 erstmals gehalten |
+| normKind / bindingness | 98,6 % / 100 % | **100 % / 100 %** | ✅ |
+| provisionKind | 85,7 %/0,873 | 75,7 %/0,741 (n ≥ 3: **0,83**) | ✅ nach Klassen-Regel |
+| obligationKind | 80,0 %/0,689 | 75,7 %/0,598 | ⚠️ echter Rückgang, s. u. |
+| **scope-applicability** (Gate-2-Klasse) | F1 0,90 | **F1 0,93** | ✅ über 0,80 |
+
+**Zwei stehende Beobachtungspunkte:**
+
+1. `conformity_assessment_body` (neu in 1.7.0) hat Genauigkeit 0,38 und drückt
+   `supervisory_authority` auf Trefferquote 0,36 — die einzige gemessene Verwechslung durch die
+   Rollenraum-Erweiterung. Abgrenzungsregel ist Kandidat für tp-4/B3a.
+2. `obligationKind`/`prohibition` F1 0,00 bei n=3 auf gv2 — kein Kleinklassen-Artefakt, aber bei n=3
+   volatil. Vor einer Maßnahme ein zweiter Messlauf.
 
 ## C_score-Band-Kopplung (THE-431)
 

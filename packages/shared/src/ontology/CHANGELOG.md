@@ -7,6 +7,43 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.7.0 — 2026-07-25 (THE-515)
+
+- **partyRoles** (15 → 19) ERWEITERT — additiv, keine id geändert/entfernt:
+  `conformity_assessment_body` (cross), `trust_service_provider` (eidas),
+  `data_holder` (data-act), `ecs_provider` (eprivacy).
+  Auslöser ist wieder eine **Messung**, keine Meinung: Golden v2 (2026-07-24) ergab
+  auf der Achse `partyRole` in-sample 0,845, out-of-sample aber nur **0,668**. Die
+  Fehleranalyse zeigte dasselbe Muster wie bei 1.6.0 — kein Modellproblem, sondern
+  eine **Lücke im Werteraum**: Für vier real vorkommende Akteure gab es keinen
+  passenden Wert, also wichen die Prüfer auf Ersatzrollen oder `n/a` aus.
+  Belegdichte vorher am Korpus nachgemessen: Konformitätsbewertungsstelle **131**
+  (KI-VO, CRA, MDR, eIDAS je DE/EN) · Vertrauensdiensteanbieter **46** (eIDAS 38) ·
+  Dateninhaber **44** (Data Act) · ECS-Anbieter **14** (ePrivacy). Kein Vorratsvokabular.
+  **Terminologie-Falle:** Derselbe Akteur heißt je nach Rechtsakt „Benannte Stelle"
+  (MDR-DE, 50×), „notifizierte Stelle" (KI-VO/CRA-DE, 50×) oder
+  „Konformitätsbewertungsstelle" (30×); englisch „notified body" vs. „conformity
+  assessment body". EINE Rolle — das Label nennt deshalb alle Varianten, sonst ordnet
+  das Modell nach Wortlaut statt nach Akteur zu.
+  **Reihenfolge:** `conformity_assessment_body` trägt `origin: 'cross'`, steht aber
+  bewusst NICHT am Ende. Die Positions-Invariante aus 1.6.0 meint nur die
+  NICHT-regulierten Akteure (`member_state`, `supervisory_authority`) — die
+  Konformitätsbewertungsstelle ist ein regulierter Akteur, der lediglich in vier
+  Rechtsakten vorkommt.
+  **Risiko (bewusst eingegangen, OntoLearner-Paper P2, arXiv:2607.01977):** Der
+  Komplexitätswert des Papers gewichtet *Breadth* mit 20 %, sein zentraler Befund ist,
+  dass Fehlermodi mit ontologischer Komplexität skalieren, nicht mit Modellgröße. Die
+  Verbreiterung 15 → 19 ist damit eine gemessene Wette mit dokumentiertem Rückbaupfad
+  (Plan `docs/superpowers/plans/2026-07-25-the-515-partyrole-170.md`, Task 6
+  Abbruchregel: notfalls zurück auf die zwei bestbelegten Rollen als 1.7.1).
+  **Bewusste Nicht-Aufnahme:** PSD2-Zahlungsinstitute → `financial_entity` (DORA Art. 2
+  listet sie ausdrücklich). Nicht jedes neue Gesetz braucht eine Rolle.
+  Fließt über die abgeleiteten Sets automatisch in `PARTY_ROLE_IDS`, `PartyRoleSchema`
+  und den OntoLearner-Export (`termTypes.partyRole`).
+  **Hinweis für alte Labels:** Eingefrorene Golden-Sets tragen weiterhin `1.5.0`/`1.6.0`
+  (§ B6 — die Version bindet das Label an den Raum, gegen den gelabelt wurde). Sie
+  bleiben gültig, weil die Änderung rein additiv ist; neu gelabelt wird gegen 1.7.0.
+
 ## 1.6.0 — 2026-07-21 (THE-421 / THE-430, Gate 1)
 
 - **partyRoles** (9 → 15) ERWEITERT — additiv, keine id geändert/entfernt:
