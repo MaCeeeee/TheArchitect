@@ -109,112 +109,161 @@ async function mapWithConcurrency<T, R>(
 
 const ENRICH_POOL_SIZE = 3;
 
+// ─── Module-level snapshot cache (survives component remounts) ───
+// THE-512: the guard used to be a per-mount `useRef(false)`, so it only blocked
+// *concurrent* loads within one mount. A remount — e.g. DashboardPage being torn
+// down and rebuilt when the 3D canvas fires `webglcontextlost` — reset the ref and
+// re-fired the whole all-projects enrichment (5 reads/project, one a full advisor
+// scan). Enough remounts stacked bursts past the per-IP rate limiter → 429 storm.
+// Hoisting the result + in-flight promise to module scope makes the enrichment fire
+// at most once per TTL no matter how often the hook (re)mounts, and dedupes any
+// concurrent callers onto a single request.
+const PORTFOLIO_TTL_MS = 30_000;
+
+interface PortfolioSnapshot {
+  projects: Project[];
+  stats: Record<string, ProjectStats | null>;
+  health: Record<string, HealthData | null>;
+  risk: Record<string, RiskData | null>;
+  cost: Record<string, CostData | null>;
+  compliance: Record<string, ComplianceData | null>;
+  fetchedAt: number;
+}
+
+let cachedSnapshot: PortfolioSnapshot | null = null;
+let inFlight: Promise<PortfolioSnapshot> | null = null;
+
+/** Test-only: clear the module cache between cases. */
+export function __resetPortfolioCacheForTests(): void {
+  cachedSnapshot = null;
+  inFlight = null;
+}
+
+async function fetchPortfolioSnapshot(): Promise<PortfolioSnapshot> {
+  // Clear stale single-project data when (re)loading the portfolio.
+  useArchitectureStore.getState().clearProject();
+  useWorkspaceStore.getState().setWorkspaces([]);
+
+  const { data } = await projectAPI.list();
+  const list: Project[] = Array.isArray(data) ? data : data.data || [];
+
+  const stats: Record<string, ProjectStats | null> = {};
+  const health: Record<string, HealthData | null> = {};
+  const risk: Record<string, RiskData | null> = {};
+  const cost: Record<string, CostData | null> = {};
+  const compliance: Record<string, ComplianceData | null> = {};
+
+  if (list.length > 0) {
+    // Enrich each project in parallel, capped by the concurrency pool.
+    const enrichResults = await mapWithConcurrency(list, ENRICH_POOL_SIZE, async (p) => {
+      const [statsRes, healthRes, riskRes, costRes, complianceRes] = await Promise.allSettled([
+        projectAPI.getStats(p._id),
+        advisorAPI.health(p._id),
+        analyticsAPI.getRisk(p._id),
+        analyticsAPI.getCost(p._id),
+        compliancePipelineAPI.getPortfolio(p._id),
+      ]);
+
+      // Unwrap axios { data } and optional server { data } wrapper
+      const unwrap = (res: PromiseSettledResult<any>) => {
+        if (res.status !== 'fulfilled') return null;
+        const body = res.value.data;
+        return body?.data ?? body;
+      };
+
+      // Health endpoint returns healthScore directly (not wrapped in { healthScore }),
+      // so we normalize it to match HealthData shape
+      const rawHealth = unwrap(healthRes);
+      const healthData = rawHealth?.total !== undefined
+        ? { healthScore: rawHealth }   // /advisor/health returns score object directly
+        : rawHealth;                    // /advisor/scan returns { healthScore: ... }
+
+      return {
+        id: p._id,
+        stats: unwrap(statsRes),
+        health: healthData,
+        risk: unwrap(riskRes),
+        cost: unwrap(costRes),
+        compliance: unwrap(complianceRes),
+      };
+    });
+
+    for (const result of enrichResults) {
+      if (result.status === 'fulfilled') {
+        const { id, stats: s, health: h, risk: r, cost: c, compliance: comp } = result.value;
+        stats[id] = s;
+        health[id] = h;
+        risk[id] = r;
+        cost[id] = c;
+        compliance[id] = comp;
+      }
+    }
+  }
+
+  return { projects: list, stats, health, risk, cost, compliance, fetchedAt: Date.now() };
+}
+
+/**
+ * Return portfolio data, reusing a fresh cached snapshot and deduping concurrent
+ * callers. `force` bypasses the TTL freshness check but still joins an in-flight
+ * request rather than starting a second one (so spam-refresh can't storm either).
+ */
+function loadPortfolio(force: boolean): Promise<PortfolioSnapshot> {
+  const fresh = cachedSnapshot !== null && Date.now() - cachedSnapshot.fetchedAt < PORTFOLIO_TTL_MS;
+  if (!force && fresh) return Promise.resolve(cachedSnapshot!);
+  if (inFlight) return inFlight;
+  inFlight = fetchPortfolioSnapshot()
+    .then((snap) => { cachedSnapshot = snap; return snap; })
+    .finally(() => { inFlight = null; });
+  return inFlight;
+}
+
 // ─── Hook ───
 
 export function usePortfolioData(): PortfolioData {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [stats, setStats] = useState<Record<string, ProjectStats | null>>({});
-  const [health, setHealth] = useState<Record<string, HealthData | null>>({});
-  const [risk, setRisk] = useState<Record<string, RiskData | null>>({});
-  const [cost, setCost] = useState<Record<string, CostData | null>>({});
-  const [compliance, setCompliance] = useState<Record<string, ComplianceData | null>>({});
-  const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Project[]>(cachedSnapshot?.projects ?? []);
+  const [stats, setStats] = useState<Record<string, ProjectStats | null>>(cachedSnapshot?.stats ?? {});
+  const [health, setHealth] = useState<Record<string, HealthData | null>>(cachedSnapshot?.health ?? {});
+  const [risk, setRisk] = useState<Record<string, RiskData | null>>(cachedSnapshot?.risk ?? {});
+  const [cost, setCost] = useState<Record<string, CostData | null>>(cachedSnapshot?.cost ?? {});
+  const [compliance, setCompliance] = useState<Record<string, ComplianceData | null>>(cachedSnapshot?.compliance ?? {});
+  const [loading, setLoading] = useState(cachedSnapshot === null);
   const [enriching, setEnriching] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const loadingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const load = useCallback(async () => {
-    // Prevent concurrent loads (spam-clicking Refresh)
-    if (loadingRef.current) return;
-    loadingRef.current = true;
-
-    setLoading(true);
+  const load = useCallback(async (force = false) => {
     setError(null);
-
-    // Clear stale project data
-    useArchitectureStore.getState().clearProject();
-    useWorkspaceStore.getState().setWorkspaces([]);
+    const willFetch = force || cachedSnapshot === null
+      || Date.now() - cachedSnapshot.fetchedAt >= PORTFOLIO_TTL_MS;
+    // Only show the spinner when we don't already have data to render.
+    if (cachedSnapshot === null) setLoading(true);
+    if (willFetch) setEnriching(true);
 
     try {
-      const { data } = await projectAPI.list();
-      const list: Project[] = Array.isArray(data) ? data : data.data || [];
-      setProjects(list);
-      setLoading(false);
-
-      if (list.length === 0) {
-        setEnriching(false);
-        return;
-      }
-
-      // Phase 2: enrich each project in parallel
-      setEnriching(true);
-
-      const enrichResults = await mapWithConcurrency(list, ENRICH_POOL_SIZE, async (p) => {
-          const [statsRes, healthRes, riskRes, costRes, complianceRes] = await Promise.allSettled([
-            projectAPI.getStats(p._id),
-            advisorAPI.health(p._id),
-            analyticsAPI.getRisk(p._id),
-            analyticsAPI.getCost(p._id),
-            compliancePipelineAPI.getPortfolio(p._id),
-          ]);
-
-          // Unwrap axios { data } and optional server { data } wrapper
-          const unwrap = (res: PromiseSettledResult<any>) => {
-            if (res.status !== 'fulfilled') return null;
-            const body = res.value.data;
-            return body?.data ?? body;
-          };
-
-          // Health endpoint returns healthScore directly (not wrapped in { healthScore }),
-          // so we normalize it to match HealthData shape
-          const rawHealth = unwrap(healthRes);
-          const healthData = rawHealth?.total !== undefined
-            ? { healthScore: rawHealth }   // /advisor/health returns score object directly
-            : rawHealth;                    // /advisor/scan returns { healthScore: ... }
-
-          return {
-            id: p._id,
-            stats: unwrap(statsRes),
-            health: healthData,
-            risk: unwrap(riskRes),
-            cost: unwrap(costRes),
-            compliance: unwrap(complianceRes),
-          };
-      });
-
-      const newStats: Record<string, ProjectStats | null> = {};
-      const newHealth: Record<string, HealthData | null> = {};
-      const newRisk: Record<string, RiskData | null> = {};
-      const newCost: Record<string, CostData | null> = {};
-      const newCompliance: Record<string, ComplianceData | null> = {};
-
-      for (const result of enrichResults) {
-        if (result.status === 'fulfilled') {
-          const { id, stats: s, health: h, risk: r, cost: c, compliance: comp } = result.value;
-          newStats[id] = s;
-          newHealth[id] = h;
-          newRisk[id] = r;
-          newCost[id] = c;
-          newCompliance[id] = comp;
-        }
-      }
-
-      setStats(newStats);
-      setHealth(newHealth);
-      setRisk(newRisk);
-      setCost(newCost);
-      setCompliance(newCompliance);
+      const snap = await loadPortfolio(force);
+      if (!mountedRef.current) return;
+      setProjects(snap.projects);
+      setStats(snap.stats);
+      setHealth(snap.health);
+      setRisk(snap.risk);
+      setCost(snap.cost);
+      setCompliance(snap.compliance);
     } catch {
-      setError('Failed to load projects');
+      if (mountedRef.current) setError('Failed to load projects');
     } finally {
-      setLoading(false);
-      setEnriching(false);
-      // Cooldown: block re-fetch for 2s to avoid 429
-      setTimeout(() => { loadingRef.current = false; }, 2000);
+      if (mountedRef.current) {
+        setLoading(false);
+        setEnriching(false);
+      }
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    mountedRef.current = true;
+    load();
+    return () => { mountedRef.current = false; };
+  }, [load]);
 
-  return { projects, stats, health, risk, cost, compliance, loading, enriching, error, refresh: load };
+  return { projects, stats, health, risk, cost, compliance, loading, enriching, error, refresh: () => load(true) };
 }
