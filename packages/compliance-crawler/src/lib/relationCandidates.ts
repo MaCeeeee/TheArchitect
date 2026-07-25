@@ -78,6 +78,15 @@ export interface RelationEnumerationStats {
   unresolvedTargets: number;
   /** Quellen im Input ohne SOURCE_TO_FAMILY-Eintrag — laut ausgewiesen, sonst stiller Blindfleck. */
   sourcesWithoutPatterns: string[];
+  /**
+   * Review-Finding 1 (THE-433): Familie → Treffer-Zahl für Familien, die in
+   * der Registry Muster HABEN, aber mit 0 Dokumenten im Input vertreten sind.
+   * Ohne diesen Zähler verschwände ein Verweis auf eine abwesende Familie
+   * komplett — genau die Sorte stiller Coverage-Lücke, die der
+   * DSGVO-Blindfleck 2026-07-19 belegt hat. Nur Familien mit >0 Treffern
+   * erscheinen; deren Pinpoints stehen zusätzlich in `unresolvedTargets`.
+   */
+  familiesWithoutDocs: Record<string, number>;
 }
 
 export interface RelationEnumerationResult {
@@ -116,17 +125,30 @@ export function enumerateRelationCandidates(docs: RelationCandidateDoc[]): Relat
     byArticle.get(article)!.push(d); // sortedDocs-Reihenfolge → Listen sind key-sortiert
   }
 
-  const targetFamilies = [...familySources.keys()].sort();
   for (const sources of familySources.values()) sources.sort();
+
+  // Review-Finding 1 (THE-433): Gescannt wird gegen ALLE Familien der Registry,
+  // nicht nur gegen die im Input vertretenen. Sonst wäre ein Verweis auf eine
+  // Familie ohne Input-Dokumente ein stiller Totalausfall — kein Kandidat, kein
+  // unresolvedTarget, keine Statistik. Für Familien ohne Dokumente liefert die
+  // Registry die repräsentative Quelle (sortiert erste).
+  const registrySourcesByFamily = new Map<Family, string[]>();
+  for (const [source, family] of Object.entries(SOURCE_TO_FAMILY)) {
+    if (!registrySourcesByFamily.has(family)) registrySourcesByFamily.set(family, []);
+    registrySourcesByFamily.get(family)!.push(source);
+  }
+  for (const sources of registrySourcesByFamily.values()) sources.sort();
+  const targetFamilies = [...registrySourcesByFamily.keys()].sort();
 
   const candidateByPair = new Map<string, RelationCandidate>();
   const unresolvedByKey = new Map<string, UnresolvedTarget>();
   let lawLevelRejected = 0;
+  const familiesWithoutDocs: Record<string, number> = {};
 
   /** Sprachrein bevorzugt, sonst stabil erste — für Ziel-Docs UND Report-Quellen. */
   const preferLanguage = <T>(items: T[], langOf: (t: T) => string | undefined, wanted: string): T => {
-    const samLang = items.filter((t) => langOf(t) === wanted);
-    return (samLang.length > 0 ? samLang : items)[0];
+    const sameLang = items.filter((t) => langOf(t) === wanted);
+    return (sameLang.length > 0 ? sameLang : items)[0];
   };
 
   for (const citing of sortedDocs) {
@@ -136,11 +158,31 @@ export function enumerateRelationCandidates(docs: RelationCandidateDoc[]): Relat
       // Sprachzwillinge derselben Familie ausschließen — gar nicht erst scannen.
       if (family === citingFamily) continue;
 
-      const sources = familySources.get(family)!;
+      const sources = familySources.get(family);
       // Muster hängen an der FAMILIE — jede Quelle der Familie liefert
-      // identische Treffer; eine repräsentative Quelle genügt.
-      const matches = referencesLaw(citing.fullText, sources[0]);
+      // identische Treffer; eine repräsentative Quelle genügt (bei Familien
+      // ohne Input-Dokumente die aus der Registry).
+      const scanSource = (sources ?? registrySourcesByFamily.get(family)!)[0];
+      const matches = referencesLaw(citing.fullText, scanSource);
       if (matches.length === 0) continue;
+
+      if (!sources) {
+        // Familie hat Muster, aber KEIN Dokument im Input: Treffer laut
+        // ausweisen statt still verwerfen — Zähler pro Familie, und jeder
+        // Pinpoint zusätzlich als nicht auflösbares Ziel (Report-Quelle aus
+        // der Registry, ohne Dokumente gibt es keine Sprachpräferenz).
+        familiesWithoutDocs[family] = (familiesWithoutDocs[family] ?? 0) + matches.length;
+        const reportSource = registrySourcesByFamily.get(family)![0];
+        for (const match of matches) {
+          for (const hint of match.articleHints) {
+            const key = `${citing.regulationKey}|${reportSource}|${hint}`;
+            if (!unresolvedByKey.has(key)) {
+              unresolvedByKey.set(key, { citingKey: citing.regulationKey, targetSource: reportSource, articleHint: hint });
+            }
+          }
+        }
+        continue;
+      }
 
       // Für unresolved-Meldungen: sprachrein bevorzugte Report-Quelle der Familie.
       const reportSource = preferLanguage(
@@ -198,6 +240,7 @@ export function enumerateRelationCandidates(docs: RelationCandidateDoc[]): Relat
       lawLevelRejected,
       unresolvedTargets: unresolvedTargets.length,
       sourcesWithoutPatterns: [...sourcesWithoutPatterns].sort(),
+      familiesWithoutDocs,
     },
   };
 }

@@ -175,6 +175,33 @@ describe('enumerateRelationCandidates (THE-433 Task 2)', () => {
     expect(candidates[0].target.regulationKey).toBe('dsgvo-en:art-32');
   });
 
+  it('(g) Familie mit Registry-Mustern, aber 0 Dokumenten im Input → laut gezählt, nie still übersprungen', () => {
+    // Review-Finding 1: früher wurde nur über die im Input VERTRETENEN Familien
+    // gescannt — ein Verweis auf eine abwesende Familie (hier: gdpr, kein
+    // dsgvo-Dokument im Input) verschwand komplett (kein Kandidat, kein
+    // unresolvedTarget, kein stats-Zähler).
+    const docs = [
+      doc(
+        'dora:art-9',
+        'dora',
+        'Art. 9',
+        FILLER + 'Die Verarbeitung erfolgt gemäß Artikel 6 der Verordnung (EU) 2016/679 in allen Fällen.',
+        'de',
+      ),
+      doc('nis2:art-3', 'nis2', 'Art. 3', FILLER + 'Sector-specific Union legal acts take precedence.', 'en'),
+    ];
+
+    const { candidates, unresolvedTargets, stats } = enumerateRelationCandidates(docs);
+
+    expect(candidates).toHaveLength(0);
+    // Der Pinpoint auf die abwesende Familie ist ein nicht auflösbares Ziel — laut.
+    expect(unresolvedTargets).toHaveLength(1);
+    expect(unresolvedTargets[0]).toMatchObject({ citingKey: 'dora:art-9', articleHint: '6' });
+    expect(unresolvedTargets[0].targetSource).toMatch(/^dsgvo/);
+    // Und die Familie selbst wird mit ihrer Treffer-Zahl ausgewiesen.
+    expect(stats.familiesWithoutDocs).toEqual({ gdpr: 1 });
+  });
+
   it('meldet Quellen ohne Referenz-Muster laut in stats (nie stiller Blindfleck)', () => {
     const docs = [
       doc('mystery:art-1', 'mystery-law', 'Art. 1', FILLER + 'Some provision text without any citation.', 'en'),

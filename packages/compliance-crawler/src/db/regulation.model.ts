@@ -196,6 +196,11 @@ const relationSuggestionSchema = new Schema<IRegulationRelationSuggestion>(
     },
     promptVersion: { type: String, required: true },
     model: { type: String, required: true },
+    // BEWUSST String, nicht Date (Muster-Bruch zu typedAt/scannedAt): der Wert
+    // durchläuft die Zod-Grenze (RelationSuggestionSchema, @thearchitect/shared),
+    // und die validiert einen ISO-8601-STRING. Ein Date-Cast hier wäre eine
+    // zweite, stillschweigend abweichende Repräsentation desselben Felds —
+    // gespeichert wird exakt das, was das Schema geprüft hat.
     suggestedAt: { type: String, required: true },
     status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
   },
