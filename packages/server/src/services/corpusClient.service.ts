@@ -11,7 +11,7 @@
  * Config: CORPUS_MONGODB_URI (e.g. mongodb://...@<corpus-tailnet>:27017/regulations-corpus?authSource=admin)
  */
 import mongoose, { Schema, Connection, Model, Document } from 'mongoose';
-import { safeErrorMessage } from '@thearchitect/shared';
+import { safeErrorMessage, type RelationSuggestionOut, type RelationSuggestionsDoc } from '@thearchitect/shared';
 import { log } from '../config/logger';
 import type { ScopeCorpusDoc } from './scopeGuarantee.service';
 
@@ -59,6 +59,15 @@ export interface ICorpusRegulation extends Document {
     status: 'suggested' | 'confirmed' | 'rejected';
     droppedAxes?: string[];
   };
+  /**
+   * Cross-Norm-Kanten-VORSCHLÄGE (THE-433 Slice 1) — geschrieben vom Batch im
+   * compliance-crawler (Server B, dort liegt der Schreibzugriff), hier nur
+   * GELESEN. Server A ist am Korpus RO-User (THE-440): confirm/reject läuft
+   * ausschließlich über den Crawler-Endpunkt, nie von hier.
+   * Feldnamen müssen mit compliance-crawler/src/db/regulation.model.ts
+   * identisch bleiben.
+   */
+  relationSuggestions?: RelationSuggestionOut[];
 }
 
 export const corpusRegulationSchema = new Schema<ICorpusRegulation>(
@@ -95,6 +104,36 @@ export const corpusRegulationSchema = new Schema<ICorpusRegulation>(
         droppedAxes: { type: [String], default: undefined },
       },
       _id: false,
+      default: undefined,
+    },
+    // Leseseite der Kanten-Vorschläge (Schreiber: compliance-crawler-Batch).
+    // Ohne Schema-Feld liefert mongoose den Pfad bei einem hydrierten Read gar
+    // nicht aus — der Review-Proxy sähe dann eine leere Liste statt der
+    // vorhandenen Vorschläge (stiller Blindfleck).
+    relationSuggestions: {
+      type: [
+        new Schema(
+          {
+            targetRegulationKey: { type: String },
+            targetVersionHash: { type: String },
+            sourceVersionHash: { type: String },
+            relationType: { type: String },
+            direction: { type: String, enum: ['a-to-b', 'b-to-a'] },
+            confidence: { type: Number, default: undefined },
+            evidence: {
+              type: new Schema(
+                { matched: { type: String }, articleHints: { type: [String], default: [] } },
+                { _id: false },
+              ),
+            },
+            promptVersion: { type: String },
+            model: { type: String },
+            suggestedAt: { type: String },
+            status: { type: String, enum: ['suggested', 'confirmed', 'rejected'] },
+          },
+          { _id: false },
+        ),
+      ],
       default: undefined,
     },
   },
@@ -240,6 +279,30 @@ export async function listScopeProvisionsBySource(sources: string[]): Promise<Sc
     if (!latest.has(d.regulationKey)) latest.set(d.regulationKey, d as unknown as ScopeCorpusDoc); // erste = höchste Version
   }
   return [...latest.values()];
+}
+
+/**
+ * THE-433 (Slice 1, Task 6): alle Korpus-Dokumente, die Cross-Norm-Kanten-
+ * VORSCHLÄGE tragen — die Lese-Seite des Review-Pfads. Nur Projektion, kein
+ * fullText: die Review-Liste zeigt Key, Titel und Evidenz-Ausschnitt, ganze
+ * Gesetzestexte über den Tailnet-Draht wären reine Last.
+ *
+ * WIRFT bei Korpus-Ausfall (wie listScopeProvisionsBySource, bewusst anders als
+ * der catch-Stil der übrigen Reads): der Aufrufer MUSS „Korpus unerreichbar"
+ * von „es gibt keine Vorschläge" unterscheiden können. Ein stiller []-Fallback
+ * würde einem Reviewer eine leere Liste zeigen, wo in Wahrheit die Verbindung
+ * fehlt — er hielte offene Vorschläge für abgearbeitet.
+ */
+export async function listCorpusRelationSuggestionDocs(
+  source?: string,
+): Promise<RelationSuggestionsDoc[]> {
+  const query: Record<string, unknown> = { relationSuggestions: { $exists: true, $ne: [] } };
+  if (source) query.source = source;
+  const docs = await CorpusRegulation()
+    .find(query)
+    .select('regulationKey source paragraphNumber title relationSuggestions')
+    .lean();
+  return docs as unknown as RelationSuggestionsDoc[];
 }
 
 /** Map of regulationKey → current (latest) versionHash. For drift-detection (THE-306/368). */

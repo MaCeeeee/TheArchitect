@@ -24,19 +24,35 @@ const REQUIRED = {
   language: 'en',
 } as Omit<Row, 'regulationKey' | 'versionHash' | 'version'>;
 
-/** Mongo-ish filter match: supports equality and `{ $in: [...] }`. */
+/** Mongo-ish filter match: supports equality, `{ $in: [...] }`, `$exists` and `$ne`. */
 function matches(row: any, filter: Record<string, any>): boolean {
-  return Object.entries(filter).every(([k, v]) =>
-    v && typeof v === 'object' && Array.isArray((v as any).$in)
-      ? (v as any).$in.includes(row[k])
-      : row[k] === v,
-  );
+  return Object.entries(filter).every(([k, v]) => {
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const op = v as Record<string, any>;
+      if (Array.isArray(op.$in)) return op.$in.includes(row[k]);
+      // $exists/$ne kommen aus dem relationSuggestions-Read (THE-433): Docs ohne
+      // Vorschlaege duerfen die Review-Liste nie erreichen.
+      let ok = true;
+      if ('$exists' in op) ok = ok && (row[k] !== undefined) === Boolean(op.$exists);
+      if ('$ne' in op) ok = ok && JSON.stringify(row[k]) !== JSON.stringify(op.$ne);
+      if ('$exists' in op || '$ne' in op) return ok;
+    }
+    return row[k] === v;
+  });
 }
 
-/** `.find()` result: sortable + await-able to the array. */
+/** `.find()` result: sortable/selectable/lean-able + await-able to the array. */
 function findQuery(rows: Row[]) {
   let result = [...rows];
   const q: any = {
+    // select/lean sind No-ops im Fake: die Projektion darf das Ergebnis eines
+    // Prueffalls nicht veraendern, sonst prueft er die Projektion statt der Logik.
+    select() {
+      return q;
+    },
+    lean() {
+      return q;
+    },
     sort(spec: Record<string, 1 | -1>) {
       const [field, dir] = Object.entries(spec)[0];
       result = [...result].sort((a: any, b: any) => (a[field] > b[field] ? 1 : -1) * dir);

@@ -47,6 +47,40 @@ export interface IRegulationTyping {
   droppedAxes?: string[];
 }
 
+/**
+ * THE-433 (Slice 1): KI-vorgeschlagene Cross-Norm-Kante am Träger-Dokument.
+ * Shape spiegelt RelationSuggestion aus @thearchitect/shared (dort Zod-validiert
+ * an der Eintrittsgrenze); a = dieses Dokument (der Zitierende), b = das Ziel.
+ */
+export interface IRegulationRelationSuggestion {
+  targetRegulationKey: string;
+  /** Text-Anker des ZIELS (sha256 von dessen fullText). */
+  targetVersionHash: string;
+  /** Text-Anker DIESES Dokuments — der Stand, auf dem der Verweis gefunden wurde. */
+  sourceVersionHash: string;
+  /** Nur inferred-Typen der E7-Registry (AC-5) — an der Zod-Grenze erzwungen. */
+  relationType: string;
+  direction: 'a-to-b' | 'b-to-a';
+  confidence?: number;
+  evidence: { matched: string; articleHints: string[] };
+  promptVersion: string;
+  model: string;
+  suggestedAt: string;
+  /** 'suggested' schreibt der Batch; confirmed/rejected setzt NUR ein Mensch. */
+  status: 'suggested' | 'confirmed' | 'rejected';
+}
+
+/**
+ * THE-433 (Slice 1): Idempotenz-Anker des Relations-Scans. Ein Scan gilt nur
+ * für exakt diesen Text-Stand (`versionHash`) und Prompt-Stand — Novelle oder
+ * Prompt-Bump macht ihn sichtbar veraltet (gleiche Logik wie typing.versionHash).
+ */
+export interface IRegulationRelationScan {
+  promptVersion: string;
+  versionHash: string;
+  scannedAt: Date;
+}
+
 export interface IRegulation extends Document {
   /** Stable, project-independent identity, e.g. "nis2:art-23" (ADR-0001). */
   regulationKey: string;
@@ -75,6 +109,10 @@ export interface IRegulation extends Document {
   ontologyVersion?: string;
   /** THE-432 (Slice T): typing suggestion — absent on untyped docs. */
   typing?: IRegulationTyping;
+  /** THE-433 (Slice 1): KI-vorgeschlagene Cross-Norm-Kanten — absent auf ungescannten Docs. */
+  relationSuggestions?: IRegulationRelationSuggestion[];
+  /** THE-433 (Slice 1): Idempotenz-Anker des letzten Relations-Scans. */
+  relationScan?: IRegulationRelationScan;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -116,6 +154,65 @@ const typingSchema = new Schema<IRegulationTyping>(
     typedAt: { type: Date, required: true },
     status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
     droppedAxes: { type: [String], default: undefined },
+  },
+  { _id: false }
+);
+
+/**
+ * THE-433 (Slice 1): relationSuggestions-Subdokument.
+ *
+ * Wie beim typing-Schema gilt: mongoose strict (Default) streicht unbekannte
+ * Pfade kommentarlos — ohne Schema-Feld wäre jeder Batch-Write ein stilles
+ * No-op. Beweis auf Dokument-Ebene in src/__tests__/relationSuggestion.test.ts
+ * (die Crawler-Suite hat kein Live-Mongo).
+ *
+ * BEWUSST kein Ontologie-Validator auf `relationType` (dieselbe Begründung wie
+ * beim typing-Schema): der Wert ist an der Zod-Grenze
+ * (RelationSuggestionSchema, @thearchitect/shared) bereits gegen E7 validiert
+ * (nur inferred-Typen). Ein zweiter Validator hier wäre eine zweite Quelle der
+ * Wahrheit, die nach einem Ontologie-Bump alte, korrekt gestempelte Vorschläge
+ * unschreibbar machte.
+ */
+const relationSuggestionSchema = new Schema<IRegulationRelationSuggestion>(
+  {
+    targetRegulationKey: { type: String, required: true, trim: true },
+    // Beide Text-Anker sind Pflicht-Provenance: ein Vorschlag ohne Aussage,
+    // WELCHE Text-Stände er verbindet, ist nach einer Novelle nicht mehr
+    // interpretierbar (Review-Fix-1-Lektion aus dem typing-Schema).
+    targetVersionHash: { type: String, required: true, trim: true },
+    sourceVersionHash: { type: String, required: true, trim: true },
+    relationType: { type: String, required: true },
+    direction: { type: String, required: true, enum: ['a-to-b', 'b-to-a'] },
+    confidence: { type: Number, min: 0, max: 1, default: undefined },
+    evidence: {
+      type: new Schema(
+        {
+          matched: { type: String, required: true },
+          articleHints: { type: [String], required: true, default: [] },
+        },
+        { _id: false }
+      ),
+      required: true,
+    },
+    promptVersion: { type: String, required: true },
+    model: { type: String, required: true },
+    // BEWUSST String, nicht Date (Muster-Bruch zu typedAt/scannedAt): der Wert
+    // durchläuft die Zod-Grenze (RelationSuggestionSchema, @thearchitect/shared),
+    // und die validiert einen ISO-8601-STRING. Ein Date-Cast hier wäre eine
+    // zweite, stillschweigend abweichende Repräsentation desselben Felds —
+    // gespeichert wird exakt das, was das Schema geprüft hat.
+    suggestedAt: { type: String, required: true },
+    status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
+  },
+  { _id: false }
+);
+
+/** THE-433 (Slice 1): Scan gilt nur für exakt diesen Text- und Prompt-Stand. */
+const relationScanSchema = new Schema<IRegulationRelationScan>(
+  {
+    promptVersion: { type: String, required: true },
+    versionHash: { type: String, required: true },
+    scannedAt: { type: Date, required: true },
   },
   { _id: false }
 );
@@ -192,6 +289,9 @@ const regulationSchema = new Schema<IRegulation>(
     },
     ontologyVersion: { type: String, trim: true },
     typing: { type: typingSchema, required: false },
+    // THE-433 (Slice 1): rein additiv — bestehende Docs bleiben unberührt.
+    relationSuggestions: { type: [relationSuggestionSchema], default: undefined },
+    relationScan: { type: relationScanSchema, required: false },
   },
   { timestamps: true }
 );
