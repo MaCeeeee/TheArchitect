@@ -592,8 +592,8 @@ muster geordnet — **verbindlich beim Labeln**:
 5. **Impliziter Bezug „der Sache nach" OHNE Artikel-Zitat ist KEINE Beziehung** (Architekten-Grundsatz).
    Regelt eine Norm dasselbe Sachgebiet „zusätzlich zu" der anderen, ohne deren konkreten Artikel zu
    nennen (KI-VO 10 „zusätzlich zu 2016/679" für besondere Kategorien), ist das **keine getypte
-   Kante** — die inhaltliche Zusammenführung leistet die **Pflichten-Harmonisierung ([[THE-422]])**,
-   nicht der Beziehungs-Graph. **Nur ausdrückliche Verweise begründen eine Beziehung.** Das hält die
+   Kante** — die inhaltliche Zusammenführung leistet die **Pflichten-Harmonisierung (UC-REQHARM-001,
+   THE-438)**, nicht der Beziehungs-Graph. **Nur ausdrückliche Verweise begründen eine Beziehung.** Das hält die
    Ebenen sauber getrennt (vgl. C4).
 6. **„Ergänzt" (komplementäre Prüfpflicht) = `CONCRETIZES`.** Ergänzt/erweitert eine ausdrücklich
    genannte Pflicht der anderen (KI-VO 27 „ergänzt" die DSGVO-35-Folgenabschätzung), Richtung a→b von
@@ -606,4 +606,4 @@ muster geordnet — **verbindlich beim Labeln**:
 - **C-v1.1 (2026-07-25):** Präzedenzkatalog C5a aus der v3-Adjudikation (16 Streitfälle). Kernregeln:
   Nutzung/Koordination ≠ Beziehung; „gilt als konform" = Equivalence; Gleichwertigkeit-als-Ausnahme =
   Verdrängung; geliehene Definition = INTERPRETS ab definierender Norm; **impliziter Bezug ohne
-  Artikel-Zitat = keine Beziehung → Harmonisierung THE-422**; „ergänzt" = CONCRETIZES.
+  Artikel-Zitat = keine Beziehung → Harmonisierung UC-REQHARM-001 (THE-438)**; „ergänzt" = CONCRETIZES.

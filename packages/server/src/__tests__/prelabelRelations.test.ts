@@ -131,7 +131,17 @@ describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
   it('carries the decisive C4 rule (parallel obligation is not a relation)', () => {
     const p = buildRelationsPrompt(anyCase as never);
     expect(p).toContain('parallel obligation is NOT a relation');
-    expect(p).toContain('OTHER NORM');
+    // rp-2 (C5a): nur AUSDRÜCKLICHE Verweise begründen eine Kante — „in substance" wurde
+    // per Architekten-Entscheid (D1, 2026-07-25) entfernt und darf nicht zurückkehren.
+    expect(p).toContain('EXPRESSLY');
+    expect(p).not.toContain('or in substance');
+  });
+
+  it('carries the C5a precedents (usage != relation, equivalence-as-exception, INTERPRETS direction)', () => {
+    const p = buildRelationsPrompt(anyCase as never);
+    expect(p).toContain('merely USES the other norm');
+    expect(p).toContain('Equivalence-as-exception is displacement');
+    expect(p).toContain('DIRECTION points FROM the norm that DEFINES the');
   });
 
   it('carries the displacement-vs-concretisation test from C5', () => {
