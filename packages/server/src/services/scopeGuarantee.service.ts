@@ -13,7 +13,7 @@
  * Erster produktiver Konsument der ONTO-Typisierung: die E3-Regeln hier sind
  * der Präzedenzfall für alle künftigen Konsumenten.
  */
-import type { CorpusHit, DiscoveryCandidate } from '@thearchitect/shared';
+import type { CorpusHit, DiscoveryCandidate, ScopeGuaranteeState } from '@thearchitect/shared';
 import { buildRegulationKey } from '@thearchitect/shared';
 
 /**
@@ -26,7 +26,13 @@ export interface ScopeCorpusDoc {
   source: string;
   paragraphNumber: string;
   title: string;
-  fullText: string;
+  /**
+   * Optional (Task-2-Anpassung): die Injektion braucht ihn nicht — CorpusHit
+   * trägt keinen fullText (der Judge sieht nur Key+Titel). Der Korpus-Read
+   * (listScopeProvisionsBySource) projiziert ihn deshalb bewusst NICHT, statt
+   * volle Gesetzestexte über den Tailnet-Draht zu ziehen.
+   */
+  fullText?: string;
   language: string;
   jurisdiction: string;
   versionHash: string;
@@ -181,11 +187,12 @@ export function injectScopeHits(candidate: DiscoveryCandidate, scopeDocs: ScopeC
 }
 
 /**
- * Sichtbarkeits-Feld (ADR-0006 E5). `unavailable` wird NICHT hier abgeleitet —
- * das ist der Lookup-Fehler-Zustand, den Task 2 setzt, wenn der Korpus-Read
- * wirft (und der als EINZIGER alertet).
+ * Sichtbarkeits-Feld (ADR-0006 E5) — kanonisch in @thearchitect/shared
+ * deklariert (Task 2: DiscoveryResult trägt es additiv), hier re-exportiert.
+ * `unavailable` wird NICHT hier abgeleitet — das ist der Lookup-Fehler-Zustand,
+ * den Task 2 setzt, wenn der Korpus-Read wirft (und der als EINZIGER alertet).
  */
-export type ScopeGuaranteeState = 'applied' | 'partial' | 'unavailable';
+export type { ScopeGuaranteeState };
 
 /** Per-Familie-Ergebnis, wie Task 2 es nach Auswahl + Injektion zusammensetzt. */
 export interface FamilyScopeResult {

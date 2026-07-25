@@ -45,6 +45,8 @@ export interface RecordContextTraceInput {
   llmTraceRef?: string;
   audit?: ContextAuditPayload;
   evidenceSetHash?: string;
+  /** Scope-Guarantee-Zustand des Discovery-Laufs (ADR-0006 E4/E5, THE-516) — additiv. */
+  scopeGuarantee?: 'applied' | 'partial' | 'unavailable';
 }
 
 /**
@@ -67,6 +69,7 @@ export async function recordContextTrace(input: RecordContextTraceInput): Promis
       llmTraceRef: input.llmTraceRef,
       audit: input.audit,
       evidenceSetHash: input.evidenceSetHash,
+      scopeGuarantee: input.scopeGuarantee,
     });
   } catch (err) {
     // Best-effort: Tracing-Fehler dürfen den Request nicht beeinflussen.

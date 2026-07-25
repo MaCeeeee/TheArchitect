@@ -13,6 +13,7 @@
 import mongoose, { Schema, Connection, Model, Document } from 'mongoose';
 import { safeErrorMessage } from '@thearchitect/shared';
 import { log } from '../config/logger';
+import type { ScopeCorpusDoc } from './scopeGuarantee.service';
 
 export interface ICorpusRegulation extends Document {
   regulationKey: string;
@@ -207,6 +208,36 @@ export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegu
   const latest = new Map<string, ICorpusRegulation>();
   for (const r of all) {
     if (!latest.has(r.regulationKey)) latest.set(r.regulationKey, r); // erste = höchste Version
+  }
+  return [...latest.values()];
+}
+
+/**
+ * THE-516 / ADR-0006 (Scope-Guarantee): alle scope-applicability-getypten §§
+ * zu den gegebenen Quellen — EIN Read für alle Familien eines Discovery-Laufs
+ * (nicht N). Projiziert nur die Felder, die der Scope-Guarantee-Kern
+ * (ScopeCorpusDoc) konsumiert — bewusst OHNE fullText: der Judge sieht nur
+ * Key+Titel, volle Gesetzestexte über den Tailnet-Draht wären reine Last.
+ * Nur die höchste Version je regulationKey (Muster listCorpusBySource).
+ *
+ * WIRFT bei Korpus-Ausfall — bewusste Abweichung vom catch-Stil der übrigen
+ * Reads: der Aufrufer (lawDiscovery) MUSS Ausfall ('unavailable' + Alert,
+ * ADR-0006 E5) von einer leeren Treffermenge ('partial', legitim — z. B.
+ * frisch gecrawltes Gesetz vor dem Re-Typing) unterscheiden können; ein
+ * stiller []-Fallback würde beide Zustände ununterscheidbar machen.
+ */
+export async function listScopeProvisionsBySource(sources: string[]): Promise<ScopeCorpusDoc[]> {
+  if (sources.length === 0) return [];
+  const docs = await CorpusRegulation()
+    .find({ source: { $in: sources }, 'typing.provisionKind': 'scope-applicability' })
+    .select(
+      'regulationKey version source paragraphNumber title language jurisdiction versionHash typing.provisionKind typing.versionHash typing.status',
+    )
+    .sort({ regulationKey: 1, version: -1 })
+    .lean();
+  const latest = new Map<string, ScopeCorpusDoc>();
+  for (const d of docs) {
+    if (!latest.has(d.regulationKey)) latest.set(d.regulationKey, d as unknown as ScopeCorpusDoc); // erste = höchste Version
   }
   return [...latest.values()];
 }
