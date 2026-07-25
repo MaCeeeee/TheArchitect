@@ -19,6 +19,7 @@ import {
   injectScopeHits,
   guaranteeStateFor,
   type FamilyScopeResult,
+  type ScopeCorpusDoc,
 } from './scopeGuarantee.service';
 import { hydeRewrite } from './hyde.service';
 import { buildApplicabilityReport, loadProjectFacts, loadNormWorldState } from './regulationApplicability.service';
@@ -180,14 +181,25 @@ function dominantLanguage(hits: CorpusHit[]): string | undefined {
  * konsumierbare scope-§§) ist ein LEGITIMER Zustand (frisch gecrawltes Gesetz
  * vor dem Re-Typing-Batch) ⇒ nur Log, KEIN Alert (Alert-Müdigkeit, ADR-0006 E5).
  */
-async function applyScopeGuarantee(
+/**
+ * E6-Injektions-Seam (ADR-0006, THE-516 Task 3): der Offline-Eval-Harness
+ * übergibt hier eine Fixture-Lookup-Funktion statt des Mongo-Reads — damit
+ * beweist der Regressionstest (CRA-Blindfleck, THE-423) EXAKT den Prod-
+ * Injektionspfad, ohne Korpus-Verbindung. Default = corpusClient-Read ⇒
+ * Prod-Verhalten byte-identisch unverändert; das Flag-aus-Gate liegt VOR
+ * diesem Aufruf (discoverCandidates), die AC-3-Identität bleibt unberührt.
+ */
+export type ScopeProvisionLookup = (sources: string[]) => Promise<ScopeCorpusDoc[]>;
+
+export async function applyScopeGuarantee(
   projectId: string,
   candidates: DiscoveryCandidate[],
+  lookup: ScopeProvisionLookup = listScopeProvisionsBySource,
 ): Promise<{ candidates: DiscoveryCandidate[]; scopeGuarantee: ScopeGuaranteeState }> {
   let scopeDocs;
   try {
     const sources = [...new Set(candidates.flatMap(c => c.sources))];
-    scopeDocs = await listScopeProvisionsBySource(sources);
+    scopeDocs = await lookup(sources);
   } catch (err) {
     // E5 weich: Discovery MUSS ohne Garantie weiterlaufen — sichtbar via Feld,
     // alarmiert via Sentry (einziger alarmierender Zustand).

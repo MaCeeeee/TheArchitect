@@ -18,6 +18,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import { toFamily } from '../services/lawDiscovery.service';
+import type { ScopeCorpusDoc } from '../services/scopeGuarantee.service';
 
 export const DiscoveryGoldenCaseSchema = z
   .object({
@@ -52,6 +53,18 @@ export const DiscoveryGoldenSetSchema = z.object({
 export type DiscoveryGoldenCase = z.infer<typeof DiscoveryGoldenCaseSchema>;
 export type DiscoveryGoldenSet = z.infer<typeof DiscoveryGoldenSetSchema>;
 
+/**
+ * ADR-0006 E6 / THE-516: Typing-Vorschlag am Fixture-§ — ADDITIV (optional),
+ * die eingefrorenen v1-Fixtures bleiben unverändert schema-gültig. Feld-Shape
+ * identisch zu `ScopeCorpusDoc.typing` (scopeGuarantee.service), damit der
+ * Eval-Harness dieselben E3-Konsumregeln durchläuft wie Prod.
+ */
+export const FixtureTypingSchema = z.object({
+  provisionKind: z.string().nullable().optional(),
+  versionHash: z.string().optional(),
+  status: z.enum(['suggested', 'confirmed', 'rejected']).optional(),
+});
+
 export const FixtureParagraphSchema = z.object({
   regulationKey: z.string().min(1),
   versionHash: z.string().min(1),
@@ -62,6 +75,7 @@ export const FixtureParagraphSchema = z.object({
   language: z.string().min(1),
   text: z.string().min(80), // kuratierter §-Text (für HyDE-Kontext + Re-Embed)
   vector: z.array(z.number()).length(768).optional(), // vom Precompute-Script befüllt
+  typing: FixtureTypingSchema.optional(), // THE-516: nur von Scope-Guarantee-Fixtures genutzt
 });
 
 export const FixtureCorpusSchema = z.object({
@@ -182,6 +196,68 @@ export function loadDiscoveryEvalData(
     );
   }
   return { golden, corpus };
+}
+
+// ─── THE-516 (ADR-0006 E6): Scope-Blindfleck-Fixture — Offline-Beweis ────────
+
+/**
+ * Eigenständiges, ADDITIVES Fixture für den E6-Regressionstest, der THE-423
+ * dauerhaft festnagelt: eine Familie, deren Retrieval-topHits NUR Durchführungs-
+ * §§ enthalten, plus ein scope-§ mit Typing, den das Retrieval NICHT hochspült.
+ * Bewusst eine EIGENE Datei (discovery.scope-blindspot.v1.json) statt einer
+ * Änderung an den eingefrorenen v1-Fixtures (Golden-Freeze-Disziplin) — und
+ * mit eigenem, handkonstruierten Vektor-Set (keine Live-Embedding-Calls: die
+ * Vektoren sind deterministische Dummy-Geometrie im Precompute-Format, 768-dim).
+ */
+export const ScopeBlindspotFixtureSchema = z.object({
+  version: z.string().min(1),
+  case: DiscoveryGoldenCaseSchema,
+  /** Query-Vektor des Falls — Pendant zu baselineVector in discovery.queries.v1.json. */
+  queryVector: z.array(z.number()).length(768),
+  paragraphs: z.array(FixtureParagraphSchema).min(2),
+});
+
+export type ScopeBlindspotFixture = z.infer<typeof ScopeBlindspotFixtureSchema>;
+
+export const DEFAULT_SCOPE_BLINDSPOT_PATH = path.join(__dirname, 'golden', 'discovery.scope-blindspot.v1.json');
+
+/** Load + Zod-validate the scope-blindspot fixture (THE-516 / ADR-0006 E6). */
+export function loadScopeBlindspotFixture(filePath: string = DEFAULT_SCOPE_BLINDSPOT_PATH): ScopeBlindspotFixture {
+  const json = readJson(filePath);
+  const parsed = ScopeBlindspotFixtureSchema.safeParse(json);
+  if (!parsed.success) {
+    throw new DiscoveryGoldenSetError(
+      `Scope-blindspot fixture failed schema validation: ${parsed.error.issues
+        .map(i => `${i.path.join('.')}: ${i.message}`)
+        .join('; ')}`,
+    );
+  }
+  return parsed.data;
+}
+
+/**
+ * E6-Injektions-Seam-Gegenstück: Fixture-Lookup im EXAKTEN Vertrag von
+ * `listScopeProvisionsBySource` (corpusClient.service) — Quellen-Filter +
+ * provisionKind-Vorfilter wie die Mongo-Query. Die E3-Vertrauensregeln
+ * (versionHash-Anker, rejected-nie) laufen bewusst NICHT hier, sondern im
+ * geteilten Kern (`selectScopeProvisions`) — der Eval prüft damit denselben
+ * Code-Pfad wie Prod, nicht eine Nachbildung.
+ */
+export function fixtureScopeLookup(paragraphs: FixtureParagraph[]): (sources: string[]) => Promise<ScopeCorpusDoc[]> {
+  return async (sources: string[]) => {
+    const wanted = new Set(sources);
+    return paragraphs
+      .filter(p => wanted.has(p.source) && p.typing?.provisionKind === 'scope-applicability')
+      .map(p => ({
+        source: p.source,
+        paragraphNumber: p.paragraphNumber,
+        title: p.title,
+        language: p.language,
+        jurisdiction: p.jurisdiction,
+        versionHash: p.versionHash,
+        typing: p.typing,
+      }));
+  };
 }
 
 /** Stratification stats — für den Report. */
