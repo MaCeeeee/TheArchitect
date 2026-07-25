@@ -22,7 +22,15 @@
  */
 'use strict';
 
-const mongoose = require('mongoose');
+// require() löst node_modules relativ zum SKRIPT-Pfad auf — nach /tmp kopiert
+// fände es /app/node_modules nicht. Fallback auf den App-Pfad des Containers,
+// damit das Kopier-Ziel egal ist.
+let mongoose;
+try {
+  mongoose = require('mongoose');
+} catch {
+  mongoose = require('/app/node_modules/mongoose');
+}
 
 const MONGODB_URI = process.env.MONGODB_URI;
 const QDRANT_URL = (process.env.QDRANT_URL || '').replace(/\/+$/, '');
