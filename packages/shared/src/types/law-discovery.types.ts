@@ -26,6 +26,14 @@ export interface CorpusHit {
   score: number; // Qdrant Cosine-Similarity ∈ [-1,1] (roh, ungeklemmt)
   /** Reserviert für ONTO-Typisierung (THE-432); heute immer undefined. */
   provisionKind?: string;
+  /**
+   * Herkunfts-Markierung (ADR-0006 E4, THE-516): 'scope-guarantee' = per
+   * Beweis-Garantie injizierter Geltungsbereichs-§, nicht vom Retrieval
+   * gefunden. ADDITIV: fehlend ⇒ implizit 'retrieval' (Bestands-Hits werden
+   * nicht backfilled) — Wirkung und Zitierung injizierter §§ bleiben so eine
+   * Datenbankabfrage (Notar-Prinzip).
+   */
+  origin?: 'retrieval' | 'scope-guarantee';
 }
 
 /** Aggregiertes Kandidaten-Gesetz (Source-Ebene) mit Retrieval-Evidenz. */
