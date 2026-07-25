@@ -1,6 +1,6 @@
 {
-  "version": "v1-draft",
-  "frozen": false,
+  "version": "gv3",
+  "frozen": true,
   "ontologyVersion": "1.7.0",
   "rubricRef": "../RUBRIC.md",
   "cases": [
@@ -17,9 +17,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "ai-act-de-art-36",
@@ -36,7 +37,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-en-art-4",
@@ -53,7 +54,7 @@
         "partyRole": "data_holder",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-en-art-5",
@@ -70,7 +71,7 @@
         "partyRole": "data_holder",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-de-art-4",
@@ -87,7 +88,7 @@
         "partyRole": "data_holder",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-de-art-5",
@@ -104,7 +105,7 @@
         "partyRole": "data_holder",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "cra-de-art-39",
@@ -121,7 +122,7 @@
         "partyRole": "conformity_assessment_body",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-en-art-46",
@@ -136,9 +137,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "mdr-de-art-44",
@@ -155,7 +157,8 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→obligation] adjudiziert"
     },
     {
       "caseId": "mdr-de-art-46",
@@ -168,11 +171,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
+        "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→obligation] adjudiziert [provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "eprivacy-en-art-4",
@@ -189,7 +193,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-en-art-6",
@@ -206,7 +210,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-de-art-4",
@@ -223,7 +227,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-de-art-6",
@@ -240,7 +244,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eidas-en-art-17",
@@ -257,7 +261,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eidas-en-art-20",
@@ -270,11 +274,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
-        "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "obligationKind": "obligation",
+        "partyRole": "trust_service_provider",
+        "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→obligation] adjudiziert [partyRole→trust_service_provider] adjudiziert [provisionKind→obligation] adjudiziert"
     },
     {
       "caseId": "eidas-de-art-17",
@@ -291,7 +296,8 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→obligation] adjudiziert"
     },
     {
       "caseId": "eidas-de-art-24",
@@ -308,7 +314,7 @@
         "partyRole": "trust_service_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-de-art-20",
@@ -325,7 +331,7 @@
         "partyRole": null,
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-en-art-36",
@@ -342,7 +348,7 @@
         "partyRole": "conformity_assessment_body",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "nis2-de-art-17",
@@ -359,7 +365,7 @@
         "partyRole": null,
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-de-art-32",
@@ -376,7 +382,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "cra-de-art-22",
@@ -389,11 +395,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": null,
-        "partyRole": null,
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→obligation] adjudiziert [partyRole→manufacturer] adjudiziert"
     },
     {
       "caseId": "eidas-en-art-8",
@@ -410,7 +417,7 @@
         "partyRole": null,
         "provisionKind": "definition"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-en-art-11",
@@ -424,10 +431,11 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "member_state",
+        "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[partyRole→ecs_provider] adjudiziert"
     },
     {
       "caseId": "dora-art-52",
@@ -440,11 +448,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
+        "obligationKind": "permission",
         "partyRole": "member_state",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→permission] adjudiziert"
     },
     {
       "caseId": "dsgvo-art-38",
@@ -461,7 +470,7 @@
         "partyRole": "controller",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "ai-act-de-art-35",
@@ -474,11 +483,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
+        "obligationKind": null,
         "partyRole": null,
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert"
     },
     {
       "caseId": "psd2-de-art-63",
@@ -495,7 +505,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "dsgvo-en-art-54",
@@ -512,7 +522,8 @@
         "partyRole": "member_state",
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→other] adjudiziert"
     },
     {
       "caseId": "psd2-en-art-89",
@@ -529,7 +540,7 @@
         "partyRole": "financial_entity",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-en-art-35",
@@ -546,7 +557,7 @@
         "partyRole": null,
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-de-art-58",
@@ -561,9 +572,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "manufacturer",
-        "provisionKind": "obligation"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "dora-de-art-17",
@@ -580,7 +592,7 @@
         "partyRole": "financial_entity",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eidas-de-art-28",
@@ -597,7 +609,7 @@
         "partyRole": "trust_service_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "lksg-24",
@@ -610,11 +622,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "permission",
-        "partyRole": "supervisory_authority",
+        "obligationKind": null,
+        "partyRole": "obligated_enterprise",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert [partyRole→obligated_enterprise] adjudiziert"
     },
     {
       "caseId": "ai-act-en-art-49",
@@ -631,7 +644,7 @@
         "partyRole": "provider",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "cra-en-art-65",
@@ -648,7 +661,8 @@
         "partyRole": null,
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "nis2-art-26",
@@ -661,11 +675,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
-        "partyRole": "provider",
+        "obligationKind": null,
+        "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert [partyRole→n/a] adjudiziert"
     },
     {
       "caseId": "eprivacy-de-art-7",
@@ -682,7 +697,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-en-art-104",
@@ -695,11 +710,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
+        "obligationKind": null,
         "partyRole": null,
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert"
     },
     {
       "caseId": "nis2-de-art-25",
@@ -716,7 +732,7 @@
         "partyRole": "member_state",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "data-act-de-art-21",
@@ -730,10 +746,11 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "permission",
-        "partyRole": null,
+        "partyRole": "member_state",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[partyRole→member_state] adjudiziert"
     },
     {
       "caseId": "cra-de-art-4",
@@ -748,9 +765,10 @@
         "bindingness": "binding",
         "obligationKind": "prohibition",
         "partyRole": "member_state",
-        "provisionKind": "obligation"
+        "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→scope-applicability] adjudiziert"
     },
     {
       "caseId": "eidas-en-art-34",
@@ -767,7 +785,7 @@
         "partyRole": "trust_service_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-en-art-16",
@@ -784,7 +802,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "dora-art-38",
@@ -801,7 +819,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "dsgvo-art-73",
@@ -814,11 +832,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
-        "partyRole": "supervisory_authority",
-        "provisionKind": "obligation"
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert [partyRole→n/a] adjudiziert [provisionKind→other] adjudiziert"
     },
     {
       "caseId": "ai-act-de-art-10",
@@ -835,7 +854,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "psd2-de-art-37",
@@ -849,10 +868,11 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "prohibition",
-        "partyRole": "provider",
+        "partyRole": "financial_entity",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[partyRole→financial_entity] adjudiziert"
     },
     {
       "caseId": "dsgvo-en-art-61",
@@ -867,9 +887,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "obligation"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "psd2-en-art-26",
@@ -884,9 +905,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "supervisory_authority",
-        "provisionKind": "enforcement-supervision"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "data-act-en-art-43",
@@ -903,7 +925,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-de-art-23",
@@ -917,10 +939,11 @@
         "normKind": "legislation",
         "bindingness": "binding",
         "obligationKind": "obligation",
-        "partyRole": "provider",
+        "partyRole": "manufacturer",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[partyRole→manufacturer] adjudiziert"
     },
     {
       "caseId": "dora-de-art-38",
@@ -937,7 +960,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eidas-de-art-39",
@@ -954,7 +977,7 @@
         "partyRole": null,
         "provisionKind": "scope-applicability"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "lksg-10",
@@ -971,7 +994,7 @@
         "partyRole": "obligated_enterprise",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "ai-act-en-art-72",
@@ -988,7 +1011,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "cra-en-art-63",
@@ -1005,7 +1028,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "nis2-art-11",
@@ -1022,7 +1045,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eprivacy-de-art-11",
@@ -1039,7 +1062,7 @@
         "partyRole": "ecs_provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "mdr-en-art-95",
@@ -1056,7 +1079,7 @@
         "partyRole": "supervisory_authority",
         "provisionKind": "enforcement-supervision"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "nis2-de-art-18",
@@ -1069,11 +1092,12 @@
       "labels": {
         "normKind": "legislation",
         "bindingness": "binding",
-        "obligationKind": "obligation",
+        "obligationKind": null,
         "partyRole": null,
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[obligationKind→n/a] adjudiziert"
     },
     {
       "caseId": "data-act-de-art-36",
@@ -1090,7 +1114,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "cra-de-art-40",
@@ -1107,7 +1131,7 @@
         "partyRole": "conformity_assessment_body",
         "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "eidas-en-art-30",
@@ -1122,9 +1146,10 @@
         "bindingness": "binding",
         "obligationKind": "obligation",
         "partyRole": "conformity_assessment_body",
-        "provisionKind": "obligation"
+        "provisionKind": "procedural"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "architect-adjudication-2026-07-25-gv3 (raters: opus + gpt-5)",
+      "notes": "[provisionKind→procedural] adjudiziert"
     },
     {
       "caseId": "eprivacy-en-art-5",
@@ -1141,7 +1166,7 @@
         "partyRole": "member_state",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "dora-art-29",
@@ -1158,7 +1183,7 @@
         "partyRole": "financial_entity",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "dsgvo-art-99",
@@ -1175,7 +1200,7 @@
         "partyRole": null,
         "provisionKind": "other"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     },
     {
       "caseId": "ai-act-de-art-25",
@@ -1192,7 +1217,7 @@
         "partyRole": "provider",
         "provisionKind": "obligation"
       },
-      "annotator": "llm-prelabel:openrouter:openai/gpt-5"
+      "annotator": "llm-prelabel:anthropic:claude-opus-4-8"
     }
   ]
 }
