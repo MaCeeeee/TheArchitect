@@ -111,6 +111,15 @@ export function assembleRelationSuggestion(
  * Ziel-Paar (targetRegulationKey) wird verworfen — der Mensch hat für dieses
  * Paar bereits entschieden. Nur 'suggested'-Einträge des Dokuments werden
  * beim Re-Scan ersetzt.
+ *
+ * ANNAHME (Review 2026-07-25): Ein Eintrag ist über `targetRegulationKey`
+ * allein identifiziert — es gibt also höchstens EINE Kante je (zitierendes
+ * Dokument, Ziel-Provision). Das gilt per Konstruktion, weil
+ * `enumerateRelationCandidates` pro Paar genau einen Kandidaten liefert
+ * (candidateByPair-Dedupe). Sollte eine spätere Slice mehrere getypte Kanten
+ * A→B zulassen, wird diese Identität mehrdeutig und muss auf
+ * (target, relationType, direction) erweitert werden — hier UND im
+ * positionalen Write von `POST /relations/decide`.
  */
 export function mergeRelationSuggestions(
   existing: RelationSuggestion[] | undefined,
@@ -136,6 +145,16 @@ export function mergeRelationSuggestions(
  * matcht der Filter nicht und der Batch verliert das Rennen — nie umgekehrt.
  * Mongo-Semantik: `$not` über `$elemMatch` matcht auch Dokumente, deren
  * Array-Feld fehlt (kein Element kann den $elemMatch erfüllen).
+ *
+ * BEKANNTE GRENZE (Review 2026-07-25, bewusst offen): Der Guard schützt gegen
+ * NEUE menschliche Ziele, nicht gegen eine ÄNDERUNG an einem bereits gesehenen.
+ * Wird eine schon entschiedene Kante während des laufenden Batches per
+ * `decide {override:true}` umentschieden (confirmed→rejected), kann der Write
+ * sie mit dem Snapshot-Stand überschreiben. Eng: verlangt den seltenen
+ * Override-Pfad im Rennen mit einem Re-Scan bei unverändertem versionHash. Die
+ * primäre Garantie — der Batch überschreibt nie eine menschliche Entscheidung
+ * mit einem Vorschlag — hält davon unberührt. Schließbar mit `decidedAt` je
+ * Eintrag im Filter; Slice 2, sobald `decide` echten Traffic sieht.
  */
 export function relationWriteFilter(
   docId: unknown,
