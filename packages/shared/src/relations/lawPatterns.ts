@@ -164,6 +164,31 @@ const PINPOINT_WINDOW = 120;
 const CITING_LAW_MARKERS =
   /(?:vorliegenden|dieser|diesem|jener)\s+(?:Verordnung|Richtlinie|Gesetzes?)|this\s+(?:Regulation|Directive|Act)/i;
 
+// ── Anaphorische Pinpoints NACH der Zitierung (THE-433, AC-4-Härtetest) ──
+//
+// Nicht jeder Artikel-Pinpoint steht VOR der Zitierung. Der adjudizierte
+// Präzedenzfall DORA Art. 1 → NIS2 Art. 4 lautet: „… transposing Article 3 of
+// Directive (EU) 2022/2555, this Regulation shall be considered a
+// sector-specific Union legal act for the purposes of ARTICLE 4 OF THAT
+// DIRECTIVE." — der entscheidungstragende Pinpoint (Art. 4) folgt der
+// Zitierung als Anapher. Ohne diesen Zweig wäre genau die Kante, an der AC-4
+// hängt, für den Batch unsichtbar (kein Kandidat → keine Klassifikation).
+//
+// BEWUSST KONSERVATIV, Fehltreffer-Vermeidung vor Vollständigkeit:
+//  1. Nur Artikel mit EXPLIZITER Anapher zählen („of that Directive/
+//     Regulation", „der/des genannten Richtlinie/Verordnung") — ein nackter
+//     Artikel nach der Zitierung gehört fast immer zum ZITIERENDEN Gesetz.
+//     „dieser Richtlinie/Verordnung" ist KEINE solche Anapher — das meint das
+//     zitierende Dokument selbst (siehe CITING_LAW_MARKERS).
+//  2. Das Fenster endet an der NÄCHSTEN Amtsnummern-Zitierung: eine Anapher
+//     löst sich immer zur zuletzt genannten Norm auf — was nach einer neuen
+//     Zitierung steht, gehört zu jener, nicht zu dieser.
+const ANAPHORIC_WINDOW = 200;
+const ANAPHORIC_PINPOINT =
+  /\b(?:Artikel|Article|Art\.)\s*(\d+[a-z]?)\s+(?:of that (?:Directive|Regulation)\b|(?:der|des) genannten (?:Richtlinie|Verordnung)\b)/gi;
+// Nächste Amtsnummern-Zitierung (irgendeines Gesetzes) — schneidet das Fenster ab.
+const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:Nr\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+\/(?:EU|EG|EC)\b/;
+
 /**
  * Findet alle Stellen, an denen `text` auf das Gesetz hinter `targetSource`
  * verweist. Leeres Ergebnis für Quellen ohne registrierte Muster — Aufrufer
@@ -194,6 +219,18 @@ export function referencesLaw(text: string, targetSource: string): LawReferenceM
         // verpuffende Auswahl-Regel.
         const n = normalizeArticleNumber(a[1]);
         if (n) articleHints.push(n);
+      }
+      // Anaphorische Pinpoints NACH der Zitierung („Article 4 of that
+      // Directive") — Fenster endet an der nächsten Amtsnummern-Zitierung,
+      // weil sich eine Anapher immer zur zuletzt genannten Norm auflöst.
+      let after = text.slice(m.index + m[0].length, m.index + m[0].length + ANAPHORIC_WINDOW);
+      const nextCitation = NEXT_CITATION.exec(after);
+      if (nextCitation) after = after.slice(0, nextCitation.index);
+      const anaRe = new RegExp(ANAPHORIC_PINPOINT.source, ANAPHORIC_PINPOINT.flags);
+      let ana: RegExpExecArray | null;
+      while ((ana = anaRe.exec(after)) !== null) {
+        const n = normalizeArticleNumber(ana[1]);
+        if (n && !articleHints.includes(n)) articleHints.push(n);
       }
       out.push({ matched: m[0], articleHints });
       if (m.index === re.lastIndex) re.lastIndex++; // Schutz vor Null-Length-Endlosschleife
