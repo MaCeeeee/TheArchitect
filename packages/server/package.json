@@ -38,6 +38,7 @@
     "relations:worksheet": "ts-node src/scripts/relations-worksheet.ts",
     "relations:blind": "ts-node src/scripts/relations-kappa.ts blind",
     "relations:kappa": "ts-node src/scripts/relations-kappa.ts compare",
+    "relations:baseline": "ts-node src/scripts/relations-baseline.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
     "migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"
   },
