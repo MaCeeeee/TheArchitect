@@ -106,30 +106,57 @@ function renderSide(label: 'A' | 'B', side: RelationsGoldenCase['a']): string {
  * bewusst eine Verdichtung, keine zweite Quelle der Wahrheit.
  */
 export const RELATIONS_RUBRIC_RULES = [
-  'DECISION RULES (from RUBRIC.md part C — apply them strictly):',
+  'DECISION RULES (from RUBRIC.md part C incl. the C5a precedent catalogue — apply them strictly):',
   '',
   'RULE 1 — a parallel obligation is NOT a relation. This is the most common labeling error.',
   'Two provisions from different regimes may pursue the same protective goal (e.g. GDPR Art. 32 and',
   'NIS2 Art. 21 both require technical and organisational security measures) without either saying',
-  'anything ABOUT the other. Neither displaces, concretises, or substitutes for the other. Correct',
-  'label: "none". Test: does one of the two provisions refer — expressly or in substance — to the',
-  'OTHER NORM? If not, answer "none", no matter how similar the subject matter is.',
+  'anything ABOUT the other. Correct label: "none". Test: does one of the two provisions EXPRESSLY',
+  'refer to the other norm? Only an express reference can ground a relation — a provision that merely',
+  'regulates the same subject matter "in addition to" the other law, WITHOUT citing its concrete',
+  'article, is "none" (adjudicated precedent: AI-Act Art. 10 vs. GDPR Art. 9 — same subject, no',
+  'article citation → none).',
   '',
-  'RULE 2 — displacement vs. concretisation. Test: after applying the one, does the other still',
+  'RULE 2 — an express reference that merely USES the other norm is still NOT a relation.',
+  'Feeding data into the other norm’s database or platform, contributing to its report, informing its',
+  'body, coordinating competences, or granting a mere participation option — none of these change what',
+  'the other norm requires, so the label is "none" EVEN IF the paired article is cited expressly',
+  '(precedents: CRA Art. 16/17 feeding NIS2 Art. 12/16/18 mechanisms; DORA Art. 32 vs. NIS2 Art. 32',
+  'mutual coordination — "without prejudice" means NIS2 keeps applying). Test: does the reference say',
+  'something about the CONTENT or APPLICABILITY of the other provision, or does it only use/name it?',
+  '',
+  'RULE 3 — displacement vs. concretisation. Test: after applying the one, does the other still',
   'apply? If it stops applying in that area → PREVAILS_OVER / DEROGATED_BY (lex specialis; markers:',
-  '"shall not apply to the extent that", "without prejudice to", sector-specific priority clauses).',
-  'If it keeps applying and is merely filled in more precisely → CONCRETIZES.',
+  '"shall not apply to the extent that", sector-specific priority clauses). If it keeps applying and',
+  'is merely filled in more precisely or supplemented ("in addition to", "complements") → CONCRETIZES.',
+  'Equivalence-as-exception is displacement: where equivalence is the CONDITION for the other norm to',
+  'stop applying ("where such requirements are at least equivalent … shall not apply"), the label is',
+  'PREVAILS_OVER, not RECOGNIZES_EQUIVALENCE (precedent: DORA Art. 1 → NIS2 Art. 4).',
   '',
-  'RULE 3 — concretisation vs. parameter. A concrete value, deadline or threshold → SETS_PARAMETER.',
+  'RULE 4 — concretisation vs. parameter. A concrete value, deadline or threshold → SETS_PARAMETER.',
   'Substantive elaboration without a fixed value → CONCRETIZES.',
   '',
-  'RULE 4 — RECOGNIZES_EQUIVALENCE requires an actual recognition clause ("shall be deemed to',
-  'satisfy…"). IMPLEMENTS requires an implementing act referring to a basic act ("implementing',
-  'regulation pursuant to…"). INTERPRETS requires the one to define a term OF the other ("within the',
-  'meaning of Article X of Regulation Y"). Do not use these merely because the topics overlap.',
+  'RULE 5 — RECOGNIZES_EQUIVALENCE requires an actual conformity/recognition fiction ("shall be',
+  'deemed to satisfy…", "gelten als konform") — pair it with the article the fiction clause names',
+  '(precedent: CRA Art. 12 deeming AI-Act high-risk products compliant, anchored on AI-Act Art. 6/43).',
+  'IMPLEMENTS requires an implementing act referring to a basic act. INTERPRETS requires the one norm',
+  'to borrow/define a term OF the other ("within the meaning of Article X of Regulation Y", "as',
+  'referred to in", "pursuant to Article X") — and its DIRECTION points FROM the norm that DEFINES the',
+  'term (the defining norm interprets for the borrower; precedent: AI-Act Art. 3 borrowing "personal',
+  'data" from GDPR Art. 4 → INTERPRETS with direction from GDPR). Do not use any of these merely',
+  'because the topics overlap.',
   '',
   'When in doubt between "none" and a relation, answer "none" — the set is conservative by design.',
 ].join('\n');
+
+/**
+ * Prompt-Version des Relations-Raters. rp-1 = C4/C5-Basisregeln (2026-07-22).
+ * rp-2 = C5a-Präzedenzkatalog aus der Adjudikation vom 2026-07-25 (Nutzung ≠
+ * Beziehung; Gleichwertigkeit-als-Ausnahme = Verdrängung; „gilt als konform" =
+ * Equivalence; INTERPRETS-Richtung ab definierender Norm; NUR ausdrückliche
+ * Verweise — „in substance" entfernt, Architekten-Entscheid D1).
+ */
+export const RELATIONS_PROMPT_VERSION = 'rp-2';
 
 /** Baut den User-Prompt mit der geschlossenen inferred-Relations-Liste + dem Paar. Rein. */
 export function buildRelationsPrompt(c: RelationsGoldenCase): string {
