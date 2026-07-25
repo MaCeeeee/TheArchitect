@@ -196,6 +196,28 @@ const LAW_FAMILY_PATTERNS: Record<string, RegExp[]> = {
   ],
   cra: [/\(EU\)\s*(?:Nr\.?\s*)?2024\/2847/i, /Cyber-?\s?Resilience Act/i, /Cyberresilienz-?Verordnung/i, /\bCRA\b/],
   lksg: [/Lieferkettensorgfaltspflichtengesetz/i, /\bLkSG\b/, /Supply Chain Due Diligence Act/i],
+  // THE-517 (Korpus-Ausbau 2026-07-25): Muster für die restlichen typisierten
+  // Gesetze, damit der Miner Verweise AUF sie in fremden Texten erkennt.
+  dataAct: [/\(EU\)\s*(?:Nr\.?\s*)?2023\/2854/i, /\bData Act\b/i, /\bDatengesetz\b/i],
+  psd2: [
+    /\(EU\)\s*(?:Nr\.?\s*)?2015\/2366/i,
+    /Payment Services Directive/i,
+    /Zahlungsdiensterichtlinie/i,
+    /\bPSD-?\s?2\b/i,
+  ],
+  mdr: [/\(EU\)\s*(?:Nr\.?\s*)?2017\/745/i, /Medical Devices? Regulation/i, /Medizinprodukte-?Verordnung/i, /\bMDR\b/],
+  eprivacy: [
+    /(?:Richtlinie|Directive)\s*2002\/58(?:\/E[GC])?/i,
+    /\be-?Privacy\b/i,
+    /Datenschutzrichtlinie für elektronische Kommunikation/i,
+  ],
+  eidas: [
+    /\(EU\)\s*(?:Nr\.?\s*)?910\/2014/i,
+    /\(EU\)\s*(?:Nr\.?\s*)?2024\/1183/i,
+    /\beIDAS\b/i,
+    /elektronische Identifizierung.*Vertrauensdienste/i,
+  ],
+  unece: [/UN(?:ECE)?[- ]?(?:Regelung|Regulation)\s*(?:No\.?|Nr\.?)?\s*155/i, /\bUN[- ]?R155\b/i, /\bR155\b/],
 };
 
 /** Korpus-Quelle → Law-Familie. Beide Sprachvarianten zeigen auf dieselbe Musterliste. */
@@ -210,7 +232,24 @@ const SOURCE_TO_FAMILY: Record<string, keyof typeof LAW_FAMILY_PATTERNS> = {
   'ai-act-en': 'aiAct',
   'cra-de': 'cra',
   'cra-en': 'cra',
+  cra: 'cra',
   lksg: 'lksg',
+  // THE-517: restliche Korpus-Quellen (Quell-IDs gegen die Goldens verifiziert;
+  // einige Gesetze existieren zusätzlich als suffixlose Roh-Variante).
+  'data-act-de': 'dataAct',
+  'data-act-en': 'dataAct',
+  psd2: 'psd2',
+  'psd2-de': 'psd2',
+  'psd2-en': 'psd2',
+  mdr: 'mdr',
+  'mdr-de': 'mdr',
+  'mdr-en': 'mdr',
+  eprivacy: 'eprivacy',
+  'eprivacy-de': 'eprivacy',
+  'eprivacy-en': 'eprivacy',
+  'eidas-de': 'eidas',
+  'eidas-en': 'eidas',
+  'unece-r155': 'unece',
 };
 
 export interface LawReferenceMatch {

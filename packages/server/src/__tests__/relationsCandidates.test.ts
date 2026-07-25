@@ -272,6 +272,55 @@ describe('referencesLaw', () => {
   it('returns no hits for a source without registered reference patterns', () => {
     expect(referencesLaw('Verordnung (EU) 2016/679', 'does-not-exist')).toHaveLength(0);
   });
+
+  // ─── THE-517: Muster der Korpus-Ausbau-Gesetze — je Familie ein DE- und ein
+  // EN-Beleg im realistischen Zitier-Wortlaut, plus die Quell-Varianten.
+  describe('THE-517 corpus-expansion patterns', () => {
+    it('detects the Data Act by number (DE + EN source variants share patterns)', () => {
+      expect(referencesLaw('gemäß Kapitel II der Verordnung (EU) 2023/2854', 'data-act-de').length).toBeGreaterThan(0);
+      expect(referencesLaw('data made available under Regulation (EU) 2023/2854', 'data-act-en').length).toBeGreaterThan(0);
+    });
+
+    it('detects PSD2 by number and by directive name', () => {
+      expect(referencesLaw('Zahlungsdienste im Sinne der Richtlinie (EU) 2015/2366', 'psd2').length).toBeGreaterThan(0);
+      expect(referencesLaw('payment institutions authorised under Directive (EU) 2015/2366', 'psd2-en').length).toBeGreaterThan(0);
+    });
+
+    it('detects the MDR by number and by German name', () => {
+      expect(referencesLaw('Produkte gemäß der Verordnung (EU) 2017/745', 'mdr').length).toBeGreaterThan(0);
+      expect(referencesLaw('im Anwendungsbereich der Medizinprodukte-Verordnung', 'mdr-de').length).toBeGreaterThan(0);
+    });
+
+    it('detects the ePrivacy directive by its 2002/58 number in both phrasings', () => {
+      expect(referencesLaw('unbeschadet der Richtlinie 2002/58/EG', 'eprivacy').length).toBeGreaterThan(0);
+      expect(referencesLaw('without prejudice to Directive 2002/58/EC', 'eprivacy-en').length).toBeGreaterThan(0);
+    });
+
+    it('detects eIDAS by both regulation numbers (910/2014 base + 2024/1183 amendment)', () => {
+      expect(referencesLaw('Vertrauensdienste gemäß der Verordnung (EU) Nr. 910/2014', 'eidas-de').length).toBeGreaterThan(0);
+      expect(referencesLaw('European Digital Identity Wallets under Regulation (EU) 2024/1183', 'eidas-en').length).toBeGreaterThan(0);
+    });
+
+    it('detects UNECE R155 in German and English regulation phrasing', () => {
+      expect(referencesLaw('Anforderungen der UN-Regelung Nr. 155 an das CSMS', 'unece-r155').length).toBeGreaterThan(0);
+      expect(referencesLaw('type approval according to UN Regulation No. 155', 'unece-r155').length).toBeGreaterThan(0);
+    });
+
+    it('extracts the pinpointed article for a newly registered law too', () => {
+      const hits = referencesLaw(
+        'Dateninhaber im Sinne von Artikel 2 der Verordnung (EU) 2023/2854 stellen die Daten bereit',
+        'data-act-de',
+      );
+      expect(hits.length).toBeGreaterThan(0);
+      expect(hits.flatMap((h) => h.articleHints)).toContain('2');
+    });
+
+    it('still finds no reference in a same-topic text without citation (C4 guard holds for new laws)', () => {
+      expect(
+        referencesLaw('Der Dateninhaber stellt dem Nutzer die bei der Nutzung erzeugten Daten bereit.', 'data-act-de'),
+      ).toHaveLength(0);
+    });
+  });
 });
 
 // Die Normalisierung ist der Angelpunkt der Pinpoint-Auswahl: links steht ein
