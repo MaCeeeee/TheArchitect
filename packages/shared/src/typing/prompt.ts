@@ -27,7 +27,7 @@ import {
 } from '../ontology';
 
 /** Bump bei JEDER inhaltlichen Änderung an System/Rules/Template — Teil der Provenance (AC-1) und der Batch-Idempotenz (THE-432). */
-export const TYPING_PROMPT_VERSION = 'tp-2';
+export const TYPING_PROMPT_VERSION = 'tp-3';
 
 // ─── Achsen (Kontrakt-Oberfläche, siehe axisFacetOf) ────────────
 export const TYPING_AXES = [
@@ -93,7 +93,8 @@ export function axisFacetOf(
 /**
  * Die strittigen Abgrenzungen aus RUBRIC.md B3 PLUS die adjudizierten
  * Präzedenzen aus RUBRIC.md B3a (42 Streitfälle, Architekten-Entscheid
- * 2026-07-22), verdichtet für den Prompt.
+ * 2026-07-22; erweitert am 2026-07-25 um den Rollenraum 1.7.0, RUBRIC B-v1.4),
+ * verdichtet für den Prompt.
  *
  * Gleiche Begründung wie bei den Beziehungs-Regeln: Ein Kappa misst nur dann
  * eine unklare Aufgabendefinition, wenn die Prüfer die Definition bekommen
@@ -107,6 +108,12 @@ export function axisFacetOf(
  * Bei Änderungen an RUBRIC.md B3 ODER B3a ist dieser Text nachzuziehen —
  * Verdichtung, keine zweite Quelle der Wahrheit. Jede inhaltliche Änderung
  * bumpt TYPING_PROMPT_VERSION.
+ *
+ * tp-3 (2026-07-25, THE-515): Regel 10 trägt den Rollenraum aus E6 1.7.0. Drei
+ * der vier Rollen KEHREN eine frühere Präzedenz um (`n/a` → eigener Wert) —
+ * Regel 8 nennt notifizierte Stellen deshalb nicht mehr als Beispiel für „kein
+ * passender Wert". Die Werteliste selbst kommt aus der Ontologie; hier steht nur,
+ * WORAN man den Akteur erkennt (insbesondere: drei deutsche Namen für denselben).
  */
 export const TYPING_RUBRIC_RULES = [
   'DECISION RULES (from RUBRIC.md B3 — the three distinctions annotators disagree on):',
@@ -124,7 +131,7 @@ export const TYPING_RUBRIC_RULES = [
   '   "obligation". Powers or duties of the authority → "enforcement-supervision". This axis almost',
   '   always runs parallel to partyRole — if that is a supervisory authority, "obligation" is suspect.',
   '',
-  'PRECEDENTS (from RUBRIC.md B3a — adjudicated 2026-07-22, binding for like cases):',
+  'PRECEDENTS (from RUBRIC.md B3a — adjudicated 2026-07-22, extended 2026-07-25; binding for like cases):',
   '',
   '4. Scope and definition articles (the Art. 1-3 pattern: "This Regulation applies to...") NAME roles',
   '   without obligating them → partyRole "na" AND obligationKind "na"; the duties live in later',
@@ -159,12 +166,25 @@ export const TYPING_RUBRIC_RULES = [
   '   the right to...") → partyRole is the bearer of the MIRROR DUTY (the controller),',
   '   not the right-holder. In the directive two-step ("Member States shall require entities to X") →',
   '   partyRole is whoever the duty ends with (the entity); where it ends at the state itself (enact',
-  '   sanctions rules) → "member_state". An actor with no fitting role in the closed list (e.g.',
-  '   notified bodies / conformity assessment bodies) → "na" — NEVER borrow a neighboring role.',
+  '   sanctions rules) → "member_state". An actor with no fitting role in the closed list at all →',
+  '   "na" — NEVER borrow a neighboring role. Check rule 10 before falling back to "na": four roles',
+  '   were added in E6 1.7.0 exactly because this fallback was over-used.',
   '',
   '9. Master-data registration (a register of entities; submitting name, address, contact details,',
   '   IP ranges) → "procedural"; an EVENT-driven notification duty (report an incident) stays',
   '   "obligation".',
+  '',
+  '10. Roles added in E6 1.7.0 — reverse three earlier "na" precedents; use the id, do not fall back:',
+  '   - conformity_assessment_body: ONE actor with THREE German names — "Konformitätsbewertungsstelle",',
+  '     "notifizierte Stelle", "Benannte Stelle" (MDR uses only the last one); EN "notified body" or',
+  '     "conformity assessment body". Classify by the ACTOR, never by which name the act happens to use.',
+  '   - trust_service_provider: eIDAS "Vertrauensdiensteanbieter", qualified or not.',
+  '   - data_holder: Data Act "Dateninhaber" — the party that must make data available; NOT the data',
+  '     recipient and NOT the user.',
+  '   - ecs_provider: ePrivacy provider of a publicly available electronic communications service',
+  '     ("Anbieter elektronischer Kommunikationsdienste") — the operator, not the subscriber.',
+  '   Counter-rule (do NOT invent a role where an existing one fits): PSD2 payment institutions →',
+  '   "financial_entity", because DORA Art. 2 lists payment institutions as financial entities.',
   '',
   'normKind and bindingness describe the DOCUMENT the provision comes from, not the individual',
   'provision. A provision that EMPOWERS the Commission to adopt delegated acts is not itself a',

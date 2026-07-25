@@ -248,9 +248,15 @@ Der geschlossene Rollenraum, nach Regime gruppiert:
 | DORA | Finanzunternehmen, IKT-Drittdienstleister |
 | CRA | Hersteller (dazu Einführer und Händler aus der Zeile darüber) |
 | LkSG | verpflichtetes Unternehmen |
-| übergreifend | Mitgliedstaat, Aufsichtsbehörde |
+| eIDAS | Vertrauensdiensteanbieter |
+| Data Act | Dateninhaber |
+| ePrivacy | Anbieter elektronischer Kommunikationsdienste |
+| übergreifend | Konformitätsbewertungsstelle (= notifizierte bzw. Benannte Stelle), Mitgliedstaat, Aufsichtsbehörde |
 
-Die sechs zuletzt genannten Rollen (NIS2 bis Mitgliedstaat) sind mit E6 1.6.0 hinzugekommen, und zwar
+Die vier zuletzt hinzugekommenen Rollen (eIDAS bis Konformitätsbewertungsstelle) tragen E6 1.7.0; ihre
+Begründung, die drei damit aufgehobenen Präzedenzen und das Risiko der Verbreiterung stehen in B3a.
+
+Die sechs davor genannten Rollen (NIS2 bis Mitgliedstaat) sind mit E6 1.6.0 hinzugekommen, und zwar
 **wegen einer Messung**: Der erste Zwei-Prüfer-Lauf ergab auf dieser Achse Kappa 0,597 — knapp unter dem
 Tor von 0,6. Die Durchsicht der Abweichungen zeigte keine unklare Rubrik, sondern eine **fehlende
 Klasse**: Für eine NIS2- oder DORA-Vorschrift gab es schlicht keinen passenden Wert, also griffen die
@@ -321,7 +327,35 @@ gleich gelabelt; sie sind zugleich Material für Judge-Prompts (§ 7.5). Volle B
 | Betroffenenrechte (DSGVO Art. 15–22) | `partyRole` **controller** — Adressat ist der Träger der Spiegelpflicht, nicht der Rechte-Inhaber |
 | Richtlinien-Zweischritt („MS verlangen von Einrichtungen, dass sie…", NIS2 Art. 27) | `partyRole` = **bei wem die Pflicht endet** (die Einrichtung); Gegenprobe Art. 36: endet sie beim Staat → member_state-Seite |
 | Stammdaten-Registrierung (NIS2 Art. 27 „Register der Einrichtungen") | `provisionKind` **procedural**; anlassbezogene Vorfalls-Meldung bleibt obligation |
-| Akteur ohne Rolle im Werteraum (notifizierte Stellen, CRA Art. 42/47) | `partyRole` **n/a** — nie eine fremde Rolle borgen; Merker: Kandidat für Facetten-Erweiterung |
+| Akteur ohne Rolle im Werteraum (notifizierte Stellen, CRA Art. 42/47) | `partyRole` **n/a** — nie eine fremde Rolle borgen; Merker: Kandidat für Facetten-Erweiterung. ⚠️ **Für notifizierte Stellen aufgehoben (B-v1.4, 2026-07-25)** — der Merker ist eingelöst, siehe erste Zeile des nächsten Blocks. Die Regel selbst gilt unverändert für Akteure, die *weiterhin* keinen Wert haben |
+
+**Erweiterung 2026-07-25 (Rollenraum E6 1.7.0, THE-515):**
+
+| Muster (Beispielfall) | Entscheidung |
+|---|---|
+| Konformitätsbewertungsstelle — derselbe Akteur heißt „Konformitätsbewertungsstelle", „notifizierte Stelle" (KI-VO/CRA) und „Benannte Stelle" (MDR, dort ausschließlich); englisch „notified body" bzw. „conformity assessment body" | `partyRole` **conformity_assessment_body** — ein Akteur, mehrere Namen: nach **Akteur** zuordnen, nicht nach Wortlaut. **Umkehr** der Präzedenz „Akteur ohne Rolle → n/a" (CRA Art. 42/47) |
+| Vertrauensdiensteanbieter (eIDAS, qualifiziert wie nicht-qualifiziert) | `partyRole` **trust_service_provider** — neu, **keine Umkehr**: bisher unbesetztes Terrain, in v1/v2 nie adjudiziert |
+| Dateninhaber (Data Act, z. B. Art. 8/9/11 — die Seite, die Daten bereitstellen muss) | `partyRole` **data_holder** — **Umkehr** der Golden-v2-Adjudikation vom 2026-07-24 (dort `n/a`). Abzugrenzen gegen Datenempfänger und Nutzer: gemeint ist, wer bereitstellen **muss** |
+| Anbieter öffentlich zugänglicher elektronischer Kommunikationsdienste (ePrivacy, z. B. Art. 3/12) | `partyRole` **ecs_provider** — **Umkehr** der Golden-v2-Adjudikation vom 2026-07-24 (dort `n/a`). Gemeint ist der Diensteanbieter, nicht der Teilnehmer |
+| PSD2-Zahlungsinstitut (Golden v2) | `partyRole` **financial_entity** — **bleibt unverändert.** DORA Art. 2 zählt Zahlungsinstitute ausdrücklich zu den Finanzunternehmen; das Vokabular fehlt hier also gar nicht. Bewusstes Gegenbeispiel: **nicht jedes neue Gesetz braucht eine neue Rolle** |
+
+> **Bewusste Umkehr dreier früherer Festlegungen:** Drei Präzedenzen dieses Katalogs entschieden denselben
+> Sachverhalt zuvor auf `n/a` — notifizierte bzw. Konformitätsbewertungsstellen (Gate-1-Adjudikation
+> 2026-07-22, CRA Art. 42/47: „Akteur ohne Rolle im Werteraum → n/a, nie borgen"), Data-Act-Dateninhaber
+> und ePrivacy-Diensteanbieter (beide Golden-v2-Adjudikation 2026-07-24). Diese Entscheidungen waren
+> **richtig, solange sie galten**: `n/a` war die ehrliche Antwort auf einen Werteraum, der für diese
+> Akteure keinen Wert hatte, und das Borgen einer Nachbarrolle wäre der schlechtere Fehler gewesen. Mit
+> E6 1.7.0 ist die Voraussetzung entfallen — die Rollen existieren, also greift „nichts borgen → n/a"
+> hier nicht mehr. Auslöser war eine Messung, keine Meinung: `partyRole` fiel out-of-sample auf **0,668**
+> (in-sample 0,845), und die Fehleranalyse lokalisierte den Einbruch genau auf diese fehlenden Klassen.
+> `n/a` bleibt dem Fall vorbehalten, dass sich der Satz an **niemanden** richtet (B3, Regel 1) — und
+> Akteuren, die auch in 1.7.0 keinen Wert haben.
+
+**Ehrliche Risikonotiz:** Die Verbreiterung des Rollenraums von 15 auf 19 Werte erhöht die ontologische
+Komplexität, und genau die — nicht die Modellgröße — benennt das OntoLearner-Paper (arXiv:2607.01977)
+als Haupttreiber der Fehlermodi („failure modes scale with ontological complexity rather than model
+size"); die Erweiterung ist deshalb belegt und mit dokumentiertem Rückbaupfad ausgeführt (Re-Messung an
+einem frischen Prüfsatz, im Zweifel zurück auf die zwei bestbelegten Rollen).
 
 ## B4. Erwartete Einigkeit — wo Streit normal ist
 
@@ -405,6 +439,15 @@ gegen die gelabelt wurde — bei einer Ontologie-Erhöhung ist zu prüfen, ob al
   Stammdaten-Registrierung) — interner Widerspruch aufgelöst. Klassifizierungs-Prüfsatz eingefroren
   (`typing.v1.json`, E6 1.6.0, Cross-House-Kappa obligationKind 0,815 · provisionKind 0,748 ·
   partyRole 0,742).
+- **B-v1.4 (2026-07-25):** B3a um den Rollenraum **E6 1.7.0** erweitert (THE-515): vier Präzedenzen für
+  `conformity_assessment_body` (inkl. der drei deutschen Bezeichnungen desselben Akteurs),
+  `trust_service_provider`, `data_holder`, `ecs_provider`; die Rollen-Tabelle in B3 entsprechend
+  fortgeschrieben. **Drei frühere Festlegungen sind ausdrücklich umgekehrt** (notifizierte Stellen aus
+  der Gate-1-Adjudikation 2026-07-22, Dateninhaber und ePrivacy-Diensteanbieter aus der
+  Golden-v2-Adjudikation 2026-07-24 — je zuvor `n/a`); PSD2-Zahlungsinstitute → `financial_entity`
+  bleiben als Gegenbeispiel bestehen. Anlass: `partyRole` out-of-sample 0,668 gegen in-sample 0,845, auf
+  fehlende Klassen lokalisiert. Prompt nachgezogen (`TYPING_PROMPT_VERSION` tp-2 → **tp-3**), mit
+  Risikonotiz zur gestiegenen ontologischen Komplexität und Rückbaupfad.
 
 ---
 
