@@ -30,6 +30,11 @@ export interface IConsumedRef {
   score?: number;
   citedByJudge?: boolean;
   checkpointNo?: number;
+  /**
+   * ADR-0006 E4 (THE-516): Herkunft eines konsumierten § — additiv optional,
+   * fehlend ⇒ implizit 'retrieval'. Bestehende Traces bleiben schema-gültig.
+   */
+  origin?: 'retrieval' | 'scope-guarantee';
 }
 
 export interface IContextAuditPayload {
@@ -56,6 +61,8 @@ export interface IContextTrace extends Omit<Document, 'model'> {
   llmTraceRef?: string;
   audit?: IContextAuditPayload;
   evidenceSetHash?: string;
+  /** ADR-0006 E4/E5 (THE-516): Scope-Guarantee-Zustand des Laufs — additiv optional. */
+  scopeGuarantee?: 'applied' | 'partial' | 'unavailable';
 
   createdAt: Date;
 }
@@ -84,6 +91,8 @@ const consumedRefSchema = new Schema<IConsumedRef>(
     score: { type: Number },
     citedByJudge: { type: Boolean },
     checkpointNo: { type: Number },
+    // ADR-0006 E4 (THE-516): additiv, kein required/kein Default — Alt-Traces valide.
+    origin: { type: String, enum: ['retrieval', 'scope-guarantee'] },
   },
   { _id: false },
 );
@@ -111,6 +120,8 @@ const contextTraceSchema = new Schema<IContextTrace>(
     llmTraceRef: { type: String },
     audit: { type: contextAuditPayloadSchema },
     evidenceSetHash: { type: String },
+    // ADR-0006 E4/E5 (THE-516): Run-Metadatum, additiv optional.
+    scopeGuarantee: { type: String, enum: ['applied', 'partial', 'unavailable'] },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );

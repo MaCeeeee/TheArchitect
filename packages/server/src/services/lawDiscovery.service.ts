@@ -8,10 +8,19 @@
  * `discoverCandidates` bleibt UNBERÜHRT (Slice-1-Vertrag).
  */
 import type Anthropic from '@anthropic-ai/sdk';
-import type { ApplicabilityReport, ConsumedRef, CorpusHit, DiscoveryCandidate, DiscoveryResult } from '@thearchitect/shared';
+import * as Sentry from '@sentry/node';
+import type { ApplicabilityReport, ConsumedRef, CorpusHit, DiscoveryCandidate, DiscoveryResult, ScopeGuaranteeState } from '@thearchitect/shared';
+import { safeErrorMessage } from '@thearchitect/shared';
 import { buildUseCaseProfile } from './useCaseProfile.service';
 import { governedCorpusSearch } from './governedRetrieval.service';
-import { isCorpusConfigured } from './corpusClient.service';
+import { isCorpusConfigured, listScopeProvisionsBySource } from './corpusClient.service';
+import {
+  selectScopeProvisions,
+  injectScopeHits,
+  guaranteeStateFor,
+  type FamilyScopeResult,
+  type ScopeCorpusDoc,
+} from './scopeGuarantee.service';
 import { hydeRewrite } from './hyde.service';
 import { buildApplicabilityReport, loadProjectFacts, loadNormWorldState } from './regulationApplicability.service';
 import { judgeCandidate } from './lawJudge.service';
@@ -97,7 +106,130 @@ export async function discoverCandidates(projectId: string, opts?: DiscoverCandi
   }
 
   const candidates = aggregateHitsToCandidates(hits);
-  return { projectId, corpusConfigured: true, candidates };
+  if (!scopeGuaranteeEnabled()) {
+    // AC-3: Flag aus ⇒ byte-identisch zu vorher — kein Feld, kein Korpus-
+    // Typing-Read, keine Log-Zeile.
+    return { projectId, corpusConfigured: true, candidates };
+  }
+  const guaranteed = await applyScopeGuarantee(projectId, candidates);
+  return { projectId, corpusConfigured: true, candidates: guaranteed.candidates, scopeGuarantee: guaranteed.scopeGuarantee };
+}
+
+// ─── THE-516 (ADR-0006): Scope-Guarantee — Beweis-Garantie, kein Ranking-Boost ───
+
+// ADR-0006 E3.3: dark-by-default Gate für die Scope-Guarantee. PER AUFRUF
+// gelesen (nicht modul-weit gecacht) — Muster hydeEnabled() unten. WICHTIG:
+// bei allen Env-Fallbacks `||` statt `??` (Present-but-empty-Lehre THE-514:
+// ein gesetzter-aber-leerer Env-Wert muss auf den Default fallen, nicht als
+// „gesetzt" durchrutschen).
+function scopeGuaranteeEnabled(): boolean {
+  return process.env.LAW_DISCOVERY_SCOPE_GUARANTEE === 'true';
+}
+
+/**
+ * E5-Alerting-Seam: `unavailable` ist der EINZIGE alarmierende Zustand — er
+ * fließt über die bestehende Kette (Sentry → n8n → Ops-Register, kein neuer
+ * Draht). Injizierbar für Tests; Default = etabliertes Muster aus index.ts
+ * (captureException nur bei gesetztem SENTRY_DSN) + lauter log.error, damit
+ * der Ausfall auch ohne Sentry (Dev) sichtbar bleibt.
+ */
+export type ScopeGuaranteeAlert = (message: string, err: unknown) => void;
+const defaultScopeGuaranteeAlert: ScopeGuaranteeAlert = (message, err) => {
+  log.error({ err: safeErrorMessage(err) }, message);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err instanceof Error ? err : new Error(message), {
+      tags: { component: 'law-discovery-scope-guarantee' },
+      extra: { message },
+    });
+  }
+};
+
+/**
+ * E2-Sprachwahl-Input: dominante Sprache der vorhandenen Familien-topHits,
+ * damit das injizierte Beweismaterial sprachlich zur Evidenz passt.
+ * Tie-Break deterministisch: bei Gleichstand gewinnt die lexikographisch
+ * kleinste Sprache (Iteration über sortierte Einträge, nur ECHT größere
+ * Zählung verdrängt).
+ */
+function dominantLanguage(hits: CorpusHit[]): string | undefined {
+  const counts = new Map<string, number>();
+  for (const h of hits) counts.set(h.language, (counts.get(h.language) ?? 0) + 1);
+  let best: string | undefined;
+  let bestCount = 0;
+  for (const [lang, count] of [...counts.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    if (count > bestCount) {
+      best = lang;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+/**
+ * ADR-0006 E1/E2/E5: je Kandidaten-Familie bis zu 2 Geltungsbereichs-§§ ins
+ * Judge-Beweismaterial injizieren. Läuft NACH aggregateHitsToCandidates —
+ * Familien-Score/hitCount sind fix, die Injektion ist Beweis-Garantie, kein
+ * Ranking-Eingriff (Score-Neutralität = harte Leitplanke).
+ *
+ * EIN Korpus-Read über die Quellen ALLER Familien (nicht N Reads). Weiches
+ * Ausfall-Verhalten (E5): wirft der Lookup, läuft die Discovery unverändert
+ * weiter — Zustand 'unavailable' + Alert. 'partial' (mind. eine Familie ohne
+ * konsumierbare scope-§§) ist ein LEGITIMER Zustand (frisch gecrawltes Gesetz
+ * vor dem Re-Typing-Batch) ⇒ nur Log, KEIN Alert (Alert-Müdigkeit, ADR-0006 E5).
+ */
+/**
+ * E6-Injektions-Seam (ADR-0006, THE-516 Task 3): der Offline-Eval-Harness
+ * übergibt hier eine Fixture-Lookup-Funktion statt des Mongo-Reads — damit
+ * beweist der Regressionstest (CRA-Blindfleck, THE-423) EXAKT den Prod-
+ * Injektionspfad, ohne Korpus-Verbindung. Default = corpusClient-Read ⇒
+ * Prod-Verhalten byte-identisch unverändert; das Flag-aus-Gate liegt VOR
+ * diesem Aufruf (discoverCandidates), die AC-3-Identität bleibt unberührt.
+ */
+export type ScopeProvisionLookup = (sources: string[]) => Promise<ScopeCorpusDoc[]>;
+
+export async function applyScopeGuarantee(
+  projectId: string,
+  candidates: DiscoveryCandidate[],
+  lookup: ScopeProvisionLookup = listScopeProvisionsBySource,
+): Promise<{ candidates: DiscoveryCandidate[]; scopeGuarantee: ScopeGuaranteeState }> {
+  let scopeDocs;
+  try {
+    const sources = [...new Set(candidates.flatMap(c => c.sources))];
+    scopeDocs = await lookup(sources);
+  } catch (err) {
+    // E5 weich: Discovery MUSS ohne Garantie weiterlaufen — sichtbar via Feld,
+    // alarmiert via Sentry (einziger alarmierender Zustand).
+    // Review-Fix (E5): der Alert selbst darf die weiche Degradierung nie brechen —
+    // würde Sentry/Logger werfen, wäre genau der harte Ausfall da, den E5 verhindert.
+    try {
+      defaultScopeGuaranteeAlert(
+        `[law-discovery] scope-guarantee corpus lookup failed (project ${projectId}): ${safeErrorMessage(err)}`,
+        err,
+      );
+    } catch (alertErr) {
+      log.error({ err: safeErrorMessage(alertErr) }, '[law-discovery] scope-guarantee alert failed');
+    }
+    return { candidates, scopeGuarantee: 'unavailable' };
+  }
+
+  const results: FamilyScopeResult[] = [];
+  const injected = candidates.map(candidate => {
+    const familyDocs = scopeDocs.filter(d => candidate.sources.includes(d.source));
+    const selected = selectScopeProvisions(familyDocs, { preferredLanguage: dominantLanguage(candidate.topHits) });
+    // covered = ≥1 konsumierbarer scope-§ existiert: er landet entweder als
+    // Injektion in den topHits oder ist bereits regulär drin (E2-Dedupe).
+    results.push({ family: candidate.family, covered: selected.length > 0 });
+    return injectScopeHits(candidate, selected).candidate;
+  });
+
+  const scopeGuarantee = guaranteeStateFor(results);
+  if (scopeGuarantee === 'partial') {
+    log.warn(
+      { projectId, uncoveredFamilies: results.filter(r => !r.covered).map(r => r.family) },
+      '[law-discovery] scope guarantee partial — families without consumable scope provisions',
+    );
+  }
+  return { candidates: injected, scopeGuarantee };
 }
 
 // ─── Slice-2 (THE-462/463): Judge-Orchestrierung ─────────────────
@@ -186,12 +318,16 @@ export async function discoverAndJudge(
   const discovery = await discoverCandidates(projectId, { anthropicClient: opts.anthropicClient });
   const hasProvider = Boolean(opts.anthropicClient || process.env.ANTHROPIC_API_KEY);
   if (discovery.candidates.length === 0 || !hasProvider) {
-    return mergeApplicability(stageA, [], undefined, undefined, world);
+    const early = mergeApplicability(stageA, [], undefined, undefined, world);
+    if (discovery.scopeGuarantee) early.scopeGuarantee = discovery.scopeGuarantee;
+    return early;
   }
 
   const gated = gateCandidatesForJudge(discovery.candidates);
   if (gated.length === 0) {
-    return mergeApplicability(stageA, [], undefined, undefined, world);
+    const gatedEmpty = mergeApplicability(stageA, [], undefined, undefined, world);
+    if (discovery.scopeGuarantee) gatedEmpty.scopeGuarantee = discovery.scopeGuarantee;
+    return gatedEmpty;
   }
 
   const model = defaultJudgeModel();
@@ -211,6 +347,12 @@ export async function discoverAndJudge(
   );
 
   for (const candidate of gated) {
+    // ADR-0006 E4 (THE-516): injizierte scope-§§ stecken bereits in den topHits
+    // (discoverCandidates), also ändert sich der evidenceSetHash hier AUTOMATISCH
+    // — bewusst KEIN Sonderfall: neues Beweismaterial ⇒ neu beurteilen ist
+    // gewollt (Kosten ≈ ein Judge-Lauf je Familie, einmalig pro Projekt beim
+    // ersten Lauf mit Flag). AC-6: der Judge-Prompt wächst dadurch um ≤2 §§ je
+    // Familie (~+2–4k Tokens/Discovery-Lauf — vernachlässigbar).
     const corpusVersionHash = evidenceSetHash(candidate);
     evidenceHashes.push(corpusVersionHash);
 
@@ -263,6 +405,9 @@ export async function discoverAndJudge(
       score: hit.score,
       retrievalMethod: 'dense',
       citedByJudge: verdict.keyParagraphs.includes(hit.regulationKey),
+      // ADR-0006 E4 (THE-516): Herkunfts-Markierung injizierter scope-§§ —
+      // additiv, Bestands-Hits bleiben unmarkiert (implizit 'retrieval').
+      ...(hit.origin ? { origin: hit.origin } : {}),
     }));
     const contextTraceId = await recordContextTrace({
       feature: 'discovery',
@@ -271,6 +416,9 @@ export async function discoverAndJudge(
       model,
       llmTraceRef: verdict.aiTraceRequestId,
       evidenceSetHash: corpusVersionHash,
+      // ADR-0006 E5 (THE-516): Garantie-Zustand als Run-Metadatum im Trace —
+      // fehlt bei Flag aus (additiv).
+      ...(discovery.scopeGuarantee ? { scopeGuarantee: discovery.scopeGuarantee } : {}),
     });
 
     // Spec-Fix 1 (AC-2): BEIDE Urteile persistieren — auch applies:false. Sonst
@@ -306,5 +454,8 @@ export async function discoverAndJudge(
   // ändert sich, sobald sich irgendein geurteiltes Evidence-Set ändert.
   const corpusVersion = computeVersionHash([...evidenceHashes].sort().join('|'));
 
-  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
+  const report = mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
+  // Review-Fix 3 (ADR E5): Sichtbarkeit bis in die API-Antwort — nicht nur Trace/Logs.
+  if (discovery.scopeGuarantee) report.scopeGuarantee = discovery.scopeGuarantee;
+  return report;
 }

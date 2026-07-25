@@ -26,6 +26,14 @@ export interface CorpusHit {
   score: number; // Qdrant Cosine-Similarity ∈ [-1,1] (roh, ungeklemmt)
   /** Reserviert für ONTO-Typisierung (THE-432); heute immer undefined. */
   provisionKind?: string;
+  /**
+   * Herkunfts-Markierung (ADR-0006 E4, THE-516): 'scope-guarantee' = per
+   * Beweis-Garantie injizierter Geltungsbereichs-§, nicht vom Retrieval
+   * gefunden. ADDITIV: fehlend ⇒ implizit 'retrieval' (Bestands-Hits werden
+   * nicht backfilled) — Wirkung und Zitierung injizierter §§ bleiben so eine
+   * Datenbankabfrage (Notar-Prinzip).
+   */
+  origin?: 'retrieval' | 'scope-guarantee';
 }
 
 /** Aggregiertes Kandidaten-Gesetz (Source-Ebene) mit Retrieval-Evidenz. */
@@ -39,11 +47,26 @@ export interface DiscoveryCandidate {
   topHits: CorpusHit[]; // Retrieval-Evidenz, gekürzt
 }
 
+/**
+ * Sichtbarkeits-Feld der Scope-Guarantee (ADR-0006 E5, THE-516):
+ * 'applied' = jede Kandidaten-Familie hat ≥1 Geltungsbereichs-§ in der Evidenz;
+ * 'partial' = mind. eine Familie ohne konsumierbare scope-§§ (legitim, z. B.
+ * frisch gecrawltes Gesetz vor dem Re-Typing — nur Log, kein Alert);
+ * 'unavailable' = Korpus-Typing-Lookup fehlgeschlagen (alertet via Sentry).
+ */
+export type ScopeGuaranteeState = 'applied' | 'partial' | 'unavailable';
+
 export interface DiscoveryResult {
   projectId: string;
   corpusConfigured: boolean;
   candidates: DiscoveryCandidate[];
   degraded?: string; // gesetzt bei Graceful Degradation (leerer/unkonfigurierter Korpus)
+  /**
+   * ADDITIV (ADR-0006 E5): nur gesetzt, wenn das Flag
+   * LAW_DISCOVERY_SCOPE_GUARANTEE an ist — Flag aus ⇒ Feld fehlt ⇒
+   * byte-identisches Verhalten (AC-3).
+   */
+  scopeGuarantee?: ScopeGuaranteeState;
 }
 
 // ─── UC-LAW-002 Slice-2 (THE-462/463) — Judge, Finding, Merge (additiv) ───
