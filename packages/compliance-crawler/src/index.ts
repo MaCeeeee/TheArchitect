@@ -15,6 +15,7 @@ import { healthRoutes } from './routes/health';
 import { crawlRoutes } from './routes/crawl';
 import { embedAllRoutes } from './routes/embed-all';
 import { corpusStatusRoutes } from './routes/corpus-status';
+import { relationsRoutes } from './routes/relations';
 
 async function buildApp() {
   const app = Fastify({
@@ -27,6 +28,7 @@ async function buildApp() {
   await app.register(crawlRoutes);
   await app.register(embedAllRoutes);
   await app.register(corpusStatusRoutes);
+  await app.register(relationsRoutes);
 
   return app;
 }

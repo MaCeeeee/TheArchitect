@@ -21,9 +21,20 @@ import {
   crawlerConfig,
   CrawlerUnreachableError,
 } from '../services/complianceCrawler.service';
-import { corpusHealth, isCorpusConfigured } from '../services/corpusClient.service';
+import {
+  corpusHealth,
+  isCorpusConfigured,
+  listCorpusRelationSuggestionDocs,
+} from '../services/corpusClient.service';
 import { getFallbackStats, isStrictCorpusReads } from '../services/regulationResolver.service';
-import { isNormSource, NORM_SOURCE_IDS } from '@thearchitect/shared';
+import {
+  isNormSource,
+  NORM_SOURCE_IDS,
+  RELATION_STATUSES,
+  safeErrorMessage,
+  selectRelationSuggestions,
+} from '@thearchitect/shared';
+import { z } from 'zod';
 import { log } from '../config/logger';
 
 const router = Router();
@@ -63,6 +74,63 @@ router.get('/regulations/crawler/health', async (_req: Request, res: Response) =
   const config = crawlerConfig();
   const h = await crawlerHealth();
   res.json({ config, health: h, ok: h?.status === 'ok' });
+});
+
+// ──────────────────────────────────────────────────────────
+// GET /api/regulations/corpus/relations — READ-ONLY-Proxy auf die Cross-Norm-
+// Kanten-Vorschläge im Korpus (THE-433, Slice 1, Task 6).
+//
+// Server A ist am Korpus RO-User (THE-440): dieser Endpunkt liest, und zwar
+// ausschließlich. Bestätigen/Verwerfen läuft über den Crawler (Server B), der
+// den Schreibzugriff hat — POST /relations/decide dort. Zeilen-Form, Filter
+// und Sortierung kommen aus @thearchitect/shared, damit die Liste hier und die
+// Liste im Crawler nicht auseinanderlaufen können.
+//
+// Degradierung statt Absturz: ist der Korpus nicht konfiguriert oder nicht
+// erreichbar, antwortet der Endpunkt 503 mit klarer Meldung. Eine leere Liste
+// wäre hier die gefährlichste Antwort — ein Reviewer hielte offene Vorschläge
+// für abgearbeitet.
+// ──────────────────────────────────────────────────────────
+const CorpusRelationsQuerySchema = z.object({
+  source: z.string().min(1).optional(),
+  status: z.enum(RELATION_STATUSES).optional(),
+  targetSource: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+router.get('/regulations/corpus/relations', async (req: Request, res: Response) => {
+  const parsed = CorpusRelationsQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    return res
+      .status(400)
+      .json({ success: false, error: 'invalid_query', details: parsed.error.flatten() });
+  }
+  if (!isCorpusConfigured()) {
+    return res.status(503).json({
+      available: false,
+      error:
+        'corpus not configured — set CORPUS_MONGODB_URI (relation suggestions live in the canonical corpus)',
+    });
+  }
+  const { source, status, targetSource, limit, offset } = parsed.data;
+  try {
+    const docs = await listCorpusRelationSuggestionDocs(source);
+    const { items, total } = selectRelationSuggestions(docs, {
+      status,
+      targetSource,
+      limit,
+      offset,
+    });
+    return res.json({ available: true, items, total, limit, offset });
+  } catch (err) {
+    const message = safeErrorMessage(err);
+    log.warn({ err: message }, '[the-433] corpus relations read failed — degrading to 503');
+    return res.status(503).json({
+      available: false,
+      error: `corpus unreachable — relation suggestions cannot be read right now (${message})`,
+    });
+  }
 });
 
 // ──────────────────────────────────────────────────────────
