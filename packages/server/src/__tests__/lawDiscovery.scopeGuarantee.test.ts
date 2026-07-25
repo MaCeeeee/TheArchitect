@@ -252,3 +252,16 @@ describe('discoverAndJudge — Scope-Guarantee im ContextTrace (THE-516 / E4)', 
     expect('scopeGuarantee' in traceInput).toBe(false);
   });
 });
+
+// Review-Fix 3 (ADR E5): das Sichtbarkeits-Feld muss die API-Antwort erreichen,
+// nicht nur Trace und Logs — sonst ist die Degradierung für Konsumenten unsichtbar.
+describe('scopeGuarantee erreicht den ApplicabilityReport', () => {
+  it('Flag aus ⇒ Report trägt KEIN scopeGuarantee-Feld (Additivität)', async () => {
+    delete process.env.LAW_DISCOVERY_SCOPE_GUARANTEE;
+    const { discoverAndJudge } = await import('../services/lawDiscovery.service');
+    // hasProvider=false-Pfad reicht: kein Judge nötig, früher Merge-Return.
+    delete process.env.ANTHROPIC_API_KEY;
+    const report = await discoverAndJudge('000000000000000000000001');
+    expect('scopeGuarantee' in report).toBe(false);
+  });
+});

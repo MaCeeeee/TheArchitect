@@ -143,10 +143,6 @@ const defaultScopeGuaranteeAlert: ScopeGuaranteeAlert = (message, err) => {
     });
   }
 };
-let scopeGuaranteeAlert: ScopeGuaranteeAlert = defaultScopeGuaranteeAlert;
-export function __setScopeGuaranteeAlertForTests(fn: ScopeGuaranteeAlert | null): void {
-  scopeGuaranteeAlert = fn ?? defaultScopeGuaranteeAlert;
-}
 
 /**
  * E2-Sprachwahl-Input: dominante Sprache der vorhandenen Familien-topHits,
@@ -203,14 +199,16 @@ export async function applyScopeGuarantee(
   } catch (err) {
     // E5 weich: Discovery MUSS ohne Garantie weiterlaufen — sichtbar via Feld,
     // alarmiert via Sentry (einziger alarmierender Zustand).
-    log.warn(
-      { projectId, err: safeErrorMessage(err) },
-      '[law-discovery] scope-guarantee corpus lookup failed — continuing without guarantee',
-    );
-    scopeGuaranteeAlert(
-      `[law-discovery] scope-guarantee corpus lookup failed (project ${projectId}): ${safeErrorMessage(err)}`,
-      err,
-    );
+    // Review-Fix (E5): der Alert selbst darf die weiche Degradierung nie brechen —
+    // würde Sentry/Logger werfen, wäre genau der harte Ausfall da, den E5 verhindert.
+    try {
+      defaultScopeGuaranteeAlert(
+        `[law-discovery] scope-guarantee corpus lookup failed (project ${projectId}): ${safeErrorMessage(err)}`,
+        err,
+      );
+    } catch (alertErr) {
+      log.error({ err: safeErrorMessage(alertErr) }, '[law-discovery] scope-guarantee alert failed');
+    }
     return { candidates, scopeGuarantee: 'unavailable' };
   }
 
@@ -320,12 +318,16 @@ export async function discoverAndJudge(
   const discovery = await discoverCandidates(projectId, { anthropicClient: opts.anthropicClient });
   const hasProvider = Boolean(opts.anthropicClient || process.env.ANTHROPIC_API_KEY);
   if (discovery.candidates.length === 0 || !hasProvider) {
-    return mergeApplicability(stageA, [], undefined, undefined, world);
+    const early = mergeApplicability(stageA, [], undefined, undefined, world);
+    if (discovery.scopeGuarantee) early.scopeGuarantee = discovery.scopeGuarantee;
+    return early;
   }
 
   const gated = gateCandidatesForJudge(discovery.candidates);
   if (gated.length === 0) {
-    return mergeApplicability(stageA, [], undefined, undefined, world);
+    const gatedEmpty = mergeApplicability(stageA, [], undefined, undefined, world);
+    if (discovery.scopeGuarantee) gatedEmpty.scopeGuarantee = discovery.scopeGuarantee;
+    return gatedEmpty;
   }
 
   const model = defaultJudgeModel();
@@ -452,5 +454,8 @@ export async function discoverAndJudge(
   // ändert sich, sobald sich irgendein geurteiltes Evidence-Set ändert.
   const corpusVersion = computeVersionHash([...evidenceHashes].sort().join('|'));
 
-  return mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
+  const report = mergeApplicability(stageA, findingsForMerge, corpusVersion, currentEvidenceHashes, world);
+  // Review-Fix 3 (ADR E5): Sichtbarkeit bis in die API-Antwort — nicht nur Trace/Logs.
+  if (discovery.scopeGuarantee) report.scopeGuarantee = discovery.scopeGuarantee;
+  return report;
 }

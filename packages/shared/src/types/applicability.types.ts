@@ -138,6 +138,12 @@ export interface ApplicabilityReport {
   assessments: NormApplicabilityAssessment[];
   /** Rechtlicher Hinweis — immer anzeigen. */
   disclaimer: string;
+  /**
+   * ADR-0006 E5 (THE-516): Degradierungszustand der Scope-Guarantee — nur
+   * gesetzt, wenn das Flag aktiv ist. 'unavailable' = Korpus-Lookup fehlgeschlagen
+   * (alarmiert), 'partial' = mind. eine Familie ohne konsumierbare scope-§§ (legitim).
+   */
+  scopeGuarantee?: 'applied' | 'partial' | 'unavailable';
   /** Deckungs-Transparenz (THE-455/F1-Muster): Stage-A-Regeln + Stage-B-Korpus-Stand. */
   coverage?: {
     stageARuleCount: number;
