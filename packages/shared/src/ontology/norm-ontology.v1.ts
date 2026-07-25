@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.6.0',
-  updatedAt: '2026-07-21',
+  ontologyVersion: '1.7.0',
+  updatedAt: '2026-07-25',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -115,7 +115,9 @@ export const NORM_ONTOLOGY = {
    * „Mitgliedstaaten" 156 · LkSG-„Unternehmen". Kein Vorrats-Vokabular.
    *
    * Reihenfolge ist bedeutungstragend: erst die regime-spezifischen Rollen nach
-   * Gesetz gruppiert, danach die regime-übergreifenden (`origin: 'cross'`) am Ende.
+   * Gesetz gruppiert, danach die NICHT-regulierten Akteure (`member_state`,
+   * `supervisory_authority`) am Ende. Die Invariante lautet ausdrücklich NICHT
+   * „alle `origin: 'cross'` zuletzt" — siehe `conformity_assessment_body` unten.
    */
   partyRoles: [
     { id: 'controller', label: 'Controller / Verantwortlicher', origin: 'gdpr' },
@@ -131,6 +133,54 @@ export const NORM_ONTOLOGY = {
     { id: 'ict_third_party_provider', label: 'ICT Third-Party Service Provider — IKT-Drittdienstleister', origin: 'dora' },
     { id: 'manufacturer', label: 'Manufacturer — Hersteller', origin: 'cra' },
     { id: 'obligated_enterprise', label: 'Obligated Enterprise — verpflichtetes Unternehmen', origin: 'lksg' },
+
+    // ─── THE-515 (v1.7.0): vier belegt fehlende Adressaten ────────────────────
+    //
+    // WARUM (bitte nicht "aufräumen"): Auslöser ist wieder eine MESSUNG, keine
+    // Meinung. Golden v2 (2026-07-24) ergab auf der Achse `partyRole` in-sample
+    // 0,845, aber out-of-sample nur **0,668**. Die Fehleranalyse zeigte dasselbe
+    // Muster wie bei der 1.6.0-Erweiterung: kein Modellproblem, sondern eine
+    // Lücke im Werteraum — für vier real vorkommende Akteure gab es schlicht
+    // keinen passenden Wert, also wichen die Prüfer auf beliebige Ersatzrollen
+    // oder `n/a` aus.
+    //
+    // Belegdichte vorher am Korpus nachgemessen (nicht geschätzt):
+    //   conformity_assessment_body 131 Belege (KI-VO, CRA, MDR, eIDAS — je DE/EN)
+    //   trust_service_provider      46 Belege (davon eIDAS 38)
+    //   data_holder                 44 Belege (Data Act)
+    //   ecs_provider                14 Belege (ePrivacy)
+    //
+    // TERMINOLOGIE-FALLE (deshalb die langen Labels): Derselbe Akteur heißt je
+    // nach Rechtsakt „Benannte Stelle" (MDR-DE, 50×), „notifizierte Stelle"
+    // (KI-VO/CRA-DE, 50×) oder „Konformitätsbewertungsstelle" (30×); englisch
+    // „notified body" vs. „conformity assessment body". Das ist EINE Rolle — das
+    // Label muss alle Varianten nennen, sonst ordnet das Modell nach Wortlaut
+    // statt nach Akteur zu.
+    //
+    // RISIKO (OntoLearner-Paper P2, arXiv:2607.01977): Der Komplexitätswert des
+    // Papers gewichtet *Breadth* mit 20 %, und sein zentraler Befund lautet, dass
+    // Fehlermodi mit ontologischer Komplexität skalieren, nicht mit Modellgröße.
+    // Die Verbreiterung des Rollenraums 15 → 19 ist damit eine **gemessene Wette**,
+    // kein offensichtlicher Gewinn: Die Re-Messung entscheidet, und es gibt einen
+    // dokumentierten Rückbaupfad (Plan 2026-07-25-the-515-partyrole-170.md, Task 6
+    // Abbruchregel: notfalls zurück auf die zwei bestbelegten Rollen, 1.7.1).
+    //
+    // BEWUSSTE NICHT-Aufnahme: PSD2-Zahlungsinstitute → `financial_entity`
+    // (DORA Art. 2 listet sie ausdrücklich). Nicht jedes neue Gesetz braucht eine
+    // eigene Rolle; nur dort, wo das Vokabular wirklich fehlt.
+    //
+    // ⚠️ POSITION von `conformity_assessment_body`: trägt `origin: 'cross'` (der
+    // Akteur kommt in vier Rechtsakten vor, gehört also keinem Regime), steht aber
+    // BEWUSST NICHT am Listenende. Die Positions-Invariante meint nur die
+    // NICHT-regulierten Akteure `member_state`/`supervisory_authority`; die
+    // Konformitätsbewertungsstelle ist ein regulierter Akteur und gehört zu den
+    // Regime-Rollen. Wer hier nach `origin` "durchsortiert", bricht die Semantik.
+    { id: 'conformity_assessment_body', label: 'Conformity Assessment Body / Notified Body — Konformitätsbewertungsstelle, notifizierte bzw. Benannte Stelle', origin: 'cross' },
+    { id: 'trust_service_provider', label: 'Trust Service Provider — Vertrauensdiensteanbieter', origin: 'eidas' },
+    { id: 'data_holder', label: 'Data Holder — Dateninhaber', origin: 'data-act' },
+    { id: 'ecs_provider', label: 'Electronic Communications Service Provider — Anbieter elektronischer Kommunikationsdienste', origin: 'eprivacy' },
+
+    // Nicht-Regulierte, regime-übergreifend — bleiben die letzten zwei.
     { id: 'member_state', label: 'Member State — Mitgliedstaat', origin: 'cross' },
     { id: 'supervisory_authority', label: 'Supervisory Authority / Aufsichtsbehörde', origin: 'cross' },
   ],
