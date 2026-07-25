@@ -566,7 +566,44 @@ Beziehungsart + Richtung + `ambiguous`/`notes`. Die Kopplung ist erzwungen: Rich
 Art, keine Richtung bei „keine Beziehung". § 8 gilt sinngemäß — **ein eingefrorener Satz wird nie
 editiert**.
 
+## C5a. Präzedenzkatalog aus der Adjudikation (2026-07-25, v3-Streitfälle)
+
+16 Streitfälle (Opus vs. GPT-5, Kappa 0,397) architekten-entschieden. Die Regeln, nach Verwechslungs-
+muster geordnet — **verbindlich beim Labeln**:
+
+1. **Nutzung/Koordination ≠ Beziehung (auch bei ausdrücklichem Verweis).** Speist eine Provision Daten
+   in eine Datenbank/Plattform der anderen ein, trägt zu deren Bericht bei, informiert deren Gremium,
+   koordiniert Zuständigkeiten oder gewährt nur eine **Teilnahme-Option** — dann **„keine Beziehung"**,
+   selbst wenn der Paar-Artikel ausdrücklich zitiert wird. Test: Sagt der Verweis etwas über den
+   *Inhalt/die Geltung* der anderen Norm, oder *benutzt/nennt* er sie nur? (Belege: CRA 16/17 ↔ NIS2
+   12/16/18 = Einspeisung; DORA 32 ↔ NIS2 32 „without prejudice" = Koordination; CRA 52 ↔ KI-VO 6 =
+   Behörden; CRA 12(4) ↔ KI-VO 57 = Reallabor-Teilnahme-Option.)
+2. **„Gilt als konform/erfüllt" = `RECOGNIZES_EQUIVALENCE`.** Erklärt eine Norm die Erfüllung der
+   anderen zur eigenen Erfüllung (Konformitätsfiktion), ist das Gleichwertigkeit — gepaart mit dem
+   Artikel, den die Fiktions-Klausel nennt (CRA 12 „gelten als konform", knüpft an KI-VO Art. 6 und
+   das Verfahren nach Art. 43).
+3. **Gleichwertigkeit-als-Ausnahme = `PREVAILS_OVER`, nicht Gleichwertigkeit.** Ist die Gleichwertig-
+   keit die *Bedingung dafür, dass die andere Norm entfällt* („shall not apply where equivalent"), dann
+   Verdrängung. Der C5-Verdrängungstest schlägt die Wort-Anleihe „equivalent". (Beleg: DORA 1 erklärt
+   sich zum sektorspez. Rechtsakt „for the purposes of Article 4"; NIS2 4 entfällt dann.)
+4. **Geliehene Definition = `INTERPRETS`, Richtung von der definierenden Norm aus.** „im Sinne von /
+   as referred to in / pursuant to Art. X der anderen Norm" → die Norm, die den Begriff *definiert*,
+   legt aus (Richtung zeigt von ihr weg). (Belege: KI-VO 3 ← DSGVO 4/9; CRA 3 ← NIS2 12; CRA 57 ← NIS2 3.)
+5. **Impliziter Bezug „der Sache nach" OHNE Artikel-Zitat ist KEINE Beziehung** (Architekten-Grundsatz).
+   Regelt eine Norm dasselbe Sachgebiet „zusätzlich zu" der anderen, ohne deren konkreten Artikel zu
+   nennen (KI-VO 10 „zusätzlich zu 2016/679" für besondere Kategorien), ist das **keine getypte
+   Kante** — die inhaltliche Zusammenführung leistet die **Pflichten-Harmonisierung ([[THE-422]])**,
+   nicht der Beziehungs-Graph. **Nur ausdrückliche Verweise begründen eine Beziehung.** Das hält die
+   Ebenen sauber getrennt (vgl. C4).
+6. **„Ergänzt" (komplementäre Prüfpflicht) = `CONCRETIZES`.** Ergänzt/erweitert eine ausdrücklich
+   genannte Pflicht der anderen (KI-VO 27 „ergänzt" die DSGVO-35-Folgenabschätzung), Richtung a→b von
+   der ergänzenden Norm aus.
+
 ## C9. Changelog Teil C
 
 - **C-v1 (2026-07-20):** Erstfassung (THE-421, Slice G). Richtungs-Regel C3; die Parallel-Pflicht-
   Abgrenzung C4 als Kernregel; Entscheidungsregeln C5; Lesehinweis zur Schieflage C6.
+- **C-v1.1 (2026-07-25):** Präzedenzkatalog C5a aus der v3-Adjudikation (16 Streitfälle). Kernregeln:
+  Nutzung/Koordination ≠ Beziehung; „gilt als konform" = Equivalence; Gleichwertigkeit-als-Ausnahme =
+  Verdrängung; geliehene Definition = INTERPRETS ab definierender Norm; **impliziter Bezug ohne
+  Artikel-Zitat = keine Beziehung → Harmonisierung THE-422**; „ergänzt" = CONCRETIZES.
