@@ -9,11 +9,12 @@
  *  1. INFERRED-ONLY (THE-433 AC-5): nur Relationstypen mit
  *     `derivation: 'inferred'` dürfen dem Modell überhaupt angeboten werden.
  *     `AMENDS`/`CONSOLIDATES`/`REPEALS`/`CITES` kommen aus offiziellen
- *     Dokument-Metadaten (ELI/CELLAR) — ein Sprachmodell darf sie NIEMALS
- *     vorschlagen. `isInferredRelation` (aus @thearchitect/shared) ist das
- *     Gate, sowohl beim Bauen der Options-Liste als auch beim Parsen: schlägt
- *     das Modell trotzdem eine Metadata-Relation vor, wird sie wie OOV
- *     behandelt und verworfen.
+ *     Dokument-Metadaten (ELI/CELLAR), `INTERPRETS` seit THE-529 aus dem
+ *     deterministischen Detektor (`derivation: 'mechanical'`) — ein
+ *     Sprachmodell darf beide NIEMALS vorschlagen. `isInferredRelation` (aus
+ *     @thearchitect/shared) ist das Gate, sowohl beim Bauen der Options-Liste
+ *     als auch beim Parsen: schlägt das Modell trotzdem eine Metadata- oder
+ *     mechanische Relation vor, wird sie wie OOV behandelt und verworfen.
  *
  *  2. EXPLICIT DIRECTION: das Paar ist nach `regulationKey` sortiert
  *     gespeichert (stabile Identität), das trägt aber KEINE rechtliche

@@ -33,7 +33,7 @@
  * Linear: THE-433 · Registry: norm-ontology.v1.ts (E7 `relationTypes`)
  */
 import { z } from 'zod';
-import { isInferredRelation } from '../ontology';
+import { isInferredRelation, isMechanicalRelation } from '../ontology';
 
 export const RELATION_SUGGESTION_STATUSES = ['suggested', 'confirmed', 'rejected'] as const;
 export type RelationSuggestionStatus = (typeof RELATION_SUGGESTION_STATUSES)[number];
@@ -45,10 +45,14 @@ export const RelationSuggestionSchema = z.object({
   targetVersionHash: z.string().min(1),
   /** sha256 des fullText des Träger-Dokuments (des zitierenden) — Pflicht-Anker. */
   sourceVersionHash: z.string().min(1),
-  /** NUR inferred-Typen der E7-Registry — metadata-Kanten validieren hier nie (AC-5). */
-  relationType: z.string().refine(isInferredRelation, {
+  /**
+   * inferred- ODER mechanical-Typen der E7-Registry — metadata-Kanten
+   * validieren hier nie (AC-5). THE-529: mechanische Kanten (INTERPRETS)
+   * schreibt der deterministische Detektor über denselben Suggestion-Pfad.
+   */
+  relationType: z.string().refine((v) => isInferredRelation(v) || isMechanicalRelation(v), {
     message:
-      "relationType must be an ontology 'inferred' relation type (metadata edges like AMENDS come from ELI/CELLAR, never from a model)",
+      'relationType must be an ontology inferred or mechanical relation type — metadata edges come from the parser, never as suggestions',
   }),
   /** a = zitierendes Dokument (Träger des Eintrags), b = Ziel. */
   direction: z.enum(['a-to-b', 'b-to-a']),
@@ -59,6 +63,10 @@ export const RelationSuggestionSchema = z.object({
     matched: z.string().min(1),
     /** Artikelnummern-Pinpoints aus dem Verweis (normalisiert). */
     articleHints: z.array(z.string()),
+    /** THE-529: der volle Beleg-Satz des mechanischen INTERPRETS-Parsers (additiv, optional). */
+    sentence: z.string().optional(),
+    /** THE-529: der Prüfpfad des Parsers, z. B. "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)" (additiv, optional). */
+    pPath: z.string().optional(),
   }),
   /** Provenance: mit welchem Prompt-Stand und Modell wurde vorgeschlagen. */
   promptVersion: z.string().min(1),

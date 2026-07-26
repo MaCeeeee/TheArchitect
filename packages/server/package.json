@@ -40,6 +40,7 @@
     "relations:kappa": "ts-node src/scripts/relations-kappa.ts compare",
     "relations:baseline": "ts-node src/scripts/relations-baseline.ts",
     "relations:audit-interprets": "ts-node src/scripts/build-interprets-audit.ts",
+    "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
     "migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"
   },

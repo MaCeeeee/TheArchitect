@@ -103,6 +103,28 @@ Frozen `typing.gv3.json` (70 Fälle, out-of-sample, 33 adjudiziert) — Nachweis
 2. `obligationKind`/`prohibition` F1 0,00 bei n=3 auf gv2 — kein Kleinklassen-Artefakt, aber bei n=3
    volatil. Vor einer Maßnahme ein zweiter Messlauf.
 
+## Relations (THE-433 / THE-529) — zwei Pfade, zwei Messungen
+
+Seit THE-529 ist die Kanten-Erzeugung zweigeteilt; jede Hälfte hat ihr eigenes Gate:
+
+1. **LLM-Pfad** (`derivation: 'inferred'`, rp-4): gemessen von `relations:baseline` gegen das
+   frozen Golden **`relations.v5.json`** (188 Fälle, adjudiziert 2026-07-26). Gates unverändert:
+   Gesamt-Übereinstimmung ≥ 0,85 UND none-Precision ≥ 0,90 UND F1 ≥ 0,70 je gemessener
+   LLM-Klasse mit n ≥ 10 UND 0 metadata-Typ-Vorschläge.
+2. **Mechanischer Pfad** (`derivation: 'mechanical'`, aktuell nur INTERPRETS): der
+   Prüfbaum-Detektor (P0→P1→P2, `auditInterpretsCandidate`) läuft im Crawler-Batch VOR dem
+   LLM und erzeugt INTERPRETS-Kanten mit berechneter Richtung + Beleg-Satz. INTERPRETS ist
+   damit **kein LLM-F1-Gate mehr** — die Baseline weist die mechanischen Fälle nur aus
+   („mechanical (Parser-Pfad, THE-529): n=16 — nicht Teil der LLM-Messung").
+
+**Messstand v5 (2026-07-26):** `relations:parser-eval` gegen v5 + Korpus-Pool:
+**P = 1,0 / R = 1,0 auf allen 16 INTERPRETS-Wahrheiten** (0 fp, 0 fn, 0 Richtungs-Mismatches).
+Ehrlichkeits-Klausel: der Detektor ist die Quelle der v5-Wahrheiten — der Lauf beweist die
+Verdrahtung Ende-zu-Ende, nicht die Wahrheit. Wahrheits-Validierung: Architekten-Adjudikation
+2026-07-26 + Kimi-K3-Fremd-Check (92,6 %). Hintergrund: das Kohärenz-Gate rp-3 riss
+(Kappa 0,35 Opus↔GPT-5) → Architekten-Entscheid THE-529, INTERPRETS mechanisch zu erkennen
+statt es einem Rater-Konsens zu überlassen, den es nicht gibt.
+
 ## C_score-Band-Kopplung (THE-431)
 
 Auto-Akzeptanz-Schwelle steigt mit Norm-Komplexität — dort konzentrieren sich

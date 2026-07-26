@@ -514,9 +514,11 @@ Norm?* Wenn nein: keine Beziehung, egal wie ähnlich die Inhalte sind.
 
 ## C5. Entscheidungsregeln je Beziehungsart
 
-Nur die acht **abgeleiteten** Arten stehen zur Wahl. Die vier metadatenbasierten (`AMENDS`,
+Nur die sieben **abgeleiteten** Arten stehen zur Wahl. Die vier metadatenbasierten (`AMENDS`,
 `CONSOLIDATES`, `REPEALS`, `CITES`) stammen aus amtlichen Dokument-Metadaten, werden nie aus dem Text
-erschlossen und tauchen hier gar nicht erst als Option auf.
+erschlossen und tauchen hier gar nicht erst als Option auf. `INTERPRETS` ist seit THE-529 die dritte
+Kategorie **mechanisch**: der deterministische Detektor (C5b-Schablone, `interpretsAudit.ts`) erkennt
+sie — Rater und LLM wählen sie nicht mehr (die Zeile unten bleibt als Beschreibung der Kante stehen).
 
 | Art | Kriterium | Erkennungszeichen |
 |---|---|---|
@@ -524,7 +526,7 @@ erschlossen und tauchen hier gar nicht erst als Option auf.
 | `CONCRETIZES` | die eine Norm **füllt eine allgemeine Pflicht der anderen inhaltlich aus** — die andere gilt weiter | „nähere Bestimmungen zu…", spezielle Regeln innerhalb eines fortbestehenden Rahmens |
 | `SETS_PARAMETER` | die eine Norm **fixiert einen konkreten Wert/Schwellenwert**, den die andere voraussetzt | Fristen, Schwellen, technische Kennzahlen |
 | `RECOGNIZES_EQUIVALENCE` | Erfüllung der einen **gilt als** Erfüllung der anderen | „gilt als erfüllt, wenn…", Anerkennungsklauseln |
-| `INTERPRETS` | die eine Norm **legt einen Begriff der anderen aus** | „im Sinne von Artikel X der Verordnung Y" |
+| `INTERPRETS` *(mechanisch — keine Rater-/LLM-Wahl, s. C5b)* | die eine Norm **borgt eine Definition der anderen an ihrem Definitionsort** | „im Sinne von Artikel X der Verordnung Y" |
 | `TRANSPOSES` | Umsetzung einer Richtlinie in nationales Recht | nationale Umsetzungsgesetze |
 | `IMPLEMENTS` | Durchführungsrechtsakt zu einem Basisrechtsakt | „Durchführungsverordnung zu…" |
 
@@ -586,9 +588,11 @@ muster geordnet — **verbindlich beim Labeln**:
    keit die *Bedingung dafür, dass die andere Norm entfällt* („shall not apply where equivalent"), dann
    Verdrängung. Der C5-Verdrängungstest schlägt die Wort-Anleihe „equivalent". (Beleg: DORA 1 erklärt
    sich zum sektorspez. Rechtsakt „for the purposes of Article 4"; NIS2 4 entfällt dann.)
-4. **Geliehene Definition = `INTERPRETS`, Richtung von der definierenden Norm aus.** „im Sinne von /
-   as referred to in / pursuant to Art. X der anderen Norm" → die Norm, die den Begriff *definiert*,
-   legt aus (Richtung zeigt von ihr weg). (Belege: KI-VO 3 ← DSGVO 4/9; CRA 3 ← NIS2 12; CRA 57 ← NIS2 3.)
+4. **Geliehene Definition = `INTERPRETS` — seit THE-529 MECHANISCH (C5b), keine Rater-Entscheidung
+   mehr.** Der Detektor prüft Schablone (P0), Paar-Artikel (P1) und Definitionsort (P2) und BERECHNET
+   die Richtung (vom Definierer weg). Historischer Hinweis: die ursprünglichen Belege dieses Punkts
+   (KI-VO 3 ← DSGVO 9; CRA 3 ← NIS2 12; CRA 57 ← NIS2 3) erwiesen sich in der Adjudikation 2026-07-26
+   als **Fehl-Label** (Nutzungs-Referenzen, Regel B) — genau deshalb wurde der Punkt mechanisiert.
 5. **Impliziter Bezug „der Sache nach" OHNE Artikel-Zitat ist KEINE Beziehung** (Architekten-Grundsatz).
    Regelt eine Norm dasselbe Sachgebiet „zusätzlich zu" der anderen, ohne deren konkreten Artikel zu
    nennen (KI-VO 10 „zusätzlich zu 2016/679" für besondere Kategorien), ist das **keine getypte
@@ -599,7 +603,7 @@ muster geordnet — **verbindlich beim Labeln**:
    genannte Pflicht der anderen (KI-VO 27 „ergänzt" die DSGVO-35-Folgenabschätzung), Richtung a→b von
    der ergänzenden Norm aus.
 
-## C5b. INTERPRETS mechanisch — Schablone + berechnete Richtung (ENTWURF — Regeln A/B werden in der Adjudikationssitzung THE-519 gefüllt)
+## C5b. INTERPRETS mechanisch — Schablone + berechnete Richtung
 
 > Dieser Abschnitt schärft die C5-Zeile `INTERPRETS` und C5a-Punkt 4 zu einem **mechanischen Test**.
 > Anlass: die v4-Wahrheiten trugen drei INTERPRETS-Fehler, die eine **frei vergebene Richtung** und ein
@@ -619,11 +623,12 @@ INTERPRETS liegt vor, wenn der **zitierende Satz** alle vier Slots trägt:
 | **[Ziel-Artikel]** | der zitierte Artikel | „Artikel 4 Nummer 1" |
 | **[Ziel-Gesetz]** | die zitierte Norm | „der Verordnung (EU) 2016/679" |
 
-Auto-Verdikt aus den Slots:
+Auto-Verdikt aus den Slots (die drei Tore P0–P2, in dieser Reihenfolge):
 
-- **Alle vier Slots gefüllt UND [Ziel-Artikel] = der Paar-Artikel** → `INTERPRETS`.
-- **[Leih-Operator] fehlt** → **keine Beziehung** (bloße Nutzung/Zuständigkeit, vgl. C5a-1).
-- **[Ziel-Artikel] fehlt oder ≠ Paar-Artikel** → **Paar-Artefakt** (Paar raus, **kein Label**).
+- **[Leih-Operator] + [Begriff] fehlen** (P0 ✗) → **keine Beziehung** (bloße Nutzung/Zuständigkeit, vgl. C5a-1 · Regel B).
+- **[Ziel-Artikel] fehlt oder ≠ Paar-Artikel** (P1 ✗) → **Paar-Artefakt** (Paar raus, **kein Label**).
+- **[Ziel-Artikel] ist KEIN Definitionsort** für den Begriff (P2 ✗) → **keine Beziehung** (Regel A — hartes Tor, s.u.).
+- **Alle drei Tore ✓** (Slots gefüllt, [Ziel-Artikel] = Paar-Artikel, und der zitierte Artikel definiert den Begriff) → `INTERPRETS`.
 
 ### Die Richtungs-Regel als BERECHNUNGSVORSCHRIFT (nicht als Urteil)
 
@@ -663,16 +668,23 @@ keine eigene Entscheidung.
    (der Artikel-35-Bezug entstand über die Satzgrenze hinweg, vgl. Task 2). [Ziel-Artikel] ≠ Paar →
    **Paar-Artefakt** (Paar raus, **kein Label**). **v4 fälschlich `INTERPRETS` `a-to-b`.**
 
-### Zwei offene Regeln (Platzhalter — Adjudikationssitzung THE-519)
+### Zwei Regeln — adjudiziert 2026-07-26 (THE-519)
 
-- **Regel A (offen, Sitzung THE-519):** geprägter Begriff, dessen Bedeutung nur über einen
-  **SACH-(Nicht-Definitions-)Artikel** umrissen wird. Beispiel `dora-de-art-3__psd2-de-art-32`:
-  „‚… ausgenommenes Zahlungsinstitut' ein Zahlungsinstitut, für das eine Ausnahme **nach Artikel 32
-  Absatz 1** der Richtlinie (EU) 2015/2366 gilt" — der zitierte Art. 32 ist eine Ausnahme-, keine
-  Definitionsvorschrift. `INTERPRETS`, eigener Typ, oder keine Beziehung? → **wird entschieden.**
-- **Regel B (offen, Sitzung THE-519):** die reine **Nutzungs-/Zuständigkeits-Referenz** endgültig als
-  **keine Beziehung** festzurren (heute über C5a-1 + den fehlenden Operator abgedeckt; Regel B macht es
-  zur benannten Regel). → **wird entschieden.**
+- **Regel A — der zitierte Artikel muss den Begriff DEFINIEREN (hartes Tor, P2).** Ein geprägter
+  Begriff, dessen zitierte Fundstelle ein **SACH-(Nicht-Definitions-)Artikel** ist (Ausnahme-,
+  Anwendungs-, Zuständigkeits-Vorschrift), trägt **keine** INTERPRETS-Kante → **keine Beziehung**.
+  Beispiel `dora-de-art-3__psd2-de-art-32`: „‚… ausgenommenes Zahlungsinstitut' … eine Ausnahme **nach
+  Artikel 32 Absatz 1** der Richtlinie (EU) 2015/2366" — Art. 32 ist eine Ausnahme-, keine
+  Definitionsvorschrift → **none**. Ebenso, wenn der Leih-Satz in Wahrheit eine **dritte Norm** nennt,
+  die nicht das Paar ist (`dora-art-3__emoney-9`: „central counterparty as defined in Art. 2 of Reg.
+  648/2012" — Ziel ist EMIR, nicht das Paar) → **none / Fehl-Paarung**. *Begründung: INTERPRETS ist das
+  Leihen einer **Definition** an ihrem Definitionsort; ohne Definitionsort ist es Nutzung, nicht
+  Interpretation. Hält die Klasse scharf; korpusweit 0 echte „Sach-Artikel"-Fälle.*
+- **Regel B — Nutzungs-/Verweis-Referenz = keine Beziehung (festgezurrt).** Ein Satz, der einen
+  Ziel-Artikel nennt, aber **keinen Leih-Operator + kein Definiendum** trägt (P0 ✗ — „**nach** Artikel
+  X", „**as referred to in** Article X", „pursuant to Article X"), benutzt die andere Norm, ohne einen
+  Begriff aus ihr zu borgen → **keine Beziehung**. Bisher über C5a-1 + fehlenden Operator abgedeckt;
+  Regel B macht es zur benannten, endgültigen Regel.
 
 ## C9. Changelog Teil C
 
@@ -682,6 +694,14 @@ keine eigene Entscheidung.
   Nutzung/Koordination ≠ Beziehung; „gilt als konform" = Equivalence; Gleichwertigkeit-als-Ausnahme =
   Verdrängung; geliehene Definition = INTERPRETS ab definierender Norm; **impliziter Bezug ohne
   Artikel-Zitat = keine Beziehung → Harmonisierung UC-REQHARM-001 (THE-438)**; „ergänzt" = CONCRETIZES.
-- **C-v1.2 (ENTWURF, THE-519):** C5b Schablonen-Regel (4 Slots) + berechnete Richtung (vom Definierer
-  weg, nie frei vergeben); vier Worked Examples inkl. der drei v4-Fehl-Labels. Regeln A/B offen bis zur
-  Adjudikation.
+- **C-v1.2 (THE-519, adjudiziert 2026-07-26):** C5b Schablonen-Regel (4 Slots) + berechnete Richtung
+  (vom Definierer weg, nie frei vergeben); vier Worked Examples inkl. der drei v4-Fehl-Labels. **Regel A
+  (Ziel-Artikel muss definieren — P2 hartes Tor) und Regel B (Nutzungs-Referenz = none) adjudiziert und
+  in rp-3 (RULE 5a/5b) eingearbeitet.** Ergebnis der Adjudikation: 16 saubere INTERPRETS-Anleihen im
+  Korpus (7 von 10 v4-INTERPRETS waren falsch); Golden v5.
+- **C-v1.3 (THE-529, 2026-07-26):** INTERPRETS wird **mechanisch** (E7-derivation `mechanical`): das
+  Kohärenz-Gate über die 28-Fall-Teilmenge riss bei Kappa 0,35 (Opus vs. GPT-5, rp-3) — beide Häuser
+  wenden die Regeln A/B inkonsistent an, während der C5b-Detektor alle Fälle deterministisch löst
+  (Fremd-Check Kimi K3: 92,6 % Übereinstimmung mit der Parser-Wahrheit). Konsequenz: INTERPRETS raus
+  aus der Rater-/LLM-Wahl (Worksheet + Prompt rp-4); die Kante erzeugt ausschließlich der Detektor
+  (`interpretsAudit.ts`), Richtung berechnet, Beleg-Satz + P-Pfad als Provenance am Vorschlag.

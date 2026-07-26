@@ -228,6 +228,62 @@ const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:Nr\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+
 const SENTENCE_BOUNDARY_SOURCE = String.raw`(?<!\b(?:[A-Za-zÄÖÜäöü]|Art|Artikel|Abs|Nr|Nrn|No|lit|Buchst|Ziff|Ziffer|Nummer|para|pt|Sec|Reg|Dir|vgl|bzw|sog|gem|ggf|ff|resp|cf|EU|EG|EC))[.;]\s+(?=[A-ZÄÖÜ0-9(])`;
 
 /**
+ * Zerlegt einen Volltext an der obigen Satz-Grenzen-Definition in Sätze
+ * (getrimmt, leere Segmente verworfen). Hierher gehoben aus
+ * packages/server/src/scripts/build-interprets-audit.ts (THE-529, Task 1):
+ * das Server-Skript spiegelte SENTENCE_BOUNDARY_SOURCE byte-gleich, weil die
+ * Konstante nicht exportiert war — jetzt gibt es EINE Wahrheit, die Eval
+ * (Server) und Batch (Crawler) identisch nutzen. Verhalten byte-identisch zum
+ * Server-Original (Golden-Identitätstests: interpretsSharedLift.test.ts).
+ */
+export function splitSentences(text: string): string[] {
+  if (!text) return [];
+  const re = new RegExp(SENTENCE_BOUNDARY_SOURCE, 'g');
+  const out: string[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const end = m.index + m[0].length;
+    out.push(text.slice(last, end));
+    last = end;
+    if (m.index === re.lastIndex) re.lastIndex++; // Null-Length-Schutz
+  }
+  out.push(text.slice(last));
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+
+// ── Ziel-Gesetz-Identifikatoren aus der Musterregistry (THE-529, Task 1) ──
+//
+// `parseBorrowTemplate`/`auditInterpretsCandidate` brauchen die literalen
+// Verordnungsnummern des Ziel-Gesetzes (z. B. „2016/679"), die im Verweis-Satz
+// auftauchen. Die stehen bereits — als Regex — in `LAW_FAMILY_PATTERNS`; hier
+// werden die reinen Nummern herausgezogen, damit keine zweite, driftende
+// Nummern-Wahrheit entsteht. Hierher gehoben aus
+// packages/server/src/scripts/build-interprets-audit.ts, weil der Crawler-Batch
+// keinen Server-Code importieren kann.
+const IDENT_IN_PATTERN = /(\d{3,4})\\\/(\d+)(?:\\\/E\[GC\])?/g;
+const identCache = new Map<string, string[]>();
+
+/** Literale Gesetzes-Nummern-Identifikatoren für eine Korpus-Quelle (z. B. 'dsgvo' → ['2016/679']). */
+export function identsForSource(source: string): string[] {
+  const family = SOURCE_TO_FAMILY[source];
+  if (!family) return [];
+  const cached = identCache.get(family);
+  if (cached) return cached;
+  const out = new Set<string>();
+  for (const pattern of LAW_FAMILY_PATTERNS[family]) {
+    IDENT_IN_PATTERN.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = IDENT_IN_PATTERN.exec(pattern.source)) !== null) {
+      out.add(`${m[1]}/${m[2]}`);
+    }
+  }
+  const idents = [...out];
+  identCache.set(family, idents);
+  return idents;
+}
+
+/**
  * Beschneidet den Text VOR dem Match auf den Satz des Matches: alles bis zum
  * LETZTEN Satzende im Fenster wird verworfen (gehört zum Vorsatz). Bleibt kein
  * Satzende im Fenster, ist das ganze Fenster satz-lokal und bleibt unverändert.

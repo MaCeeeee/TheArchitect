@@ -62,7 +62,8 @@ export interface IRegulationRelationSuggestion {
   relationType: string;
   direction: 'a-to-b' | 'b-to-a';
   confidence?: number;
-  evidence: { matched: string; articleHints: string[] };
+  /** THE-529: sentence + pPath sind additive optionale Parser-Belege. */
+  evidence: { matched: string; articleHints: string[]; sentence?: string; pPath?: string };
   promptVersion: string;
   model: string;
   suggestedAt: string;
@@ -79,6 +80,8 @@ export interface IRegulationRelationScan {
   promptVersion: string;
   versionHash: string;
   scannedAt: Date;
+  /** THE-529: Version des mechanischen Detektors (additiv, optional). */
+  detectorVersion?: string;
 }
 
 export interface IRegulation extends Document {
@@ -189,6 +192,11 @@ const relationSuggestionSchema = new Schema<IRegulationRelationSuggestion>(
         {
           matched: { type: String, required: true },
           articleHints: { type: [String], required: true, default: [] },
+          // THE-529: additive optionale Parser-Belege. mongoose strict streicht
+          // unbekannte Pfade beim $set kommentarlos — ohne diese Schema-Felder
+          // wären sentence/pPath stille No-ops (Beweis: relationSuggestion.test.ts).
+          sentence: { type: String, default: undefined },
+          pPath: { type: String, default: undefined },
         },
         { _id: false }
       ),
@@ -213,6 +221,8 @@ const relationScanSchema = new Schema<IRegulationRelationScan>(
     promptVersion: { type: String, required: true },
     versionHash: { type: String, required: true },
     scannedAt: { type: Date, required: true },
+    // THE-529: additive Detektor-Provenance (mechanischer INTERPRETS-Parser).
+    detectorVersion: { type: String, default: undefined },
   },
   { _id: false }
 );

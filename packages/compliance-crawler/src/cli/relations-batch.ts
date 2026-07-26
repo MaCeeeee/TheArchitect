@@ -49,6 +49,7 @@ import {
 } from '../lib/relationCandidates';
 import {
   RELATIONS_BATCH_MODEL,
+  RELATIONS_DETECTOR_VERSION,
   newRelationsBatchCounters,
   processRelationDocGroup,
   relationWriteFilter,
@@ -89,7 +90,9 @@ async function main(): Promise<void> {
   // Korpus als Ziel-Raum, auch wenn --source die zitierende Seite einschränkt.
   const docs = (await Regulation.find({})
     .select(
-      'regulationKey source paragraphNumber title fullText language versionHash relationScan relationSuggestions'
+      // `typing` liefert die P2-Quelle des mechanischen INTERPRETS-Detektors
+      // (THE-529 Task 3: typing.provisionKind → Kandidaten-Ziel).
+      'regulationKey source paragraphNumber title fullText language versionHash typing relationScan relationSuggestions'
     )
     .sort({ regulationKey: 1, version: 1 })
     .lean()) as unknown as RelationsBatchDoc[];
@@ -109,7 +112,7 @@ async function main(): Promise<void> {
   console.log(
     `[relations-batch] ${docs.length} corpus docs · ${allCandidates.length} candidates` +
       (args.source ? ` (citing source=${args.source})` : '') +
-      ` · model=${RELATIONS_BATCH_MODEL} · prompt=${RELATIONS_PROMPT_VERSION}` +
+      ` · model=${RELATIONS_BATCH_MODEL} · prompt=${RELATIONS_PROMPT_VERSION} · detector=${RELATIONS_DETECTOR_VERSION}` +
       (args.dryRun ? ' · DRY-RUN (no LLM, no writes)' : '') +
       (args.force ? ' · FORCE (re-scan up-to-date docs)' : '')
   );
@@ -163,6 +166,9 @@ async function main(): Promise<void> {
     force: args.force,
     dryRun: false,
     promptVersion: RELATIONS_PROMPT_VERSION,
+    // THE-529: Detektor-Stand ist Teil der Skip-Semantik — Alt-Scans ohne
+    // detectorVersion werden re-scannt (mechanische INTERPRETS korpusweit).
+    detectorVersion: RELATIONS_DETECTOR_VERSION,
     model: RELATIONS_BATCH_MODEL,
   };
 

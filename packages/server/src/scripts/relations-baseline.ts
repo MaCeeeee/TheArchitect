@@ -1,7 +1,14 @@
 /**
  * relations-baseline — die Baseline-Messung für THE-433 (Slice 1, Task 4):
- * derselbe Klassifikator, der produktiv Kanten vorschlägt (Haiku + rp-2),
- * über ALLE Fälle des eingefrorenen Golden `relations.v4.json`.
+ * derselbe Klassifikator, der produktiv Kanten vorschlägt (Haiku + rp-4),
+ * über die LLM-Fälle des eingefrorenen Golden `relations.v5.json`.
+ *
+ * THE-529 (Task 6): INTERPRETS ist mechanisch (`derivation: 'mechanical'`) —
+ * der Parser-Pfad im Crawler-Batch erzeugt diese Kanten, nicht das LLM.
+ * Mechanische Wahrheiten werden deshalb NICHT ans LLM gegeben und NICHT in die
+ * F1-Gates gerechnet; der Report weist sie als „mechanical (Parser-Pfad,
+ * THE-529)" aus. Deren Messung ist der Parser-Eval
+ * (interprets-parser-eval.ts), nicht diese Baseline.
  *
  * WARUM DIESES SKRIPT DAS GATE IST: Der Batch (compliance-crawler, Server B)
  * schreibt Kanten-VORSCHLÄGE an den Korpus. Ob diese Vorschläge überhaupt
@@ -11,7 +18,7 @@
  * die Zahl nicht von der Regel trennen kann, gegen die sie gemessen wurde.
  *
  * BYTE-IDENTISCHER PROMPT: System, Rubrik und Template kommen aus
- * @thearchitect/shared (rp-2) — exakt die Quelle, aus der auch der Batch baut.
+ * @thearchitect/shared (rp-4) — exakt die Quelle, aus der auch der Batch baut.
  * Ein zweiter Prompt hier würde etwas anderes messen als das, was produktiv
  * läuft, und die Zahl wäre keine Aussage über den Batch.
  *
@@ -19,8 +26,9 @@
  *  1. Messausfall ≠ Enthaltung. Eine leere Antwort (auch nach den Retries in
  *     withEmptyResponseRetry) ist FEHLENDE DATEN, kein Datenpunkt: sie verlässt
  *     Zähler UND Nenner und wird laut ausgewiesen. Sie darf niemals als 'none'
- *     durchgehen — 'none' ist hier die Negativ-KLASSE (155/175), und ein
- *     Ausfall, der dort landet, schönt genau die Zahl, die das Gate prüft.
+ *     durchgehen — 'none' ist hier die Negativ-KLASSE (der Löwenanteil des
+ *     Golden), und ein Ausfall, der dort landet, schönt genau die Zahl, die
+ *     das Gate prüft.
  *  2. Richtungs-Fehler ≠ Typ-Fehler. „Wer verdrängt wen" IST die Behauptung;
  *     ein vertauschter Pfeil ist ein anderer Defekt als eine falsche Beziehung
  *     und bekommt deshalb einen eigenen Zähler (er zählt trotzdem als Fehler).
@@ -34,12 +42,13 @@
  *
  *   export ANTHROPIC_API_KEY=sk-...
  *   npm run relations:baseline
- *   npm run relations:baseline -- --golden src/evals/golden/relations.v4.json \
+ *   npm run relations:baseline -- --golden src/evals/golden/relations.v5.json \
  *                                 --json reports/the-433-baseline.json
  *
  * Exit-Code 1 bei ABBRUCH — das Gate ist maschinenlesbar, nicht nur lesbar.
  *
- * Linear: THE-433 (Slice 1, Task 4) · Golden: relations.v4 (frozen, 175 Fälle)
+ * Linear: THE-433 (Slice 1, Task 4) · THE-529 (Task 6) · Golden: relations.v5
+ * (frozen, 188 Fälle, davon 16 mechanische INTERPRETS-Wahrheiten)
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,6 +57,7 @@ import {
   RELATIONS_PRELABEL_SYSTEM,
   RELATIONS_PROMPT_VERSION,
   buildRelationsPrompt,
+  isMechanicalRelation,
   parseRelationLabel,
   type RelationDirection,
   type RelationsPromptPair,
@@ -64,13 +74,13 @@ import { loadRelationsGolden } from '../evals/relationsGolden';
 /** Gleiches Budget wie im Prelabel-Lauf, der den Prompt kalibriert hat. */
 const MAX_TOKENS = 200;
 
-/** Das eingefrorene Golden aus THE-517 — 175 adjudizierte Fälle, rp-2. */
+/** Das eingefrorene Golden aus THE-519 — 188 adjudizierte Fälle (v5, 2026-07-26). */
 export const DEFAULT_BASELINE_GOLDEN_PATH = path.join(
   __dirname,
   '..',
   'evals',
   'golden',
-  'relations.v4.json'
+  'relations.v5.json'
 );
 
 // ─── Die VOR der Messung fixierte Erfolgs-/Abbruchregel ──────────
@@ -85,16 +95,22 @@ export const BASELINE_MIN_TYPE_F1 = 0.7;
 export const BASELINE_GATE_MIN_SUPPORT = 10;
 
 /**
- * Wörtlich aus dem Plan-Header (2026-07-25-the-433-relation-extraction.md).
+ * Fixiert VOR der Messung (Ursprung: Plan-Header 2026-07-25-the-433-relation-
+ * extraction.md; angepasst durch THE-529 Task 6: das INTERPRETS-F1-Gate ist
+ * entfallen, weil INTERPRETS mechanisch erkannt wird und das LLM diese Klasse
+ * weder angeboten bekommt noch antworten darf — der Ausweis ersetzt das Gate).
  * Steht im Report, damit Zahl und Regel nie getrennt zitiert werden können.
  */
 export const RELATIONS_BASELINE_SUCCESS_RULE =
   'Erfolgs-/Abbruchregel (VOR der Messung fixiert): Baseline = derselbe Klassifikator ' +
-  '(Haiku + rp-2) über alle 175 frozen-Golden-Fälle. Erfolg: Übereinstimmung mit der ' +
-  'Wahrheit gesamt >= 0,85 UND none-Precision >= 0,90 UND INTERPRETS-F1 >= 0,70 (die ' +
-  'einzige n>=10-Positiv-Klasse) UND 0 metadata-Typ-Vorschläge. Dann bleiben die ' +
-  'Vorschläge im Korpus (suggest-only, dark). Sonst: Vorschläge werden NICHT geschrieben, ' +
-  'Fehleranalyse als dokumentierte Grenze ins Nachweisdokument.';
+  '(Haiku + rp-4) über die LLM-Fälle des frozen Golden relations.v5. INTERPRETS wird ' +
+  'mechanisch erkannt (Parser-Pfad, THE-529) und ist NICHT Teil der LLM-Messung — ' +
+  'seine Verdrahtung misst interprets-parser-eval, seine Wahrheit die Architekten-' +
+  'Adjudikation. Erfolg: Übereinstimmung mit der Wahrheit gesamt >= 0,85 UND ' +
+  'none-Precision >= 0,90 UND F1 >= 0,70 für jede gemessene LLM-Klasse mit n >= 10 ' +
+  'UND 0 metadata-Typ-Vorschläge. Dann bleiben die Vorschläge im Korpus (suggest-only, ' +
+  'dark). Sonst: Vorschläge werden NICHT geschrieben, Fehleranalyse als dokumentierte ' +
+  'Grenze ins Nachweisdokument.';
 
 // ─── Datenmodell ────────────────────────────────────────────────
 
@@ -162,7 +178,13 @@ export interface RelationsBaselineVerdict {
 export interface RelationsBaselineReport {
   promptVersion: string;
   totalCases: number;
-  /** Gemessene Fälle = totalCases − Messausfälle. Nenner aller Quoten. */
+  /**
+   * Mechanische Wahrheiten (THE-529, z. B. INTERPRETS): der Parser-Pfad ist
+   * für sie zuständig — sie verlassen Zähler UND Nenner der LLM-Messung und
+   * werden hier nur AUSGEWIESEN.
+   */
+  mechanical: { count: number; caseIds: string[] };
+  /** Gemessene Fälle = totalCases − mechanical − Messausfälle. Nenner aller Quoten. */
   scored: number;
   measurementFailures: number;
   measurementFailureCaseIds: string[];
@@ -243,12 +265,20 @@ export function scoreRelationsBaseline(
   const measurementFailureCaseIds: string[] = [];
   const metadataProposalCaseIds: string[] = [];
   const directionErrorCaseIds: string[] = [];
+  const mechanicalCaseIds: string[] = [];
   let oovDrops = 0;
 
   // Gemessene Paare (Wahrheit, Vorhersage) — Ausfälle sind hier bereits raus.
   const scoredPairs: Array<{ truth: RelationsBaselineTruth; pred: RelationsBaselinePrediction }> = [];
 
   for (const truth of cases) {
+    // THE-529: mechanische Wahrheiten (Parser-Pfad) sind keine LLM-Messfälle.
+    // Sie verlassen Zähler UND Nenner — eine fehlende Vorhersage ist hier
+    // KEIN Messausfall, sondern die erwartete Arbeitsteilung.
+    if (typeof truth.relation === 'string' && isMechanicalRelation(truth.relation)) {
+      mechanicalCaseIds.push(truth.caseId);
+      continue;
+    }
     const pred = byCase.get(truth.caseId);
     // metadata-Vorschläge zählen IMMER, auch auf einem Fall, der als Messung
     // ausfiel: ein verbotener Typ ist eine Aussage des Modells, kein Datum.
@@ -322,7 +352,10 @@ export function scoreRelationsBaseline(
     .map((relationType) => {
       const m = metricFor(relationType);
       const thin = m.support < BASELINE_GATE_MIN_SUPPORT;
-      return { relationType, ...m, thin, gated: !thin };
+      // Mechanische Klassen können hier nur auftauchen, wenn eine Vorhersage
+      // sie behauptet (Wahrheiten sind oben ausgesteuert; rp-4 droppt sie als
+      // OOV) — sie werden ausgewiesen, aber NIE gegated (THE-529).
+      return { relationType, ...m, thin, gated: !thin && !isMechanicalRelation(relationType) };
     });
 
   // ─── Verdikt gegen die fixierte Regel ───
@@ -350,6 +383,7 @@ export function scoreRelationsBaseline(
   return {
     promptVersion: RELATIONS_PROMPT_VERSION,
     totalCases: cases.length,
+    mechanical: { count: mechanicalCaseIds.length, caseIds: mechanicalCaseIds },
     scored: scoredPairs.length,
     measurementFailures: measurementFailureCaseIds.length,
     measurementFailureCaseIds,
@@ -383,6 +417,10 @@ export function formatRelationsBaselineReport(r: RelationsBaselineReport): strin
   L.push(RELATIONS_BASELINE_SUCCESS_RULE);
   L.push('');
   L.push(`Fälle gesamt:        ${r.totalCases}`);
+  L.push(
+    `mechanical (Parser-Pfad, THE-529): n=${r.mechanical.count} — nicht Teil der LLM-Messung` +
+      (r.mechanical.count > 0 ? `  (${r.mechanical.caseIds.join(', ')})` : '')
+  );
   L.push(`davon gemessen:      ${r.scored}`);
   L.push(
     `Messausfälle:        ${r.measurementFailures}` +
@@ -437,6 +475,18 @@ export function formatRelationsBaselineReport(r: RelationsBaselineReport): strin
 /** Minimaler Fall-Shape, den der Lauf braucht (strukturell = RelationsGoldenCase). */
 export interface RelationsBaselineCase extends RelationsPromptPair {
   caseId: string;
+}
+
+/**
+ * THE-529: Trennt die LLM-Messfälle von den mechanischen. Fälle, deren
+ * WAHRHEIT eine mechanische Klasse ist (INTERPRETS), erreichen das LLM nicht —
+ * der Parser-Pfad ist produktiv für sie zuständig, und ein LLM-Call darauf
+ * würde Geld für eine Klasse ausgeben, die rp-4 gar nicht mehr anbietet.
+ */
+export function selectLlmCases<T extends { relation?: string | null }>(cases: T[]): T[] {
+  return cases.filter(
+    (c) => !(typeof c.relation === 'string' && isMechanicalRelation(c.relation))
+  );
 }
 
 export interface RelationsBaselineRun {
@@ -517,7 +567,11 @@ async function main(): Promise<void> {
     return;
   }
 
-  const cases: RelationsBaselineCase[] = golden.cases.map((c) => ({
+  // THE-529: mechanische Fälle (INTERPRETS) erreichen das LLM nicht — sie
+  // werden nur ausgewiesen. Die Wahrheiten behalten ALLE Fälle; die Trennung
+  // rechnet scoreRelationsBaseline selbst (mechanical verlässt Zähler+Nenner).
+  const llmGoldenCases = selectLlmCases(golden.cases);
+  const cases: RelationsBaselineCase[] = llmGoldenCases.map((c) => ({
     caseId: c.caseId,
     a: c.a,
     b: c.b,
@@ -539,7 +593,7 @@ async function main(): Promise<void> {
 
   const client = createRaterClient(cfg);
   console.log(
-    `[baseline] ${cases.length} Fälle · Golden ${golden.version} · Prompt ${RELATIONS_PROMPT_VERSION} · ${annotatorTag(cfg)}`
+    `[baseline] ${cases.length} LLM-Fälle (+${golden.cases.length - cases.length} mechanical, THE-529) · Golden ${golden.version} · Prompt ${RELATIONS_PROMPT_VERSION} · ${annotatorTag(cfg)}`
   );
 
   const { predictions, inputTokens, outputTokens } = await runRelationsBaseline(

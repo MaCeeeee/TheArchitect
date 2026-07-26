@@ -63,16 +63,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   parseBorrowTemplate,
-  auditInterpretsCandidate,
-  deriveDirection,
+  selectBorrowSentence,
+  identsForSource,
+  isDefinitionTitle,
+  splitSentences,
+  INTERPRETS_VERDICT_RANK,
   normalizeArticleNumber,
   buildRegulationKey,
   SOURCE_TO_FAMILY,
-  LAW_FAMILY_PATTERNS,
   type BorrowSlots,
   type Direction,
   type InterpretsVerdict,
+  type P2Source,
 } from '@thearchitect/shared';
+
+// Re-Export der nach shared gehobenen Hilfsfunktionen (THE-529, Task 1 + Härtung)
+// — die bestehenden Tests (buildInterpretsAudit.test.ts) laufen unverändert gegen
+// diese Re-Exporte, derselbe Beweis der Gleichheit wie beim lawPatterns-Umzug.
+// `isDefinitionTitle` lebt seit der THE-529-Härtung in shared (dritte P2-Quelle),
+// damit Server-Eval und Crawler-Prod byte-gleich dieselbe Überschrift prüfen.
+export { identsForSource, splitSentences, isDefinitionTitle };
 import {
   loadRelationsGolden,
   type RelationsGoldenCase,
@@ -108,8 +118,9 @@ export type AuditBucket = 'a-interprets' | 'b-none-operator' | 'c-pool';
 /** Auto-Verdikt inkl. des Ableitungs-Ausgangs `pair-artifact` (kein Satz gefunden). */
 export type AutoVerdict = InterpretsVerdict;
 
-/** Herkunft des P2-Belegs — transparent im Artefakt ausgewiesen. */
-export type P2Source = 'typed' | 'title' | 'fallback' | null;
+// Die P2-Quelle (`P2Source`, 'typed'|'title'|'fallback'|null) ist seit der
+// THE-529-Härtung die geteilte shared-Ableitung: `auditInterpretsCandidate`
+// weist sie am Ergebnis aus, statt dass der Generator sie selbst rekonstruiert.
 
 export interface AuditCaseResult {
   caseId: string;
@@ -141,76 +152,19 @@ export interface AuditSubset {
   counts: { a: number; b: number; c: number; total: number };
 }
 
-// ─── Ziel-Gesetz-Identifikatoren aus der Musterregistry ─────────────
-//
-// `parseBorrowTemplate`/`auditInterpretsCandidate` brauchen die literalen
-// Verordnungsnummern des Ziel-Gesetzes (z. B. „2016/679"), die im Verweis-Satz
-// auftauchen. Die stehen bereits — als Regex — in `LAW_FAMILY_PATTERNS`; hier
-// werden die reinen Nummern herausgezogen, damit keine zweite, driftende
-// Nummern-Wahrheit entsteht (dieselbe Haltung wie im Task-1-Kopf).
-const IDENT_IN_PATTERN = /(\d{3,4})\\\/(\d+)(?:\\\/E\[GC\])?/g;
-const identCache = new Map<string, string[]>();
-
-export function identsForSource(source: string): string[] {
-  const family = SOURCE_TO_FAMILY[source];
-  if (!family) return [];
-  const cached = identCache.get(family);
-  if (cached) return cached;
-  const out = new Set<string>();
-  for (const pattern of LAW_FAMILY_PATTERNS[family]) {
-    IDENT_IN_PATTERN.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = IDENT_IN_PATTERN.exec(pattern.source)) !== null) {
-      out.add(`${m[1]}/${m[2]}`);
-    }
-  }
-  const idents = [...out];
-  identCache.set(family, idents);
-  return idents;
-}
-
-// ─── Satz-Segmentierung ─────────────────────────────────────────────
-//
-// Dieselbe Satz-Grenzen-Definition wie der Miner (`lawPatterns.ts`,
-// SENTENCE_BOUNDARY_SOURCE): „.“/„;“ + Whitespace + Großbuchstabe/Ziffer/
-// öffnende Klammer, aber KEIN Satzende hinter einer juristischen Abkürzung
-// oder einem Einzelbuchstaben-Kürzel (negativer Lookbehind). Der Miner
-// exportiert die Konstante nicht; sie hier byte-gleich zu spiegeln ist die
-// „Satz-Segmentierung wie im Miner üblich" aus der Task-Spec.
-const SENTENCE_BOUNDARY = String.raw`(?<!\b(?:[A-Za-zÄÖÜäöü]|Art|Artikel|Abs|Nr|Nrn|No|lit|Buchst|Ziff|Ziffer|Nummer|para|pt|Sec|Reg|Dir|vgl|bzw|sog|gem|ggf|ff|resp|cf|EU|EG|EC))[.;]\s+(?=[A-ZÄÖÜ0-9(])`;
-
-export function splitSentences(text: string): string[] {
-  if (!text) return [];
-  const re = new RegExp(SENTENCE_BOUNDARY, 'g');
-  const out: string[] = [];
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const end = m.index + m[0].length;
-    out.push(text.slice(last, end));
-    last = end;
-    if (m.index === re.lastIndex) re.lastIndex++; // Null-Length-Schutz
-  }
-  out.push(text.slice(last));
-  return out.map((s) => s.trim()).filter(Boolean);
-}
-
-// ─── P2-Quelle aus der Überschrift ──────────────────────────────────
-const DEFINITION_TITLE = /\b(?:definition|definitions|definitionen|begriffsbestimmung|begriffsbestimmungen|begriffe)\b/i;
-
-/** Ist die Ziel-Provision laut Überschrift ein Definitions-Ort? */
-export function isDefinitionTitle(title: string | undefined): boolean {
-  return Boolean(title && DEFINITION_TITLE.test(title));
-}
+// `identsForSource` + `splitSentences` + die Satz-Auswahl leben seit THE-529
+// (Task 1) in @thearchitect/shared (lawPatterns.ts bzw. interpretsAudit.ts,
+// `selectBorrowSentence`) — der Crawler-Batch kann keinen Server-Code
+// importieren, und zwei Kopien wären zwei driftende Wahrheiten. Die
+// Satz-Grenzen-Definition ist damit nicht mehr byte-gespiegelt, sondern
+// dieselbe exportierte Funktion wie im Miner.
 
 // ─── Kern: ein Fall durch den Prüfbaum ──────────────────────────────
 
-const VERDICT_RANK: Record<AutoVerdict, number> = {
-  interprets: 3,
-  'policy-A': 2,
-  'none-usage': 1,
-  'pair-artifact': 0,
-};
+// Verdikt-Rangfolge — seit THE-529 die geteilte shared-Konstante (dieselbe
+// Rangfolge wählt in `selectBorrowSentence` den besten Satz UND hier die
+// bessere der beiden Paar-Richtungen).
+const VERDICT_RANK = INTERPRETS_VERDICT_RANK;
 
 interface DerivationHit {
   citingSide: 'a' | 'b';
@@ -227,10 +181,14 @@ interface DerivationHit {
 }
 
 /**
- * Prüft eine Richtung des Paars: `citing` zitiert `target`. Sucht den Satz in
- * `citing.fullText`, der den Ziel-Paar-Artikel des Ziel-Gesetzes nennt, und
- * lässt ihn durch `auditInterpretsCandidate` laufen. Gibt den BESTEN Treffer
- * (höchstes Verdikt) zurück oder `null`, wenn kein Satz den Paar-Artikel nennt.
+ * Prüft eine Richtung des Paars: `citing` zitiert `target`. Die eigentliche
+ * Satz-Auswahl (Segmentierung, Schablonen-Filter, bester Treffer nach
+ * Verdikt-Rang) ist die geteilte shared-Funktion `selectBorrowSentence`
+ * (THE-529, Task 1) — die P2-QUELLEN-Ableitung (typisiert > Überschrift >
+ * fullText-Fallback) lebt seit der Härtung KOMPLETT in
+ * `auditInterpretsCandidate` (dritte P2-Quelle `isDefinitionTitle`). Hier bleibt
+ * nur das Durchreichen der drei P2-Eingaben + das Umlabeln in `DerivationHit`.
+ * `null`, wenn kein Satz den Paar-Artikel nennt.
  */
 function deriveOneDirection(
   citing: AuditSideInput,
@@ -242,52 +200,34 @@ function deriveOneDirection(
   const idents = identsForSource(target.source);
   if (idents.length === 0) return null;
 
-  // P2-Quelle bestimmen (typisiert > Überschrift > fullText-Fallback).
-  let provisionKind: string | undefined;
-  let p2Source: P2Source = null;
-  if (target.provisionKind) {
-    provisionKind = target.provisionKind;
-    p2Source = target.provisionKind === 'definition' ? 'typed' : null;
-  } else if (isDefinitionTitle(target.title)) {
-    provisionKind = 'definition';
-    p2Source = 'title';
-  }
+  // P2-Quelle KOMPLETT in der geteilten shared-Ableitung (typisiert >
+  // Überschrift > fullText-Fallback): `targetProvisionKind` + `targetTitle` +
+  // `targetFullText` durchreichen, `p2Source` vom Ergebnis lesen. Keine eigene
+  // title-Verzweigung mehr — EINE Wahrheit für Server-Eval UND Crawler-Prod.
+  const best = selectBorrowSentence({
+    citingSide,
+    fullText: citing.fullText,
+    pairTargetArticle,
+    targetLawIdents: idents,
+    targetProvisionKind: target.provisionKind, // P2-Quelle 1 (typisiert)
+    targetTitle: target.title, // P2-Quelle 2 (Überschrift) — shared prüft sie
+    targetFullText: target.fullText, // P2-Quelle 3 (fullText-Fallback)
+  });
+  if (!best) return null;
 
-  let best: DerivationHit | null = null;
-  for (const sentence of splitSentences(citing.fullText)) {
-    const probe = parseBorrowTemplate(sentence, idents);
-    // Nur Sätze, die den Ziel-Paar-Artikel des Ziel-Gesetzes wirklich nennen.
-    if (probe.targetArticle !== pairTargetArticle || !probe.targetLawHit) continue;
-
-    const audit = auditInterpretsCandidate({
-      citingSide,
-      citingSentence: sentence,
-      pairTargetArticle,
-      targetLawIdents: idents,
-      targetProvisionKind: provisionKind,
-      targetFullText: target.fullText,
-    });
-    // Wenn P2 über den fullText-Fallback kam (nicht über typed/title), das
-    // im p2Source-Etikett ehrlich machen.
-    const hitP2Source: P2Source = audit.p2 === 'fallback' ? 'fallback' : p2Source;
-    const hit: DerivationHit = {
-      citingSide,
-      citingSentence: sentence,
-      pairTargetArticle,
-      slots: audit.slots,
-      autoVerdict: audit.verdict,
-      direction: audit.direction,
-      p0: audit.p0,
-      p1: audit.p1,
-      p2: audit.p2,
-      p2Source: hitP2Source,
-      reasons: audit.reasons,
-    };
-    if (!best || VERDICT_RANK[hit.autoVerdict] > VERDICT_RANK[best.autoVerdict]) {
-      best = hit;
-    }
-  }
-  return best;
+  return {
+    citingSide,
+    citingSentence: best.sentence,
+    pairTargetArticle,
+    slots: best.slots,
+    autoVerdict: best.verdict,
+    direction: best.direction,
+    p0: best.p0,
+    p1: best.p1,
+    p2: best.p2,
+    p2Source: best.p2Source, // aus der geteilten shared-Ableitung
+    reasons: best.reasons,
+  };
 }
 
 /** P-Pfad-String für das Artefakt aus den drei Knoten + P2-Quelle. */
@@ -857,6 +797,16 @@ export function renderAuditHtml(subset: AuditSubset, opts: { generatedAt?: strin
 
 // ─── JSON-Sidecar ───────────────────────────────────────────────────
 
+/** Paar-Seiten-Identität im Sidecar — genug, damit der v5-Builder (--from-audit)
+ *  die caseId rekonstruieren und die volle PairSide aus dem Pool (--from-file)
+ *  nachschlagen kann, ohne die caseId-Slugs zurückparsen zu müssen. */
+export interface SidecarSideId {
+  regulationKey: string;
+  source: string;
+  paragraphNumber: string;
+  language: 'de' | 'en';
+}
+
 export interface SidecarPerCase {
   autoVerdict: AutoVerdict;
   direction?: Direction;
@@ -865,6 +815,10 @@ export interface SidecarPerCase {
   slots: BorrowSlots;
   pPath: string;
   citingSide?: 'a' | 'b';
+  /** Der geborgte Beleg-Satz (Quelle für golden `evidence.sentence`), wenn gefunden. */
+  citingSentence?: string;
+  a: SidecarSideId;
+  b: SidecarSideId;
   languageTwinOf?: string;
 }
 
@@ -881,6 +835,12 @@ export function buildSidecar(subset: AuditSubset, opts: { frozenAt?: string } = 
   const caseIds = subset.cases.map((c) => c.caseId); // bereits caseId-sortiert
   const perCase: Record<string, SidecarPerCase> = {};
   for (const c of subset.cases) {
+    const sideId = (s: AuditSideInput): SidecarSideId => ({
+      regulationKey: s.regulationKey,
+      source: s.source,
+      paragraphNumber: s.paragraphNumber,
+      language: s.language,
+    });
     perCase[c.caseId] = {
       autoVerdict: c.autoVerdict,
       ...(c.direction ? { direction: c.direction } : {}),
@@ -889,6 +849,9 @@ export function buildSidecar(subset: AuditSubset, opts: { frozenAt?: string } = 
       slots: c.slots,
       pPath: c.pPath,
       ...(c.citingSide ? { citingSide: c.citingSide } : {}),
+      ...(c.citingSentence ? { citingSentence: c.citingSentence } : {}),
+      a: sideId(c.a),
+      b: sideId(c.b),
       ...(c.languageTwinOf ? { languageTwinOf: c.languageTwinOf } : {}),
     };
   }

@@ -46,6 +46,18 @@ export interface RelationCandidateDoc {
   fullText: string;
   language: string;
   versionHash: string;
+  /**
+   * THE-529 (Task 3): Roh-Typing-Auszug aus Mongo (Slice-T-Subdokument) —
+   * Input-Feld; wird beim Kandidaten-Bau zu `provisionKind` destilliert.
+   */
+  typing?: { provisionKind?: string; status?: string };
+  /**
+   * THE-529 (Task 3): P2-Quelle des mechanischen INTERPRETS-Detektors
+   * („Ziel ist ein Definitions-Ort"). Gesetzt NUR am Kandidaten-Ziel und NUR,
+   * wenn das Typing nicht menschlich verworfen ist (status !== 'rejected') —
+   * ein verworfenes Label darf keinen mechanischen Beleg speisen.
+   */
+  provisionKind?: string;
 }
 
 export interface RelationCandidateEvidence {
@@ -151,6 +163,19 @@ export function enumerateRelationCandidates(docs: RelationCandidateDoc[]): Relat
     return (sameLang.length > 0 ? sameLang : items)[0];
   };
 
+  /**
+   * THE-529 (Task 3): provisionKind ans Kandidaten-Ziel destillieren — NUR
+   * wenn das Typing nicht menschlich verworfen ist. `rejected` heißt: das
+   * Label ist als falsch markiert; es darf dann auch nicht als P2-Quelle des
+   * mechanischen INTERPRETS-Detektors (Task 4) dienen. Rein: das Input-Doc
+   * bleibt unangetastet (Kopie nur, wenn tatsächlich etwas zu setzen ist).
+   */
+  const withProvisionKind = (d: RelationCandidateDoc): RelationCandidateDoc => {
+    const t = d.typing;
+    if (!t?.provisionKind || t.status === 'rejected') return d;
+    return { ...d, provisionKind: t.provisionKind };
+  };
+
   for (const citing of sortedDocs) {
     const citingFamily: Family | undefined = SOURCE_TO_FAMILY[citing.source];
 
@@ -211,7 +236,7 @@ export function enumerateRelationCandidates(docs: RelationCandidateDoc[]): Relat
           if (candidateByPair.has(pairKey)) continue; // duplikatfrei — erste Evidence gewinnt
           candidateByPair.set(pairKey, {
             citing,
-            target,
+            target: withProvisionKind(target),
             evidence: { matched: match.matched, articleHints: [...match.articleHints] },
           });
         }

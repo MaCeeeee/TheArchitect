@@ -30,7 +30,7 @@
  * Linear: THE-519
  */
 
-import { normalizeArticleNumber } from './lawPatterns';
+import { normalizeArticleNumber, splitSentences } from './lawPatterns';
 
 /** Zwei Anführungs-Konventionen des Korpus: DE „ … " und EN ‘ … ' (plus gerade). */
 // Unicode-Escapes, damit die geraden Quotes das String-Literal nicht abschließen.
@@ -68,8 +68,30 @@ const CONDITIONAL_OPERATORS: Array<{ re: RegExp; label: string }> = [
  * gefolgt von means/bezeichnet/ist"). Für die schärfere Definiendum-POSITION
  * (Term direkt vor dem Operator, `isDefiniendumLink`) wird `ist` bewusst NICHT
  * verwendet — dort zählen nur die starken Verben means/bezeichnet.
+ *
+ * `bedeutet` (THE-529 Härtung): deutsche Sammel-Definitionen prägen ihre
+ * Begriffe mit „bedeutet" statt „bezeichnet" — z. B. 1025/2012 (Norm-VO)
+ * Art. 2 „‚harmonisierte Norm' bedeutet eine Norm …". Ohne „bedeutet" trüge
+ * ein solcher Satz keinen Definiendum-Kontext, und ein bedingter Operator
+ * („gemäß") würde nicht als Anleihe zählen.
  */
-const DEFINIENS_VERB = /\b(?:means|bezeichnet|ist)\b/i;
+const DEFINIENS_VERB = /\b(?:means|bezeichnet|bedeutet|ist)\b/i;
+
+/**
+ * Definitions-Überschrift (DE + EN): trägt die ZIEL-Provision einen Titel wie
+ * „Begriffsbestimmungen"/„Definitions", IST sie ein Definitions-Ort (P2) — auch
+ * wenn sie nicht getypt ist (fehlender `provisionKind`) und die Sammel-Definition
+ * den Begriff so prägt, dass der Ziel-Text-Fallback ihn nicht fasst (Definiendum
+ * NACH dem Verb: „… bezeichnet der Ausdruck: 1. ‚X' …"). Gehoben aus
+ * build-interprets-audit.ts (THE-529 Härtung), damit Server-Eval und
+ * Crawler-Prod byte-gleich dieselbe dritte P2-Quelle nutzen.
+ */
+const DEFINITION_TITLE = /\b(?:definition|definitions|definitionen|begriffsbestimmung|begriffsbestimmungen|begriffe)\b/i;
+
+/** Ist die Ziel-Provision laut Überschrift ein Definitions-Ort? */
+export function isDefinitionTitle(title: string | undefined): boolean {
+  return Boolean(title && DEFINITION_TITLE.test(title));
+}
 
 /** Max. Distanz (Zeichen) zwischen Definiendum-Ausdruck und Operator. */
 const DEFINIENDUM_WINDOW = 40;
@@ -88,6 +110,17 @@ export interface BorrowSlots {
 export type InterpretsVerdict = 'interprets' | 'none-usage' | 'pair-artifact' | 'policy-A';
 export type Direction = 'a-to-b' | 'b-to-a';
 
+/**
+ * Herkunft des P2-Belegs, damit die Konsumenten den Prüfpfad korrekt labeln
+ * können (Server-Artefakt „(typisiert)/(Überschrift)/(Ziel-Text)", Crawler-
+ * pPath). `null`, wenn P2 nicht (positiv) griff — d. h. vor P2 abgebrochen oder
+ * P2 ✗ (policy-A).
+ *   'typed'    — Ziel-Provision als Definition typisiert (`provisionKind`).
+ *   'title'    — Ziel-Provision trägt eine Definitions-Überschrift.
+ *   'fallback' — Ziel-Text prägt den Begriff selbst („X means/bezeichnet …").
+ */
+export type P2Source = 'typed' | 'title' | 'fallback' | null;
+
 export interface InterpretsAudit {
   slots: BorrowSlots;
   /** P0 — Leih-Operator + Definiendum vorhanden. */
@@ -96,6 +129,8 @@ export interface InterpretsAudit {
   p1: boolean;
   /** P2 — Ziel ist ein Definitions-Ort (true) oder per Fallback belegt. */
   p2: boolean | 'fallback';
+  /** Quelle des P2-Belegs (typed > title > fallback) — `null`, wenn P2 nicht positiv griff. */
+  p2Source: P2Source;
   verdict: InterpretsVerdict;
   /** Berechnete Richtung (fehlt, wenn der Prüfbaum vor P2 abbricht). */
   direction?: Direction;
@@ -109,6 +144,8 @@ export interface InterpretsAuditInput {
   pairTargetArticle: string;
   targetLawIdents: string[];
   targetProvisionKind?: string;
+  /** P2-Quelle „Überschrift": Titel der Ziel-Provision (dritte P2-Quelle). */
+  targetTitle?: string;
   targetFullText?: string;
 }
 
@@ -266,7 +303,7 @@ export function auditInterpretsCandidate(input: InterpretsAuditInput): Interpret
   if (!p0) {
     const missing = !slots.operator && !slots.term ? 'weder Leih-Operator noch Definiendum' : !slots.operator ? 'kein Leih-Operator' : 'kein Definiendum (geborgter Begriff)';
     reasons.push(`P0 negativ: ${missing} im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.`);
-    return { slots, p0: false, p1: false, p2: false, verdict: 'none-usage', reasons };
+    return { slots, p0: false, p1: false, p2: false, p2Source: null, verdict: 'none-usage', reasons };
   }
   reasons.push(`P0 positiv: Leih-Operator „${slots.operator}" auf das Definiendum „${slots.term}".`);
 
@@ -278,18 +315,38 @@ export function auditInterpretsCandidate(input: InterpretsAuditInput): Interpret
         `${slots.targetLawHit ? ` (gefunden: Artikel ${slots.targetArticle ?? '—'} zu ${slots.targetLawHit})` : ' (kein Ziel-Gesetz im Satz)'}` +
         ` — das Paar ist ein Mining-Artefakt, kein Label.`,
     );
-    return { slots, p0: true, p1: false, p2: false, verdict: 'pair-artifact', reasons };
+    return { slots, p0: true, p1: false, p2: false, p2Source: null, verdict: 'pair-artifact', reasons };
   }
   reasons.push(`P1 positiv: Verweis auf Artikel ${slots.targetArticle} des Ziel-Gesetzes (${slots.targetLawHit}).`);
 
   // ── P2: Ziel ist ein Definitions-Ort ────────────────────────────────
+  // P2-Reihenfolge (erste zutreffende gewinnt):
+  //   1. targetProvisionKind === 'definition'  → typed
+  //   2. isDefinitionTitle(targetTitle)        → title   (dritte Quelle, THE-529 Härtung)
+  //   3. targetFullText && definiendumInText    → fallback
+  // Die Überschrift-Quelle fängt die deutschen Sammel-Definitionen (DSGVO/
+  // Data-Act „personenbezogene Daten", KI-VO „harmonisierte Norm"), deren
+  // Ziel-Text den Begriff NACH dem Verb prägt und die der fullText-Fallback
+  // deshalb nicht fasst — bislang hingen sie in Prod allein am Typing.
   let p2: boolean | 'fallback' = false;
+  let p2Source: P2Source = null;
   if (input.targetProvisionKind === 'definition') {
     p2 = true;
+    p2Source = 'typed';
     reasons.push('P2 positiv: Ziel-Provision ist als Definition typisiert.');
+  } else if (!input.targetProvisionKind && isDefinitionTitle(input.targetTitle)) {
+    // Überschrift-P2 NUR als Sicherheitsnetz für UNTYPISIERTE Provisionen: ein
+    // getyptes `provisionKind` (auch ≠ 'definition') hat Vorrang, sonst würde ein
+    // Sach-Artikel mit definitions-artigem Titel (z. B. MDR Art. 3 „Änderung
+    // bestimmter Begriffsbestimmungen", typisiert 'procedural') fälschlich P2 ✓.
+    // Das entspricht der alten Server-Reihenfolge (Typing schlägt Überschrift).
+    p2 = true;
+    p2Source = 'title';
+    reasons.push(`P2 positiv: Ziel-Provision trägt eine Definitions-Überschrift („${input.targetTitle}").`);
   } else if (input.targetFullText && slots.term && definiendumInText(slots.term, input.targetFullText)) {
     p2 = 'fallback';
-    reasons.push(`P2 (fallback): kein provisionKind, aber der Ziel-Text prägt „${slots.term}" als definierten Ausdruck.`);
+    p2Source = 'fallback';
+    reasons.push(`P2 (fallback): kein provisionKind/keine Definitions-Überschrift, aber der Ziel-Text prägt „${slots.term}" als definierten Ausdruck.`);
   } else {
     reasons.push('P2 negativ: Ziel-Provision ist kein Definitions-Ort (geprägter Begriff über einen Sach-Artikel).');
   }
@@ -298,13 +355,103 @@ export function auditInterpretsCandidate(input: InterpretsAuditInput): Interpret
 
   if (p2 === true || p2 === 'fallback') {
     reasons.push(`Verdikt interprets — Richtung berechnet: ${direction} (vom Definierer weg).`);
-    return { slots, p0: true, p1: true, p2, verdict: 'interprets', direction, reasons };
+    return { slots, p0: true, p1: true, p2, p2Source, verdict: 'interprets', direction, reasons };
   }
 
   // P0 ✓ ∧ P1 ✓ ∧ P2 ✗ → policy-A: Klasse bleibt offen bis Architekten-Regel A.
   // Richtung dennoch berechnen und mitgeben (falls Regel A „interprets" sagt).
   reasons.push(`Verdikt policy-A (offen bis Architekten-Regel A) — Richtung berechnet: ${direction}.`);
-  return { slots, p0: true, p1: true, p2: false, verdict: 'policy-A', direction, reasons };
+  return { slots, p0: true, p1: true, p2: false, p2Source: null, verdict: 'policy-A', direction, reasons };
+}
+
+// ── Satz-Auswahl (THE-529, Task 1 — gehoben aus build-interprets-audit.ts) ──
+
+/**
+ * Verdikt-Rangfolge für die Auswahl des BESTEN Borrow-Satzes (höher gewinnt).
+ * Exportiert, damit Server-Eval und Crawler-Batch dieselbe Rangfolge nutzen —
+ * auch für die Wahl zwischen den beiden Richtungen eines Paars.
+ */
+export const INTERPRETS_VERDICT_RANK: Record<InterpretsVerdict, number> = {
+  interprets: 3,
+  'policy-A': 2,
+  'none-usage': 1,
+  'pair-artifact': 0,
+};
+
+export interface SelectBorrowSentenceInput {
+  /** Welche Paar-Seite zitiert — Grundlage der berechneten Richtung. */
+  citingSide: 'a' | 'b';
+  /** Volltext der ZITIERENDEN Provision (wird hier satz-segmentiert). */
+  fullText: string;
+  /** Normalisierter Paar-Ziel-Artikel, den der Verweis-Satz nennen muss. */
+  pairTargetArticle: string;
+  /** Literale Ziel-Gesetz-Identifikatoren (identsForSource). */
+  targetLawIdents: string[];
+  /** P2-Quelle: Typisierung der Ziel-Provision (falls vorhanden). */
+  targetProvisionKind?: string;
+  /** P2-Quelle „Überschrift": Titel der Ziel-Provision (dritte P2-Quelle). */
+  targetTitle?: string;
+  /** P2-Fallback: Volltext der Ziel-Provision. */
+  targetFullText?: string;
+}
+
+/** Der gewählte Borrow-Satz samt vollständigem Audit-Ergebnis. */
+export interface BorrowSentenceHit {
+  sentence: string;
+  slots: BorrowSlots;
+  verdict: InterpretsVerdict;
+  direction?: Direction;
+  p0: boolean;
+  p1: boolean;
+  p2: boolean | 'fallback';
+  /** Quelle des P2-Belegs (typed > title > fallback) — für den Prüfpfad-Label. */
+  p2Source: P2Source;
+  reasons: string[];
+}
+
+/**
+ * Wählt aus dem Volltext der zitierenden Provision den besten Borrow-Satz:
+ * satz-segmentieren, je Satz die Schablone parsen, nur Sätze behalten, die den
+ * Paar-Ziel-Artikel des Ziel-Gesetzes wirklich nennen, jeden Kandidaten durch
+ * `auditInterpretsCandidate` laufen lassen und den Treffer mit dem höchsten
+ * Verdikt zurückgeben. Rein und deterministisch — Server-Eval
+ * (build-interprets-audit.ts) und Crawler-Batch nutzen exakt dieselbe Auswahl.
+ * `undefined`, wenn kein Satz den Paar-Artikel nennt (→ pair-artifact beim
+ * Aufrufer). Gehoben aus build-interprets-audit.ts (THE-529, Task 1),
+ * Verhalten byte-identisch zum Server-Original.
+ */
+export function selectBorrowSentence(input: SelectBorrowSentenceInput): BorrowSentenceHit | undefined {
+  let best: BorrowSentenceHit | undefined;
+  for (const sentence of splitSentences(input.fullText)) {
+    const probe = parseBorrowTemplate(sentence, input.targetLawIdents);
+    // Nur Sätze, die den Ziel-Paar-Artikel des Ziel-Gesetzes wirklich nennen.
+    if (probe.targetArticle !== input.pairTargetArticle || !probe.targetLawHit) continue;
+
+    const audit = auditInterpretsCandidate({
+      citingSide: input.citingSide,
+      citingSentence: sentence,
+      pairTargetArticle: input.pairTargetArticle,
+      targetLawIdents: input.targetLawIdents,
+      targetProvisionKind: input.targetProvisionKind,
+      targetTitle: input.targetTitle,
+      targetFullText: input.targetFullText,
+    });
+    const hit: BorrowSentenceHit = {
+      sentence,
+      slots: audit.slots,
+      verdict: audit.verdict,
+      direction: audit.direction,
+      p0: audit.p0,
+      p1: audit.p1,
+      p2: audit.p2,
+      p2Source: audit.p2Source,
+      reasons: audit.reasons,
+    };
+    if (!best || INTERPRETS_VERDICT_RANK[hit.verdict] > INTERPRETS_VERDICT_RANK[best.verdict]) {
+      best = hit;
+    }
+  }
+  return best;
 }
 
 /**

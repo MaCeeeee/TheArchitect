@@ -1,18 +1,24 @@
 {
   "generatedFrom": "relations.v4.json",
-  "frozenAt": "2026-07-26T07:03:38.325Z",
+  "frozenAt": "2026-07-26T08:14:16.923Z",
   "caseIds": [
     "ai-act-de-art-3__dsgvo-art-4",
     "ai-act-de-art-3__dsgvo-art-9",
+    "ai-act-de-art-3__standardisation-de-art-2",
     "ai-act-en-art-3__dsgvo-en-art-4",
+    "ai-act-en-art-3__standardisation-en-art-2",
     "cra-en-art-16__nis2-art-12",
     "cra-en-art-3__dsgvo-en-art-4",
     "cra-en-art-3__nis2-art-12",
     "cra-en-art-3__nis2-art-6",
+    "cra-en-art-3__standardisation-en-art-2",
     "cra-en-art-57__nis2-art-3",
     "cra-en-art-8__nis2-art-3",
     "data-act-de-art-2__dsgvo-art-4",
     "data-act-en-art-2__dsgvo-en-art-4",
+    "data-act-en-art-2__standardisation-en-art-2",
+    "dora-art-3__emoney-en-art-2",
+    "dora-art-3__emoney-en-art-9",
     "dora-art-3__nis2-art-6",
     "dora-art-3__psd2-en-art-4",
     "dora-de-art-3__psd2-de-art-32",
@@ -22,13 +28,15 @@
     "dsgvo-art-4__nis2-de-art-35",
     "dsgvo-art-55__nis2-de-art-35",
     "dsgvo-art-58__nis2-de-art-35",
-    "eidas-en-art-3__nis2-art-6"
+    "eidas-en-art-3__nis2-art-6",
+    "mdr-en-art-2__standardisation-en-art-2",
+    "nis2-art-6__standardisation-en-art-2"
   ],
   "counts": {
     "a": 10,
     "b": 5,
-    "c": 6,
-    "total": 21
+    "c": 14,
+    "total": 29
   },
   "perCase": {
     "ai-act-de-art-3__dsgvo-art-4": {
@@ -43,7 +51,20 @@
         "targetArticle": "4"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "50. „personenbezogene Daten“ personenbezogene Daten im Sinne von Artikel 4 Nummer 1 der Verordnung (EU) 2016/679;",
+      "a": {
+        "regulationKey": "ai-act-de:art-3",
+        "source": "ai-act-de",
+        "paragraphNumber": "Art. 3",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "dsgvo:art-4",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 4",
+        "language": "de"
+      }
     },
     "ai-act-de-art-3__dsgvo-art-9": {
       "autoVerdict": "none-usage",
@@ -54,7 +75,46 @@
         "targetArticle": "9"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "37. „besondere Kategorien personenbezogener Daten“ die in Artikel 9 Absatz 1der Verordnung (EU) 2016/679, Artikel 10 der Richtlinie (EU) 2016/680 und Artikel 10 Absatz 1 der Verordnung (EU) 2018/1725 aufgeführten Kategorien personenbezogener Daten;",
+      "a": {
+        "regulationKey": "ai-act-de:art-3",
+        "source": "ai-act-de",
+        "paragraphNumber": "Art. 3",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "dsgvo:art-9",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 9",
+        "language": "de"
+      }
+    },
+    "ai-act-de-art-3__standardisation-de-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "im Sinne",
+        "term": "harmonisierte Norm",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "27. „harmonisierte Norm“ bezeichnet eine harmonisierte Norm im Sinne des Artikels 2 Absatz 1 Buchstabe c der Verordnung (EU) Nr. 1025/2012;",
+      "a": {
+        "regulationKey": "ai-act-de:art-3",
+        "source": "ai-act-de",
+        "paragraphNumber": "Art. 3",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "standardisation-de:art-2",
+        "source": "standardisation-de",
+        "paragraphNumber": "Art. 2",
+        "language": "de"
+      }
     },
     "ai-act-en-art-3__dsgvo-en-art-4": {
       "autoVerdict": "interprets",
@@ -68,7 +128,47 @@
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
       "citingSide": "a",
+      "citingSentence": "(50) ‘personal data’ means personal data as defined in Article 4, point (1), of Regulation (EU) 2016/679;",
+      "a": {
+        "regulationKey": "ai-act-en:art-3",
+        "source": "ai-act-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "dsgvo-en:art-4",
+        "source": "dsgvo-en",
+        "paragraphNumber": "Art. 4",
+        "language": "en"
+      },
       "languageTwinOf": "ai-act-de-art-3__dsgvo-art-4"
+    },
+    "ai-act-en-art-3__standardisation-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "harmonised standard",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(27) ‘harmonised standard’ means a harmonised standard as defined in Article 2(1), point (c), of Regulation (EU) No 1025/2012;",
+      "a": {
+        "regulationKey": "ai-act-en:art-3",
+        "source": "ai-act-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "standardisation-en:art-2",
+        "source": "standardisation-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      },
+      "languageTwinOf": "ai-act-de-art-3__standardisation-de-art-2"
     },
     "cra-en-art-16__nis2-art-12": {
       "autoVerdict": "none-usage",
@@ -80,7 +180,20 @@
         "targetArticle": "12"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "In exceptional circumstances and, in particular, upon request by the manufacturer and in light of the level of sensitivity of the notified information as indicated by the manufacturer under Article 14(2), point (a), of this Regulation, the dissemination of the notification may be delayed based on justified cybersecurity-related grounds for a period of time that is strictly necessary, including where a vulnerability is subject to a coordinated vulnerability disclosure procedure as referred to in Article 12(1) of Directive (EU) 2022/2555.",
+      "a": {
+        "regulationKey": "cra-en:art-16",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 16",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-12",
+        "source": "nis2",
+        "paragraphNumber": "Art. 12",
+        "language": "en"
+      }
     },
     "cra-en-art-3__dsgvo-en-art-4": {
       "autoVerdict": "interprets",
@@ -93,7 +206,20 @@
         "targetArticle": "4"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(47) ‘personal data’ means personal data as defined in Article 4, point (1), of Regulation (EU) 2016/679;",
+      "a": {
+        "regulationKey": "cra-en:art-3",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "dsgvo-en:art-4",
+        "source": "dsgvo-en",
+        "paragraphNumber": "Art. 4",
+        "language": "en"
+      }
     },
     "cra-en-art-3__nis2-art-12": {
       "autoVerdict": "none-usage",
@@ -105,7 +231,20 @@
         "targetArticle": "12"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(51) ‘CSIRT designated as coordinator’ means a CSIRT designated as coordinator pursuant to Article 12(1) of Directive (EU) 2022/2555.",
+      "a": {
+        "regulationKey": "cra-en:art-3",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-12",
+        "source": "nis2",
+        "paragraphNumber": "Art. 12",
+        "language": "en"
+      }
     },
     "cra-en-art-3__nis2-art-6": {
       "autoVerdict": "interprets",
@@ -119,7 +258,46 @@
         "targetArticle": "6"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(43) ‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;",
+      "a": {
+        "regulationKey": "cra-en:art-3",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-6",
+        "source": "nis2",
+        "paragraphNumber": "Art. 6",
+        "language": "en"
+      }
+    },
+    "cra-en-art-3__standardisation-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "international standard",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(34) ‘international standard’ means an international standard as defined in Article 2, point (1)(a), of Regulation (EU) No 1025/2012;",
+      "a": {
+        "regulationKey": "cra-en:art-3",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "standardisation-en:art-2",
+        "source": "standardisation-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      }
     },
     "cra-en-art-57__nis2-art-3": {
       "autoVerdict": "none-usage",
@@ -131,7 +309,20 @@
         "targetArticle": "3"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(c) the availability, authenticity, integrity or confidentiality of services offered using an electronic information system by essential entities as referred to in Article 3(1) of Directive (EU) 2022/2555; or (d) other aspects of public interest protection.",
+      "a": {
+        "regulationKey": "cra-en:art-57",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 57",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-3",
+        "source": "nis2",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      }
     },
     "cra-en-art-8__nis2-art-3": {
       "autoVerdict": "none-usage",
@@ -143,7 +334,20 @@
         "targetArticle": "3"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "Those delegated acts shall specify the required assurance level that shall be proportionate to the level of cybersecurity risk associated with the products with digital elements and shall take account of their intended purpose, including the critical dependency on them by essential entities as referred to in Article 3(1) of Directive (EU) 2022/2555.",
+      "a": {
+        "regulationKey": "cra-en:art-8",
+        "source": "cra-en",
+        "paragraphNumber": "Art. 8",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-3",
+        "source": "nis2",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      }
     },
     "data-act-de-art-2__dsgvo-art-4": {
       "autoVerdict": "interprets",
@@ -157,7 +361,20 @@
         "targetArticle": "4"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "3. „personenbezogene Daten“ personenbezogene Daten im Sinne des Artikels 4 Nummer 1 der Verordnung (EU) 2016/679;",
+      "a": {
+        "regulationKey": "data-act-de:art-2",
+        "source": "data-act-de",
+        "paragraphNumber": "Art. 2",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "dsgvo:art-4",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 4",
+        "language": "de"
+      }
     },
     "data-act-en-art-2__dsgvo-en-art-4": {
       "autoVerdict": "interprets",
@@ -171,7 +388,98 @@
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
       "citingSide": "a",
+      "citingSentence": "(3) ‘personal data’ means personal data as defined in Article 4, point (1), of Regulation (EU) 2016/679;",
+      "a": {
+        "regulationKey": "data-act-en:art-2",
+        "source": "data-act-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "dsgvo-en:art-4",
+        "source": "dsgvo-en",
+        "paragraphNumber": "Art. 4",
+        "language": "en"
+      },
       "languageTwinOf": "data-act-de-art-2__dsgvo-art-4"
+    },
+    "data-act-en-art-2__standardisation-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "harmonised standard",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(43) ‘harmonised standard’ means a harmonised standard as defined in Article 2, point (1)(c), of Regulation (EU) No 1025/2012.",
+      "a": {
+        "regulationKey": "data-act-en:art-2",
+        "source": "data-act-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "standardisation-en:art-2",
+        "source": "standardisation-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      }
+    },
+    "dora-art-3__emoney-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "electronic money institution",
+        "targetLawHit": "2009/110",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(38) ‘electronic money institution’ means an electronic money institution as defined in Article 2, point (1), of Directive 2009/110/EC of the European Parliament and of the Council;",
+      "a": {
+        "regulationKey": "dora:art-3",
+        "source": "dora",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "emoney-en:art-2",
+        "source": "emoney-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      }
+    },
+    "dora-art-3__emoney-en-art-9": {
+      "autoVerdict": "policy-A",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "central counterparty",
+        "targetLawHit": "2009/110",
+        "targetArticle": "9"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✗",
+      "citingSide": "a",
+      "citingSentence": "(39) ‘electronic money institution exempted pursuant to Directive 2009/110/EC’ means an electronic money institution benefitting from a waiver as referred to in Article 9(1) of Directive 2009/110/EC; (40) ‘central counterparty’ means a central counterparty as defined in Article 2, point (1), of Regulation (EU) No 648/2012;",
+      "a": {
+        "regulationKey": "dora:art-3",
+        "source": "dora",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "emoney-en:art-9",
+        "source": "emoney-en",
+        "paragraphNumber": "Art. 9",
+        "language": "en"
+      }
     },
     "dora-art-3__nis2-art-6": {
       "autoVerdict": "interprets",
@@ -184,7 +492,20 @@
         "targetArticle": "6"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(2) ‘network and information system’ means a network and information system as defined in Article 6, point 1, of Directive (EU) 2022/2555;",
+      "a": {
+        "regulationKey": "dora:art-3",
+        "source": "dora",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-6",
+        "source": "nis2",
+        "paragraphNumber": "Art. 6",
+        "language": "en"
+      }
     },
     "dora-art-3__psd2-en-art-4": {
       "autoVerdict": "interprets",
@@ -197,7 +518,20 @@
         "targetArticle": "4"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "(35) ‘payment institution’ means a payment institution as defined in Article 4, point (4), of Directive (EU) 2015/2366;",
+      "a": {
+        "regulationKey": "dora:art-3",
+        "source": "dora",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "psd2-en:art-4",
+        "source": "psd2-en",
+        "paragraphNumber": "Art. 4",
+        "language": "en"
+      }
     },
     "dora-de-art-3__psd2-de-art-32": {
       "autoVerdict": "none-usage",
@@ -208,7 +542,20 @@
         "targetArticle": "32"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "36. „nach der Richtlinie (EU) 2015/2366 ausgenommenes Zahlungsinstitut“ ein Zahlungsinstitut, für das eine Ausnahme nach Artikel 32 Absatz 1 der Richtlinie (EU) 2015/2366 gilt;",
+      "a": {
+        "regulationKey": "dora-de:art-3",
+        "source": "dora-de",
+        "paragraphNumber": "Art. 3",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "psd2-de:art-32",
+        "source": "psd2-de",
+        "paragraphNumber": "Art. 32",
+        "language": "de"
+      }
     },
     "dora-de-art-3__psd2-de-art-33": {
       "autoVerdict": "none-usage",
@@ -220,14 +567,39 @@
         "targetArticle": "33"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "37. „Kontoinformationsdienstleister“ einen Kontoinformationsdienstleister im Sinne von Artikel 33 Absatz 1 der Richtlinie (EU) 2015/2366;",
+      "a": {
+        "regulationKey": "dora-de:art-3",
+        "source": "dora-de",
+        "paragraphNumber": "Art. 3",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "psd2-de:art-33",
+        "source": "psd2-de",
+        "paragraphNumber": "Art. 33",
+        "language": "de"
+      }
     },
     "dora-de-art-46__psd2-de-art-22": {
       "autoVerdict": "pair-artifact",
       "bucket": "b-none-operator",
       "v4Label": null,
       "slots": {},
-      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden"
+      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden",
+      "a": {
+        "regulationKey": "dora-de:art-46",
+        "source": "dora-de",
+        "paragraphNumber": "Art. 46",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "psd2-de:art-22",
+        "source": "psd2-de",
+        "paragraphNumber": "Art. 22",
+        "language": "de"
+      }
     },
     "dora-de-art-46__psd2-de-art-33": {
       "autoVerdict": "none-usage",
@@ -239,7 +611,20 @@
         "targetArticle": "33"
       },
       "pPath": "P0 ✗",
-      "citingSide": "a"
+      "citingSide": "a",
+      "citingSentence": "Unbeschadet der Bestimmungen über den Überwachungsrahmen für kritische IKT-Drittdienstleister gemäß Kapitel V Abschnitt II dieser Verordnung wird die Einhaltung dieser Verordnung durch die folgenden zuständigen Behörden im Einklang mit den durch die jeweiligen Rechtsakte übertragenen Befugnissen sichergestellt: a) bei Kreditinstituten sowie bei nach der Richtlinie 2013/36/EU ausgenommenen Instituten durch die gemäß Artikel 4 der genannten Richtlinie benannte zuständige Behörde und bei gemäß Artikel 6 Absatz 4 der Verordnung (EU) Nr. 1024/2013 als bedeutend eingestuften Kreditinstituten durch die EZB im Einklang mit den mittels der genannten Verordnung übertragenen Befugnissen und Aufgaben; b) bei Zahlungsinstituten, einschließlich der nach der Richtlinie (EU) 2015/2366 ausgenommenen Zahlungsinstitute, bei E-Geld-Instituten, einschließlich der nach der Richtlinie 2009/110/EG ausgenommenen Institute, und bei den in Artikel 33 Absatz 1 der Richtlinie (EU) 2015/2366 genannten Kontoinformationsdienstleistern durch die gemäß Artikel 22 der Richtlinie (EU) 2015/2366 benannte zuständige Behörde; c) bei Wertpapierfirmen durch die gemäß Artikel 4 der Richtlinie (EU) 2019/2034 des Europäischen Parlaments und des Rates [(38)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntr38-L_2022333DE.01000101-E0038) benannte zuständige Behörde; d) bei gemäß der Verordnung über Märkte von Krypto-Werten zugelassenen Anbietern von Krypto-Dienstleistungen und Emittenten von an Vermögenswerte geknüpften Tokens durch die gemäß der entsprechenden Bestimmung der genannten Verordnung benannte zuständige Behörde; e) bei Zentralverwahrern durch die gemäß Artikel 11 der Verordnung (EU) Nr. 909/2014 benannte zuständige Behörde; f) bei zentralen Gegenparteien durch die gemäß Artikel 22 der Verordnung (EU) Nr. 648/2012 benannte zuständige Behörde; g) bei Handelsplätzen und Datenbereitstellungsdiensten durch die gemäß Artikel 67 der Richtlinie 2014/65/EU benannte zuständige Behörde und die zuständige Behörde im Sinne von Artikel 2 Absatz 1 Nummer 18 der Verordnung (EU) Nr. 600/2014; h) bei Transaktionsregistern durch die gemäß Artikel 22 der Verordnung (EU) Nr. 648/2012 benannte zuständige Behörde; i) bei Verwaltern alternativer Investmentfonds durch die gemäß Artikel 44 der Richtlinie 2011/61/EU benannte zuständige Behörde; j) bei Verwaltungsgesellschaften durch die gemäß Artikel 97 der Richtlinie 2009/65/EG benannte zuständige Behörde; k) bei Versicherungs- und Rückversicherungsunternehmen durch die gemäß Artikel 30 der Richtlinie 2009/138/EG benannte zuständige Behörde; l) bei Versicherungsvermittlern, Rückversicherungsvermittlern und Versicherungsvermittlern in Nebentätigkeit durch die gemäß Artikel 12 der Richtlinie (EU) 2016/97 benannte zuständige Behörde; m) bei Einrichtungen der betrieblichen Altersversorgung durch die gemäß Artikel 47 der Richtlinie (EU) 2016/2341 benannte zuständige Behörde; n) bei Ratingagenturen durch die gemäß Artikel 21 der Verordnung (EG) Nr. 1060/2009 benannte zuständige Behörde; o) bei Administratoren kritischer Referenzwerte durch die gemäß den Artikeln 40 und 41 der Verordnung (EU) 2016/1011 benannte zuständige Behörde; p) bei Schwarmfinanzierungsdienstleistern durch die gemäß Artikel 29 der Verordnung (EU) 2020/1503 benannte zuständige Behörde; q) bei Verbriefungsregistern durch die gemäß Artikel 10 und Artikel 14 Absatz 1 der Verordnung (EU) 2017/2402 benannte zuständige Behörde.",
+      "a": {
+        "regulationKey": "dora-de:art-46",
+        "source": "dora-de",
+        "paragraphNumber": "Art. 46",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "psd2-de:art-33",
+        "source": "psd2-de",
+        "paragraphNumber": "Art. 33",
+        "language": "de"
+      }
     },
     "dsgvo-art-4__nis2-de-art-35": {
       "autoVerdict": "none-usage",
@@ -251,7 +636,20 @@
         "targetArticle": "4"
       },
       "pPath": "P0 ✗",
-      "citingSide": "b"
+      "citingSide": "b",
+      "citingSentence": "(1) Stellen die zuständigen Behörden im Zuge der Beaufsichtigung oder Durchsetzung fest, dass der Verstoß einer wesentlichen oder wichtigen Einrichtung gegen die in den Artikeln 21 und 23 der vorliegenden Richtlinie festgelegten Verpflichtungen eine Verletzung des Schutzes personenbezogener Daten im Sinne von Artikel 4 Nummer 12 der Verordnung (EU) 2016/679 zur Folge haben kann, die gemäß Artikel 33 der genannten Verordnung zu melden ist, unterrichten sie unverzüglich die in Artikel 55 oder 56 jener Verordnung genannten Aufsichtsbehörden.",
+      "a": {
+        "regulationKey": "dsgvo:art-4",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 4",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "nis2-de:art-35",
+        "source": "nis2-de",
+        "paragraphNumber": "Art. 35",
+        "language": "de"
+      }
     },
     "dsgvo-art-55__nis2-de-art-35": {
       "autoVerdict": "none-usage",
@@ -263,14 +661,39 @@
         "targetArticle": "55"
       },
       "pPath": "P0 ✗",
-      "citingSide": "b"
+      "citingSide": "b",
+      "citingSentence": "(2) Verhängen die in Artikel 55 oder 56 der Verordnung (EU) 2016/679 genannten Aufsichtsbehörden gemäß Artikel 58 Absatz 2 Buchstabe i der genannten Verordnung eine Geldbuße, so dürfen die zuständigen Behörden für einen Verstoß im Sinne von Absatz 1 des vorliegenden Artikels, der sich aus demselben Verhalten ergibt wie jener Verstoß, der Gegenstand der Geldbuße nach Artikel 58 Absatz 2 Buchstabe i der Verordnung (EU) 2016/679 war, keine Geldbuße nach Artikel 34 der vorliegenden Richtlinie verhängen.",
+      "a": {
+        "regulationKey": "dsgvo:art-55",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 55",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "nis2-de:art-35",
+        "source": "nis2-de",
+        "paragraphNumber": "Art. 35",
+        "language": "de"
+      }
     },
     "dsgvo-art-58__nis2-de-art-35": {
       "autoVerdict": "pair-artifact",
       "bucket": "b-none-operator",
       "v4Label": null,
       "slots": {},
-      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden"
+      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden",
+      "a": {
+        "regulationKey": "dsgvo:art-58",
+        "source": "dsgvo",
+        "paragraphNumber": "Art. 58",
+        "language": "de"
+      },
+      "b": {
+        "regulationKey": "nis2-de:art-35",
+        "source": "nis2-de",
+        "paragraphNumber": "Art. 35",
+        "language": "de"
+      }
     },
     "eidas-en-art-3__nis2-art-6": {
       "autoVerdict": "interprets",
@@ -283,7 +706,72 @@
         "targetArticle": "3"
       },
       "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
-      "citingSide": "b"
+      "citingSide": "b",
+      "citingSentence": "(24) ‘trust service’ means a trust service as defined in Article 3, point (16), of Regulation (EU) No 910/2014;",
+      "a": {
+        "regulationKey": "eidas-en:art-3",
+        "source": "eidas-en",
+        "paragraphNumber": "Art. 3",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "nis2:art-6",
+        "source": "nis2",
+        "paragraphNumber": "Art. 6",
+        "language": "en"
+      }
+    },
+    "mdr-en-art-2__standardisation-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "harmonised standard",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(70) ‘harmonised standard’ means a European standard as defined in point (1)(c) of Article 2 of Regulation (EU) No 1025/2012;",
+      "a": {
+        "regulationKey": "mdr-en:art-2",
+        "source": "mdr-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "standardisation-en:art-2",
+        "source": "standardisation-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      }
+    },
+    "nis2-art-6__standardisation-en-art-2": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "standard",
+        "targetLawHit": "1025/2012",
+        "targetArticle": "2"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "citingSentence": "(16) ‘standard’ means a standard as defined in Article 2, point (1), of Regulation (EU) No 1025/2012 of the European Parliament and of the Council [(29)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#ntr29-L_2022333EN.01008001-E0029);",
+      "a": {
+        "regulationKey": "nis2:art-6",
+        "source": "nis2",
+        "paragraphNumber": "Art. 6",
+        "language": "en"
+      },
+      "b": {
+        "regulationKey": "standardisation-en:art-2",
+        "source": "standardisation-en",
+        "paragraphNumber": "Art. 2",
+        "language": "en"
+      }
     }
   }
 }
