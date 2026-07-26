@@ -273,6 +273,59 @@ describe('referencesLaw', () => {
     expect(referencesLaw('Verordnung (EU) 2016/679', 'does-not-exist')).toHaveLength(0);
   });
 
+  // ─── THE-519: Satz-Grenzen-Regel für Pinpoints ───────────────────────
+  //
+  // Das Pinpoint-Fenster (PINPOINT_WINDOW / ANAPHORIC_WINDOW) darf NICHT über
+  // eine Satzgrenze greifen. Ein „Artikel N" im NACHBARSATZ gehört nicht zum
+  // Verweis-Satz — sonst behauptet der Miner ein Paar, das der Verweis-Satz
+  // gar nicht trägt. Genau so entstand das Golden-Artefakt dsgvo-4↔nis2-35.
+  it('does not pull an article number from the PRECEDING sentence into the citation window', () => {
+    // Satz 1 nennt „Artikel 35" ganz ohne Gesetzes-Bezug; erst Satz 2 zitiert
+    // NIS2 — mit dem satz-eigenen Pinpoint „Artikel 5". Das Fenster reichte vor
+    // dem Fix über den Satzabschluss und zog „35" mit.
+    const hits = referencesLaw(
+      'Die zuständige Behörde nach Artikel 35 handelt unverzüglich. Ein Verstoß nach Artikel 5 im Sinne der Verordnung (EU) 2022/2555 ist zu melden.',
+      'nis2',
+    );
+    const hints = hits.flatMap((h) => h.articleHints);
+    expect(hints).toContain('5'); // satz-eigener Pinpoint bleibt
+    expect(hints).not.toContain('35'); // Nachbarsatz-Nummer fällt raus
+  });
+
+  it('does not pull an article number from the FOLLOWING sentence into the citation window', () => {
+    // Symmetrisch nach vorn: Satz mit dem Verweis endet, „Artikel 35" steht
+    // erst im Folgesatz — es darf den Verweis nicht bepinnen.
+    const hits = referencesLaw(
+      'Ein Verstoß nach Artikel 5 im Sinne der Verordnung (EU) 2022/2555 ist zu melden. Die zuständige Behörde nach Artikel 35 handelt unverzüglich.',
+      'nis2',
+    );
+    const hints = hits.flatMap((h) => h.articleHints);
+    expect(hints).toContain('5');
+    expect(hints).not.toContain('35');
+  });
+
+  it('does not mistake a legal abbreviation ("Art. N") for a sentence boundary (pinpoint survives)', () => {
+    // „Art. 4" darf nicht als Satzende gelesen werden, sonst schnitte die
+    // Satz-Grenzen-Regel den eigentlichen Pinpoint weg.
+    const hits = referencesLaw('im Sinne von Art. 4 Nummer 12 der Verordnung (EU) 2016/679', 'dsgvo');
+    expect(hits.flatMap((h) => h.articleHints)).toContain('4');
+  });
+
+  // Echt-Text-Regression zum Golden-Artefakt dsgvo-4↔nis2-35 (v4 fälschlich
+  // INTERPRETS a-to-b): die zitierende Seite a = DSGVO Art. 4 ist eine reine
+  // Selbst-Definitions-Vorschrift und verweist überhaupt NICHT auf NIS2 — die
+  // a→b-Paarung hat keinen textlichen Beleg. (Das Paar entstand über die
+  // Gegenrichtung; das Fehl-Label heilt Task 1/5. Hier: der Miner darf für den
+  // NIS2-Bezug dieser Seite gar keinen — und erst recht keinen Art.-35 — Hint
+  // liefern.)
+  it('gives the real DSGVO Art. 4 text no NIS2 reference at all (dsgvo-4↔nis2-35 artifact has no basis)', () => {
+    const dsgvoArt4 =
+      'Im Sinne dieser Verordnung bezeichnet der Ausdruck: 1. „personenbezogene Daten“ alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen; 2. „Verarbeitung“ jeden mit oder ohne Hilfe automatisierter Verfahren ausgeführten Vorgang.';
+    const hits = referencesLaw(dsgvoArt4, 'nis2-de');
+    expect(hits).toHaveLength(0);
+    expect(hits.flatMap((h) => h.articleHints)).not.toContain('35');
+  });
+
   // ─── THE-517: Muster der Korpus-Ausbau-Gesetze — je Familie ein DE- und ein
   // EN-Beleg im realistischen Zitier-Wortlaut, plus die Quell-Varianten.
   describe('THE-517 corpus-expansion patterns', () => {

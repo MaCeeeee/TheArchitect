@@ -202,6 +202,31 @@ describe('enumerateRelationCandidates (THE-433 Task 2)', () => {
     expect(stats.familiesWithoutDocs).toEqual({ gdpr: 1 });
   });
 
+  // THE-519: Satz-Grenzen-Regel (geerbt aus @thearchitect/shared referencesLaw).
+  // Ein „Artikel N" im Nachbarsatz darf keinen Kandidaten auf die fremde
+  // Ziel-Provision erzeugen — genau der Mechanismus des dsgvo-4↔nis2-35-Artefakts.
+  it('(h) Pinpoint über eine Satzgrenze hinweg erzeugt keinen Kandidaten auf die fremde Provision', () => {
+    const docs = [
+      doc(
+        'dsgvo:art-4',
+        'dsgvo',
+        'Art. 4',
+        // Satz 1 nennt „Artikel 35" OHNE Gesetzes-Bezug; erst Satz 2 zitiert NIS2
+        // mit dem satz-eigenen Pinpoint „Artikel 5".
+        FILLER +
+          'Die zuständige Behörde nach Artikel 35 handelt unverzüglich. Ein Verstoß nach Artikel 5 im Sinne der Verordnung (EU) 2022/2555 ist zu melden.',
+        'de',
+      ),
+      doc('nis2:art-5', 'nis2', 'Art. 5', FILLER + 'Regelung des Artikels 5.', 'de'),
+      doc('nis2:art-35', 'nis2', 'Art. 35', FILLER + 'Regelung des Artikels 35.', 'de'),
+    ];
+
+    const { candidates } = enumerateRelationCandidates(docs);
+    const targets = candidates.map((c) => c.target.regulationKey);
+    expect(targets).toContain('nis2:art-5'); // satz-eigener Pinpoint → Kandidat
+    expect(targets).not.toContain('nis2:art-35'); // Nachbarsatz-Nummer → kein Kandidat
+  });
+
   it('meldet Quellen ohne Referenz-Muster laut in stats (nie stiller Blindfleck)', () => {
     const docs = [
       doc('mystery:art-1', 'mystery-law', 'Art. 1', FILLER + 'Some provision text without any citation.', 'en'),

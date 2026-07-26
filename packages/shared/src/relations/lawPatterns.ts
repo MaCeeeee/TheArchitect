@@ -189,6 +189,52 @@ const ANAPHORIC_PINPOINT =
 // Nächste Amtsnummern-Zitierung (irgendeines Gesetzes) — schneidet das Fenster ab.
 const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:Nr\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+\/(?:EU|EG|EC)\b/;
 
+// ── Satz-Grenzen-Regel für Pinpoints (THE-519) ──────────────────────────
+//
+// Die Artikel-Hints EINES Matches gehören nur zum SATZ des Matches. Das
+// Fenster (PINPOINT_WINDOW rückwärts, ANAPHORIC_WINDOW vorwärts) bleibt, wird
+// aber an der Satzgrenze GEKAPPT: min(Fenster-Ende, Satz-Ende). Ohne das zieht
+// das Fenster über einen Satzabschluss hinweg eine Artikelnummer aus dem
+// Nachbarsatz heran und behauptet ein Paar, das der Verweis-Satz nie trägt —
+// genau der Mechanismus des Golden-Artefakts dsgvo-4↔nis2-35 (der zitierende
+// Satz nannte den Ziel-Artikel gar nicht; die Nummer stammte aus dem
+// Nebensatz nebenan).
+//
+// Satzende = „.“ oder „;“ + Whitespace + folgender Großbuchstabe / Ziffer /
+// öffnende Klammer (numerierte Absätze „(2)“). ABER: eine juristische
+// Abkürzung („Art.“, „Abs.“, „Nr.“ …) oder ein Einzelbuchstabe-Kürzel („z.“,
+// „u.“) ist KEIN Satzende — sonst würde „Art. 4“ als Satzabschluss missdeutet
+// und der eigentliche Pinpoint (die 4) fiele weg. Deshalb der negative
+// Lookbehind. Der DORA-Präzedenzfall („… for the purposes of Article 4 of
+// that Directive.“) bleibt grün: seine Anapher steht IM SELBEN Satz vor dem
+// Satzende, also innerhalb der Kappung (doraNis2Hardening.test.ts).
+const SENTENCE_BOUNDARY_SOURCE = String.raw`(?<!\b(?:[A-Za-zÄÖÜäöü]|Art|Artikel|Abs|Nr|Nrn|No|lit|Buchst|Ziff|Ziffer|Nummer|para|pt|Sec|Reg|Dir|vgl|bzw|sog|gem|ggf|ff|resp|cf|EU|EG|EC))[.;]\s+(?=[A-ZÄÖÜ0-9(])`;
+
+/**
+ * Beschneidet den Text VOR dem Match auf den Satz des Matches: alles bis zum
+ * LETZTEN Satzende im Fenster wird verworfen (gehört zum Vorsatz). Bleibt kein
+ * Satzende im Fenster, ist das ganze Fenster satz-lokal und bleibt unverändert.
+ */
+function clampBeforeToSentence(before: string): string {
+  const re = new RegExp(SENTENCE_BOUNDARY_SOURCE, 'g');
+  let lastEnd = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(before)) !== null) {
+    lastEnd = m.index + m[0].length;
+    if (m.index === re.lastIndex) re.lastIndex++; // Null-Length-Schutz
+  }
+  return lastEnd >= 0 ? before.slice(lastEnd) : before;
+}
+
+/**
+ * Beschneidet den Text NACH dem Match auf den Satz des Matches: alles ab dem
+ * ERSTEN Satzende wird verworfen (gehört zum Folgesatz).
+ */
+function clampAfterToSentence(after: string): string {
+  const first = new RegExp(SENTENCE_BOUNDARY_SOURCE).exec(after);
+  return first ? after.slice(0, first.index) : after;
+}
+
 /**
  * Findet alle Stellen, an denen `text` auf das Gesetz hinter `targetSource`
  * verweist. Leeres Ergebnis für Quellen ohne registrierte Muster — Aufrufer
@@ -204,7 +250,9 @@ export function referencesLaw(text: string, targetSource: string): LawReferenceM
     const re = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g');
     let m: RegExpExecArray | null;
     while ((m = re.exec(text)) !== null) {
-      const before = text.slice(Math.max(0, m.index - PINPOINT_WINDOW), m.index);
+      // Fenster rückwärts, an der Satzgrenze gekappt: Hints nur aus dem Satz
+      // des Matches (THE-519).
+      const before = clampBeforeToSentence(text.slice(Math.max(0, m.index - PINPOINT_WINDOW), m.index));
       const articleHints: string[] = [];
       const artRe = /\b(?:Artikel|Article|Art\.)\s*(\d+[a-z]?)/gi;
       let a: RegExpExecArray | null;
@@ -226,6 +274,11 @@ export function referencesLaw(text: string, targetSource: string): LawReferenceM
       let after = text.slice(m.index + m[0].length, m.index + m[0].length + ANAPHORIC_WINDOW);
       const nextCitation = NEXT_CITATION.exec(after);
       if (nextCitation) after = after.slice(0, nextCitation.index);
+      // … und zusätzlich an der Satzgrenze gekappt: eine Anapher, die erst im
+      // Folgesatz steht, gehört nicht mehr zu diesem Verweis (THE-519). Der
+      // DORA-Fall („Article 4 of that Directive“) steht im selben Satz und
+      // bleibt damit erhalten.
+      after = clampAfterToSentence(after);
       const anaRe = new RegExp(ANAPHORIC_PINPOINT.source, ANAPHORIC_PINPOINT.flags);
       let ana: RegExpExecArray | null;
       while ((ana = anaRe.exec(after)) !== null) {
