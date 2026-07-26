@@ -96,13 +96,13 @@ Reuse-Landkarte (verifiziert im Code, siehe auch Deep-Dive in der Spec):
 |---|---|---|
 | Ausweiten von Änderungen | **niedrig** | Telemetrie = isoliertes neues Modell + ein Connector-Fetch; Wert-Komposition ruft vorhandene Services. Kein Query-weiter Refactor |
 | Kognitive Last | niedrig–mittel | Vertrauensstufen-Logik und Monte-Carlo-Komposition sind etablierte Muster; das 3-Stufen-Modell ist bereits im Trust-Spine gedacht |
-| Unbekannte Unbekannte | **mittel** | (a) **Markt** — adoptieren externe Builder das? (product-UU, nicht tech). (b) **Baseline bleibt kontrafaktisch** (manuelle Dauer = Annahme). (c) **Integration:** akzeptiert die `assessWorkflow`-Pipeline (M1 in-memory, THE-360) *connector-synchronisierte* Workflows oder nur client-geparste Uploads? |
+| Unbekannte Unbekannte | **niedrig–mittel** (war mittel) | (a) **Markt** — adoptieren externe Builder das? (product-UU, nicht tech, bleibt). (b) **Baseline bleibt kontrafaktisch** (manuelle Dauer = Annahme). (c) **Integration — AUFGELÖST** (Code-Check 2026-07-26, siehe §6.1): thin Adapter am Raw-Fetch-Seam, keine offene tech-Unbekannte mehr |
 | **Abhängigkeiten** | **mittel–hoch** | Komponiert/überschneidet THE-351 (Compliance, Done), THE-474 (Value-Engine, Backlog), THE-101 (Report, Done), Trust-Spine (Done). Keine echten Blocker, aber **Overlap muss aufgelöst werden**, sonst Doppelbau |
 | Unklarheiten | mittel | 5 offene Produktfragen der Spec + neue Re-Cut-Frage (Value-Engine-Ownership) |
 
 **Regel-Anwendung:** Der harte Umschnitt-Zwang triggert bei *UU hoch UND Deps hoch* (CHOICE-002) bzw. *UU hoch ODER Deps hoch* (CHOICE-003). Hier: UU = mittel, Deps = mittel–hoch → **kein harter Umschnitt-Zwang, aber ein Scope-Re-Cut ist klar geboten** (Compose statt Rebuild), weil sonst nachweislich Done-Arbeit doppelt gebaut würde.
 
-**Haupt-Watch-Point:** Der Integrations-Punkt aus THE-360 — ob live-gesyncte Workflows dieselbe Assessment-Pipeline durchlaufen wie client-geparste Uploads. Das ist die einzige echte technische Unbekannte und muss per Code-Check geklärt werden, **bevor** REQs geschnitten werden. **Zweiter Watch-Point:** Value-Engine-Ownership gegenüber THE-474.
+**Haupt-Watch-Point (AUFGELÖST 2026-07-26, §6.1):** Der Integrations-Punkt — ob live-gesyncte Workflows dieselbe Assessment-Pipeline durchlaufen. Code-Check ergab: thin Adapter am Raw-Fetch-Seam, mit einer wichtigen Falle (der naive Weg über den persistierten Graphen liefert *falsche Negative*). **Verbleibender Watch-Point:** Value-Engine-Ownership gegenüber THE-474 (Produktentscheidung, kein Code-Risiko).
 
 ## 6. Verdikt & empfohlener Schnitt
 
@@ -114,7 +114,21 @@ Reuse-Landkarte (verifiziert im Code, siehe auch Deep-Dive in der Spec):
 
 **Zwei Klärungen vor REQ-Erstellung:**
 1. **Value-Engine-Ownership (Scope):** Besitzt WVA eine eigene Wertformel oder konsumiert es die THE-474-Engine? Empfehlung: WVA definiert die *workflow-spezifische* Formel (Telemetrie × Zeitersparnis − Betriebskosten), nutzt aber die *gemeinsame* Monte-Carlo-/Cost-Engine — keine zweite Finanzmaschine.
-2. **Pipeline-Integration (Code-Check):** Verarbeitet `assessWorkflow` connector-gesyncte Workflows? Falls nein → ein Adapter-REQ analog THE-360, sonst Compliance-Compose gratis.
+2. **Pipeline-Integration (Code-Check): ✅ AUFGELÖST** — siehe §6.1.
+
+## 6.1 Klärung 2 — AUFGELÖST (Code-Check 2026-07-26)
+
+**Frage:** Sind server-gesyncte n8n-Workflows für die `assessWorkflow`-Compliance-Pipeline nutzbar?
+
+**Befund — die naive Annahme ist falsch, aber der richtige Weg ist billig:**
+
+- `assessWorkflow(rawN8nJson)` (`services/wfcomp/assess.ts:20-27`) konsumiert **das rohe n8n-Workflow-JSON inkl. `node.parameters`** — **nicht** `{elements, connections}` und **nicht** den Neo4j-Graphen. Die Scope-Erkennung (`scope.ts:39-41`) und der Lift (`lift.ts:31-68`) leiten alles aus `node.parameters` ab (PII-Parameter-Keys + Ziel-Hostnames).
+- ⚠️ **Falle:** Der Connector-Parse (`n8n.connector.ts:133-211`) **wirft `node.parameters` weg** und persistiert nur Struktur. Wer die Pipeline auf den **persistierten** `source:'n8n'`-Graphen zeigt, bekommt für *jeden* Workflow „nicht im Scope" — **stille Falsch-Negative.** Der offensichtliche Weg ist genau der falsche.
+- ✅ **Der richtige Seam:** Das rohe JSON liegt server-seitig bereits vor — `fetchWorkflow` (`n8n.connector.ts:222-225`, `GET /workflows/:id`) liefert es vollständig, bevor `parseWorkflow` (`n8n.connector.ts:118-119`) es reduziert. Genau dort andocken: pro `fullWf` ein `assessAndStore({ projectId, wfcompId: <n8n-Workflow-Id>, raw: fullWf })` (`services/wfcomp/store.ts:29`).
+- ✅ **Privacy gratis:** `sanitize` läuft als **erster** Schritt *innerhalb* der Pipeline (`assess.ts:44`, `sanitize.ts:78` — verwirft `pinData`/`credentials`/Parameter-*Werte*, behält nur Keys+Struktur). Übergabe des Roh-JSON ist damit automatisch DSGVO-sicher — **NFR-01 ist im Compose-Weg erfüllt, kein separater Sanitize-Pass nötig.**
+- ✅ **Idempotenz gratis:** `wfcompId = n8n-Workflow-Id` → `persist.ts:44-47` + Mongo-Upsert (`store.ts:39-52`) re-assessen sauber bei jedem Sync.
+
+**Konsequenz für den Schnitt:** Compliance-Compose ist bestätigt billig (**ein Aufruf am Fetch-Seam**, THE-360-analoger Adapter entfällt), aber es ist **nicht** „gratis über den vorhandenen Graphen" — es braucht den expliziten Hook am Raw-JSON. Das wird ein eigener kleiner REQ (FR-09-compose), kein Null-Aufwand. UU-Dimension sinkt dadurch von mittel auf niedrig–mittel.
 
 **Sofort-Hygiene in Linear (unabhängig vom Bau):**
 - THE-480 `relatedTo` THE-351, THE-474, THE-101 setzen; `buildsOn` Trust-Spine (THE-320) vermerken.
