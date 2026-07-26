@@ -599,6 +599,81 @@ muster geordnet — **verbindlich beim Labeln**:
    genannte Pflicht der anderen (KI-VO 27 „ergänzt" die DSGVO-35-Folgenabschätzung), Richtung a→b von
    der ergänzenden Norm aus.
 
+## C5b. INTERPRETS mechanisch — Schablone + berechnete Richtung (ENTWURF — Regeln A/B werden in der Adjudikationssitzung THE-519 gefüllt)
+
+> Dieser Abschnitt schärft die C5-Zeile `INTERPRETS` und C5a-Punkt 4 zu einem **mechanischen Test**.
+> Anlass: die v4-Wahrheiten trugen drei INTERPRETS-Fehler, die eine **frei vergebene Richtung** und ein
+> **fehlender Operator-Test** überhaupt erst möglich machten (belegt in den Worked Examples unten).
+> INTERPRETS wird ab hier nicht mehr geurteilt, sondern an einer Schablone abgelesen und die Richtung
+> **berechnet**. Ton wie im übrigen Teil C: der Test benennt, was im Satz **steht** — keine
+> Interpretations-Verben.
+
+### Die Schablone (4 Slots)
+
+INTERPRETS liegt vor, wenn der **zitierende Satz** alle vier Slots trägt:
+
+| Slot | Inhalt | Beleg |
+|---|---|---|
+| **[Begriff]** | der Ausdruck in Definiendum-Position (in Anführungszeichen bzw. als Nummern-Item vor dem Operator) | „personenbezogene Daten" |
+| **[Leih-Operator]** | „im Sinne von / im Sinne des" · „as defined in" · „as referred to in" | „im Sinne des" |
+| **[Ziel-Artikel]** | der zitierte Artikel | „Artikel 4 Nummer 1" |
+| **[Ziel-Gesetz]** | die zitierte Norm | „der Verordnung (EU) 2016/679" |
+
+Auto-Verdikt aus den Slots:
+
+- **Alle vier Slots gefüllt UND [Ziel-Artikel] = der Paar-Artikel** → `INTERPRETS`.
+- **[Leih-Operator] fehlt** → **keine Beziehung** (bloße Nutzung/Zuständigkeit, vgl. C5a-1).
+- **[Ziel-Artikel] fehlt oder ≠ Paar-Artikel** → **Paar-Artefakt** (Paar raus, **kein Label**).
+
+### Die Richtungs-Regel als BERECHNUNGSVORSCHRIFT (nicht als Urteil)
+
+Die Richtung wird **nie frei vergeben** — sie ergibt sich aus der Seite, die den Begriff **definiert**:
+
+- Die **zitierende Seite** (die den Schablonen-Satz trägt) ist der **NUTZER**.
+- Die **zitierte Seite** ist der **DEFINIERER**.
+- Der Pfeil zeigt **vom Definierer weg** (zum Nutzer).
+
+**Merksatz:** Wer den Begriff *hat* (definiert), dorthin zeigt der Pfeil **nicht** — er zeigt von dort
+zum Nutzer. Steht die zitierende Seite als `a`, ist das Ziel `b` → Richtung `b-to-a`; steht die
+zitierende Seite als `b` → `a-to-b`. Die Richtung ist damit eine Ableitung aus der Seiten-Zuordnung,
+keine eigene Entscheidung.
+
+### Minimalpaar-Tabelle (JA/NEIN — Unterschied = der eine markierte Slot)
+
+| Zitierender Satz | [Leih-Operator] | [Ziel-Artikel] = Paar-Artikel | Verdikt |
+|---|---|---|---|
+| „personenbezogene Daten **im Sinne des** Artikels 4 …" (Paar = Art. 4) | vorhanden | ja | **INTERPRETS** (JA) |
+| „**nach** Artikel 32 gilt …" (kein Definiendum-Operator) | **fehlt** | – | **keine Beziehung — Nutzung** (NEIN) |
+| „… **as defined in** Article 2 …" bei Paar = Art. 6 | vorhanden | **nein (2 ≠ 6)** | **Paar-Artefakt — kein Label** (NEIN) |
+
+### Vier Worked Examples (echte v4-Fälle inkl. der ursprünglichen — teils falschen — v4-Labels)
+
+1. **`data-act-de-art-2__dsgvo-art-4`** — zitierender Satz (Data Act Art. 2, Nr. 3): „personenbezogene
+   Daten **im Sinne des** Artikels 4 Nummer 1 der Verordnung (EU) 2016/679". Alle vier Slots gefüllt,
+   Ziel-Artikel 4 = Paar-Artikel → `INTERPRETS`. Definierer = DSGVO Art. 4 (Seite `b`); Pfeil vom
+   DSGVO weg → **`b-to-a`**. *(v4: korrekt.)*
+2. **`cra-en-art-3__nis2-art-6`** — zitierender Satz (CRA Art. 3, (43)): „‘incident' means an incident
+   **as defined in** Article 6, point (6), of Directive (EU) 2022/2555". Alle vier Slots, Ziel-Artikel 6
+   = Paar-Artikel → `INTERPRETS`. Definierer = NIS2 Art. 6 (Seite `b`); Pfeil von NIS2 weg → **`b-to-a`**.
+   **v4 stand fälschlich `a-to-b` — genau der Fehler, den die Berechnungsregel unmöglich macht.**
+3. **`dora-de-art-46__psd2-de-art-33`** — zitierender Satz: „… bei Zahlungsinstituten, einschließlich
+   der **nach** der Richtlinie (EU) 2015/2366 ausgenommenen Zahlungsinstitute …". Kein Leih-Operator,
+   kein Definiendum → **keine Beziehung** (Nutzung). **v4 fälschlich `INTERPRETS`.**
+4. **`dsgvo-art-4__nis2-de-art-35`** — der zitierende Satz nennt den Paar-Ziel-Artikel 35 **nicht**
+   (der Artikel-35-Bezug entstand über die Satzgrenze hinweg, vgl. Task 2). [Ziel-Artikel] ≠ Paar →
+   **Paar-Artefakt** (Paar raus, **kein Label**). **v4 fälschlich `INTERPRETS` `a-to-b`.**
+
+### Zwei offene Regeln (Platzhalter — Adjudikationssitzung THE-519)
+
+- **Regel A (offen, Sitzung THE-519):** geprägter Begriff, dessen Bedeutung nur über einen
+  **SACH-(Nicht-Definitions-)Artikel** umrissen wird. Beispiel `dora-de-art-3__psd2-de-art-32`:
+  „‚… ausgenommenes Zahlungsinstitut' ein Zahlungsinstitut, für das eine Ausnahme **nach Artikel 32
+  Absatz 1** der Richtlinie (EU) 2015/2366 gilt" — der zitierte Art. 32 ist eine Ausnahme-, keine
+  Definitionsvorschrift. `INTERPRETS`, eigener Typ, oder keine Beziehung? → **wird entschieden.**
+- **Regel B (offen, Sitzung THE-519):** die reine **Nutzungs-/Zuständigkeits-Referenz** endgültig als
+  **keine Beziehung** festzurren (heute über C5a-1 + den fehlenden Operator abgedeckt; Regel B macht es
+  zur benannten Regel). → **wird entschieden.**
+
 ## C9. Changelog Teil C
 
 - **C-v1 (2026-07-20):** Erstfassung (THE-421, Slice G). Richtungs-Regel C3; die Parallel-Pflicht-
@@ -607,3 +682,6 @@ muster geordnet — **verbindlich beim Labeln**:
   Nutzung/Koordination ≠ Beziehung; „gilt als konform" = Equivalence; Gleichwertigkeit-als-Ausnahme =
   Verdrängung; geliehene Definition = INTERPRETS ab definierender Norm; **impliziter Bezug ohne
   Artikel-Zitat = keine Beziehung → Harmonisierung UC-REQHARM-001 (THE-438)**; „ergänzt" = CONCRETIZES.
+- **C-v1.2 (ENTWURF, THE-519):** C5b Schablonen-Regel (4 Slots) + berechnete Richtung (vom Definierer
+  weg, nie frei vergeben); vier Worked Examples inkl. der drei v4-Fehl-Labels. Regeln A/B offen bis zur
+  Adjudikation.

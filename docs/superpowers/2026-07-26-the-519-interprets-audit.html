@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>INTERPRETS — Audit-Instrument (THE-519)</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #0f172a; --muted: #64748b; --border: #e2e8f0;
+    --card: #f8fafc; --accent: #7c3aed;
+    --ok-bg: #dcfce7; --ok-fg: #166534; --ok-border: #86efac;
+    --miss-bg: #fee2e2; --miss-fg: #991b1b; --miss-border: #fca5a5;
+    --v-interprets: #16a34a; --v-none: #64748b; --v-pair: #dc2626; --v-policy: #d97706;
+    --mark-term: #fde68a; --mark-operator: #bfdbfe; --mark-article: #ddd6fe; --mark-law: #bbf7d0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --fg: #e2e8f0; --muted: #94a3b8; --border: #334155;
+      --card: #1e293b; --accent: #a78bfa;
+      --ok-bg: #14532d; --ok-fg: #bbf7d0; --ok-border: #166534;
+      --miss-bg: #450a0a; --miss-fg: #fecaca; --miss-border: #7f1d1d;
+      --mark-term: #78350f; --mark-operator: #1e3a8a; --mark-article: #4c1d95; --mark-law: #14532d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 2rem 1.25rem 4rem; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 1080px; margin-inline: auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2.5rem 0 1rem; border-bottom: 2px solid var(--border); padding-bottom: .4rem; }
+  .lede { color: var(--muted); margin: 0 0 1.5rem; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .88em;
+    background: var(--card); padding: .05em .35em; border-radius: 4px; }
+  .counts { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; }
+  .counts .box { background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: .6rem 1rem; }
+  .counts .box b { font-size: 1.4rem; display: block; color: var(--accent); }
+  .calib-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; }
+  .calib-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+  .calib-id { margin-bottom: .6rem; word-break: break-all; }
+  .calib-row { display: flex; justify-content: space-between; gap: .5rem; padding: .25rem 0;
+    border-top: 1px dashed var(--border); font-size: .9rem; }
+  .calib-row > span:first-child { color: var(--muted); }
+  .calib-ppath { text-align: right; font-size: .82rem; }
+  .rules { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 8px; padding: 1rem 1.25rem; }
+  .rules h3 { margin: .75rem 0 .25rem; font-size: 1rem; }
+  .rules h3:first-child { margin-top: 0; }
+  .rules p { margin: .25rem 0; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.1rem 1.25rem; margin: 0 0 1rem; }
+  .card.calib { border-left: 4px solid var(--accent); }
+  .card header { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    flex-wrap: wrap; }
+  .card-id { word-break: break-all; }
+  .verdict { font-weight: 700; font-size: .9rem; }
+  .verdict-interprets { color: var(--v-interprets); }
+  .verdict-none-usage { color: var(--v-none); }
+  .verdict-pair-artifact { color: var(--v-pair); }
+  .verdict-policy-A { color: var(--v-policy); }
+  .meta { display: flex; gap: 1rem; flex-wrap: wrap; color: var(--muted); font-size: .85rem;
+    margin: .5rem 0 .75rem; }
+  .bucket { color: var(--accent); }
+  .twin { color: var(--v-policy); }
+  .provisions { font-size: .9rem; margin-bottom: .75rem; }
+  .provisions > div { margin: .15rem 0; }
+  .provisions b { display: inline-block; width: 1.2em; color: var(--muted); }
+  .sentence { background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: .75rem; margin-bottom: .6rem; overflow-x: auto; }
+  .sentence-empty { color: var(--muted); font-style: italic; }
+  mark { padding: .05em .2em; border-radius: 3px; color: inherit; }
+  mark.slot-term { background: var(--mark-term); }
+  mark.slot-operator { background: var(--mark-operator); }
+  mark.slot-article { background: var(--mark-article); }
+  mark.slot-law { background: var(--mark-law); }
+  .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .6rem; }
+  .chip { font-size: .8rem; padding: .25rem .55rem; border-radius: 999px; border: 1px solid; }
+  .chip b { font-weight: 700; margin-right: .3em; }
+  .chip-ok { background: var(--ok-bg); color: var(--ok-fg); border-color: var(--ok-border); }
+  .chip-missing { background: var(--miss-bg); color: var(--miss-fg); border-color: var(--miss-border); }
+  .ppath { font-size: .85rem; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  details { margin-top: .5rem; font-size: .85rem; }
+  summary { cursor: pointer; color: var(--muted); }
+  details ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+  .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .8rem; color: var(--muted); margin: .5rem 0 0; }
+  .legend span { display: inline-flex; align-items: center; gap: .3rem; }
+  .legend .sw { width: 1rem; height: 1rem; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+  <h1>INTERPRETS — Audit-Instrument</h1>
+  <p class="lede">THE-519 · erzeugt 2026-07-26T07:03:38.323Z · aus <code>relations.v4.json</code>.
+  Das Instrument urteilt nicht — es zeigt für jeden Fall, was im markierten Satz steht, und leitet
+  daraus mechanisch ein Verdikt + die berechnete Richtung ab.</p>
+
+  <div class="counts">
+    <div class="box"><b>21</b> Fälle in der Audit-Teilmenge</div>
+    <div class="box"><b>10</b> (a) v4-INTERPRETS</div>
+    <div class="box"><b>5</b> (b) v4-none + Operator</div>
+    <div class="box"><b>6</b> (c) Pool</div>
+  </div>
+
+  <div class="legend">
+    <span><span class="sw" style="background:var(--mark-term)"></span>Begriff (Definiendum)</span>
+    <span><span class="sw" style="background:var(--mark-operator)"></span>Leih-Operator</span>
+    <span><span class="sw" style="background:var(--mark-article)"></span>Ziel-Artikel</span>
+    <span><span class="sw" style="background:var(--mark-law)"></span>Ziel-Gesetz</span>
+  </div>
+
+  <h2>Eich-Karten — wie das Instrument jeden Fehler fängt</h2>
+  <p class="lede">Die vier Kalibrier-Fälle nebeneinander: das v4-Label, das Auto-Verdikt des
+  Instruments und der Prüfpfad. Drei sind v4-Fehler, einer die korrekte Positiv-Schablone.</p>
+  <div class="calib-grid">
+    <div class="calib-card">
+    <div class="calib-id"><code>data-act-de-art-2__dsgvo-art-4</code></div>
+    <div class="calib-row"><span>v4-Label</span><span><code>INTERPRETS:b-to-a</code></span></div>
+    <div class="calib-row"><span>Auto-Verdikt</span><span class="verdict verdict-interprets">INTERPRETS <code>b-to-a</code></span></div>
+    <div class="calib-row"><span>P-Pfad</span><span class="calib-ppath">P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)</span></div>
+  </div>
+<div class="calib-card">
+    <div class="calib-id"><code>cra-en-art-3__nis2-art-6</code></div>
+    <div class="calib-row"><span>v4-Label</span><span><code>INTERPRETS:a-to-b</code></span></div>
+    <div class="calib-row"><span>Auto-Verdikt</span><span class="verdict verdict-interprets">INTERPRETS <code>b-to-a</code></span></div>
+    <div class="calib-row"><span>P-Pfad</span><span class="calib-ppath">P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)</span></div>
+  </div>
+<div class="calib-card">
+    <div class="calib-id"><code>dora-de-art-46__psd2-de-art-33</code></div>
+    <div class="calib-row"><span>v4-Label</span><span><code>INTERPRETS:b-to-a</code></span></div>
+    <div class="calib-row"><span>Auto-Verdikt</span><span class="verdict verdict-none-usage">none (Nutzung)</span></div>
+    <div class="calib-row"><span>P-Pfad</span><span class="calib-ppath">P0 ✗</span></div>
+  </div>
+<div class="calib-card">
+    <div class="calib-id"><code>dsgvo-art-4__nis2-de-art-35</code></div>
+    <div class="calib-row"><span>v4-Label</span><span><code>INTERPRETS:a-to-b</code></span></div>
+    <div class="calib-row"><span>Auto-Verdikt</span><span class="verdict verdict-none-usage">none (Nutzung)</span></div>
+    <div class="calib-row"><span>P-Pfad</span><span class="calib-ppath">P0 ✗</span></div>
+  </div>
+  </div>
+
+  <h2>Regel-Fragen — zwei offene Entscheidungen (C5b)</h2>
+  <div class="rules">
+    <h3>Regel A — geprägter Begriff über einen Sach-Artikel (<code>policy-A</code>)</h3>
+    <p>Fälle mit Leih-Operator + Definiendum, deren Verweis auf den Paar-Artikel zielt (P0 ✓, P1 ✓),
+    der Ziel-Artikel aber KEIN Definitions-Ort ist (P2 ✗). Der markierte Satz borgt einen Begriff,
+    aber die zitierte Provision definiert ihn nicht selbst.</p>
+    <p><b>Zu entscheiden:</b> zählen diese Fälle als <code>INTERPRETS</code>, als <code>none</code>,
+    oder als eigener Sub-Typ? Bis zur Entscheidung trägt das Instrument sie als <code>policy-A</code>.</p>
+    <h3>Regel B — Nutzungs-Referenz</h3>
+    <p>Fälle, in denen der markierte Satz einen Ziel-Artikel nennt, aber KEINEN Leih-Operator + kein
+    Definiendum trägt (P0 ✗). Der Satz benutzt die andere Norm, ohne einen Begriff aus ihr zu borgen.</p>
+    <p><b>Zu entscheiden:</b> Nutzungs-Referenz endgültig als <code>none</code> festzurren?</p>
+  </div>
+
+  <h2>Alle Fälle der Audit-Teilmenge (21)</h2>
+  <article class="card">
+    <header>
+      <div class="card-id"><code>ai-act-de-art-3__dsgvo-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> ai-act-de Art. 3 — Begriffsbestimmungen</div>
+      <div><b>b</b> dsgvo Art. 4 — Begriffsbestimmungen</div>
+    </div>
+    <div class="sentence">50. „<mark class="slot-term">personenbezogene Daten</mark>“ personenbezogene Daten <mark class="slot-operator">im Sinne</mark> von <mark class="slot-article">Artikel 4</mark> Nummer 1 der Verordnung (EU) <mark class="slot-law">2016/679</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> personenbezogene Daten</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „im Sinne&quot; auf das Definiendum „personenbezogene Daten&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>ai-act-de-art-3__dsgvo-art-9</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> ai-act-de Art. 3 — Begriffsbestimmungen</div>
+      <div><b>b</b> dsgvo Art. 9 — Verarbeitung besonderer Kategorien personenbezogener Daten</div>
+    </div>
+    <div class="sentence">37. „besondere Kategorien personenbezogener Daten“ die in <mark class="slot-article">Artikel 9</mark> Absatz 1der Verordnung (EU) <mark class="slot-law">2016/679</mark>, Artikel 10 der Richtlinie (EU) 2016/680 und Artikel 10 Absatz 1 der Verordnung (EU) 2018/1725 aufgeführten Kategorien personenbezogener Daten;</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-missing"><b>Operator</b> fehlt — kein Leih-Operator im Satz</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 9</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: weder Leih-Operator noch Definiendum im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>ai-act-en-art-3__dsgvo-en-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      <span class="twin">Sprachzwilling von <code>ai-act-de-art-3__dsgvo-art-4</code> (zählt für n einfach)</span>
+    </div>
+    <div class="provisions">
+      <div><b>a</b> ai-act-en Art. 3 — Definitions</div>
+      <div><b>b</b> dsgvo-en Art. 4 — Definitions</div>
+    </div>
+    <div class="sentence">(50) ‘<mark class="slot-term">personal data</mark>’ means personal data <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 4</mark>, point (1), of Regulation (EU) <mark class="slot-law">2016/679</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> personal data</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „personal data&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>cra-en-art-16__nis2-art-12</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(b) v4-none + Leih-Operator</span>
+      <span>v4: none</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 16 — Establishment of a single reporting platform</div>
+      <div><b>b</b> nis2 Art. 12 — Coordinated vulnerability disclosure and a European vulnerability database</div>
+    </div>
+    <div class="sentence">In exceptional circumstances and, in particular, upon request by the manufacturer and in light of the level of sensitivity of the notified information as indicated by the manufacturer under Article 14(2), point (a), of this Regulation, the dissemination of the notification may be delayed based on justified cybersecurity-related grounds for a period of time that is strictly necessary, including where a vulnerability is subject to a coordinated vulnerability disclosure procedure <mark class="slot-operator">as referred to in</mark> <mark class="slot-article">Article 12</mark>(1) of Directive (EU) <mark class="slot-law">2022/2555</mark>.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> as referred to in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 12</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>cra-en-art-3__dsgvo-en-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 3 — Definitions</div>
+      <div><b>b</b> dsgvo-en Art. 4 — Definitions</div>
+    </div>
+    <div class="sentence">(47) ‘<mark class="slot-term">personal data</mark>’ means personal data <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 4</mark>, point (1), of Regulation (EU) <mark class="slot-law">2016/679</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> personal data</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „personal data&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>cra-en-art-3__nis2-art-12</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 3 — Definitions</div>
+      <div><b>b</b> nis2 Art. 12 — Coordinated vulnerability disclosure and a European vulnerability database</div>
+    </div>
+    <div class="sentence">(51) ‘CSIRT designated as coordinator’ means a CSIRT designated as coordinator <mark class="slot-operator">pursuant to</mark> <mark class="slot-article">Article 12</mark>(1) of Directive (EU) <mark class="slot-law">2022/2555</mark>.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> pursuant to</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 12</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card calib">
+    <header>
+      <div class="card-id"><code>cra-en-art-3__nis2-art-6</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:a-to-b</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 3 — Definitions</div>
+      <div><b>b</b> nis2 Art. 6 — Definitions</div>
+    </div>
+    <div class="sentence">(43) ‘<mark class="slot-term">incident</mark>’ means an incident <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 6</mark>, point (6), of Directive (EU) <mark class="slot-law">2022/2555</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> incident</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 6</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „incident&quot;.</li><li>P1 positiv: Verweis auf Artikel 6 des Ziel-Gesetzes (2022/2555).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>cra-en-art-57__nis2-art-3</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 57 — Compliant products with digital elements which present a significant cybersecurity risk</div>
+      <div><b>b</b> nis2 Art. 3 — Essential and important entities</div>
+    </div>
+    <div class="sentence">(c) the availability, authenticity, integrity or confidentiality of services offered using an electronic information system by essential entities <mark class="slot-operator">as referred to in</mark> <mark class="slot-article">Article 3</mark>(1) of Directive (EU) <mark class="slot-law">2022/2555</mark>; or (d) other aspects of public interest protection.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> as referred to in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 3</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>cra-en-art-8__nis2-art-3</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(b) v4-none + Leih-Operator</span>
+      <span>v4: none</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 8 — Critical products with digital elements</div>
+      <div><b>b</b> nis2 Art. 3 — Essential and important entities</div>
+    </div>
+    <div class="sentence">Those delegated acts shall specify the required assurance level that shall be proportionate to the level of cybersecurity risk associated with the products with digital elements and shall take account of their intended purpose, including the critical dependency on them by essential entities <mark class="slot-operator">as referred to in</mark> <mark class="slot-article">Article 3</mark>(1) of Directive (EU) <mark class="slot-law">2022/2555</mark>.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> as referred to in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 3</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card calib">
+    <header>
+      <div class="card-id"><code>data-act-de-art-2__dsgvo-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> data-act-de Art. 2 — Begriffsbestimmungen</div>
+      <div><b>b</b> dsgvo Art. 4 — Begriffsbestimmungen</div>
+    </div>
+    <div class="sentence">3. „<mark class="slot-term">personenbezogene Daten</mark>“ personenbezogene Daten <mark class="slot-operator">im Sinne</mark> des <mark class="slot-article">Artikels 4</mark> Nummer 1 der Verordnung (EU) <mark class="slot-law">2016/679</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> personenbezogene Daten</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „im Sinne&quot; auf das Definiendum „personenbezogene Daten&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>data-act-en-art-2__dsgvo-en-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      <span class="twin">Sprachzwilling von <code>data-act-de-art-2__dsgvo-art-4</code> (zählt für n einfach)</span>
+    </div>
+    <div class="provisions">
+      <div><b>a</b> data-act-en Art. 2 — Definitions</div>
+      <div><b>b</b> dsgvo-en Art. 4 — Definitions</div>
+    </div>
+    <div class="sentence">(3) ‘<mark class="slot-term">personal data</mark>’ means personal data <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 4</mark>, point (1), of Regulation (EU) <mark class="slot-law">2016/679</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> personal data</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „personal data&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-art-3__nis2-art-6</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora Art. 3 — Definitions</div>
+      <div><b>b</b> nis2 Art. 6 — Definitions</div>
+    </div>
+    <div class="sentence">(2) ‘<mark class="slot-term">network and information system</mark>’ means a network and information system <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 6</mark>, point 1, of Directive (EU) <mark class="slot-law">2022/2555</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> network and information system</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 6</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2022/2555</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „network and information system&quot;.</li><li>P1 positiv: Verweis auf Artikel 6 des Ziel-Gesetzes (2022/2555).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-art-3__psd2-en-art-4</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora Art. 3 — Definitions</div>
+      <div><b>b</b> psd2-en Art. 4 — Definitions</div>
+    </div>
+    <div class="sentence">(35) ‘<mark class="slot-term">payment institution</mark>’ means a payment institution <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 4</mark>, point (4), of Directive (EU) <mark class="slot-law">2015/2366</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> payment institution</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2015/2366</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „payment institution&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2015/2366).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-de-art-3__psd2-de-art-32</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora-de Art. 3 — Begriffsbestimmungen</div>
+      <div><b>b</b> psd2-de Art. 32 — Bedingungen</div>
+    </div>
+    <div class="sentence">36. „nach der Richtlinie (EU) <mark class="slot-law">2015/2366</mark> ausgenommenes Zahlungsinstitut“ ein Zahlungsinstitut, für das eine Ausnahme nach <mark class="slot-article">Artikel 32</mark> Absatz 1 der Richtlinie (EU) 2015/2366 gilt;</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-missing"><b>Operator</b> fehlt — kein Leih-Operator im Satz</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 32</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2015/2366</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: weder Leih-Operator noch Definiendum im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-de-art-3__psd2-de-art-33</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora-de Art. 3 — Begriffsbestimmungen</div>
+      <div><b>b</b> psd2-de Art. 33 — Kontoinformationsdienstleister</div>
+    </div>
+    <div class="sentence">37. „Kontoinformationsdienstleister“ einen Kontoinformationsdienstleister <mark class="slot-operator">im Sinne</mark> von <mark class="slot-article">Artikel 33</mark> Absatz 1 der Richtlinie (EU) <mark class="slot-law">2015/2366</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 33</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2015/2366</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-de-art-46__psd2-de-art-22</code></div>
+      <div class="verdict verdict-pair-artifact">pair-artifact (Paar raus)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(b) v4-none + Leih-Operator</span>
+      <span>v4: none</span>
+      
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora-de Art. 46 — Zuständige Behörden</div>
+      <div><b>b</b> psd2-de Art. 22 — Benennung der zuständigen Behörden</div>
+    </div>
+    <div class="sentence sentence-empty">Kein Satz auf einer der beiden Seiten nennt den Paar-Ziel-Artikel des jeweils anderen Gesetzes.</div>
+    <div class="ppath">kein Verweis-Satz auf den Paar-Artikel gefunden</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>Auf keiner der beiden Seiten nennt ein Satz den Paar-Ziel-Artikel des jeweils anderen Gesetzes — das Paar ist ein Mining-Artefakt, kein Label.</li></ul></details>
+  </article>
+<article class="card calib">
+    <header>
+      <div class="card-id"><code>dora-de-art-46__psd2-de-art-33</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:b-to-a</code></span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora-de Art. 46 — Zuständige Behörden</div>
+      <div><b>b</b> psd2-de Art. 33 — Kontoinformationsdienstleister</div>
+    </div>
+    <div class="sentence">Unbeschadet der Bestimmungen über den Überwachungsrahmen für kritische IKT-Drittdienstleister gemäß Kapitel V Abschnitt II dieser Verordnung wird die Einhaltung dieser Verordnung durch die folgenden zuständigen Behörden im Einklang mit den durch die jeweiligen Rechtsakte übertragenen Befugnissen sichergestellt: a) bei Kreditinstituten sowie bei nach der Richtlinie 2013/36/EU ausgenommenen Instituten durch die gemäß Artikel 4 der genannten Richtlinie benannte zuständige Behörde und bei gemäß Artikel 6 Absatz 4 der Verordnung (EU) Nr. 1024/2013 als bedeutend eingestuften Kreditinstituten durch die EZB im Einklang mit den mittels der genannten Verordnung übertragenen Befugnissen und Aufgaben; b) bei Zahlungsinstituten, einschließlich der nach der Richtlinie (EU) <mark class="slot-law">2015/2366</mark> ausgenommenen Zahlungsinstitute, bei E-Geld-Instituten, einschließlich der nach der Richtlinie 2009/110/EG ausgenommenen Institute, und bei den in <mark class="slot-article">Artikel 33</mark> Absatz 1 der Richtlinie (EU) 2015/2366 genannten Kontoinformationsdienstleistern durch die gemäß Artikel 22 der Richtlinie (EU) 2015/2366 benannte zuständige Behörde; c) bei Wertpapierfirmen durch die gemäß Artikel 4 der Richtlinie (EU) 2019/2034 des Europäischen Parlaments und des Rates [(38)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554#ntr38-L_2022333DE.01000101-E0038) benannte zuständige Behörde; d) bei gemäß der Verordnung über Märkte von Krypto-Werten zugelassenen Anbietern von Krypto-Dienstleistungen und Emittenten von an Vermögenswerte geknüpften Tokens durch die gemäß der entsprechenden Bestimmung der genannten Verordnung benannte zuständige Behörde; e) bei Zentralverwahrern durch die gemäß Artikel 11 der Verordnung (EU) Nr. 909/2014 benannte zuständige Behörde; f) bei zentralen Gegenparteien durch die gemäß Artikel 22 der Verordnung (EU) Nr. 648/2012 benannte zuständige Behörde; g) bei Handelsplätzen und Datenbereitstellungsdiensten durch die gemäß Artikel 67 der Richtlinie 2014/65/EU benannte zuständige Behörde und die zuständige Behörde <mark class="slot-operator">im Sinne</mark> von Artikel 2 Absatz 1 Nummer 18 der Verordnung (EU) Nr. 600/2014; h) bei Transaktionsregistern durch die gemäß Artikel 22 der Verordnung (EU) Nr. 648/2012 benannte zuständige Behörde; i) bei Verwaltern alternativer Investmentfonds durch die gemäß Artikel 44 der Richtlinie 2011/61/EU benannte zuständige Behörde; j) bei Verwaltungsgesellschaften durch die gemäß Artikel 97 der Richtlinie 2009/65/EG benannte zuständige Behörde; k) bei Versicherungs- und Rückversicherungsunternehmen durch die gemäß Artikel 30 der Richtlinie 2009/138/EG benannte zuständige Behörde; l) bei Versicherungsvermittlern, Rückversicherungsvermittlern und Versicherungsvermittlern in Nebentätigkeit durch die gemäß Artikel 12 der Richtlinie (EU) 2016/97 benannte zuständige Behörde; m) bei Einrichtungen der betrieblichen Altersversorgung durch die gemäß Artikel 47 der Richtlinie (EU) 2016/2341 benannte zuständige Behörde; n) bei Ratingagenturen durch die gemäß Artikel 21 der Verordnung (EG) Nr. 1060/2009 benannte zuständige Behörde; o) bei Administratoren kritischer Referenzwerte durch die gemäß den Artikeln 40 und 41 der Verordnung (EU) 2016/1011 benannte zuständige Behörde; p) bei Schwarmfinanzierungsdienstleistern durch die gemäß Artikel 29 der Verordnung (EU) 2020/1503 benannte zuständige Behörde; q) bei Verbriefungsregistern durch die gemäß Artikel 10 und Artikel 14 Absatz 1 der Verordnung (EU) 2017/2402 benannte zuständige Behörde.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 33</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2015/2366</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card calib">
+    <header>
+      <div class="card-id"><code>dsgvo-art-4__nis2-de-art-35</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(a) v4-INTERPRETS</span>
+      <span>v4: <code>INTERPRETS:a-to-b</code></span>
+      <span>zitierende Seite: <code>b</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dsgvo Art. 4 — Begriffsbestimmungen</div>
+      <div><b>b</b> nis2-de Art. 35 — Verstöße mit Verletzungen des Schutzes personenbezogener Daten</div>
+    </div>
+    <div class="sentence">(1) Stellen die zuständigen Behörden im Zuge der Beaufsichtigung oder Durchsetzung fest, dass der Verstoß einer wesentlichen oder wichtigen Einrichtung gegen die in den Artikeln 21 und 23 der vorliegenden Richtlinie festgelegten Verpflichtungen eine Verletzung des Schutzes personenbezogener Daten <mark class="slot-operator">im Sinne</mark> von <mark class="slot-article">Artikel 4</mark> Nummer 12 der Verordnung (EU) <mark class="slot-law">2016/679</mark> zur Folge haben kann, die gemäß Artikel 33 der genannten Verordnung zu melden ist, unterrichten sie unverzüglich die in Artikel 55 oder 56 jener Verordnung genannten Aufsichtsbehörden.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 4</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dsgvo-art-55__nis2-de-art-35</code></div>
+      <div class="verdict verdict-none-usage">none (Nutzung)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(b) v4-none + Leih-Operator</span>
+      <span>v4: none</span>
+      <span>zitierende Seite: <code>b</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dsgvo Art. 55 — Zuständigkeit</div>
+      <div><b>b</b> nis2-de Art. 35 — Verstöße mit Verletzungen des Schutzes personenbezogener Daten</div>
+    </div>
+    <div class="sentence">(2) Verhängen die in <mark class="slot-article">Artikel 55</mark> oder 56 der Verordnung (EU) <mark class="slot-law">2016/679</mark> genannten Aufsichtsbehörden gemäß Artikel 58 Absatz 2 Buchstabe i der genannten Verordnung eine Geldbuße, so dürfen die zuständigen Behörden für einen Verstoß <mark class="slot-operator">im Sinne</mark> von Absatz 1 des vorliegenden Artikels, der sich aus demselben Verhalten ergibt wie jener Verstoß, der Gegenstand der Geldbuße nach Artikel 58 Absatz 2 Buchstabe i der Verordnung (EU) 2016/679 war, keine Geldbuße nach Artikel 34 der vorliegenden Richtlinie verhängen.</div>
+       <div class="chips">
+         <span class="chip chip-missing"><b>Begriff</b> fehlt — kein Definiendum in Operator-Nähe</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 55</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2016/679</span>
+       </div>
+    <div class="ppath">P0 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 negativ: kein Definiendum (geborgter Begriff) im markierten Satz — keine Begriffs-Anleihe, sondern eine Nutzungs-Referenz.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dsgvo-art-58__nis2-de-art-35</code></div>
+      <div class="verdict verdict-pair-artifact">pair-artifact (Paar raus)</div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(b) v4-none + Leih-Operator</span>
+      <span>v4: none</span>
+      
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dsgvo Art. 58 — Befugnisse</div>
+      <div><b>b</b> nis2-de Art. 35 — Verstöße mit Verletzungen des Schutzes personenbezogener Daten</div>
+    </div>
+    <div class="sentence sentence-empty">Kein Satz auf einer der beiden Seiten nennt den Paar-Ziel-Artikel des jeweils anderen Gesetzes.</div>
+    <div class="ppath">kein Verweis-Satz auf den Paar-Artikel gefunden</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>Auf keiner der beiden Seiten nennt ein Satz den Paar-Ziel-Artikel des jeweils anderen Gesetzes — das Paar ist ein Mining-Artefakt, kein Label.</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>eidas-en-art-3__nis2-art-6</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>a-to-b</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>b</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> eidas-en Art. 3 — Definitions</div>
+      <div><b>b</b> nis2 Art. 6 — Definitions</div>
+    </div>
+    <div class="sentence">(24) ‘<mark class="slot-term">trust service</mark>’ means a trust service <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 3</mark>, point (16), of Regulation (EU) No <mark class="slot-law">910/2014</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> trust service</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 3</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 910/2014</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „trust service&quot;.</li><li>P1 positiv: Verweis auf Artikel 3 des Ziel-Gesetzes (910/2014).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: a-to-b (vom Definierer weg).</li></ul></details>
+  </article>
+</body>
+</html>

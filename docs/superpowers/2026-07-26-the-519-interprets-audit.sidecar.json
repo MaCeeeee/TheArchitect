@@ -1,0 +1,289 @@
+{
+  "generatedFrom": "relations.v4.json",
+  "frozenAt": "2026-07-26T07:03:38.325Z",
+  "caseIds": [
+    "ai-act-de-art-3__dsgvo-art-4",
+    "ai-act-de-art-3__dsgvo-art-9",
+    "ai-act-en-art-3__dsgvo-en-art-4",
+    "cra-en-art-16__nis2-art-12",
+    "cra-en-art-3__dsgvo-en-art-4",
+    "cra-en-art-3__nis2-art-12",
+    "cra-en-art-3__nis2-art-6",
+    "cra-en-art-57__nis2-art-3",
+    "cra-en-art-8__nis2-art-3",
+    "data-act-de-art-2__dsgvo-art-4",
+    "data-act-en-art-2__dsgvo-en-art-4",
+    "dora-art-3__nis2-art-6",
+    "dora-art-3__psd2-en-art-4",
+    "dora-de-art-3__psd2-de-art-32",
+    "dora-de-art-3__psd2-de-art-33",
+    "dora-de-art-46__psd2-de-art-22",
+    "dora-de-art-46__psd2-de-art-33",
+    "dsgvo-art-4__nis2-de-art-35",
+    "dsgvo-art-55__nis2-de-art-35",
+    "dsgvo-art-58__nis2-de-art-35",
+    "eidas-en-art-3__nis2-art-6"
+  ],
+  "counts": {
+    "a": 10,
+    "b": 5,
+    "c": 6,
+    "total": 21
+  },
+  "perCase": {
+    "ai-act-de-art-3__dsgvo-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "im Sinne",
+        "term": "personenbezogene Daten",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
+      "citingSide": "a"
+    },
+    "ai-act-de-art-3__dsgvo-art-9": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "targetLawHit": "2016/679",
+        "targetArticle": "9"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "ai-act-en-art-3__dsgvo-en-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "personal data",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "languageTwinOf": "ai-act-de-art-3__dsgvo-art-4"
+    },
+    "cra-en-art-16__nis2-art-12": {
+      "autoVerdict": "none-usage",
+      "bucket": "b-none-operator",
+      "v4Label": null,
+      "slots": {
+        "operator": "as referred to in",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "12"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "cra-en-art-3__dsgvo-en-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "personal data",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a"
+    },
+    "cra-en-art-3__nis2-art-12": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "pursuant to",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "12"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "cra-en-art-3__nis2-art-6": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:a-to-b",
+      "slots": {
+        "operator": "as defined in",
+        "term": "incident",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "6"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
+      "citingSide": "a"
+    },
+    "cra-en-art-57__nis2-art-3": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "as referred to in",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "3"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "cra-en-art-8__nis2-art-3": {
+      "autoVerdict": "none-usage",
+      "bucket": "b-none-operator",
+      "v4Label": null,
+      "slots": {
+        "operator": "as referred to in",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "3"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "data-act-de-art-2__dsgvo-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "im Sinne",
+        "term": "personenbezogene Daten",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (Überschrift)",
+      "citingSide": "a"
+    },
+    "data-act-en-art-2__dsgvo-en-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "personal data",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a",
+      "languageTwinOf": "data-act-de-art-2__dsgvo-art-4"
+    },
+    "dora-art-3__nis2-art-6": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "network and information system",
+        "targetLawHit": "2022/2555",
+        "targetArticle": "6"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a"
+    },
+    "dora-art-3__psd2-en-art-4": {
+      "autoVerdict": "interprets",
+      "direction": "b-to-a",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "payment institution",
+        "targetLawHit": "2015/2366",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "a"
+    },
+    "dora-de-art-3__psd2-de-art-32": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "targetLawHit": "2015/2366",
+        "targetArticle": "32"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "dora-de-art-3__psd2-de-art-33": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "im Sinne",
+        "targetLawHit": "2015/2366",
+        "targetArticle": "33"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "dora-de-art-46__psd2-de-art-22": {
+      "autoVerdict": "pair-artifact",
+      "bucket": "b-none-operator",
+      "v4Label": null,
+      "slots": {},
+      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden"
+    },
+    "dora-de-art-46__psd2-de-art-33": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:b-to-a",
+      "slots": {
+        "operator": "im Sinne",
+        "targetLawHit": "2015/2366",
+        "targetArticle": "33"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "a"
+    },
+    "dsgvo-art-4__nis2-de-art-35": {
+      "autoVerdict": "none-usage",
+      "bucket": "a-interprets",
+      "v4Label": "INTERPRETS:a-to-b",
+      "slots": {
+        "operator": "im Sinne",
+        "targetLawHit": "2016/679",
+        "targetArticle": "4"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "b"
+    },
+    "dsgvo-art-55__nis2-de-art-35": {
+      "autoVerdict": "none-usage",
+      "bucket": "b-none-operator",
+      "v4Label": null,
+      "slots": {
+        "operator": "im Sinne",
+        "targetLawHit": "2016/679",
+        "targetArticle": "55"
+      },
+      "pPath": "P0 ✗",
+      "citingSide": "b"
+    },
+    "dsgvo-art-58__nis2-de-art-35": {
+      "autoVerdict": "pair-artifact",
+      "bucket": "b-none-operator",
+      "v4Label": null,
+      "slots": {},
+      "pPath": "kein Verweis-Satz auf den Paar-Artikel gefunden"
+    },
+    "eidas-en-art-3__nis2-art-6": {
+      "autoVerdict": "interprets",
+      "direction": "a-to-b",
+      "bucket": "c-pool",
+      "slots": {
+        "operator": "as defined in",
+        "term": "trust service",
+        "targetLawHit": "910/2014",
+        "targetArticle": "3"
+      },
+      "pPath": "P0 ✓ · P1 ✓ · P2 ✓ (typisiert)",
+      "citingSide": "b"
+    }
+  }
+}

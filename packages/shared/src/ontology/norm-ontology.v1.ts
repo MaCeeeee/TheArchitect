@@ -275,6 +275,11 @@ export const NORM_ONTOLOGY = {
     { id: 'eprivacy-de', label: 'ePrivacy-Richtlinie 2002/58/EG — Deutsch', jurisdiction: 'EU' },
     { id: 'eidas-en', label: 'eIDAS Regulation (EU) 910/2014 — English', jurisdiction: 'EU' },
     { id: 'eidas-de', label: 'eIDAS-Verordnung (EU) 910/2014 — Deutsch', jurisdiction: 'EU' },
+    // THE-519: Anleihe-Ziel-Gesetze (Definitionsquellen für Cross-Norm-INTERPRETS).
+    { id: 'standardisation-en', label: 'Standardisation Regulation (EU) No 1025/2012 — English', jurisdiction: 'EU' },
+    { id: 'standardisation-de', label: 'Normungsverordnung (EU) Nr. 1025/2012 — Deutsch', jurisdiction: 'EU' },
+    { id: 'emoney-en', label: 'E-Money Directive 2009/110/EC — English', jurisdiction: 'EU' },
+    { id: 'emoney-de', label: 'E-Geld-Richtlinie 2009/110/EG — Deutsch', jurisdiction: 'EU' },
     { id: 'iso27001', label: 'ISO/IEC 27001' },
     // THE-413: PolicySource collapse — modeling-framework sources become data
     // rows so Policy.source validates against the same registry as regulations.
