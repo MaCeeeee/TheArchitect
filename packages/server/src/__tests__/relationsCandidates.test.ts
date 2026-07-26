@@ -374,6 +374,33 @@ describe('referencesLaw', () => {
       ).toHaveLength(0);
     });
   });
+
+  describe('THE-519 borrow-target laws (Standardisation 1025/2012, E-Money 2009/110) + German genitive flexion', () => {
+    it('detects the Standardisation Regulation and pins the article across the "des Artikels" genitive', () => {
+      const hits = referencesLaw(
+        'eine harmonisierte Norm im Sinne des Artikels 2 der Verordnung (EU) Nr. 1025/2012',
+        'standardisation-de',
+      );
+      expect(hits.length).toBeGreaterThan(0);
+      // Genitiv "des Artikels 2" darf den Pinpoint NICHT verschlucken (der Grund, warum
+      // die harmonisierte-Norm-Anleihen von KI-VO/CRA/DataAct/MDR/NIS2 sonst unsichtbar blieben).
+      expect(hits.flatMap((h) => h.articleHints)).toContain('2');
+    });
+
+    it('detects the Standardisation Regulation by number and by its full English name (not the generic concept)', () => {
+      expect(referencesLaw('a harmonised standard as defined in Article 2 of Regulation (EU) No 1025/2012', 'standardisation-en').flatMap((h) => h.articleHints)).toContain('2');
+      expect(referencesLaw('bodies notified under the European Standardisation Regulation', 'standardisation-en').length).toBeGreaterThan(0);
+    });
+
+    it('detects the E-Money Directive by number and by name (DE + EN)', () => {
+      expect(referencesLaw('ein Institut im Sinne von Artikel 2 der Richtlinie 2009/110/EG', 'emoney-de').flatMap((h) => h.articleHints)).toContain('2');
+      expect(referencesLaw('as defined in Article 2 of the Electronic Money Directive', 'emoney-en').length).toBeGreaterThan(0);
+    });
+
+    it('the genitive flexion does not spuriously match a same-topic text without an article citation', () => {
+      expect(referencesLaw('Die europäische Normung fördert den Binnenmarkt.', 'standardisation-de')).toHaveLength(0);
+    });
+  });
 });
 
 // Die Normalisierung ist der Angelpunkt der Pinpoint-Auswahl: links steht ein

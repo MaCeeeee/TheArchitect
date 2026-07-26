@@ -87,6 +87,18 @@ export const LAW_FAMILY_PATTERNS: Record<string, RegExp[]> = {
     /elektronische Identifizierung.*Vertrauensdienste/i,
   ],
   unece: [/UN(?:ECE)?[- ]?(?:Regelung|Regulation)\s*(?:No\.?|Nr\.?)?\s*155/i, /\bUN[- ]?R155\b/i, /\bR155\b/],
+  // THE-519: Anleihe-Ziel-Gesetze (werden von Korpus-Normen als Definitionsquelle zitiert).
+  standardisation: [
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?1025\/2012/i,
+    /European Standardisation Regulation/i,
+    /Normungsverordnung/i,
+  ],
+  emoney: [
+    /(?:Richtlinie|Directive)\s*2009\/110(?:\/E[GC])?/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2009\/110/i,
+    /Electronic Money Directive/i,
+    /E-?Geld-?Richtlinie/i,
+  ],
 };
 
 /** Korpus-Quelle → Law-Familie. Beide Sprachvarianten zeigen auf dieselbe Musterliste. */
@@ -119,6 +131,11 @@ export const SOURCE_TO_FAMILY: Record<string, keyof typeof LAW_FAMILY_PATTERNS> 
   'eidas-de': 'eidas',
   'eidas-en': 'eidas',
   'unece-r155': 'unece',
+  // THE-519: Anleihe-Ziel-Gesetze.
+  'standardisation-de': 'standardisation',
+  'standardisation-en': 'standardisation',
+  'emoney-de': 'emoney',
+  'emoney-en': 'emoney',
 };
 
 export interface LawReferenceMatch {
@@ -185,7 +202,7 @@ const CITING_LAW_MARKERS =
 //     Zitierung steht, gehört zu jener, nicht zu dieser.
 const ANAPHORIC_WINDOW = 200;
 const ANAPHORIC_PINPOINT =
-  /\b(?:Artikel|Article|Art\.)\s*(\d+[a-z]?)\s+(?:of that (?:Directive|Regulation)\b|(?:der|des) genannten (?:Richtlinie|Verordnung)\b)/gi;
+  /\b(?:Artikel[ns]?|Article|Art\.)\s*(\d+[a-z]?)\s+(?:of that (?:Directive|Regulation)\b|(?:der|des) genannten (?:Richtlinie|Verordnung)\b)/gi;
 // Nächste Amtsnummern-Zitierung (irgendeines Gesetzes) — schneidet das Fenster ab.
 const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:Nr\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+\/(?:EU|EG|EC)\b/;
 
@@ -254,7 +271,7 @@ export function referencesLaw(text: string, targetSource: string): LawReferenceM
       // des Matches (THE-519).
       const before = clampBeforeToSentence(text.slice(Math.max(0, m.index - PINPOINT_WINDOW), m.index));
       const articleHints: string[] = [];
-      const artRe = /\b(?:Artikel|Article|Art\.)\s*(\d+[a-z]?)/gi;
+      const artRe = /\b(?:Artikel[ns]?|Article|Art\.)\s*(\d+[a-z]?)/gi;
       let a: RegExpExecArray | null;
       while ((a = artRe.exec(before)) !== null) {
         // Zwischen Artikel-Hinweis und Zitierung nachsehen: „… Artikel 32 der

@@ -117,6 +117,11 @@ export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
   'eprivacy-de': { celex: '32002L0058', language: 'de', jurisdiction: 'EU', effectiveFrom: '2002-07-31', transport: 'eur-lex' },
   'eidas-en': { celex: '32014R0910', language: 'en', jurisdiction: 'EU', effectiveFrom: '2016-07-01', transport: 'eur-lex' },
   'eidas-de': { celex: '32014R0910', language: 'de', jurisdiction: 'EU', effectiveFrom: '2016-07-01', transport: 'eur-lex' },
+  // THE-519: Anleihe-Ziel-Gesetze (Definitionsquellen — 1025/2012 von KI-VO/CRA/DataAct/MDR/NIS2, 2009/110 von DORA/PSD2 zitiert). Ganze Gesetze (Crawl-ganze-Gesetze-Regel).
+  'standardisation-en': { celex: '32012R1025', language: 'en', jurisdiction: 'EU', effectiveFrom: '2013-01-01', transport: 'eur-lex' },
+  'standardisation-de': { celex: '32012R1025', language: 'de', jurisdiction: 'EU', effectiveFrom: '2013-01-01', transport: 'eur-lex' },
+  'emoney-en': { celex: '32009L0110', language: 'en', jurisdiction: 'EU', effectiveFrom: '2011-04-30', transport: 'eur-lex' },
+  'emoney-de': { celex: '32009L0110', language: 'de', jurisdiction: 'EU', effectiveFrom: '2011-04-30', transport: 'eur-lex' },
 };
 
 /**
