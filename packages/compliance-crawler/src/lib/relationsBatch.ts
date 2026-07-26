@@ -31,7 +31,11 @@ import {
   RELATIONS_PROMPT_VERSION,
   RelationSuggestionSchema,
   buildRelationsPrompt,
+  identsForSource,
+  normalizeArticleNumber,
   parseRelationLabel,
+  selectBorrowSentence,
+  type P2Source,
   type RelationDirection,
   type RelationSuggestion,
 } from '@thearchitect/shared';
@@ -44,9 +48,27 @@ import type { RetryOutcome } from './typingBatch';
 // anderes produktiv fahren, als die Baseline gemessen hat.
 export const RELATIONS_BATCH_MODEL = 'claude-haiku-4-5-20251001';
 
+/**
+ * THE-529 (Task 4): Versions-Stempel des mechanischen INTERPRETS-Detektors.
+ * Teil der Skip-Semantik (wie promptVersion): ein Detektor-Bump macht alle
+ * Alt-Scans sichtbar veraltet — und Alt-Scans OHNE detectorVersion (aus der
+ * Zeit vor dem Detektor) werden re-scannt (gewollt: so entstehen mechanische
+ * INTERPRETS-Kanten korpusweit).
+ */
+export const RELATIONS_DETECTOR_VERSION = 'interprets-audit-v1';
+
+/**
+ * model-Stempel mechanischer Suggestions — NICHT das LLM-Modell: der Reviewer
+ * (und jede Auswertung) muss am Eintrag ablesen können, dass hier der
+ * deterministische Parser geurteilt hat, nicht Haiku.
+ */
+export const RELATIONS_DETECTOR_MODEL = `mechanical:${RELATIONS_DETECTOR_VERSION}`;
+
 /** Der Idempotenz-Anker, wie er als `relationScan` ans Dokument geschrieben wird. */
 export interface RelationScanAnchor {
   promptVersion: string;
+  /** THE-529: Detektor-Stand, mit dem dieser Scan lief (Skip-Semantik). */
+  detectorVersion: string;
   versionHash: string;
   scannedAt: Date;
 }
@@ -54,7 +76,7 @@ export interface RelationScanAnchor {
 /** Schlanke Sicht auf das zitierende Korpus-Dokument — Kandidaten-Felder + Batch-Zustand. */
 export interface RelationsBatchDoc extends RelationCandidateDoc {
   _id: unknown;
-  relationScan?: { promptVersion?: string; versionHash?: string };
+  relationScan?: { promptVersion?: string; versionHash?: string; detectorVersion?: string };
   relationSuggestions?: RelationSuggestion[];
 }
 
@@ -66,13 +88,22 @@ export interface RelationsBatchDoc extends RelationCandidateDoc {
  * confirmed-Kante tragen und für neue Ziele frisch gescannt werden.
  */
 export function shouldSkipRelationScan(
-  doc: { versionHash: string; relationScan?: { promptVersion?: string; versionHash?: string } },
-  opts: { force: boolean; promptVersion: string }
+  doc: {
+    versionHash: string;
+    relationScan?: { promptVersion?: string; versionHash?: string; detectorVersion?: string };
+  },
+  opts: { force: boolean; promptVersion: string; detectorVersion: string }
 ): boolean {
   if (opts.force) return false;
   const scan = doc.relationScan;
+  // THE-529 (Task 4): Skip NUR bei unverändertem Text- UND Prompt- UND
+  // Detektor-Stand. Alt-Scans ohne detectorVersion (vor dem mechanischen
+  // Detektor) matchen nie → Re-Scan gewollt.
   return (
-    !!scan && scan.versionHash === doc.versionHash && scan.promptVersion === opts.promptVersion
+    !!scan &&
+    scan.versionHash === doc.versionHash &&
+    scan.promptVersion === opts.promptVersion &&
+    scan.detectorVersion === opts.detectorVersion
   );
 }
 
@@ -86,7 +117,7 @@ export function shouldSkipRelationScan(
 export function assembleRelationSuggestion(
   candidate: RelationCandidate,
   label: { relation: string; direction: RelationDirection },
-  meta: { model: string; now: Date }
+  meta: { model: string; now: Date; sentence?: string; pPath?: string }
 ): RelationSuggestion {
   return RelationSuggestionSchema.parse({
     targetRegulationKey: candidate.target.regulationKey,
@@ -97,12 +128,92 @@ export function assembleRelationSuggestion(
     evidence: {
       matched: candidate.evidence.matched,
       articleHints: [...candidate.evidence.articleHints],
+      // THE-529: Parser-Belege des mechanischen Pfads (voller Borrow-Satz +
+      // Prüfpfad) — der LLM-Pfad lässt beide weg (Felder bleiben abwesend).
+      ...(meta.sentence !== undefined ? { sentence: meta.sentence } : {}),
+      ...(meta.pPath !== undefined ? { pPath: meta.pPath } : {}),
     },
     promptVersion: RELATIONS_PROMPT_VERSION,
     model: meta.model,
     suggestedAt: meta.now.toISOString(),
     status: 'suggested',
   });
+}
+
+/**
+ * Prüfpfad-String der mechanischen Suggestion — gleiche Darstellung wie das
+ * Audit-Artefakt des Server-Generators (build-interprets-audit.ts formatPPath).
+ * Nur für Verdikt 'interprets' aufgerufen: P0/P1 sind dann per Konstruktion ✓.
+ * Die P2-QUELLE (`p2Source` aus der geteilten shared-Ableitung) bestimmt das
+ * Etikett:
+ *   'typed'    → „(typisiert)"  — Ziel als Definition typisiert (Task-3-Quelle).
+ *   'title'    → „(Überschrift)" — Ziel trägt eine Definitions-Überschrift
+ *                (THE-529 Härtung: fängt die dt. Sammel-Definitionen).
+ *   'fallback' → „(Ziel-Text)"  — Definitions-Prägung im Ziel-Text belegt.
+ */
+function formatDetectorPPath(p2Source: P2Source): string {
+  const src =
+    p2Source === 'typed'
+      ? '(typisiert)'
+      : p2Source === 'title'
+        ? '(Überschrift)'
+        : '(Ziel-Text)';
+  return `P0 ✓ · P1 ✓ · P2 ✓ ${src}`;
+}
+
+/**
+ * THE-529 (Task 4): Der mechanische INTERPRETS-Detektor — läuft pro Kandidat
+ * VOR dem LLM. Rein und deterministisch: satz-segmentiert den fullText des
+ * ZITIERENDEN Dokuments (evidence.matched ist ein Regex-Schnipsel, KEIN Satz),
+ * wählt via shared `selectBorrowSentence` den besten Borrow-Satz auf den
+ * Paar-Ziel-Artikel und übernimmt das Audit-Verdikt:
+ *  - 'interprets' → mechanische Suggestion mit BERECHNETER Richtung
+ *    (deriveDirection: Pfeil zeigt vom Definierer = Ziel-Seite weg), vollem
+ *    Beleg-Satz und Prüfpfad. Das LLM wird für den Kandidaten NICHT gerufen.
+ *  - jedes andere Verdikt (none-usage/pair-artifact/policy-A/kein Satz) →
+ *    undefined, der Kandidat geht unverändert an den LLM-Pfad (der ab rp-4
+ *    INTERPRETS weder anbietet noch akzeptiert — OOV-Drop).
+ *
+ * Richtungs-Mappe: Suggestion-Modell und Audit teilen dasselbe a/b-Modell —
+ * `a` ist IMMER das zitierende Dokument (Träger des Eintrags, suggestion.ts),
+ * und der Kandidat zitiert per Konstruktion von `citing` aus → citingSide='a'.
+ * Die Audit-Richtung ('b-to-a': vom Ziel/Definierer weg zum Zitierenden) ist
+ * damit 1:1 die Suggestion-Richtung, keine Konvertierung nötig.
+ */
+export function detectMechanicalInterprets(
+  candidate: RelationCandidate,
+  meta: { now: Date }
+): RelationSuggestion | undefined {
+  // Der Paar-Ziel-Artikel ist die Artikelnummer der Ziel-Provision — dieselbe
+  // Normalisierung, mit der enumerateRelationCandidates das Ziel aufgelöst hat
+  // (articleHint → normalizeArticleNumber(target.paragraphNumber)). Per
+  // Konstruktion definiert (nur normalisierbare Provisionen werden Ziele);
+  // defensiv: ohne Nummer kein mechanisches Urteil → LLM-Pfad.
+  const pairTargetArticle = normalizeArticleNumber(candidate.target.paragraphNumber);
+  if (pairTargetArticle === undefined) return undefined;
+
+  const hit = selectBorrowSentence({
+    citingSide: 'a', // a = zitierendes Dokument = Träger des Eintrags (suggestion.ts)
+    fullText: candidate.citing.fullText,
+    pairTargetArticle,
+    targetLawIdents: identsForSource(candidate.target.source),
+    targetProvisionKind: candidate.target.provisionKind, // Task 3: P2-Quelle (typisiert)
+    targetTitle: candidate.target.title, // THE-529 Härtung: P2-Quelle (Überschrift)
+    targetFullText: candidate.target.fullText, // P2-Fallback (Ziel-Text)
+  });
+  if (!hit || hit.verdict !== 'interprets' || !hit.direction) return undefined;
+
+  // Zod-Grenze gilt auch für den mechanischen Pfad (AC-5) — wirft LAUT.
+  return assembleRelationSuggestion(
+    candidate,
+    { relation: 'INTERPRETS', direction: hit.direction },
+    {
+      model: RELATIONS_DETECTOR_MODEL,
+      now: meta.now,
+      sentence: hit.sentence,
+      pPath: formatDetectorPPath(hit.p2Source),
+    }
+  );
 }
 
 /**
@@ -252,7 +363,13 @@ export interface RelationsDocGroup {
  */
 export async function processRelationDocGroup(
   group: RelationsDocGroup,
-  opts: { force: boolean; dryRun: boolean; promptVersion: string; model: string },
+  opts: {
+    force: boolean;
+    dryRun: boolean;
+    promptVersion: string;
+    detectorVersion: string;
+    model: string;
+  },
   deps: RelationsProcessDeps,
   counters: RelationsBatchCounters
 ): Promise<void> {
@@ -268,6 +385,20 @@ export async function processRelationDocGroup(
 
   for (const candidate of candidates) {
     counters.candidatesProcessed++;
+
+    // THE-529 (Task 4): mechanischer INTERPRETS-Detektor ZUERST — trifft er,
+    // wird das LLM für diesen Kandidaten NICHT gerufen (INTERPRETS ist
+    // derivation 'mechanical'; rp-4 kennt es LLM-seitig nicht mehr).
+    const mechanical = detectMechanicalInterprets(candidate, {
+      now: deps.now?.() ?? new Date(),
+    });
+    if (mechanical) {
+      fresh.push(mechanical);
+      counters.suggestionsByType[mechanical.relationType] =
+        (counters.suggestionsByType[mechanical.relationType] ?? 0) + 1;
+      continue;
+    }
+
     const user = buildRelationsPrompt({ a: candidate.citing, b: candidate.target });
 
     let outcome: RetryOutcome;
@@ -316,6 +447,7 @@ export async function processRelationDocGroup(
     ? null
     : {
         promptVersion: opts.promptVersion,
+        detectorVersion: opts.detectorVersion,
         versionHash: doc.versionHash,
         scannedAt: deps.now?.() ?? new Date(),
       };

@@ -40,7 +40,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import mongoose from 'mongoose';
-import { NORM_ONTOLOGY, buildRegulationKey } from '@thearchitect/shared';
+import { NORM_ONTOLOGY, buildRegulationKey, type Direction, type BorrowSlots } from '@thearchitect/shared';
 import { Regulation } from '../models/Regulation';
 import {
   rankCandidatePairs,
@@ -51,9 +51,12 @@ import {
 } from '../evals/relationsCandidates';
 import {
   RelationsGoldenSetSchema,
+  loadRelationsGolden,
   type RelationsGoldenCase,
   type RelationsGoldenPairSide,
+  type RelationsGoldenSet,
 } from '../evals/relationsGolden';
+import type { AuditSidecar, SidecarSideId } from './build-interprets-audit';
 
 // ─── Reine Transformation (ohne I/O — testbar) ──────────────────
 
@@ -349,8 +352,201 @@ export function loadCandidatesFromPool(
   return bySource;
 }
 
+// ─── THE-519: --from-audit — v5 aus v4 + Audit-Sidecar + Pool ─────────
+//
+// Deterministischer Golden-Build-Pfad, der KEINE Kandidaten rankt, sondern die
+// bereits adjudizierten INTERPRETS-Wahrheiten aus dem Audit-Sidecar
+// (build-interprets-audit.ts) ins v5-Golden überträgt. Reine Funktion (keine
+// I/O), damit sie testbar bleibt; der CLI-Zweig unten hängt nur Datei-Lesen/
+// -Schreiben davor. Der Freeze (frozen:true + Beleg-Zwang) passiert später
+// separat — dieses Set kommt bewusst als `frozen:false` heraus.
+
+/** BorrowSlots → Record<string,string>, nur definierte String-Werte (für evidence.slots). */
+function slotsToRecord(slots: BorrowSlots): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(slots)) {
+    if (typeof v === 'string') out[k] = v;
+  }
+  return out;
+}
+
+/** Invers-Richtung — nur nötig, falls eine (defensiv) unsortierte Sidecar-Seite umsortiert wird. */
+function flipDirection(d: Direction | undefined): Direction | undefined {
+  if (d === 'a-to-b') return 'b-to-a';
+  if (d === 'b-to-a') return 'a-to-b';
+  return d;
+}
+
+/** Baut eine PairSide aus dem Pool: Quelle → Provision mit passendem regulationKey. Wirft laut, wenn eine Seite fehlt. */
+function pairSideFromPool(
+  side: SidecarSideId,
+  poolBySource: Map<string, CandidateParagraph[]>,
+): RelationsGoldenPairSide {
+  const candidates = poolBySource.get(side.source);
+  if (!candidates) {
+    throw new Error(
+      `buildV5FromAudit: Quelle "${side.source}" nicht im Pool — kann PairSide für ${side.regulationKey} nicht bauen`,
+    );
+  }
+  const match = candidates.find((c) => c.regulationKey === side.regulationKey);
+  if (!match) {
+    throw new Error(
+      `buildV5FromAudit: ${side.regulationKey} nicht im Pool (Quelle "${side.source}", ${candidates.length} Provision(s) vorhanden)`,
+    );
+  }
+  return toPairSide(match);
+}
+
+/**
+ * Überträgt die adjudizierten INTERPRETS-Wahrheiten aus dem Audit-Sidecar ins
+ * v5-Golden. Deterministisch:
+ *
+ *  1. Basis = tiefe Kopie aller v4-Fälle (Reihenfolge erhalten); neue Fälle
+ *     werden hinten in caseId-sortierter Reihenfolge angehängt.
+ *  2. Pro Sidecar-`perCase`:
+ *     - `interprets` → Fall IST INTERPRETS: relation/direction/evidence setzen
+ *       (Beleg aus `citingSentence` — fehlt er, wird geworfen). Existiert der
+ *       Fall in v4, wird er aktualisiert (a/b + notes bleiben); sonst NEU aus
+ *       dem Pool gebaut. `languageTwinOf` wird übernommen, wenn gesetzt.
+ *     - sonst (`none-usage`/`policy-A`/`pair-artifact`) → KEIN INTERPRETS: ein
+ *       v4-INTERPRETS wird zu `relation:null` degradiert (direction/evidence
+ *       weg, notes-Vermerk); ein bereits-null/anders-Fall bleibt unverändert;
+ *       ein neuer Nicht-INTERPRETS-Kandidat wird NICHT aufgenommen.
+ *  3. v4-Fälle, die im Sidecar nicht vorkommen, bleiben unverändert.
+ */
+export function buildV5FromAudit(
+  v4: RelationsGoldenSet,
+  sidecar: AuditSidecar,
+  poolBySource: Map<string, CandidateParagraph[]>,
+): RelationsGoldenSet {
+  // 1. Basis: tiefe Kopie aller v4-Fälle, Reihenfolge erhalten.
+  const cases: RelationsGoldenCase[] = v4.cases.map((c) => structuredClone(c));
+  const byId = new Map<string, RelationsGoldenCase>();
+  for (const c of cases) byId.set(c.caseId, c);
+
+  const newCases: RelationsGoldenCase[] = [];
+
+  for (const [caseId, pc] of Object.entries(sidecar.perCase)) {
+    const existing = byId.get(caseId);
+
+    if (pc.autoVerdict === 'interprets') {
+      // Ein INTERPRETS ohne Beleg darf nicht entstehen — sollte nie passieren.
+      if (!pc.citingSentence) {
+        throw new Error(
+          `buildV5FromAudit: INTERPRETS-Fall ${caseId} ohne citingSentence — ` +
+            `ein INTERPRETS ohne Beleg darf nicht entstehen (Sidecar defekt?)`,
+        );
+      }
+      const evidence = {
+        sentence: pc.citingSentence,
+        slots: slotsToRecord(pc.slots),
+        auditPath: pc.pPath,
+      };
+
+      if (existing) {
+        // Bestehenden Fall aktualisieren: a/b + notes bleiben, Label überschreiben.
+        existing.relation = 'INTERPRETS';
+        existing.direction = pc.direction;
+        existing.evidence = evidence;
+        if (pc.languageTwinOf) existing.languageTwinOf = pc.languageTwinOf;
+      } else {
+        // Neuer Fall: PairSides aus dem Pool holen, a<b defensiv normalisieren.
+        const sa = pairSideFromPool(pc.a, poolBySource);
+        const sb = pairSideFromPool(pc.b, poolBySource);
+        const [a, b, direction] =
+          sa.regulationKey < sb.regulationKey ? [sa, sb, pc.direction] : [sb, sa, flipDirection(pc.direction)];
+        const newCase: RelationsGoldenCase = {
+          caseId,
+          a,
+          b,
+          relation: 'INTERPRETS',
+          direction,
+          evidence,
+          ...(pc.languageTwinOf ? { languageTwinOf: pc.languageTwinOf } : {}),
+        };
+        newCases.push(newCase);
+        byId.set(caseId, newCase);
+      }
+    } else {
+      // Kein INTERPRETS.
+      if (existing && existing.relation === 'INTERPRETS') {
+        // Bewusste Degradierung zur Negativ-Klasse.
+        existing.relation = null;
+        delete existing.direction;
+        delete existing.evidence;
+        const note = `THE-519: v4-INTERPRETS degradiert (${pc.autoVerdict})`;
+        existing.notes = existing.notes ? `${existing.notes} · ${note}` : note;
+      }
+      // v4-null/andere Relation → unverändert; nicht in v4 → nicht aufnehmen.
+    }
+  }
+
+  newCases.sort((x, y) => x.caseId.localeCompare(y.caseId));
+  cases.push(...newCases);
+
+  return {
+    version: 'relations.v5',
+    frozen: false,
+    ontologyVersion: v4.ontologyVersion,
+    rubricRef: v4.rubricRef,
+    cases,
+  };
+}
+
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
+
+  // ── THE-519: --from-audit — v5 aus v4 + Sidecar + Pool (kein Ranking, keine DB) ──
+  const fromAuditArg = argValue(argv, '--from-audit');
+  if (fromAuditArg) {
+    const goldenArg = argValue(argv, '--golden');
+    const fromFileArg = argValue(argv, '--from-file');
+    const outArg = argValue(argv, '--out');
+    if (!goldenArg || !fromFileArg || !outArg) {
+      console.error(
+        '--from-audit braucht --golden <v4.json>, --from-file <pool.json> und --out <v5.json>.',
+      );
+      process.exitCode = 2;
+      return;
+    }
+    const v4 = loadRelationsGolden(path.resolve(goldenArg));
+    const sidecar = JSON.parse(fs.readFileSync(path.resolve(fromAuditArg), 'utf8')) as AuditSidecar;
+    const pool = JSON.parse(fs.readFileSync(path.resolve(fromFileArg), 'utf8'));
+    if (!Array.isArray(pool)) throw new Error(`--from-file: ${path.resolve(fromFileArg)} enthält kein Array`);
+
+    const sidecarSources = [
+      ...new Set(Object.values(sidecar.perCase).flatMap((pc) => [pc.a.source, pc.b.source])),
+    ];
+    const poolBySource = loadCandidatesFromPool(pool, sidecarSources);
+
+    const v5 = buildV5FromAudit(v4, sidecar, poolBySource);
+
+    const outPath = path.resolve(outArg);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
+    fs.writeFileSync(outPath, JSON.stringify(v5, null, 2) + '\n');
+
+    const interpretsTotal = v5.cases.filter((c) => c.relation === 'INTERPRETS').length;
+    const interpretsCanonical = v5.cases.filter(
+      (c) => c.relation === 'INTERPRETS' && !c.languageTwinOf,
+    ).length;
+    const v4InterpretsIds = new Set(
+      v4.cases.filter((c) => c.relation === 'INTERPRETS').map((c) => c.caseId),
+    );
+    const degraded = v5.cases.filter(
+      (c) => v4InterpretsIds.has(c.caseId) && c.relation !== 'INTERPRETS',
+    ).length;
+    const v4Ids = new Set(v4.cases.map((c) => c.caseId));
+    const added = v5.cases.filter((c) => !v4Ids.has(c.caseId)).length;
+
+    console.error(
+      `[relations-build --from-audit] ${v5.cases.length} Fälle · ` +
+        `INTERPRETS ${interpretsTotal} (kanonisch ${interpretsCanonical}, Sprachzwillinge einfach) · ` +
+        `degradierte v4-INTERPRETS ${degraded} · neu aufgenommen ${added}\n` +
+        `[relations-build --from-audit] → ${outPath}`,
+    );
+    return;
+  }
+
   const pairsArg = argValue(argv, '--pairs');
   const outArg = argValue(argv, '--out');
   const targetSizeArg = argValue(argv, '--target-size');

@@ -27,7 +27,7 @@ const IdLabel = z.object({ id: z.string().min(1), label: z.string().min(1) });
 const RelationTypeEntry = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
-  derivation: z.enum(['metadata', 'inferred']),
+  derivation: z.enum(['metadata', 'inferred', 'mechanical']),
   directed: z.boolean(),
   inverseOf: z.string().min(1).optional(),
 });
@@ -139,4 +139,17 @@ export const LanguageSchema = makeMemberSchema(languageIds, 'languages');
 export function isInferredRelation(id: string): boolean {
   const rel = NORM_ONTOLOGY.relationTypes.find((r) => r.id === id);
   return rel?.derivation === 'inferred';
+}
+
+/**
+ * Relation types produced by a deterministic detector (derivation ===
+ * 'mechanical', THE-529). Their truth is the shared parser in
+ * relations/interpretsAudit.ts — they are NEVER proposed by the LLM (the
+ * registry-driven options list excludes them, parseRelationLabel drops them
+ * as OOV) and NEVER come from the parser-metadata path (ELI/CELLAR).
+ * Returns true if `id` is a mechanical relation.
+ */
+export function isMechanicalRelation(id: string): boolean {
+  const rel = NORM_ONTOLOGY.relationTypes.find((r) => r.id === id);
+  return rel?.derivation === 'mechanical';
 }

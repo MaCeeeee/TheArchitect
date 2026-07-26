@@ -8,7 +8,13 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/relationsKappa.test.ts
  */
-import { makeBlindRelationsCopy, compareRelationsSets } from '../scripts/relations-kappa';
+import {
+  makeBlindRelationsCopy,
+  compareRelationsSets,
+  dominantAnnotator,
+  leakageViolations,
+  classComposition,
+} from '../scripts/relations-kappa';
 import {
   RelationsGoldenSetSchema,
   type RelationsGoldenSet,
@@ -54,6 +60,8 @@ describe('makeBlindRelationsCopy()', () => {
       notes: 'LLM-Vorschlag: DORA verdrängt NIS2 für Finanzunternehmen',
       annotator: 'A',
       labeledAt: '2026-07-20',
+      evidence: { sentence: 'DORA Art. 1 verdrängt NIS2 …', slots: { term: 'x' }, auditPath: 'P0 ✓' },
+      languageTwinOf: 'case-1-en',
     }),
   ]);
 
@@ -66,6 +74,9 @@ describe('makeBlindRelationsCopy()', () => {
       expect(c.notes).toBeUndefined();
       expect(c.ambiguous).toBeUndefined();
       expect(c.labeledAt).toBeUndefined();
+      // THE-519: der Beleg (Satz + Slots) und die Zwillings-Markierung sind Anker → müssen weg.
+      expect(c.evidence).toBeUndefined();
+      expect(c.languageTwinOf).toBeUndefined();
     }
     expect(blind.frozen).toBe(false);
     expect(RelationsGoldenSetSchema.safeParse(blind).success).toBe(true);
@@ -196,5 +207,50 @@ describe('compareRelationsSets() — unmatched cases', () => {
     expect(r.unmatchedCaseIds).toContain('case-2');
     expect(r.unmatchedCaseIds).toContain('case-3');
     expect(r.sharedCases).toBe(1);
+  });
+});
+
+describe('Kohärenz-Gate (THE-519) — Leakage-Sperre + Komposition', () => {
+  it('dominantAnnotator liefert den häufigsten annotator-Tag', () => {
+    const s = set([
+      caseFixture('c1', { relation: null, annotator: 'anthropic:claude-opus-4-8' }),
+      caseFixture('c2', { relation: null, annotator: 'anthropic:claude-opus-4-8' }),
+      caseFixture('c3', { relation: null, annotator: 'openrouter:gpt-5' }),
+    ]);
+    expect(dominantAnnotator(s)).toBe('anthropic:claude-opus-4-8');
+  });
+
+  it('leakageViolations: Rater A = Haiku wird abgelehnt', () => {
+    const v = leakageViolations('anthropic:claude-haiku-4-5-20251001', 'openrouter:gpt-5');
+    expect(v.length).toBeGreaterThan(0);
+    expect(v.join(' ')).toMatch(/Haiku/);
+  });
+
+  it('leakageViolations: Rater B ohne openrouter wird abgelehnt', () => {
+    const v = leakageViolations('anthropic:claude-opus-4-8', 'anthropic:claude-opus-4-8');
+    expect(v.length).toBeGreaterThan(0);
+    expect(v.join(' ')).toMatch(/Cross-House/);
+  });
+
+  it('leakageViolations: Opus (A) + OpenRouter (B) passiert sauber', () => {
+    expect(leakageViolations('anthropic:claude-opus-4-8', 'openrouter:openai/gpt-5')).toEqual([]);
+  });
+
+  it('leakageViolations: leere annotator-Tags werden beanstandet', () => {
+    expect(leakageViolations('', 'openrouter:gpt-5').length).toBeGreaterThan(0);
+    expect(leakageViolations('anthropic:claude-opus-4-8', '').length).toBeGreaterThan(0);
+  });
+
+  it('classComposition zählt Klassen und ignoriert ungelabelte Fälle', () => {
+    const s = set([
+      caseFixture('c1', { relation: 'INTERPRETS', direction: 'b-to-a' }),
+      caseFixture('c2', { relation: 'INTERPRETS', direction: 'b-to-a' }),
+      caseFixture('c3', { relation: null }),
+      caseFixture('c4', {}), // offen/ungelabelt → zählt nicht
+    ]);
+    const comp = classComposition(s);
+    expect(comp.get('INTERPRETS:b-to-a')).toBe(2);
+    expect(comp.get('__none__')).toBe(1);
+    expect([...comp.keys()]).not.toContain('__open__');
   });
 });

@@ -42,7 +42,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { isInferredRelation } from '@thearchitect/shared';
+import { isInferredRelation, isMechanicalRelation } from '@thearchitect/shared';
 
 // ─── Pair side ───────────────────────────────────────────────────────
 
@@ -61,15 +61,34 @@ export type RelationsGoldenPairSide = z.infer<typeof PairSide>;
 
 /**
  * `relation` is `.optional()` (open/draft), or `null` (deliberate negative —
- * "no relation"), or a relation-type id. The id MUST be an `inferred` type —
- * `metadata` edges (AMENDS/CONSOLIDATES/REPEALS/CITES) come from the parser,
- * never from a model/annotator proposing a golden label here.
+ * "no relation"), or a relation-type id. The id MUST be an `inferred` or
+ * `mechanical` type — `metadata` edges (AMENDS/CONSOLIDATES/REPEALS/CITES)
+ * come from the parser, never from a model/annotator proposing a golden label
+ * here. THE-529: the golden also carries mechanical truths (INTERPRETS) — the
+ * rater tooling (kappa/prelabel/worksheet) and all v3/v4/v5 golden files must
+ * keep reading them after the registry flip.
  */
-const RelationTypeLabel = z.union([z.string(), z.null()]).refine((v) => v === null || isInferredRelation(v), {
-  message: "relation must be an ontology 'inferred' relation type or null (metadata relations must never be labeled here)",
-});
+const RelationTypeLabel = z
+  .union([z.string(), z.null()])
+  .refine((v) => v === null || isInferredRelation(v) || isMechanicalRelation(v), {
+    message:
+      "relation must be an ontology 'inferred' or 'mechanical' relation type or null (metadata relations must never be labeled here)",
+  });
 
 const DirectionSchema = z.enum(['a-to-b', 'b-to-a']);
+
+/**
+ * Beleg am Fall (THE-519, Golden v5): der Satz, der die INTERPRETS-Anleihe
+ * trägt, plus optional die aufgelösten Schablonen-Slots und der Prüfbaum-Pfad
+ * (P0→P1→P2). Macht eingefrorene INTERPRETS-Fälle AUDITIERBAR — der Beleg
+ * reist am Fall mit, nicht in einer Nebendatei. Additiv; `evidence` selbst ist
+ * `.optional()`, die Pflicht kommt set-level nur für `frozen === true`.
+ */
+const EvidenceSchema = z.object({
+  sentence: z.string().min(1),
+  slots: z.record(z.string()).optional(),
+  auditPath: z.string().optional(),
+});
 
 export const RelationsGoldenCaseSchema = z
   .object({
@@ -82,6 +101,14 @@ export const RelationsGoldenCaseSchema = z
     notes: z.string().optional(),
     annotator: z.string().optional(),
     labeledAt: z.string().optional(),
+    evidence: EvidenceSchema.optional(),
+    /**
+     * Sprachzwilling (THE-519): caseId des Zwillings in der ANDEREN Sprache
+     * (dieselbe Anleihe in DE und EN). Nur EINE Seite trägt das Feld — egal
+     * welche —, damit die „n≥12 saubere Fälle"-Zählung Zwillinge als einen
+     * Fall zählen kann. Rein additiv und optional.
+     */
+    languageTwinOf: z.string().optional(),
     /**
      * `true` = der Prüfer hat für diesen Fall GAR KEINE Antwort geliefert (auch
      * nach Wiederholungen leer) — eine FEHLGESCHLAGENE MESSUNG, keine Label-
@@ -112,14 +139,54 @@ export const RelationsGoldenCaseSchema = z
 
 export type RelationsGoldenCase = z.infer<typeof RelationsGoldenCaseSchema>;
 
-export const RelationsGoldenSetSchema = z.object({
-  version: z.string().min(1),
-  frozen: z.boolean(),
-  /** E6/E7-Version, gegen die gelabelt wurde — Drift-Anker bei Ontologie-Bump. */
-  ontologyVersion: z.string().min(1),
-  rubricRef: z.string().default('RUBRIC.md'),
-  cases: z.array(RelationsGoldenCaseSchema).min(1),
-});
+export const RelationsGoldenSetSchema = z
+  .object({
+    version: z.string().min(1),
+    frozen: z.boolean(),
+    /** E6/E7-Version, gegen die gelabelt wurde — Drift-Anker bei Ontologie-Bump. */
+    ontologyVersion: z.string().min(1),
+    rubricRef: z.string().default('RUBRIC.md'),
+    /**
+     * Set-Level-Provenance (THE-529, additiv): Woher die Wahrheiten stammen —
+     * Adjudikations-Datum, Basis-Version, Gate-Historie, Fremd-Checks. Ohne
+     * dieses Feld würde Zod die Provenance beim Parsen stillschweigend
+     * strippen; ein frozen Set OHNE nachvollziehbare Herkunft ist keine
+     * Baseline-Grundlage.
+     */
+    notes: z.string().optional(),
+    cases: z.array(RelationsGoldenCaseSchema).min(1),
+  })
+  /**
+   * Auditierbarkeits-Tor (THE-519): in einem EINGEFRORENEN Set muss jeder
+   * INTERPRETS-Fall seinen Beleg tragen. Set-level (nicht am Fall!), weil die
+   * Pflicht von `frozen` abhängt: `frozen === false` (Rater-/Blind-/Draft-
+   * Dateien) läuft durch dieselbe Parse-Kette — ein Rater darf einen
+   * INTERPRETS-Fall OHNE evidence labeln, ohne dass der bezahlte Lauf crasht.
+   *
+   * Grandfathering: Der Beleg-Zwang wurde mit v5 eingeführt. Frozen-Goldens
+   * davor (v1..v4) luden lange ohne Beleg und MÜSSEN weiter laden (Generator,
+   * Baseline-Default, Kappa-Tools lesen v4 als Basis, bis v5 sie ablöst) —
+   * sonst bräche dieser rückwirkende Refine den v4→v5-Übergang. `evidenceEra`
+   * greift ab Major-Version 5; ein unbekanntes Schema wird streng behandelt.
+   */
+  .refine(
+    (set) =>
+      !set.frozen ||
+      !evidenceEra(set.version) ||
+      set.cases.every((c) => c.relation !== 'INTERPRETS' || (c.evidence !== undefined && c.evidence.sentence.length > 0)),
+    { message: 'frozen set (v5+): every INTERPRETS case must carry evidence.sentence', path: ['cases'] }
+  );
+
+/**
+ * Ob die Beleg-Pflicht für diese Golden-Version gilt. Versionen heißen
+ * `relations.v4`, `relations.v5`, … (auch bloß `v5`) — der Beleg-Zwang
+ * (THE-519) beginnt bei Major 5. Eine Version ohne erkennbares `v<n>` gilt als
+ * „neu" → streng (trägt Beleg).
+ */
+export function evidenceEra(version: string): boolean {
+  const m = /v(\d+)/.exec(version);
+  return m ? Number(m[1]) >= 5 : true;
+}
 
 export type RelationsGoldenSet = z.infer<typeof RelationsGoldenSetSchema>;
 

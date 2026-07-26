@@ -26,6 +26,7 @@ export {
   NormSourceSchema,
   LanguageSchema,
   isInferredRelation,
+  isMechanicalRelation,
 } from './norm-ontology.schema';
 
 // ─── Derived allowed-value sets (data-driven — no hand-maintained enum) ──

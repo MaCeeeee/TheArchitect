@@ -89,15 +89,15 @@
 </head>
 <body>
   <h1>INTERPRETS — Audit-Instrument</h1>
-  <p class="lede">THE-519 · erzeugt 2026-07-26T07:03:38.323Z · aus <code>relations.v4.json</code>.
+  <p class="lede">THE-519 · erzeugt 2026-07-26T08:14:16.922Z · aus <code>relations.v4.json</code>.
   Das Instrument urteilt nicht — es zeigt für jeden Fall, was im markierten Satz steht, und leitet
   daraus mechanisch ein Verdikt + die berechnete Richtung ab.</p>
 
   <div class="counts">
-    <div class="box"><b>21</b> Fälle in der Audit-Teilmenge</div>
+    <div class="box"><b>29</b> Fälle in der Audit-Teilmenge</div>
     <div class="box"><b>10</b> (a) v4-INTERPRETS</div>
     <div class="box"><b>5</b> (b) v4-none + Operator</div>
-    <div class="box"><b>6</b> (c) Pool</div>
+    <div class="box"><b>14</b> (c) Pool</div>
   </div>
 
   <div class="legend">
@@ -151,7 +151,7 @@
     <p><b>Zu entscheiden:</b> Nutzungs-Referenz endgültig als <code>none</code> festzurren?</p>
   </div>
 
-  <h2>Alle Fälle der Audit-Teilmenge (21)</h2>
+  <h2>Alle Fälle der Audit-Teilmenge (29)</h2>
   <article class="card">
     <header>
       <div class="card-id"><code>ai-act-de-art-3__dsgvo-art-4</code></div>
@@ -204,6 +204,31 @@
   </article>
 <article class="card">
     <header>
+      <div class="card-id"><code>ai-act-de-art-3__standardisation-de-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> ai-act-de Art. 3 — Begriffsbestimmungen</div>
+      <div><b>b</b> standardisation-de Art. 2 — Begriffsbestimmungen</div>
+    </div>
+    <div class="sentence">27. „<mark class="slot-term">harmonisierte Norm</mark>“ bezeichnet eine harmonisierte Norm <mark class="slot-operator">im Sinne</mark> des <mark class="slot-article">Artikels 2</mark> Absatz 1 Buchstabe c der Verordnung (EU) Nr. <mark class="slot-law">1025/2012</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> harmonisierte Norm</span>
+         <span class="chip chip-ok"><b>Operator</b> im Sinne</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „im Sinne&quot; auf das Definiendum „harmonisierte Norm&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
       <div class="card-id"><code>ai-act-en-art-3__dsgvo-en-art-4</code></div>
       <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
     </header>
@@ -226,6 +251,31 @@
        </div>
     <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
     <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „personal data&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>ai-act-en-art-3__standardisation-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      <span class="twin">Sprachzwilling von <code>ai-act-de-art-3__standardisation-de-art-2</code> (zählt für n einfach)</span>
+    </div>
+    <div class="provisions">
+      <div><b>a</b> ai-act-en Art. 3 — Definitions</div>
+      <div><b>b</b> standardisation-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(27) ‘<mark class="slot-term">harmonised standard</mark>’ means a harmonised standard <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 2</mark>(1), point (c), of Regulation (EU) No <mark class="slot-law">1025/2012</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> harmonised standard</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „harmonised standard&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
   </article>
 <article class="card">
     <header>
@@ -329,6 +379,31 @@
   </article>
 <article class="card">
     <header>
+      <div class="card-id"><code>cra-en-art-3__standardisation-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> cra-en Art. 3 — Definitions</div>
+      <div><b>b</b> standardisation-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(34) ‘<mark class="slot-term">international standard</mark>’ means an international standard <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 2</mark>, point (1)(a), of Regulation (EU) No <mark class="slot-law">1025/2012</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> international standard</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „international standard&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
       <div class="card-id"><code>cra-en-art-57__nis2-art-3</code></div>
       <div class="verdict verdict-none-usage">none (Nutzung)</div>
     </header>
@@ -426,6 +501,81 @@
        </div>
     <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
     <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „personal data&quot;.</li><li>P1 positiv: Verweis auf Artikel 4 des Ziel-Gesetzes (2016/679).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>data-act-en-art-2__standardisation-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> data-act-en Art. 2 — Definitions</div>
+      <div><b>b</b> standardisation-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(43) ‘<mark class="slot-term">harmonised standard</mark>’ means a harmonised standard <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 2</mark>, point (1)(c), of Regulation (EU) No <mark class="slot-law">1025/2012</mark>.</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> harmonised standard</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „harmonised standard&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-art-3__emoney-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora Art. 3 — Definitions</div>
+      <div><b>b</b> emoney-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(38) ‘<mark class="slot-term">electronic money institution</mark>’ means an electronic money institution <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 2</mark>, point (1), of Directive <mark class="slot-law">2009/110</mark>/EC of the European Parliament and of the Council;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> electronic money institution</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2009/110</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „electronic money institution&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (2009/110).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>dora-art-3__emoney-en-art-9</code></div>
+      <div class="verdict verdict-policy-A">policy-A (offen) · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> dora Art. 3 — Definitions</div>
+      <div><b>b</b> emoney-en Art. 9 — Optional exemptions</div>
+    </div>
+    <div class="sentence">(39) ‘electronic money institution exempted pursuant to Directive <mark class="slot-law">2009/110</mark>/EC’ means an electronic money institution benefitting from a waiver as referred to in <mark class="slot-article">Article 9</mark>(1) of Directive 2009/110/EC; (40) ‘<mark class="slot-term">central counterparty</mark>’ means a central counterparty <mark class="slot-operator">as defined in</mark> Article 2, point (1), of Regulation (EU) No 648/2012;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> central counterparty</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 9</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 2009/110</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✗</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „central counterparty&quot;.</li><li>P1 positiv: Verweis auf Artikel 9 des Ziel-Gesetzes (2009/110).</li><li>P2 negativ: Ziel-Provision ist kein Definitions-Ort (geprägter Begriff über einen Sach-Artikel).</li><li>Verdikt policy-A (offen bis Architekten-Regel A) — Richtung berechnet: b-to-a.</li></ul></details>
   </article>
 <article class="card">
     <header>
@@ -664,6 +814,56 @@
        </div>
     <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
     <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „trust service&quot;.</li><li>P1 positiv: Verweis auf Artikel 3 des Ziel-Gesetzes (910/2014).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: a-to-b (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>mdr-en-art-2__standardisation-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> mdr-en Art. 2 — Definitions</div>
+      <div><b>b</b> standardisation-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(70) ‘<mark class="slot-term">harmonised standard</mark>’ means a European standard <mark class="slot-operator">as defined in</mark> point (1)(c) of <mark class="slot-article">Article 2</mark> of Regulation (EU) No <mark class="slot-law">1025/2012</mark>;</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> harmonised standard</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „harmonised standard&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
+  </article>
+<article class="card">
+    <header>
+      <div class="card-id"><code>nis2-art-6__standardisation-en-art-2</code></div>
+      <div class="verdict verdict-interprets">INTERPRETS · Richtung <code>b-to-a</code></div>
+    </header>
+    <div class="meta">
+      <span class="bucket">(c) Pool-Kandidat</span>
+      <span>v4: neu (Pool)</span>
+      <span>zitierende Seite: <code>a</code></span>
+      
+    </div>
+    <div class="provisions">
+      <div><b>a</b> nis2 Art. 6 — Definitions</div>
+      <div><b>b</b> standardisation-en Art. 2 — Definitions</div>
+    </div>
+    <div class="sentence">(16) ‘<mark class="slot-term">standard</mark>’ means a standard <mark class="slot-operator">as defined in</mark> <mark class="slot-article">Article 2</mark>, point (1), of Regulation (EU) No <mark class="slot-law">1025/2012</mark> of the European Parliament and of the Council [(29)](https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555#ntr29-L_2022333EN.01008001-E0029);</div>
+       <div class="chips">
+         <span class="chip chip-ok"><b>Begriff</b> standard</span>
+         <span class="chip chip-ok"><b>Operator</b> as defined in</span>
+         <span class="chip chip-ok"><b>Ziel-Artikel</b> 2</span>
+         <span class="chip chip-ok"><b>Ziel-Gesetz</b> 1025/2012</span>
+       </div>
+    <div class="ppath">P0 ✓ · P1 ✓ · P2 ✓ (typisiert)</div>
+    <details><summary>Prüfpfad im Klartext</summary><ul><li>P0 positiv: Leih-Operator „as defined in&quot; auf das Definiendum „standard&quot;.</li><li>P1 positiv: Verweis auf Artikel 2 des Ziel-Gesetzes (1025/2012).</li><li>P2 positiv: Ziel-Provision ist als Definition typisiert.</li><li>Verdikt interprets — Richtung berechnet: b-to-a (vom Definierer weg).</li></ul></details>
   </article>
 </body>
 </html>

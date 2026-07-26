@@ -33,13 +33,16 @@ const pairCase: RelationsGoldenCase = {
 };
 
 describe('buildRelationsPrompt', () => {
-  it('offers only inferred relation types, never metadata ones', () => {
+  it('offers only inferred relation types, never metadata or mechanical ones', () => {
     const p = buildRelationsPrompt(pairCase);
     expect(p).toContain('DEROGATED_BY');
     expect(p).not.toContain('AMENDS');
     expect(p).not.toContain('CITES');
     expect(p).not.toContain('CONSOLIDATES');
     expect(p).not.toContain('REPEALS');
+    // THE-529: INTERPRETS is mechanical (parser-detected) — the registry-driven
+    // options list must not offer it to the LLM anymore.
+    expect(p).not.toContain('INTERPRETS');
     expect(p).toContain('none');
   });
 
@@ -116,6 +119,17 @@ describe('parseRelationLabel', () => {
     expect(r.relation).toBeUndefined();
     expect(r.dropped).toBe(true);
   });
+
+  // THE-529 Drift-Schutz: ein Alt-Modell (oder ein Modell, das INTERPRETS aus
+  // dem Training kennt) darf die mechanische Relation nicht mehr über den
+  // LLM-Pfad einschleusen — sie ist ab rp-4 OOV und wird gedroppt. Die Wahrheit
+  // für INTERPRETS erzeugt ausschließlich der Parser (interpretsAudit.ts).
+  it('drops INTERPRETS as OOV — it is mechanical now, never LLM-proposed', () => {
+    const r = parseRelationLabel('{"relation":"INTERPRETS","direction":"b-to-a"}');
+    expect(r.relation).toBeUndefined();
+    expect(r.direction).toBeUndefined();
+    expect(r.dropped).toBe(true);
+  });
 });
 
 // Der erste Zwei-Prüfer-Lauf ohne Rubrik-Regeln kam auf Kappa 0,265: beide
@@ -145,14 +159,17 @@ describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
     expect(p).toContain('Equivalence-as-exception is displacement');
   });
 
-  // C-v1.2 (THE-519): INTERPRETS ist eine Schablone, die Richtung wird BERECHNET,
-  // nie geurteilt. Asserted werden Kernsätze, NICHT das Versions-Literal oder der
-  // exakte RULE-Wortlaut (sonst bricht die rp-3-Finalisierung diese Tests).
-  it('carries the sharpened INTERPRETS rule: borrow template + derived direction', () => {
+  // rp-4 (THE-529): INTERPRETS ist mechanisch geworden — die Schablonen-Regeln
+  // (BORROW TEMPLATE, RULE 5a/5b) leben jetzt im deterministischen Detektor
+  // (shared/src/relations/interpretsAudit.ts), NICHT mehr im LLM-Prompt. Der
+  // Prompt darf INTERPRETS weder anbieten noch erklären.
+  it('carries NO INTERPRETS rule text anymore — the rules moved into the mechanical detector', () => {
     const p = buildRelationsPrompt(anyCase as never);
-    expect(p).toContain('BORROW TEMPLATE');
-    expect(p).toContain('direction is DERIVED, never judged');
-    expect(p).toContain('bare usage/competence reference WITHOUT a definiendum operator');
+    expect(p).not.toContain('INTERPRETS');
+    expect(p).not.toContain('BORROW TEMPLATE');
+    expect(p).not.toContain('direction is DERIVED, never judged');
+    expect(p).not.toContain('must DEFINE the term');
+    expect(p).not.toContain('usage is not interpretation');
   });
 
   it('carries the displacement-vs-concretisation test from C5', () => {

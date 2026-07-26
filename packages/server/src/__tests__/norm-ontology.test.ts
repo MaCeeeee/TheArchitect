@@ -11,6 +11,7 @@ import {
   NormKindSchema,
   RelationTypeSchema,
   isInferredRelation,
+  isMechanicalRelation,
   exportForOntoLearner,
   isNormSource,
   isJurisdiction,
@@ -52,12 +53,18 @@ describe('E6 Norm-Ontology (THE-429)', () => {
     expect(sources).toEqual(expect.arrayContaining(['ai-act-en', 'ai-act-de', 'data-act-en', 'data-act-de']));
   });
 
-  // THE-433 AC-5 boundary contract: parser-derived edges are not LLM-proposable.
-  it('separates metadata (parser) from inferred (LLM) relations', () => {
+  // THE-433 AC-5 boundary contract, extended by THE-529: three derivation paths.
+  // metadata = parser (ELI/CELLAR), inferred = LLM-proposed, mechanical =
+  // deterministic detector (INTERPRETS via interpretsAudit.ts) — never the LLM.
+  it('separates metadata (parser) from inferred (LLM) from mechanical (detector) relations', () => {
     expect(isInferredRelation('AMENDS')).toBe(false); // ELI/CELLAR metadata
     expect(isInferredRelation('REPEALS')).toBe(false);
     expect(isInferredRelation('DEROGATED_BY')).toBe(true); // text-inferred, human-confirmed
-    expect(isInferredRelation('INTERPRETS')).toBe(true);
+    // THE-529: INTERPRETS left the LLM path — it is mechanical now.
+    expect(isInferredRelation('INTERPRETS')).toBe(false);
+    expect(isMechanicalRelation('INTERPRETS')).toBe(true);
+    expect(isMechanicalRelation('CONCRETIZES')).toBe(false);
+    expect(isMechanicalRelation('AMENDS')).toBe(false); // metadata stays metadata
   });
 
   // AC-3: OntoLearner export is JSON-roundtrippable and covers every vocabulary id.

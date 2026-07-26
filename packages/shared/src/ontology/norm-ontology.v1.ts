@@ -76,10 +76,12 @@ export const NORM_ONTOLOGY = {
 
   /**
    * E7 — cross-norm relation types.
-   * `derivation` is the boundary contract between the deterministic parser path
-   * and the LLM-suggestion path (THE-433 AC-5): 'metadata' edges come from
-   * ELI/CELLAR and MUST NOT be produced by an LLM; 'inferred' edges are the
-   * text-dependent ones the RE pipeline may suggest (human-confirmed).
+   * `derivation` is the boundary contract between three producer paths
+   * (THE-433 AC-5, extended THE-529): 'metadata' edges come from ELI/CELLAR
+   * and MUST NOT be produced by an LLM; 'inferred' edges are the
+   * text-dependent ones the RE pipeline may suggest (human-confirmed);
+   * 'mechanical' edges are produced by a deterministic detector (truth:
+   * relations/interpretsAudit.ts) — never LLM-proposed, never metadata.
    */
   relationTypes: [
     { id: 'AMENDS', label: 'amends', derivation: 'metadata', directed: true },
@@ -93,7 +95,11 @@ export const NORM_ONTOLOGY = {
     { id: 'PREVAILS_OVER', label: 'prevails over', derivation: 'inferred', directed: true, inverseOf: 'DEROGATED_BY' },
     { id: 'SETS_PARAMETER', label: 'sets parameter', derivation: 'inferred', directed: true },
     { id: 'RECOGNIZES_EQUIVALENCE', label: 'recognizes equivalence', derivation: 'inferred', directed: true },
-    { id: 'INTERPRETS', label: 'interprets', derivation: 'inferred', directed: true },
+    // THE-529 — Kohärenz-Gate 0,35 (Opus/GPT-5 uneins über die Regel-Anwendung),
+    // Kimi-Fremd-Check 92,6 % für die Parser-Wahrheit: INTERPRETS ist eine
+    // Schablonen-Relation (Borrow-Template, Richtung berechnet) und verlässt
+    // den LLM-Pfad — Detektor: relations/interpretsAudit.ts.
+    { id: 'INTERPRETS', label: 'interprets', derivation: 'mechanical', directed: true },
   ],
 
   /**

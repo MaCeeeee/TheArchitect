@@ -192,19 +192,94 @@ export function makeBlindRelationsCopy(set: RelationsGoldenSet): RelationsGolden
         // Auch ein Ausfall-Vermerk ist eine Spur des ersten Durchgangs und
         // damit ein Anker — er gehört in A's Datei, nicht in B's blinde Kopie.
         measurementFailed: undefined,
+        // THE-519: evidence trägt den Beleg-Satz + die Slots (Begriff/Operator) —
+        // der STÄRKSTE Anker überhaupt; languageTwinOf verrät „Zwilling eines
+        // gelabelten Falls". Beide raus, sonst ist die Kopie nicht blind.
+        evidence: undefined,
+        languageTwinOf: undefined,
       }),
     ),
   };
 }
 
+// ─── Kohärenz-Gate (THE-519) ─────────────────────────────────────
+
+/** Häufigster nicht-leerer annotator-Tag über die gelabelten Fälle. */
+export function dominantAnnotator(set: RelationsGoldenSet): string {
+  const counts = new Map<string, number>();
+  for (const c of set.cases) {
+    if (c.annotator) counts.set(c.annotator, (counts.get(c.annotator) ?? 0) + 1);
+  }
+  let best = '';
+  let bestN = 0;
+  for (const [tag, n] of counts) {
+    if (n > bestN) {
+      best = tag;
+      bestN = n;
+    }
+  }
+  return best;
+}
+
+/**
+ * Harte Leakage-Sperre fürs Kohärenz-Gate (Plan Task 5, Leitplanke „Leakage
+ * unmöglich"). Rater A darf NICHT das getestete Prod-Modell (Haiku) sein —
+ * sonst labelt das Modell seine eigene Wahrheit. Rater B MUSS das Cross-House-
+ * Modell (OpenRouter/GPT-5) sein — sonst misst das Gate keine Haus-übergreifende
+ * Kohärenz. Gibt die Verletzungsgründe zurück (leer = ok).
+ */
+export function leakageViolations(annotatorA: string, annotatorB: string): string[] {
+  const out: string[] = [];
+  if (!annotatorA) out.push('Rater A (Datei 1) trägt keinen annotator-Tag.');
+  else if (/haiku/i.test(annotatorA))
+    out.push(`Rater A ist Haiku (annotator="${annotatorA}") — das getestete Prod-Modell darf die Wahrheit nicht selbst labeln.`);
+  if (!annotatorB) out.push('Rater B (Datei 2) trägt keinen annotator-Tag.');
+  else if (!/openrouter/i.test(annotatorB))
+    out.push(`Rater B ist nicht Cross-House (annotator="${annotatorB}" ohne "openrouter") — das Gate braucht ein Fremd-Haus-Modell.`);
+  return out;
+}
+
+/** Klassen-Verteilung (relationLabelForKappa) über ein Set — für B4a-Ausweis konstanter Klassen. */
+export function classComposition(set: RelationsGoldenSet): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const c of set.cases) {
+    const label = relationLabelForKappa(c);
+    if (label === '__open__') continue; // ungelabelt zählt nicht als Klasse
+    m.set(label, (m.get(label) ?? 0) + 1);
+  }
+  return m;
+}
+
 // ─── CLI ────────────────────────────────────────────────────────
 
 function main(): void {
-  const [mode, arg1, arg2] = process.argv.slice(2);
+  const argv = process.argv.slice(2);
+  const flags = new Set(argv.filter((a) => a.startsWith('--')));
+  const flagValue = (name: string): string | undefined => {
+    const i = argv.indexOf(name);
+    return i !== -1 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : undefined;
+  };
+  const positional = argv.filter((a, i) => !a.startsWith('--') && !(i > 0 && argv[i - 1] === '--only'));
+  const [mode, arg1, arg2] = positional;
 
   if (mode === 'blind' && arg1 && arg2) {
     const set = loadRelationsGolden(path.resolve(arg1));
-    const blind = makeBlindRelationsCopy(set);
+    // --only <sidecar.json>: auf die eingefrorene Audit-Teilmenge (caseIds)
+    // beschränken — die vorregistrierte Kohärenz-Gate-Menge (THE-519).
+    const onlyPath = flagValue('--only');
+    let source = set;
+    if (onlyPath) {
+      const sidecar = JSON.parse(fs.readFileSync(path.resolve(onlyPath), 'utf8')) as { caseIds?: string[] };
+      const ids = new Set(sidecar.caseIds ?? []);
+      if (ids.size === 0) throw new Error(`--only: ${onlyPath} enthält keine caseIds`);
+      const kept = set.cases.filter((c) => ids.has(c.caseId));
+      const missing = [...ids].filter((id) => !kept.some((c) => c.caseId === id));
+      if (missing.length > 0)
+        console.error(`[relations-kappa] ⚠️ ${missing.length} Teilmengen-caseIds nicht im Set: ${missing.join(', ')}`);
+      source = { ...set, cases: kept };
+      console.error(`[relations-kappa] --only: ${kept.length}/${ids.size} Teilmengen-Fälle behalten.`);
+    }
+    const blind = makeBlindRelationsCopy(source);
     fs.writeFileSync(path.resolve(arg2), JSON.stringify(blind, null, 2));
     console.log(
       `[relations-kappa] blind copy: ${blind.cases.length} cases → ${arg2}\n` +
@@ -216,6 +291,23 @@ function main(): void {
   if (mode === 'compare' && arg1 && arg2) {
     const a = loadRelationsGolden(path.resolve(arg1));
     const b = loadRelationsGolden(path.resolve(arg2));
+    const gate = flags.has('--gate');
+
+    // --gate: harte Leakage-Sperre VOR jeder Zahl (Kohärenz-Gate THE-519).
+    // arg1 = Rater A (Opus, nicht Haiku), arg2 = Rater B (OpenRouter/GPT-5).
+    if (gate) {
+      const annA = dominantAnnotator(a);
+      const annB = dominantAnnotator(b);
+      const violations = leakageViolations(annA, annB);
+      if (violations.length > 0) {
+        console.error('[relations-kappa] ⛔ KOHÄRENZ-GATE ABGEBROCHEN — Leakage-Sperre:');
+        for (const v of violations) console.error(`  - ${v}`);
+        process.exitCode = 3;
+        return;
+      }
+      console.log(`[relations-kappa] Gate-Leakage-Check ✓ · Rater A="${annA}" · Rater B="${annB}"`);
+    }
+
     const r = compareRelationsSets(a, b);
 
     console.log(`[relations-kappa] shared cases: ${r.sharedCases}`);
@@ -243,6 +335,27 @@ function main(): void {
       }
     }
 
+    if (gate) {
+      // Klassen-Komposition (B4a): eine konstante Klasse macht Kappa bedeutungslos.
+      const compA = classComposition(a);
+      const compB = classComposition(b);
+      const fmt = (m: Map<string, number>): string =>
+        [...m.entries()].sort().map(([k, n]) => `${k}=${n}`).join(', ') || '—';
+      console.log(`\n[relations-kappa] Klassen A: ${fmt(compA)}`);
+      console.log(`[relations-kappa] Klassen B: ${fmt(compB)}`);
+      if (compA.size <= 1) console.log(`[relations-kappa] ⚠️ Rater A hat nur ${compA.size} Klasse(n) — Kappa degeneriert (B4a).`);
+      if (compB.size <= 1) console.log(`[relations-kappa] ⚠️ Rater B hat nur ${compB.size} Klasse(n) — Kappa degeneriert (B4a).`);
+
+      const THRESHOLD = 0.8;
+      if (r.overall.kappa >= THRESHOLD) {
+        console.log(`\n[relations-kappa] ✅ KOHÄRENZ-GATE BESTANDEN — Kappa ${r.overall.kappa.toFixed(3)} ≥ ${THRESHOLD} (Cross-House, rp-3).`);
+      } else {
+        console.log(`\n[relations-kappa] ❌ KOHÄRENZ-GATE GERISSEN — Kappa ${r.overall.kappa.toFixed(3)} < ${THRESHOLD}. Zurück zu Task 3/4 (Schablone/Regeln schärfen → neue Prompt-Version → frisches blindes Rating), niemals still nach-editieren.`);
+        process.exitCode = 1;
+      }
+      return;
+    }
+
     if (r.overall.pairs > 0 && r.overall.kappa < 0.6) {
       console.log(`\n[relations-kappa] ⚠️ Aggregat-Kappa ${r.overall.kappa.toFixed(3)} < 0.6 — Rubrik schärfen, nicht das Modell tunen.`);
       process.exitCode = 1;
@@ -252,8 +365,8 @@ function main(): void {
 
   console.error(
     'Usage:\n' +
-      '  relations-kappa blind   <in.json> <out.json>   # blinde Kopie für Annotator B\n' +
-      '  relations-kappa compare <a.json> <b.json>      # Aggregat-Kappa + Typ-Kappa + Abweichungsliste',
+      '  relations-kappa blind   <in.json> <out.json> [--only <sidecar.json>]   # blinde Kopie (optional auf Audit-Teilmenge)\n' +
+      '  relations-kappa compare <a.json> <b.json> [--gate]                     # Aggregat/Typ-Kappa (+ Gate: Leakage-Sperre, Kappa≥0.80, Komposition)',
   );
   process.exitCode = 2;
 }

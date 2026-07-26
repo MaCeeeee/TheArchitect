@@ -14,6 +14,7 @@ import {
   auditInterpretsCandidate,
   parseBorrowTemplate,
   deriveDirection,
+  isDefinitionTitle,
   type InterpretsAuditInput,
 } from '@thearchitect/shared';
 
@@ -22,6 +23,7 @@ const IDENTS = {
   gdpr: ['2016/679'],
   nis2: ['2022/2555'],
   psd2: ['2015/2366'],
+  standardisation: ['1025/2012'],
 };
 
 describe('deriveDirection — die Richtung entsteht NUR hier, berechnet', () => {
@@ -225,7 +227,156 @@ describe('auditInterpretsCandidate — P2-Zweige', () => {
     };
     const audit = auditInterpretsCandidate(input);
     expect(audit.p2).toBe(false);
+    expect(audit.p2Source).toBeNull();
     expect(audit.verdict).toBe('policy-A');
     expect(audit.direction).toBe('a-to-b'); // Richtung mitgegeben (Regel A könnte interprets sagen)
+  });
+
+  it('p2Source weist die Quelle des P2-Belegs aus (typed / fallback)', () => {
+    const typed = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: '(43) ‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;',
+      pairTargetArticle: '6',
+      targetLawIdents: IDENTS.nis2,
+      targetProvisionKind: 'definition',
+    });
+    expect(typed.p2).toBe(true);
+    expect(typed.p2Source).toBe('typed');
+
+    const fallback = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: '(43) ‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;',
+      pairTargetArticle: '6',
+      targetLawIdents: IDENTS.nis2,
+      targetFullText: "(6) 'incident' means an event compromising the availability of a system;",
+    });
+    expect(fallback.p2).toBe('fallback');
+    expect(fallback.p2Source).toBe('fallback');
+  });
+});
+
+// ─── isDefinitionTitle (jetzt in shared, THE-529 Härtung) ────────────────────
+describe('isDefinitionTitle (shared) — Definitions-Überschriften DE + EN', () => {
+  it('erkennt DE + EN Definitions-Titel', () => {
+    expect(isDefinitionTitle('Begriffsbestimmungen')).toBe(true);
+    expect(isDefinitionTitle('Definitions')).toBe(true);
+    expect(isDefinitionTitle('Article 4 — Definitionen')).toBe(true);
+    expect(isDefinitionTitle('Begriffe')).toBe(true);
+  });
+  it('lehnt Sach-Überschriften + undefined ab', () => {
+    expect(isDefinitionTitle('Zuständige Behörden')).toBe(false);
+    expect(isDefinitionTitle('Verstöße')).toBe(false);
+    expect(isDefinitionTitle(undefined)).toBe(false);
+  });
+});
+
+// ─── Überschrift-P2 als dritte Quelle (der Beweis der Härtung) ───────────────
+//
+// Deutsche Sammel-Definition: der Ziel-Text prägt den Begriff NACH dem Verb
+// („… bezeichnet der Ausdruck: 1. ‚personenbezogene Daten' alle Informationen
+// …"), weshalb der fullText-Fallback (Term unmittelbar VOR means/bezeichnet) ihn
+// NICHT fasst. Ohne getyptes provisionKind hing so ein Fall bislang in Prod in
+// der Luft. Die Ziel-ÜBERSCHRIFT „Begriffsbestimmungen" ist der einzige Hebel.
+describe('auditInterpretsCandidate — Überschrift-P2 (dritte Quelle)', () => {
+  const CITING =
+    '3. „personenbezogene Daten“ personenbezogene Daten im Sinne des Artikels 4 Nummer 1 der Verordnung (EU) 2016/679;';
+  // Sammel-Definition: Definiendum steht NACH dem Verb → fullText-Fallback greift NICHT.
+  const COLLECTIVE_DEF =
+    'Im Sinne dieser Verordnung bezeichnet der Ausdruck: 1. „personenbezogene Daten“ alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen;';
+
+  it('MIT Definitions-Überschrift → interprets, P2 über die Überschrift (title)', () => {
+    const audit = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: CITING,
+      pairTargetArticle: '4',
+      targetLawIdents: IDENTS.gdpr,
+      // KEIN provisionKind (typing-los), aber Definitions-Überschrift
+      targetTitle: 'Begriffsbestimmungen',
+      targetFullText: COLLECTIVE_DEF,
+    });
+    expect(audit.p0).toBe(true);
+    expect(audit.p1).toBe(true);
+    expect(audit.p2).toBe(true);
+    expect(audit.p2Source).toBe('title'); // Überschrift war der Hebel, nicht typed/fallback
+    expect(audit.verdict).toBe('interprets');
+    expect(audit.direction).toBe('b-to-a');
+  });
+
+  it('OHNE Überschrift UND ohne provisionKind → NICHT interprets (policy-A) — die Überschrift ist der Hebel', () => {
+    const audit = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: CITING,
+      pairTargetArticle: '4',
+      targetLawIdents: IDENTS.gdpr,
+      // weder title noch provisionKind; der Sammel-Def-fullText prägt den Term
+      // NACH dem Verb → Fallback greift NICHT
+      targetFullText: COLLECTIVE_DEF,
+    });
+    expect(audit.p0).toBe(true);
+    expect(audit.p1).toBe(true);
+    expect(audit.p2).toBe(false);
+    expect(audit.p2Source).toBeNull();
+    expect(audit.verdict).toBe('policy-A'); // ohne den Überschrift-Hebel bleibt es offen
+  });
+
+  it('P2-Reihenfolge: typed schlägt title (typed gewinnt, wenn beide gälten)', () => {
+    const audit = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: CITING,
+      pairTargetArticle: '4',
+      targetLawIdents: IDENTS.gdpr,
+      targetProvisionKind: 'definition',
+      targetTitle: 'Begriffsbestimmungen',
+    });
+    expect(audit.p2Source).toBe('typed'); // erste zutreffende Quelle gewinnt
+  });
+
+  // Regression (Review-Fund): die Überschrift-P2 darf ein GETYPTES Nicht-
+  // Definitions-Provision nicht überstimmen — sonst würde ein Sach-Artikel mit
+  // definitions-artigem Titel (MDR Art. 3 „Änderung bestimmter
+  // Begriffsbestimmungen", typisiert 'procedural') in Prod fälschlich eine
+  // mechanische INTERPRETS-Kante erzeugen. Typing hat Vorrang (alte Server-
+  // Reihenfolge); die Überschrift ist nur das Netz für UNTYPISIERTE Provisionen.
+  it('getyptes procedural + Definitions-Titel → NICHT interprets (Typing schlägt Überschrift)', () => {
+    const audit = auditInterpretsCandidate({
+      citingSide: 'a',
+      citingSentence: '5. „Produkt“ Produkt im Sinne des Artikels 3 der Verordnung (EU) 2017/745;',
+      pairTargetArticle: '3',
+      targetLawIdents: ['2017/745'],
+      targetProvisionKind: 'procedural',
+      targetTitle: 'Änderung bestimmter Begriffsbestimmungen',
+    });
+    expect(audit.p0).toBe(true); // Begriff + Leih-Operator vorhanden
+    expect(audit.p1).toBe(true); // Ziel-Artikel 3 = Paar-Artikel
+    expect(audit.p2).toBe(false); // Typing 'procedural' schlägt die Definitions-Überschrift
+    expect(audit.p2Source).toBeNull();
+    expect(audit.verdict).toBe('policy-A');
+  });
+});
+
+// ─── DEFINIENS_VERB kennt jetzt „bedeutet" (dt. Sammel-Definitionen) ─────────
+//
+// „bedeutet" ist das Definiens-Verb der Norm-VO 1025/2012 Art. 2. In
+// `hasDefiniendumContext` gatet ein Definiens-Verb hinter einem quotierten
+// Begriff den BEDINGTEN Operator (aus reiner Nutzung wird eine Anleihe). Der
+// Beweis läuft über den funktionierenden „pursuant to"-Pfad: mit „bedeutet"
+// wird der Operator erkannt, mit einem Nicht-Definiens-Verb („applies") nicht.
+describe('parseBorrowTemplate — „bedeutet" als Definiens-Verb', () => {
+  it('quotierter Begriff + „bedeutet" gatet den bedingten Operator „pursuant to"', () => {
+    const slots = parseBorrowTemplate(
+      '‘harmonised standard’ bedeutet a standard pursuant to Article 2 of Regulation (EU) 1025/2012',
+      IDENTS.standardisation,
+    );
+    expect(slots.operator).toBe('pursuant to');
+    expect(slots.targetArticle).toBe('2');
+    expect(slots.targetLawHit).toBe('1025/2012');
+  });
+
+  it('dasselbe mit Nicht-Definiens-Verb („applies") → KEIN Operator (Kontrast: „bedeutet" ist der Hebel)', () => {
+    const slots = parseBorrowTemplate(
+      '‘harmonised standard’ applies as a standard pursuant to Article 2 of Regulation (EU) 1025/2012',
+      IDENTS.standardisation,
+    );
+    expect(slots.operator).toBeUndefined();
   });
 });

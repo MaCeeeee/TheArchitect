@@ -236,4 +236,53 @@ describe('enumerateRelationCandidates (THE-433 Task 2)', () => {
     const { stats } = enumerateRelationCandidates(docs);
     expect(stats.sourcesWithoutPatterns).toEqual(['mystery-law']);
   });
+
+  // ─── THE-529 (Task 3): typing.provisionKind ans Kandidaten-Ziel ───
+  //
+  // Der mechanische INTERPRETS-Detektor (Task 4) braucht die Typisierung der
+  // ZIEL-Provision als P2-Quelle („Ziel ist ein Definitions-Ort"). Sie wird
+  // NUR durchgereicht, wenn sie nicht menschlich verworfen ist: ein
+  // rejected-Typing ist ein als falsch markiertes Label und darf keinen
+  // mechanischen Beleg speisen.
+  describe('typing.provisionKind am Kandidaten (THE-529 Task 3)', () => {
+    const citing = doc(
+      'dora:art-1',
+      'dora',
+      'Art. 1',
+      FILLER + 'In relation to entities covered by Article 3 of Directive (EU) 2022/2555, this Regulation shall apply.',
+      'en',
+    );
+    const target = doc('nis2:art-3', 'nis2', 'Art. 3', FILLER + 'Sector-specific Union legal acts take precedence.', 'en');
+
+    function run(typing?: { provisionKind?: string; status?: string }) {
+      const { candidates } = enumerateRelationCandidates([citing, { ...target, typing }]);
+      expect(candidates).toHaveLength(1);
+      return candidates[0];
+    }
+
+    it('confirmed-Typing → target.provisionKind am Kandidaten', () => {
+      const c = run({ provisionKind: 'definition', status: 'confirmed' });
+      expect(c.target.provisionKind).toBe('definition');
+    });
+
+    it('suggested-Typing (nicht rejected) → wird ebenfalls durchgereicht', () => {
+      const c = run({ provisionKind: 'definition', status: 'suggested' });
+      expect(c.target.provisionKind).toBe('definition');
+    });
+
+    it('rejected-Typing → provisionKind fehlt (verworfenes Label speist keinen Detektor)', () => {
+      const c = run({ provisionKind: 'definition', status: 'rejected' });
+      expect(c.target.provisionKind).toBeUndefined();
+    });
+
+    it('typing ohne provisionKind → Feld fehlt', () => {
+      const c = run({ status: 'confirmed' });
+      expect(c.target.provisionKind).toBeUndefined();
+    });
+
+    it('ohne typing → Feld fehlt', () => {
+      const c = run(undefined);
+      expect(c.target.provisionKind).toBeUndefined();
+    });
+  });
 });

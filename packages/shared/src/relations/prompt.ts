@@ -1,6 +1,7 @@
 /**
- * Relations-Prompt (rp-2) — die EINE Quelle für den Cross-Norm-Relations-
- * Klassifizierungs-Prompt (geschlossene inferred-Liste der E7-Registry).
+ * Relations-Prompt — die EINE Quelle für den Cross-Norm-Relations-
+ * Klassifizierungs-Prompt (geschlossene inferred-Liste der E7-Registry;
+ * Versionsstand siehe RELATIONS_PROMPT_VERSION unten).
  *
  * WARUM in shared (THE-433 Slice 1, Task 3a — exakt das Slice-T-Muster von
  * shared/src/typing/prompt.ts): Der Batch (packages/compliance-crawler,
@@ -21,7 +22,8 @@
  * Zwei Hard-Regeln (Begründung im Kopf von prelabel-relations.ts):
  *  1. INFERRED-ONLY (THE-433 AC-5): nur Relationstypen mit
  *     `derivation: 'inferred'` werden dem Modell angeboten; Metadata-Typen
- *     (AMENDS/CONSOLIDATES/REPEALS/CITES) kommen aus ELI/CELLAR und werden
+ *     (AMENDS/CONSOLIDATES/REPEALS/CITES) kommen aus ELI/CELLAR, mechanische
+ *     (INTERPRETS, THE-529) aus dem deterministischen Detektor — beide werden
  *     beim Parsen wie OOV verworfen.
  *  2. EXPLICIT DIRECTION: die Richtung ist ein eigenes Modell-Feld
  *     ('a-to-b' | 'b-to-a') und wird nie aus einer Sortierung abgeleitet.
@@ -135,16 +137,6 @@ export const RELATIONS_RUBRIC_RULES = [
   '(precedent: CRA Art. 12 deeming AI-Act high-risk products compliant, anchored on AI-Act Art. 6/43).',
   'IMPLEMENTS requires an implementing act referring to a basic act.',
   '',
-  'INTERPRETS requires the BORROW TEMPLATE in the citing sentence: a defined term stands in',
-  'definiendum position, a borrow-operator follows ("within the meaning of Article X of Regulation Y",',
-  '"as defined in Article X of …", "as referred to in Article X of …"), and the CITED article IS the',
-  'paired target article. All three present → INTERPRETS. Its direction is DERIVED, never judged: it',
-  'points FROM the norm that DEFINES the term (the cited/target norm) TO the norm that USES it (the',
-  'citing norm). Determine which side carries the operator sentence; the direction always points away',
-  'from the defined-term’s home norm (precedent: the norm borrowing "personal data" from GDPR Art. 4 →',
-  'INTERPRETS pointing away from GDPR). A bare usage/competence reference WITHOUT a definiendum operator',
-  'is "none", not INTERPRETS. Do not use any of these merely because the topics overlap.',
-  '',
   'When in doubt between "none" and a relation, answer "none" — the set is conservative by design.',
 ].join('\n');
 
@@ -161,12 +153,28 @@ export const RELATIONS_RUBRIC_RULES = [
  * Batch-Idempotenz (relationScan.promptVersion).
  *
  * rp-3-draft = INTERPRETS geschärft auf die Schablonen-Regel + berechnete
- * Richtung (Definitions-Nachzug C-v1.2, THE-519). Finalisierung zu rp-3 erst
- * nach den Architekten-Regeln A/B (Task 5), § 7.4 — kein Tuning, die Definition
- * selbst hat sich geändert (drei v4-INTERPRETS-Fehler nur durch frei vergebene
- * Richtung / fehlenden Operator-Test möglich).
+ * Richtung (Definitions-Nachzug C-v1.2, THE-519).
+ *
+ * rp-3 (final) = Architekten-Regeln A/B aus der Adjudikation 2026-07-26
+ * eingearbeitet (§ 7.4 — kein Tuning, die Definition selbst hat sich geändert):
+ *   Regel A → RULE 5a: der zitierte Ziel-Artikel muss den Begriff DEFINIEREN
+ *     (P2 als hartes Tor; „geprägter Begriff über Sach-Artikel" = none).
+ *   Regel B → RULE 5b: Nutzungs-/Verweis-Referenz ohne Definiendum = none.
+ * EINGEFROREN vor dem Kohärenz-Gate (Anti-Post-hoc, Leitplanke 2). Jede weitere
+ * Änderung an System/Rules/Template = Version-Bump (rp-3.1, …) + frisches Rating.
+ *
+ * rp-4 = INTERPRETS → mechanical (THE-529). KEIN Regel-Tuning, sondern ein
+ * Strukturwechsel: die Optionsliste (registry-getrieben) verliert INTERPRETS,
+ * und der komplette INTERPRETS-Regelblock (Schablone + RULE 5a/5b) zieht in
+ * den deterministischen Detektor (relations/interpretsAudit.ts). Die übrigen
+ * Regeln (RULE 1–5) sind WORTGLEICH zu rp-3. parseRelationLabel droppt ein
+ * vom Modell dennoch behauptetes INTERPRETS ab jetzt als OOV (Drift-Schutz
+ * gegen Alt-Modelle). KONSEQUENZ (ausgewiesen): der promptVersion-Bump
+ * invalidiert alle relationScan-Anker → der nächste Batch-Lauf ist ein
+ * Voll-Re-Scan (~110 LLM-Kandidaten, <1$) — gewollt, denn derselbe Lauf
+ * erzeugt zugleich die mechanischen INTERPRETS-Kanten korpusweit.
  */
-export const RELATIONS_PROMPT_VERSION = 'rp-3-draft';
+export const RELATIONS_PROMPT_VERSION = 'rp-4';
 
 /** Baut den User-Prompt mit der geschlossenen inferred-Relations-Liste + dem Paar. Rein. */
 export function buildRelationsPrompt(c: RelationsPromptPair): string {

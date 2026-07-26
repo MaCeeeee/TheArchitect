@@ -174,3 +174,116 @@ describe('relationLabelForKappa', () => {
     expect(relationLabelForKappa(c)).toBe('DEROGATED_BY:b-to-a');
   });
 });
+
+// ─── THE-519: evidence + languageTwinOf ──────────────────────────────
+
+const interpretsCase = {
+  ...baseCase,
+  caseId: 'dora-nis2-interprets',
+  relation: 'INTERPRETS',
+  direction: 'a-to-b' as const,
+};
+
+describe('RelationsGoldenCaseSchema — evidence field', () => {
+  it('accepts a case with evidence.sentence only', () => {
+    const c = { ...interpretsCase, evidence: { sentence: 'Article 3 borrows the term.' } };
+    expect(RelationsGoldenCaseSchema.safeParse(c).success).toBe(true);
+  });
+
+  it('accepts evidence with optional slots and auditPath', () => {
+    const c = {
+      ...interpretsCase,
+      evidence: {
+        sentence: 'Article 3 borrows the term "personal data".',
+        slots: { term: 'personal data', citedArticle: 'Art. 4' },
+        auditPath: 'P0→P1→P2',
+      },
+    };
+    expect(RelationsGoldenCaseSchema.safeParse(c).success).toBe(true);
+  });
+
+  it('rejects evidence with an empty sentence', () => {
+    const c = { ...interpretsCase, evidence: { sentence: '' } };
+    expect(RelationsGoldenCaseSchema.safeParse(c).success).toBe(false);
+  });
+
+  it('rejects evidence missing sentence', () => {
+    const c = { ...interpretsCase, evidence: { slots: { term: 'x' } } };
+    expect(RelationsGoldenCaseSchema.safeParse(c).success).toBe(false);
+  });
+});
+
+describe('RelationsGoldenCaseSchema — languageTwinOf', () => {
+  it('accepts a case carrying languageTwinOf', () => {
+    const c = { ...interpretsCase, languageTwinOf: 'dora-nis2-interprets-en' };
+    expect(RelationsGoldenCaseSchema.safeParse(c).success).toBe(true);
+  });
+});
+
+describe('RelationsGoldenSetSchema — frozen evidence requirement (v5+)', () => {
+  it('rejects a frozen v5 set with an INTERPRETS case lacking evidence', () => {
+    const set = { ...validSet, version: 'relations.v5', frozen: true, cases: [interpretsCase] };
+    expect(RelationsGoldenSetSchema.safeParse(set).success).toBe(false);
+  });
+
+  it('accepts a frozen v5 set with an INTERPRETS case carrying evidence.sentence', () => {
+    const set = {
+      ...validSet,
+      version: 'relations.v5',
+      frozen: true,
+      cases: [{ ...interpretsCase, evidence: { sentence: 'Article 3 borrows the term.' } }],
+    };
+    expect(RelationsGoldenSetSchema.safeParse(set).success).toBe(true);
+  });
+
+  it('grandfathers a frozen PRE-v5 set (relations.v4) with an INTERPRETS case lacking evidence', () => {
+    // Der Beleg-Zwang (THE-519) gilt erst ab v5; v1..v4 luden lange ohne Beleg
+    // und MÜSSEN weiter laden (v4→v5-Übergang).
+    const set = { ...validSet, version: 'relations.v4', frozen: true, cases: [interpretsCase] };
+    expect(RelationsGoldenSetSchema.safeParse(set).success).toBe(true);
+  });
+
+  it('accepts a NON-frozen v5 set with an INTERPRETS case lacking evidence (rater/draft file)', () => {
+    const set = { ...validSet, version: 'relations.v5', frozen: false, cases: [interpretsCase] };
+    expect(RelationsGoldenSetSchema.safeParse(set).success).toBe(true);
+  });
+
+  it('accepts a frozen v5 set with a null-case (no relation) lacking evidence — only INTERPRETS needs a proof', () => {
+    const set = { ...validSet, version: 'relations.v5', frozen: true, cases: [{ ...baseCase, relation: null }] };
+    expect(RelationsGoldenSetSchema.safeParse(set).success).toBe(true);
+  });
+});
+
+describe('loadRelationsGolden — evidence + languageTwinOf round-trip', () => {
+  const tmp = path.join(os.tmpdir(), `relations-golden-twin-${process.pid}.json`);
+  afterEach(() => {
+    if (fs.existsSync(tmp)) fs.unlinkSync(tmp);
+  });
+
+  it('preserves languageTwinOf and evidence through parse', () => {
+    const set = {
+      ...validSet,
+      frozen: true,
+      cases: [
+        {
+          ...interpretsCase,
+          languageTwinOf: 'dora-nis2-interprets-en',
+          evidence: {
+            sentence: 'Article 3 borrows the term "personal data".',
+            slots: { term: 'personal data' },
+            auditPath: 'P0→P1→P2',
+          },
+        },
+      ],
+    };
+    fs.writeFileSync(tmp, JSON.stringify(set));
+    const loaded = loadRelationsGolden(tmp);
+    const c = loaded.cases[0];
+    expect(c.languageTwinOf).toBe('dora-nis2-interprets-en');
+    expect(c.evidence).toEqual({
+      sentence: 'Article 3 borrows the term "personal data".',
+      slots: { term: 'personal data' },
+      auditPath: 'P0→P1→P2',
+    });
+  });
+});

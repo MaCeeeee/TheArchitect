@@ -70,6 +70,38 @@ describe('RelationSuggestionSchema (shared, THE-433 Task 1)', () => {
     expect(RelationSuggestionSchema.safeParse(withoutConfidence).success).toBe(true);
     expect(RelationSuggestionSchema.safeParse({ ...validSuggestion, confidence: 1.5 }).success).toBe(false);
   });
+
+  // ── THE-529 (Task 1): additive evidence-Felder sentence + pPath ──────
+  it('evidence.sentence + evidence.pPath parsen und round-trippen (THE-529)', () => {
+    const withNewFields = {
+      ...validSuggestion,
+      evidence: {
+        ...validSuggestion.evidence,
+        sentence:
+          '‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;',
+        pPath: 'P0 ✓ · P1 ✓ · P2 ✓ (typisiert)',
+      },
+    };
+    const parsed = RelationSuggestionSchema.safeParse(withNewFields);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.evidence.sentence).toBe(withNewFields.evidence.sentence);
+      expect(parsed.data.evidence.pPath).toBe('P0 ✓ · P1 ✓ · P2 ✓ (typisiert)');
+      // Round-trip: erneutes Parsen der geparsten Daten ist verlustfrei.
+      const again = RelationSuggestionSchema.safeParse(parsed.data);
+      expect(again.success).toBe(true);
+      if (again.success) expect(again.data).toEqual(parsed.data);
+    }
+  });
+
+  it('evidence OHNE die neuen Felder parst wie bisher (Abwärtskompatibilität, THE-529)', () => {
+    const parsed = RelationSuggestionSchema.safeParse(validSuggestion);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.evidence.sentence).toBeUndefined();
+      expect(parsed.data.evidence.pPath).toBeUndefined();
+    }
+  });
 });
 
 // ─── Mongoose: additives Korpus-Feld ─────────────────────────────────
@@ -125,5 +157,49 @@ describe('Regulation.relationSuggestions + relationScan (additiv, THE-433 Task 1
     expect(doc.validateSync()).toBeUndefined();
     expect(doc.relationSuggestions ?? []).toHaveLength(0);
     expect(doc.relationScan).toBeUndefined();
+  });
+
+  // ── THE-529 (Task 1): Silent-Drop-Regressionstests ───────────────────
+  // mongoose strict streicht unbekannte Pfade beim Schreiben kommentarlos —
+  // ohne Schema-Feld wären evidence.sentence/pPath + relationScan.detectorVersion
+  // stille No-ops. Beweis auf Dokument-Ebene via toObject() (kein Live-Mongo).
+  it('evidence.sentence + evidence.pPath werden NICHT gedroppt (THE-529)', () => {
+    const sentence =
+      '‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;';
+    const pPath = 'P0 ✓ · P1 ✓ · P2 ✓ (typisiert)';
+    const doc = new Regulation({
+      ...base,
+      relationSuggestions: [
+        { ...validSuggestion, evidence: { ...validSuggestion.evidence, sentence, pPath } },
+      ],
+    });
+    expect(doc.validateSync()).toBeUndefined();
+    const obj = doc.toObject();
+    expect(obj.relationSuggestions?.[0].evidence.sentence).toBe(sentence);
+    expect(obj.relationSuggestions?.[0].evidence.pPath).toBe(pPath);
+    // Die bestehenden Pflichtfelder bleiben unangetastet.
+    expect(obj.relationSuggestions?.[0].evidence.matched).toBe('Directive (EU) 2022/2555');
+  });
+
+  it('relationScan.detectorVersion wird NICHT gedroppt und bleibt optional (THE-529)', () => {
+    const withDetector = new Regulation({
+      ...base,
+      relationScan: {
+        promptVersion: 'rp-1',
+        versionHash: HASH_A,
+        scannedAt: new Date('2026-07-26'),
+        detectorVersion: 'interprets-parser-v1',
+      },
+    });
+    expect(withDetector.validateSync()).toBeUndefined();
+    expect(withDetector.toObject().relationScan?.detectorVersion).toBe('interprets-parser-v1');
+
+    // Ohne detectorVersion weiterhin valide (rein additiv).
+    const withoutDetector = new Regulation({
+      ...base,
+      relationScan: { promptVersion: 'rp-1', versionHash: HASH_A, scannedAt: new Date('2026-07-26') },
+    });
+    expect(withoutDetector.validateSync()).toBeUndefined();
+    expect(withoutDetector.toObject().relationScan?.detectorVersion).toBeUndefined();
   });
 });
