@@ -91,7 +91,7 @@ async function main() {
 
   let docs = await db
     .collection('regulations')
-    .find({}, { projection: { regulationKey: 1, source: 1, paragraphNumber: 1, title: 1, fullText: 1, language: 1, versionHash: 1 } })
+    .find({}, { projection: { regulationKey: 1, source: 1, paragraphNumber: 1, title: 1, fullText: 1, language: 1, versionHash: 1, typing: 1 } })
     .toArray();
 
   if (docs.length === 0) {
@@ -107,13 +107,20 @@ async function main() {
   for (const d of docs) {
     const key = d.regulationKey;
     const hit = key ? vectors.get(key) : undefined;
-    const stat = perSource.get(d.source) || { total: 0, withVec: 0, hashMismatch: 0 };
+    const stat = perSource.get(d.source) || { total: 0, withVec: 0, hashMismatch: 0, withKind: 0 };
     stat.total += 1;
     let embedding;
     if (hit) {
       stat.withVec += 1;
       if (hit.versionHash && d.versionHash && hit.versionHash !== d.versionHash) stat.hashMismatch += 1;
       embedding = hit.vector;
+    }
+    // THE-519: provisionKind aus typing-Subdokument (P2-Quelle fürs Audit-Instrument).
+    // Nur suggested/confirmed; rejected → Feld weglassen (menschlich verworfen).
+    let provisionKind;
+    if (d.typing && d.typing.status !== 'rejected' && d.typing.provisionKind) {
+      provisionKind = d.typing.provisionKind;
+      stat.withKind += 1;
     }
     perSource.set(d.source, stat);
     pool.push({
@@ -122,16 +129,20 @@ async function main() {
       title: d.title || '',
       fullText: d.fullText || '',
       language: d.language === 'en' ? 'en' : 'de',
+      ...(provisionKind ? { provisionKind } : {}),
       ...(embedding ? { embedding } : {}),
     });
   }
 
-  log('Abdeckung pro Quelle (total / mit Vektor / versionHash-Abweichung):');
+  log('Abdeckung pro Quelle (total / mit Vektor / versionHash-Abweichung / mit provisionKind):');
   let missing = 0;
+  let missingKind = 0;
   for (const [src, s] of [...perSource.entries()].sort()) {
     missing += s.total - s.withVec;
-    log(`  ${src}: ${s.total} / ${s.withVec} / ${s.hashMismatch}`);
+    missingKind += s.total - s.withKind;
+    log(`  ${src}: ${s.total} / ${s.withVec} / ${s.hashMismatch} / ${s.withKind}`);
   }
+  if (missingKind > 0) log(`⚠️ ${missingKind} Provisions OHNE provisionKind (untypisiert/rejected) — Audit nutzt dort den Überschrift-/Text-Fallback (P2).`);
   if (missing > 0) log(`⚠️ ${missing} Provisions OHNE Vektor — der Miner schließt sie laut aus (nicht still).`);
   else log('✓ Vektor-Abdeckung vollständig.');
 
