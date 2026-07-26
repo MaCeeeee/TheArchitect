@@ -134,18 +134,41 @@ describe('auditInterpretsCandidate — 4 Kalibrier-Fälle aus relations.v4.json'
     expect(audit.reasons.join(' ')).toMatch(/Leih-Operator|Definiendum/);
   });
 
-  // ── Fehler 3: dsgvo-art-4 ↔ nis2-de-art-35 (Paar-Artefakt) ──────────────
-  // Die zitierende Seite (a = dsgvo Art. 4) ist eine reine Selbst-Definitions-
-  // Vorschrift; sie zitiert NICHT Art. 35 der NIS2 (das Paar entstand über ein
-  // satzübergreifendes Pinpoint-Fenster, Task 2). P0 ✓ (Definitions-Kopf trägt
-  // Operator + Definiendum), aber P1 ✗ (kein NIS2-Bezug) → pair-artifact.
-  it('dsgvo-art-4 ↔ nis2-de-art-35 → pair-artifact (P1 ✗, Satz nennt Art. 35 nicht)', () => {
+  // ── Fehler 3: dsgvo-art-4 ↔ nis2-de-art-35 (kein Definitions-Borrow) ─────
+  // Der EINZIGE echte Cross-Norm-Verweis dieses Paars steht in nis2-35 (Seite b)
+  // und ist eine reine NUTZUNG („… im Sinne von Artikel 4 … der Verordnung (EU)
+  // 2016/679 …") OHNE Anführungszeichen-Definiendum. Nach der P0-Term-Schärfung
+  // (Definiendum-Position erzwungen) fehlt der Term → P0 ✗ → none-usage. Das
+  // spurioese PAAR selbst (dsgvo-4 ↔ nis2-35) entstand über ein
+  // satzübergreifendes Pinpoint-Fenster (Task 2) und wird auf der
+  // Ableitungs-Ebene von Task 4 als pair-artifact aussortiert (kein
+  // Definiendum-Satz findet den Paar-Artikel) — auf der FUNKTIONS-Ebene ist der
+  // echte Satz korrekt none-usage.
+  it('dsgvo-art-4 ↔ nis2-de-art-35 → none-usage (echter Verweis ist Nutzung ohne Definiendum)', () => {
+    const input: InterpretsAuditInput = {
+      citingSide: 'b', // nis2-35 trägt den echten Verweis auf dsgvo
+      citingSentence:
+        'Stellen die zuständigen Behörden fest, dass der Verstoß eine Verletzung des Schutzes personenbezogener Daten im Sinne von Artikel 4 Nummer 12 der Verordnung (EU) 2016/679 zur Folge haben kann;',
+      pairTargetArticle: '4',
+      targetLawIdents: IDENTS.gdpr,
+    };
+    const audit = auditInterpretsCandidate(input);
+    expect(audit.p0).toBe(false); // „im Sinne von" ohne Anführungszeichen-Definiendum
+    expect(audit.verdict).toBe('none-usage');
+    expect(audit.direction).toBeUndefined();
+  });
+
+  // ── P1-Zweig eigenständig: echte Anleihe-Schablone, aber falscher Artikel ─
+  // Beweist den pair-artifact-Ausgang (P0 ✓, P1 ✗) mit ECHTEM Text: der
+  // CRA-Satz borgt „incident" von NIS2 Art. 6 — gegen ein Paar geprüft, das
+  // fälschlich Art. 35 als Ziel behauptet, nennt der Satz Art. 35 NICHT.
+  it('echte Anleihe gegen falschen Paar-Artikel → pair-artifact (P0 ✓, P1 ✗)', () => {
     const input: InterpretsAuditInput = {
       citingSide: 'a',
-      citingSentence:
-        'Im Sinne dieser Verordnung bezeichnet der Ausdruck: 1. „personenbezogene Daten“ alle Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen;',
-      pairTargetArticle: '35', // nis2:art-35
+      citingSentence: '(43) ‘incident’ means an incident as defined in Article 6, point (6), of Directive (EU) 2022/2555;',
+      pairTargetArticle: '35', // falsch: der Satz nennt Art. 6, nicht Art. 35
       targetLawIdents: IDENTS.nis2,
+      targetProvisionKind: 'definition',
     };
     const audit = auditInterpretsCandidate(input);
     expect(audit.p0).toBe(true);
@@ -153,6 +176,25 @@ describe('auditInterpretsCandidate — 4 Kalibrier-Fälle aus relations.v4.json'
     expect(audit.verdict).toBe('pair-artifact');
     expect(audit.direction).toBeUndefined();
     expect(audit.reasons.join(' ')).toMatch(/Mining-Artefakt/);
+  });
+
+  // ── P0-Term-Loch (Review-Fund): irgendein Quote ≠ Definiendum ───────────
+  // „The ‚Commission' shall act as defined in Article 6 …": ‚Commission' steht
+  // NICHT in Definiendum-Position (zwischen Quote und Operator steht das
+  // Prädikat „shall act", keine Wiederholung/kein Definiens-Verb) → term leer
+  // → P0 ✗ → none-usage. Ohne die Schärfung liefe das fälschlich als interprets.
+  it('Quote in Nicht-Definiendum-Position (⟨X⟩ shall act as defined in …) → none-usage', () => {
+    const input: InterpretsAuditInput = {
+      citingSide: 'a',
+      citingSentence: "The 'Commission' shall act as defined in Article 6 of Directive (EU) 2022/2555",
+      pairTargetArticle: '6',
+      targetLawIdents: IDENTS.nis2,
+      targetProvisionKind: 'definition',
+    };
+    const audit = auditInterpretsCandidate(input);
+    expect(audit.slots.term).toBeUndefined();
+    expect(audit.p0).toBe(false);
+    expect(audit.verdict).toBe('none-usage');
   });
 });
 

@@ -61,8 +61,18 @@ const CONDITIONAL_OPERATORS: Array<{ re: RegExp; label: string }> = [
   { re: /\bgemäß\b/i, label: 'gemäß' },
 ];
 
-/** Definiens-Verb: was einem Definiendum folgt, wenn ein Begriff GEPRÄGT wird. */
+/**
+ * Definiens-Verb: was einem Definiendum folgt, wenn ein Begriff GEPRÄGT wird.
+ * `ist` ist eine schwache dt. Kopula und bleibt hier NUR, weil der Plan sie für
+ * den P2-Fallback + die Definiendum-Kontext-Gate ausdrücklich nennt („Term
+ * gefolgt von means/bezeichnet/ist"). Für die schärfere Definiendum-POSITION
+ * (Term direkt vor dem Operator, `isDefiniendumLink`) wird `ist` bewusst NICHT
+ * verwendet — dort zählen nur die starken Verben means/bezeichnet.
+ */
 const DEFINIENS_VERB = /\b(?:means|bezeichnet|ist)\b/i;
+
+/** Max. Distanz (Zeichen) zwischen Definiendum-Ausdruck und Operator. */
+const DEFINIENDUM_WINDOW = 40;
 
 export interface BorrowSlots {
   /** Das Definiendum — der geborgte Begriff (Anführungszeichen-/Nummern-Item). */
@@ -133,6 +143,26 @@ function hasDefiniendumContext(sentence: string): boolean {
 }
 
 /**
+ * Steht ein Anführungszeichen-Ausdruck in DEFINIENDUM-POSITION vor dem
+ * Operator? Zwischen Ausdruck und Operator darf nur ein Definiendum-Link
+ * stehen: (a) nichts (Ausdruck grenzt an den Operator), (b) ein starkes
+ * Definiens-Verb „means"/„bezeichnet" (Muster „‚incident' means … as defined
+ * in"), oder (c) eine Wiederholung des Begriffs selbst (Muster
+ * „‚personenbezogene Daten' personenbezogene Daten im Sinne …"). Ein anderes
+ * Prädikat („shall act", „applies") disqualifiziert — dann wird der Begriff
+ * BENUTZT, nicht geprägt.
+ */
+function isDefiniendumLink(between: string, term: string): boolean {
+  const trimmed = between.trim().replace(/^[\s,;:.()]+|[\s,;:.()]+$/g, '');
+  if (trimmed === '') return true;
+  if (/\b(?:means|bezeichnet)\b/i.test(trimmed)) return true;
+  const words = (s: string): string[] => s.toLowerCase().match(/[\p{L}]+/gu) ?? [];
+  const termWords = new Set(words(term));
+  const betweenWords = words(trimmed);
+  return betweenWords.length > 0 && betweenWords.every((w) => termWords.has(w));
+}
+
+/**
  * Zerlegt einen Verweis-Satz in die vier Schablonen-Slots. Rein, deterministisch,
  * ohne Seiteneffekte. Fehlt ein Slot → undefined.
  */
@@ -162,17 +192,24 @@ export function parseBorrowTemplate(sentence: string, targetLawIdents: string[])
   }
 
   // ── Term (Definiendum) ──────────────────────────────────────────────
-  // Bevorzugt der Ausdruck VOR dem Operator (Anleihe-Muster
-  // „TERM im Sinne von …"); fehlt einer, der erste Ausdruck des Satzes
-  // (Definitions-Kopf-Muster „im Sinne … bezeichnet TERM"). Ohne Ausdruck
-  // in Anführungszeichen bleibt der Slot leer.
-  const quotes = quotedTerms(sentence);
-  if (quotes.length > 0) {
-    if (operatorIndex >= 0) {
-      const before = quotes.filter((q) => q.end <= operatorIndex);
-      slots.term = (before.length > 0 ? before[before.length - 1] : quotes[0]).text;
-    } else {
-      slots.term = quotes[0].text;
+  // Der Term muss in DEFINIENDUM-POSITION stehen: ein Anführungszeichen-
+  // Ausdruck unmittelbar VOR dem Operator, wobei zwischen Ausdruck und
+  // Operator nur ein Definiendum-Link steht (nichts, ein Definiens-Verb
+  // „means/bezeichnet", oder die Wiederholung des Begriffs selbst). Sonst
+  // erfüllte JEDER Anführungszeichen-Ausdruck im Satz den Slot — und
+  // „The ‚Commission' shall act as defined in Article 6 …" würde fälschlich
+  // als Begriffs-Anleihe (term=„Commission") durchgehen, obwohl „Commission"
+  // gar nicht der geliehene Begriff ist. Steht kein Ausdruck in
+  // Operator-Nähe → term bleibt leer → P0 scheitert → none-usage.
+  if (operatorIndex >= 0) {
+    const quotes = quotedTerms(sentence);
+    // Nächstgelegener Ausdruck vor dem Operator zuerst.
+    for (const q of quotes.filter((x) => x.end <= operatorIndex).reverse()) {
+      if (operatorIndex - q.end > DEFINIENDUM_WINDOW) break; // zu weit weg → kein Definiendum
+      if (isDefiniendumLink(sentence.slice(q.end, operatorIndex), q.text)) {
+        slots.term = q.text;
+        break;
+      }
     }
   }
 
