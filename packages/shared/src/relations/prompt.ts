@@ -133,12 +133,17 @@ export const RELATIONS_RUBRIC_RULES = [
   'RULE 5 — RECOGNIZES_EQUIVALENCE requires an actual conformity/recognition fiction ("shall be',
   'deemed to satisfy…", "gelten als konform") — pair it with the article the fiction clause names',
   '(precedent: CRA Art. 12 deeming AI-Act high-risk products compliant, anchored on AI-Act Art. 6/43).',
-  'IMPLEMENTS requires an implementing act referring to a basic act. INTERPRETS requires the one norm',
-  'to borrow/define a term OF the other ("within the meaning of Article X of Regulation Y", "as',
-  'referred to in", "pursuant to Article X") — and its DIRECTION points FROM the norm that DEFINES the',
-  'term (the defining norm interprets for the borrower; precedent: AI-Act Art. 3 borrowing "personal',
-  'data" from GDPR Art. 4 → INTERPRETS with direction from GDPR). Do not use any of these merely',
-  'because the topics overlap.',
+  'IMPLEMENTS requires an implementing act referring to a basic act.',
+  '',
+  'INTERPRETS requires the BORROW TEMPLATE in the citing sentence: a defined term stands in',
+  'definiendum position, a borrow-operator follows ("within the meaning of Article X of Regulation Y",',
+  '"as defined in Article X of …", "as referred to in Article X of …"), and the CITED article IS the',
+  'paired target article. All three present → INTERPRETS. Its direction is DERIVED, never judged: it',
+  'points FROM the norm that DEFINES the term (the cited/target norm) TO the norm that USES it (the',
+  'citing norm). Determine which side carries the operator sentence; the direction always points away',
+  'from the defined-term’s home norm (precedent: the norm borrowing "personal data" from GDPR Art. 4 →',
+  'INTERPRETS pointing away from GDPR). A bare usage/competence reference WITHOUT a definiendum operator',
+  'is "none", not INTERPRETS. Do not use any of these merely because the topics overlap.',
   '',
   'When in doubt between "none" and a relation, answer "none" — the set is conservative by design.',
 ].join('\n');
@@ -154,8 +159,14 @@ export const RELATIONS_RUBRIC_RULES = [
  * Architekten-Entscheid Pre-Flight 2026-07-25). Bump bei JEDER inhaltlichen
  * Änderung an System/Rules/Template — Teil der Provenance und der
  * Batch-Idempotenz (relationScan.promptVersion).
+ *
+ * rp-3-draft = INTERPRETS geschärft auf die Schablonen-Regel + berechnete
+ * Richtung (Definitions-Nachzug C-v1.2, THE-519). Finalisierung zu rp-3 erst
+ * nach den Architekten-Regeln A/B (Task 5), § 7.4 — kein Tuning, die Definition
+ * selbst hat sich geändert (drei v4-INTERPRETS-Fehler nur durch frei vergebene
+ * Richtung / fehlenden Operator-Test möglich).
  */
-export const RELATIONS_PROMPT_VERSION = 'rp-2';
+export const RELATIONS_PROMPT_VERSION = 'rp-3-draft';
 
 /** Baut den User-Prompt mit der geschlossenen inferred-Relations-Liste + dem Paar. Rein. */
 export function buildRelationsPrompt(c: RelationsPromptPair): string {

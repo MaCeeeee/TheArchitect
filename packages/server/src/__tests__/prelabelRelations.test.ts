@@ -137,11 +137,22 @@ describe('buildRelationsPrompt — Rubrik-Regeln im Prompt', () => {
     expect(p).not.toContain('or in substance');
   });
 
-  it('carries the C5a precedents (usage != relation, equivalence-as-exception, INTERPRETS direction)', () => {
+  // Die rp-2-Gleichwertigkeits-/Verdrängungs-Regeln bleiben WORTGLEICH erhalten —
+  // nur der INTERPRETS-Teil wird in C-v1.2 (THE-519) geschärft.
+  it('keeps the rp-2 usage-vs-relation and equivalence-as-exception precedents', () => {
     const p = buildRelationsPrompt(anyCase as never);
     expect(p).toContain('merely USES the other norm');
     expect(p).toContain('Equivalence-as-exception is displacement');
-    expect(p).toContain('DIRECTION points FROM the norm that DEFINES the');
+  });
+
+  // C-v1.2 (THE-519): INTERPRETS ist eine Schablone, die Richtung wird BERECHNET,
+  // nie geurteilt. Asserted werden Kernsätze, NICHT das Versions-Literal oder der
+  // exakte RULE-Wortlaut (sonst bricht die rp-3-Finalisierung diese Tests).
+  it('carries the sharpened INTERPRETS rule: borrow template + derived direction', () => {
+    const p = buildRelationsPrompt(anyCase as never);
+    expect(p).toContain('BORROW TEMPLATE');
+    expect(p).toContain('direction is DERIVED, never judged');
+    expect(p).toContain('bare usage/competence reference WITHOUT a definiendum operator');
   });
 
   it('carries the displacement-vs-concretisation test from C5', () => {
