@@ -43,46 +43,46 @@
 /** Muster pro LAW-Familie — Sprachvarianten (dsgvo/dsgvo-en) teilen sie sich. */
 export const LAW_FAMILY_PATTERNS: Record<string, RegExp[]> = {
   gdpr: [
-    /\((?:EU|EG)\)\s*(?:Nr\.?\s*)?2016\/679/i,
+    /\((?:EU|EG)\)\s*(?:(?:Nr|No)\.?\s*)?2016\/679/i,
     /Datenschutz-?Grundverordnung/i,
     /\bDS-?GVO\b/i,
     /General Data Protection Regulation/i,
     /\bGDPR\b/,
   ],
-  nis2: [/\(EU\)\s*(?:Nr\.?\s*)?2022\/2555/i, /NIS-?\s?2(?:-|\s)?(?:Richtlinie|Directive)/i, /\bNIS-?\s?2\b/i],
+  nis2: [/\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2022\/2555/i, /NIS-?\s?2(?:-|\s)?(?:Richtlinie|Directive)/i, /\bNIS-?\s?2\b/i],
   dora: [
-    /\(EU\)\s*(?:Nr\.?\s*)?2022\/2554/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2022\/2554/i,
     /Digital Operational Resilience Act/i,
     /Digitale Operationale Resilienz/i,
     /\bDORA\b/,
   ],
   aiAct: [
-    /\(EU\)\s*(?:Nr\.?\s*)?2024\/1689/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2024\/1689/i,
     /KI-?Verordnung/i,
     /Artificial Intelligence Act/i,
     /\bAI Act\b/i,
     /\bKI-?VO\b/i,
   ],
-  cra: [/\(EU\)\s*(?:Nr\.?\s*)?2024\/2847/i, /Cyber-?\s?Resilience Act/i, /Cyberresilienz-?Verordnung/i, /\bCRA\b/],
+  cra: [/\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2024\/2847/i, /Cyber-?\s?Resilience Act/i, /Cyberresilienz-?Verordnung/i, /\bCRA\b/],
   lksg: [/Lieferkettensorgfaltspflichtengesetz/i, /\bLkSG\b/, /Supply Chain Due Diligence Act/i],
   // THE-517 (Korpus-Ausbau 2026-07-25): Muster für die restlichen typisierten
   // Gesetze, damit der Miner Verweise AUF sie in fremden Texten erkennt.
-  dataAct: [/\(EU\)\s*(?:Nr\.?\s*)?2023\/2854/i, /\bData Act\b/i, /\bDatengesetz\b/i],
+  dataAct: [/\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2023\/2854/i, /\bData Act\b/i, /\bDatengesetz\b/i],
   psd2: [
-    /\(EU\)\s*(?:Nr\.?\s*)?2015\/2366/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2015\/2366/i,
     /Payment Services Directive/i,
     /Zahlungsdiensterichtlinie/i,
     /\bPSD-?\s?2\b/i,
   ],
-  mdr: [/\(EU\)\s*(?:Nr\.?\s*)?2017\/745/i, /Medical Devices? Regulation/i, /Medizinprodukte-?Verordnung/i, /\bMDR\b/],
+  mdr: [/\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2017\/745/i, /Medical Devices? Regulation/i, /Medizinprodukte-?Verordnung/i, /\bMDR\b/],
   eprivacy: [
     /(?:Richtlinie|Directive)\s*2002\/58(?:\/E[GC])?/i,
     /\be-?Privacy\b/i,
     /Datenschutzrichtlinie für elektronische Kommunikation/i,
   ],
   eidas: [
-    /\(EU\)\s*(?:Nr\.?\s*)?910\/2014/i,
-    /\(EU\)\s*(?:Nr\.?\s*)?2024\/1183/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?910\/2014/i,
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2024\/1183/i,
     /\beIDAS\b/i,
     /elektronische Identifizierung.*Vertrauensdienste/i,
   ],
@@ -204,7 +204,7 @@ const ANAPHORIC_WINDOW = 200;
 const ANAPHORIC_PINPOINT =
   /\b(?:Artikel[ns]?|Article|Art\.)\s*(\d+[a-z]?)\s+(?:of that (?:Directive|Regulation)\b|(?:der|des) genannten (?:Richtlinie|Verordnung)\b)/gi;
 // Nächste Amtsnummern-Zitierung (irgendeines Gesetzes) — schneidet das Fenster ab.
-const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:Nr\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+\/(?:EU|EG|EC)\b/;
+const NEXT_CITATION = /\((?:EU|EG|EC)\)\s*(?:(?:Nr|No)\.?\s*)?\d{3,4}\/\d+|\b\d{4}\/\d+\/(?:EU|EG|EC)\b/;
 
 // ── Satz-Grenzen-Regel für Pinpoints (THE-519) ──────────────────────────
 //

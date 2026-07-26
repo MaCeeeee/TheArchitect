@@ -354,6 +354,20 @@ describe('referencesLaw', () => {
       expect(referencesLaw('European Digital Identity Wallets under Regulation (EU) 2024/1183', 'eidas-en').length).toBeGreaterThan(0);
     });
 
+    // THE-529 Prod-Fund (Re-Scan 2026-07-26): die englisch-formelle Zitatform
+    // „Regulation (EU) No 910/2014" fiel durch — alle Familien-Muster erlaubten
+    // nur „Nr." (deutsch), nicht „No" (englisch). Dadurch enumerierte die
+    // NIS2-6→eIDAS-3-„trust service"-Anleihe NICHT (15/16 mechanische Kanten
+    // statt 16). Alle Muster auf `(?:(?:Nr|No)\.?\s*)?` geweitet.
+    it('detects the English formal "No" citation form (NIS2 → eIDAS trust-service borrow)', () => {
+      const hits = referencesLaw(
+        '‘trust service’ means a trust service as defined in Article 3, point (16), of Regulation (EU) No 910/2014',
+        'eidas-en',
+      );
+      expect(hits.length).toBeGreaterThan(0);
+      expect(hits.flatMap((h) => h.articleHints)).toContain('3');
+    });
+
     it('detects UNECE R155 in German and English regulation phrasing', () => {
       expect(referencesLaw('Anforderungen der UN-Regelung Nr. 155 an das CSMS', 'unece-r155').length).toBeGreaterThan(0);
       expect(referencesLaw('type approval according to UN Regulation No. 155', 'unece-r155').length).toBeGreaterThan(0);
