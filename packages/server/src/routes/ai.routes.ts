@@ -9,10 +9,30 @@ import { streamChat } from '../services/ai.service';
 
 const router = Router();
 
-router.use(authenticate);
-router.use(requireVerifiedEmail);
 const isDev = process.env.NODE_ENV !== 'production';
-router.use(rateLimit({ name: 'ai-chat', windowMs: 24 * 60 * 60 * 1000, max: isDev ? 10000 : 50 }));
+
+/**
+ * THE-533: Diese Middlewares MÜSSEN auf den KI-Pfad beschränkt bleiben.
+ *
+ * Als router-weites `router.use(...)` liefen sie für JEDEN `/api/projects/*`-
+ * Request, der nicht schon von einem früher gemounteten Router beantwortet
+ * wurde — dieser Router hängt auf `/api/projects` (index.ts), und alles, was
+ * DANACH gemountet ist (regulations, compliance, requirements, norms, report,
+ * roadmap, rag, register …), fiel durch diese Kette hindurch. Jeder solche
+ * Request zählte gegen das KI-Chat-Kontingent von 50/24 h; danach war der halbe
+ * Compliance-Bereich 24 Stunden lang mit `429 Too many requests` dicht —
+ * obwohl der Nutzer nie den KI-Chat aufgerufen hatte. `requireVerifiedEmail`
+ * sperrte auf demselben Weg Routen, die gar keine Verifikation verlangen.
+ *
+ * Pfad-Verengung statt `router.use(mw)`: alle Routen dieses Routers liegen
+ * unter `/:projectId/ai`, das Verhalten für sie bleibt unverändert.
+ */
+router.use(
+  '/:projectId/ai',
+  authenticate,
+  requireVerifiedEmail,
+  rateLimit({ name: 'ai-chat', windowMs: 24 * 60 * 60 * 1000, max: isDev ? 10000 : 50 }),
+);
 
 // POST /:projectId/ai/chat — Streaming AI chat
 router.post(

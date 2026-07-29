@@ -42,11 +42,22 @@ function validateAttestations(input: unknown): Array<{ litera: string; value: st
   return out;
 }
 
-router.use(authenticate);
-router.use('/:projectId', requireProjectAccess('viewer'));
 // Bound abuse — /assess?infer hits an LLM, /recompute writes the graph.
 const isDev = process.env.NODE_ENV !== 'production';
-router.use(rateLimit({ name: 'wfcomp', windowMs: 15 * 60 * 1000, max: isDev ? 100000 : 100 }));
+
+/**
+ * THE-533: auf den wfcomp-Pfad verengt (vgl. ai.routes.ts). Router-weit
+ * gesetzt, liefen diese Middlewares für jeden `/api/projects/*`-Request, der
+ * bis hierher durchfiel, und zählten ihn gegen das wfcomp-Kontingent
+ * (100/15 min) — mit 429 auf Routen, die mit wfcomp nichts zu tun haben.
+ * Alle Routen dieses Routers liegen unter `/:projectId/wfcomp`.
+ */
+router.use(
+  '/:projectId/wfcomp',
+  authenticate,
+  requireProjectAccess('viewer'),
+  rateLimit({ name: 'wfcomp', windowMs: 15 * 60 * 1000, max: isDev ? 100000 : 100 }),
+);
 
 /**
  * POST /api/projects/:projectId/wfcomp/assess[?infer=true][&workflowId=…]
