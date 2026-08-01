@@ -141,9 +141,23 @@ npx jest obligationPrompt
 
 `PAIR_RELATION_SYSTEM` wörtlich aus dem Experiment übernehmen (`docs/evals/typed-relation-experiment.md`). Dazu:
 
+**Ergänzung gegenüber dem Experiment: die Richtung.** IR 8477 unterscheidet `subset-of` von `superset-of`; das Experiment zog beides in ein richtungsloses `subset` zusammen (3 von 120 Fällen, empirisch folgenlos). Ohne Richtung ist unser Vokabular **nicht** auf einen extern gepflegten Katalog abbildbar — das SCF mappt nach derselben Methodik, und genau dieser Anschluss ist der Zweck der Typisierung (O-6). Der **Antwortraum bleibt bei vier**, damit κ 0,681 der Vergleichsmaßstab bleibt; die Richtung ist ein zusätzliches Feld, kein fünfter Typ.
+
 ```ts
 export const PAIR_RELATIONS = ['equal', 'subset', 'intersects', 'unrelated'] as const;
 export type PairRelation = (typeof PAIR_RELATIONS)[number];
+export type WiderSide = 'A' | 'B';
+
+export interface PairRelationVerdict {
+  relation: PairRelation;
+  /** Nur bei `subset`: die weitere Pflicht. Sonst `undefined`. */
+  wider?: WiderSide;
+  why: string;
+}
+
+/** Übersetzung ins Katalog-Vokabular aus Sicht von A — der einzige Grund für `wider`. */
+export type Ir8477Relation = 'equal' | 'subset-of' | 'superset-of' | 'intersects-with' | 'not-related-to';
+export function toIr8477(v: PairRelationVerdict): Ir8477Relation { /* … */ }
 
 /**
  * Faltet die typisierte Beziehung auf eine binäre Sicht — NUR dort benutzen,
@@ -233,6 +247,13 @@ it('records a typed relation, not a yes/no', () => {
   expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: true }] }).success).toBe(false);
 });
 
+it('records the direction with a subset — and rejects one without', () => {
+  // Dieselbe Regel wie im Parser: ein richtungsloses subset saehe wie ein
+  // Urteil aus, truege aber die halbe Aussage nicht.
+  expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: 'subset', wider: 'A' }] }).success).toBe(true);
+  expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: 'subset' }] }).success).toBe(false);
+});
+
 it('allows an explicit "unsure" instead of forcing a relation', () => {
   // Ein erzwungenes Urteil taeuscht Gewissheit vor, die der Mensch nicht hatte —
   // derselbe Fehlermodus wie der erzwungene Katalog-Treffer.
@@ -273,6 +294,12 @@ it('offers all four relations plus an explicit unsure', () => {
   for (const r of ['equal', 'subset', 'intersects', 'unrelated', 'unsicher']) {
     expect(html.toLowerCase()).toContain(r);
   }
+});
+
+it('asks which side is the wider one when the human picks subset', () => {
+  // Der Mensch bekommt dieselbe Rubrik wie der Richter — einschliesslich der
+  // Richtung, sonst ist sein Gold nicht gegen die Maschinenurteile stellbar.
+  expect(html).toMatch(/weitere/i);
 });
 
 it('explains each relation in the sheet itself', () => {
