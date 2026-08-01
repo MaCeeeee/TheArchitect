@@ -30,7 +30,7 @@ import {
   type ObligationRef,
   type ObligationSlots,
 } from '@thearchitect/shared';
-import { resolveTypedAddressees, compareAddressees, type TypedProvisionDoc } from '../services/typedProvision.service';
+import { resolveTypedAddressees, partyCoverage, type TypedProvisionDoc } from '../services/typedProvision.service';
 import {
   createRaterClient,
   resolveRaterConfig,
@@ -44,13 +44,15 @@ export interface SlotRecord extends ObligationRef {
   /** Korpus-Schlüssel der Provision — Join-Anker, wird nie in einen Prompt gerendert. */
   regulationKey?: string | null;
   /**
-   * Adressat aus der TYPISIERTEN Provision (THE-540 Achse 1).
+   * Der VERPFLICHTETE, aus der typisierten Provision (`partyRole`, THE-540).
    *
-   * Steht NEBEN `slots.adressat`, ersetzt ihn nicht. Erst wenn die Gegenprobe
-   * gemessen hat, ob beide Wege übereinstimmen, darf einer abgeschaltet werden —
-   * sonst tauscht man eine ungeprüfte Quelle gegen eine andere ungeprüfte.
+   * Er kommt bewusst NICHT aus der Zerlegung: dort lieferte das Modell
+   * überwiegend den Empfänger (rund 4/20 Übereinstimmung). Die Typisierung
+   * deckt ihn zu 100 % ab, die Zerlegung tat es zu 48 % — und beschrieb dabei
+   * etwas anderes. `null` heißt „keine konsumierbare Typisierung", nicht
+   * „kein Adressat".
    */
-  typedAdressat?: string | null;
+  adressat?: string | null;
 }
 
 export const arg = (argv: string[], flag: string): string | undefined => {
@@ -127,7 +129,7 @@ export async function decomposeAll(
       records.push({
         ...o,
         slots,
-        typedAdressat: o.regulationKey ? typedAddressees.get(o.regulationKey) ?? null : null,
+        adressat: o.regulationKey ? typedAddressees.get(o.regulationKey) ?? null : null,
       });
     } else failed.push(o);
     onProgress?.(i + 1, obligations.length);
@@ -193,11 +195,12 @@ async function main(): Promise<void> {
       const n = records.filter((r) => pick(r).trim() !== SLOT_UNSTATED && pick(r).trim() !== '').length;
       return `${n}/${records.length} = ${records.length ? Math.round((100 * n) / records.length) : 0} %`;
     };
-    // Gegenprobe (THE-540): beide Adressat-Wege nebeneinander. Erst wenn hier
-    // gemessen ist, ob der Join wirklich mehr abdeckt, darf einer abgeschaltet
-    // werden — bis dahin bleiben beide Werte im Datensatz.
-    const cmp = compareAddressees(
-      records.map((r) => ({ fromLlm: r.slots.adressat, fromTyping: r.typedAdressat })),
+    // Abdeckung beider Parteien-Slots (THE-540). Sie werden NICHT mehr
+    // gegeneinander verglichen: seit dem Split messen sie verschiedene Dinge —
+    // `adressat` den Verpflichteten (aus der Typisierung), `empfaenger` die
+    // Gegenpartei (aus der Zerlegung). Ein Vergleich wäre ein Kategorienfehler.
+    const cov = partyCoverage(
+      records.map((r) => ({ adressat: r.adressat, empfaenger: r.slots.empfaenger })),
     );
     const modal = OBLIGATION_MODALITIES.map(
       (m) => `${m} ${records.filter((r) => r.slots.modalitaet === m).length}`,
@@ -205,11 +208,11 @@ async function main(): Promise<void> {
     console.log(
       `\n[slots] ${records.length}/${obligations.length} zerlegt (${cfg.provider}/${cfg.model})\n` +
         `[slots] verschiedene Handlungs-Formulierungen: ${uniqueActions}\n` +
-        `[slots] Befüllung — Adressat ${fillRate((r) => r.slots.adressat)} · ` +
-        `Bedingung ${fillRate((r) => r.slots.bedingung)}\n` +
+        `[slots] Bedingung befüllt: ${fillRate((r) => r.slots.bedingung)}\n` +
         `[slots] Modalität: ${modal}\n` +
-        `[slots] Adressat — Zerlegung ${cmp.llmFilled}/${cmp.total} · Typisierung ${cmp.typedFilled}/${cmp.total} · ` +
-        `beide ${cmp.bothFilled} · zusammen ${cmp.eitherFilled} (Zuwachs durch Join: +${cmp.gainOverLlm})\n` +
+        `[slots] Adressat  (Typisierung · wer ist verpflichtet): ${cov.adressatFilled}/${cov.total}\n` +
+        `[slots] Empfänger (Zerlegung · an wen):                 ${cov.empfaengerFilled}/${cov.total}\n` +
+        `[slots] beide Parteien bekannt: ${cov.bothFilled}/${cov.total}\n` +
         `[slots] annotator: ${annotatorTag(cfg)}\n` +
         `[slots] → ${outPath}\n` +
         `[slots] NEXT: npm run actions:derive -- --in ${path.relative(process.cwd(), outPath)}`,

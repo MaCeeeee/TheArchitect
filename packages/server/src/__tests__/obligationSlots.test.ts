@@ -18,7 +18,7 @@ import {
 
 const valid: ObligationSlots = {
   handlung: 'Sicherheitsvorfall an die zuständige Behörde melden',
-  adressat: 'Verantwortlicher',
+  empfaenger: 'die zuständige Aufsichtsbehörde',
   modalitaet: 'pflicht',
   bedingung: 'binnen 72 Stunden nach Kenntnis',
 };
@@ -32,13 +32,13 @@ describe('ObligationSlots (THE-438)', () => {
     expect(ObligationSlotsSchema.safeParse({ ...valid, handlung: '' }).success).toBe(false);
   });
 
-  it('allows an unstated addressee or condition without dropping the record', () => {
+  it('allows an unstated recipient or condition without dropping the record', () => {
     // Nicht jede Pflicht nennt beides. Ein fehlender Wert ist eine ECHTE
     // Beobachtung und darf den Datensatz nicht ungültig machen — sonst
     // verlieren wir genau die Pflichten, deren Delta wir ausweisen wollen.
     const r = ObligationSlotsSchema.safeParse({
       ...valid,
-      adressat: SLOT_UNSTATED,
+      empfaenger: SLOT_UNSTATED,
       bedingung: SLOT_UNSTATED,
     });
     expect(r.success).toBe(true);
@@ -47,8 +47,17 @@ describe('ObligationSlots (THE-438)', () => {
   it('still rejects a silently dropped slot — unstated must be explicit', () => {
     // '—' ist etwas anderes als "Feld fehlt". Fehlt es, war die Zerlegung
     // unvollständig und das ist ein Lauf-Fehler, keine Beobachtung.
-    const { adressat: _drop, ...withoutAddressee } = valid;
-    expect(ObligationSlotsSchema.safeParse(withoutAddressee).success).toBe(false);
+    const { empfaenger: _drop, ...withoutRecipient } = valid;
+    expect(ObligationSlotsSchema.safeParse(withoutRecipient).success).toBe(false);
+  });
+
+  it('has no addressee slot — the obliged party comes from the typed provision', () => {
+    // THE-540: Der Slot hiess `adressat` und sollte den VERPFLICHTETEN tragen,
+    // lieferte aber ueberwiegend den EMPFAENGER (4/20 Uebereinstimmung mit der
+    // Typisierung). Umbenannt statt geloescht — der Empfaenger ist bei
+    // Meldeketten die Abweichung, die zaehlt.
+    expect(Object.keys(ObligationSlotsSchema.shape)).not.toContain('adressat');
+    expect(Object.keys(ObligationSlotsSchema.shape)).toContain('empfaenger');
   });
 
   it('constrains modality to the deontic values, mirroring obligationKinds', () => {

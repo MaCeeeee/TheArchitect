@@ -28,7 +28,7 @@ const fakeClient = (replies: string[]): RaterClient => {
   };
 };
 
-const GOOD = '{"handlung":"Vorfall melden","adressat":"Verantwortlicher","modalitaet":"pflicht","bedingung":"72h"}';
+const GOOD = '{"handlung":"Vorfall melden","empfaenger":"Aufsichtsbehörde","modalitaet":"pflicht","bedingung":"72h"}';
 
 describe('arg (THE-438)', () => {
   it('reads a flag value and returns undefined when absent', () => {
@@ -125,16 +125,16 @@ describe('crossLawGroups (THE-438)', () => {
 });
 
 describe('decomposeAll — Typisierungs-Join (THE-540)', () => {
-  it('attaches the typed addressee alongside the extracted one', async () => {
-    // NEBENEINANDER, nicht ersetzend: die Gegenprobe braucht beide Werte.
+  it('carries the obliged party from typing and the recipient from decomposition', async () => {
     const { records } = await decomposeAll(
       [obl('DSGVO', 'Art. 33', 'dsgvo:art-33')],
       fakeClient([GOOD]),
       undefined,
       new Map([['dsgvo:art-33', 'controller']]),
     );
-    expect(records[0].slots.adressat).toBe('Verantwortlicher');
-    expect(records[0].typedAdressat).toBe('controller');
+    // Zwei verschiedene Parteien, nicht zwei Meinungen ueber dieselbe.
+    expect(records[0].slots.empfaenger).toBe('Aufsichtsbehörde');
+    expect(records[0].adressat).toBe('controller');
   });
 
   it('leaves the typed addressee null when the corpus has nothing for that key', async () => {
@@ -144,12 +144,12 @@ describe('decomposeAll — Typisierungs-Join (THE-540)', () => {
       undefined,
       new Map([['dsgvo:art-33', 'controller']]),
     );
-    expect(records[0].typedAdressat).toBeNull();
+    expect(records[0].adressat).toBeNull();
   });
 
   it('leaves it null when the obligation has no corpus key at all', async () => {
     const { records } = await decomposeAll([obl('DSGVO', 'Art. 33')], fakeClient([GOOD]), undefined, new Map());
-    expect(records[0].typedAdressat).toBeNull();
+    expect(records[0].adressat).toBeNull();
   });
 
   it('still decomposes when the join map is empty — a corpus outage loses no obligation', async () => {
