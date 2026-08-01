@@ -6,17 +6,17 @@
  * Gruppierung. Nicht abgedeckt ist die Mongo-Abfrage in `loadObligations` —
  * die braucht eine laufende Instanz.
  */
-import { arg, decomposeAll } from '../scripts/obligation-slots';
+import { arg, decomposeAll, type LoadedObligation } from '../scripts/obligation-slots';
 import { uniqueActionPhrases, parseProposal } from '../scripts/derive-action-catalog';
 import { crossLawGroups } from '../scripts/classify-obligations';
 import type { RaterClient } from '../evals/raterClient';
-import type { ObligationRef } from '@thearchitect/shared';
 
-const obl = (law: string, para: string): ObligationRef => ({
+const obl = (law: string, para: string, regulationKey: string | null = null): LoadedObligation => ({
   law,
   para,
   title: `${law} ${para}`,
   text: 'Der Verantwortliche meldet die Verletzung binnen 72 Stunden.',
+  regulationKey,
 });
 
 const fakeClient = (replies: string[]): RaterClient => {
@@ -28,7 +28,7 @@ const fakeClient = (replies: string[]): RaterClient => {
   };
 };
 
-const GOOD = '{"handlung":"Vorfall melden","adressat":"Verantwortlicher","modalitaet":"pflicht","bedingung":"72h"}';
+const GOOD = '{"handlung":"Vorfall melden","empfaenger":"Aufsichtsbehörde","modalitaet":"pflicht","bedingung":"72h"}';
 
 describe('arg (THE-438)', () => {
   it('reads a flag value and returns undefined when absent', () => {
@@ -123,3 +123,39 @@ describe('crossLawGroups (THE-438)', () => {
     expect(groups.map((g) => g.actionId)).toEqual(['b', 'a']);
   });
 });
+
+describe('decomposeAll — Typisierungs-Join (THE-540)', () => {
+  it('carries the obliged party from typing and the recipient from decomposition', async () => {
+    const { records } = await decomposeAll(
+      [obl('DSGVO', 'Art. 33', 'dsgvo:art-33')],
+      fakeClient([GOOD]),
+      undefined,
+      new Map([['dsgvo:art-33', 'controller']]),
+    );
+    // Zwei verschiedene Parteien, nicht zwei Meinungen ueber dieselbe.
+    expect(records[0].slots.empfaenger).toBe('Aufsichtsbehörde');
+    expect(records[0].adressat).toBe('controller');
+  });
+
+  it('leaves the typed addressee null when the corpus has nothing for that key', async () => {
+    const { records } = await decomposeAll(
+      [obl('NIS2', 'Art. 23', 'nis2:art-23')],
+      fakeClient([GOOD]),
+      undefined,
+      new Map([['dsgvo:art-33', 'controller']]),
+    );
+    expect(records[0].adressat).toBeNull();
+  });
+
+  it('leaves it null when the obligation has no corpus key at all', async () => {
+    const { records } = await decomposeAll([obl('DSGVO', 'Art. 33')], fakeClient([GOOD]), undefined, new Map());
+    expect(records[0].adressat).toBeNull();
+  });
+
+  it('still decomposes when the join map is empty — a corpus outage loses no obligation', async () => {
+    const { records, failed } = await decomposeAll([obl('DSGVO', 'Art. 33', 'dsgvo:art-33')], fakeClient([GOOD]));
+    expect(records).toHaveLength(1);
+    expect(failed).toHaveLength(0);
+  });
+});
+

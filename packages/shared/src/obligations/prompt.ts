@@ -87,13 +87,15 @@ function renderObligation(o: ObligationRef): string {
 export const SLOT_SYSTEM = `Du zerlegst eine regulatorische Pflicht in vier Bestandteile.
 
 - handlung:   WAS getan werden muss — die Maßnahme, gesetzesneutral formuliert.
-- adressat:   WER verpflichtet ist. Nicht genannt: "${SLOT_UNSTATED}".
+- empfaenger: AN WEN / GEGENÜBER WEM zu leisten ist — Behörde, betroffene Person,
+              Kunde, Vertragspartner. NICHT wer verpflichtet ist.
+              Nicht genannt: "${SLOT_UNSTATED}".
 - modalitaet: "pflicht", "verbot" oder "erlaubnis".
 - bedingung:  WANN/UNTER WELCHEN UMSTÄNDEN — Frist, Schwelle, Auslöser. Nicht genannt: "${SLOT_UNSTATED}".
 
 Formuliere die Handlung mit deinen eigenen Worten. Es gibt KEINE Vorgabeliste.
 
-Antworte NUR mit JSON: {"handlung":"...","adressat":"...","modalitaet":"...","bedingung":"..."}`;
+Antworte NUR mit JSON: {"handlung":"...","empfaenger":"...","modalitaet":"...","bedingung":"..."}`;
 
 export function buildSlotUserPrompt(o: ObligationRef): string {
   return renderObligation(o);

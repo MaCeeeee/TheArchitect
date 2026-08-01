@@ -197,6 +197,25 @@ describe('renderActionReportMarkdown (THE-438)', () => {
     expect(md).toContain('Arm K *(muss 0 sein)*');
   });
 
+  it('names the false alarms so the prescribed remedy is actionable', async () => {
+    // Ein gerissenes Tor, das nur "die Negativ-Kontrolle hat versagt" meldet,
+    // macht die vorgeschriebene Abhilfe ("Katalog-Eintrag aufteilen")
+    // unausfuehrbar. Ein Befund, den man nicht lokalisieren kann, ist keiner.
+    const r = await evaluateActions(tiny, { h1: async () => YES }); // sagt auch bei Arm K ja
+    expect(r.report.valid).toBe(false);
+    const md = renderActionReportMarkdown(r);
+    expect(md).toContain('### Fehlalarme der Negativ-Kontrolle');
+    expect(md).toContain('`k-1`');
+    expect(r.votesByCase['k-1'].h1).toBe(true);
+  });
+
+  it('omits the false-alarm section entirely when the negative control holds', async () => {
+    const r = await evaluateActions(tiny, {
+      h1: async (_s, u) => (u.includes('Zugriff') ? NO : YES),
+    });
+    expect(renderActionReportMarkdown(r)).not.toContain('Fehlalarme der Negativ-Kontrolle');
+  });
+
   it('warns that the arm rates are pooled across houses', async () => {
     // Haus-Quote, gepoolte Quote und Mehrheitsquote sind drei verschiedene
     // Zahlen (37/37/47 % · 40 % · 35 % in der Referenzmessung).
