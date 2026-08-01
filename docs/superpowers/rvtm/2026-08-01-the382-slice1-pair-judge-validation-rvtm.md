@@ -24,18 +24,18 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 
 | ID | Anforderung | Plan-Task | Verifikation | Status |
 |---|---|---|---|---|
-| **MV-1** | **Mensch sieht dieselbe geblendete Darstellung wie der Richter** — sonst ist eine Abweichung doppeldeutig (Urteil vs. Informationsvorsprung) | Task 4 | Unit: Arbeitsblatt enthält keinen Gesetzesnamen; `blinded: true` im Gold | ⬜ |
-| **MV-2** | **Kein Maschinenurteil im Arbeitsblatt** — ein vorbelegter Wert misst Zustimmung, nicht Urteil | Task 4 | Unit: HTML enthält keinen Vorschlag, keine Arm-Kennzeichnung, keine Katalog-Handlung | ⬜ |
-| **MV-3** | **„Unsicher" ist ein zulässiges Urteil** und wird aus dem Kappa ausgeschlossen, nicht als Dissens gezählt | Task 3, 8 | Unit: `relation: null` schema-valide; Vergleich überspringt sie | ⬜ |
+| **MV-1** | **Mensch sieht dieselbe geblendete Darstellung wie der Richter** — sonst ist eine Abweichung doppeldeutig (Urteil vs. Informationsvorsprung) | Task 4 | Unit: Arbeitsblatt enthält keinen Gesetzesnamen; `blinded: true` im Gold | ✅ |
+| **MV-2** | **Kein Maschinenurteil im Arbeitsblatt** — ein vorbelegter Wert misst Zustimmung, nicht Urteil | Task 4 | Unit: HTML enthält keinen Vorschlag, keine Arm-Kennzeichnung, keine Katalog-Handlung | ✅ |
+| **MV-3** | **„Unsicher" ist ein zulässiges Urteil** und wird aus dem Kappa ausgeschlossen, nicht als Dissens gezählt | Task 3, 8 | Unit: `relation: null` schema-valide; Vergleich überspringt sie | 🟡 Schema ✅, Vergleich = Task 8 |
 | **MV-9** | **`intersects` wird NICHT mit `equal` verrechnet.** Wo eine binäre Sicht nötig ist, wird die Faltung ausdrücklich benannt | Task 1, 2, 7 | Unit: `foldRelation('intersects') === false`; Report nennt die Faltung | ✅ |
-| **MV-10** | **Mensch und Richter bekommen dieselbe Rubrik** — sonst misst der Kappa die Differenz der Rubriken statt der Urteile | Task 4 | Unit: Arbeitsblatt enthält die vier Definitionen wörtlich | ⬜ |
+| **MV-10** | **Mensch und Richter bekommen dieselbe Rubrik** — sonst misst der Kappa die Differenz der Rubriken statt der Urteile | Task 4 | Unit: Arbeitsblatt enthält die vier Definitionen wörtlich | ✅ |
 | **MV-11** | **Binäre Vorgängerfassung bleibt erhalten** — der eingefrorene Vergleichslauf muss reproduzierbar bleiben | Task 1 | `PAIR_JUDGE_SYSTEM` weiterhin exportiert, als historisch gekennzeichnet | ✅ |
 | **MV-12** | **`subset` trägt eine Richtung.** IR 8477 unterscheidet subset-of von superset-of; ohne sie ist das Vokabular nicht auf einen externen Katalog abbildbar (O-6). Der Antwortraum bleibt bei **vier**, damit κ 0,681 Vergleichsmaßstab bleibt | Task 1, 3, 4 | Unit: `subset` ohne lesbare Richtung wird verworfen, nicht still angenommen; `toIr8477` bildet beide Richtungen ab | ✅ |
-| **MV-4** | **Stichprobe deterministisch** — der Anker darf zwischen Läufen nicht wackeln | Task 3 | Unit: zweimal gezogen = identisch, arm-proportional | ⬜ |
+| **MV-4** | **Stichprobe deterministisch** — der Anker darf zwischen Läufen nicht wackeln | Task 3 | Unit: zweimal gezogen = identisch, arm-proportional | ✅ |
 | **MV-5** | **Kanarienvögel mechanisch konstruiert, nicht generiert** — ein Modell erbte seine eigenen blinden Flecken | Task 6 | Unit: kein LLM-Aufruf; deterministisch; beide Hälften aus Arm T | ⬜ |
 | **MV-6** | **Leere Canary-Menge ≠ bestanden** (`null` statt 100 %) und **fehlende Antwort ≠ gefangen** | Task 6 | Unit: `canaryCatchRate([])` ist `null`; `null`-Votum zählt nicht als gefangen | ⬜ |
 | **MV-7** | **Kanarienvögel erreichen nie die Stufen oder Arm-Quoten** | Task 7 | Unit: kein `canary__`-Eintrag in `tiers` | ⬜ |
-| **MV-8** | **Kanarienvögel gemischt, nicht als Block** — sonst erkennt ein Modell das Muster | Task 7 | Review der Reihenfolge im Harness | ⬜ |
+| **MV-8** | **Kanarienvögel gemischt, nicht als Block** — sonst erkennt ein Modell das Muster | Task 7 | Review der Reihenfolge im Harness | 🟡 Blatt ✅ (`interleaveByArm`), Harness = Task 7 |
 | **ADD-1** | Rein additiv: binäre Fassung bleibt exportiert, bestehende Aufrufe unverändert gültig | Task 1, 2 | Bestands-Suiten grün ohne Anpassung | ⬜ |
 
 ## Menschliche Tore
@@ -52,4 +52,5 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 - **O-5 Gegenprobe zum Experiment:** Vergibt der **Mensch** häufig `equal`, widerspricht das Ergebnis 2 des Experiments (0/120 bei den Modellen). Dann liegt eine Rubrik-Differenz Mensch/Maschine vor, die **vor** jeder Veröffentlichung zu klären ist.
 - **O-6 SCF/ENISA als externes Gold:** CC BY-ND — intern nutzbar, nicht auslieferbar. Die Transitivität „gleiche Kontrolle ⇒ harmonisierbar" ist **unsere** Folgerung, nicht die Behauptung des SCF, und selbst zu prüfen. Eigener Vorlauf, blockiert diesen Slice nicht.
 - **O-3 Obergrenze unbekannt:** Ohne einen zweiten Menschen kennen wir das Mensch↔Mensch-Kappa nicht — also nicht, was der Richter überhaupt erreichen *könnte*. Ein κ von 0,65 wäre bei einer menschlichen Obergrenze von 0,70 ein gutes Ergebnis und bei 0,95 ein schlechtes.
+- **O-7 Blendungs-Bug (behoben, Wirkung auf Altzahlen benannt):** `CITATION_PATTERN` verschluckte den ersten Buchstaben des Folgeworts („Art. 33 binnen“ → „der Bestimmunginnen“). Auf `actions.v1` traf das **40 von 480 Textfeldern (8,3 %)**; der Richter las diese Stellen in **allen** bisherigen Läufen verstümmelt. Der Vergleich binär 0,308 ↔ vier Typen 0,681 bleibt gültig — beide Läufe teilten denselben Renderpfad —, die absoluten Zahlen sind auf leicht beschädigtem Text erhoben. Nach dem Fix: 0 verstümmelte Felder.
 - **O-4 Reihenfolge-Risiko:** Der Bericht bei Alex trägt bereits die Formulierung „Wer die Maßnahme einmal umsetzt, erfüllt beide" — das ist `equal` und nicht belegt. Die Korrektur läuft unabhängig von diesem Slice und ist bereits angestoßen; das ist der Preis dafür, vor der Validierung veröffentlicht zu haben.
