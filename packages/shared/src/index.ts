@@ -42,3 +42,4 @@ export * from './typing';
 export * from './relations';
 export * from './types/law-discovery.types';
 export * from './types/context-trace.types';
+export * from './obligations';
