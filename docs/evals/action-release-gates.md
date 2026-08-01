@@ -25,10 +25,14 @@ Positiv-Kontrolle hätte beides sofort aufgedeckt. Sie war nie gefahren worden.*
 2. **Blendung strukturell.** Alle Prompts rendern die Pflicht über *einen* Renderer, der
    Gesetzesnamen und Fundstellen entfernt. Nachgewiesen an allen 438 Feldern der 219 echten
    Pflichten: 0 Rest-Gesetzesnamen, 0 Rest-Fundstellen, 0 überblendete Texte.
-3. **Mindestens zwei Häuser.** Ein Haus liefert keine Konfidenzstufe. Die Häuser müssen aus
-   verschiedenen Modell-Familien kommen — zwei Modelle geteilter Herkunft irren systematisch
-   in dieselbe Richtung, ihre Übereinstimmung ist dann aufgebläht (dieselbe Begründung wie
-   bei `raterClient`).
+3. **Mindestens DREI Häuser aus verschiedenen Modell-Familien.** Zwei Modelle geteilter
+   Herkunft irren systematisch in dieselbe Richtung, ihre Übereinstimmung ist dann aufgebläht
+   (dieselbe Begründung wie bei `raterClient`).
+
+   Mit **zwei** Häusern ist **Stufe B unerreichbar**: „Mehrheit ≥2/3" verlangt dann beide
+   Stimmen und fällt mit Einstimmigkeit zusammen. Ein Zwei-Häuser-Lauf kollabiert auf A und C
+   — im Live-Lauf sichtbar als `B 0/60`, was wie ein Befund aussieht, aber Arithmetik ist.
+   Zwei Häuser sind für einen Rauchtest brauchbar, für eine Freigabe nicht.
 4. **Ausfälle ausgewiesen.** Die Zahl verwertbarer Antworten je Haus steht im Bericht. Ein
    stummes Haus ist keine Gegenstimme — es fällt aus der Quote heraus, und das muss sichtbar
    sein, sonst sieht ein Budget-Problem wie inhaltliche Uneinigkeit aus.
@@ -63,6 +67,21 @@ DSGVO × NIS2 × DORA, 219 Kern-Pflichten, Prüfsatz `actions.v1` (T 60 · K 60)
 κ: Opus↔Kimi **0,697** · Haiku↔Opus **0,498** · Haiku↔Kimi **0,308** — alle unter dem Tor.
 Konfidenzstufen auf Arm T: **A 11/60 = 18 % · B 10/60 = 17 % · zusammen 35 %.**
 
+### Live-Läufe gegen dieselbe Grundlinie (2026-08-01, Haiku + Kimi)
+
+| | Lauf 1 | Lauf 2 |
+| --- | --- | --- |
+| Positiv-Kontrolle | 30/30 | 30/30 |
+| Negativ-Kontrolle | **1/120 → Lauf ungültig** | 0/120 |
+| Arm T (gepoolt) | *(nicht ausgewiesen)* | 45/120 = 38 % |
+| κ | 0,299 | 0,268 |
+| Stufe A auf Arm T | 10/60 | 9/60 |
+
+**Was das zeigt:** Die Messung ist auf der **Aggregat**-Ebene stabil (Arm T 38 % gegen 37 % der
+Referenz, κ 0,27–0,30 gegen 0,308) und auf der **Fall**-Ebene nicht. Genau deshalb liefert
+Slice 1 Vorschläge und keine Behauptungen. Die Stufe-B-Zeile ist in beiden Läufen 0, weil zwei
+Häuser keine Mehrheit ohne Einstimmigkeit bilden können — Arithmetik, kein Befund.
+
 ## Drei Zahlen, die nicht gegeneinander zitiert werden dürfen
 
 Der Bericht enthält für Arm T **drei verschiedene Quoten**. Alle sind richtig, alle messen
@@ -89,7 +108,18 @@ dann gehört sie zur *starken* These und schließt die gesuchte Antwort aus. (3)
 Token-Budget? Ein Reasoning-Modell mit zu kleinem Budget liefert leeren Text, und das sieht
 in der Auswertung aus wie „keine Meinung", nicht wie „kaputt".
 
-**Negativ-Kontrolle mit Fehlalarm.** Der Katalog-Eintrag der betroffenen Paare ist zu grob.
+**Negativ-Kontrolle mit Fehlalarm.** Der Bericht **benennt die betroffenen Fälle**, und
+`<out>.votes.json` enthält die Stimmen je Fall und Haus. Ein Befund, den man nicht
+lokalisieren kann, ist kein Befund.
+
+> **Zuerst wiederholen, dann schneiden.** Der Richter ist stochastisch: zwei Live-Läufe über
+> denselben Prüfsatz ergaben **1/120** und **0/120** Fehlalarme, ohne dass sich der Fall
+> wiederholte. Ein einzelner, nicht reproduzierender Fehlalarm ist **Rauschen** — den Katalog
+> daraufhin zu zerschneiden wäre schlimmer als das Rauschen. Die Schwelle bleibt bei 0, aber
+> die Konsequenz greift erst, wenn derselbe Fall **im Wiederholungslauf erneut** anschlägt.
+> Ein einmaliger Fehlalarm macht den Lauf ungültig — er macht den Katalog nicht falsch.
+
+Reproduziert sich der Fehlalarm, ist der Katalog-Eintrag der betroffenen Paare zu grob.
 Erster Kandidat ist `vorfall-melden-behoerde`: er fasst Früh-, Zwischen- und Abschlussmeldung
 dreier Rechtsakte zusammen und erreichte nur **9/26** Mehrheitstreffer. Zwei unabhängige Wege
 zeigen darauf — die Messung und die Neu-Ableitung, die ihn in drei Einträge zerlegt.
