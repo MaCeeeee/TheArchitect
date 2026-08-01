@@ -157,7 +157,17 @@ export function buildClassifyUserPrompt(o: ObligationRef): string {
   return renderObligation(o);
 }
 
-// ─── 3. Paar-Richter ─────────────────────────────────────────────────────
+// ─── 3. Paar-Richter, binäre Vorgängerfassung ────────────────────────────
+/**
+ * BINÄRE VORGÄNGERFASSUNG. Am 2026-08-01 als unterspezifiziert gemessen und
+ * durch `PAIR_RELATION_SYSTEM` ersetzt; bleibt exportiert, weil der
+ * eingefrorene Vergleichslauf reproduzierbar bleiben muss.
+ *
+ * Nicht für neue Läufe verwenden: auf denselben 120 Fällen erzwang die
+ * Ja/Nein-Frage bei jedem Mittelfeld-Paar einen Münzwurf (κ Haiku ↔ Kimi 0,308
+ * gegen 0,681 bei vier Typen), und 70 % der Meinungsverschiedenheiten waren
+ * Fälle, in denen beide Häuser „teilweise" meinten.
+ */
 export const PAIR_JUDGE_SYSTEM = `Du bist Compliance-Jurist und berätst ein Unternehmen bei der UMSETZUNG.
 
 Zwei Pflichten aus verschiedenen Rechtsakten. Entscheide EINE Frage:
@@ -175,6 +185,96 @@ Antworte NUR mit JSON: {"same": true|false, "delta": "<abweichende Parameter, od
 
 export function buildPairJudgeUserPrompt(a: ObligationRef, b: ObligationRef): string {
   return `A) Rechtsakt X, Bestimmung 1\n${renderObligation(a)}\n\nB) Rechtsakt Y, Bestimmung 2\n${renderObligation(b)}`;
+}
+
+// ─── 4. Paar-Richter, typisiert nach NIST IR 8477 ─────────────────────────
+/**
+ * Die vier Beziehungstypen. Reihenfolge und Schreibweise sind an NIST IR 8477
+ * (Set Theory Relationship Mapping) angelehnt, damit unsere Urteile später auf
+ * einen extern gepflegten Katalog abbildbar bleiben (das SCF mappt nach
+ * derselben Methodik) — siehe `toIr8477`.
+ */
+export const PAIR_RELATIONS = ['equal', 'subset', 'intersects', 'unrelated'] as const;
+export type PairRelation = (typeof PAIR_RELATIONS)[number];
+
+/** Welche der beiden Pflichten die WEITERE ist. Nur bei `subset` belegt. */
+export type WiderSide = 'A' | 'B';
+
+export interface PairRelationVerdict {
+  relation: PairRelation;
+  /** Nur bei `subset`: die weitere Pflicht. Sonst `undefined`. */
+  wider?: WiderSide;
+  why: string;
+}
+
+/**
+ * Die typisierte Rubrik. Der Text der vier Definitionen ist WÖRTLICH der des
+ * Experiments vom 2026-08-01 (`docs/evals/typed-relation-experiment.md`) — und
+ * die `equal`-Definition ist wörtlich das binäre „JA" der Vorgängerfassung.
+ *
+ * Genau darauf beruht der Befund: dieselbe Definition, nur mit
+ * Ausweichmöglichkeit, ließ die Ja-Quote von 35 % auf 0 % fallen. Wer diese
+ * Formulierung ändert, macht den Vergleich zur Messung hinfällig.
+ *
+ * Neu gegenüber dem Experiment ist allein die RICHTUNG: `subset` ohne Angabe,
+ * welche Pflicht die weitere ist, trägt die halbe Aussage nicht und lässt sich
+ * nicht auf IR 8477 abbilden, das subset-of und superset-of unterscheidet.
+ */
+export const PAIR_RELATION_SYSTEM = `Du bist Compliance-Jurist und berätst ein Unternehmen bei der UMSETZUNG.
+
+Zwei Pflichten aus verschiedenen Rechtsakten. Beurteile das Verhältnis der MASSNAHMEN,
+die zu ihrer Erfüllung nötig sind — nicht die Ähnlichkeit der Texte.
+
+Wähle GENAU EINEN Beziehungstyp:
+
+- "equal"       Eine gemeinsam betriebene Maßnahme erfüllt BEIDE vollständig.
+                Unterschiede beschränken sich auf Parameter (Adressat, Frist, Schwelle).
+- "subset"      Die eine Pflicht ist vollständig in der anderen enthalten: wer die
+                weitere erfüllt, erfüllt die engere automatisch mit.
+- "intersects"  Es gibt einen gemeinsamen Kern, aber JEDE Pflicht verlangt zusätzlich
+                etwas, das die andere nicht verlangt. Eine Maßnahme deckt beide nur
+                teilweise ab.
+- "unrelated"   Getrennte Maßnahmen. Kein gemeinsamer Kern.
+
+Bei "subset" gib zusätzlich mit "wider" an, welche der beiden die WEITERE ist ("A" oder "B").
+
+Antworte NUR mit JSON: {"relation":"equal|subset|intersects|unrelated","wider":"A|B (nur bei subset)","why":"<ein knapper Satz>"}`;
+
+/** Dieselbe geblendete Darstellung wie beim binären Richter. */
+export const buildPairRelationUserPrompt = buildPairJudgeUserPrompt;
+
+/**
+ * Faltet die typisierte Beziehung auf eine binäre Sicht — NUR dort benutzen, wo
+ * eine Ja/Nein-Ansicht unvermeidlich ist, und die Faltung dann ausweisen.
+ *
+ * `intersects` fällt bewusst auf `false`: „gemeinsamer Kern plus eigene Zusätze"
+ * ist NICHT „eine Maßnahme erfüllt beide". Diese Zusammenlegung war der
+ * ursprüngliche Fehler, der die veröffentlichten 35 % erzeugt hat.
+ */
+export function foldRelation(r: PairRelation): boolean {
+  return r === 'equal' || r === 'subset';
+}
+
+/** Das Vokabular von NIST IR 8477, aus Sicht von A. */
+export type Ir8477Relation = 'equal' | 'subset-of' | 'superset-of' | 'intersects-with' | 'not-related-to';
+
+/**
+ * Übersetzt ein Urteil in die Sprache des externen Katalogs. Der einzige Grund,
+ * warum `wider` erhoben wird: ohne die Richtung ist `subset` hier nicht
+ * abbildbar, und damit wäre ein Abgleich gegen ein extern gepflegtes Mapping
+ * (SCF, ENISA) nicht möglich.
+ */
+export function toIr8477(v: PairRelationVerdict): Ir8477Relation {
+  switch (v.relation) {
+    case 'equal':
+      return 'equal';
+    case 'subset':
+      return v.wider === 'A' ? 'superset-of' : 'subset-of';
+    case 'intersects':
+      return 'intersects-with';
+    case 'unrelated':
+      return 'not-related-to';
+  }
 }
 
 // ─── Parser ──────────────────────────────────────────────────────────────
@@ -227,4 +327,27 @@ export function parsePairVerdict(raw: string): PairVerdict | null {
   const o = firstJsonObject(raw) as Partial<PairVerdict> | null;
   if (!o || typeof o.same !== 'boolean') return null;
   return { same: o.same, delta: String(o.delta ?? SLOT_UNSTATED), why: String(o.why ?? '') };
+}
+
+/**
+ * Ein fehlender oder erfundener Typ ist UNLESBAR, nicht „unrelated" — dieselbe
+ * Regel wie beim fehlenden `same`: sonst verwandelt ein kaputter Lauf sich in
+ * einen sauberen Negativ-Befund.
+ *
+ * Ein `subset` OHNE lesbare Richtung wird ebenso verworfen. Es sähe wie ein
+ * Urteil aus, trüge aber die halbe Aussage nicht — und stillschweigend eine
+ * Richtung anzunehmen hieße, sie zu erfinden.
+ */
+export function parsePairRelation(raw: string): PairRelationVerdict | null {
+  const o = firstJsonObject(raw) as { relation?: unknown; wider?: unknown; why?: unknown } | null;
+  if (!o || typeof o.relation !== 'string') return null;
+
+  const relation = PAIR_RELATIONS.find((r) => r === o.relation);
+  if (!relation) return null;
+
+  const why = String(o.why ?? '');
+  if (relation !== 'subset') return { relation, why };
+
+  const wider = o.wider === 'A' || o.wider === 'B' ? o.wider : null;
+  return wider ? { relation, wider, why } : null;
 }

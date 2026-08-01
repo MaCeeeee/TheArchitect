@@ -24,9 +24,14 @@ import {
   parseSlots,
   parseActionAssignment,
   parsePairVerdict,
+  parsePairRelation,
+  foldRelation,
+  toIr8477,
   SLOT_SYSTEM,
   CLASSIFY_SYSTEM,
   PAIR_JUDGE_SYSTEM,
+  PAIR_RELATION_SYSTEM,
+  PAIR_RELATIONS,
   NO_ACTION,
   type ObligationRef,
 } from '@thearchitect/shared';
@@ -187,5 +192,95 @@ describe('parsers', () => {
     // "same" fehlt darf NICHT als "nein" durchgehen: das wuerde einen kaputten
     // Lauf in einen sauberen Negativ-Befund verwandeln.
     expect(parsePairVerdict('{"why":"unklar"}')).toBeNull();
+  });
+});
+
+/**
+ * Die typisierte Rubrik (THE-382 Slice 1, Chunk 1).
+ *
+ * Gemessen 2026-08-01 auf denselben 120 Faellen, derselben geblendeten
+ * Darstellung, denselben zwei Haeusern — geaendert wurde NUR der Antwortraum:
+ *
+ *   κ Haiku ↔ Kimi   binaer 0,308  →  vier Typen 0,681
+ *
+ * 19 von 27 binaeren Meinungsverschiedenheiten (70 %) sind Faelle, in denen
+ * BEIDE Haeuser `intersects` vergeben — der binaere Zwang machte jedes
+ * Mittelfeld-Paar zum Muenzwurf. Und `equal` kam null Mal vor, bei wortgleicher
+ * Definition: die veroeffentlichten 35 % waren die Mittelkategorie, nach oben
+ * gedrueckt. Beleg: docs/evals/typed-relation-experiment.md
+ */
+describe('PAIR_RELATION_SYSTEM — typisierte Beziehung (THE-382)', () => {
+  it('offers all four IR 8477 relations', () => {
+    for (const r of PAIR_RELATIONS) {
+      expect(PAIR_RELATION_SYSTEM).toContain(r);
+    }
+  });
+
+  it('keeps the equal-definition WORD-IDENTICAL to the measured experiment', () => {
+    // Genau darauf beruht der Befund: dieselbe Definition wie das binaere "JA",
+    // nur mit Ausweichmoeglichkeit, laesst die Ja-Quote von 35 % auf 0 % fallen.
+    // Aendert jemand diese Formulierung, ist der Vergleich zur Messung hinfaellig.
+    expect(PAIR_RELATION_SYSTEM).toMatch(/Eine gemeinsam betriebene Maßnahme erfüllt BEIDE vollständig/);
+    expect(PAIR_RELATION_SYSTEM).toMatch(/Unterschiede beschränken sich auf Parameter/);
+  });
+
+  it('describes intersects as shared core PLUS own additions', () => {
+    expect(PAIR_RELATION_SYSTEM).toMatch(/gemeinsamen Kern/);
+    expect(PAIR_RELATION_SYSTEM).toMatch(/zusätzlich/);
+  });
+
+  it('asks which side is the wider one — subset without direction is ambiguous', () => {
+    // IR 8477 unterscheidet subset-of von superset-of. Ohne Richtung ist unser
+    // Vokabular nicht auf den Katalog (SCF mappt nach IR 8477) abbildbar, und
+    // genau diese Anschlussfaehigkeit ist der Zweck der Typisierung.
+    expect(PAIR_RELATION_SYSTEM).toContain('wider');
+  });
+
+  it('parses each relation and rejects invented ones', () => {
+    expect(parsePairRelation('{"relation":"intersects","why":"x"}')?.relation).toBe('intersects');
+    expect(parsePairRelation('{"relation":"unrelated","why":"x"}')?.relation).toBe('unrelated');
+    expect(parsePairRelation('{"relation":"sort-of","why":"x"}')).toBeNull();
+  });
+
+  it('treats a missing relation as unreadable, never as "unrelated"', () => {
+    // Sonst wird ein kaputter Lauf zu einem sauberen Negativ-Befund —
+    // derselbe Fehler wie beim fehlenden "same" im binaeren Richter.
+    expect(parsePairRelation('{"why":"unklar"}')).toBeNull();
+  });
+
+  it('rejects a subset without a readable direction', () => {
+    // Ein richtungsloses subset waere still: es sieht wie ein Urteil aus,
+    // traegt aber die Haelfte der Aussage nicht.
+    expect(parsePairRelation('{"relation":"subset","why":"x"}')).toBeNull();
+    expect(parsePairRelation('{"relation":"subset","wider":"C","why":"x"}')).toBeNull();
+    expect(parsePairRelation('{"relation":"subset","wider":"A","why":"x"}')?.wider).toBe('A');
+  });
+
+  it('leaves the direction undefined where it has no meaning', () => {
+    expect(parsePairRelation('{"relation":"equal","wider":"A","why":"x"}')?.wider).toBeUndefined();
+  });
+
+  it('folds to a binary view WITHOUT counting intersects as yes', () => {
+    // Diese Zusammenlegung war der urspruengliche Fehler, der die 35 % erzeugt hat.
+    expect(foldRelation('equal')).toBe(true);
+    expect(foldRelation('subset')).toBe(true);
+    expect(foldRelation('intersects')).toBe(false);
+    expect(foldRelation('unrelated')).toBe(false);
+  });
+
+  it('maps to the IR 8477 vocabulary from A’s perspective', () => {
+    expect(toIr8477({ relation: 'equal', why: '' })).toBe('equal');
+    expect(toIr8477({ relation: 'subset', wider: 'B', why: '' })).toBe('subset-of');
+    expect(toIr8477({ relation: 'subset', wider: 'A', why: '' })).toBe('superset-of');
+    expect(toIr8477({ relation: 'intersects', why: '' })).toBe('intersects-with');
+    expect(toIr8477({ relation: 'unrelated', why: '' })).toBe('not-related-to');
+  });
+
+  it('keeps the binary predecessor exported so the frozen run stays reproducible', () => {
+    expect(PAIR_JUDGE_SYSTEM).toMatch(/"same"/);
+  });
+
+  it('renders the pair blinded, like every other prompt', () => {
+    expect(buildPairJudgeUserPrompt(oblA, oblB)).not.toMatch(LAW_NAMES);
   });
 });
