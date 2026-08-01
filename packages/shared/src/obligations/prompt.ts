@@ -62,8 +62,15 @@ const LAW_NAME_PATTERN =
  * `§` ist kein Wortzeichen, ein vorangestelltes `\b` verlangte also ein
  * Wortzeichen unmittelbar davor und griffe am Satzanfang nie („§ 4 LkSG …"
  * bliebe stehen).
+ *
+ * Der Buchstaben-Zusatz (`Art. 6a`, `§ 4b`) muss UNMITTELBAR an der Ziffer
+ * hängen. Stand dort `\s*[a-z]?`, verschluckte das Muster den ersten Buchstaben
+ * des Folgeworts: „Art. 33 binnen 72 Stunden" wurde zu „der Bestimmunginnen
+ * 72 Stunden". Auf dem eingefrorenen Prüfsatz traf das 40 von 480 Textfeldern
+ * (8,3 %) — der Richter las diese Stellen verstümmelt. Gefunden 2026-08-01
+ * beim Bau des Arbeitsblatts (THE-382).
  */
-const CITATION_PATTERN = /(?:\bArt(?:ikel)?\b\.?|§{1,2})\s*\d+\s*[a-z]?(?:\s*(?:Abs\.?|Absatz)\s*\d+)?/gi;
+const CITATION_PATTERN = /(?:\bArt(?:ikel)?\b\.?|§{1,2})\s*\d+[a-z]?\b(?:\s*(?:Abs\.?|Absatz)\s*\d+)?/gi;
 
 /**
  * Entfernt Gesetzesnamen und Fundstellen aus einem Textstück. Ersetzt durch

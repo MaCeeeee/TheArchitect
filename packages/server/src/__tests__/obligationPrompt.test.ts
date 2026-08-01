@@ -67,6 +67,20 @@ describe('blindLawNames (THE-438)', () => {
     expect(blindLawNames('Artikel 32 verlangt TOMs.')).not.toMatch(/Artikel\s*32/);
   });
 
+  it('does not swallow the first letter of the following word (THE-382)', () => {
+    // `\\s*[a-z]?` liess das Muster ueber die Luecke greifen: "Art. 33 binnen"
+    // wurde zu "der Bestimmunginnen". Auf dem eingefrorenen Pruefsatz traf das
+    // 40 von 480 Textfeldern — der Richter las diese Stellen verstuemmelt.
+    expect(blindLawNames('Meldet die Verletzung gemäß Art. 33 binnen 72 Stunden.')).toContain(' binnen 72 Stunden');
+    expect(blindLawNames('Maßnahmen gemäß Artikel 32 dokumentieren.')).toContain(' dokumentieren');
+    expect(blindLawNames('Vorfälle der nach Artikel 46 zuständigen Behörde melden.')).toContain(' zuständigen Behörde');
+  });
+
+  it('still blinds a lettered citation that hangs on the digits', () => {
+    expect(blindLawNames('Nach Art. 6a Abs. 1 gilt Folgendes.')).not.toMatch(/6a/);
+    expect(blindLawNames('§ 4b verlangt ein Risikomanagement.')).not.toMatch(/4b/);
+  });
+
   it('leaves the substantive obligation intact — blinding must not eat the content', () => {
     const out = blindLawNames('Nach DSGVO Art. 32 sind technische und organisatorische Maßnahmen zu treffen.');
     expect(out).toContain('technische und organisatorische Maßnahmen zu treffen');
