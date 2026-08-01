@@ -24,6 +24,8 @@ import {
   SLOT_SYSTEM,
   buildSlotUserPrompt,
   parseSlots,
+  SLOT_UNSTATED,
+  OBLIGATION_MODALITIES,
   type ObligationRef,
   type ObligationSlots,
 } from '@thearchitect/shared';
@@ -129,9 +131,24 @@ async function main(): Promise<void> {
     fs.writeFileSync(outPath, JSON.stringify(records, null, 2) + '\n');
 
     const uniqueActions = new Set(records.map((r) => r.slots.handlung)).size;
+    // Befüllung je Slot und Modalitäts-Verteilung ausweisen: ein Slot, der
+    // überwiegend leer bleibt, trägt das versprochene Delta nicht (Adressat
+    // lag in der Referenzmessung bei 48 %), und eine kippende
+    // Modalitäts-Verteilung ist das einzige Frühwarnsignal dafür, dass
+    // Verbote nicht mehr als solche erkannt werden (THE-542).
+    const fillRate = (pick: (r: SlotRecord) => string): string => {
+      const n = records.filter((r) => pick(r).trim() !== SLOT_UNSTATED && pick(r).trim() !== '').length;
+      return `${n}/${records.length} = ${records.length ? Math.round((100 * n) / records.length) : 0} %`;
+    };
+    const modal = OBLIGATION_MODALITIES.map(
+      (m) => `${m} ${records.filter((r) => r.slots.modalitaet === m).length}`,
+    ).join(' · ');
     console.log(
       `\n[slots] ${records.length}/${obligations.length} zerlegt (${cfg.provider}/${cfg.model})\n` +
         `[slots] verschiedene Handlungs-Formulierungen: ${uniqueActions}\n` +
+        `[slots] Befüllung — Adressat ${fillRate((r) => r.slots.adressat)} · ` +
+        `Bedingung ${fillRate((r) => r.slots.bedingung)}\n` +
+        `[slots] Modalität: ${modal}\n` +
         `[slots] annotator: ${annotatorTag(cfg)}\n` +
         `[slots] → ${outPath}\n` +
         `[slots] NEXT: npm run actions:derive -- --in ${path.relative(process.cwd(), outPath)}`,
