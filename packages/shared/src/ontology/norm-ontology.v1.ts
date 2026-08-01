@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.7.0',
-  updatedAt: '2026-07-25',
+  ontologyVersion: '1.8.0',
+  updatedAt: '2026-08-01',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -189,6 +189,65 @@ export const NORM_ONTOLOGY = {
     // Nicht-Regulierte, regime-übergreifend — bleiben die letzten zwei.
     { id: 'member_state', label: 'Member State — Mitgliedstaat', origin: 'cross' },
     { id: 'supervisory_authority', label: 'Supervisory Authority / Aufsichtsbehörde', origin: 'cross' },
+  ],
+
+  /**
+   * E6 — kanonische Handlungen: die gesetzesneutralen MASSNAHMEN, auf die
+   * Pflichten zeigen. Bezugsgröße der Requirement-Harmonisierung (THE-438).
+   *
+   * HERKUNFT: nicht handgebaut und nicht von ISO 27001 / NIST CSF übernommen,
+   * sondern aus dem Korpus ABGELEITET (THE-538, 2026-08-01): 219 Kern-Pflichten
+   * aus DSGVO × NIS2 × DORA → Zerlegung in ⟨Handlung·Adressat·Modalität·
+   * Bedingung⟩ → 216 freie Handlungs-Formulierungen → bottom-up-Vokabular.
+   * 218/219 waren zuordenbar. Das Verfahren ist als `npm run actions:derive`
+   * wiederholbar — der Katalog ist deshalb FORTSCHREIBBAR, nicht endgültig.
+   *
+   * WARUM ÜBERHAUPT: Drei Verfahren, die Pflichten über ihre FORMULIERUNG
+   * vergleichen (Jaccard, Embedding-Paare, gröbere Granularität), fanden 0
+   * Treffer — sie vergleichen Texte, gefragt ist aber, ob EINE Maßnahme beide
+   * Pflichten erfüllt. Über die kanonische Handlung trennt es sauber: 35 %
+   * gemeinsam erfüllbar (Mehrheit dreier Modell-Häuser) gegen 0/60 in der
+   * Negativ-Kontrolle, in jedem Haus.
+   *
+   * GRANULARITÄT ist der springende Punkt: grob genug, dass verschiedene
+   * Gesetze denselben Eintrag treffen können — fein genug, dass der Eintrag
+   * eine umsetzbare Maßnahme bleibt. Zu grob erzeugt einen Compliance-FEHLER
+   * (zwei Meldepflichten mit verschiedenen Adressaten und Fristen als
+   * „dieselbe Pflicht" auszuweisen wäre einer). Deshalb prüft der Eval eine
+   * NEGATIV-Kontrolle. Bekannter Schwachpunkt: `vorfall-melden-behoerde` fasst
+   * Früh-/Zwischen-/Abschlussmeldung dreier Rechtsakte zusammen und erreichte
+   * nur 9/26 Mehrheitstreffer — erster Kandidat für eine Aufspaltung, falls die
+   * Negativ-Kontrolle je Fehlalarme zeigt.
+   *
+   * `label` ist ENGLISCH (user-sichtbar), `description` deutsch (Prompt-Text).
+   */
+  canonicalActions: [
+    { id: 'rechtsgrundlage-dokumentieren', label: 'Establish and document legal basis', description: 'Für jede Verarbeitungs- oder Aufbewahrungstätigkeit die rechtliche Basis bestimmen, prüfen und nachweisbar festhalten, inklusive Interessenabwägung.' },
+    { id: 'zweck-festlegen', label: 'Define and limit processing purposes', description: 'Zwecke der Datenerhebung explizit bestimmen, dokumentieren und Zweckänderungen auf Kompatibilität prüfen oder unterbinden.' },
+    { id: 'aufbewahrung-loeschfristen', label: 'Define retention and deletion periods', description: 'Für alle Datenkategorien Speicherfristen definieren, dokumentieren und technisch durchsetzen.' },
+    { id: 'datenminimierung', label: 'Minimise data and ensure accuracy', description: 'Datenbestand auf das Notwendige beschränken, unnötige oder unrichtige Daten löschen bzw. berichtigen und Datenminimierung durch Voreinstellung umsetzen.' },
+    { id: 'betroffene-informieren', label: 'Inform data subjects and provide transparency', description: 'Betroffene über Zwecke, Rechtsgrundlage, Empfänger, Speicherdauer, Rechte, Drittlandtransfers und automatisierte Entscheidungen klar und zugänglich unterrichten.' },
+    { id: 'betroffenenrechte-bearbeiten', label: 'Handle and facilitate data subject rights', description: 'Anträge auf Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch und Übertragbarkeit bearbeiten, Datenkopie bereitstellen und Ablehnungen begründen.' },
+    { id: 'einwilligung-verwalten', label: 'Obtain, evidence and allow withdrawal of consent', description: 'Einwilligung verständlich und freiwillig einholen, versioniert nachweisbar speichern und Widerruf ebenso einfach ermöglichen.' },
+    { id: 'loeschung-durchfuehren', label: 'Execute and propagate erasure', description: 'Personenbezogene Daten samt aller Kopien, Backups und Replikationen technisch löschen, Dritte informieren und Ausnahmen prüfen und dokumentieren.' },
+    { id: 'technisch-organisatorische-massnahmen', label: 'Implement technical and organisational safeguards', description: 'Risikobasiert geeignete TOMs zur Sicherstellung von Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit implementieren, dokumentieren und aktualisieren.' },
+    { id: 'verschluesselung-pseudonymisierung', label: 'Encrypt and pseudonymise data', description: 'Pseudonymisierung und Verschlüsselung evaluieren und einsetzen, um Daten gegen unbefugten Zugriff und Verlust zu schützen.' },
+    { id: 'zugriffskontrolle', label: 'Control access', description: 'Physische und logische Zugangskontrollen für Informations- und IKT-Assets einrichten und Zugriff durch Anweisung steuern.' },
+    { id: 'risikobewertung', label: 'Assess and document risks', description: 'Risiken der Verarbeitung bzw. für Netz- und Informationssysteme identifizieren, hinsichtlich Wahrscheinlichkeit und Ausmaß bewerten und dokumentieren.' },
+    { id: 'folgenabschaetzung', label: 'Carry out a data protection impact assessment', description: 'Bei riskanter Verarbeitung eine DSFA mit Beschreibung, Notwendigkeits- und Verhältnismäßigkeitsprüfung, Risikobewertung und Abhilfemaßnahmen erstellen und den DSB einbeziehen.' },
+    { id: 'wirksamkeit-pruefen', label: 'Review effectiveness of measures', description: 'Die Wirksamkeit von Sicherheits- und Risikomanagementmaßnahmen regelmäßig prüfen, bewerten, evaluieren und bei Bedarf Korrekturmaßnahmen ergreifen.' },
+    { id: 'verzeichnis-fuehren', label: 'Maintain a record of processing activities', description: 'Ein Verzeichnis mit Verantwortlichem, Zwecken, Daten- und Betroffenenkategorien, Empfängern, Löschfristen, Transfers und TOMs führen und der Aufsichtsbehörde bereitstellen.' },
+    { id: 'auftragsverarbeiter-steuern', label: 'Select and contractually bind processors', description: 'Auftragsverarbeiter mit ausreichenden Garantien auswählen, per Vertrag zu Weisungsgebundenheit, Geheimhaltung, Sicherung und Unterstützung verpflichten und Unterauftrag nur mit Genehmigung zulassen.' },
+    { id: 'compliance-nachweisen', label: 'Demonstrate conformity and use certification', description: 'Konforme Verarbeitung rückverfolgbar nachweisen und Einhaltung genehmigter Verhaltensregeln oder Zertifizierungen dokumentieren.' },
+    { id: 'vorfall-erkennen-behandeln', label: 'Detect and handle security incidents', description: 'Verfahren zur Erkennung, Protokollierung, Kategorisierung, Reaktion und Ursachenbehebung von Sicherheits- bzw. IKT-Vorfällen etablieren und anwenden.' },
+    { id: 'vorfall-melden-behoerde', label: 'Report incident to supervisory authority', description: 'Datenschutzverletzungen bzw. erhebliche Sicherheitsvorfälle inklusive Art, Folgen und Abhilfemaßnahmen fristgerecht und ggf. gestuft (Früh-, Zwischen-, Abschlussmeldung) an die zuständige Behörde melden.' },
+    { id: 'vorfall-benachrichtigen-betroffene', label: 'Notify affected persons and customers of an incident', description: 'Betroffene Personen, Diensteempfänger oder Kunden in klarer Sprache über Vorfälle und Schutz-/Minderungsmaßnahmen informieren, ggf. per öffentlicher Bekanntmachung.' },
+    { id: 'drittlandtransfer-absichern', label: 'Safeguard third-country transfers', description: 'Angemessene Übermittlungsmechanismen wählen, Schutzniveau und Garantien prüfen und dokumentieren sowie Weiterübermittlungen überwachen.' },
+    { id: 'resilienz-governance', label: 'Establish ICT risk management and resilience governance', description: 'Einen internen Governance-, Kontroll- und IKT-Risikomanagementrahmen samt Resilienzstrategie, Leitungsverantwortung, Budget und Meldekanälen definieren, genehmigen und überwachen.' },
+    { id: 'betriebskontinuitaet', label: 'Ensure business continuity and recovery', description: 'Geschäftsfortführungs-, Reaktions- und Wiederherstellungspläne etablieren, genehmigen und Verfügbarkeit von Systemen und Daten nach Vorfällen wiederherstellen.' },
+    { id: 'revision-ueberwachung', label: 'Ensure independent monitoring and audit', description: 'IKT-Systeme kontinuierlich überwachen, den Risikomanagementrahmen durch unabhängige interne Revision prüfen lassen und Follow-up für Feststellungen etablieren.' },
+    { id: 'cyberhygiene-schulung', label: 'Perform cyber hygiene and training', description: 'Verfahren der Cyberhygiene sowie Schulungen im Bereich Cybersicherheit etablieren und durchführen.' },
+    { id: 'lieferkette-bewerten', label: 'Assess supply chain security', description: 'Die Sicherheit unmittelbarer Anbieter und Diensteanbieter bewerten und Sicherheitsanforderungen bei Erwerb, Entwicklung und Wartung von Systemen einhalten.' },
   ],
 
   /**

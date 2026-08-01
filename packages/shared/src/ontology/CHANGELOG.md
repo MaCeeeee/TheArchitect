@@ -7,6 +7,39 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.8.0 — 2026-08-01 (THE-438 / THE-538)
+
+- **canonicalActions** NEU (26 Einträge) — additive Facette, keine bestehende id
+  berührt. Bezugsgröße der Requirement-Harmonisierung: zwei Pflichten sind
+  Kandidaten, wenn sie auf denselben Eintrag zeigen.
+  Auslöser ist wie bei 1.6.0/1.7.0 eine **Messung**, keine Meinung. Drei
+  Verfahren, die Pflichten über ihre FORMULIERUNG vergleichen — lexikalisch
+  (Jaccard, Maximum 0,225, echter Treffer auf Rang 17), semantisch (Embedding-
+  Paare) und gröber verdichtet — fanden **0 Treffer**. Der Fehler saß nicht in
+  den Daten: Ähnlichkeit vergleicht Texte, gefragt ist aber, ob EINE Maßnahme
+  beide Pflichten erfüllt.
+  Die Zerlegung in ⟨Handlung·Adressat·Modalität·Bedingung⟩ und ein aus dem
+  Korpus ABGELEITETES Handlungs-Vokabular (219 Pflichten aus DSGVO × NIS2 ×
+  DORA → 216 freie Formulierungen → 26 Einträge, 218/219 zuordenbar) trennen
+  dagegen sauber. Blinder Drei-Häuser-Richter (Haiku 4.5 · Opus 4.8 · Kimi K3):
+
+  | Arm | Ergebnis in allen drei Häusern |
+  | -- | -- |
+  | Positiv-Kontrolle (dieselbe Pflicht) | 15/15 |
+  | Negativ-Kontrolle (verschiedene Handlung) | **0/60** — 0 Fehlalarme auf 180 Urteile |
+  | Gleiche kanonische Handlung | 37 % · 37 % · 47 % → Mehrheit 35 %, einstimmig 18 % |
+
+  **Auflage:** κ zwischen den Häusern liegt bei 0,308–0,697 und damit unter dem
+  Tor 0,80. Die Häuser sind sich über die Quote einig, über das einzelne Paar
+  nicht. Die Facette trägt deshalb **Vorschläge, keine Behauptungen** — kein
+  Auto-Merge (THE-438 Slice 1).
+
+  Zwei Messfallen sind dabei aufgefallen und in den Prüfaufbau eingebaut:
+  ungeblendete Gesetzesnamen lassen das Modell über das Etikett statt über den
+  Text urteilen (wortgleicher Text unter zwei Etiketten: 7/15 statt 15/15), und
+  eine fehlende Positiv-Kontrolle lässt ein Instrument, das nie „ja" sagt, wie
+  einen sauberen Negativ-Befund aussehen.
+
 ## 1.7.0 — 2026-07-25 (THE-515)
 
 - **partyRoles** (15 → 19) ERWEITERT — additiv, keine id geändert/entfernt:
