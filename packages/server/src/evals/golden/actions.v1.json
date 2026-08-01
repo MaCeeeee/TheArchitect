@@ -1,0 +1,2107 @@
+{
+  "version": "actions.v1",
+  "frozen": true,
+  "ontologyVersion": "1.8.0",
+  "cases": [
+    {
+      "id": "dsgvo-art-33__dora-art-19",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Behördenweiterleitung von IKT-Vorfalldetails an EU-Agenturen und Behörden",
+        "text": "Nach Eingang der Erstmeldung und jeder Meldung gemäß Absatz 4 muss die zuständige Behörde zeitnah Einzelheiten zu dem Vorfall an EBA, ESMA oder EIOPA, EZB (bei bestimmten Finanzunternehmen), zuständige Behörden gemäß NIS2-Richtlinie oder CSIRT, Abwicklungsbehörden und den SRB (bei kritischen Funktionen) sowie andere relevante Behörden weitergeben."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-6",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Risiken der Verarbeitung identifizieren und bewerten",
+        "text": "Bei der Beurteilung des angemessenen Schutzniveaus müssen insbesondere die Risiken berücksichtigt werden, die mit der Verarbeitung verbunden sind, einschließlich der Risiken durch Vernichtung, Verlust, Veränderung oder unbefugte Offenlegung sowie unbefugten Zugang zu personenbezogenen Daten, unabhängig davon ob dies beabsichtigt oder unrechtmäßig erfolgt."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Auswirkungen von IKT-Risiken durch geeignete Strategien, Leit- und Richtlinien, Verfahren und Tools minimieren",
+        "text": "Im Einklang mit ihrem IKT-Risikomanagementrahmen müssen Finanzunternehmen die Auswirkungen von IKT-Risiken minimieren, indem sie geeignete Strategien, Leit- und Richtlinien, Verfahren, IKT-Protokolle und Tools einsetzen."
+      },
+      "actionId": "risikobewertung"
+    },
+    {
+      "id": "dsgvo-art-35__dora-art-19",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 35",
+        "title": "Durchführung einer Datenschutz-Folgenabschätzung bei hohem Risiko",
+        "text": "Der Verantwortliche muss vorab eine Datenschutz-Folgenabschätzung (DPIA) durchführen, wenn eine Verarbeitungsform, insbesondere bei Verwendung neuer Technologien, aufgrund der Art, des Umfangs, der Umstände und der Zwecke voraussichtlich ein hohes Risiko für die Rechte und Freiheiten natürlicher Personen zur Folge hat. Mehrere ähnliche Verarbeitungsvorgänge mit ähnlich hohen Risiken können in einer einzigen Abschätzung zusammengefasst werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Umgehende Weiterleitung von Vorfalldetails an Aufnahmemitgliedstaat-Behörde bei grenzüberschreitenden Aktivitäten",
+        "text": "Die zuständige Behörde muss die Einzelheiten eines schwerwiegenden IKT-bezogenen Vorfalls umgehend an die einschlägige Behörde des Aufnahmemitgliedstaats weiterleiten, wenn ein Zentralverwahrer eine umfassende grenzüberschreitende Tätigkeit ausübt, der Vorfall wahrscheinlich schwerwiegende Folgen für die Finanzmärkte des Aufnahmemitgliedstaats hat und Kooperationsvereinbarungen bestehen."
+      },
+      "actionId": "folgenabschaetzung",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-35__dora-art-9",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 35",
+        "title": "Durchführung einer Datenschutz-Folgenabschätzung für systematische umfangreiche Überwachung",
+        "text": "Eine Datenschutz-Folgenabschätzung ist erforderlich bei systematischer umfangreicher Überwachung öffentlich zugänglicher Bereiche, insbesondere wenn Kameras, Sensoren oder ähnliche Technologien zur kontinuierlichen Beobachtung verwendet werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "folgenabschaetzung",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-12__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 12",
+        "title": "Verlangen zusätzlicher Identifikationsinformationen bei begründeten Zweifeln",
+        "text": "Hat der Verantwortliche begründete Zweifel an der Identität der natürlichen Person, die einen Antrag gemäß Artikeln 15 bis 21 stellt, so kann er zusätzliche Informationen anfordern, die zur Bestätigung der Identität der betroffenen Person erforderlich sind. Dies gilt unbeschadet des Artikels 11 Absatz 2."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Frühwarnung innerhalb von 24 Stunden nach Kenntnisnahme übermitteln",
+        "text": "Innerhalb von 24 Stunden nach Kenntnisnahme eines erheblichen Sicherheitsvorfalls muss eine Frühwarnung dem CSIRT oder der zuständigen Behörde übermittelt werden. Die Frühwarnung muss gegebenenfalls angeben, ob Verdacht auf rechtswidrige oder böswillige Handlungen besteht oder grenzüberschreitende Auswirkungen möglich sind (Absatz 4 Buchstabe a)."
+      },
+      "actionId": "betroffenenrechte-bearbeiten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Meldung von Verletzungen des Schutzes personenbezogener Daten an die Aufsichtsbehörde",
+        "text": "Der Verantwortliche muss unverzüglich und möglichst binnen 72 Stunden, nachdem ihm eine Verletzung des Schutzes personenbezogener Daten bekannt wurde, diese der gemäß Artikel 51 zuständigen Aufsichtsbehörde melden, es sei denn, dass die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Erfolgt die Meldung nicht binnen 72 Stunden, muss eine Begründung für die Verzögerung beigefügt werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Behördenweiterleitung von IKT-Vorfalldetails an EU-Agenturen und Behörden",
+        "text": "Nach Eingang der Erstmeldung und jeder Meldung gemäß Absatz 4 muss die zuständige Behörde zeitnah Einzelheiten zu dem Vorfall an EBA, ESMA oder EIOPA, EZB (bei bestimmten Finanzunternehmen), zuständige Behörden gemäß NIS2-Richtlinie oder CSIRT, Abwicklungsbehörden und den SRB (bei kritischen Funktionen) sowie andere relevante Behörden weitergeben."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Nachweis der Einwilligung erbringen",
+        "text": "Der Verantwortliche muss dokumentieren und nachweisen können, dass die betroffene Person in die Verarbeitung ihrer personenbezogenen Daten eingewilligt hat. Dies erfordert ein System zur Erfassung, Speicherung und Abrufbarkeit von Einwilligungsnachweisen mit Datum, Uhrzeit und Bestätigung der betroffenen Person."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Formales Follow-up-Verfahren für kritische IKT-Revisionsfeststellungen etablieren",
+        "text": "Auf Grundlage der Feststellungen aus der Überprüfung der internen Revision müssen Finanzunternehmen ein förmliches Follow-up-Verfahren einschließlich Regeln für die rechtzeitige Überprüfung und Auswertung kritischer Erkenntnisse der IKT-Revision festlegen."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "revision-ueberwachung"
+    },
+    {
+      "id": "dsgvo-art-30__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 30",
+        "title": "Technische und organisatorische Maßnahmen gemäß Artikel 32 dokumentieren",
+        "text": "Das Verzeichnis muss, wenn möglich, eine allgemeine Beschreibung der technischen und organisatorischen Maßnahmen gemäß Artikel 32 DSGVO enthalten – Sicherheitsmaßnahmen wie Verschlüsselung, Zugriffskontrolle, Logging, Incident Response."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Vorkehrungen gegen Verfügbarkeitsmangel und Vertraulichkeitsverletzungen treffen",
+        "text": "Finanzunternehmen müssen IKT-Lösungen einsetzen, die dem Mangel an Verfügbarkeit, der Beeinträchtigung der Authentizität und Integrität, den Verletzungen der Vertraulichkeit und dem Verlust von Daten vorbeugen."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Geeignete technische und organisatorische Maßnahmen implementieren",
+        "text": "Der Verantwortliche und der Auftragsverarbeiter müssen unter Berücksichtigung des Stands der Technik, der Implementierungskosten und der Art, des Umfangs, der Umstände und der Zwecke der Verarbeitung sowie der unterschiedlichen Eintrittswahrscheinlichkeit und Schwere des Risikos geeignete technische und organisatorische Maßnahmen treffen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-35__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 35",
+        "title": "Dokumentation der Datenschutz-Folgenabschätzung mit Systembeschreibung und Zwecken",
+        "text": "Die Folgenabschätzung muss eine systematische Beschreibung der geplanten Verarbeitungsvorgänge und der Zwecke der Verarbeitung enthalten, gegebenenfalls einschließlich der von dem Verantwortlichen verfolgten berechtigten Interessen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Angemessene Trennung und Unabhängigkeit von IKT-Risikomanagement-, Kontroll- und Revisionsfunktionen sicherstellen",
+        "text": "Finanzunternehmen müssen für eine angemessene Trennung und Unabhängigkeit von IKT-Risikomanagementfunktionen, Kontrollfunktionen und internen Revisionsfunktionen gemäß dem Modell der drei Verteidigungslinien oder einem vergleichbaren internen Modell für Risikomanagement und Kontrolle sorgen."
+      },
+      "actionId": "folgenabschaetzung",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "nis2-art-21__dora-art-6",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Konzepte und Verfahren zur Risikoanalyse und Sicherheit für Informationssysteme etablieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Konzepte und Verfahren in Bezug auf die Risikoanalyse und Sicherheit für Informationssysteme etablieren und dokumentieren. Diese müssen es ermöglichen, Sicherheitsrisiken zu identifizieren, zu bewerten und zu priorisieren sowie geeignete Kontrollmaßnahmen zu implementieren und deren Wirksamkeit zu überwachen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Kontrollfunktion für Management und Überwachung des IKT-Risikos delegieren (nicht für Kleinstunternehmen)",
+        "text": "Finanzunternehmen, bei denen es sich nicht um Kleinstunternehmen handelt, müssen die Zuständigkeit für das Management und die Überwachung des IKT-Risikos an eine Kontrollfunktion übertragen und ein angemessenes Maß an Unabhängigkeit dieser Kontrollfunktion sicherstellen, um Interessenkonflikte zu vermeiden."
+      },
+      "actionId": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-34__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Geeignete technische und organisatorische Sicherheitsvorkehrungen implementieren",
+        "text": "Der Verantwortliche muss geeignete technische und organisatorische Sicherheitsvorkehrungen treffen und diese Vorkehrungen auf die von der Verletzung betroffenen personenbezogenen Daten anwenden. Insbesondere müssen solche Vorkehrungen die personenbezogenen Daten für alle Personen, die nicht zum Zugang befugt sind, unzugänglich machen, etwa durch Verschlüsselung. Diese Vorkehrungen sind notwendig, um im Notfall die Benachrichtigungspflicht zu vermeiden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Grenzüberschreitende Auswirkungen dem CSIRT mitteilen",
+        "text": "Alle Informationen, die dem CSIRT oder der zuständigen Behörde übermittelt werden, müssen es diesem ermöglichen zu ermitteln, ob der Sicherheitsvorfall grenzübergreifende Auswirkungen hat. Dies ist ein inhaltliches Anforderungsmerkmal jeder Meldung (Absatz 1 Unterabsatz 3)."
+      },
+      "actionId": "technisch-organisatorische-massnahmen",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-24__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 24",
+        "title": "Einhaltung genehmigter Zertifizierungsverfahren nachweisen",
+        "text": "Die Einhaltung eines genehmigten Zertifizierungsverfahrens gemäß Artikel 42 DSGVO kann als Gesichtspunkt herangezogen werden, um die Erfüllung der Pflichten des Verantwortlichen nachzuweisen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "IKT-Risikomanagementrahmen regelmäßig durch interne Revision überprüfen lassen",
+        "text": "Der IKT-Risikomanagementrahmen von Finanzunternehmen, bei denen es sich nicht um Kleinstunternehmen handelt, muss im Einklang mit dem Revisionsplan regelmäßig einer internen Revision durch Revisoren zu unterziehen, die über ausreichendes Wissen, ausreichende Fähigkeiten und Fachkenntnisse im Bereich IKT-Risiken sowie eine angemessene Unabhängigkeit verfügen. Häufigkeit und Schwerpunkt von IKT-Revisionen müssen den IKT-Risiken des Finanzunternehmens entsprechend angemessen sein."
+      },
+      "actionId": "compliance-nachweisen",
+      "actionIdB": "revision-ueberwachung"
+    },
+    {
+      "id": "dsgvo-art-12__nis2-art-23--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 12",
+        "title": "Unterrichtung über Ablehnung von Anträgen mit Gründen und Hinweis auf Beschwerdeverfahren",
+        "text": "Wird der Verantwortliche auf den Antrag der betroffenen Person hin nicht tätig, so muss er die betroffene Person ohne Verzögerung, spätestens aber innerhalb eines Monats nach Eingang des Antrags über die Gründe hierfür und über die Möglichkeit, bei einer Aufsichtsbehörde Beschwerde einzulegen oder einen gerichtlichen Rechtsbehelf einzulegen, unterrichten."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Grenzüberschreitende Auswirkungen dem CSIRT mitteilen",
+        "text": "Alle Informationen, die dem CSIRT oder der zuständigen Behörde übermittelt werden, müssen es diesem ermöglichen zu ermitteln, ob der Sicherheitsvorfall grenzübergreifende Auswirkungen hat. Dies ist ein inhaltliches Anforderungsmerkmal jeder Meldung (Absatz 1 Unterabsatz 3)."
+      },
+      "actionId": "betroffenenrechte-bearbeiten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Auf Ersuchen des CSIRT Zwischenbericht über Statusaktualisierungen bereitstellen",
+        "text": "Auf Ersuchen eines CSIRT oder der zuständigen Behörde müssen betroffene Einrichtungen einen Zwischenbericht über relevante Statusaktualisierungen zu einem Sicherheitsvorfall übermitteln (Absatz 4 Buchstabe c). Diese Berichte müssen zeitnah nach Aufforderung erfolgen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Zwischenmeldungen bei wesentlichen Statusänderungen einreichen",
+        "text": "Nach der Erstmeldung müssen Finanzunternehmen eine Zwischenmeldung einreichen, sobald sich der Status des ursprünglichen Vorfalls erheblich geändert hat oder sich die Handhabung auf Basis neuer Informationen geändert hat. Gegebenenfalls sind aktualisierte Meldungen bei entsprechenden Statusaktualisierungen erforderlich, sowie auf ausdrücklichen Antrag der zuständigen Behörde."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-9",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Datenlöschung in öffentlich gemachten Daten durch Informationspflicht umsetzen",
+        "text": "Hat der Verantwortliche personenbezogene Daten öffentlich gemacht und ist zu deren Löschung verpflichtet, so muss er unter Berücksichtigung verfügbarer Technologie und Implementierungskosten angemessene Maßnahmen (auch technischer Art) treffen, um andere Datenverarbeiter zu informieren, dass die betroffene Person die Löschung aller Links, Kopien und Replikationen dieser Daten verlangt hat. Dies ist eine Mitteilungspflicht an nachgelagerte Prozessoren und Kopienhalter."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Risiken von Datenkorruption, -verlust und unbefugtem Zugriff minimieren",
+        "text": "Finanzunternehmen müssen das Risiko von Datenkorruption oder -verlust, unbefugtem Zugriff und technischen Mängeln, die die Geschäftstätigkeit beeinträchtigen können, minimieren."
+      },
+      "actionId": "loeschung-durchfuehren",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--3",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der Art der Verletzung des Schutzes personenbezogener Daten in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der Art der Verletzung des Schutzes personenbezogener Daten enthalten, soweit möglich mit Angabe der Kategorien und der ungefähren Zahl der betroffenen Personen, der betroffenen Kategorien und der ungefähren Zahl der betroffenen personenbezogenen Datensätze."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Freiwillige Meldung erheblicher Cyberbedrohungen an zuständige Behörde",
+        "text": "Finanzunternehmen können auf freiwilliger Basis erhebliche Cyberbedrohungen der zuständigen Behörde melden, wenn sie der Auffassung sind, dass die Bedrohung für das Finanzsystem, die Dienstnutzer oder die Kunden relevant ist. Die Behörde kann solche Informationen an andere relevante Behörden weitergeben."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--2",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Auf Ersuchen des CSIRT Zwischenbericht über Statusaktualisierungen bereitstellen",
+        "text": "Auf Ersuchen eines CSIRT oder der zuständigen Behörde müssen betroffene Einrichtungen einen Zwischenbericht über relevante Statusaktualisierungen zu einem Sicherheitsvorfall übermitteln (Absatz 4 Buchstabe c). Diese Berichte müssen zeitnah nach Aufforderung erfolgen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Meldung schwerwiegender IKT-bezogener Vorfälle an zuständige Behörde",
+        "text": "Finanzunternehmen müssen schwerwiegende IKT-bezogene Vorfälle der nach Artikel 46 jeweils zuständigen Behörde gemäß Absatz 4 melden. Bei Aufsicht durch mehrere Behörden benennen die Mitgliedstaaten eine einzige zuständige Behörde. Kreditinstitute, die als bedeutend eingestuft wurden, melden an die zuständige nationale Behörde, die die Meldung unverzüglich an die EZB weiterleitet."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-5",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Unverzügliche Meldung von Verletzungen durch Auftragsverarbeiter",
+        "text": "Wenn dem Auftragsverarbeiter eine Verletzung des Schutzes personenbezogener Daten bekannt wird, muss er diese dem Verantwortlichen unverzüglich melden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Strategie für digitale operationale Resilienz festlegen und genehmigen",
+        "text": "Das Leitungsorgan trägt die Gesamtverantwortung für die Festlegung und Genehmigung der Strategie für die digitale operationale Resilienz gemäß Artikel 6 Absatz 8, einschließlich der Festlegung der angemessenen Toleranzschwelle für das IKT-Risiko des Finanzunternehmens."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-24__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 24",
+        "title": "Kontextgerechte Maßnahmen unter Berücksichtigung von Verarbeitungsumfang und -zweck implementieren",
+        "text": "Die technischen und organisatorischen Maßnahmen müssen an die Art, den Umfang, die Umstände und die Zwecke der Verarbeitung angepasst sein. Unterschiedliche Verarbeitungskontexte erfordern unterschiedliche Schutzmaßnahmen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Geeignete technische und organisatorische Sicherheitsvorkehrungen implementieren",
+        "text": "Der Verantwortliche muss geeignete technische und organisatorische Sicherheitsvorkehrungen treffen und diese Vorkehrungen auf die von der Verletzung betroffenen personenbezogenen Daten anwenden. Insbesondere müssen solche Vorkehrungen die personenbezogenen Daten für alle Personen, die nicht zum Zugang befugt sind, unzugänglich machen, etwa durch Verschlüsselung. Diese Vorkehrungen sind notwendig, um im Notfall die Benachrichtigungspflicht zu vermeiden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Unterschiedliche Risikostufen bei der Schutzmaßnahmenbemessung berücksichtigen",
+        "text": "Bei der Bemessung des angemessenen Schutzniveaus müssen sowohl die unterschiedlichen Eintrittswahrscheinlichkeiten als auch die unterschiedlichen Schweren der Risiken für die Rechte und Freiheiten natürlicher Personen berücksichtigt werden. Das Schutzniveau muss mit der Risikostufe skalieren — höhere Risiken erfordern stärkere Maßnahmen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--3",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Freiwillige Meldung erheblicher Cyberbedrohungen an zuständige Behörde",
+        "text": "Finanzunternehmen können auf freiwilliger Basis erhebliche Cyberbedrohungen der zuständigen Behörde melden, wenn sie der Auffassung sind, dass die Bedrohung für das Finanzsystem, die Dienstnutzer oder die Kunden relevant ist. Die Behörde kann solche Informationen an andere relevante Behörden weitergeben."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--4",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Meldung von Verletzungen des Schutzes personenbezogener Daten an die Aufsichtsbehörde",
+        "text": "Der Verantwortliche muss unverzüglich und möglichst binnen 72 Stunden, nachdem ihm eine Verletzung des Schutzes personenbezogener Daten bekannt wurde, diese der gemäß Artikel 51 zuständigen Aufsichtsbehörde melden, es sei denn, dass die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Erfolgt die Meldung nicht binnen 72 Stunden, muss eine Begründung für die Verzögerung beigefügt werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Erstmeldung und Folgemeldungen strukturiert nach Vorlage einreichen",
+        "text": "Nach Erfassung und Analyse aller relevanten Informationen müssen Finanzunternehmen eine Erstmeldung unter Verwendung der in Artikel 20 genannten Vorlage erstellen und an die zuständige Behörde übermitteln. Falls technisch unmöglich, kann die Meldung auf anderem Wege erfolgen. Die Erstmeldung muss alle Informationen enthalten, die die Behörde benötigt, um die Signifikanz des Vorfalls zu ermitteln und grenzüberschreitende Auswirkungen zu bewerten."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-19",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Kopien und Replikationen von Daten mit löschen",
+        "text": "Bei der Ausführung einer Löschaufforderung müssen alle Kopien und Replikationen der personenbezogenen Daten gelöscht werden, nicht nur das Original. Dies schließt Sicherungen, Caches, Backups und Duplikate in allen Systemen ein."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Meldung schwerwiegender IKT-bezogener Vorfälle an zuständige Behörde",
+        "text": "Finanzunternehmen müssen schwerwiegende IKT-bezogene Vorfälle der nach Artikel 46 jeweils zuständigen Behörde gemäß Absatz 4 melden. Bei Aufsicht durch mehrere Behörden benennen die Mitgliedstaaten eine einzige zuständige Behörde. Kreditinstitute, die als bedeutend eingestuft wurden, melden an die zuständige nationale Behörde, die die Meldung unverzüglich an die EZB weiterleitet."
+      },
+      "actionId": "loeschung-durchfuehren",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-25__dora-art-5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Datenschutzgrundsätze durch Maßnahmen wirksam umsetzen",
+        "text": "Die implementierten technischen und organisatorischen Maßnahmen müssen dafür ausgelegt sein, die Datenschutzgrundsätze — insbesondere Datenminimierung — wirksam umzusetzen und die notwendigen Garantien in die Verarbeitung aufzunehmen, um den Anforderungen dieser Verordnung zu genügen und die Rechte der betroffenen Personen zu schützen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-13__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 13",
+        "title": "Mitteilung des Widerrufsrechts bei Einwilligung",
+        "text": "Wenn die Verarbeitung auf einer Einwilligung (Artikel 6 Absatz 1 Buchstabe a oder Artikel 9 Absatz 2 Buchstabe a) beruht, muss der Verantwortliche der betroffenen Person zum Zeitpunkt der Erhebung mitteilen, dass sie die Einwilligung jederzeit widerrufen kann, ohne dass die Rechtmäßigkeit der bis zum Widerruf erfolgten Verarbeitung berührt wird."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-44__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 44",
+        "title": "Übermittlung personenbezogener Daten in Drittländer nur unter Compliance-Bedingungen durchführen",
+        "text": "Jedwede Übermittlung personenbezogener Daten an ein Drittland oder eine internationale Organisation ist nur zulässig, wenn der Verantwortliche und der Auftragsverarbeiter die in Kapitel V DSGVO niedergelegten Bedingungen (Angemessenheitsbeschluss, Standarddatenschutzklauseln, Binding Corporate Rules oder andere Mechanismen) einhalten und sicherstellen, dass das Schutzniveau der DSGVO nicht untergraben wird."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Verfahren zur Ermittlung, Verfolgung, Protokollierung und Kategorisierung von IKT-Vorfällen einrichten",
+        "text": "Verfahren müssen eingerichtet werden zur Ermittlung, Nachverfolgung, Protokollierung, Kategorisierung und Klassifizierung IKT-bezogener Vorfälle entsprechend ihrer Priorität und Schwere sowie der Kritikalität der betroffenen Dienste gemäß Artikel 18 Absatz 1 Kriterien."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Unverzügliche Meldung von Verletzungen durch Auftragsverarbeiter",
+        "text": "Wenn dem Auftragsverarbeiter eine Verletzung des Schutzes personenbezogener Daten bekannt wird, muss er diese dem Verantwortlichen unverzüglich melden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Kundenbenachrichtigung bei finanziellen Auswirkungen unverzüglich durchführen",
+        "text": "Wenn ein schwerwiegender IKT-bezogener Vorfall auftritt und Auswirkungen auf die finanziellen Interessen von Kunden hat, müssen die Finanzunternehmen ihre Kunden unverzüglich nach Kenntniserlangung über den Vorfall und die ergriffenen Minderungsmaßnahmen informieren."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-24__nis2-art-21",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 24",
+        "title": "Überprüfung und Aktualisierung der Maßnahmen durchführen",
+        "text": "Die implementierten technischen und organisatorischen Maßnahmen müssen erforderlichenfalls überprüft und aktualisiert werden, um sicherzustellen, dass sie den aktuellen Risiken und Anforderungen entsprechen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Konzepte und Verfahren zur Bewertung der Wirksamkeit von Cybersicherheits-Risikomanagementmaßnahmen etablieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Konzepte und Verfahren zur regelmäßigen Bewertung der Wirksamkeit ihrer Risikomanagementmaßnahmen im Bereich der Cybersicherheit etablieren. Dies muss eine systematische Überwachung der Kontrollen, regelmäßige Audits und Penetrationstests sowie die Messung von Sicherheitskennzahlen umfassen, um sicherzustellen, dass die implementierten Maßnahmen den gewünschten Schutzeffekt erzielen."
+      },
+      "actionId": "wirksamkeit-pruefen"
+    },
+    {
+      "id": "dsgvo-art-24__dora-art-9--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 24",
+        "title": "Kontextgerechte Maßnahmen unter Berücksichtigung von Verarbeitungsumfang und -zweck implementieren",
+        "text": "Die technischen und organisatorischen Maßnahmen müssen an die Art, den Umfang, die Umstände und die Zwecke der Verarbeitung angepasst sein. Unterschiedliche Verarbeitungskontexte erfordern unterschiedliche Schutzmaßnahmen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Vorkehrungen gegen Verfügbarkeitsmangel und Vertraulichkeitsverletzungen treffen",
+        "text": "Finanzunternehmen müssen IKT-Lösungen einsetzen, die dem Mangel an Verfügbarkeit, der Beeinträchtigung der Authentizität und Integrität, den Verletzungen der Vertraulichkeit und dem Verlust von Daten vorbeugen."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-34__nis2-art-23--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Benachrichtigungsinhalte in klarer und einfacher Sprache verfassen",
+        "text": "Die Benachrichtigung der betroffenen Person muss in klarer und einfacher Sprache verfasst sein und die Art der Verletzung des Schutzes personenbezogener Daten beschreiben. Sie muss mindestens folgende Informationen enthalten: die Kontaktstelle für den Datenschutz, eine allgemeine Beschreibung dessen, was passiert ist, die wahrscheinlichen Folgen der Verletzung und die ergriffenen oder geplanten Maßnahmen zur Behebung und Schadensminderung."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Diensteempfänger unverzüglich über erhebliche Sicherheitsvorfälle benachrichtigen",
+        "text": "Einrichtungen müssen gegebenenfalls die Empfänger ihrer Dienste unverzüglich über erhebliche Sicherheitsvorfälle unterrichten, die die Erbringung des jeweiligen Dienstes beeinträchtigen könnten. Dies muss parallel zur Meldung an das CSIRT erfolgen (Absatz 1 Unterabsatz 2)."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-5--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Unterschiedliche Risikostufen bei der Schutzmaßnahmenbemessung berücksichtigen",
+        "text": "Bei der Bemessung des angemessenen Schutzniveaus müssen sowohl die unterschiedlichen Eintrittswahrscheinlichkeiten als auch die unterschiedlichen Schweren der Risiken für die Rechte und Freiheiten natürlicher Personen berücksichtigt werden. Das Schutzniveau muss mit der Risikostufe skalieren — höhere Risiken erfordern stärkere Maßnahmen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--6",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Erstmeldung und Folgemeldungen strukturiert nach Vorlage einreichen",
+        "text": "Nach Erfassung und Analyse aller relevanten Informationen müssen Finanzunternehmen eine Erstmeldung unter Verwendung der in Artikel 20 genannten Vorlage erstellen und an die zuständige Behörde übermitteln. Falls technisch unmöglich, kann die Meldung auf anderem Wege erfolgen. Die Erstmeldung muss alle Informationen enthalten, die die Behörde benötigt, um die Signifikanz des Vorfalls zu ermitteln und grenzüberschreitende Auswirkungen zu bewerten."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-21",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Risikobewertung für Meldepflicht durchführen",
+        "text": "Der Verantwortliche muss bewerten, ob eine Verletzung des Schutzes personenbezogener Daten voraussichtlich zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Nur wenn dies der Fall ist oder unsicher ist, unterliegt die Verletzung der Meldepflicht. Die Bewertung muss dokumentiert werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Risikoanalyse für Netz- und Informationssysteme durchführen",
+        "text": "Wesentliche und wichtige Einrichtungen müssen geeignete und verhältnismäßige technische, operative und organisatorische Maßnahmen ergreifen, um die Risiken für die Sicherheit der Netz- und Informationssysteme, die sie für ihren Betrieb oder für die Erbringung ihrer Dienste nutzen, zu beherrschen. Die Risikoanalyse muss den Stand der Technik, relevante europäische und internationale Normen sowie die Implementierungskosten berücksichtigen und ein Sicherheitsniveau gewährleisten, das dem bestehenden Risiko angemessen ist."
+      },
+      "actionId": "risikobewertung"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-19",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Öffentliche Bekanntmachung durchführen, falls Benachrichtigung unverhältnismäßig aufwendig ist",
+        "text": "Falls die Benachrichtigung aller betroffenen Personen mit unverhältnismäßigem Aufwand verbunden ist, muss stattdessen eine öffentliche Bekanntmachung oder eine ähnliche Maßnahme erfolgen, durch die die betroffenen Personen vergleichbar wirksam informiert werden. Dies ist eine alternative Erfüllung der Informationspflicht für Großschadensfälle."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Zwischenmeldungen bei wesentlichen Statusänderungen einreichen",
+        "text": "Nach der Erstmeldung müssen Finanzunternehmen eine Zwischenmeldung einreichen, sobald sich der Status des ursprünglichen Vorfalls erheblich geändert hat oder sich die Handhabung auf Basis neuer Informationen geändert hat. Gegebenenfalls sind aktualisierte Meldungen bei entsprechenden Statusaktualisierungen erforderlich, sowie auf ausdrücklichen Antrag der zuständigen Behörde."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-35__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 35",
+        "title": "Dokumentation der Datenschutz-Folgenabschätzung mit Systembeschreibung und Zwecken",
+        "text": "Die Folgenabschätzung muss eine systematische Beschreibung der geplanten Verarbeitungsvorgänge und der Zwecke der Verarbeitung enthalten, gegebenenfalls einschließlich der von dem Verantwortlichen verfolgten berechtigten Interessen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Diensteempfänger unverzüglich über erhebliche Sicherheitsvorfälle benachrichtigen",
+        "text": "Einrichtungen müssen gegebenenfalls die Empfänger ihrer Dienste unverzüglich über erhebliche Sicherheitsvorfälle unterrichten, die die Erbringung des jeweiligen Dienstes beeinträchtigen könnten. Dies muss parallel zur Meldung an das CSIRT erfolgen (Absatz 1 Unterabsatz 2)."
+      },
+      "actionId": "folgenabschaetzung",
+      "actionIdB": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-13__dora-art-19",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 13",
+        "title": "Offenlegung von Verarbeitungszwecken und Rechtsgrundlage",
+        "text": "Der Verantwortliche muss der betroffenen Person zum Zeitpunkt der Erhebung die Zwecke mitteilen, für die die personenbezogenen Daten verarbeitet werden sollen, sowie die Rechtsgrundlage für die Verarbeitung gemäß Artikel 6 DSGVO."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Kundenbenachrichtigung bei finanziellen Auswirkungen unverzüglich durchführen",
+        "text": "Wenn ein schwerwiegender IKT-bezogener Vorfall auftritt und Auswirkungen auf die finanziellen Interessen von Kunden hat, müssen die Finanzunternehmen ihre Kunden unverzüglich nach Kenntniserlangung über den Vorfall und die ergriffenen Minderungsmaßnahmen informieren."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-28__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter verpflichten, Daten nur auf dokumentierte Weisung zu verarbeiten",
+        "text": "Der Vertrag muss vorsehen, dass der Auftragsverarbeiter die personenbezogenen Daten nur auf dokumentierte Weisung des Verantwortlichen verarbeitet, auch in Bezug auf die Übermittlung personenbezogener Daten an ein Drittland oder eine internationale Organisation, sofern er nicht durch Unionsrecht oder Mitgliedstaatsrecht hierzu verpflichtet ist. Wenn eine solche rechtliche Verpflichtung besteht, muss der Auftragsverarbeiter dem Verantwortlichen diese rechtlichen Anforderungen vor der Verarbeitung mitteilen, sofern das Recht eine solche Mitteilung nicht wegen eines wichtigen öffentlichen Interesses verbietet."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Grenzüberschreitende Auswirkungen dem CSIRT mitteilen",
+        "text": "Alle Informationen, die dem CSIRT oder der zuständigen Behörde übermittelt werden, müssen es diesem ermöglichen zu ermitteln, ob der Sicherheitsvorfall grenzübergreifende Auswirkungen hat. Dies ist ein inhaltliches Anforderungsmerkmal jeder Meldung (Absatz 1 Unterabsatz 3)."
+      },
+      "actionId": "auftragsverarbeiter-steuern",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-9",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Nachfolgende Maßnahmen zur Risikominderung implementieren und nachweisen",
+        "text": "Der Verantwortliche kann die Benachrichtigungspflicht umgehen, wenn er durch nachfolgende Maßnahmen sichergestellt hat, dass das hohe Risiko für die Rechte und Freiheiten der betroffenen Personen aller Wahrscheinlichkeit nach nicht mehr besteht. Diese Maßnahmen müssen dokumentiert und nachweisbar sein und müssen das Risiko auf ein akzeptables Niveau reduzieren."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Solide Struktur für Netzwerk- und Infrastrukturmanagement etablieren",
+        "text": "Finanzunternehmen müssen entsprechend einem risikobasierten Ansatz eine solide Struktur für Netzwerk- und Infrastrukturmanagement unter Verwendung angemessener Techniken, Methoden und Protokolle einrichten, wozu auch die Umsetzung automatisierter Mechanismen zur Isolierung betroffener Informationsassets im Falle von Cyberangriffen gehören kann."
+      },
+      "actionId": "wirksamkeit-pruefen",
+      "actionIdB": "zugriffskontrolle"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--4",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Unverzüglich über erhebliche Sicherheitsvorfälle dem CSIRT berichten",
+        "text": "Wesentliche und wichtige Einrichtungen müssen unverzüglich über jeden Sicherheitsvorfall berichten, der erhebliche Auswirkungen auf die Erbringung ihrer Dienste hat, an ihr CSIRT oder die zuständige Behörde. Die Meldung muss gem. Absatz 4 erfolgen und alle notwendigen Informationen enthalten, um grenzübergreifende Auswirkungen zu ermitteln."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Erstmeldung und Folgemeldungen strukturiert nach Vorlage einreichen",
+        "text": "Nach Erfassung und Analyse aller relevanten Informationen müssen Finanzunternehmen eine Erstmeldung unter Verwendung der in Artikel 20 genannten Vorlage erstellen und an die zuständige Behörde übermitteln. Falls technisch unmöglich, kann die Meldung auf anderem Wege erfolgen. Die Erstmeldung muss alle Informationen enthalten, die die Behörde benötigt, um die Signifikanz des Vorfalls zu ermitteln und grenzüberschreitende Auswirkungen zu bewerten."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-44__nis2-art-21",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 44",
+        "title": "Übermittlung personenbezogener Daten in Drittländer nur unter Compliance-Bedingungen durchführen",
+        "text": "Jedwede Übermittlung personenbezogener Daten an ein Drittland oder eine internationale Organisation ist nur zulässig, wenn der Verantwortliche und der Auftragsverarbeiter die in Kapitel V DSGVO niedergelegten Bedingungen (Angemessenheitsbeschluss, Standarddatenschutzklauseln, Binding Corporate Rules oder andere Mechanismen) einhalten und sicherstellen, dass das Schutzniveau der DSGVO nicht untergraben wird."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Gefahrenübergreifenden Ansatz zur Sicherheit von Netz- und Informationssystemen implementieren",
+        "text": "Die Maßnahmen müssen auf einem gefahrenübergreifenden Ansatz beruhen, der darauf abzielt, die Netz- und Informationssysteme und die physische Umwelt dieser Systeme vor Sicherheitsvorfällen zu schützen. Dieser Ansatz muss zumindest folgende Bereiche umfassen: Risikoanalyse und Sicherheit für Informationssysteme, Bewältigung von Sicherheitsvorfällen, Aufrechterhaltung des Betriebs und Krisenmanagement, Sicherheit der Lieferkette, Sicherheitsmaßnahmen bei Erwerb/Entwicklung/Wartung von Netz- und Informationssystemen, Bewertung der Wirksamkeit von Risikomanagementmaßnahmen, Cyberhygiene und Schulungen, Kryptografie und Verschlüsselung, Sicherheit des Personals und Zugriffskontrolle, Multi-Faktor-Authentifizierung und sichere Kommunikation."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-32__nis2-art-21",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Regelmäßige Überprüfung, Bewertung und Evaluierung der Sicherheitsmaßnahmen durchführen",
+        "text": "Ein Verfahren zur regelmäßigen Überprüfung, Bewertung und Evaluierung der Wirksamkeit der technischen und organisatorischen Maßnahmen zur Gewährleistung der Sicherheit der Verarbeitung muss etabliert werden. Überprüfungen müssen zeitlich geplant sein und Ergebnisse dokumentiert werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Konzepte und Verfahren zur Bewertung der Wirksamkeit von Cybersicherheits-Risikomanagementmaßnahmen etablieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Konzepte und Verfahren zur regelmäßigen Bewertung der Wirksamkeit ihrer Risikomanagementmaßnahmen im Bereich der Cybersicherheit etablieren. Dies muss eine systematische Überwachung der Kontrollen, regelmäßige Audits und Penetrationstests sowie die Messung von Sicherheitskennzahlen umfassen, um sicherzustellen, dass die implementierten Maßnahmen den gewünschten Schutzeffekt erzielen."
+      },
+      "actionId": "wirksamkeit-pruefen"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Öffentliche Bekanntmachung durchführen, falls Benachrichtigung unverhältnismäßig aufwendig ist",
+        "text": "Falls die Benachrichtigung aller betroffenen Personen mit unverhältnismäßigem Aufwand verbunden ist, muss stattdessen eine öffentliche Bekanntmachung oder eine ähnliche Maßnahme erfolgen, durch die die betroffenen Personen vergleichbar wirksam informiert werden. Dies ist eine alternative Erfüllung der Informationspflicht für Großschadensfälle."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen gewährleisten",
+        "text": "Finanzunternehmen müssen IKT-Sicherheitsrichtlinien, -verfahren, -protokolle und -Tools konzipieren, beschaffen und implementieren, die darauf abzielen, die Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen, insbesondere jener zur Unterstützung kritischer oder wichtiger Funktionen, zu gewährleisten."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-30__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 30",
+        "title": "Verzeichnis aller Verarbeitungstätigkeiten führen",
+        "text": "Jeder Verantwortliche und sein Vertreter müssen ein Verzeichnis aller Verarbeitungstätigkeiten führen, das ihrer Zuständigkeit unterliegt. Das Verzeichnis muss in schriftlicher Form geführt werden, auch in elektronischem Format möglich."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Sicherheit der Datenübermittlungsmittel gewährleisten",
+        "text": "Finanzunternehmen müssen IKT-Lösungen und -Prozesse einsetzen, die die Sicherheit der Datenübermittlungsmittel gewährleisten, insbesondere gegen unbefugten Zugriff, Datenkorruption und technische Mängel."
+      },
+      "actionId": "verzeichnis-fuehren",
+      "actionIdB": "verschluesselung-pseudonymisierung"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-5--3",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit der Systeme sicherstellen",
+        "text": "Die Fähigkeit zur Gewährleistung der Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit der Systeme und Dienste im Zusammenhang mit der Verarbeitung auf Dauer muss implementiert werden. Dies umfasst die Überwachung, Wartung und regelmäßige Tests dieser Eigenschaften."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Löschung nicht anwenden auf Daten zur Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen",
+        "text": "Die Löschungsverpflichtung gilt nicht, soweit die Verarbeitung zur Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen erforderlich ist. Der Verantwortlicher muss bewerten, ob eine solche Ausnahme vorliegt, und diese Bewertung dokumentieren."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "loeschung-durchfuehren",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-19--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Löschung nicht anwenden auf Daten zur Erfüllung rechtlicher Verpflichtungen",
+        "text": "Die Löschungsverpflichtung gilt nicht, soweit die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung erforderlich ist, die das Unionsrecht oder das Recht der Mitgliedstaaten dem Verantwortlichen auferlegt, oder zur Wahrnehmung einer Aufgabe, die im öffentlichen Interesse liegt oder in Ausübung öffentlicher Gewalt erfolgt. Der Verantwortlicher muss die Rechtsgrundlage einer solchen Verpflichtung dokumentieren und eine Ausnahmebewertung durchführen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Freiwillige Meldung erheblicher Cyberbedrohungen an zuständige Behörde",
+        "text": "Finanzunternehmen können auf freiwilliger Basis erhebliche Cyberbedrohungen der zuständigen Behörde melden, wenn sie der Auffassung sind, dass die Bedrohung für das Finanzsystem, die Dienstnutzer oder die Kunden relevant ist. Die Behörde kann solche Informationen an andere relevante Behörden weitergeben."
+      },
+      "actionId": "rechtsgrundlage-dokumentieren",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Bindlichkeit von Erklärungsteilen bei Verstößen ausschließen",
+        "text": "Teile einer schriftlichen Einwilligungserklärung, die einen Verstoß gegen die DSGVO darstellen, dürfen nicht bindend sein. Das System muss Mechanismen haben, solche fehlerhaften Teile zu identifizieren und ihre Bindlichkeit automatisch aufzuheben oder zu kennzeichnen, damit die betroffene Person nicht an rechtswidrige Bedingungen gebunden ist."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Schwerwiegende IKT-Vorfälle der höheren Führungsebene melden",
+        "text": "Schwerwiegende IKT-bezogene Vorfälle müssen der zuständigen höheren Führungsebene gemeldet werden und die Geschäftsleitung muss informiert werden, mit Darstellung der Auswirkungen, Gegenmaßnahmen und zusätzlicher Kontrollen, die infolge dieser Vorfälle einzurichten sind."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--7",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Dokumentation von Verletzungen des Schutzes personenbezogener Daten",
+        "text": "Der Verantwortliche muss Verletzungen des Schutzes personenbezogener Daten einschließlich aller im Zusammenhang mit der Verletzung stehenden Fakten, von deren Auswirkungen und der ergriffenen Abhilfemaßnahmen dokumentieren. Diese Dokumentation muss der Aufsichtsbehörde die Überprüfung der Einhaltung der Bestimmungen dieses Artikels ermöglichen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Abschlussmeldung nach Ursachenanalyse einreichen",
+        "text": "Finanzunternehmen müssen eine Abschlussmeldung einreichen, wenn die Ursachenanalyse abgeschlossen ist — unabhängig davon, ob bereits Minderungsmaßnahmen getroffen wurden oder nicht — und sich die tatsächlichen Auswirkungen beziffern lassen und Schätzungen ersetzen."
+      },
+      "actionId": "vorfall-erkennen-behandeln",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-25__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Notwendige Garantien in Verarbeitungsprozesse einbetten",
+        "text": "Der Verantwortliche muss sicherstellen, dass alle notwendigen Garantien — einschließlich Transparenz, Datenminimierung, Speicherbegrenzung und Zugangsschutz — in die technischen und organisatorischen Verarbeitungsprozesse eingebettet werden, um die Einhaltung dieser Verordnung zu gewährleisten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--8",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Zwischenmeldungen bei wesentlichen Statusänderungen einreichen",
+        "text": "Nach der Erstmeldung müssen Finanzunternehmen eine Zwischenmeldung einreichen, sobald sich der Status des ursprünglichen Vorfalls erheblich geändert hat oder sich die Handhabung auf Basis neuer Informationen geändert hat. Gegebenenfalls sind aktualisierte Meldungen bei entsprechenden Statusaktualisierungen erforderlich, sowie auf ausdrücklichen Antrag der zuständigen Behörde."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-13__nis2-art-21",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 13",
+        "title": "Mitteilung von Datenschutzbeauftragten-Kontaktdaten",
+        "text": "Der Verantwortliche muss der betroffenen Person zum Zeitpunkt der Erhebung gegebenenfalls die Kontaktdaten des Datenschutzbeauftragten mitteilen, sofern einer bestellt worden ist."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Maßnahmen zur Aufrechterhaltung des Betriebs und Notfallwiederherstellung implementieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Maßnahmen zur Aufrechterhaltung ihres Betriebs implementieren, einschließlich Backup-Management und Wiederherstellung nach Notfällen (Disaster Recovery). Diese müssen es ermöglichen, kritische Funktionen nach einem Sicherheitsvorfall oder einer anderen Störung schnellstmöglich wiederherzustellen und dabei Datenverlust zu minimieren."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "betriebskontinuitaet"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter verpflichten, technische und organisatorische Maßnahmen gemäß Artikel 32 zu ergreifen",
+        "text": "Der Vertrag muss vorsehen, dass der Auftragsverarbeiter alle gemäß Artikel 32 erforderlichen Maßnahmen ergreift. Dies umfasst die Implementierung technischer und organisatorischer Maßnahmen zur Sicherung von personenbezogenen Daten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Risiken von Datenkorruption, -verlust und unbefugtem Zugriff minimieren",
+        "text": "Finanzunternehmen müssen das Risiko von Datenkorruption oder -verlust, unbefugtem Zugriff und technischen Mängeln, die die Geschäftstätigkeit beeinträchtigen können, minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-15__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 15",
+        "title": "Informationen über Übermittlungen in Drittländer und geeignete Garantien bereitstellen",
+        "text": "Werden personenbezogene Daten an ein Drittland oder eine internationale Organisation übermittelt, muss der Verantwortliche die betroffene Person auf Anfrage über die geeigneten Garantien gemäß Artikel 46 im Zusammenhang mit der Übermittlung unterrichten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Kommunikationspläne für Vorfälle entwickeln",
+        "text": "Pläne für die Kommunikation mit Personal, externen Interessenträgern und Medien sowie für die Benachrichtigung von Kunden, interne Eskalationsverfahren (einschließlich IKT-bezogener Kundenbeschwerden) und die Bereitstellung von Informationen an andere Finanzunternehmen als Gegenparteien müssen ausgearbeitet werden, je nach Sachlage."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "betriebskontinuitaet"
+    },
+    {
+      "id": "dsgvo-art-44__dora-art-17--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 44",
+        "title": "Verantwortlicher und Auftragsverarbeiter müssen Kapitel-V-Bedingungen vor Übermittlung prüfen",
+        "text": "Vor jeder geplanten oder tatsächlichen Übermittlung personenbezogener Daten an ein Drittland oder eine internationale Organisation muss der Verantwortliche und, soweit anwendbar, der Auftragsverarbeiter überprüfen, dass mindestens eine der in Kapitel V festgelegten Bedingungen erfüllt ist (z.B. Angemessenheitsbeschluss der Kommission, ausgehandelte Standarddatenschutzklauseln oder Binding Corporate Rules) und dokumentieren diese Prüfung."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Kohärente Überwachung, Handhabung und Weiterverfolgung von Vorfällen sicherstellen",
+        "text": "Angemessene Verfahren und Prozesse müssen eingerichtet werden, um die kohärente und integrierte Überwachung, Handhabung und Weiterverfolgung IKT-bezogener Vorfälle zu gewährleisten. Ursachen müssen ermittelt, dokumentiert und angegangen werden, um das Auftreten solcher Vorfälle zu verhindern."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Unverzüglich über erhebliche Sicherheitsvorfälle dem CSIRT berichten",
+        "text": "Wesentliche und wichtige Einrichtungen müssen unverzüglich über jeden Sicherheitsvorfall berichten, der erhebliche Auswirkungen auf die Erbringung ihrer Dienste hat, an ihr CSIRT oder die zuständige Behörde. Die Meldung muss gem. Absatz 4 erfolgen und alle notwendigen Informationen enthalten, um grenzübergreifende Auswirkungen zu ermitteln."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-6--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Einwilligungsaufforderung in verständlicher und klarer Sprache mit Differentiation präsentieren",
+        "text": "Wenn die Einwilligung durch eine schriftliche Erklärung erfolgt, die noch andere Sachverhalte betrifft, muss das Ersuchen um Einwilligung in verständlicher und leicht zugänglicher Form in einer klaren und einfachen Sprache präsentiert werden, so dass es von anderen Sachverhalten klar zu unterscheiden ist. Mehrsprachige Präsentation, Formatierung und Zeichengröße müssen die Lesbarkeit sicherstellen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Auswirkungen von IKT-Risiken durch geeignete Strategien, Leit- und Richtlinien, Verfahren und Tools minimieren",
+        "text": "Im Einklang mit ihrem IKT-Risikomanagementrahmen müssen Finanzunternehmen die Auswirkungen von IKT-Risiken minimieren, indem sie geeignete Strategien, Leit- und Richtlinien, Verfahren, IKT-Protokolle und Tools einsetzen."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "risikobewertung"
+    },
+    {
+      "id": "dsgvo-art-6__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 6",
+        "title": "Überprüfe das Vorhandensein geeigneter Schutzmaßnahmen bei Zweckänderung",
+        "text": "Bei der Prüfung der Vereinbarkeit einer Zweckänderung (Art. 6 Abs. 4) muss der Verantwortliche feststellen, ob geeignete Garantien vorhanden sind — insbesondere Verschlüsselung oder Pseudonymisierung — die die Risiken der Weiterverarbeitung für die betroffenen Personen mindern. Das Vorhandensein oder die Abwesenheit solcher Maßnahmen ist zu dokumentieren."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Abschlussbericht spätestens einen Monat nach Meldung einreichen",
+        "text": "Spätestens einen Monat nach Übermittlung der Meldung gemäß Absatz 4 Buchstabe b muss ein Abschlussbericht eingereicht werden. Dieser Abschlussbericht muss enthalten: (i) ausführliche Beschreibung des Vorfalls einschließlich Schweregrad und Auswirkungen; (ii) Art der Bedrohung bzw. Ursache; (iii) getroffene und laufende Abhilfemaßnahmen; (iv) gegebenenfalls grenzüberschreitende Auswirkungen (Absatz 4 Buchstabe d)."
+      },
+      "actionId": "zweck-festlegen",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-6--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Regelmäßige Überprüfung, Bewertung und Evaluierung der Sicherheitsmaßnahmen durchführen",
+        "text": "Ein Verfahren zur regelmäßigen Überprüfung, Bewertung und Evaluierung der Wirksamkeit der technischen und organisatorischen Maßnahmen zur Gewährleistung der Sicherheit der Verarbeitung muss etabliert werden. Überprüfungen müssen zeitlich geplant sein und Ergebnisse dokumentiert werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "IKT-Risikomanagementrahmen regelmäßig durch interne Revision überprüfen lassen",
+        "text": "Der IKT-Risikomanagementrahmen von Finanzunternehmen, bei denen es sich nicht um Kleinstunternehmen handelt, muss im Einklang mit dem Revisionsplan regelmäßig einer internen Revision durch Revisoren zu unterziehen, die über ausreichendes Wissen, ausreichende Fähigkeiten und Fachkenntnisse im Bereich IKT-Risiken sowie eine angemessene Unabhängigkeit verfügen. Häufigkeit und Schwerpunkt von IKT-Revisionen müssen den IKT-Risiken des Finanzunternehmens entsprechend angemessen sein."
+      },
+      "actionId": "wirksamkeit-pruefen",
+      "actionIdB": "revision-ueberwachung"
+    },
+    {
+      "id": "nis2-art-23__dora-art-17",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Abschlussbericht spätestens einen Monat nach Meldung einreichen",
+        "text": "Spätestens einen Monat nach Übermittlung der Meldung gemäß Absatz 4 Buchstabe b muss ein Abschlussbericht eingereicht werden. Dieser Abschlussbericht muss enthalten: (i) ausführliche Beschreibung des Vorfalls einschließlich Schweregrad und Auswirkungen; (ii) Art der Bedrohung bzw. Ursache; (iii) getroffene und laufende Abhilfemaßnahmen; (iv) gegebenenfalls grenzüberschreitende Auswirkungen (Absatz 4 Buchstabe d)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Schwerwiegende IKT-Vorfälle der höheren Führungsebene melden",
+        "text": "Schwerwiegende IKT-bezogene Vorfälle müssen der zuständigen höheren Führungsebene gemeldet werden und die Geschäftsleitung muss informiert werden, mit Darstellung der Auswirkungen, Gegenmaßnahmen und zusätzlicher Kontrollen, die infolge dieser Vorfälle einzurichten sind."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-30__dora-art-5",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 30",
+        "title": "Datenübermittlungen in Drittländer mit angemessenen Garantien dokumentieren",
+        "text": "Falls personenbezogene Daten an Drittländer oder internationale Organisationen übermittelt werden, müssen geeignete Garantien dokumentiert werden. Dies umfasst insbesondere bei Übermittlungen gemäß Artikel 49 Absatz 1 Unterabsatz 2 DSGVO die Dokumentation der entsprechenden Rechtfertigung."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Klare Aufgaben und Verantwortlichkeiten für IKT-bezogene Funktionen festlegen",
+        "text": "Das Leitungsorgan muss klare Aufgaben und Verantwortlichkeiten für alle IKT-bezogenen Funktionen sowie angemessene Governance-Regelungen festlegen, um wirksame und rechtzeitige Kommunikation, Zusammenarbeit und Koordinierung zwischen diesen Funktionen zu gewährleisten."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "betriebskontinuitaet"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23--3",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Meldung von Verletzungen des Schutzes personenbezogener Daten an die Aufsichtsbehörde",
+        "text": "Der Verantwortliche muss unverzüglich und möglichst binnen 72 Stunden, nachdem ihm eine Verletzung des Schutzes personenbezogener Daten bekannt wurde, diese der gemäß Artikel 51 zuständigen Aufsichtsbehörde melden, es sei denn, dass die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Erfolgt die Meldung nicht binnen 72 Stunden, muss eine Begründung für die Verzögerung beigefügt werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Abschlussbericht spätestens einen Monat nach Meldung einreichen",
+        "text": "Spätestens einen Monat nach Übermittlung der Meldung gemäß Absatz 4 Buchstabe b muss ein Abschlussbericht eingereicht werden. Dieser Abschlussbericht muss enthalten: (i) ausführliche Beschreibung des Vorfalls einschließlich Schweregrad und Auswirkungen; (ii) Art der Bedrohung bzw. Ursache; (iii) getroffene und laufende Abhilfemaßnahmen; (iv) gegebenenfalls grenzüberschreitende Auswirkungen (Absatz 4 Buchstabe d)."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-19",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Einwilligungsaufforderung in verständlicher und klarer Sprache mit Differentiation präsentieren",
+        "text": "Wenn die Einwilligung durch eine schriftliche Erklärung erfolgt, die noch andere Sachverhalte betrifft, muss das Ersuchen um Einwilligung in verständlicher und leicht zugänglicher Form in einer klaren und einfachen Sprache präsentiert werden, so dass es von anderen Sachverhalten klar zu unterscheiden ist. Mehrsprachige Präsentation, Formatierung und Zeichengröße müssen die Lesbarkeit sicherstellen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Abschlussmeldung nach Ursachenanalyse einreichen",
+        "text": "Finanzunternehmen müssen eine Abschlussmeldung einreichen, wenn die Ursachenanalyse abgeschlossen ist — unabhängig davon, ob bereits Minderungsmaßnahmen getroffen wurden oder nicht — und sich die tatsächlichen Auswirkungen beziffern lassen und Schätzungen ersetzen."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Unverzüglich Löschung personenbezogener Daten bei Anforderung durchführen",
+        "text": "Der Verantwortliche muss personenbezogene Daten unverzüglich (ohne schuldhaftes Zögern) löschen, wenn die betroffene Person dies verlangt und einer der in Art. 17 Abs. 1 a)–f) genannten Gründe vorliegt: (a) Daten sind für Erhebungszweck nicht mehr notwendig, (b) Einwilligung widerrufen und keine andere Rechtsgrundlage vorhanden, (c) Widerspruch gegen Verarbeitung gemäß Art. 21 mit fehlenden vorrangigen Gründen, (d) unrechtmäßige Verarbeitung, (e) Löschung zur Erfüllung unionaler oder mitgliedstaatlicher Rechtsverpflichtung erforderlich, oder (f) Daten von unter 16-Jährigen ohne gültige Einwilligung erhoben. Dabei müssen alle Kopien und Replikationen gelöscht werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Verfahren zur Ermittlung, Verfolgung, Protokollierung und Kategorisierung von IKT-Vorfällen einrichten",
+        "text": "Verfahren müssen eingerichtet werden zur Ermittlung, Nachverfolgung, Protokollierung, Kategorisierung und Klassifizierung IKT-bezogener Vorfälle entsprechend ihrer Priorität und Schwere sowie der Kritikalität der betroffenen Dienste gemäß Artikel 18 Absatz 1 Kriterien."
+      },
+      "actionId": "loeschung-durchfuehren",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-17",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung von Maßnahmen zur Behebung und Abmilderung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der von dem Verantwortlichen ergriffenen oder vorgeschlagenen Maßnahmen zur Behebung der Verletzung des Schutzes personenbezogener Daten und gegebenenfalls Maßnahmen zur Abmilderung ihrer möglichen nachteiligen Auswirkungen enthalten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Verfahren zur Ermittlung, Verfolgung, Protokollierung und Kategorisierung von IKT-Vorfällen einrichten",
+        "text": "Verfahren müssen eingerichtet werden zur Ermittlung, Nachverfolgung, Protokollierung, Kategorisierung und Klassifizierung IKT-bezogener Vorfälle entsprechend ihrer Priorität und Schwere sowie der Kritikalität der betroffenen Dienste gemäß Artikel 18 Absatz 1 Kriterien."
+      },
+      "actionId": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-17",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter unverzüglich informieren bei Verdacht auf Verstoß gegen Datenschutzrecht",
+        "text": "Der Auftragsverarbeiter muss den Verantwortlichen unverzüglich informieren, falls er der Auffassung ist, dass eine Weisung gegen diese Verordnung oder gegen andere Datenschutzbestimmungen der Union oder der Mitgliedstaaten verstößt."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Verfahren zur Ermittlung, Verfolgung, Protokollierung und Kategorisierung von IKT-Vorfällen einrichten",
+        "text": "Verfahren müssen eingerichtet werden zur Ermittlung, Nachverfolgung, Protokollierung, Kategorisierung und Klassifizierung IKT-bezogener Vorfälle entsprechend ihrer Priorität und Schwere sowie der Kritikalität der betroffenen Dienste gemäß Artikel 18 Absatz 1 Kriterien."
+      },
+      "actionId": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-9--3",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Geeignete technische und organisatorische Sicherheitsvorkehrungen implementieren",
+        "text": "Der Verantwortliche muss geeignete technische und organisatorische Sicherheitsvorkehrungen treffen und diese Vorkehrungen auf die von der Verletzung betroffenen personenbezogenen Daten anwenden. Insbesondere müssen solche Vorkehrungen die personenbezogenen Daten für alle Personen, die nicht zum Zugang befugt sind, unzugänglich machen, etwa durch Verschlüsselung. Diese Vorkehrungen sind notwendig, um im Notfall die Benachrichtigungspflicht zu vermeiden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Vorkehrungen gegen Verfügbarkeitsmangel und Vertraulichkeitsverletzungen treffen",
+        "text": "Finanzunternehmen müssen IKT-Lösungen einsetzen, die dem Mangel an Verfügbarkeit, der Beeinträchtigung der Authentizität und Integrität, den Verletzungen der Vertraulichkeit und dem Verlust von Daten vorbeugen."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Weiteren Auftragsverarbeiter nur mit vorheriger schriftlicher Genehmigung einsetzen",
+        "text": "Der Auftragsverarbeiter darf keinen weiteren Auftragsverarbeiter ohne vorherige gesonderte oder allgemeine schriftliche Genehmigung des Verantwortlichen in Anspruch nehmen. Bei allgemeiner schriftlicher Genehmigung muss der Auftragsverarbeiter den Verantwortlichen immer über jede beabsichtigte Änderung informieren und dem Verantwortlichen die Möglichkeit geben, gegen derartige Änderungen Einspruch zu erheben."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Kontrollfunktion für Management und Überwachung des IKT-Risikos delegieren (nicht für Kleinstunternehmen)",
+        "text": "Finanzunternehmen, bei denen es sich nicht um Kleinstunternehmen handelt, müssen die Zuständigkeit für das Management und die Überwachung des IKT-Risikos an eine Kontrollfunktion übertragen und ein angemessenes Maß an Unabhängigkeit dieser Kontrollfunktion sicherstellen, um Interessenkonflikte zu vermeiden."
+      },
+      "actionId": "auftragsverarbeiter-steuern",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-19--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Speicherung und Verwaltung von Einwilligungsnachweisen mit Versionierung",
+        "text": "Alle Einwilligungsnachweise einschließlich Datum, Uhrzeit, Inhalt der Erklärung, Sprache und das Ergebnis etwaiger Freiwilligkeitsprüfungen müssen versioniert, unveränderbar und über die gesamte Dauer der Verarbeitung abrufbar gespeichert werden. Dies ermöglicht die Nachverfolgung von Änderungen und den Nachweis der Compliance."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Freiwillige Meldung erheblicher Cyberbedrohungen an zuständige Behörde",
+        "text": "Finanzunternehmen können auf freiwilliger Basis erhebliche Cyberbedrohungen der zuständigen Behörde melden, wenn sie der Auffassung sind, dass die Bedrohung für das Finanzsystem, die Dienstnutzer oder die Kunden relevant ist. Die Behörde kann solche Informationen an andere relevante Behörden weitergeben."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-6",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Risikobewertung für Meldepflicht durchführen",
+        "text": "Der Verantwortliche muss bewerten, ob eine Verletzung des Schutzes personenbezogener Daten voraussichtlich zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Nur wenn dies der Fall ist oder unsicher ist, unterliegt die Verletzung der Meldepflicht. Die Bewertung muss dokumentiert werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Auswirkungen von IKT-Risiken durch geeignete Strategien, Leit- und Richtlinien, Verfahren und Tools minimieren",
+        "text": "Im Einklang mit ihrem IKT-Risikomanagementrahmen müssen Finanzunternehmen die Auswirkungen von IKT-Risiken minimieren, indem sie geeignete Strategien, Leit- und Richtlinien, Verfahren, IKT-Protokolle und Tools einsetzen."
+      },
+      "actionId": "risikobewertung"
+    },
+    {
+      "id": "dsgvo-art-12__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 12",
+        "title": "Verlangen zusätzlicher Identifikationsinformationen bei begründeten Zweifeln",
+        "text": "Hat der Verantwortliche begründete Zweifel an der Identität der natürlichen Person, die einen Antrag gemäß Artikeln 15 bis 21 stellt, so kann er zusätzliche Informationen anfordern, die zur Bestätigung der Identität der betroffenen Person erforderlich sind. Dies gilt unbeschadet des Artikels 11 Absatz 2."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Alle IKT-bezogenen Vorfälle und erheblichen Cyberbedrohungen erfassen",
+        "text": "Finanzunternehmen müssen alle IKT-bezogenen Vorfälle und erheblichen Cyberbedrohungen erfassen. Es sind angemessene Verfahren und Prozesse einzurichten, um die kohärente und integrierte Überwachung, Handhabung und Weiterverfolgung zu gewährleisten."
+      },
+      "actionId": "betroffenenrechte-bearbeiten",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-7__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Speicherung und Verwaltung von Einwilligungsnachweisen mit Versionierung",
+        "text": "Alle Einwilligungsnachweise einschließlich Datum, Uhrzeit, Inhalt der Erklärung, Sprache und das Ergebnis etwaiger Freiwilligkeitsprüfungen müssen versioniert, unveränderbar und über die gesamte Dauer der Verarbeitung abrufbar gespeichert werden. Dies ermöglicht die Nachverfolgung von Änderungen und den Nachweis der Compliance."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Frühwarnung innerhalb von 24 Stunden nach Kenntnisnahme übermitteln",
+        "text": "Innerhalb von 24 Stunden nach Kenntnisnahme eines erheblichen Sicherheitsvorfalls muss eine Frühwarnung dem CSIRT oder der zuständigen Behörde übermittelt werden. Die Frühwarnung muss gegebenenfalls angeben, ob Verdacht auf rechtswidrige oder böswillige Handlungen besteht oder grenzüberschreitende Auswirkungen möglich sind (Absatz 4 Buchstabe a)."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-44__dora-art-17--3",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 44",
+        "title": "Schutzniveau der DSGVO bei Drittlandübermittlungen nicht untergraben",
+        "text": "Der Verantwortliche muss durch die Wahl angemessener Mechanismen (Angemessenheitsbeschluss, Standarddatenschutzklauseln, Binding Corporate Rules, unternehmensverbindliche Regeln oder andere zulässige Mittel gemäß Kapitel V) sicherstellen, dass das durch die DSGVO gewährleistete Schutzniveau für natürliche Personen bei jeder Übermittlung in Drittländer oder an internationale Organisationen nicht untergraben wird."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Schwerwiegende IKT-Vorfälle der höheren Führungsebene melden",
+        "text": "Schwerwiegende IKT-bezogene Vorfälle müssen der zuständigen höheren Führungsebene gemeldet werden und die Geschäftsleitung muss informiert werden, mit Darstellung der Auswirkungen, Gegenmaßnahmen und zusätzlicher Kontrollen, die infolge dieser Vorfälle einzurichten sind."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-15__dora-art-5",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 15",
+        "title": "Information über automatisierte Entscheidungsfindung und Profiling bereitstellen",
+        "text": "Der Verantwortliche muss auf Anfrage mittteilen, ob automatisierte Entscheidungsfindung einschließlich Profiling gemäß Artikel 22 Absätze 1 und 4 stattfindet, und in diesen Fällen aussagekräftige Informationen über die involvierte Logik sowie die Tragweite und angestrebten Auswirkungen der Verarbeitung für die betroffene Person bereitstellen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Strategie für digitale operationale Resilienz festlegen und genehmigen",
+        "text": "Das Leitungsorgan trägt die Gesamtverantwortung für die Festlegung und Genehmigung der Strategie für die digitale operationale Resilienz gemäß Artikel 6 Absatz 8, einschließlich der Festlegung der angemessenen Toleranzschwelle für das IKT-Risiko des Finanzunternehmens."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-17__dora-art-19--3",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 17",
+        "title": "Datenlöschung in öffentlich gemachten Daten durch Informationspflicht umsetzen",
+        "text": "Hat der Verantwortliche personenbezogene Daten öffentlich gemacht und ist zu deren Löschung verpflichtet, so muss er unter Berücksichtigung verfügbarer Technologie und Implementierungskosten angemessene Maßnahmen (auch technischer Art) treffen, um andere Datenverarbeiter zu informieren, dass die betroffene Person die Löschung aller Links, Kopien und Replikationen dieser Daten verlangt hat. Dies ist eine Mitteilungspflicht an nachgelagerte Prozessoren und Kopienhalter."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Zwischenmeldungen bei wesentlichen Statusänderungen einreichen",
+        "text": "Nach der Erstmeldung müssen Finanzunternehmen eine Zwischenmeldung einreichen, sobald sich der Status des ursprünglichen Vorfalls erheblich geändert hat oder sich die Handhabung auf Basis neuer Informationen geändert hat. Gegebenenfalls sind aktualisierte Meldungen bei entsprechenden Statusaktualisierungen erforderlich, sowie auf ausdrücklichen Antrag der zuständigen Behörde."
+      },
+      "actionId": "loeschung-durchfuehren",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-9--4",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Geeignete technische und organisatorische Sicherheitsvorkehrungen implementieren",
+        "text": "Der Verantwortliche muss geeignete technische und organisatorische Sicherheitsvorkehrungen treffen und diese Vorkehrungen auf die von der Verletzung betroffenen personenbezogenen Daten anwenden. Insbesondere müssen solche Vorkehrungen die personenbezogenen Daten für alle Personen, die nicht zum Zugang befugt sind, unzugänglich machen, etwa durch Verschlüsselung. Diese Vorkehrungen sind notwendig, um im Notfall die Benachrichtigungspflicht zu vermeiden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-6__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 6",
+        "title": "Dokumentiere die Verbindung zwischen ursprünglichem und neuem Verarbeitungszweck",
+        "text": "Bei der Prüfung der Vereinbarkeit einer Zweckänderung gemäß Art. 6 Abs. 4 Buchstabe a muss jede Verbindung zwischen den Zwecken dokumentiert werden, für die die Daten erhoben wurden, und denjenigen Zwecken, die beabsichtigt sind. Diese Dokumentation ist der Nachweis der Kompatibilität."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Angemessene Trennung und Unabhängigkeit von IKT-Risikomanagement-, Kontroll- und Revisionsfunktionen sicherstellen",
+        "text": "Finanzunternehmen müssen für eine angemessene Trennung und Unabhängigkeit von IKT-Risikomanagementfunktionen, Kontrollfunktionen und internen Revisionsfunktionen gemäß dem Modell der drei Verteidigungslinien oder einem vergleichbaren internen Modell für Risikomanagement und Kontrolle sorgen."
+      },
+      "actionId": "zweck-festlegen",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--5",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Abschlussbericht spätestens einen Monat nach Meldung einreichen",
+        "text": "Spätestens einen Monat nach Übermittlung der Meldung gemäß Absatz 4 Buchstabe b muss ein Abschlussbericht eingereicht werden. Dieser Abschlussbericht muss enthalten: (i) ausführliche Beschreibung des Vorfalls einschließlich Schweregrad und Auswirkungen; (ii) Art der Bedrohung bzw. Ursache; (iii) getroffene und laufende Abhilfemaßnahmen; (iv) gegebenenfalls grenzüberschreitende Auswirkungen (Absatz 4 Buchstabe d)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Abschlussmeldung nach Ursachenanalyse einreichen",
+        "text": "Finanzunternehmen müssen eine Abschlussmeldung einreichen, wenn die Ursachenanalyse abgeschlossen ist — unabhängig davon, ob bereits Minderungsmaßnahmen getroffen wurden oder nicht — und sich die tatsächlichen Auswirkungen beziffern lassen und Schätzungen ersetzen."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-28__nis2-art-21",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Verarbeitungsvertrag oder Rechtsinstrument mit Auftragsverarbeiter abschließen",
+        "text": "Die Verarbeitung durch einen Auftragsverarbeiter muss auf der Grundlage eines Vertrags oder eines anderen Rechtsinstruments erfolgen, das in schriftlicher Form (auch elektronisches Format) vorliegen muss. Der Vertrag muss Gegenstand und Dauer der Verarbeitung, Art und Zweck der Verarbeitung, die Art der personenbezogenen Daten, die Kategorien betroffener Personen und die Pflichten und Rechte des Verantwortlichen festlegen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Sicherheit der Lieferkette, einschließlich Anbieter und Diensteanbieter, bewerten",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Maßnahmen zur Sicherheit der Lieferkette einschließlich sicherheitsbezogener Aspekte der Beziehungen zu ihren unmittelbaren Anbietern oder Diensteanbietern ergreifen. Dies umfasst die Bewertung der spezifischen Schwachstellen der Anbieter, die Gesamtqualität ihrer Produkte und ihrer Cybersicherheitspraxis, einschließlich der Sicherheit ihrer Entwicklungsprozesse, sowie die Berücksichtigung der Ergebnisse von koordinierten Risikobewertungen kritischer Lieferketten gemäß Artikel 22 Abs. 1."
+      },
+      "actionId": "auftragsverarbeiter-steuern",
+      "actionIdB": "lieferkette-bewerten"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--6",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Meldung an zuständige Behörde muss CSIRT erreichen",
+        "text": "Sollte eine betroffene Einrichtung den erheblichen Sicherheitsvorfall der zuständigen Behörde melden, muss der Mitgliedstaat sicherstellen, dass diese Behörde die Meldung nach Eingang an das CSIRT weiterleitet (Absatz 1 Unterabsatz 4). Dies ist eine Durchleitungsverpflichtung für nationale Behörden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "EU-Agenturen-Bewertung von grenzüberschreitenden Auswirkungen und Benachrichtigung",
+        "text": "Nach Erhalt der Informationen müssen EBA, ESMA oder EIOPA in Abstimmung mit ENISA und in Zusammenarbeit mit der zuständigen Behörde bewerten, ob der Vorfall für Behörden in anderen Mitgliedstaaten relevant ist. Anschließend benachrichtigen sie die zuständigen Behörden in anderen Mitgliedstaaten entsprechend. Die EZB unterrichtet die Mitglieder des Europäischen Systems der Zentralbanken über für das Zahlungssystem relevante Aspekte."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-6",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Geeignete technische und organisatorische Sicherheitsvorkehrungen implementieren",
+        "text": "Der Verantwortliche muss geeignete technische und organisatorische Sicherheitsvorkehrungen treffen und diese Vorkehrungen auf die von der Verletzung betroffenen personenbezogenen Daten anwenden. Insbesondere müssen solche Vorkehrungen die personenbezogenen Daten für alle Personen, die nicht zum Zugang befugt sind, unzugänglich machen, etwa durch Verschlüsselung. Diese Vorkehrungen sind notwendig, um im Notfall die Benachrichtigungspflicht zu vermeiden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "IKT-Protokolle und -Tools zum Schutz aller Informations- und IKT-Assets implementieren",
+        "text": "Der IKT-Risikomanagementrahmen muss Strategien, Leit- und Richtlinien, Verfahren sowie IKT-Protokolle und -Tools umfassen, die erforderlich sind, um alle Informations- und IKT-Assets (Computer-Software, Hardware, Server) ordnungsgemäß und angemessen zu schützen und alle relevanten physischen Komponenten und Infrastrukturen (Räumlichkeiten, Rechenzentren) zu schützen, damit der angemessene Schutz vor Risiken, einschließlich Beschädigung und unbefugtem Zugriff oder Nutzung, gewährleistet ist."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-5__nis2-art-23",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 5",
+        "title": "Datenminimierung durchführen und implementieren",
+        "text": "Personenbezogene Daten müssen dem Zweck angemessen und erheblich sowie auf das für die Zwecke der Verarbeitung notwendige Maß beschränkt sein. Dies verlangt ein aktives Überprüfungsverfahren, um nur die Mindestmenge an personenbezogenen Daten zu verarbeiten, die für den festgelegten Zweck erforderlich ist. Es müssen Maßnahmen implementiert werden, um unnötige Daten zu identifizieren und zu löschen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Meldung an zuständige Behörde muss CSIRT erreichen",
+        "text": "Sollte eine betroffene Einrichtung den erheblichen Sicherheitsvorfall der zuständigen Behörde melden, muss der Mitgliedstaat sicherstellen, dass diese Behörde die Meldung nach Eingang an das CSIRT weiterleitet (Absatz 1 Unterabsatz 4). Dies ist eine Durchleitungsverpflichtung für nationale Behörden."
+      },
+      "actionId": "datenminimierung",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23--4",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Schrittweise Bereitstellung fehlender Meldungsinformationen ohne unangemessene Verzögerung",
+        "text": "Wenn und soweit die Informationen nicht zur gleichen Zeit bereitgestellt werden können, kann der Verantwortliche diese Informationen ohne unangemessene weitere Verzögerung schrittweise zur Verfügung stellen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-30__dora-art-6",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 30",
+        "title": "Kategorien betroffener Personen und Datenkategorien beschreiben",
+        "text": "Das Verzeichnis muss eine Beschreibung der Kategorien betroffener Personen und der Kategorien personenbezogener Daten enthalten – z.B. Kunden, Mitarbeiter, und welche Datenarten verarbeitet werden (Namen, E-Mail-Adressen, Verhaltensprofile)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "IKT-Protokolle und -Tools zum Schutz aller Informations- und IKT-Assets implementieren",
+        "text": "Der IKT-Risikomanagementrahmen muss Strategien, Leit- und Richtlinien, Verfahren sowie IKT-Protokolle und -Tools umfassen, die erforderlich sind, um alle Informations- und IKT-Assets (Computer-Software, Hardware, Server) ordnungsgemäß und angemessen zu schützen und alle relevanten physischen Komponenten und Infrastrukturen (Räumlichkeiten, Rechenzentren) zu schützen, damit der angemessene Schutz vor Risiken, einschließlich Beschädigung und unbefugtem Zugriff oder Nutzung, gewährleistet ist."
+      },
+      "actionId": "verzeichnis-fuehren",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-7__dora-art-19--3",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 7",
+        "title": "Freiwilligkeit der Einwilligung beurteilen und dokumentieren",
+        "text": "Bei der Beurteilung, ob eine Einwilligung freiwillig erteilt wurde, muss dem Umstand in größtmöglichem Umfang Rechnung getragen werden, ob die Erfüllung eines Vertrags, einschließlich der Erbringung einer Dienstleistung, von der Einwilligung zu einer Verarbeitung von personenbezogenen Daten abhängig ist, die für die Erfüllung des Vertrags nicht erforderlich sind. Dies ist insbesondere bei der Verarbeitung im Kontext von Serviceleistungen zu prüfen und zu dokumentieren."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Erstmeldung und Folgemeldungen strukturiert nach Vorlage einreichen",
+        "text": "Nach Erfassung und Analyse aller relevanten Informationen müssen Finanzunternehmen eine Erstmeldung unter Verwendung der in Artikel 20 genannten Vorlage erstellen und an die zuständige Behörde übermitteln. Falls technisch unmöglich, kann die Meldung auf anderem Wege erfolgen. Die Erstmeldung muss alle Informationen enthalten, die die Behörde benötigt, um die Signifikanz des Vorfalls zu ermitteln und grenzüberschreitende Auswirkungen zu bewerten."
+      },
+      "actionId": "einwilligung-verwalten",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-21__dora-art-6--2",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Konzepte und Verfahren zur Risikoanalyse und Sicherheit für Informationssysteme etablieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Konzepte und Verfahren in Bezug auf die Risikoanalyse und Sicherheit für Informationssysteme etablieren und dokumentieren. Diese müssen es ermöglichen, Sicherheitsrisiken zu identifizieren, zu bewerten und zu priorisieren sowie geeignete Kontrollmaßnahmen zu implementieren und deren Wirksamkeit zu überwachen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Soliden, umfassenden und gut dokumentierten IKT-Risikomanagementrahmen etablieren",
+        "text": "Finanzunternehmen müssen einen soliden, umfassenden und gut dokumentierten IKT-Risikomanagementrahmen als Teil ihres Gesamtrisikomanagementsystems etablieren und unterhalten. Dieser Rahmen muss es dem Finanzunternehmen ermöglichen, IKT-Risiken schnell, effizient und umfassend anzugehen und ein hohes Niveau an digitaler operationaler Resilienz zu gewährleisten."
+      },
+      "actionId": "resilienz-governance"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--7",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Abschlussmeldung nach Ursachenanalyse einreichen",
+        "text": "Finanzunternehmen müssen eine Abschlussmeldung einreichen, wenn die Ursachenanalyse abgeschlossen ist — unabhängig davon, ob bereits Minderungsmaßnahmen getroffen wurden oder nicht — und sich die tatsächlichen Auswirkungen beziffern lassen und Schätzungen ersetzen."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-33__dora-art-19--9",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Meldung von Verletzungen des Schutzes personenbezogener Daten an die Aufsichtsbehörde",
+        "text": "Der Verantwortliche muss unverzüglich und möglichst binnen 72 Stunden, nachdem ihm eine Verletzung des Schutzes personenbezogener Daten bekannt wurde, diese der gemäß Artikel 51 zuständigen Aufsichtsbehörde melden, es sei denn, dass die Verletzung voraussichtlich nicht zu einem Risiko für die Rechte und Freiheiten natürlicher Personen führt. Erfolgt die Meldung nicht binnen 72 Stunden, muss eine Begründung für die Verzögerung beigefügt werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "EU-Agenturen-Bewertung von grenzüberschreitenden Auswirkungen und Benachrichtigung",
+        "text": "Nach Erhalt der Informationen müssen EBA, ESMA oder EIOPA in Abstimmung mit ENISA und in Zusammenarbeit mit der zuständigen Behörde bewerten, ob der Vorfall für Behörden in anderen Mitgliedstaaten relevant ist. Anschließend benachrichtigen sie die zuständigen Behörden in anderen Mitgliedstaaten entsprechend. Die EZB unterrichtet die Mitglieder des Europäischen Systems der Zentralbanken über für das Zahlungssystem relevante Aspekte."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-34__dora-art-6--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 34",
+        "title": "Risikobeurteilung durchführen, um Benachrichtigungspflicht auszulösen",
+        "text": "Vor jeder Benachrichtigungsentscheidung muss der Verantwortliche eine Risikobeurteilung durchführen. Diese Beurteilung muss klären, ob die Verletzung 'voraussichtlich ein hohes Risiko für die persönlichen Rechte und Freiheiten natürlicher Personen zur Folge' hat. Nur wenn diese hohe Risikoschwelle überschritten ist, ist die sofortige Benachrichtigung erforderlich."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 6",
+        "title": "Auswirkungen von IKT-Risiken durch geeignete Strategien, Leit- und Richtlinien, Verfahren und Tools minimieren",
+        "text": "Im Einklang mit ihrem IKT-Risikomanagementrahmen müssen Finanzunternehmen die Auswirkungen von IKT-Risiken minimieren, indem sie geeignete Strategien, Leit- und Richtlinien, Verfahren, IKT-Protokolle und Tools einsetzen."
+      },
+      "actionId": "risikobewertung"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Genehmigung durch Verhaltensregeln oder Zertifizierung als Nachweismittel nutzen",
+        "text": "Die Einhaltung genehmigter Verhaltensregeln gemäß Artikel 40 DSGVO oder eines genehmigten Zertifizierungsverfahrens gemäß Artikel 42 DSGVO kann als Faktor herangezogen werden, um die Erfüllung der in Absatz 1 genannten Anforderungen nachzuweisen. Solche Zertifikate oder Verhaltensregeln sind zu dokumentieren und verfügbar zu halten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen gewährleisten",
+        "text": "Finanzunternehmen müssen IKT-Sicherheitsrichtlinien, -verfahren, -protokolle und -Tools konzipieren, beschaffen und implementieren, die darauf abzielen, die Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen, insbesondere jener zur Unterstützung kritischer oder wichtiger Funktionen, zu gewährleisten."
+      },
+      "actionId": "compliance-nachweisen",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-9--3",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Geeignete technische und organisatorische Maßnahmen implementieren",
+        "text": "Der Verantwortliche und der Auftragsverarbeiter müssen unter Berücksichtigung des Stands der Technik, der Implementierungskosten und der Art, des Umfangs, der Umstände und der Zwecke der Verarbeitung sowie der unterschiedlichen Eintrittswahrscheinlichkeit und Schwere des Risikos geeignete technische und organisatorische Maßnahmen treffen, um ein dem Risiko angemessenes Schutzniveau zu gewährleisten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Risiken von Datenkorruption, -verlust und unbefugtem Zugriff minimieren",
+        "text": "Finanzunternehmen müssen das Risiko von Datenkorruption oder -verlust, unbefugtem Zugriff und technischen Mängeln, die die Geschäftstätigkeit beeinträchtigen können, minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-35__nis2-art-23--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 35",
+        "title": "Durchführung einer Datenschutz-Folgenabschätzung bei hohem Risiko",
+        "text": "Der Verantwortliche muss vorab eine Datenschutz-Folgenabschätzung (DPIA) durchführen, wenn eine Verarbeitungsform, insbesondere bei Verwendung neuer Technologien, aufgrund der Art, des Umfangs, der Umstände und der Zwecke voraussichtlich ein hohes Risiko für die Rechte und Freiheiten natürlicher Personen zur Folge hat. Mehrere ähnliche Verarbeitungsvorgänge mit ähnlich hohen Risiken können in einer einzigen Abschätzung zusammengefasst werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "actionId": "folgenabschaetzung",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-15__dora-art-9",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 15",
+        "title": "Geplante Speicherdauer oder Löschungskriterien angeben",
+        "text": "Der Verantwortliche muss auf Anfrage mitteilen, wie lange personenbezogene Daten gespeichert werden oder, falls die genaue Dauer nicht feststeht, welche Kriterien für die Festlegung der Speicherdauer herangezogen werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen gewährleisten",
+        "text": "Finanzunternehmen müssen IKT-Sicherheitsrichtlinien, -verfahren, -protokolle und -Tools konzipieren, beschaffen und implementieren, die darauf abzielen, die Resilienz, Kontinuität und Verfügbarkeit von IKT-Systemen, insbesondere jener zur Unterstützung kritischer oder wichtiger Funktionen, zu gewährleisten."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "resilienz-governance"
+    },
+    {
+      "id": "dsgvo-art-15__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 15",
+        "title": "Bestätigung der Datenverarbeitung bereitstellen",
+        "text": "Der Verantwortliche muss auf Anfrage einer betroffenen Person eine Bestätigung darüber erteilen, ob personenbezogene Daten verarbeitet werden, die sich auf diese Person beziehen. Diese Bestätigung muss unverzüglich und in verständlicher Form erfolgen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Solide Struktur für Netzwerk- und Infrastrukturmanagement etablieren",
+        "text": "Finanzunternehmen müssen entsprechend einem risikobasierten Ansatz eine solide Struktur für Netzwerk- und Infrastrukturmanagement unter Verwendung angemessener Techniken, Methoden und Protokolle einrichten, wozu auch die Umsetzung automatisierter Mechanismen zur Isolierung betroffener Informationsassets im Falle von Cyberangriffen gehören kann."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "zugriffskontrolle"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--8",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Unverzüglich über erhebliche Sicherheitsvorfälle dem CSIRT berichten",
+        "text": "Wesentliche und wichtige Einrichtungen müssen unverzüglich über jeden Sicherheitsvorfall berichten, der erhebliche Auswirkungen auf die Erbringung ihrer Dienste hat, an ihr CSIRT oder die zuständige Behörde. Die Meldung muss gem. Absatz 4 erfolgen und alle notwendigen Informationen enthalten, um grenzübergreifende Auswirkungen zu ermitteln."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Meldung schwerwiegender IKT-bezogener Vorfälle an zuständige Behörde",
+        "text": "Finanzunternehmen müssen schwerwiegende IKT-bezogene Vorfälle der nach Artikel 46 jeweils zuständigen Behörde gemäß Absatz 4 melden. Bei Aufsicht durch mehrere Behörden benennen die Mitgliedstaaten eine einzige zuständige Behörde. Kreditinstitute, die als bedeutend eingestuft wurden, melden an die zuständige nationale Behörde, die die Meldung unverzüglich an die EZB weiterleitet."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--9",
+      "arm": "K",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Meldung an zuständige Behörde muss CSIRT erreichen",
+        "text": "Sollte eine betroffene Einrichtung den erheblichen Sicherheitsvorfall der zuständigen Behörde melden, muss der Mitgliedstaat sicherstellen, dass diese Behörde die Meldung nach Eingang an das CSIRT weiterleitet (Absatz 1 Unterabsatz 4). Dies ist eine Durchleitungsverpflichtung für nationale Behörden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Kundenbenachrichtigung bei finanziellen Auswirkungen unverzüglich durchführen",
+        "text": "Wenn ein schwerwiegender IKT-bezogener Vorfall auftritt und Auswirkungen auf die finanziellen Interessen von Kunden hat, müssen die Finanzunternehmen ihre Kunden unverzüglich nach Kenntniserlangung über den Vorfall und die ergriffenen Minderungsmaßnahmen informieren."
+      },
+      "actionId": "vorfall-melden-behoerde",
+      "actionIdB": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-13__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 13",
+        "title": "Mitteilung von Drittlandsübermittlungen und Datenschutzgarantien",
+        "text": "Der Verantwortliche muss der betroffenen Person zum Zeitpunkt der Erhebung mitteilen, ob er beabsichtigt, die personenbezogenen Daten an ein Drittland oder eine internationale Organisation zu übermitteln, sowie ob ein Angemessenheitsbeschluss der Kommission besteht oder auf welche geeigneten Garantien (Artikel 46, 47, 49 Abs. 1 Unterabsatz 2) verwiesen wird."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Verfahren für Reaktionsmaßnahmen bei IKT-Vorfällen einrichten",
+        "text": "Verfahren für Reaktionsmaßnahmen bei IKT-bezogenen Vorfällen müssen eingerichtet werden, um Auswirkungen zu mindern und sicherzustellen, dass die Dienste zeitnah verfügbar und sicher werden."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-25__nis2-art-21",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Speicherfrist für personenbezogene Daten definieren und durchsetzen",
+        "text": "Der Verantwortliche muss durch geeignete technische und organisatorische Maßnahmen sicherstellen, dass personenbezogene Daten nur für so lange wie notwendig gespeichert werden. Dies muss durch Voreinstellungen und Maßnahmen für die Speicherfrist durchgesetzt werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Gefahrenübergreifenden Ansatz zur Sicherheit von Netz- und Informationssystemen implementieren",
+        "text": "Die Maßnahmen müssen auf einem gefahrenübergreifenden Ansatz beruhen, der darauf abzielt, die Netz- und Informationssysteme und die physische Umwelt dieser Systeme vor Sicherheitsvorfällen zu schützen. Dieser Ansatz muss zumindest folgende Bereiche umfassen: Risikoanalyse und Sicherheit für Informationssysteme, Bewältigung von Sicherheitsvorfällen, Aufrechterhaltung des Betriebs und Krisenmanagement, Sicherheit der Lieferkette, Sicherheitsmaßnahmen bei Erwerb/Entwicklung/Wartung von Netz- und Informationssystemen, Bewertung der Wirksamkeit von Risikomanagementmaßnahmen, Cyberhygiene und Schulungen, Kryptografie und Verschlüsselung, Sicherheit des Personals und Zugriffskontrolle, Multi-Faktor-Authentifizierung und sichere Kommunikation."
+      },
+      "actionId": "aufbewahrung-loeschfristen",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--10",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Zwischenmeldungen bei wesentlichen Statusänderungen einreichen",
+        "text": "Nach der Erstmeldung müssen Finanzunternehmen eine Zwischenmeldung einreichen, sobald sich der Status des ursprünglichen Vorfalls erheblich geändert hat oder sich die Handhabung auf Basis neuer Informationen geändert hat. Gegebenenfalls sind aktualisierte Meldungen bei entsprechenden Statusaktualisierungen erforderlich, sowie auf ausdrücklichen Antrag der zuständigen Behörde."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--11",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Vollständige Meldung innerhalb von 72 Stunden mit Severity und Auswirkungen übermitteln",
+        "text": "Innerhalb von 72 Stunden nach Kenntnisnahme muss eine detaillierte Meldung über den Sicherheitsvorfall dem CSIRT oder der zuständigen Behörde übermittelt werden. Diese Meldung muss eine erste Bewertung des Vorfalls einschließlich Schweregrad und Auswirkungen sowie Kompromittierungsindikatoren enthalten und die Informationen aus der Frühwarnung aktualisieren (Absatz 4 Buchstabe b)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Erstmeldung und Folgemeldungen strukturiert nach Vorlage einreichen",
+        "text": "Nach Erfassung und Analyse aller relevanten Informationen müssen Finanzunternehmen eine Erstmeldung unter Verwendung der in Artikel 20 genannten Vorlage erstellen und an die zuständige Behörde übermitteln. Falls technisch unmöglich, kann die Meldung auf anderem Wege erfolgen. Die Erstmeldung muss alle Informationen enthalten, die die Behörde benötigt, um die Signifikanz des Vorfalls zu ermitteln und grenzüberschreitende Auswirkungen zu bewerten."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-17--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter unverzüglich informieren bei Verdacht auf Verstoß gegen Datenschutzrecht",
+        "text": "Der Auftragsverarbeiter muss den Verantwortlichen unverzüglich informieren, falls er der Auffassung ist, dass eine Weisung gegen diese Verordnung oder gegen andere Datenschutzbestimmungen der Union oder der Mitgliedstaaten verstößt."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Frühwarnindikatoren für IKT-Vorfälle einsetzen",
+        "text": "Im Rahmen des Vorfallbehandlungsprozesses müssen Frühwarnindikatoren (Early Warning Indicators) eingesetzt werden, um IKT-bezogene Vorfälle frühzeitig zu erkennen."
+      },
+      "actionId": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-44__dora-art-5",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 44",
+        "title": "Anwendung aller Bestimmungen des Kapitels V zur Sicherung des Schutzniveaus",
+        "text": "Alle relevanten Bestimmungen des Kapitels V der DSGVO (Artikel 45 bis 50) müssen auf jede Übermittlung personenbezogener Daten an Drittländer oder internationale Organisationen angewendet werden. Dies ist zwingend erforderlich, um das hohe Datenschutzniveau, das die DSGVO für natürliche Personen garantiert, zu erhalten und nicht zu untergraben."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "drittlandtransfer-absichern",
+      "actionIdB": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-25__dora-art-9--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Datenschutzgrundsätze durch Maßnahmen wirksam umsetzen",
+        "text": "Die implementierten technischen und organisatorischen Maßnahmen müssen dafür ausgelegt sein, die Datenschutzgrundsätze — insbesondere Datenminimierung — wirksam umzusetzen und die notwendigen Garantien in die Verarbeitung aufzunehmen, um den Anforderungen dieser Verordnung zu genügen und die Rechte der betroffenen Personen zu schützen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Solide Struktur für Netzwerk- und Infrastrukturmanagement etablieren",
+        "text": "Finanzunternehmen müssen entsprechend einem risikobasierten Ansatz eine solide Struktur für Netzwerk- und Infrastrukturmanagement unter Verwendung angemessener Techniken, Methoden und Protokolle einrichten, wozu auch die Umsetzung automatisierter Mechanismen zur Isolierung betroffener Informationsassets im Falle von Cyberangriffen gehören kann."
+      },
+      "actionId": "technisch-organisatorische-massnahmen",
+      "actionIdB": "zugriffskontrolle"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--12",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Abschlussbericht spätestens einen Monat nach Meldung einreichen",
+        "text": "Spätestens einen Monat nach Übermittlung der Meldung gemäß Absatz 4 Buchstabe b muss ein Abschlussbericht eingereicht werden. Dieser Abschlussbericht muss enthalten: (i) ausführliche Beschreibung des Vorfalls einschließlich Schweregrad und Auswirkungen; (ii) Art der Bedrohung bzw. Ursache; (iii) getroffene und laufende Abhilfemaßnahmen; (iv) gegebenenfalls grenzüberschreitende Auswirkungen (Absatz 4 Buchstabe d)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Umgehende Weiterleitung von Vorfalldetails an Aufnahmemitgliedstaat-Behörde bei grenzüberschreitenden Aktivitäten",
+        "text": "Die zuständige Behörde muss die Einzelheiten eines schwerwiegenden IKT-bezogenen Vorfalls umgehend an die einschlägige Behörde des Aufnahmemitgliedstaats weiterleiten, wenn ein Zentralverwahrer eine umfassende grenzüberschreitende Tätigkeit ausübt, der Vorfall wahrscheinlich schwerwiegende Folgen für die Finanzmärkte des Aufnahmemitgliedstaats hat und Kooperationsvereinbarungen bestehen."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-9--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter verpflichten, technische und organisatorische Maßnahmen gemäß Artikel 32 zu ergreifen",
+        "text": "Der Vertrag muss vorsehen, dass der Auftragsverarbeiter alle gemäß Artikel 32 erforderlichen Maßnahmen ergreift. Dies umfasst die Implementierung technischer und organisatorischer Maßnahmen zur Sicherung von personenbezogenen Daten."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "IKT-Sicherheitstools, -Richtlinien und -Verfahren zur Risikominderung implementieren",
+        "text": "Finanzunternehmen müssen durch den Einsatz angemessener IKT-Sicherheitstools, -Richtlinien und -Verfahren die Auswirkungen von IKT-Risiken auf IKT-Systeme minimieren."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-13__nis2-art-23--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 13",
+        "title": "Offenlegung berechtigter Interessen bei Artikel-6-Absatz-1-Buchstabe-f-Verarbeitung",
+        "text": "Wenn die Verarbeitung auf Artikel 6 Absatz 1 Buchstabe f (berechtigte Interessen) beruht, muss der Verantwortliche der betroffenen Person zum Zeitpunkt der Erhebung die berechtigten Interessen mitteilen, die von dem Verantwortlichen oder einem Dritten verfolgt werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Grenzüberschreitende Auswirkungen dem CSIRT mitteilen",
+        "text": "Alle Informationen, die dem CSIRT oder der zuständigen Behörde übermittelt werden, müssen es diesem ermöglichen zu ermitteln, ob der Sicherheitsvorfall grenzübergreifende Auswirkungen hat. Dies ist ein inhaltliches Anforderungsmerkmal jeder Meldung (Absatz 1 Unterabsatz 3)."
+      },
+      "actionId": "betroffene-informieren",
+      "actionIdB": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-25__nis2-art-21--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Speicherfrist für personenbezogene Daten definieren und durchsetzen",
+        "text": "Der Verantwortliche muss durch geeignete technische und organisatorische Maßnahmen sicherstellen, dass personenbezogene Daten nur für so lange wie notwendig gespeichert werden. Dies muss durch Voreinstellungen und Maßnahmen für die Speicherfrist durchgesetzt werden."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Sicherheitsmaßnahmen bei Erwerb, Entwicklung und Wartung von Netz- und Informationssystemen implementieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Sicherheitsmaßnahmen bei Erwerb, Entwicklung und Wartung von Netz- und Informationssystemen implementieren. Dies umfasst das Management von Schwachstellen und deren Offenlegung (Vulnerability Management), damit Sicherheitslücken zeitnah identifiziert und behoben werden können. Die Prozesse müssen sichere Entwicklungspraktiken, Sicherheitstesting und koordinierte Offenlegung von Schwachstellen vorsehen."
+      },
+      "actionId": "aufbewahrung-loeschfristen",
+      "actionIdB": "lieferkette-bewerten"
+    },
+    {
+      "id": "dsgvo-art-28__dora-art-5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter nur mit ausreichenden Garantien beauftragen",
+        "text": "Der Verantwortliche darf einen Auftragsverarbeiter nur einsetzen, wenn dieser hinreichend Garantien dafür bietet, dass geeignete technische und organisatorische Maßnahmen so durchgeführt werden, dass die Verarbeitung im Einklang mit den Anforderungen dieser Verordnung erfolgt und den Schutz der Rechte der betroffenen Person gewährleistet."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinie zu IKT-Dienstleistungsvereinbarungen mit Drittdienstleistern genehmigen und überprüfen",
+        "text": "Das Leitungsorgan muss die Leitlinie des Finanzunternehmens in Bezug auf Vereinbarungen über die Nutzung von IKT-Dienstleistungen, die von IKT-Drittdienstleistern bereitgestellt werden, genehmigen und regelmäßig überprüfen."
+      },
+      "actionId": "auftragsverarbeiter-steuern"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23--5",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Beschreibung der wahrscheinlichen Folgen der Verletzung in der Meldung",
+        "text": "Die Meldung an die Aufsichtsbehörde muss eine Beschreibung der wahrscheinlichen Folgen der Verletzung des Schutzes personenbezogener Daten enthalten."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Frühwarnung innerhalb von 24 Stunden nach Kenntnisnahme übermitteln",
+        "text": "Innerhalb von 24 Stunden nach Kenntnisnahme eines erheblichen Sicherheitsvorfalls muss eine Frühwarnung dem CSIRT oder der zuständigen Behörde übermittelt werden. Die Frühwarnung muss gegebenenfalls angeben, ob Verdacht auf rechtswidrige oder böswillige Handlungen besteht oder grenzüberschreitende Auswirkungen möglich sind (Absatz 4 Buchstabe a)."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--13",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Fortschrittsbericht und finaler Bericht bei andauerndem Vorfall einreichen",
+        "text": "Falls ein Sicherheitsvorfall zum Zeitpunkt der Einreichung des Abschlussberichts noch andauert, müssen die betreffenden Einrichtungen einen Fortschrittsbericht zu diesem Zeitpunkt und einen finalen Abschlussbericht innerhalb eines Monats nach Behandlung des Vorfalls vorlegen (Absatz 4 Buchstabe e). Dies gilt auch für Vertrauensdiensteanbieter, die jedoch bereits innerhalb von 24 Stunden (nicht 72 Stunden) melden müssen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Meldung schwerwiegender IKT-bezogener Vorfälle an zuständige Behörde",
+        "text": "Finanzunternehmen müssen schwerwiegende IKT-bezogene Vorfälle der nach Artikel 46 jeweils zuständigen Behörde gemäß Absatz 4 melden. Bei Aufsicht durch mehrere Behörden benennen die Mitgliedstaaten eine einzige zuständige Behörde. Kreditinstitute, die als bedeutend eingestuft wurden, melden an die zuständige nationale Behörde, die die Meldung unverzüglich an die EZB weiterleitet."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-32__dora-art-5--4",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 32",
+        "title": "Verfügbarkeit und Zugang zu personenbezogenen Daten nach Zwischenfällen rasch wiederherstellen",
+        "text": "Es muss die Fähigkeit implementiert werden, die Verfügbarkeit der personenbezogenen Daten und den Zugang zu ihnen bei einem physischen oder technischen Zwischenfall rasch wiederherzustellen. Dies erfordert Backup- und Disaster-Recovery-Verfahren mit dokumentierten RTOs und RPOs."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "IKT-Geschäftsfortführungsleitlinie und IKT-Reaktions- und Wiederherstellungspläne genehmigen und regelmäßig überprüfen",
+        "text": "Das Leitungsorgan muss die IKT-Geschäftsfortführungsleitlinie nach Artikel 11 Absatz 1 und die IKT-Reaktions- und Wiederherstellungspläne nach Artikel 11 Absatz 3 genehmigen, überwachen und regelmäßig überprüfen. Diese können als eigenständige spezialisierte Leitlinie, die integraler Bestandteil der allgemeinen Geschäftsfortführungsleitlinie und des Reaktions- und Wiederherstellungsplans ist, verabschiedet werden."
+      },
+      "actionId": "betriebskontinuitaet"
+    },
+    {
+      "id": "nis2-art-23__dora-art-19--14",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Diensteempfänger unverzüglich über erhebliche Sicherheitsvorfälle benachrichtigen",
+        "text": "Einrichtungen müssen gegebenenfalls die Empfänger ihrer Dienste unverzüglich über erhebliche Sicherheitsvorfälle unterrichten, die die Erbringung des jeweiligen Dienstes beeinträchtigen könnten. Dies muss parallel zur Meldung an das CSIRT erfolgen (Absatz 1 Unterabsatz 2)."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 19",
+        "title": "Kundenbenachrichtigung bei finanziellen Auswirkungen unverzüglich durchführen",
+        "text": "Wenn ein schwerwiegender IKT-bezogener Vorfall auftritt und Auswirkungen auf die finanziellen Interessen von Kunden hat, müssen die Finanzunternehmen ihre Kunden unverzüglich nach Kenntniserlangung über den Vorfall und die ergriffenen Minderungsmaßnahmen informieren."
+      },
+      "actionId": "vorfall-benachrichtigen-betroffene"
+    },
+    {
+      "id": "dsgvo-art-28__nis2-art-21--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 28",
+        "title": "Auftragsverarbeiter unverzüglich informieren bei Verdacht auf Verstoß gegen Datenschutzrecht",
+        "text": "Der Auftragsverarbeiter muss den Verantwortlichen unverzüglich informieren, falls er der Auffassung ist, dass eine Weisung gegen diese Verordnung oder gegen andere Datenschutzbestimmungen der Union oder der Mitgliedstaaten verstößt."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Sicherheitsmaßnahmen bei Erwerb, Entwicklung und Wartung von Netz- und Informationssystemen implementieren",
+        "text": "Wesentliche und wichtige Einrichtungen müssen Sicherheitsmaßnahmen bei Erwerb, Entwicklung und Wartung von Netz- und Informationssystemen implementieren. Dies umfasst das Management von Schwachstellen und deren Offenlegung (Vulnerability Management), damit Sicherheitslücken zeitnah identifiziert und behoben werden können. Die Prozesse müssen sichere Entwicklungspraktiken, Sicherheitstesting und koordinierte Offenlegung von Schwachstellen vorsehen."
+      },
+      "actionId": "vorfall-erkennen-behandeln",
+      "actionIdB": "lieferkette-bewerten"
+    },
+    {
+      "id": "dsgvo-art-33__nis2-art-23--6",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 33",
+        "title": "Schrittweise Bereitstellung fehlender Meldungsinformationen ohne unangemessene Verzögerung",
+        "text": "Wenn und soweit die Informationen nicht zur gleichen Zeit bereitgestellt werden können, kann der Verantwortliche diese Informationen ohne unangemessene weitere Verzögerung schrittweise zur Verfügung stellen."
+      },
+      "b": {
+        "law": "NIS2",
+        "para": "Art. 23",
+        "title": "Frühwarnung innerhalb von 24 Stunden nach Kenntnisnahme übermitteln",
+        "text": "Innerhalb von 24 Stunden nach Kenntnisnahme eines erheblichen Sicherheitsvorfalls muss eine Frühwarnung dem CSIRT oder der zuständigen Behörde übermittelt werden. Die Frühwarnung muss gegebenenfalls angeben, ob Verdacht auf rechtswidrige oder böswillige Handlungen besteht oder grenzüberschreitende Auswirkungen möglich sind (Absatz 4 Buchstabe a)."
+      },
+      "actionId": "vorfall-melden-behoerde"
+    },
+    {
+      "id": "dsgvo-art-12__dora-art-17--2",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 12",
+        "title": "Kostenlose Bereitstellung von Informationen und Maßnahmen",
+        "text": "Informationen gemäß Artikeln 13 und 14 sowie alle Mitteilungen und Maßnahmen gemäß Artikeln 15 bis 22 und Artikel 34 müssen unentgeltlich zur Verfügung gestellt werden. Der Verantwortliche darf nur in Fällen offenkundig unbegründeter oder exzessiver Anträge ein angemessenes Entgelt verlangen oder die Tätigung ablehnen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Frühwarnindikatoren für IKT-Vorfälle einsetzen",
+        "text": "Im Rahmen des Vorfallbehandlungsprozesses müssen Frühwarnindikatoren (Early Warning Indicators) eingesetzt werden, um IKT-bezogene Vorfälle frühzeitig zu erkennen."
+      },
+      "actionId": "betroffenenrechte-bearbeiten",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "nis2-art-21__dora-art-9",
+      "arm": "T",
+      "a": {
+        "law": "NIS2",
+        "para": "Art. 21",
+        "title": "Gefahrenübergreifenden Ansatz zur Sicherheit von Netz- und Informationssystemen implementieren",
+        "text": "Die Maßnahmen müssen auf einem gefahrenübergreifenden Ansatz beruhen, der darauf abzielt, die Netz- und Informationssysteme und die physische Umwelt dieser Systeme vor Sicherheitsvorfällen zu schützen. Dieser Ansatz muss zumindest folgende Bereiche umfassen: Risikoanalyse und Sicherheit für Informationssysteme, Bewältigung von Sicherheitsvorfällen, Aufrechterhaltung des Betriebs und Krisenmanagement, Sicherheit der Lieferkette, Sicherheitsmaßnahmen bei Erwerb/Entwicklung/Wartung von Netz- und Informationssystemen, Bewertung der Wirksamkeit von Risikomanagementmaßnahmen, Cyberhygiene und Schulungen, Kryptografie und Verschlüsselung, Sicherheit des Personals und Zugriffskontrolle, Multi-Faktor-Authentifizierung und sichere Kommunikation."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 9",
+        "title": "Vorkehrungen gegen Verfügbarkeitsmangel und Vertraulichkeitsverletzungen treffen",
+        "text": "Finanzunternehmen müssen IKT-Lösungen einsetzen, die dem Mangel an Verfügbarkeit, der Beeinträchtigung der Authentizität und Integrität, den Verletzungen der Vertraulichkeit und dem Verlust von Daten vorbeugen."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    },
+    {
+      "id": "dsgvo-art-30__dora-art-17",
+      "arm": "K",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 30",
+        "title": "Vorgesehene Fristen für Datenlöschung dokumentieren",
+        "text": "Das Verzeichnis muss, wenn möglich, die vorgesehenen Fristen für die Löschung der verschiedenen Datenkategorien enthalten – z.B. wie lange Audit-Logs, Sessionen, API-Keys oder andere personenbezogene Daten aufbewahrt werden."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 17",
+        "title": "Kohärente Überwachung, Handhabung und Weiterverfolgung von Vorfällen sicherstellen",
+        "text": "Angemessene Verfahren und Prozesse müssen eingerichtet werden, um die kohärente und integrierte Überwachung, Handhabung und Weiterverfolgung IKT-bezogener Vorfälle zu gewährleisten. Ursachen müssen ermittelt, dokumentiert und angegangen werden, um das Auftreten solcher Vorfälle zu verhindern."
+      },
+      "actionId": "aufbewahrung-loeschfristen",
+      "actionIdB": "vorfall-erkennen-behandeln"
+    },
+    {
+      "id": "dsgvo-art-25__dora-art-5--2",
+      "arm": "T",
+      "a": {
+        "law": "DSGVO",
+        "para": "Art. 25",
+        "title": "Technische und organisatorische Maßnahmen zur Datenschutz-Konformität implementieren",
+        "text": "Der Verantwortliche muss unter Berücksichtigung des Stands der Technik, der Implementierungskosten und der Art, des Umfangs, der Umstände und der Zwecke der Verarbeitung sowie der unterschiedlichen Eintrittswahrscheinlichkeit und Schwere der mit der Verarbeitung verbundenen Risiken für die Rechte und Freiheiten natürlicher Personen sowohl zum Zeitpunkt der Festlegung der Mittel für die Verarbeitung als auch zum Zeitpunkt der eigentlichen Verarbeitung geeignete technische und organisatorische Maßnahmen treffen, wie z.B. Pseudonymisierung, die dafür ausgelegt sind, die Datenschutzgrundsätze wie etwa Datenminimierung wirksam umzusetzen."
+      },
+      "b": {
+        "law": "DORA",
+        "para": "Art. 5",
+        "title": "Leitlinien für Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten einführen",
+        "text": "Das Leitungsorgan muss Leitlinien einführen, die darauf abzielen, hohe Standards in Bezug auf die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten aufrechtzuerhalten."
+      },
+      "actionId": "technisch-organisatorische-massnahmen"
+    }
+  ]
+}
