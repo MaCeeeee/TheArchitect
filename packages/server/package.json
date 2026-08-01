@@ -40,6 +40,10 @@
     "relations:kappa": "ts-node src/scripts/relations-kappa.ts compare",
     "relations:baseline": "ts-node src/scripts/relations-baseline.ts",
     "relations:audit-interprets": "ts-node src/scripts/build-interprets-audit.ts",
+    "actions:slots": "ts-node src/scripts/obligation-slots.ts",
+    "actions:derive": "ts-node src/scripts/derive-action-catalog.ts",
+    "actions:eval": "ts-node src/evals/runActionEval.ts",
+    "actions:classify": "ts-node src/scripts/classify-obligations.ts",
     "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
     "migrate:severity": "ts-node src/scripts/migrate-severity-enforcement.ts"

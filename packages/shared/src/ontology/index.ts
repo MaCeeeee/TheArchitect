@@ -23,6 +23,7 @@ export {
   ProvisionKindSchema,
   RelationTypeSchema,
   PartyRoleSchema,
+  CanonicalActionSchema,
   NormSourceSchema,
   LanguageSchema,
   isInferredRelation,
@@ -36,6 +37,7 @@ export const OBLIGATION_KIND_IDS = NORM_ONTOLOGY.obligationKinds.map((o) => o.id
 export const PROVISION_KIND_IDS = NORM_ONTOLOGY.provisionKinds.map((p) => p.id);
 export const RELATION_TYPE_IDS = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 export const PARTY_ROLE_IDS = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
+export const CANONICAL_ACTION_IDS = NORM_ONTOLOGY.canonicalActions.map((a) => a.id);
 export const NORM_SOURCE_IDS = NORM_ONTOLOGY.normSources.map((s) => s.id);
 export const JURISDICTION_IDS = NORM_ONTOLOGY.jurisdictions.map((j) => j.id);
 export const LANGUAGE_IDS = NORM_ONTOLOGY.languages.map((l) => l.id);
@@ -49,12 +51,15 @@ const LANGUAGE_ID_SET = new Set<string>(LANGUAGE_IDS);
 const NORM_KIND_ID_SET = new Set<string>(NORM_KIND_IDS);
 const OBLIGATION_KIND_ID_SET = new Set<string>(OBLIGATION_KIND_IDS);
 const PROVISION_KIND_ID_SET = new Set<string>(PROVISION_KIND_IDS);
+const CANONICAL_ACTION_ID_SET = new Set<string>(CANONICAL_ACTION_IDS);
 export const isNormSource = (v: string): boolean => NORM_SOURCE_ID_SET.has(v);
 export const isJurisdiction = (v: string): boolean => JURISDICTION_ID_SET.has(v);
 export const isLanguage = (v: string): boolean => LANGUAGE_ID_SET.has(v);
 export const isNormKind = (v: string): boolean => NORM_KIND_ID_SET.has(v);
 export const isObligationKind = (v: string): boolean => OBLIGATION_KIND_ID_SET.has(v);
 export const isProvisionKind = (v: string): boolean => PROVISION_KIND_ID_SET.has(v);
+/** Bezugsgröße der Harmonisierung (THE-438) — Schreibgrenze wie die übrigen Facetten. */
+export const isCanonicalAction = (v: string): boolean => CANONICAL_ACTION_ID_SET.has(v);
 
 // ─── Derived convenience literal unions (authoring/UI only) ──────────
 export type NormKindId = (typeof NORM_ONTOLOGY.normKinds)[number]['id'];
@@ -63,6 +68,7 @@ export type ObligationKindId = (typeof NORM_ONTOLOGY.obligationKinds)[number]['i
 export type ProvisionKindId = (typeof NORM_ONTOLOGY.provisionKinds)[number]['id'];
 export type RelationTypeId = (typeof NORM_ONTOLOGY.relationTypes)[number]['id'];
 export type PartyRoleId = (typeof NORM_ONTOLOGY.partyRoles)[number]['id'];
+export type CanonicalActionId = (typeof NORM_ONTOLOGY.canonicalActions)[number]['id'];
 export type NormSourceId = (typeof NORM_ONTOLOGY.normSources)[number]['id'];
 export type JurisdictionId = (typeof NORM_ONTOLOGY.jurisdictions)[number]['id'];
 export type LanguageId = (typeof NORM_ONTOLOGY.languages)[number]['id'];

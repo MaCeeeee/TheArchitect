@@ -24,6 +24,17 @@ const NormKindEntry = z.object({
   bindingnessDefault: z.string().min(1),
 });
 const IdLabel = z.object({ id: z.string().min(1), label: z.string().min(1) });
+/**
+ * E6 — kanonische Handlung: die gesetzesneutrale MASSNAHME, auf die eine Pflicht
+ * zeigt. Bezugsgröße der Harmonisierung (THE-438/THE-538). `description` ist
+ * nicht dekorativ — der Klassifikations-Prompt wird daraus gebaut, deshalb
+ * erzwingt das Schema eine echte Länge statt nur `min(1)`.
+ */
+const CanonicalActionEntry = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  description: z.string().min(11),
+});
 const RelationTypeEntry = z.object({
   id: z.string().min(1),
   label: z.string().min(1),
@@ -51,6 +62,7 @@ export const NormOntologySchema = z.object({
   provisionKinds: z.array(IdLabel).min(1),
   relationTypes: z.array(RelationTypeEntry).min(1),
   partyRoles: z.array(PartyRoleEntry).min(1),
+  canonicalActions: z.array(CanonicalActionEntry).min(1),
   maturityScales: z.array(MaturityScaleEntry).min(1),
   jurisdictions: z.array(JurisdictionEntry).min(1),
   languages: z.array(IdLabel).min(1),
@@ -79,6 +91,7 @@ export function assertOntologyValid(ontology: unknown = NORM_ONTOLOGY): void {
     ['provisionKinds', o.provisionKinds.map((x) => x.id)],
     ['relationTypes', o.relationTypes.map((x) => x.id)],
     ['partyRoles', o.partyRoles.map((x) => x.id)],
+    ['canonicalActions', o.canonicalActions.map((x) => x.id)],
     ['jurisdictions', o.jurisdictions.map((x) => x.id)],
     ['languages', o.languages.map((x) => x.id)],
     ['assuranceSchemes', o.assuranceSchemes.map((x) => x.id)],
@@ -119,6 +132,7 @@ const obligationKindIds = NORM_ONTOLOGY.obligationKinds.map((o) => o.id);
 const provisionKindIds = NORM_ONTOLOGY.provisionKinds.map((p) => p.id);
 const relationIds = NORM_ONTOLOGY.relationTypes.map((r) => r.id);
 const partyRoleIds = NORM_ONTOLOGY.partyRoles.map((p) => p.id);
+const canonicalActionIds = NORM_ONTOLOGY.canonicalActions.map((a) => a.id);
 const sourceIds = NORM_ONTOLOGY.normSources.map((s) => s.id);
 const languageIds = NORM_ONTOLOGY.languages.map((l) => l.id);
 
@@ -128,6 +142,7 @@ export const ObligationKindSchema = makeMemberSchema(obligationKindIds, 'obligat
 export const ProvisionKindSchema = makeMemberSchema(provisionKindIds, 'provisionKinds');
 export const RelationTypeSchema = makeMemberSchema(relationIds, 'relationTypes');
 export const PartyRoleSchema = makeMemberSchema(partyRoleIds, 'partyRoles');
+export const CanonicalActionSchema = makeMemberSchema(canonicalActionIds, 'canonicalActions');
 export const NormSourceSchema = makeMemberSchema(sourceIds, 'normSources');
 export const LanguageSchema = makeMemberSchema(languageIds, 'languages');
 

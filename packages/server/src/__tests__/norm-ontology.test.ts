@@ -316,6 +316,7 @@ describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430 / THE-515)'
   });
 
   it('pins the shipped ontology version (deliberate gate, mirrors the CHANGELOG)', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.7.0');
+    // 1.8.0 — canonicalActions (THE-438/THE-538). Bewusst mit dem CHANGELOG bewegt.
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.8.0');
   });
 });
