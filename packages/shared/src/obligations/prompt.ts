@@ -99,6 +99,39 @@ export function buildSlotUserPrompt(o: ObligationRef): string {
   return renderObligation(o);
 }
 
+// ─── 1b. Vokabular-Ableitung ─────────────────────────────────────────────
+/**
+ * Leitet aus den FREIEN Handlungs-Formulierungen ein kanonisches Vokabular ab.
+ *
+ * Steht hier und nicht im Skript, weil REQ-REQHARM-001.0 eine WIEDERHOLBARE
+ * Ableitung verlangt: ein Prompt, der im Skript lebt, driftet gegenüber dem
+ * Katalog, den er einmal erzeugt hat.
+ *
+ * Bewusst OHNE Vorgabeliste und ohne Zielzahl. Gibt man eine Anzahl vor,
+ * produziert das Modell sie — und man misst die Vorgabe statt den Korpus. Der
+ * ausdrückliche Hinweis, dass „lässt sich nicht bündeln" eine zulässige
+ * Antwort ist, ist die Gegenprobe: ohne ihn erzeugt jedes Modell ein
+ * plausibles Vokabular, auch wenn keines existiert.
+ */
+export const DERIVE_SYSTEM = `Du leitest aus einer Liste regulatorischer Handlungs-Phrasen ein KANONISCHES HANDLUNGS-VOKABULAR ab.
+
+Regeln:
+- Jeder Eintrag ist eine gesetzesneutrale Maßnahme, die ein Unternehmen UMSETZEN kann
+  ("Vorfall an Aufsicht melden", "Daten verschlüsseln", "Wirksamkeit prüfen").
+- Granularität: so grob, dass verschiedene Gesetze denselben Eintrag treffen können —
+  so fein, dass er umsetzbar bleibt.
+- Leite AUS DEN DATEN ab. Erfinde keine Einträge, die die Liste nicht hergibt.
+  Erzwinge keine runde Zahl.
+- Wenn die Phrasen sich NICHT sinnvoll bündeln lassen, sag das (wenige, sehr breite
+  Einträge sind ein ehrliches Signal).
+
+Antworte NUR mit JSON: {"vokabular":[{"id":"kebab-case-id","label":"<englisch>","description":"<ein Satz, deutsch>"}],"anmerkung":"<was dir bei der Ableitung aufgefallen ist>"}`;
+
+/** Nummerierte Liste der freien Formulierungen — geblendet wie alles andere. */
+export function buildDeriveUserPrompt(phrases: string[]): string {
+  return phrases.map((p, i) => `${i + 1}. ${blindLawNames(p)}`).join('\n');
+}
+
 // ─── 2. Klassifikation ───────────────────────────────────────────────────
 const CATALOGUE = NORM_ONTOLOGY.canonicalActions
   .map((a) => `${a.id}: ${a.label} — ${a.description}`)

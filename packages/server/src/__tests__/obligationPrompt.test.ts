@@ -18,6 +18,8 @@ import {
   buildSlotUserPrompt,
   buildClassifyUserPrompt,
   buildPairJudgeUserPrompt,
+  buildDeriveUserPrompt,
+  DERIVE_SYSTEM,
   blindLawNames,
   parseSlots,
   parseActionAssignment,
@@ -118,6 +120,22 @@ describe('system prompts', () => {
     // misst man die Liste und nicht den Korpus.
     expect(SLOT_SYSTEM).not.toContain('vorfall-melden-behoerde');
     expect(SLOT_SYSTEM).not.toContain('technisch-organisatorische-massnahmen');
+  });
+
+  it('derives the vocabulary without prescribing a size or a list', () => {
+    // Gibt man eine Anzahl vor, produziert das Modell sie — dann misst man die
+    // Vorgabe statt den Korpus. Und "laesst sich nicht buendeln" muss eine
+    // zulaessige Antwort sein, sonst erzeugt jedes Modell ein plausibles
+    // Vokabular, auch wenn keines existiert.
+    expect(DERIVE_SYSTEM).not.toMatch(/\b(26|25|20|30)\b/);
+    expect(DERIVE_SYSTEM).not.toContain('vorfall-melden-behoerde');
+    expect(DERIVE_SYSTEM).toMatch(/NICHT sinnvoll bündeln/);
+  });
+
+  it('blinds the phrases fed into the derivation as well', () => {
+    const p = buildDeriveUserPrompt(['DSGVO-Verzeichnis nach Art. 30 führen', 'Vorfall melden']);
+    expect(p).not.toMatch(LAW_NAMES);
+    expect(p).toContain('Vorfall melden');
   });
 
   it('states the weak thesis in the judge rubric, not the strong one', () => {
