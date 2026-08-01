@@ -73,6 +73,13 @@ export interface ActionEvalResult {
   usable: Record<string, number>;
   /** caseIds je Arm — damit Stufen auf dem richtigen Nenner berichtet werden. */
   armCaseIds: { T: string[]; K: string[] };
+  /**
+   * Stimmen je Fall und Haus. Ohne sie sagt ein gerissenes Tor zwar DASS die
+   * Negativ-Kontrolle versagt hat, aber nicht WELCHES Paar — und die
+   * vorgeschriebene Abhilfe („Katalog-Eintrag aufteilen") wäre nicht
+   * ausführbar. Ein Befund, den man nicht lokalisieren kann, ist kein Befund.
+   */
+  votesByCase: Record<string, Record<string, Vote>>;
   stats: ReturnType<typeof actionGoldenStats>;
 }
 
@@ -152,6 +159,7 @@ export async function evaluateActions(
       T: set.cases.filter((c) => c.arm === 'T').map((c) => c.id),
       K: set.cases.filter((c) => c.arm === 'K').map((c) => c.id),
     },
+    votesByCase,
     stats: actionGoldenStats(set),
   };
 }
@@ -170,6 +178,12 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
     const d = r.armCaseIds[arm].length;
     return d ? `${Math.round((100 * n) / d)} %` : '—';
   };
+  // Fehlalarme lokalisieren: Arm-K-Fälle, in denen mindestens ein Haus "ja" sagte.
+  const falseAlarms = r.armCaseIds.K.map((id) => ({
+    id,
+    houses: r.houses.filter((h) => r.votesByCase[id]?.[h] === true),
+  })).filter((f) => f.houses.length > 0);
+
   const tierRow = (t: Tier, kriterium: string, verhalten: string): string =>
     `| ${t} | ${kriterium} | ${tierIn('T', t)} / ${r.armCaseIds.T.length} (${pctIn('T', tierIn('T', t))}) ` +
     `| ${tierIn('K', t)} / ${r.armCaseIds.K.length} | ${verhalten} |`;
@@ -196,6 +210,20 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
     '',
     'Die Arm-K-Spalte ist eine zweite Ablesung der Negativ-Kontrolle: dort muss überall 0 stehen.',
     '',
+    ...(falseAlarms.length
+      ? [
+          '### Fehlalarme der Negativ-Kontrolle',
+          '',
+          'Diese Paare tragen VERSCHIEDENE kanonische Handlungen, wurden aber als gemeinsam erfüllbar',
+          'beurteilt. Jedes einzelne ist zu adjudizieren: entweder ist der Katalog-Eintrag zu grob',
+          '(dann aufteilen) oder der Prüfsatz-Fall falsch einsortiert (dann korrigieren).',
+          '',
+          '| Fall | Haus/Häuser |',
+          '| --- | --- |',
+          ...falseAlarms.map((f) => `| \`${f.id}\` | ${f.houses.join(', ')} |`),
+          '',
+        ]
+      : []),
     '## Übereinstimmung der Häuser',
     '',
     '| Paar | κ | roh | n |',
@@ -249,8 +277,12 @@ async function main(): Promise<void> {
 
   const outPath = arg('--out');
   if (outPath) {
-    fs.mkdirSync(path.dirname(path.resolve(outPath)), { recursive: true });
-    fs.writeFileSync(path.resolve(outPath), md + '\n');
+    const abs = path.resolve(outPath);
+    fs.mkdirSync(path.dirname(abs), { recursive: true });
+    fs.writeFileSync(abs, md + '\n');
+    // Rohdaten daneben: ein Bericht ist zum Lesen, die Stimmen sind zum
+    // Nachrechnen. Ohne sie ist ein gerissenes Tor nicht lokalisierbar.
+    fs.writeFileSync(abs.replace(/\.md$/, '') + '.votes.json', JSON.stringify(result.votesByCase, null, 2) + '\n');
   }
   console.log(`\n${md}`);
 
