@@ -69,6 +69,62 @@ export function cohensKappa(a: boolean[], b: boolean[]): number | null {
   return pe === 1 ? null : (po - pe) / (1 - pe);
 }
 
+/**
+ * Cohen's Kappa über n Kategorien — die Verallgemeinerung von `cohensKappa` auf
+ * die typisierte Rubrik (`equal` · `subset` · `intersects` · `unrelated`).
+ *
+ * Warum es die binäre Fassung nicht ersetzt: `cohensKappa` bleibt für echte
+ * Ja/Nein-Reihen zuständig. Beide teilen dieselben zwei Regeln — `null` bei
+ * konstantem Prüfer (Prävalenz-Paradox) und Wurf bei ungleicher Länge.
+ *
+ * Der Grund für die n-kategoriale Fassung ist gemessen: auf denselben 120
+ * Fällen stieg das Kappa zwischen den Häusern von 0,308 auf 0,681, allein weil
+ * die Mittelkategorie existierte (`docs/evals/typed-relation-experiment.md`).
+ */
+export function relationKappa(a: string[], b: string[]): number | null {
+  if (a.length !== b.length) {
+    throw new Error(`relationKappa: ungleiche Länge (${a.length} vs ${b.length}) — Prüferreihen gehören paarweise zusammen`);
+  }
+  const n = a.length;
+  if (n === 0) return null;
+
+  // Ein konstanter Prüfer macht Kappa rechnerisch 0, ohne dass Uneinigkeit
+  // vorläge. Genau diese Falle hat das Wegwerf-Skript des Experiments erwischt:
+  // 98 % Rohübereinstimmung, kollabiertes Kappa 0,000.
+  if (new Set(a).size === 1 || new Set(b).size === 1) return null;
+
+  const labels = new Set([...a, ...b]);
+  let agree = 0;
+  for (let i = 0; i < n; i++) if (a[i] === b[i]) agree++;
+  const po = agree / n;
+
+  let pe = 0;
+  for (const l of labels) {
+    pe += (a.filter((v) => v === l).length / n) * (b.filter((v) => v === l).length / n);
+  }
+  return pe === 1 ? null : (po - pe) / (1 - pe);
+}
+
+/**
+ * Zählt die Zellen der Konfusionsmatrix als `"<a>|<b>"`.
+ *
+ * Ohne sie lässt ein Dissens sich nur zählen, nicht adjudizieren. Im Experiment
+ * war genau diese Matrix der Befund: 19 der 27 Meinungsverschiedenheiten sassen
+ * in der Zelle `intersects|intersects` — die Häuser waren sich einig, dass es
+ * teilweise ist, und wurden von der binären Frage auseinanderdividiert.
+ */
+export function relationConfusion(a: string[], b: string[]): Record<string, number> {
+  if (a.length !== b.length) {
+    throw new Error(`relationConfusion: ungleiche Länge (${a.length} vs ${b.length})`);
+  }
+  const out: Record<string, number> = {};
+  for (let i = 0; i < a.length; i++) {
+    const key = `${a[i]}|${b[i]}`;
+    out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
+
 export interface HouseAgreement {
   a: string;
   b: string;
@@ -198,6 +254,13 @@ export function buildActionReport(arms: { P: boolean[]; T: boolean[]; K: boolean
     valid && p.rate > 0
       ? `Arm T gegen die Decke des Instruments: ${((100 * t.rate) / p.rate).toFixed(0)} %.`
       : 'Lauf ungültig — Arm T wird bewusst nicht ausgewiesen.',
+    '',
+    // MV-9: Eine gefaltete Quote sieht aus wie eine gemessene. Wer sie zitiert,
+    // muss im selben Text lesen koennen, dass `intersects` NICHT eingerechnet
+    // ist — genau diese stille Zusammenlegung erzeugte die 35 %.
+    'Lesehinweis: Die Quoten sind binär. Wo typisierte Urteile zugrunde liegen, ' +
+      'sind sie über `foldRelation` **gefaltet** — `intersects` („gemeinsamer Kern, ' +
+      'ausgewiesene Zusätze") zählt dabei NICHT als Treffer.',
     '',
     reason,
   ].join('\n');

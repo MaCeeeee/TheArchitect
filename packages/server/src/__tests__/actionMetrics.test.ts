@@ -11,6 +11,8 @@
  */
 import {
   cohensKappa,
+  relationKappa,
+  relationConfusion,
   pairwiseKappa,
   tierFor,
   armRates,
@@ -167,5 +169,61 @@ describe('coherence gate (THE-438)', () => {
   it('treats an unmeasurable kappa as NOT meeting the gate', () => {
     // null heisst "nicht bestimmbar", nicht "bestanden".
     expect(meetsCoherenceGate(null)).toBe(false);
+  });
+});
+
+/**
+ * Typ-Kappa (THE-382 Slice 1, Task 2).
+ *
+ * Warum n-kategorial statt binaer: auf denselben 120 Faellen stieg das Kappa
+ * zwischen den Haeusern von 0,308 auf 0,681, allein weil die Mittelkategorie
+ * `intersects` existierte. Ein binaeres Kappa haette diesen Gewinn nicht
+ * abbilden koennen — es haette die Mittelfaelle wieder zu Muenzwuerfen gemacht.
+ */
+describe('relationKappa (THE-382)', () => {
+  it('computes kappa over four categories', () => {
+    const a = ['equal', 'intersects', 'unrelated', 'intersects'] as const;
+    const b = ['equal', 'intersects', 'unrelated', 'unrelated'] as const;
+    expect(relationKappa([...a], [...b])).toBeGreaterThan(0.5);
+  });
+
+  it('reports perfect agreement as 1 when the categories actually vary', () => {
+    const a = ['equal', 'intersects', 'unrelated'] as const;
+    expect(relationKappa([...a], [...a])).toBeCloseTo(1, 6);
+  });
+
+  it('returns null when a rater is constant — same rule as cohensKappa', () => {
+    // Die Praevalenzfalle, in die das Wegwerf-Analyseskript des Experiments
+    // gelaufen ist: 98 % Rohuebereinstimmung, kollabiertes Kappa 0,000. Eine 0
+    // an dieser Stelle wuerde perfekte Uebereinstimmung als Totaldissens
+    // ausweisen. "Nicht bestimmbar" ist die ehrliche Antwort.
+    expect(relationKappa(['intersects', 'intersects'], ['intersects', 'unrelated'])).toBeNull();
+  });
+
+  it('throws on unequal length instead of silently comparing the first n', () => {
+    expect(() => relationKappa(['equal'], ['equal', 'unrelated'])).toThrow(/ungleiche Länge/);
+  });
+
+  it('reports WHERE the disagreement sits, not just how much', () => {
+    // Ohne die Konfusionsmatrix laesst ein Dissens sich nicht adjudizieren,
+    // nur zaehlen — derselbe Grund wie bei den namentlichen Fehlalarmen.
+    const m = relationConfusion(['equal', 'intersects'], ['intersects', 'intersects']);
+    expect(m['equal|intersects']).toBe(1);
+    expect(m['intersects|intersects']).toBe(1);
+  });
+
+  it('surfaces the finding that carried the experiment: both sides intersects', () => {
+    // 19 der 27 binaeren Meinungsverschiedenheiten sassen in dieser einen Zelle.
+    const m = relationConfusion(['intersects', 'intersects', 'equal'], ['intersects', 'intersects', 'unrelated']);
+    expect(m['intersects|intersects']).toBe(2);
+  });
+});
+
+describe('foldRelation-Nutzung im Report (THE-382)', () => {
+  it('names the folding explicitly wherever a binary view is shown', () => {
+    // Eine gefaltete Quote sieht aus wie eine gemessene. Wer sie zitiert, muss
+    // im selben Text lesen koennen, dass `intersects` NICHT eingerechnet ist.
+    const md = buildActionReport({ P: [true], T: [true], K: [false] }).markdown;
+    expect(md).toMatch(/gefaltet|Faltung/i);
   });
 });
