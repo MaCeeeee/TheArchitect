@@ -44,6 +44,7 @@
     "actions:derive": "ts-node src/scripts/derive-action-catalog.ts",
     "actions:eval": "ts-node src/evals/runActionEval.ts",
     "pairs:worksheet": "ts-node src/scripts/pair-worksheet.ts",
+    "pairs:ingest": "ts-node src/scripts/pair-ingest.ts",
     "actions:classify": "ts-node src/scripts/classify-obligations.ts",
     "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
