@@ -11,7 +11,7 @@
 import {
   isConsumableTyping,
   resolveTypedAddressees,
-  compareAddressees,
+  partyCoverage,
   type TypedProvisionDoc,
 } from '../services/typedProvision.service';
 
@@ -99,35 +99,31 @@ describe('resolveTypedAddressees (THE-540)', () => {
   });
 });
 
-describe('compareAddressees — die Gegenprobe (THE-540)', () => {
-  it('counts coverage of both paths and their overlap', () => {
-    const r = compareAddressees([
-      { fromLlm: 'Verantwortlicher', fromTyping: 'controller' },
-      { fromLlm: '—', fromTyping: 'controller' },
-      { fromLlm: 'Einrichtung', fromTyping: null },
-      { fromLlm: '—', fromTyping: null },
+describe('partyCoverage — Abdeckung je Partei (THE-540)', () => {
+  it('counts both party slots separately', () => {
+    const r = partyCoverage([
+      { adressat: 'controller', empfaenger: 'Aufsichtsbehörde' },
+      { adressat: 'controller', empfaenger: '—' },
+      { adressat: null, empfaenger: 'betroffene Person' },
+      { adressat: null, empfaenger: '—' },
     ]);
-    expect(r).toMatchObject({ total: 4, llmFilled: 2, typedFilled: 2, bothFilled: 1, eitherFilled: 3 });
+    expect(r).toEqual({ total: 4, adressatFilled: 2, empfaengerFilled: 2, bothFilled: 1 });
   });
 
-  it('reports the gain of the join over the LLM path alone', () => {
-    // Die Zahl, an der das Ticket haengt: hebt der Join die Abdeckung wirklich?
-    const r = compareAddressees([
-      { fromLlm: '—', fromTyping: 'controller' },
-      { fromLlm: '—', fromTyping: 'processor' },
-      { fromLlm: 'Verantwortlicher', fromTyping: null },
-    ]);
-    expect(r.llmFilled).toBe(1);
-    expect(r.eitherFilled).toBe(3);
-    expect(r.gainOverLlm).toBe(2);
+  it('does NOT compare the two slots against each other', () => {
+    // Seit dem Split tragen sie bewusst Verschiedenes: "controller" (wer ist
+    // verpflichtet) und "Aufsichtsbehoerde" (an wen). Eine Abweichung ist die
+    // richtige Antwort auf zwei Fragen, kein Fehler — deshalb gibt es hier
+    // keinen Uebereinstimmungs-Wert mehr.
+    const r = partyCoverage([{ adressat: 'controller', empfaenger: 'Aufsichtsbehörde' }]);
+    expect(Object.keys(r)).toEqual(['total', 'adressatFilled', 'empfaengerFilled', 'bothFilled']);
   });
 
   it('treats the unstated marker as empty, not as a value', () => {
-    const r = compareAddressees([{ fromLlm: '—', fromTyping: null }]);
-    expect(r.llmFilled).toBe(0);
+    expect(partyCoverage([{ adressat: null, empfaenger: '—' }]).empfaengerFilled).toBe(0);
   });
 
   it('handles an empty sample without dividing by zero', () => {
-    expect(compareAddressees([])).toMatchObject({ total: 0, llmFilled: 0, gainOverLlm: 0 });
+    expect(partyCoverage([])).toEqual({ total: 0, adressatFilled: 0, empfaengerFilled: 0, bothFilled: 0 });
   });
 });

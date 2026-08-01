@@ -115,6 +115,15 @@ describe('system prompts', () => {
     expect(CLASSIFY_SYSTEM).toContain('technisch-organisatorische-massnahmen');
   });
 
+  it('asks for the RECIPIENT, not the obliged party (THE-540)', () => {
+    // Der Slot hiess `adressat` und fragte nach dem Verpflichteten — geliefert
+    // wurde ueberwiegend der Empfaenger. Der Prompt fragt jetzt danach, was das
+    // Modell ohnehin liefert, und sagt ausdruecklich, was NICHT gemeint ist.
+    expect(SLOT_SYSTEM).toContain('empfaenger');
+    expect(SLOT_SYSTEM).toMatch(/NICHT wer verpflichtet ist/);
+    expect(SLOT_SYSTEM).not.toMatch(/- adressat:/);
+  });
+
   it('keeps the slot prompt free of a predefined action vocabulary', () => {
     // Erst FREI extrahieren, dann Vokabular ableiten. Gibt man die Liste vor,
     // misst man die Liste und nicht den Korpus.
@@ -148,7 +157,7 @@ describe('system prompts', () => {
 
 describe('parsers', () => {
   it('parses a slot decomposition and survives fenced JSON', () => {
-    const raw = '```json\n{"handlung":"melden","adressat":"Verantwortlicher","modalitaet":"pflicht","bedingung":"72h"}\n```';
+    const raw = '```json\n{"handlung":"melden","empfaenger":"Aufsichtsbehörde","modalitaet":"pflicht","bedingung":"72h"}\n```';
     expect(parseSlots(raw)?.handlung).toBe('melden');
   });
 

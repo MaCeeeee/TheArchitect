@@ -2,20 +2,40 @@
  * Slot-Zerlegung einer Pflicht (THE-438 Slice 1).
  *
  * WARUM VIER SLOTS UND NICHT EIN TEXT: Harmonisierung lebt auf genau EINEM
- * davon — der `handlung`. `adressat` und `bedingung` sind die
+ * davon — der `handlung`. `empfaenger` und `bedingung` sind die
  * ABWEICHUNGSTRÄGER: sie werden ausgewiesen, nie eingeebnet. Würde man sie
  * wegmitteln, entstünde genau der Compliance-Fehler, den die Negativ-Kontrolle
  * des Evals verhindern soll — zwei Meldepflichten mit verschiedenen Behörden
  * und Fristen sind NICHT dieselbe Pflicht.
+ *
+ * ── WARUM `empfaenger` UND NICHT `adressat` (THE-540) ──
+ *
+ * Der Slot hieß bis 2026-08-01 `adressat` und sollte den VERPFLICHTETEN tragen.
+ * Gemessen an 219 Pflichten lieferte das Modell dort aber überwiegend den
+ * EMPFÄNGER: bei DSGVO Art. 33 „Aufsichtsbehörde", während die typisierte
+ * Provision `controller` trägt — verpflichtet ist der Verantwortliche,
+ * Empfänger die Behörde. Übereinstimmung beider Wege: rund 4 von 20
+ * Provisions.
+ *
+ * Der Wert war also nicht falsch, sondern etwas anderes — und das Wertvollere:
+ * Bei „Vorfall an Behörde melden" ist der Verpflichtete oft dieselbe Klasse,
+ * aber Aufsichtsbehörde vs. CSIRT vs. Finanzaufsicht ist genau die Abweichung,
+ * die eine gemeinsame Meldekette parametrieren muss. Deshalb wurde der Slot
+ * umbenannt statt gelöscht, und der Prompt fragt jetzt danach, was das Modell
+ * ohnehin liefert.
+ *
+ * Der VERPFLICHTETE kommt nicht mehr von hier, sondern aus der typisierten
+ * Provision (`partyRole`, Abdeckung 100 % gegen 48 % aus der Zerlegung) —
+ * siehe `services/typedProvision.service.ts`.
  *
  * ── WAS DIE SLOTS TATSÄCHLICH TRAGEN (gemessen, 219 Pflichten, THE-542) ──
  *
  *   handlung   219/219 = 100 %, 216 verschiedene Formulierungen
  *   bedingung  205/219 =  94 %, 191 verschiedene — der tragende Abweichungsträger
  *              (82 % der gesetzesübergreifenden Paare zeigen hier ein Delta)
- *   adressat   105/219 =  48 % — trägt NUR DIE HÄLFTE. Der Adressat steht meist
- *              im Geltungsbereichs-Artikel, nicht in der Pflicht. Abhilfe:
- *              aus `partyRole` der typisierten Provision joinen (THE-540).
+ *   empfaenger 105/219 =  48 % — gemessen wurde der Slot unter seinem alten
+ *              Namen `adressat`. Die Quote gilt für das, was das Modell dort
+ *              tatsächlich lieferte: den Empfänger.
  *   modalitaet 219/219 = 100 %, aber nur 2 Werte belegt (pflicht 210,
  *              erlaubnis 9, verbot 0).
  *
@@ -40,9 +60,10 @@
  * (Art. 9 Abs. 2, Art. 49, DORA Art. 4) werden korrekt als `erlaubnis`
  * erkannt (4/5 in der Kontrolle).
  *
- * WARUM FREITEXT STATT WERTERAUM: Zwei der vier Slots hat die Ontologie
- * bereits (`partyRole` ≙ adressat, `obligationKind` ≙ modalitaet). Trotzdem
- * werden `handlung`, `adressat` und `bedingung` hier als Freitext geführt: die
+ * WARUM FREITEXT STATT WERTERAUM: Die Ontologie führt `obligationKind` als
+ * geschlossenen Werteraum, und `partyRole` deckt den VERPFLICHTETEN ab (der
+ * hier gar nicht mehr steht). Trotzdem
+ * werden `handlung`, `empfaenger` und `bedingung` hier als Freitext geführt: die
  * Zerlegung folgt dem Gesetzestext und darf nicht in einen Werteraum gezwungen
  * werden. Ein erzwungener Wert ist der Hauptfehlermodus (Schema-Blindheit) —
  * und die freie Formulierung ist die EINGABE der Vokabular-Ableitung. Würde
@@ -72,10 +93,15 @@ export const ObligationSlotsSchema = z.object({
    * Verbatim gespeichert, nicht getrimmt oder normalisiert (siehe Kopf).
    */
   handlung: z.string().min(1),
-  /** Wer verpflichtet ist. Abweichungsträger — `SLOT_UNSTATED`, wenn ungenannt. */
-  adressat: z.string().min(1),
+  /**
+   * An WEN / gegenüber wem zu leisten ist — Behörde, betroffene Person, Kunde.
+   * Abweichungsträger; `SLOT_UNSTATED`, wenn ungenannt.
+   *
+   * NICHT der Verpflichtete: der kommt aus der typisierten Provision (THE-540).
+   */
+  empfaenger: z.string().min(1),
   modalitaet: z.enum(OBLIGATION_MODALITIES),
-  /** Frist, Schwelle, Auslöser. Abweichungsträger wie `adressat`. */
+  /** Frist, Schwelle, Auslöser. Abweichungsträger wie `empfaenger`. */
   bedingung: z.string().min(1),
 });
 

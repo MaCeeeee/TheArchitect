@@ -25,10 +25,17 @@
  *
  * ── WAS DIESER DIENST NICHT TUT ──
  *
- * Er überschreibt den LLM-Wert NICHT. Beide Wege werden nebeneinander geführt,
- * bis die Gegenprobe (`compareAddressees`) gemessen hat, ob sie übereinstimmen.
- * Erst danach darf einer abgeschaltet werden — sonst ersetzt man eine ungeprüfte
- * Quelle durch eine andere ungeprüfte.
+ * Er überschreibt den LLM-Wert NICHT — und das hat sich ausgezahlt. Die
+ * Gegenprobe ergab, dass beide Wege gar nicht dasselbe messen: die Zerlegung
+ * lieferte überwiegend den EMPFÄNGER („Aufsichtsbehörde" bei DSGVO Art. 33),
+ * die Typisierung den VERPFLICHTETEN (`controller`). Übereinstimmung: rund
+ * 4 von 20 Provisions.
+ *
+ * Konsequenz war der Slot-Split, nicht die Abschaltung eines Weges: der
+ * Verpflichtete kommt aus der Typisierung, die Gegenpartei bleibt als
+ * `empfaenger` in der Zerlegung. Hätte der Join den Wert einfach
+ * überschrieben, wäre der wertvollere der beiden verloren gegangen — bei
+ * Meldeketten ist der Empfänger die Abweichung, die zählt.
  *
  * `obligationKind` bleibt bewusst ungenutzt: die Achse liegt mit zuletzt
  * macro-F1 0,579 unter ihrer Freigabe-Schwelle von 0,75 (THE-540 Achse 2,
@@ -103,43 +110,38 @@ export async function resolveTypedAddressees(
 const isFilled = (v: string | null | undefined): boolean =>
   Boolean(v) && String(v).trim() !== '' && String(v).trim() !== SLOT_UNSTATED;
 
-export interface AddresseeComparison {
+export interface PartyCoverage {
   total: number;
-  /** Pflichten, für die die Zerlegung einen Adressaten lieferte. */
-  llmFilled: number;
-  /** Pflichten, für die der Korpus einen lieferte. */
-  typedFilled: number;
-  /** Pflichten, für die BEIDE lieferten — nur hier ist ein Vergleich möglich. */
+  /** Verpflichteter — aus der typisierten Provision. */
+  adressatFilled: number;
+  /** Gegenpartei — aus der Zerlegung. */
+  empfaengerFilled: number;
+  /** Pflichten, bei denen beide Parteien bekannt sind. */
   bothFilled: number;
-  /** Pflichten, für die mindestens einer lieferte. */
-  eitherFilled: number;
-  /** Zuwachs des Joins gegenüber dem LLM-Weg allein. Die Zahl, an der das Ticket hängt. */
-  gainOverLlm: number;
 }
 
 /**
- * Gegenprobe zwischen beiden Wegen.
+ * Abdeckung der beiden Parteien-Slots.
  *
- * Bewusst KEIN Wert-Vergleich `fromLlm === fromTyping`: die Zerlegung liefert
- * Freitext („Verantwortlicher"), der Korpus eine Ontologie-Rolle
- * (`controller`). Sie sind nicht string-gleich und sollen es nicht sein. Was
- * hier gemessen wird, ist die ABDECKUNG — ob die inhaltliche Zuordnung stimmt,
- * ist eine Adjudikations-Frage und keine, die ein `===` beantwortet.
+ * Ersetzt die frühere `compareAddressees`, die beide Wege GEGENEINANDER gemessen
+ * hat. Diese Gegenprobe hat ihre Frage beantwortet — und zwar mit einem
+ * Befund, der die Frage selbst hinfällig macht: Die Zerlegung lieferte
+ * überwiegend den EMPFÄNGER, die Typisierung den VERPFLICHTETEN (rund 4 von 20
+ * Provisions stimmten überein, THE-540). Seit dem Slot-Split tragen beide
+ * bewusst verschiedene Inhalte.
+ *
+ * Sie weiter zu vergleichen wäre ein Kategorienfehler: eine Abweichung zwischen
+ * „controller" und „Aufsichtsbehörde" ist kein Fehler, sondern die richtige
+ * Antwort auf zwei verschiedene Fragen. Gemessen wird deshalb nur noch die
+ * Abdeckung je Slot.
  */
-export function compareAddressees(
-  pairs: Array<{ fromLlm: string | null | undefined; fromTyping: string | null | undefined }>,
-): AddresseeComparison {
-  const llmFilled = pairs.filter((p) => isFilled(p.fromLlm)).length;
-  const typedFilled = pairs.filter((p) => isFilled(p.fromTyping)).length;
-  const bothFilled = pairs.filter((p) => isFilled(p.fromLlm) && isFilled(p.fromTyping)).length;
-  const eitherFilled = pairs.filter((p) => isFilled(p.fromLlm) || isFilled(p.fromTyping)).length;
-
+export function partyCoverage(
+  rows: Array<{ adressat: string | null | undefined; empfaenger: string | null | undefined }>,
+): PartyCoverage {
   return {
-    total: pairs.length,
-    llmFilled,
-    typedFilled,
-    bothFilled,
-    eitherFilled,
-    gainOverLlm: eitherFilled - llmFilled,
+    total: rows.length,
+    adressatFilled: rows.filter((r) => isFilled(r.adressat)).length,
+    empfaengerFilled: rows.filter((r) => isFilled(r.empfaenger)).length,
+    bothFilled: rows.filter((r) => isFilled(r.adressat) && isFilled(r.empfaenger)).length,
   };
 }
