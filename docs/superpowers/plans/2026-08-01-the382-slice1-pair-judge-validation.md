@@ -1,14 +1,14 @@
-# THE-382 Slice 1 — Paar-Richter gegen Menschen validieren
+# THE-382 Slice 1 — Typisierter Paar-Richter, gegen Menschen validiert
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Messen, ob der Paar-Richter mit einem menschlichen Urteil übereinstimmt — und die veröffentlichte Harmonisierungs-Quote von 35 % dadurch bestätigen, korrigieren oder zurückziehen.
+**Goal:** Den Paar-Richter von Ja/Nein auf die vier typisierten Beziehungen nach NIST IR 8477 umstellen und **gegen ein menschliches Urteil** validieren — damit die Harmonisierungs-Aussage erstmals einen Anker außerhalb unserer eigenen Modelle bekommt.
 
-**Architecture:** Ein menschliches Gold entsteht **neben** dem eingefrorenen `actions.v1`, adjudiziert über ein blindes HTML-Arbeitsblatt nach dem Muster von `relations-worksheet`. Kanarienvögel entstehen **mechanisch** durch Partner-Tausch (kein LLM). Metriken und Tore kommen in die bestehenden reinen Module; der Harness bekommt die Catch-Rate als zweite Vorbedingung neben der Positiv-Kontrolle.
+**Architecture:** Die Rubrik wird **vor** allem anderen typisiert (`equal` · `subset` · `intersects` · `unrelated`), weil ein binäres Gold Menschen auf eine nachweislich kaputte Frage adjudizieren ließe. Menschliches Gold entsteht **neben** dem eingefrorenen `actions.v1` über ein blindes Arbeitsblatt. Kanarienvögel entstehen **mechanisch** durch Partner-Tausch. Catch-Rate wird zweite Vorbedingung neben der Positiv-Kontrolle.
 
-**Tech Stack:** TypeScript (server), Zod, Jest, `raterClient` (Mehrhaus), bestehende Golden-/Kappa-Maschinerie.
+**Tech Stack:** TypeScript (shared + server), Zod, Jest, `raterClient` (Mehrhaus), bestehende Golden-/Kappa-Maschinerie.
 
-**Linear:** THE-382 Slice 1 (Epic THE-378) · betrifft THE-438
+**Linear:** THE-382 Slice 1 (Epic THE-378) · betrifft THE-438, THE-541
 
 **RVTM:** `docs/superpowers/rvtm/2026-08-01-the382-slice1-pair-judge-validation-rvtm.md`
 
@@ -16,42 +16,51 @@
 
 ## Kontext, den du brauchst
 
-### Warum dieser Slice existiert
+### Warum dieser Plan umgeschrieben wurde
 
-Der Paar-Richter entscheidet: *„Erfüllt EINE betriebene Maßnahme beide Pflichten, wenn Adressat und Frist als Parameter geführt werden?"* Auf seinem Urteil ruhen die veröffentlichte Quote **35 % (Mehrheit) / 18 % (einstimmig)**, die Konfidenzstufen A/B/C und die Freigabe-Tore.
+Die erste Fassung wollte den **binären** Richter gegen Menschen validieren. Ein Experiment am 2026-08-01 hat gezeigt, dass die Binarität selbst der Defekt ist — Belege vollständig in [`docs/evals/typed-relation-experiment.md`](../../evals/typed-relation-experiment.md):
 
-Was existiert, sind **strukturelle** Kontrollen: Arm P (dieselbe Pflicht, muss „ja") und Arm K (verschiedene kanonische Handlung, muss „nein"), plus Kappa zwischen drei Modell-Häusern (0,308–0,697).
+| | κ Haiku ↔ Kimi |
+|---|---|
+| binär | **0,308** |
+| vier Typen, **sonst alles identisch** | **0,681** |
 
-> **Das ist Konsistenz, nicht Richtigkeit.** Drei Häuser können sich einig und gemeinsam irren. Die Kontrollen belegen, dass das Instrument *funktioniert* — nicht, dass sein Urteil *stimmt*.
+**70 %** der binären Meinungsverschiedenheiten sind Fälle, in denen **beide** Häuser `intersects` sagen. Sie waren sich einig, dass es *teilweise* ist; der Zwang zum Ja/Nein hat sie auseinanderdividiert.
 
-Die Zahlen sind damit **nicht widerlegt, sondern unbelegt**. Dieser Slice liefert den fehlenden Anker.
+Und der schwerere Befund: **`equal` kam in 120 Fällen kein einziges Mal vor** — bei wortgleicher Definition. Die veröffentlichten 35 % waren nicht „eine Maßnahme erfüllt beide", sondern die Mittelkategorie, nach oben gedrückt.
 
-### Zwei Entwurfsentscheidungen, die du nicht umdrehen darfst
+> **Konsequenz für diesen Plan:** Erst die Rubrik reparieren, dann Menschen fragen. Ein menschliches Gold auf der binären Frage wäre teuer erhobener Müll.
+
+### Was der Katalog weiterhin leistet
+
+Arm T → `intersects` 37 / `unrelated` 8 · Arm K → `unrelated` 55 / `intersects` 1.
+
+Die kanonische Handlung findet **zusammengehörige** Pflichten zuverlässig. Sie findet nur keine **deckungsgleichen**. Die Entscheidung aus THE-538 steht; nur die Deutung ändert sich.
+
+### Drei Entwurfsentscheidungen, die du nicht umdrehen darfst
 
 **1. Der Mensch sieht dieselbe geblendete Darstellung wie der Richter.**
-
-Der Richter urteilt über geblendeten Text — ohne Gesetzesnamen und Fundstellen (gemessen: ungeblendet 7/15, geblendet 15/15). Bekäme der Mensch mehr Information, wäre jede Abweichung doppeldeutig: Urteilsunterschied *oder* Informationsvorsprung. Dann misst der Kappa nicht mehr die Frage, die er messen soll.
-
-Der Preis ist real — dem Menschen fehlt Kontext, den er normalerweise hätte. Er wird bewusst bezahlt und im Report ausgewiesen.
+Bekäme er mehr Information, wäre jede Abweichung doppeldeutig — Urteilsunterschied *oder* Informationsvorsprung — und der Kappa misst etwas anderes. Der Preis (fehlender Kontext) wird bewusst gezahlt und im Report ausgewiesen.
 
 **2. Das menschliche Gold entsteht NEBEN `actions.v1`, nicht darin.**
+Der Prüfsatz bleibt eingefroren, sonst verliert die Vorher/Nachher-Aussage ihren Bezugspunkt.
 
-Der Prüfsatz ist eingefroren. Ein zweites, menschlich gelabeltes Set referenziert seine `caseId`s. Würde man `actions.v1` anreichern, wäre der Prüfsatz, gegen den die 35 % gemessen wurden, nicht mehr derselbe — und die Vorher/Nachher-Aussage verlöre ihren Bezugspunkt.
+**3. `intersects` wird nicht wegdefiniert.**
+Die Versuchung ist groß, `intersects` mit `equal` zusammenzuwerfen, damit die Quote wieder gut aussieht. Genau das war der ursprüngliche Fehler. Die vier Typen bleiben getrennt; wo eine binäre Sicht nötig ist, wird die Faltung **explizit benannt**.
 
-### Konventionen, die gelten
+### Konventionen
 
 | Regel | Warum |
 |---|---|
-| Tests für shared-Logik liegen in `packages/server/src/__tests__/` | `packages/shared` hat keinen Test-Runner |
-| Reine Module (kein I/O) für alles Rechnende | Muster `actionMetrics.ts`, `typingMetrics.ts` — vollständig testbar |
-| Worksheet-Renderer ist eine **reine Funktion** `(set) => string` | Muster `renderRelationsWorksheet` |
+| Tests für shared-Logik in `packages/server/src/__tests__/` | `packages/shared` hat keinen Test-Runner |
+| Prompts in `packages/shared/src/obligations/prompt.ts` | Eval und Produktion müssen byteidentische Prompts benutzen |
+| Reine Module für alles Rechnende | Muster `actionMetrics.ts` |
 | Kein `??` für Env-Fallbacks, immer `||` | Env-Variablen sind hier oft vorhanden aber leer |
-| UI-Strings Englisch, Kommentare Deutsch | Projektkonvention |
 
 ### Was dieser Slice NICHT tut
 
-- **Keine Prompt-Verbesserung.** Leitsatz des Epics: *„Das erste Ergebnis ist eine Zahl, kein besserer Prompt."*
-- **Kein Mapping-Richter** — das ist Slice 2 und braucht ein Fachurteil.
+- **Keine Prompt-Optimierung.** Die Typisierung ist eine Rubrik-Reparatur, kein Tuning.
+- **Kein Mapping-Richter** — Slice 2, braucht ein Fachurteil.
 - **Keine Änderung an `actions.v1`.**
 
 ---
@@ -60,107 +69,64 @@ Der Prüfsatz ist eingefroren. Ein zweites, menschlich gelabeltes Set referenzie
 
 | Datei | Verantwortung |
 |---|---|
+| `packages/shared/src/obligations/prompt.ts` *(ändern)* | `PAIR_RELATION_SYSTEM` + `parsePairRelation` — die typisierte Rubrik |
 | `packages/server/src/evals/pairGold.ts` *(neu)* | Schema + Loader des menschlichen Golds, deterministische Stichprobe |
-| `packages/server/src/evals/canaries.ts` *(neu)* | Partner-Tausch-Kanarienvögel, mechanisch; Catch-Rate |
-| `packages/server/src/evals/actionMetrics.ts` *(ändern)* | Richter↔Mensch-Übereinstimmung, Canary-Tor, Kollaps-Erkennung |
-| `packages/server/src/evals/runActionEval.ts` *(ändern)* | Canary-Injektion, Catch-Rate als 2. Vorbedingung, Verdikt-Verteilung |
-| `packages/server/src/scripts/pair-worksheet.ts` *(neu)* | Blindes HTML-Arbeitsblatt für die Adjudikation |
-| `packages/server/src/scripts/pair-ingest.ts` *(neu)* | Arbeitsblatt-Ausgabe → `actions.human.v1.json` |
-| `packages/server/src/scripts/pair-agreement.ts` *(neu)* | Der Vergleichslauf: Richter vs. Mensch |
-| `packages/server/src/evals/golden/actions.human.v1.json` *(neu, von Hand)* | Das menschliche Gold |
-
-**Tests:** `pairGold.test.ts` · `canaries.test.ts` · `actionMetrics.test.ts` *(erweitern)* · `runActionEval.test.ts` *(erweitern)* · `pairWorksheet.test.ts`
+| `packages/server/src/evals/canaries.ts` *(neu)* | Partner-Tausch-Kanarienvögel, Catch-Rate |
+| `packages/server/src/evals/actionMetrics.ts` *(ändern)* | Typ-Kappa, Richter↔Mensch, Canary-Tor, Kollaps-Erkennung |
+| `packages/server/src/evals/runActionEval.ts` *(ändern)* | typisierte Urteile, Canary-Injektion, Verteilungen |
+| `packages/server/src/scripts/pair-worksheet.ts` *(neu)* | Blindes HTML-Arbeitsblatt, vier Optionen |
+| `packages/server/src/scripts/pair-ingest.ts` *(neu)* | Arbeitsblatt → `actions.human.v1.json` |
+| `packages/server/src/scripts/pair-agreement.ts` *(neu)* | Vergleichslauf Richter ↔ Mensch |
+| `packages/server/src/evals/golden/typed-relation.experiment.json` *(vorhanden)* | Rohdaten des Experiments, 120 × 2 Häuser |
 
 **npm-Aliasse:** `pairs:worksheet` · `pairs:ingest` · `pairs:agreement`
 
 ---
 
-## Chunk 1: Menschliches Gold
+## Chunk 1: Die Rubrik typisieren
 
-### Task 1: Schema, Loader, deterministische Stichprobe
+### Task 1: `PAIR_RELATION_SYSTEM` in shared
 
 **Files:**
-- Create: `packages/server/src/evals/pairGold.ts`
-- Test: `packages/server/src/__tests__/pairGold.test.ts`
+- Modify: `packages/shared/src/obligations/prompt.ts`
+- Test: `packages/server/src/__tests__/obligationPrompt.test.ts` *(erweitern)*
 
-- [ ] **Step 1: Schreibe den fehlschlagenden Test**
+- [ ] **Step 1: Schreibe die fehlschlagenden Tests**
 
 ```ts
-/**
- * Tests für das menschliche Paar-Gold (THE-382 Slice 1, Task 1).
- *
- * Das Gold entsteht NEBEN `actions.v1`, nicht darin — der Prüfsatz bleibt
- * eingefroren, sonst verliert die Vorher/Nachher-Aussage ihren Bezugspunkt.
- */
-import { PairGoldSchema, samplePairs, loadPairGold, type PairGold } from '../evals/pairGold';
-import { loadActionGolden } from '../evals/actionGolden';
-
-describe('PairGold — Schema (THE-382)', () => {
-  const valid: PairGold = {
-    version: 'actions.human.v1',
-    frozen: false,
-    sourceSet: 'actions.v1',
-    annotator: 'human:ea',
-    blinded: true,
-    verdicts: [{ caseId: 'x__y', same: true, note: 'eine Meldekette bedient beide' }],
-  };
-
-  it('accepts a decision set', () => {
-    expect(PairGoldSchema.safeParse(valid).success).toBe(true);
+describe('PAIR_RELATION_SYSTEM — typisierte Beziehung (THE-382)', () => {
+  it('offers all four IR 8477 relations', () => {
+    for (const r of ['equal', 'subset', 'intersects', 'unrelated']) {
+      expect(PAIR_RELATION_SYSTEM).toContain(r);
+    }
   });
 
-  it('records that the human saw the BLINDED rendering', () => {
-    // Sonst waere eine Abweichung doppeldeutig: Urteilsunterschied oder
-    // Informationsvorsprung. Der Kappa wuerde etwas anderes messen.
-    expect(PairGoldSchema.safeParse({ ...valid, blinded: false }).success).toBe(true);
-    expect(Object.keys(PairGoldSchema.shape)).toContain('blinded');
+  it('keeps the equal-definition WORD-IDENTICAL to the old binary yes', () => {
+    // Genau darauf beruht der Befund: dieselbe Definition, nur mit
+    // Ausweichmoeglichkeit, faellt die Ja-Quote von 35 % auf 0 %. Aendert
+    // jemand diese Formulierung, ist der Vergleich zur Messung hinfaellig.
+    expect(PAIR_RELATION_SYSTEM).toMatch(/Unterschiede beschränken sich auf Parameter/);
   });
 
-  it('requires the source set so the reference point stays traceable', () => {
-    const { sourceSet: _drop, ...without } = valid;
-    expect(PairGoldSchema.safeParse(without).success).toBe(false);
+  it('describes intersects as shared core PLUS own additions', () => {
+    expect(PAIR_RELATION_SYSTEM).toMatch(/gemeinsamen Kern/);
+    expect(PAIR_RELATION_SYSTEM).toMatch(/zusätzlich/);
   });
 
-  it('allows an explicit "unsure" instead of forcing a verdict', () => {
-    // Ein erzwungenes Urteil ist schlechter als ein offenes: es taeuscht
-    // Gewissheit vor, die der Mensch nicht hatte.
-    const r = PairGoldSchema.safeParse({
-      ...valid,
-      verdicts: [{ caseId: 'x__y', same: null, note: 'zu wenig Kontext' }],
-    });
-    expect(r.success).toBe(true);
+  it('parses each relation and rejects invented ones', () => {
+    expect(parsePairRelation('{"relation":"intersects","why":"x"}')?.relation).toBe('intersects');
+    expect(parsePairRelation('{"relation":"sort-of","why":"x"}')).toBeNull();
   });
 
-  it('rejects duplicate caseIds', () => {
-    const dup = { ...valid, verdicts: [valid.verdicts[0], valid.verdicts[0]] };
-    expect(() => loadPairGold(dup)).toThrow(/doppelte/i);
-  });
-});
-
-describe('samplePairs — deterministische Stichprobe (THE-382)', () => {
-  const set = loadActionGolden();
-
-  it('draws the same sample twice — the anchor must not wobble', () => {
-    expect(samplePairs(set, 40).map((c) => c.id)).toEqual(samplePairs(set, 40).map((c) => c.id));
+  it('treats a missing relation as unreadable, never as "unrelated"', () => {
+    // Sonst wird ein kaputter Lauf zu einem sauberen Negativ-Befund —
+    // derselbe Fehler wie beim fehlenden "same" im binaeren Richter.
+    expect(parsePairRelation('{"why":"unklar"}')).toBeNull();
   });
 
-  it('covers both decision arms', () => {
-    const ids = new Set(samplePairs(set, 40).map((c) => c.id));
-    const armOf = new Map(set.cases.map((c) => [c.id, c.arm]));
-    const arms = new Set([...ids].map((id) => armOf.get(id)));
-    expect(arms).toEqual(new Set(['T', 'K']));
-  });
-
-  it('draws proportionally from each arm rather than by chance', () => {
-    const s = samplePairs(set, 40);
-    const armOf = new Map(set.cases.map((c) => [c.id, c.arm]));
-    const t = s.filter((c) => armOf.get(c.id) === 'T').length;
-    expect(t).toBeGreaterThanOrEqual(15);
-    expect(t).toBeLessThanOrEqual(25);
-  });
-
-  it('never asks for more than the set holds', () => {
-    expect(samplePairs(set, 9999)).toHaveLength(set.cases.length);
+  it('renders the pair blinded, like every other prompt', () => {
+    const p = buildPairJudgeUserPrompt(oblA, oblB);
+    expect(p).not.toMatch(LAW_NAMES);
   });
 });
 ```
@@ -168,485 +134,263 @@ describe('samplePairs — deterministische Stichprobe (THE-382)', () => {
 - [ ] **Step 2: Fehlschlag bestätigen**
 
 ```bash
-npx jest pairGold
+npx jest obligationPrompt
 ```
-Erwartet: FAIL — Modul nicht gefunden.
 
 - [ ] **Step 3: Implementieren**
 
-`pairGold.ts`:
+`PAIR_RELATION_SYSTEM` wörtlich aus dem Experiment übernehmen (`docs/evals/typed-relation-experiment.md`). Dazu:
 
 ```ts
-/**
- * pairGold — menschliches Gold für den Paar-Richter (THE-382 Slice 1).
- *
- * Es entsteht NEBEN dem eingefrorenen `actions.v1` und referenziert dessen
- * `caseId`s. Würde man den Prüfsatz anreichern, wäre er nicht mehr derselbe,
- * gegen den die veröffentlichten 35 % gemessen wurden.
- *
- * `blinded` ist Pflichtangabe, kein Detail: der Mensch urteilt über DIESELBE
- * geblendete Darstellung wie der Richter. Bekäme er mehr Information, wäre
- * jede Abweichung doppeldeutig — Urteilsunterschied oder Informationsvorsprung.
- *
- * `same: null` heißt „unsicher" und ist ein zulässiges Urteil. Ein erzwungenes
- * Ja/Nein täuscht Gewissheit vor, die der Mensch nicht hatte — derselbe
- * Fehlermodus wie ein erzwungener Katalog-Treffer.
- *
- * Linear: THE-382 Slice 1
- */
-import fs from 'node:fs';
-import { z } from 'zod';
-import type { ActionGoldenSet, ActionGoldenCase } from './actionGolden';
-
-export const PairVerdictSchema = z.object({
-  caseId: z.string().min(1),
-  /** `null` = bewusst unsicher, kein fehlendes Urteil. */
-  same: z.boolean().nullable(),
-  note: z.string().optional(),
-});
-
-export const PairGoldSchema = z.object({
-  version: z.string().min(1),
-  frozen: z.boolean(),
-  /** Prüfsatz, auf den sich die caseIds beziehen. */
-  sourceSet: z.string().min(1),
-  annotator: z.string().min(1),
-  /** Sah der Mensch die geblendete Darstellung? Siehe Kopf. */
-  blinded: z.boolean(),
-  verdicts: z.array(PairVerdictSchema).min(1),
-});
-
-export type PairGold = z.infer<typeof PairGoldSchema>;
-
-export function loadPairGold(input: string | unknown): PairGold {
-  const raw = typeof input === 'string' ? JSON.parse(fs.readFileSync(input, 'utf8')) : input;
-  const gold = PairGoldSchema.parse(raw);
-  const seen = new Set<string>();
-  const dup: string[] = [];
-  for (const v of gold.verdicts) (seen.has(v.caseId) ? dup : seen).add(v.caseId);
-  if (dup.length) throw new Error(`pairGold: doppelte caseIds: ${dup.join(', ')}`);
-  return gold;
-}
+export const PAIR_RELATIONS = ['equal', 'subset', 'intersects', 'unrelated'] as const;
+export type PairRelation = (typeof PAIR_RELATIONS)[number];
 
 /**
- * Deterministische, arm-proportionale Stichprobe.
+ * Faltet die typisierte Beziehung auf eine binäre Sicht — NUR dort benutzen,
+ * wo eine Ja/Nein-Ansicht unvermeidlich ist, und dann die Faltung ausweisen.
  *
- * Kein Zufall: Der menschliche Anker darf zwischen zwei Läufen nicht wackeln,
- * sonst misst man die Stichprobe statt den Richter. Gezogen wird gleichmäßig
- * über jeden Arm — eine Stichprobe, die zufällig nur Arm T träfe, könnte die
- * Negativ-Seite nicht prüfen.
+ * `intersects` fällt bewusst auf `false`: „gemeinsamer Kern plus eigene
+ * Zusätze" ist NICHT „eine Maßnahme erfüllt beide". Diese Zusammenlegung war
+ * der ursprüngliche Fehler, der die 35 % erzeugt hat.
  */
-export function samplePairs(set: ActionGoldenSet, count: number): ActionGoldenCase[] {
-  const byArm = { T: set.cases.filter((c) => c.arm === 'T'), K: set.cases.filter((c) => c.arm === 'K') };
-  const total = Math.min(count, set.cases.length);
-  const out: ActionGoldenCase[] = [];
-
-  for (const arm of ['T', 'K'] as const) {
-    const pool = byArm[arm];
-    const want = Math.min(Math.round((total * pool.length) / set.cases.length), pool.length);
-    for (let i = 0; i < want; i++) out.push(pool[Math.floor((i * pool.length) / want)]);
-  }
-  return out.slice(0, total);
+export function foldRelation(r: PairRelation): boolean {
+  return r === 'equal' || r === 'subset';
 }
 ```
 
-- [ ] **Step 4: Test grün**
+`PAIR_JUDGE_SYSTEM` bleibt **erhalten und exportiert** — der eingefrorene Vergleichslauf muss reproduzierbar bleiben. Kopfkommentar: *„binäre Vorgängerfassung, gemessen 2026-08-01 als unterspezifiziert; nur noch für den historischen Vergleich."*
+
+- [ ] **Step 4: Grün + Commit**
 
 ```bash
-npx jest pairGold
-```
-Erwartet: PASS (9 Tests).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add packages/server/src/evals/pairGold.ts packages/server/src/__tests__/pairGold.test.ts && git commit -m "feat(the-382): Schema + deterministische Stichprobe fuer das menschliche Paar-Gold"
+npm run build --workspace @thearchitect/shared && npx jest obligationPrompt
+git add packages/shared/src/obligations/prompt.ts packages/server/src/__tests__/obligationPrompt.test.ts && git commit -m "feat(the-382): typisierte Paar-Rubrik nach IR 8477, binaere Fassung bleibt fuer den Vergleich"
 ```
 
 ---
 
-### Task 2: Blindes Arbeitsblatt
+### Task 2: Metriken auf Typen umstellen
+
+**Files:**
+- Modify: `packages/server/src/evals/actionMetrics.ts`
+- Test: `packages/server/src/__tests__/actionMetrics.test.ts` *(erweitern)*
+
+- [ ] **Step 1: Tests**
+
+```ts
+describe('relationKappa (THE-382)', () => {
+  it('computes kappa over four categories', () => {
+    const a = ['equal', 'intersects', 'unrelated', 'intersects'] as const;
+    const b = ['equal', 'intersects', 'unrelated', 'unrelated'] as const;
+    expect(relationKappa([...a], [...b])).toBeGreaterThan(0.5);
+  });
+
+  it('returns null when a rater is constant — same rule as everywhere', () => {
+    expect(relationKappa(['intersects', 'intersects'], ['intersects', 'intersects'])).toBeNull();
+  });
+
+  it('reports WHERE the disagreement sits, not just how much', () => {
+    // Ohne die Konfusionsmatrix laesst sich ein Dissens nicht adjudizieren,
+    // nur zaehlen — derselbe Grund wie bei den Fehlalarm-Namen.
+    const m = relationConfusion(['equal', 'intersects'], ['intersects', 'intersects']);
+    expect(m['equal|intersects']).toBe(1);
+  });
+});
+
+describe('foldRelation-Nutzung im Report (THE-382)', () => {
+  it('names the folding explicitly wherever a binary view is shown', () => {
+    const md = buildActionReport({ P: [true], T: [true], K: [false] }).markdown;
+    expect(md).toMatch(/gefaltet|Faltung/i);
+  });
+});
+```
+
+- [ ] **Step 2–3: Implementieren, grün**
+
+`relationKappa` (n-kategorial, `null` bei konstantem Rater — dieselbe Regel wie `cohensKappa`) und `relationConfusion` (Paar-Zähler, damit Dissens adjudizierbar ist).
+
+> **Bestandsschutz:** `cohensKappa` bleibt unverändert für binäre Reihen. `relationKappa` ist die n-kategoriale Verallgemeinerung; beide teilen die Prävalenz-Regel.
+
+- [ ] **Step 4: Commit**
+
+---
+
+## Chunk 2: Menschliches Gold
+
+### Task 3: Schema, Loader, deterministische Stichprobe
+
+**Files:**
+- Create: `packages/server/src/evals/pairGold.ts`
+- Test: `packages/server/src/__tests__/pairGold.test.ts`
+
+Wie in der Vorfassung, mit **einer Änderung**: das Urteil ist eine `PairRelation`, nicht `boolean`.
+
+- [ ] **Step 1: Tests**
+
+```ts
+it('records a typed relation, not a yes/no', () => {
+  expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: 'intersects' }] }).success).toBe(true);
+  expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: true }] }).success).toBe(false);
+});
+
+it('allows an explicit "unsure" instead of forcing a relation', () => {
+  // Ein erzwungenes Urteil taeuscht Gewissheit vor, die der Mensch nicht hatte —
+  // derselbe Fehlermodus wie der erzwungene Katalog-Treffer.
+  expect(PairGoldSchema.safeParse({ ...valid, verdicts: [{ caseId: 'x', relation: null }] }).success).toBe(true);
+});
+
+it('records that the human saw the BLINDED rendering', () => {
+  expect(Object.keys(PairGoldSchema.shape)).toContain('blinded');
+});
+
+it('requires the source set so the reference point stays traceable', () => {
+  const { sourceSet: _d, ...without } = valid;
+  expect(PairGoldSchema.safeParse(without).success).toBe(false);
+});
+
+it('rejects duplicate caseIds', () => { /* … */ });
+```
+
+Dazu `samplePairs(set, count)`: **deterministisch** (der Anker darf zwischen Läufen nicht wackeln) und **arm-proportional** (eine Stichprobe, die zufällig nur Arm T träfe, könnte die Negativ-Seite nicht prüfen).
+
+- [ ] **Steps 2–5:** wie üblich — Fehlschlag, Implementierung, grün, Commit.
+
+---
+
+### Task 4: Blindes Arbeitsblatt mit vier Optionen
 
 **Files:**
 - Create: `packages/server/src/scripts/pair-worksheet.ts`
 - Test: `packages/server/src/__tests__/pairWorksheet.test.ts`
 - Modify: `packages/server/package.json`
 
-- [ ] **Step 1: Schreibe den fehlschlagenden Test**
+Aufbau wörtlich nach `relations-worksheet.ts`: **reine** Renderfunktion `(cases) => string`, eine in sich geschlossene HTML-Datei.
+
+- [ ] **Step 1: Tests**
 
 ```ts
-import { renderPairWorksheet } from '../scripts/pair-worksheet';
-import { loadActionGolden } from '../evals/actionGolden';
-import { samplePairs } from '../evals/pairGold';
+it('offers all four relations plus an explicit unsure', () => {
+  for (const r of ['equal', 'subset', 'intersects', 'unrelated', 'unsicher']) {
+    expect(html.toLowerCase()).toContain(r);
+  }
+});
 
-const cases = samplePairs(loadActionGolden(), 6);
+it('explains each relation in the sheet itself', () => {
+  // Der Mensch bekommt DIESELBE Rubrik wie der Richter — sonst beantworten
+  // sie verschiedene Fragen und der Kappa misst die Differenz der Rubriken.
+  expect(html).toMatch(/gemeinsamen Kern/);
+  expect(html).toMatch(/Unterschiede beschränken sich auf Parameter/);
+});
 
-describe('renderPairWorksheet (THE-382)', () => {
-  const html = renderPairWorksheet(cases);
+it('BLINDS law names — the human sees what the judge sees', () => {
+  expect(html).not.toMatch(/\bDSGVO\b|\bNIS2\b|\bDORA\b/);
+});
 
-  it('renders one block per case with both obligations', () => {
-    for (const c of cases) expect(html).toContain(c.id);
-  });
+it('shows NO machine verdict and no arm label — no anchoring', () => {
+  expect(html).not.toMatch(/vorschlag|suggested|Arm [TK]/i);
+});
 
-  it('BLINDS law names — the human must see what the judge sees', () => {
-    // Sonst ist eine Abweichung doppeldeutig (Urteil vs. Informationsvorsprung).
-    expect(html).not.toMatch(/\bDSGVO\b|\bNIS2\b|\bDORA\b/);
-  });
-
-  it('shows NO machine verdict — the human must not be anchored', () => {
-    // Ein vorbelegtes Urteil misst Zustimmung, nicht Urteil.
-    expect(html).not.toMatch(/vorschlag|suggested|machine|maschine/i);
-  });
-
-  it('offers an explicit "unsure" alongside yes and no', () => {
-    expect(html).toMatch(/unsicher/i);
-  });
-
-  it('carries the rubric question verbatim so the human judges the same thing', () => {
-    expect(html).toContain('EINE gemeinsam betriebene Maßnahme');
-  });
-
-  it('is self-contained — no external assets', () => {
-    expect(html).not.toMatch(/<script src=|<link[^>]+href="http/);
-  });
+it('is self-contained — no external assets', () => {
+  expect(html).not.toMatch(/<script src=|<link[^>]+href="http/);
 });
 ```
 
-- [ ] **Step 2: Fehlschlag bestätigen**
-
-```bash
-npx jest pairWorksheet
-```
-
-- [ ] **Step 3: Implementieren**
-
-Aufbau wörtlich nach `relations-worksheet.ts`: **reine** Renderfunktion `(cases) => string`, eine in sich geschlossene HTML-Datei, Export-Knopf schreibt JSON in ein `<textarea>`.
-
-Wesentlich:
-- Jede Pflicht wird über `blindLawNames` gerendert (aus `@thearchitect/shared`) — nicht selbst gebaut.
-- Drei Radio-Optionen je Fall: **ja · nein · unsicher**, keine vorbelegt.
-- Die Rubrik-Frage steht wörtlich über jedem Fall — dieselbe Formulierung wie in `PAIR_JUDGE_SYSTEM`, damit Mensch und Maschine dieselbe Frage beantworten.
-- Freitextfeld „Begründung (optional)".
-- Kein Maschinenurteil, keine Arm-Kennzeichnung, keine Katalog-Handlung sichtbar.
-
-- [ ] **Step 4: Alias + Rauchtest**
-
-```json
-"pairs:worksheet": "ts-node src/scripts/pair-worksheet.ts"
-```
-
-```bash
-npm run pairs:worksheet -- --count 40 --out /tmp/pair-label.html
-```
-Erwartet: Datei geschrieben, im Browser bedienbar.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add packages/server/src/scripts/pair-worksheet.ts packages/server/src/__tests__/pairWorksheet.test.ts packages/server/package.json && git commit -m "feat(the-382): blindes Arbeitsblatt fuer die Paar-Adjudikation"
-```
+- [ ] **Steps 2–5:** Implementierung, Alias `pairs:worksheet`, Rauchtest, Commit.
 
 ---
 
-### Task 3: Einlesen der Adjudikation
+### Task 5: Einlesen der Adjudikation
 
 **Files:**
 - Create: `packages/server/src/scripts/pair-ingest.ts`
 - Modify: `packages/server/package.json`
 
-- [ ] **Step 1: Implementieren**
+**Pflichtprüfungen:**
+- Jede `caseId` existiert in `actions.v1` — sonst Abbruch, kein stiller Verlust.
+- `blinded` und `annotator` gesetzt.
+- Anteil `relation: null` ausgewiesen. **Über 30 % ist ein Warnsignal**: dann war die Blendung zu scharf oder die Rubrik unklar — nicht der Mensch zu unentschlossen.
+- **Verteilung der vier Typen ausgewiesen.** Erscheint `equal` auch beim Menschen nicht, ist das die unabhängige Bestätigung von Ergebnis 2.
 
-Liest die exportierte JSON-Ausgabe des Arbeitsblatts, validiert gegen `PairGoldSchema`, schreibt `src/evals/golden/actions.human.v1.json`.
-
-**Pflichtprüfungen beim Einlesen:**
-- Jede `caseId` existiert in `actions.v1` — sonst Abbruch (kein stiller Verlust).
-- `blinded` und `annotator` müssen gesetzt sein.
-- Anteil `same: null` wird ausgewiesen. **Über 30 % ist ein Warnsignal**: dann war die Blendung zu scharf oder die Frage unklar — nicht der Mensch zu unentschlossen.
-
-- [ ] **Step 2: Alias + Commit**
-
-```json
-"pairs:ingest": "ts-node src/scripts/pair-ingest.ts"
-```
-
-```bash
-git add packages/server/src/scripts/pair-ingest.ts packages/server/package.json && git commit -m "feat(the-382): Adjudikation einlesen und als menschliches Gold ablegen"
-```
+- [ ] Implementieren · Alias `pairs:ingest` · Commit.
 
 ---
 
-## Chunk 2: Kanarienvögel und Metriken
+## Chunk 3: Kanarienvögel, Harness, Messung
 
-### Task 4: Partner-Tausch-Kanarienvögel
+### Task 6: Partner-Tausch-Kanarienvögel
 
 **Files:**
 - Create: `packages/server/src/evals/canaries.ts`
 - Test: `packages/server/src/__tests__/canaries.test.ts`
 
-- [ ] **Step 1: Schreibe den fehlschlagenden Test**
+Unverändert aus der Vorfassung, mit **einer Anpassung an die Typen**: Ein gefangener Kanarienvogel ist jetzt `unrelated` **oder** `intersects` — nicht `equal`/`subset`.
+
+> **Begründung der Lockerung:** Beide Hälften stammen aus Arm-T-Paaren, gehören aber zu verschiedenen Maßnahmen. `unrelated` ist die erwartete Antwort; `intersects` ist vertretbar, weil zwei beliebige Compliance-Pflichten fast immer einen entfernten Bezug haben. **Nicht** vertretbar ist `equal`/`subset` — das wäre der Rubber-Stamp.
+
+- [ ] **Tests**
 
 ```ts
-import { buildPartnerSwapCanaries, canaryCatchRate } from '../evals/canaries';
-import { loadActionGolden } from '../evals/actionGolden';
-
-const set = loadActionGolden();
-
-describe('buildPartnerSwapCanaries (THE-382)', () => {
-  const canaries = buildPartnerSwapCanaries(set, 10);
-
-  it('builds pairs from DIFFERENT canonical actions — they must be judged "no"', () => {
-    for (const c of canaries) expect(c.actionA).not.toBe(c.actionB);
-  });
-
-  it('takes both sides from arm T — the halves LOOK harmonisable', () => {
-    // Das ist der Unterschied zu Arm K: dort ist schon eine Seite untypisch.
-    // Hier stammen beide Haelften aus harmonisierbaren Paaren, der Fall ist
-    // also plausibel und damit ein echter Test statt eines leichten.
-    const armT = new Set(set.cases.filter((c) => c.arm === 'T').map((c) => c.id));
-    for (const c of canaries) {
-      expect(armT.has(c.fromA)).toBe(true);
-      expect(armT.has(c.fromB)).toBe(true);
-    }
-  });
-
-  it('is deterministic — the gate must not wobble between runs', () => {
-    expect(buildPartnerSwapCanaries(set, 10).map((c) => c.id))
-      .toEqual(buildPartnerSwapCanaries(set, 10).map((c) => c.id));
-  });
-
-  it('needs no LLM — canaries are constructed, not generated', () => {
-    expect(canaries.length).toBe(10);
-  });
-
-  it('marks every canary so it can never be counted as a real case', () => {
-    for (const c of canaries) expect(c.id.startsWith('canary__')).toBe(true);
-  });
+it('counts unrelated AND intersects as caught, equal/subset as missed', () => {
+  expect(canaryCatchRate(['unrelated', 'intersects', 'equal', 'unrelated'])).toBeCloseTo(0.75, 6);
 });
 
-describe('canaryCatchRate (THE-382)', () => {
-  it('counts a caught canary as a "no" verdict', () => {
-    expect(canaryCatchRate([false, false, true, false])).toBeCloseTo(0.75, 6);
-  });
-
-  it('treats an unanswered canary as NOT caught — silence is not detection', () => {
-    expect(canaryCatchRate([false, null, false, false])).toBeCloseTo(0.75, 6);
-  });
-
-  it('returns null for an empty set instead of a perfect score', () => {
-    // 0 von 0 als 100 % zu melden waere die gefaehrlichste Variante:
-    // ein Lauf ohne Kanarien saehe aus wie ein bestandener.
-    expect(canaryCatchRate([])).toBeNull();
-  });
+it('treats an unanswered canary as NOT caught — silence is not detection', () => {
+  expect(canaryCatchRate(['unrelated', null, 'unrelated', 'unrelated'])).toBeCloseTo(0.75, 6);
 });
+
+it('returns null for an empty set instead of a perfect score', () => {
+  // 0 von 0 als 100 % zu melden waere die gefaehrlichste Variante: ein Lauf
+  // ohne Kanarien saehe aus wie ein bestandener.
+  expect(canaryCatchRate([])).toBeNull();
+});
+
+it('builds both halves from arm T so the case LOOKS plausible', () => { /* … */ });
+it('is deterministic and needs no LLM', () => { /* … */ });
+it('marks every canary so it can never be counted as a real case', () => { /* … */ });
 ```
 
-- [ ] **Step 2: Fehlschlag bestätigen**
-
-```bash
-npx jest canaries
-```
-
-- [ ] **Step 3: Implementieren**
-
-```ts
-/**
- * canaries — Kanarienvögel für den Paar-Richter (THE-382).
- *
- * WARUM: Ein Richter, der alles durchwinkt, ist perfekt konsistent und völlig
- * nutzlos (Rubber-Stamping). Arm K prüft das grob — dort ist aber schon eine
- * Seite offensichtlich unpassend. Der PARTNER-TAUSCH ist schärfer: beide
- * Hälften stammen aus harmonisierbaren Arm-T-Paaren, sehen also plausibel aus,
- * gehören aber zu VERSCHIEDENEN Maßnahmen. Der Richter MUSS „nein" sagen.
- *
- * Mechanisch konstruiert, kein LLM: Kanarienvögel, die ein Modell erzeugt,
- * erben dessen blinde Flecken.
- *
- * Linear: THE-382 Slice 1 (Baustein für Slice 3)
- */
-import type { ActionGoldenSet, ActionGoldenCase } from './actionGolden';
-import type { Vote } from './actionMetrics';
-
-export interface Canary {
-  id: string;
-  a: ActionGoldenCase['a'];
-  b: ActionGoldenCase['b'];
-  actionA: string;
-  actionB: string;
-  fromA: string;
-  fromB: string;
-}
-
-export function buildPartnerSwapCanaries(set: ActionGoldenSet, count: number): Canary[] {
-  const armT = set.cases.filter((c) => c.arm === 'T');
-  const out: Canary[] = [];
-  for (let i = 0; i < armT.length && out.length < count; i++) {
-    for (let j = i + 1; j < armT.length && out.length < count; j++) {
-      if (armT[i].actionId === armT[j].actionId) continue;
-      out.push({
-        id: `canary__${armT[i].id}__${armT[j].id}`,
-        a: armT[i].a,
-        b: armT[j].b,
-        actionA: armT[i].actionId,
-        actionB: armT[j].actionId,
-        fromA: armT[i].id,
-        fromB: armT[j].id,
-      });
-    }
-  }
-  return out;
-}
-
-/**
- * Anteil gefangener Kanarienvögel. `null` bei leerer Menge — 0 von 0 als
- * 100 % zu melden wäre die gefährlichste Variante: ein Lauf ohne Kanarien
- * sähe aus wie ein bestandener.
- *
- * Eine ausgebliebene Antwort zählt als NICHT gefangen: Schweigen ist keine
- * Erkennung.
- */
-export function canaryCatchRate(verdicts: Vote[]): number | null {
-  if (verdicts.length === 0) return null;
-  return verdicts.filter((v) => v === false).length / verdicts.length;
-}
-
-export const CANARY_CATCH_MIN = 0.9;
-```
-
-- [ ] **Step 4: Test grün + Commit**
-
-```bash
-npx jest canaries
-git add packages/server/src/evals/canaries.ts packages/server/src/__tests__/canaries.test.ts && git commit -m "feat(the-382): Partner-Tausch-Kanarienvoegel, mechanisch konstruiert"
-```
+- [ ] Implementieren · grün · Commit.
 
 ---
 
-### Task 5: Metriken — Übereinstimmung, Tor, Kollaps
-
-**Files:**
-- Modify: `packages/server/src/evals/actionMetrics.ts`
-- Test: `packages/server/src/__tests__/actionMetrics.test.ts` *(erweitern)*
-
-- [ ] **Step 1: Schreibe die fehlschlagenden Tests**
-
-```ts
-describe('judgeHumanAgreement (THE-382)', () => {
-  it('reports kappa and raw agreement over the shared cases', () => {
-    const r = judgeHumanAgreement(
-      { a: true, b: false, c: true },
-      { a: true, b: false, c: false },
-    );
-    expect(r.n).toBe(3);
-    expect(r.agreement).toBeCloseTo(2 / 3, 6);
-  });
-
-  it('SKIPS cases the human marked unsure — an open verdict is not a disagreement', () => {
-    const r = judgeHumanAgreement({ a: true, b: true }, { a: true, b: null });
-    expect(r.n).toBe(1);
-  });
-
-  it('reports null kappa when one side is constant, like everywhere else', () => {
-    expect(judgeHumanAgreement({ a: true, b: true }, { a: true, b: true }).kappa).toBeNull();
-  });
-
-  it('flags when too few cases remain to say anything', () => {
-    expect(judgeHumanAgreement({ a: true }, { a: true }).sufficient).toBe(false);
-  });
-});
-
-describe('collapseSignal (THE-382)', () => {
-  it('raises the alarm when every verdict is identical', () => {
-    // Rubber-Stamping: perfekt konsistent, voellig nutzlos.
-    expect(collapseSignal([true, true, true, true]).collapsed).toBe(true);
-    expect(collapseSignal([true, false, true, false]).collapsed).toBe(false);
-  });
-
-  it('reports the rejection rate so drift is visible before it collapses', () => {
-    expect(collapseSignal([true, false, false, false]).rejectionRate).toBeCloseTo(0.75, 6);
-  });
-});
-
-describe('buildActionReport — Canary als ZWEITE Vorbedingung (THE-382)', () => {
-  const clean = { P: Array(20).fill(true), T: [true, false], K: Array(10).fill(false) };
-
-  it('INVALIDATES the run when the canary catch rate is below the gate', () => {
-    const r = buildActionReport({ ...clean, canaryCatchRate: 0.7 });
-    expect(r.valid).toBe(false);
-    expect(r.tRate).toBeNull();
-    expect(r.reason).toMatch(/Canary|Kanarien/i);
-  });
-
-  it('INVALIDATES the run when no canaries were injected at all', () => {
-    // Gleiche Logik wie bei Arm P: nicht geprueft heisst nicht bestanden.
-    const r = buildActionReport({ ...clean, canaryCatchRate: null });
-    expect(r.valid).toBe(false);
-    expect(r.reason).toMatch(/nicht injiziert|keine Kanarien/i);
-  });
-
-  it('stays valid when both preconditions hold', () => {
-    expect(buildActionReport({ ...clean, canaryCatchRate: 0.95 }).valid).toBe(true);
-  });
-});
-```
-
-- [ ] **Step 2: Fehlschlag bestätigen, dann implementieren**
-
-`canaryCatchRate` wird optionales Feld von `buildActionReport`. Reihenfolge der Prüfungen: **Positiv-Kontrolle → Kanarienvögel → Negativ-Kontrolle**. Fehlende Kanarien behandeln wie fehlenden Arm P: *nicht geprüft ≠ bestanden*.
-
-> **Achtung — Bestandsschutz:** `buildActionReport` wird heute ohne `canaryCatchRate` aufgerufen. Damit die bestehenden Tests nicht brechen, ist das Feld **optional**; fehlt es ganz (`undefined`), bleibt das Verhalten wie bisher. Nur ein **ausdrückliches** `null` bedeutet „Kanarien vorgesehen, aber keine injiziert" und kippt den Lauf. Der Unterschied gehört in den Kommentar.
-
-- [ ] **Step 3: Alle Metrik-Tests grün + Commit**
-
-```bash
-npx jest actionMetrics
-git add packages/server/src/evals/actionMetrics.ts packages/server/src/__tests__/actionMetrics.test.ts && git commit -m "feat(the-382): Richter-Mensch-Uebereinstimmung, Canary-Tor, Kollaps-Erkennung"
-```
-
----
-
-## Chunk 3: Harness und Messung
-
-### Task 6: Kanarienvögel in den Harness
+### Task 7: Harness auf Typen + Kanarienvögel
 
 **Files:**
 - Modify: `packages/server/src/evals/runActionEval.ts`
 - Test: `packages/server/src/__tests__/runActionEval.test.ts` *(erweitern)*
 
-- [ ] **Step 1: Tests**
+- [ ] **Tests**
 
 ```ts
-it('injects canaries and reports their catch rate', async () => {
-  const r = await evaluateActions(tiny, { h1: async () => NO }, undefined, { canaries: 4 });
-  expect(r.canary.injected).toBe(4);
-  expect(r.canary.catchRate).toBe(1);
+it('reports the relation distribution per arm', async () => { /* Arm T vs Arm K */ });
+it('injects canaries mixed into the run, not as a block', async () => { /* Reihenfolge */ });
+it('never lets a canary reach the tiers', async () => { /* kein canary__ in tiers */ });
+it('marks the run invalid when canaries are not caught', async () => { /* Tor */ });
+it('marks the run invalid when NO canaries were injected', async () => {
+  // Gleiche Logik wie bei Arm P: nicht geprueft heisst nicht bestanden.
 });
-
-it('marks the run invalid when canaries are not caught', async () => {
-  const r = await evaluateActions(tiny, { h1: async () => YES }, undefined, { canaries: 4 });
-  expect(r.report.valid).toBe(false);
-  expect(r.report.reason).toMatch(/Kanarien/i);
-});
-
-it('never lets a canary reach the tiers — it is not a real case', async () => {
-  const r = await evaluateActions(tiny, { h1: async () => NO }, undefined, { canaries: 4 });
-  expect(Object.keys(r.tiers).some((id) => id.startsWith('canary__'))).toBe(false);
-});
-
-it('reports the verdict distribution so rubber-stamping is visible', async () => {
-  const r = await evaluateActions(tiny, { h1: async () => YES }, undefined, { canaries: 2 });
-  expect(r.collapse.collapsed).toBe(true);
-});
+it('reports the folding explicitly wherever a binary number appears', async () => { /* … */ });
 ```
 
-- [ ] **Step 2: Implementieren**
+- [ ] **Implementieren**
 
-Kanarienvögel werden **gemischt** mit den echten Fällen geurteilt (nicht als Block am Ende — sonst erkennt ein Modell das Muster), aber getrennt ausgewertet und **nie** in `tiers` oder Arm-Quoten gezählt. Bericht bekommt einen Abschnitt „Kanarienvögel" und „Verdikt-Verteilung".
+Kanarienvögel werden **gemischt** geurteilt (nicht als Block — sonst erkennt ein Modell das Muster), getrennt ausgewertet, **nie** in Stufen oder Arm-Quoten gezählt. Bericht bekommt: Typ-Verteilung je Arm, Kanarienvögel, Verdikt-Verteilung.
 
-- [ ] **Step 3: Grün + Commit**
+**Konfidenzstufen neu:** Sie beziehen sich künftig auf den **Typ**, nicht auf ein Ja/Nein.
+
+| Stufe | Kriterium |
+|---|---|
+| **A** | alle Häuser einig auf `equal` oder `subset` |
+| **B** | alle Häuser einig auf `intersects` — *gemeinsamer Kern, Zusätze ausweisen* |
+| **C** | keine Einigkeit über den Typ |
+
+> Das ist die eigentliche Reparatur: Stufe B war vorher „Mehrheit ≥2/3" und damit bei zwei Häusern arithmetisch unerreichbar. Jetzt trägt sie die Kategorie, die real vorkommt.
+
+- [ ] Grün · Commit.
 
 ---
 
-### Task 7: Der Vergleichslauf 🧑
+### Task 8: Der Vergleichslauf 🧑
 
 **Files:**
 - Create: `packages/server/src/scripts/pair-agreement.ts`
@@ -654,36 +398,27 @@ Kanarienvögel werden **gemischt** mit den echten Fällen geurteilt (nicht als B
 
 - [ ] **Step 1: Skript**
 
-Lädt `actions.human.v1.json` + fährt den Paar-Richter über **dieselben** Fälle, gibt aus:
-
-| Zeile | Bedeutung |
+| Ausgabe | Bedeutung |
 |---|---|
-| n verglichen / n unsicher übersprungen | Grundgesamtheit |
-| **Kappa Richter ↔ Mensch** | die Zahl, an der alles hängt (Tor **≥ 0,7**) |
-| Rohübereinstimmung | Kontext zum Kappa (Prävalenz-Falle) |
-| Abweichungen, einzeln aufgelistet | damit ein Dissens adjudizierbar ist, nicht nur zählbar |
+| n verglichen / n „unsicher" übersprungen | Grundgesamtheit |
+| **κ Richter ↔ Mensch (4 Typen)** | die Zahl, an der alles hängt — Tor **≥ 0,7** |
+| Konfusionsmatrix | *wo* der Dissens sitzt, damit er adjudizierbar ist |
+| Typ-Verteilung Mensch vs. Richter | erscheint `equal` beim Menschen? |
 | Canary-Catch-Rate | zweites Tor |
 | Verdikt-Verteilung | Kollaps-Signal |
 
-- [ ] **Step 2: Menschliches Tor** 🧑
+- [ ] **Step 2: Menschliches Tor** 🧑 — Adjudikation von 40 Paaren über das Arbeitsblatt.
 
-Adjudikation von 40 Paaren durch einen Enterprise Architekten über das Arbeitsblatt aus Task 2.
-
-- [ ] **Step 3: Der Lauf und sein Verdikt** 🧑
-
-```bash
-npm run pairs:agreement -- --gold src/evals/golden/actions.human.v1.json
-```
+- [ ] **Step 3: Verdikt** 🧑
 
 | Ergebnis | Konsequenz |
 |---|---|
-| **κ ≥ 0,7** | Die 35 % bestehen. Vorbehalt an THE-438 wird aufgehoben, Tor-Dokument ergänzt. |
-| **κ < 0,7** | Die 35 % werden **zurückgezogen**, bis Rubrik oder Richter überarbeitet sind. Kein Zitieren, auch nicht mit Fußnote. |
-| **Kanarien < 90 %** | Lauf ungültig — erst reparieren, dann erneut messen. |
+| **κ ≥ 0,7** | Der typisierte Richter ist verwendbar. Stufen A/B/C werden auf Typen umgestellt, die Aussage lautet ab dann „gemeinsamer Kern, ausgewiesene Zusätze". |
+| **κ < 0,7** | Auch die typisierte Fassung trägt nicht. Dann ist die Frage selbst zu klären, bevor irgendeine Quote zitiert wird. |
+| **Kanarien < 90 %** | Lauf ungültig — erst reparieren, dann messen. |
+| **Mensch vergibt `equal` häufig** | Widerspruch zu Ergebnis 2 des Experiments → Rubrik-Differenz Mensch/Maschine untersuchen, **bevor** eine Zahl veröffentlicht wird. |
 
-- [ ] **Step 4: Ergebnis dokumentieren**
-
-Kommentar an THE-438 und THE-382, Abschnitt in `docs/evals/action-release-gates.md`, Häkchen in der RVTM.
+- [ ] **Step 4: Ergebnis dokumentieren** — Kommentar an THE-438 und THE-382, Abschnitt in `action-release-gates.md`, RVTM-Häkchen, Bericht nachziehen.
 
 ---
 
@@ -691,9 +426,9 @@ Kommentar an THE-438 und THE-382, Abschnitt in `docs/evals/action-release-gates.
 
 | Offen | Warum |
 |---|---|
-| Mapping-Richter | Slice 2 — braucht ein Fachurteil (Domänengrenze, Präzedenz THE-434) |
-| Geteilte Canary-Mechanik für beide Richter | Slice 3 — hier entsteht sie erst für einen |
-| Prompt-Verbesserung | Wartet auf diese Zahl. *„Das erste Ergebnis ist eine Zahl, kein besserer Prompt."* |
-| Mehr als ein Adjudikator | Ein zweiter Mensch würde Mensch↔Mensch-Kappa erlauben — die ehrlichste Obergrenze für das, was der Richter erreichen kann. Sinnvoll, sobald jemand verfügbar ist. |
+| Mapping-Richter | Slice 2 — braucht Fachurteil (Domänengrenze, Präzedenz THE-434) |
+| SCF/ENISA als externes Gold | Vielversprechend (CC BY-ND: intern nutzbar, nicht auslieferbar), aber die Transitivität „gleiche Kontrolle ⇒ harmonisierbar" ist **unsere** Folgerung und selbst zu prüfen. Eigener Vorlauf. |
+| Zweiter Adjudikator | Erst mit ihm kennen wir die Mensch↔Mensch-Obergrenze — also das, was der Richter überhaupt erreichen *kann*. |
+| Wirtschaftlicher Wert von `intersects` | Ein gemeinsamer Kern kann viel oder wenig Aufwand sparen. Das misst erst ein Nutzer, kein Richter. |
 
 > **Grenze, die im Report stehen muss:** 40 Paare, ein Adjudikator, geblendete Darstellung. Das reicht, um einen groben Dissens zu erkennen — nicht, um einen knappen Kappa auf zwei Stellen zu verteidigen.

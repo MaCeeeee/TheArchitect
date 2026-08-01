@@ -1,0 +1,1082 @@
+[
+  {
+    "id": "dsgvo-art-33__dora-art-19",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt eine Risikobeschreibung in der Meldung an die Aufsichtsbehörde; B verlangt die Weitergabe von Vorfalldetails durch die Behörde an andere Behörden/Agenturen – unterschiedliche Adressaten, unterschiedliche Inhalte und unterschiedliche Kommunikationsrichtungen.",
+    "whyK": "Die inhaltliche Gestaltung der Vorfallmeldung durch das Unternehmen ist eine andere Maßnahme als die spätere Weiterleitung der Meldung durch die Aufsichtsbehörde an benannte Stellen."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-6",
+    "arm": "T",
+    "actionId": "risikobewertung",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Risikoidentifikation und -management, aber A fokussiert auf Datenschutzrisiken (Datenverlust, unbefugter Zugriff auf personenbezogene Daten), während B allgemeine IKT-Risiken von Finanzunternehmen umfasst; eine gemeinsame Maßnahme deckt nur den Überschneidungsbereich ab.",
+    "whyK": "Beide verlangen risikobasierte Absicherung, aber A verlangt die Berücksichtigung spezifischer Verarbeitungsrisiken für personenbezogene Daten, während B zusätzlich aktive Minimierung von IKT-Risiken durch Strategien, Verfahren, Protokolle und Tools fordert."
+  },
+  {
+    "id": "dsgvo-art-35__dora-art-19",
+    "arm": "K",
+    "actionId": "folgenabschaetzung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt präventive Risikoanalyse einer Datenverarbeitung (DPIA), Bestimmung 2 verlangt reaktive Meldung eines eingetretenen IKT-Vorfalls an Behörden – unterschiedliche Zwecke, Auslöser und Adressaten ohne gemeinsamen Kern.",
+    "whyK": "Die eine Pflicht verlangt vom Verantwortlichen eine interne, ex-ante-Risikoabschätzung (DPIA) vor der Verarbeitung, die andere eine externe Weiterleitung von Vorfallinformationen zwischen Behörden im Krisenfall — unterschiedliche Akteure, Auslöser und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-35__dora-art-9",
+    "arm": "K",
+    "actionId": "folgenabschaetzung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Datenschutz-Folgenabschätzung für Überwachungstechnologie und IKT-Sicherheitsmaßnahmen in Finanzunternehmen adressieren völlig unterschiedliche Risiken (Privatsphäre vs. Systemverfügbarkeit) mit getrennten Maßnahmenkatalogen.",
+    "whyK": "A verlangt eine analytische Folgenabschätzung (Dokumentation/Bewertung) für Überwachungsverarbeitungen, B den tatsächlichen Einsatz technischer Sicherheitstools und -verfahren gegen IKT-Risiken – die Assessment-Pflicht erfüllt keine Implementierung und umgekehrt, es gibt keinen gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-12__nis2-art-23",
+    "arm": "K",
+    "actionId": "betroffenenrechte-bearbeiten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Identitätsprüfung bei Datenschutzanträgen, Bestimmung 2 verpflichtet zur Incident-Meldung an Behörden – völlig unterschiedliche Sachverhalte und Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "Identitätsprüfung bei Betroffenenanträgen (Art. 12 Abs. 6 DSGVO) und 24-Stunden-Frühwarnung bei Sicherheitsvorfällen an das CSIRT (NIS2) erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--2",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A ist eine Meldung durch den Verantwortlichen an die Aufsichtsbehörde nach Datenschutzrecht; B ist eine interne Weitergabe durch die Behörde selbst an andere Behörden/Agenturen nach IKT-Sicherheitsrecht – unterschiedliche Akteure, Adressaten, Auslöser und Zwecke.",
+    "whyK": "A verpflichtet das Unternehmen (Verantwortlichen) zur Meldung von Datenpannen an die Datenschutz-Aufsichtsbehörde binnen 72 Stunden, während B eine Pflicht der zuständigen Behörde selbst ist, eingegangene IKT-Vorfallmeldungen an EU-Agenturen und andere Behörden weiterzuleiten – anderer Pflichtenträger, andere Adressaten, kein gemeinsamer Maßnahmenkern für das Unternehmen."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-6",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt ein Dokumentationssystem für Datenschutz-Einwilligungen (erfasst Nutzerkonsent), B verlangt ein Audit-Follow-up-Verfahren für IKT-Revisionsfeststellungen (adressiert interne Kontrolle/Compliance); völlig unterschiedliche Gegenstände, Adressaten und Prozesse.",
+    "whyK": "Einwilligungs-Nachweissystem (Einwilligungsmanagement) und ein formales Follow-up-Verfahren für IKT-Revisionsfeststellungen sind völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-30__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide fordern technische Maßnahmen, aber A verlangt Dokumentation eines Maßnahmenkatalogs (Verschlüsselung, Zugriffskontrolle, Logging), während B spezifisch IKT-Lösungen gegen vier konkrete Bedrohungen (Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit) vorschreibt – teilweise überlappend (Verschlüsselung, Zugriffskontrolle erfassen Vertraulichkeit), aber jeweils mit eigenen Anforderungen.",
+    "whyK": "Gemeinsamer Kern sind dieselben TOMs (Verschlüsselung, Zugriffskontrolle, Verfügbarkeits-/Vertraulichkeitsschutz), doch A verlangt deren Dokumentation im Verarbeitungsverzeichnis, während B den tatsächlichen Einsatz schützender IKT-Lösungen verlangt – keine Maßnahme deckt die andere vollständig ab."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-5",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt risikobasierte tech./org. Maßnahmen (umfassend, flexibel), Bestimmung 2 verlangt spezifische Leitlinien zu vier Datenschutzzielen (Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit) — gemeinsamer Kern bei Sicherheitsmaßnahmen, aber unterschiedliche Umsetzungswege und Anforderungen.",
+    "whyK": "Beide betreffen Datensicherheitsziele, doch A verlangt konkrete risikoangemessene TOM, während B zusätzlich formale Leitlinien des Leitungsorgans einschließlich Authentizität fordert."
+  },
+  {
+    "id": "dsgvo-art-35__dora-art-6",
+    "arm": "K",
+    "actionId": "folgenabschaetzung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die inhaltliche Dokumentation von Datenschutz-Folgenabschätzungen (Was muss dokumentiert werden?), Bestimmung 2 regelt die organisatorische Struktur von Risikomanagement-Funktionen in Finanzunternehmen (Wie müssen Funktionen getrennt sein?) – völlig unterschiedliche Regelungsgegenstände ohne gemeinsamen Maßnahmenkern.",
+    "whyK": "A verlangt die inhaltliche Dokumentation von Verarbeitungsvorgängen in einer Folgenabschätzung, B verlangt eine organisatorische Trennung von IKT-Risiko-, Kontroll- und Revisionsfunktionen – völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-21__dora-art-6",
+    "arm": "T",
+    "actionId": "resilienz-governance",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide erfordern IKT-Risikomanagement und -Überwachung, aber A) verlangt Konzepte/Verfahren zur Risikoanalyse und Kontrolle (für wesentliche Einrichtungen), während B) zusätzlich die organisatorische Delegation an eine unabhängige Kontrollfunktion (nur für Finanzunternehmen) vorschreibt – jede hat also eigenständige Anforderungen.",
+    "whyK": "Gemeinsamer Kern ist das Management und die Überwachung von IKT-/Informationssicherheitsrisiken, doch A verlangt zusätzlich dokumentierte Risikoanalyse-Konzepte und implementierte Kontrollen, während B zusätzlich die Übertragung an eine unabhängige Kontrollfunktion fordert."
+  },
+  {
+    "id": "dsgvo-art-34__nis2-art-23",
+    "arm": "K",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt technische/organisatorische Maßnahmen zur Datensicherung (Prävention); B verlangt Informationspflicht zur Klassifizierung von Vorfällen (Meldung nach Eintritt). Unterschiedliche Phasen und Gegenstände.",
+    "whyK": "A verlangt die Implementierung präventiver Schutzmaßnahmen (z.B. Verschlüsselung) für betroffene Daten, B dagegen eine inhaltliche Ausgestaltung der Vorfallsmeldung an das CSIRT — getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-24__dora-art-6",
+    "arm": "K",
+    "actionId": "compliance-nachweisen",
+    "haiku": "intersects",
+    "kimi": "unrelated",
+    "whyH": "Beide adressieren Nachweisverfahren für Compliance, aber A) erlaubt externe Zertifizierung als Erfüllungsnachweis allgemein, während B) eine spezifische interne Revisionsstruktur mit definierten Kompetenzen für IKT-Risiken verlangt – sie können sich teilweise überlappen, decken aber nicht gegenseitig alle Anforderungen.",
+    "whyK": "Die eine Pflicht betrifft die (freiwillige) Nutzung eines externen Zertifizierungsverfahrens als Nachweisinstrument, die andere eine verpflichtende regelmäßige interne Revision des IKT-Risikomanagementrahmens durch unabhängige Revisoren — unterschiedliche Akteure, Prüfgegenstände und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-12__nis2-art-23--2",
+    "arm": "K",
+    "actionId": "betroffenenrechte-bearbeiten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Benachrichtigungspflichten bei Ablehnung von Anträgen gegenüber einer betroffenen Person; Bestimmung 2 regelt Meldeinhalte zu Sicherheitsvorfällen gegenüber technischen Behörden – völlig unterschiedliche Sachverhalte und Adressaten.",
+    "whyK": "A verlangt eine Unterrichtung der betroffenen Person über die Ablehnung ihres Antrags (Betroffenenrechte), B eine inhaltliche Ausgestaltung von Meldungen an Behörden/CSIRT hinsichtlich grenzüberschreitender Auswirkungen von Sicherheitsvorfällen – völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "subset",
+    "whyH": "Gemeinsamer Kern: Zwischenmeldungen bei Statusänderungen an Behörden. Unterschied: A) reaktiv auf Ersuchen, B) proaktiv bei wesentlichen Änderungen UND auf Antrag — B) verlangt also zusätzlich eigenständiges Monitoring und proaktive Meldepflicht.",
+    "whyK": "Pflicht A (Zwischenbericht nur auf Ersuchen von CSIRT/Behörde) ist vollständig in Pflicht B enthalten, die Zwischenmeldungen sowohl bei wesentlichen Statusänderungen als auch auf behördlichen Antrag verlangt – wer B umsetzt, erfüllt A automatisch mit."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-9",
+    "arm": "K",
+    "actionId": "loeschung-durchfuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt eine Mitteilungspflicht an Dritte nach Datenlöschung, Bestimmung 2 regelt präventive Sicherheitsmaßnahmen gegen Datenkorruption und Zugriffsverletzungen — unterschiedliche Schutzziele und Maßnahmenkataloge ohne gemeinsamen Kern.",
+    "whyK": "A verlangt eine Benachrichtigung nachgelagerter Verarbeiter über Löschverlangen, B technisch-organisatorische Maßnahmen zur Risikominimierung bei Datenverlust und unbefugtem Zugriff – die erforderlichen Maßnahmen haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--3",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Meldung einer eingetretenen Datenschutzverletzung mit spezifischen Inhaltsangaben (Art, Kategorien, Zahlen); B regelt freiwillige Meldung von Cyberbedrohungen, die noch nicht eingetreten sind – unterschiedliche Trigger, Adressaten und Zwecke.",
+    "whyK": "A erfordert eine verpflichtende, inhaltlich bestimmte Meldung einer personenbezogenen Datenverletzung an die Datenschutzaufsicht, B dagegen eine freiwillige Cyberbedrohungs-Information an die zuständige Finanzbehörde mit anderem Auslöser, Adressaten und Zweck."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--2",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Meldung von IKT-Vorfällen an Behörden, aber A) beschränkt sich auf CSIRT-Ersuchen und Statusupdates zu bereits bekannten Vorfällen, während B) eine initiale Meldungspflicht schwerwiegender Vorfälle unabhängig von Ersuchen auslöst und spezifische Eskalationswege (EZB) vorsieht.",
+    "whyK": "Beide betreffen die Übermittlung von Vorfallsinformationen an Behörden, doch A verlangt ersuchenabhängige Zwischenberichte mit Statusaktualisierungen, während B eine eigenständige Meldung schwerwiegender IKT-Vorfälle einschließlich spezieller Zuständigkeitswege erfordert."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-5",
+    "arm": "K",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Benachrichtigung bei Datenschutzverletzungen durch einen Auftragsverarbeiter; Bestimmung 2 regelt die strategische Governance von IKT-Risiken durch das Leitungsorgan. Kein gemeinsamer Kern in den erforderlichen Maßnahmen.",
+    "whyK": "Die Pflichten betreffen völlig verschiedene Maßnahmen und Akteure: Meldung von Datenschutzverletzungen durch den Auftragsverarbeiter versus Festlegung und Genehmigung einer IKT-Resilienzstrategie durch das Leitungsorgan — kein gemeinsamer Kern."
+  },
+  {
+    "id": "dsgvo-art-24__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen kontextgerechte Schutzmaßnahmen, aber A fokussiert auf Datenverarbeitung allgemein (DSGVO-Logik), B auf IKT-Risiken spezifisch im Finanzsektor; gemeinsamer Kern (Risikobasierung), aber unterschiedliche Anwendungsbereiche und Schwerpunkte (Datenschutz vs. Cybersicherheit).",
+    "whyK": "Gemeinsamer Kern sind risikoadäquate Sicherheitsmaßnahmen, doch A verlangt zusätzlich die Ausrichtung an Zwecken und Umfang der personenbezogenen Datenverarbeitung, während B zusätzlich spezifische IKT-Sicherheitstools und -verfahren zur Minderung von IKT-Risikoauswirkungen auf Systeme verlangt — keine Maßnahme deckt beide vollständig ab."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-5",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide Pflichten adressieren Datenschutz durch technische/organisatorische Maßnahmen und teilen den Kern 'Vertraulichkeit + Integrität', aber A) zielt spezifisch auf Schutz vor unbefugtem Zugriff (Verschlüsselung, Notfallprävention), während B) zusätzlich Verfügbarkeit und Authentizität als eigenständige Anforderungen einführt, die A) nicht zwingend erfasst.",
+    "whyK": "Beide zielen auf Datensicherheit (insb. Vertraulichkeit), doch A verlangt konkrete, auf die Daten angewandte TOMs wie Verschlüsselung, während B eine leitungsorganeigene Leitlinien-Governance fordert, die zusätzlich Verfügbarkeit, Authentizität und Integrität abdeckt — keine Maßnahme erfüllt die andere vollständig."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen risikoadaptierte Maßnahmen, aber A) fokussiert auf die Bemessungslogik (Skalierung nach Risikostufe), während B) konkrete technische Implementierungsmittel (Tools, Richtlinien, Verfahren) für einen spezifischen Sektor vorschreibt—eine gemeinsame Maßnahme deckt nicht beide vollständig ab.",
+    "whyK": "Gemeinsamer Kern ist die risikobasierte Ausgestaltung von Sicherheitsmaßnahmen, aber A verlangt zusätzlich eine Skalierungsmethodik nach Eintrittswahrscheinlichkeit und Schwere für Rechte natürlicher Personen, während B zusätzlich die konkrete Implementierung von IKT-Sicherheitstools, -Richtlinien und -Verfahren fordert."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--3",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Pflicht zur Berichterstattung über einen eingetretenen Sicherheitsvorfall in zeitlich gestaffelten Berichten (Fortschritt/Final); Bestimmung 2 regelt die freiwillige Meldung potentieller Cyberbedrohungen vor Eintritt eines Schadens – unterschiedliche Auslöser, Adressaten, Zeitpunkte und Rechtscharaktere (Pflicht vs. Ermessen).",
+    "whyK": "A verlangt eine verpflichtende, fristgebundene Mehr-Stufen-Meldung (Fortschritts-/Abschlussbericht) für tatsächlich eingetretene, andauernde Sicherheitsvorfälle, B ist eine rein freiwillige Meldung von Cyberbedrohungen ohne Fristen oder Berichtsstruktur – unterschiedlicher Auslöser (Vorfall vs. Bedrohung), unterschiedliche Verbindlichkeit und kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--4",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide Pflichten erfordern die Meldung eines Vorfalls an eine Behörde, aber A verlangt zusätzlich eine strikte 72-Stunden-Frist mit Schwellenwert (Risiko), während B zusätzlich ein spezifisches Formular und umfassende Informationen zu Signifikanz und grenzüberschreitenden Auswirkungen verlangt – teilweise überlappend, teilweise eigenständig.",
+    "whyK": "Beide verlangen eine Vorfallmeldung an eine Behörde (gemeinsamer Kern), doch A verlangt die 72h-Frist mit Verzögerungsbegründung bei einem datenschutzbezogenen Risikoschwellenwert, während B eine vorlagenbasierte Erstmeldung mit spezifischen Inhalten zur Signifikanz- und Grenzüberschreitungsbewertung fordert – keine der beiden Maßnahmen deckt die andere vollständig ab."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-19",
+    "arm": "K",
+    "actionId": "loeschung-durchfuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die technische Löschung von Datenreplikationen bei Datenschutzanfragen, Bestimmung 2 verpflichtet zur Meldung von Cybersicherheitsvorfällen — völlig unterschiedliche Maßnahmen mit keinem gemeinsamen Kern.",
+    "whyK": "Löschen sämtlicher Datenkopien auf Anforderung ist eine Datenmanagement-Maßnahme, während die Meldung schwerwiegender IKT-Vorfälle an Behörden ein separates Meldeverfahren erfordert – kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-25__dora-art-5",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen technisch-organisatorische Maßnahmen zum Datenschutz, aber A) fokussiert auf Grundsätze und Datenminimierung, während B) spezifisch vier IT-Sicherheitsattribute (VAIV) normiert—gemeinsamer Kern bei Integrität und Vertraulichkeit, aber unterschiedliche Schwerpunkte und Anforderungen.",
+    "whyK": "Beide erfordern geeignete organisatorische und technische Schutzmaßnahmen, doch A umfasst zusätzlich Datenschutzgrundsätze und Betroffenenrechte, während B zusätzlich Leitlinien zu Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit verlangt."
+  },
+  {
+    "id": "dsgvo-art-13__nis2-art-23",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Informationspflicht zum Widerrufsrecht bei Datenverarbeitung mit Einwilligung; Bestimmung 2 regelt Meldepflichten bei andauernden Sicherheitsvorfällen – völlig unterschiedliche Sachverhalte, Adressaten und Maßnahmen.",
+    "whyK": "A verlangt eine Information der betroffenen Person über das Widerrufsrecht bei Einwilligung (Transparenzpflicht gegenüber Betroffenen), B verlangt Fortschritts- und Abschlussberichte zu Sicherheitsvorfällen gegenüber Behörden — völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-44__dora-art-17",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt Datenschutz bei internationalen Übermittlungen, B regelt IKT-Incident-Management; unterschiedliche Risikobereiche, keine gemeinsame Maßnahme.",
+    "whyK": "A verlangt Sicherstellungsmechanismen für Drittland-Datenübermittlungen, B verlangt ein internes Verfahren zur Vorfallerkennung und -klassifizierung – keine gemeinsame Maßnahme denkbar."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--5",
+    "arm": "T",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Unterschiedliche Adressaten (Auftragsverarbeiter→Verantwortlicher vs. Finanzunternehmen→Kunden), unterschiedliche Ereignisse (Datenschutzverletzung vs. IKT-Vorfall mit Finanzauswirkungen) und unterschiedliche Informationsinhalte erfordern getrennte Maßnahmen ohne gemeinsamen operativen Kern.",
+    "whyK": "Beide verlangen eine unverzügliche vorfallsbezogene Benachrichtigung, unterscheiden sich aber in Auslöser, Absender, Empfänger und Mitteilungsinhalt, sodass eine gemeinsame Maßnahme beide nur teilweise erfüllt."
+  },
+  {
+    "id": "dsgvo-art-24__nis2-art-21",
+    "arm": "T",
+    "actionId": "wirksamkeit-pruefen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen regelmäßige Überprüfung implementierter Maßnahmen, aber Y spezifiziert konkrete Methoden (Audits, Penetrationstests, Metriken) und Wirksamkeitsbewertung, während X nur generelle Aktualisierung bei Risikoveränderung verlangt — jede Pflicht hat zusätzliche eigene Anforderungen.",
+    "whyK": "Gemeinsamer Kern ist die Wirksamkeitsprüfung der Sicherheitsmaßnahmen, aber B verlangt zusätzlich etablierte Verfahren mit Audits, Penetrationstests und Kennzahlen, während A zusätzlich die tatsächliche Aktualisierung der Maßnahmen bei Bedarf fordert."
+  },
+  {
+    "id": "dsgvo-art-24__dora-art-9--2",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 fordert kontextgerechte Anpassung aller technisch-organisatorischen Maßnahmen nach Verarbeitungsumfang und -zweck; Bestimmung 2 fordert spezifisch IKT-Maßnahmen gegen konkrete Sicherheitsrisiken (Verfügbarkeit, Vertraulichkeit, Integrität). Der gemeinsame Kern ist die Implementierung technischer Sicherheitsmaßnahmen, aber Bestimmung 1 betont die Kontextproportionalität und Flexibilität, während Bestimmung 2 vier spezifische Risikokategorien benannt verlangt – eine Maßnahme kann beide nur teilweise erfüllen.",
+    "whyK": "Beide verlangen Schutzmaßnahmen, doch A fordert deren kontextbezogene Ausgestaltung, während B zusätzlich konkret präventive IKT-Lösungen für Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit und Datenverluste verlangt."
+  },
+  {
+    "id": "dsgvo-art-34__nis2-art-23--2",
+    "arm": "T",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide regeln Benachrichtigungspflichten bei Sicherheitsvorfällen, erfordern aber unterschiedliche Adressaten (betroffene Person vs. Diensteempfänger), unterschiedliche Schwellen (Datenschutzverletzung vs. erhebliche Sicherheitsvorfälle) und unterschiedliche Inhalte (detaillierte Schutzmaßnahmen vs. Auswirkungen auf Diensterbringung); eine Maßnahme deckt beide nur teilweise ab.",
+    "whyK": "Gemeinsamer Kern: unverzügliche Benachrichtigung betroffener Personen/Empfänger über einen Vorfall; A verlangt aber zusätzlich feste Mindestinhalte in klarer Sprache (Kontaktstelle, Folgen, Maßnahmen), B dagegen eine Parallelität zur CSIRT-Meldung und andere Adressaten (Diensteempfänger)."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-5--2",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt eine risikoadaptive Bemessung des Schutzniveaus (Skalierung mit Risikostufe), Bestimmung 2 verlangt die Einführung von Leitlinien zu spezifischen Datenschutzzielen (Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit) — gemeinsamer Kern ist die Etablierung von Schutzstandards, aber jede hat eigenständige Anforderungen (Risikobasierung vs. normative Leitlinien zu vier konkreten Zielen).",
+    "whyK": "Gemeinsamer Kern ist die Sicherheitsgovernance für Vertraulichkeit, Integrität und Verfügbarkeit von Daten, aber A verlangt zusätzlich eine risikobasierte Skalierung des Schutzniveaus (Eintrittswahrscheinlichkeit/Schwere), während B zusätzlich formale Leitlinien des Leitungsorgans inklusive Authentizität fordert."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--6",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt spezifisch eine Beschreibung wahrscheinlicher Folgen von Datenschutzverletzungen; Bestimmung 2 verlangt strukturierte Meldung mit allen Informationen zur Signifikanz- und Auswirkungsbewertung — die Folgenanalyse ist Teil, aber nicht das Ganze von Bestimmung 2.",
+    "whyK": "Gemeinsamer Kern ist die Vorfallmeldung an eine Behörde einschließlich Beschreibung der Auswirkungen, aber A verlangt gezielt die Folgen der Datenschutzverletzung als Inhaltselement, während B eine vorlagenbasierte strukturierte Erstmeldung mit Informationen zur Signifikanz und zu grenzüberschreitenden Auswirkungen fordert – jede Pflicht verlangt also Zusätze, die die andere nicht enthält."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-21",
+    "arm": "T",
+    "actionId": "risikobewertung",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Unterschiedliche Schutzgüter (Datenschutz vs. Netz-/IT-Sicherheit), unterschiedliche Auslöser (Datenschutzverletzung vs. betriebliche NIS-Nutzung) und unterschiedliche Bewertungskriterien erfordern separate Maßnahmen.",
+    "whyK": "Gemeinsamer Kern ist die Risikobewertung, doch A ist ein anlassbezogenes Assessment einzelner Datenpannen mit Fokus auf Rechte/Betroffene und Dokumentationspflicht, während B eine laufende, systembezogene Sicherheits-Risikoanalyse mit konkreten TOMs, Stand der Technik und Kostenabwägung verlangt – jede Pflicht verlangt Zusätze, die die andere nicht enthält."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-19",
+    "arm": "K",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt die Informationsform für Betroffene bei Unmöglichkeit der Einzelbenachrichtigung; B regelt die Aktualisierungspflicht von Meldungen an Behörden — völlig unterschiedliche Adressaten und Maßnahmeinhalte.",
+    "whyK": "A verlangt eine öffentliche Information Betroffener als Ersatz für Individualbenachrichtigung, B fortlaufende Folgemeldungen an die Behörde bei Statusänderungen — unterschiedliche Adressaten, Auslöser und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-35__nis2-art-23",
+    "arm": "K",
+    "actionId": "folgenabschaetzung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Dokumentation einer Datenschutz-Folgenabschätzung (präventive Analyse) und Benachrichtigung bei Sicherheitsvorfällen (reaktive Mitteilung) erfordern völlig unterschiedliche Maßnahmen mit verschiedenen Zwecken, Adressaten und Zeitbezügen.",
+    "whyK": "Pflicht A verlangt die ex-ante Dokumentation von Verarbeitungsvorgängen und Zwecken im Rahmen einer Folgenabschätzung, Pflicht B eine reaktive Ereignis-Benachrichtigung von Diensteempfängern bei Sicherheitsvorfällen — die Maßnahmen (Risikodokumentation vs. Incident-Meldewesen) haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-13__dora-art-19",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt proaktive Transparenz über Datenverarbeitung bei Erhebung; B verlangt reaktive Notfallkommunikation bei IKT-Vorfällen mit Finanzschaden – unterschiedliche Trigger, Adressaten, Zwecke und Maßnahmen.",
+    "whyK": "A verlangt proaktive Transparenz bei Datenerhebung über Zwecke und Rechtsgrundlage, B verlangt reaktive Kundenbenachrichtigung bei schwerwiegenden IKT-Vorfällen über Vorfall und Minderungsmaßnahmen — unterschiedlicher Auslöser, Zeitpunkt und Inhalt, keine gemeinsame Maßnahme möglich."
+  },
+  {
+    "id": "dsgvo-art-28__nis2-art-23",
+    "arm": "K",
+    "actionId": "auftragsverarbeiter-steuern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A) regelt Weisungsbindung von Auftragsverarbeitern in Verträgen; B) regelt Meldeinhalte zu Sicherheitsvorfällen – unterschiedliche Regelungsgegenstände und Adressaten ohne gemeinsamen Maßnahmenkern.",
+    "whyK": "A betrifft vertragliche Weisungsbindung des Auftragsverarbeiters (DSGVO Art. 28), B den Inhalt von Meldungen an CSIRTs bei Sicherheitsvorfällen (NIS2 Art. 23) – verschiedene Adressaten, Gegenstände und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-9",
+    "arm": "K",
+    "actionId": "wirksamkeit-pruefen",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A verlangt Risikominderungsmaßnahmen zur Erfüllung einer Benachrichtigungspflicht nach Datenschutzverletzungen; B verlangt präventive Infrastrukturschutzmaßnahmen für Finanzunternehmen — unterschiedliche Zwecke, Adressaten und Regelungslogiken ohne gemeinsamen Kern.",
+    "whyK": "Beide verlangen risikomindernde technische Maßnahmen bei Angriffen, doch A fordert zusätzlich die Nachweisdokumentation der Risikoreduktion, während B eine eigenständige Managementstruktur für Netzwerk und Infrastruktur vorschreibt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--4",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Meldung erheblicher Sicherheitsvorfälle mit Informationen zu grenzüberschreitenden Auswirkungen, aber A) adressiert alle wesentlichen Einrichtungen an CSIRT/Behörde unverzüglich, während B) nur Finanzunternehmen an Behörde mit strukturierter Vorlage nach Analyse verlangt – unterschiedliche Adressaten, Fristen und Formerfordernisse schaffen Überschneidung ohne vollständige Deckung.",
+    "whyK": "Gemeinsamer Kern ist die Vorfallmeldung an eine Behörde mit Inhalten zur Bewertung grenzübergreifender Auswirkungen; doch A verlangt die Meldung unverzüglich (ggf. vor vollständiger Analyse, auch an ein CSIRT), während B erst nach vollständiger Erfassung und Analyse aller Informationen und zwingend unter Verwendung einer bestimmten Meldevorlage meldet — keine einzelne Maßnahme erfüllt beide vollständig."
+  },
+  {
+    "id": "dsgvo-art-44__nis2-art-21",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Datenschutz bei internationalen Datenübermittlungen, Bestimmung 2 regelt Cybersicherheit von Netz- und Informationssystemen; unterschiedliche Regelungszwecke und Maßnahmenbereiche ohne gemeinsamen Kern.",
+    "whyK": "Pflicht A verlangt rechtliche Transfermechanismen (Angemessenheitsbeschluss, SCCs, BCRs) für Drittlandübermittlungen, Pflicht B ein technisch-organisatorisches Sicherheits-Risikomanagement für Netz- und Informationssysteme — beide erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-32__nis2-art-21",
+    "arm": "T",
+    "actionId": "wirksamkeit-pruefen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen regelmäßige Bewertung von Sicherheitsmaßnahmen mit Dokumentation; Bestimmung B präzisiert aber zusätzlich konkrete Methoden (Audits, Penetrationstests, KPIs), die Bestimmung A nicht fordert, während A eine breitere Anwendbarkeit hat.",
+    "whyK": "Gemeinsamer Kern ist ein etabliertes Verfahren zur regelmäßigen Wirksamkeitsbewertung der Sicherheitsmaßnahmen; A verlangt zusätzlich explizit Zeitplanung und Ergebnisdokumentation, B zusätzlich spezifische Instrumente (Kontrollüberwachung, Audits, Penetrationstests, Sicherheitskennzahlen), sodass keine Pflicht die andere vollständig abdeckt."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-9--2",
+    "arm": "K",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Informationspflicht bei Datenschutzunfällen durch alternative Bekanntmachung; Bestimmung 2 verlangt IKT-Sicherheitsmaßnahmen zur Systemstabilität — unterschiedliche Zwecke, keine überlappenden Handlungspflichten.",
+    "whyK": "A verlangt eine kommunikative Ersatzmaßnahme (öffentliche Bekanntmachung zur Information Betroffener), B verlangt technisch-organisatorische IKT-Sicherheitsmaßnahmen zur Gewährleistung von Resilienz — kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-30__dora-art-9--2",
+    "arm": "K",
+    "actionId": "verzeichnis-fuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Verzeichnisführung (administrative Dokumentation) und Sicherheit von Übermittlungsmitteln (technische Infrastruktur) erfordern völlig unterschiedliche Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "Ein Verzeichnis der Verarbeitungstätigkeiten zu führen (Dokumentation) und die Sicherheit von Datenübermittlungsmitteln technisch zu gewährleisten (IKT-Schutzmaßnahmen) erfordern vollständig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-5--3",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide adressieren Vertraulichkeit und Integrität, aber A) verlangt technische Implementierung mit Überwachung/Tests von Systemen, während B) nur Leitlinien des Leitungsorgans fordert; A) umfasst zusätzlich Verfügbarkeit/Belastbarkeit von Systemen, B) zusätzlich Authentizität von Daten und deren Governance-Rahmen.",
+    "whyK": "Gemeinsamer Kern ist die Absicherung von Vertraulichkeit, Integrität und Verfügbarkeit, doch A verlangt zusätzlich die tatsächliche technische Implementierung samt Überwachung, Wartung und regelmäßigen Tests (inkl. Belastbarkeit der Systeme), während B zusätzlich einen formalen Governance-Akt — die Einführung von Leitlinien durch das Leitungsorgan, erweitert um Authentizität der Daten — verlangt; weder erfüllen Tests die Leitlinienpflicht noch erfüllen Leitlinien die Implementierungspflicht."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-9--2",
+    "arm": "K",
+    "actionId": "loeschung-durchfuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Datenschutz-Ausnahmen von Löschungspflichten bei Rechtsstreitigkeiten; Bestimmung 2 regelt IT-Sicherheitsmaßnahmen zur Risikominderung. Unterschiedliche Schutzgüter, unterschiedliche Maßnahmenbereiche, kein gemeinsamer operativer Kern.",
+    "whyK": "A verlangt eine rechtliche Bewertung und Dokumentation, ob Daten ausnahmsweise zur Geltendmachung von Rechtsansprüchen aufbewahrt werden dürfen, während B die Implementierung technischer IKT-Sicherheitstools und -Richtlinien zur Risikominderung verlangt – beide Maßnahmen haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-19--2",
+    "arm": "K",
+    "actionId": "rechtsgrundlage-dokumentieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt eine Löschungsausnahme für Daten bei rechtlichen Verpflichtungen (Datenaufbewahrung), Bestimmung 2 regelt die freiwillige Meldung von Cyberbedrohungen an Behörden (Informationsfluss) – völlig unterschiedliche Gegenstände und Maßnahmen.",
+    "whyK": "Die Ausnahme von der Löschpflicht mit Rechtsgrundlagen-Dokumentation und die freiwillige Meldung von Cyberbedrohungen an Behörden erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-17",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Gültigkeit von Vertragsbedingungen (Kontrollmechanismus für Einwilligungserklärungen), Bestimmung 2 regelt die Meldepflicht für IKT-Vorfälle an Management – völlig unterschiedliche Regelungsgegenstände ohne gemeinsamen Kern.",
+    "whyK": "A verlangt einen Mechanismus zur Aufhebung/Kennzeichnung rechtswidriger Einwilligungsklauseln, B ein Meldeverfahren für IKT-Vorfälle an die Geschäftsleitung – ohne jeden gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--7",
+    "arm": "K",
+    "actionId": "vorfall-erkennen-behandeln",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt interne Dokumentation aller Fakten und Maßnahmen zu Datenschutzverletzungen für Aufsichtsbehörden; Bestimmung 2 verlangt externe Meldung von Finanzunternehmen mit abgeschlossener Ursachenanalyse und bezifferten Auswirkungen — unterschiedliche Adressaten, Inhalte, Zeitpunkte und Branchen.",
+    "whyK": "Beide verlangen Angaben zum Vorfall und seinen Auswirkungen, A verlangt jedoch eine interne Dokumentation samt Abhilfemaßnahmen, während B zusätzlich eine eingereichte Abschlussmeldung nach Ursachenanalyse mit bezifferten Auswirkungen fordert."
+  },
+  {
+    "id": "dsgvo-art-25__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide fordern technisch-organisatorische Maßnahmen zur Risikominderung, aber A verlangt spezifisch Datenschutzgarantien (Transparenz, Minimierung, Speicherbegrenzung, Zugang), während B auf allgemeine IKT-Sicherheit gegen Systemrisiken abzielt – teilweise Überschneidung bei Zugangsschutz, aber separate Anforderungskerne.",
+    "whyK": "Beide verlangen Sicherheitsmaßnahmen in Technik und Organisation, aber A zusätzlich datenschutzspezifische Garantien wie Transparenz und Datenminimierung, während B zusätzlich eine breitere IKT-Risikominderung für Systeme verlangt."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--8",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt den Inhalt einer Erstmeldung (Folgenanalyse), Bestimmung 2 regelt das Nachfolgeverfahren durch Zwischenmeldungen bei Statusänderungen – unterschiedliche Meldungsphasen ohne gemeinsamen Kernverpflichtungsinhalt.",
+    "whyK": "A verlangt ein inhaltliches Element der Erstmeldung (Folgenbeschreibung), B eine eigenständige Folgepflicht (Zwischenmeldungen bei Statusänderungen) — die Umsetzungsmaßnahmen (Meldungsinhalt vs. Monitoring-/Nachmeldeprozess) haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-13__nis2-art-21",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt eine Informationspflicht (Transparenz gegenüber betroffenen Personen), Bestimmung 2 regelt technisch-organisatorische Sicherheitsmaßnahmen (Notfallvorsorglichkeit); keine gemeinsame operative Maßnahme erfüllt beide.",
+    "whyK": "A ist eine reine Informationspflicht (Mitteilung von DSB-Kontaktdaten an Betroffene), B verlangt technisch-organisatorische Maßnahmen (Backup, Disaster Recovery) — es gibt keinerlei gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide erfordern technische und organisatorische Maßnahmen zum Datenschutz, aber A) adressiert vertraglich gebundene Auftragsverarbeiter mit umfassenden Sicherheitsanforderungen, während B) spezifisch auf Finanzunternehmen abzielt und Risikominimierung mit Geschäftskontinuität verknüpft – jede hat zusätzliche Anforderungen, die die andere nicht enthält.",
+    "whyK": "Gemeinsamer Kern sind technisch-organisatorische Sicherheitsmaßnahmen gegen Datenverlust und unbefugten Zugriff, doch A verlangt zusätzlich die vertragliche Verpflichtung des Auftragsverarbeiters (Governance/Drittbezug), während B zusätzlich eigene betriebliche Risikominimierung inklusive Schutz vor technischen Mängeln und Beeinträchtigung des Geschäftsbetriebs verlangt."
+  },
+  {
+    "id": "dsgvo-art-15__dora-art-17",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Transparenz über Drittlandübermittlungen von Personendaten auf Anfrage; B verlangt operative Kommunikationspläne für IKT-Vorfälle — unterschiedliche Sachverhalte, Adressaten und Zwecke ohne gemeinsamen Kern.",
+    "whyK": "A verlangt eine auskunftsreife Dokumentation über Garantien für Drittlandübermittlungen gegenüber betroffenen Personen auf Anfrage, B verlangt die vorbeugende Erstellung von Incident-Kommunikationsplänen (Personal, Medien, Kunden, Gegenparteien, Eskalation) — Inhalt, Auslöser und Adressaten haben keinen gemeinsamen Kern, sodass keine Maßnahme beide auch nur teilweise abdeckt."
+  },
+  {
+    "id": "dsgvo-art-44__dora-art-17--2",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt Prüfung und Dokumentation von Datenschutz-Garantien vor Datenübermittlungen; Bestimmung 2 verlangt IKT-Incident-Management nach Vorfällen – völlig unterschiedliche Risiken, Zeitpunkte und Maßnahmen.",
+    "whyK": "A verlangt eine rechtliche Transferprüfung und -dokumentation vor Drittlandübermittlungen, B dagegen den Betrieb von Prozessen zur Überwachung und Nachbereitung von IKT-Vorfällen — es gibt keinen gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt Inhalte einer Meldung (Beschreibung von Folgen), Bestimmung 2 regelt die zeitliche Struktur von Berichten bei andauernden Vorfällen — unterschiedliche Aspekte der Meldepflicht, die nicht gegenseitig erfüllt werden können.",
+    "whyK": "Beide betreffen die Meldung von Vorfällen, doch A verlangt ein bestimmtes inhaltliches Element, während B ein eigenes gestuftes Nachberichtsverfahren mit gesonderten Fristen vorschreibt."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23--2",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt Analyse von Datenschutzfolgen in Datenschutz-Meldungen; Bestimmung 2 verlangt operative Meldung von IT-Sicherheitsvorfällen an CSIRT – unterschiedliche Kontexte, Adressaten und Informationszwecke ohne gemeinsamen Kern.",
+    "whyK": "Gemeinsamer Kern ist die Vorfallmeldung an eine Behörde mit Beschreibung der Auswirkungen, aber Adressat (Aufsichtsbehörde vs. CSIRT), Auslöseschwelle (Datenschutzverletzung vs. erhebliche Dienstbeeinträchtigung) und geforderte Meldeinhalte (Folgen für Betroffene vs. grenzübergreifende Auswirkungen, gestuftes Meldeverfahren) unterscheiden sich, sodass eine einzige Maßnahme beide Pflichten nur teilweise abdeckt."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-6--2",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt Transparenzanforderungen bei Einwilligungserklärungen (Form, Sprache, Lesbarkeit), B regelt IT-Risikomanagement in Finanzunternehmen (technische und organisatorische Kontrollen) — keine gemeinsamen Maßnahmen.",
+    "whyK": "A verlangt die verständliche, klar abgegrenzte Gestaltung einer Einwilligungserklärung, B den Einsatz von Strategien, Verfahren und Tools zur Minimierung von IKT-Risiken — völlig unterschiedliche Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-6__nis2-art-23",
+    "arm": "K",
+    "actionId": "zweck-festlegen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Risikoprüfung und Dokumentation von Schutzmaßnahmen bei Zweckänderung; B verlangt einen zeitgebundenen Abschlussbericht zu einem Vorfall mit spezifischem Inhalt — unterschiedliche Trigger, unterschiedliche Maßnahmen, kein gemeinsamer Kern.",
+    "whyK": "Pflicht A verlangt die Prüfung und Dokumentation geeigneter Garantien bei Zweckänderung, Pflicht B einen fristgebundenen Abschlussbericht zu einem Sicherheitsvorfall — verschiedene Auslöser, Inhalte und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-6--2",
+    "arm": "K",
+    "actionId": "wirksamkeit-pruefen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Gemeinsamer Kern: regelmäßige Überprüfung von Sicherheitsmaßnahmen mit Dokumentation. Aber B verlangt zusätzlich interne Revision durch qualifizierte, unabhängige Revisoren (nur für Nicht-Kleinstunternehmen im Finanzsektor), während A allgemein technische und organisatorische Maßnahmen selbst evaluieren lässt – unterschiedliche Akteure und Schwerpunkte.",
+    "whyK": "Beide verlangen regelmäßige Prüfungen, doch A erfordert konkret geplante und dokumentierte Wirksamkeitsprüfungen der TOMs, während B zusätzlich eine unabhängige, fachkundige interne Revision des gesamten IKT-Risikomanagementrahmens verlangt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-17",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide erfordern Dokumentation von IKT-Vorfällen mit Auswirkungen und Maßnahmen, aber A verlangt zusätzlich formale Einreichung mit spezifischer Frist und Schweregrad-Analyse, während B nur interne Meldung an Geschäftsleitung und künftige Kontrollen verlangt.",
+    "whyK": "Gemeinsamer Kern ist die Vorfalldarstellung mit Auswirkungen und Gegen-/Abhilfemaßnahmen, doch A verlangt zusätzlich Bedrohungsart/Ursache, grenzüberschreitende Auswirkungen und behördliche Einreichung binnen Monatsfrist, während B zusätzlich die interne Meldung an Führungsebene/Geschäftsleitung und die Darlegung neu einzurichtender Kontrollen verlangt."
+  },
+  {
+    "id": "dsgvo-art-30__dora-art-5",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Dokumentation von Datenübermittlungen in Drittländer; B verlangt interne Governance-Strukturen für IKT-Funktionen — verschiedene Gegenstände, keine gemeinsame Maßnahme.",
+    "whyK": "Die Dokumentation geeigneter Garantien für Drittlandübermittlungen und die Festlegung von IKT-Verantwortlichkeiten erfordern getrennte Maßnahmen ohne gemeinsamen Umsetzungskern."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23--3",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide Pflichten adressieren die Reaktion auf Datenschutzverletzungen, aber Bestimmung 1 verlangt eine initiale Meldung innerhalb 72h (Gatekeeping), während Bestimmung 2 einen umfassenden Abschlussbericht einen Monat später fordert; jede hat zusätzliche, von der anderen nicht verlangte Anforderungen (Verzögerungsbegründung vs. detaillierte Analyse).",
+    "whyK": "Beide Pflichten speisen sich aus demselben Incident-Response- und Dokumentationsprozess, aber A verlangt die fristgebundene 72h-Erstmeldung an die Datenschutzaufsicht, während B einen inhaltlich weit umfangreicheren Abschlussbericht einen Monat später verlangt – keine einzelne Meldung erfüllt beide."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-19",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Gestaltung von Einwilligungserklärungen (Transparenz, Lesbarkeit, Klarheit), Bestimmung 2 verlangt die Einreichung einer Meldung zu Ursachenanalysen (Timing, Inhalt). Keine gemeinsamen Maßnahmenkerne.",
+    "whyK": "Formulierung einer Einwilligungsaufforderung (Textgestaltung/Sprache) und Einreichung einer Abschlussmeldung nach Ursachenanalyse (Incident-Reporting an Aufsicht) erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-17",
+    "arm": "K",
+    "actionId": "loeschung-durchfuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt die Löschung personenbezogener Daten auf Antrag unter bestimmten Bedingungen; B regelt die interne Prozesseinrichtung zur Dokumentation von Cybersecurity-Vorfällen – völlig unterschiedliche Maßnahmenkomplexe ohne gemeinsamen Kern.",
+    "whyK": "Die Löschung personenbezogener Daten auf Verlangen der betroffenen Person (Betroffenenrecht) und das Einrichten von Verfahren zur Erkennung und Klassifizierung von IKT-Vorfällen (Incident-Management) erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-17",
+    "arm": "T",
+    "actionId": "vorfall-erkennen-behandeln",
+    "haiku": "intersects",
+    "kimi": "unrelated",
+    "whyH": "Beide erfordern ein Incident-Management-System, aber A verlangt zusätzlich beschreibende Maßnahmendarstellung gegenüber der Behörde, während B zusätzlich technische Kategorisierung/Klassifizierung nach Schwere und Kritikalität verlangt.",
+    "whyK": "A verlangt die inhaltliche Beschreibung von Behebungs-/Abmilderungsmaßnahmen in einer Meldung, B verlangt das Einrichten organisatorischer Verfahren zur Ermittlung, Protokollierung und Klassifizierung von Vorfällen — getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-17",
+    "arm": "T",
+    "actionId": "vorfall-erkennen-behandeln",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt eine Benachrichtigungspflicht bei erkanntem Datenschutzverstoß; Bestimmung 2 verlangt ein IKT-Incident-Management-System. Keine gemeinsamen Maßnahmen, unterschiedliche Zwecke und Adressaten.",
+    "whyK": "A verlangt eine Meldung des Auftragsverarbeiters bei rechtswidrigen Weisungen, B den Aufbau eines Systems zur Ermittlung und Kategorisierung von IKT-Vorfällen — getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-9--3",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide fordern technische Sicherheitsvorkehrungen; A zielt spezifisch auf Verschlüsselung gegen Unbefugte (Vertraulichkeit, um Benachrichtigungspflicht zu vermeiden), B verlangt breitere IKT-Lösungen gegen Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit — gemeinsamer Kern bei Vertraulichtsschutz, aber B erfordert darüber hinaus Verfügbarkeit und Integrität, A konzentriert sich auf Verschlüsselung mit Benachrichtigungsschwelle.",
+    "whyK": "Gemeinsamer Kern sind technische Vertraulichkeitsschutzmaßnahmen (z. B. Verschlüsselung), doch A verlangt spezifisch, personenbezogene Daten für Unbefugte unzugänglich zu machen (auch organisatorisch), während B zusätzlich Verfügbarkeit, Integrität, Authentizität und Verlustprävention aller IKT-Systeme fordert."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-6",
+    "arm": "K",
+    "actionId": "auftragsverarbeiter-steuern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt die Fremdvergabe von Datenverarbeitung mit Genehmigungsvorbehalt; B regelt die interne Governance von IKT-Risikomanagement durch eine unabhängige Kontrollfunktion — unterschiedliche Adressaten, Zwecke und Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "A verlangt ein vertragliches Genehmigungs-/Informationsverfahren für Subunternehmer in der Auftragsverarbeitung, B verlangt eine organisatorisch unabhängige interne Kontrollfunktion für IKT-Risiko – kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-19--2",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die technische Dokumentation von Einwilligungen (Speicherung, Versionierung, Nachweisführung), Bestimmung 2 regelt eine optionale Meldepflicht von Cyberbedrohungen an Behörden — keine gemeinsamen Maßnahmenkerne.",
+    "whyK": "Die Speicherung versionierter Einwilligungsnachweise und die freiwillige Meldung von Cyberbedrohungen an Behörden erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-6",
+    "arm": "T",
+    "actionId": "risikobewertung",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A verlangt Risikobewertung personenbezogener Daten zur Schwellwertbestimmung für Meldung; B verlangt IKT-Risikominimierung durch operative Maßnahmen im Finanzsektor — unterschiedliche Ziele, Adressaten und Maßnahmenkerne.",
+    "whyK": "Gemeinsamer Kern ist die Risikobewertung von (IKT-/Sicherheits-)Vorfällen, doch A verlangt zusätzlich eine einzelfallbezogene, dokumentierte Bewertung als Meldeauslöser für Datenschutzverletzungen, während B zusätzlich ein laufendes Risikomanagement mit Strategien, Richtlinien und Tools zur Schadensminimierung fordert."
+  },
+  {
+    "id": "dsgvo-art-12__dora-art-17",
+    "arm": "K",
+    "actionId": "betroffenenrechte-bearbeiten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Identitätsverifikation bei Datenschutzanträgen, B regelt Erfassung von Cybersicherheitsvorfällen – völlig unterschiedliche Sachbereiche ohne gemeinsamen Maßnahmenkern.",
+    "whyK": "Identitätsprüfung bei Betroffenenanträgen (DSGVO Art. 12 Abs. 6) und Erfassung/Monitoring von IKT-Vorfällen und Cyberbedrohungen (DORA) erfordern völlig getrennte Verfahren ohne gemeinsamen operativen Kern."
+  },
+  {
+    "id": "dsgvo-art-7__nis2-art-23",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt unveränderbare Speicherung von Einwilligungsnachweisen mit Versionierung zur Dokumentation von Zustimmungen; B verlangt schnelle Meldung von Sicherheitsvorfällen an Behörden — völlig unterschiedliche Zwecke, Adressaten und Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "A verlangt die versionierte, unveränderbare Speicherung von Einwilligungsnachweisen (Dokumentations-/Speichermaßnahme), B die aktive Meldung von Sicherheitsvorfällen an Behörden binnen 24 Stunden (Meldeprozess) — kein gemeinsamer Kern, vollständig getrennte Maßnahmen."
+  },
+  {
+    "id": "dsgvo-art-44__dora-art-17--3",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Datenschutz bei Drittlandübermittlungen durch technisch-rechtliche Mechanismen; Bestimmung 2 regelt interne Meldepflichten für IKT-Sicherheitsvorfälle — unterschiedliche Sachbereiche und Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "Pflicht A erfordert Datentransfer-Safeguards für Drittlandübermittlungen, während Pflicht B interne Melde- und Nachsteuerungsmaßnahmen für schwerwiegende IKT-Vorfälle verlangt; es gibt keinen gemeinsamen Umsetzungskern."
+  },
+  {
+    "id": "dsgvo-art-15__dora-art-5",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt Transparenzpflichten gegenüber Betroffenen zu automatisierten Entscheidungen (DSGVO-Logik), B regelt interne Governance und Risikostrategien für IKT-Resilienz (DORA-Logik) — völlig unterschiedliche Maßnahmenbereiche ohne gemeinsamen Kern.",
+    "whyK": "Auskunftspflicht gegenüber Betroffenen über Profiling-Logik und -Auswirkungen versus interne Governance-Maßnahme des Leitungsorgans zur Genehmigung einer IKT-Resilienzstrategie – kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-17__dora-art-19--3",
+    "arm": "K",
+    "actionId": "loeschung-durchfuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt Datenlöschinformationspflichten gegenüber Kopienhaltern, B regelt Statusmeldepflichten gegenüber Behörden – völlig unterschiedliche Adressaten, Inhalte und Zwecke.",
+    "whyK": "A verlangt die Information nachgelagerten Datenverarbeiter über Löschungsverlangen betroffener Personen, B verlangt Zwischenmeldungen über Statusänderungen von Vorfällen an eine Behörde – verschiedene Anlässe, Adressaten und Inhalte ohne gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-9--4",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Sicherheitsvorkehrungen, aber A fokussiert auf Datenschutz durch Zugriffskontrolle/Verschlüsselung (Benachrichtigungspflicht vermeiden), während B umfassend IKT-Risiken für Systeme minimiert – B ist breiter, A enger auf Datenschutz zugeschnitten; gemeinsamer Kern (Sicherheitsmaßnahmen), aber jede verlangt zusätzlich Unterschiedliches.",
+    "whyK": "Gemeinsamer Kern ist die Implementierung geeigneter Sicherheitsmaßnahmen (z.B. Verschlüsselung als IKT-Sicherheitstool), doch A verlangt zusätzlich, die betroffenen personenbezogenen Daten für Unbefugte unzugänglich zu machen, während B zusätzlich ein umfassendes Risikominderungsprogramm (Tools, Richtlinien, Verfahren) für sämtliche IKT-Systeme verlangt."
+  },
+  {
+    "id": "dsgvo-art-6__dora-art-6",
+    "arm": "K",
+    "actionId": "zweck-festlegen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A) verlangt Dokumentation der Zweckkompatibilität bei Datenverarbeitung, B) verlangt organisatorische Trennung von Risikomanagement- und Kontrollfunktionen im Finanzsektor – völlig unterschiedliche operative Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "Die Dokumentation der Zweckverbindung bei Zweckänderung (DSGVO-Kompatibilitätsprüfung) und die organisatorische Trennung von IKT-Risikomanagement-, Kontroll- und Revisionsfunktionen (DORA-Drei-Linien-Modell) erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--5",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen einen Abschlussbericht mit Ursachenanalyse und Maßnahmen, aber A) hat eine starre Monatsfrist und verlangt grenzüberschreitende Auswirkungen, während B) an Abschluss der Analyse und Bezifferbarkeit der Auswirkungen gebunden ist — unterschiedliche Trigger und Anforderungen.",
+    "whyK": "Gemeinsamer Kern ist ein Abschlussbericht mit Vorfallsbeschreibung, Ursache und Maßnahmen, doch A verlangt eine starre Einmonatsfrist und grenzüberschreitende Auswirkungen, während B einen eigenen, an die abgeschlossene Ursachenanalyse und tatsächliche (statt geschätzte) Auswirkungszahlen geknüpften Einreichungszeitpunkt verlangt — eine einzige Maßnahme deckt beide daher nur teilweise ab."
+  },
+  {
+    "id": "dsgvo-art-28__nis2-art-21",
+    "arm": "K",
+    "actionId": "auftragsverarbeiter-steuern",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Vertragsform und -inhalt für Datenverarbeitung (DSGVO-Kontext), Bestimmung 2 verlangt Cybersecurity- und Lieferkettenrisiko-Bewertungen (NIS2-Kontext); unterschiedliche Zwecke, unterschiedliche Maßnahmen, kein gemeinsamer Kern.",
+    "whyK": "A verlangt den Abschluss eines Vertrags mit bestimmtem Inhalt über die Datenverarbeitung, B verlangt eine Sicherheitsbewertung von Anbietern/Lieferketten — Vertragserstellung und Sicherheitsrisikobewertung sind getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--6",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A regelt die nationale Weitergabe an das CSIRT, B regelt die grenzüberschreitende Bewertung und Benachrichtigung durch EU-Agenturen — unterschiedliche Akteure, unterschiedliche Ziele, unterschiedliche Adressaten.",
+    "whyK": "Beide verarbeiten und verteilen eingehende Vorfallmeldungen, doch A verlangt die Weiterleitung an das CSIRT, während B zusätzlich eine grenzüberschreitende Bewertung und Benachrichtigung anderer Behörden erfordert."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-6",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide erfordern technische Sicherheitsvorkehrungen, aber A fokussiert spezifisch auf Datenschutz durch Verschlüsselung gegen unbefugten Zugriff, während B einen umfassenderen IKT-Risikomanagementrahmen mit physischem Schutz und Asset-Management verlangt – teilweise Überschneidung, aber je mit zusätzlichen eigenen Anforderungen.",
+    "whyK": "Gemeinsamer Kern sind technische Schutzmaßnahmen gegen unbefugten Zugriff (z. B. Verschlüsselung als IKT-Tool), doch A verlangt zusätzlich die konkrete Anwendung auf die betroffenen personenbezogenen Daten bis zur Unlesbarkeit, während B zusätzlich ein umfassendes Framework mit Richtlinien sowie Schutz aller Assets inklusive physischer Infrastruktur und gegen Beschädigung fordert."
+  },
+  {
+    "id": "dsgvo-art-5__nis2-art-23",
+    "arm": "K",
+    "actionId": "datenminimierung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Datenminimierung (Reduzierung unnötiger Datenbestände) und Meldungsweiterleitung an CSIRT (Verfahrenspflicht bei Sicherheitsvorfällen) sind völlig verschiedene Maßnahmenbündel ohne gemeinsamen operativen Kern.",
+    "whyK": "Datenminimierung (Prüf- und Löschverfahren für Verarbeitungszwecke) und die staatliche Weiterleitung von Vorfallmeldungen an das CSIRT erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23--4",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A regelt die zeitliche Staffelung von Informationen bei deren Bereitstellung (Flexibilität bei unvollständiger gleichzeitiger Verfügbarkeit), B regelt die Meldepflicht mit konkreten Fristen und Berichtstypen bei andauernden Sicherheitsvorfällen—unterschiedliche Regelungsgegenstände ohne gemeinsamen Maßnahmenkern.",
+    "whyK": "Beide verlangen ein gestuftes Meldeverfahren mit Nachmeldungen bei noch unvollständiger Information, aber A erlaubt nur eine schrittweise Informationslieferung ohne unangemessene Verzögerung (Option, kein fester Fristenrahmen), während B bei andauerndem Vorfall verbindlich einen Fortschrittsbericht und einen Abschlussbericht binnen eines Monats nach Behebung vorschreibt."
+  },
+  {
+    "id": "dsgvo-art-30__dora-art-6",
+    "arm": "K",
+    "actionId": "verzeichnis-fuehren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt Dokumentation/Verzeichnis von Datenkategorien; Bestimmung 2 verlangt technische und organisatorische Schutzmaßnahmen für IKT-Assets — unterschiedliche Maßnahmenbereiche ohne gemeinsamen Kern.",
+    "whyK": "A verlangt eine dokumentarische Beschreibung im Verarbeitungsverzeichnis, B die tatsächliche Implementierung von IKT-Schutztools und -verfahren für Assets – zwei getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-7__dora-art-19--3",
+    "arm": "K",
+    "actionId": "einwilligung-verwalten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung A regelt die Dokumentation von Einwilligungsfreiheit bei Datenverarbeitung, Bestimmung B regelt die strukturierte Meldung von Vorfällen an Behörden – völlig unterschiedliche Compliance-Maßnahmen mit keinem gemeinsamen operativen Kern.",
+    "whyK": "Einwilligungs-Freiwilligkeitsprüfung mit Dokumentation und behördliche Vorfallmeldung nach Vorlage sind völlig getrennte Prozesse ohne gemeinsamen Umsetzungskern."
+  },
+  {
+    "id": "nis2-art-21__dora-art-6--2",
+    "arm": "T",
+    "actionId": "resilienz-governance",
+    "haiku": "intersects",
+    "kimi": "subset",
+    "whyH": "Beide erfordern Risikoanalyse und Dokumentation für Informationssysteme, aber Y verlangt zusätzlich einen formalen Rahmen als Teil des Gesamtrisikomanagementsystems und digitale operationale Resilienz, was über X hinausgeht.",
+    "whyK": "Der umfassende IKT-Risikomanagementrahmen nach B umfasst Risikoidentifikation, -bewertung, Schutzkontrollen und Wirksamkeitsüberwachung als Kernelemente, sodass dessen vollständige Umsetzung die von A geforderten dokumentierten Risikoanalyse- und Sicherheitskonzepte automatisch miterfüllt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--7",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen eine abschließende Meldung nach Incident-Management, aber A) verlangt zusätzlich einen Zwischenbericht bei andauerndem Vorfall und eine starre 1-Monats-Frist, während B) an Abschluss der Ursachenanalyse und Bezifferbarkeit der Auswirkungen gebunden ist — unterschiedliche Trigger und Anforderungen.",
+    "whyK": "Beide verlangen einen Abschlussbericht zum Vorfall mit tatsächlichen statt geschätzten Angaben, doch A erfordert zusätzlich einen Fortschrittsbericht bei andauerndem Vorfall und knüpft an die Behebung plus einen Monat an, während B den Abschluss der Ursachenanalyse als Auslöser verlangt — unabhängig von Minderungsmaßnahmen."
+  },
+  {
+    "id": "dsgvo-art-33__dora-art-19--9",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Meldepflicht des Verantwortlichen gegenüber seiner nationalen Aufsichtsbehörde (Anmelder und Adressat); Bestimmung 2 regelt die nachgelagerte Bewertung und Benachrichtigung durch EU-Agenturen zwischen Behörden (andere Akteure, andere Adressaten) — getrennte Prozessschritte ohne gemeinsamen Kern.",
+    "whyK": "Pflicht A verlangt eine unternehmensseitige Verletzungsmeldung an die Datenschutzaufsicht, während Pflicht B eine anschließende behördliche grenzüberschreitende Bewertung und Benachrichtigung durch Finanzaufsichtsstellen regelt."
+  },
+  {
+    "id": "dsgvo-art-34__dora-art-6--2",
+    "arm": "T",
+    "actionId": "risikobewertung",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A verlangt eine Risikobeurteilung zur Schwellwertbestimmung für Benachrichtigungspflichten; B verlangt IKT-Risikominderungsmaßnahmen durch Strategien und Governance — unterschiedliche Zwecke, unterschiedliche Maßnahmenbündel, kein gemeinsamer Kern.",
+    "whyK": "Gemeinsamer Kern ist ein dokumentiertes Risikobeurteilungsverfahren im Incident-/Risikomanagement; A verlangt zusätzlich die spezifische Schwellenprüfung 'hohes Risiko für Rechte und Freiheiten' als Benachrichtigungsauslöser, B zusätzlich konkrete Minimierungsmaßnahmen (Strategien, Richtlinien, Protokolle, Tools) für IKT-Risiken."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-9--2",
+    "arm": "K",
+    "actionId": "compliance-nachweisen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A regelt Nachweismittel für Compliance-Anforderungen (Dokumentation von Verhaltensregeln/Zertifikaten), B regelt die technische Umsetzung von IKT-Sicherheitsmaßnahmen — unterschiedliche Pflichtgegenstände erfordern separate Maßnahmen.",
+    "whyK": "A verlangt eine Nachweis-/Dokumentationsmaßnahme (Zertifikate oder Verhaltensregeln beziehen, dokumentieren und verfügbar halten), B verlangt eine operative Umsetzungsmaßnahme (IKT-Sicherheitsrichtlinien und -Tools konzipieren, beschaffen und implementieren) — die Tätigkeiten zur Erfüllung haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-9--3",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Schutzmaßnahmen gegen ähnliche Risiken, aber A) ist prinzipienbasiert und risikoadaptiv (mit Abwägungskriterien), während B) spezifische Risiken (Korruption, Verlust, Zugriff) und einen Finanzsektor-Kontext nennt – eine gemeinsame Maßnahme deckt beide nur teilweise ab.",
+    "whyK": "Beide verlangen einen Kern risikobasierter technischer und organisatorischer Schutzmaßnahmen; A erfasst jedoch die Datensicherheit breiter, während B zusätzlich Betriebsrisiken durch Datenverlust, Datenkorruption und technische Mängel unabhängig vom Personenbezug adressiert."
+  },
+  {
+    "id": "dsgvo-art-35__nis2-art-23--2",
+    "arm": "K",
+    "actionId": "folgenabschaetzung",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "DPIA ist eine präventive Risikoanalyse vor Verarbeitung; Incident Reporting ist eine reaktive Meldepflicht nach Sicherheitsvorfall – unterschiedliche Zeitpunkte, unterschiedliche Zwecke, keine gemeinsame Maßnahme.",
+    "whyK": "Die vorsorgliche Datenschutz-Folgenabschätzung für risikoreiche Verarbeitungen und die Berichtspflichten bei einem andauernden Sicherheitsvorfall erfordern vollständig getrennte Maßnahmen."
+  },
+  {
+    "id": "dsgvo-art-15__dora-art-9",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Transparenzkommunikation über Datenspeicherfristen; B verlangt technische IKT-Sicherheitsmaßnahmen für Systemresilienz — keine gemeinsamen Umsetzungsmaßnahmen.",
+    "whyK": "A verlangt eine reine Informations-/Transparenzleistung gegenüber Betroffenen (Mitteilung der Speicherdauer), B eine technisch-organisatorische Sicherheitsmaßnahme (Konzeption und Implementierung von IKT-Resilienz-Tools) — es gibt keinen gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-15__dora-art-9--2",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt Auskunftserteilung über Datenverarbeitung an betroffene Personen; B verlangt technische Infrastruktur und Cybersecurity-Maßnahmen — völlig unterschiedliche Sachverhalte ohne gemeinsamen Kern.",
+    "whyK": "Auskunftspflicht gegenüber betroffenen Personen und Aufbau einer Netzwerk-/Infrastruktur-Managementstruktur erfordern völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--8",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Meldung von Sicherheitsvorfällen an Behörden, aber A adressiert wesentliche Einrichtungen (branchenneutral) mit Schwelle 'erhebliche Auswirkungen auf Dienste', während B spezifisch Finanzunternehmen mit 'schwerwiegende IKT-Vorfälle' und zusätzliche EZB-Eskalation verlangt; gemeinsamer Kern (Meldepflicht), aber unterschiedliche Adressaten, Schwellen und Meldewege.",
+    "whyK": "Gemeinsamer Kern ist ein Meldeworkflow für schwere Vorfälle, aber Auslöser/Schwellen, Adressat und Routing unterscheiden sich: A meldet sicherheitsrelevante Vorfälle an CSIRT/zuständige Behörde mit grenzübergreifenden Informationen, B meldet schwerwiegende IKT-Vorfälle an die Finanzaufsichtsbehörde mit Sonderweg zur EZB für bedeutende Kreditinstitute."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--9",
+    "arm": "K",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Behördenkommunikation (Meldung → Behörde → CSIRT), Bestimmung 2 regelt Kundenkommunikation durch Finanzunternehmen; unterschiedliche Adressaten, unterschiedliche Kommunikationsketten, keine gemeinsame Maßnahme.",
+    "whyK": "A verpflichtet staatliche Behörden zur Weiterleitung von Meldungen an das CSIRT, B verpflichtet Finanzunternehmen zur direkten Kundenbenachrichtigung – unterschiedliche Akteure, Adressaten und Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-13__dora-art-17",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Transparenzpflichten bei Drittlandsübermittlung personenbezogener Daten; Bestimmung 2 regelt technische Incident-Response-Verfahren für IKT-Sicherheit. Kein gemeinsamer Maßnahmenkern.",
+    "whyK": "A verlangt eine Information der betroffenen Person über Drittlandübermittlungen (Transparenzpflicht), B die Einrichtung von Incident-Response-Verfahren für IKT-Vorfälle — völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-25__nis2-art-21",
+    "arm": "K",
+    "actionId": "aufbewahrung-loeschfristen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Datenspeicherfristen (Datenschutz), Bestimmung 2 regelt IT-Sicherheitsmaßnahmen gegen Sicherheitsvorfälle – unterschiedliche Schutzgüter und Maßnahmenbereiche ohne gemeinsamen Kern.",
+    "whyK": "A verlangt TOMs zur Befristung/Löschung personenbezogener Daten (Speicherfristen-Management), während B ein gefahrenübergreifendes Sicherheitsrisikomanagement für Netz- und Informationssysteme verlangt, dessen Mindestbereiche (Risikoanalyse, Vorfallbewältigung, Lieferkette, Kryptografie, Zugangskontrolle etc.) keine Speicherfristen umfassen – die Maßnahmen haben keinen gemeinsamen Kern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--10",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Aktualisierungsmeldungen bei laufenden Vorfällen, aber X schreibt explizit Zeitpunkte (Fortschrittsbericht sofort, final innerhalb eines Monats) vor, während Y nur 'bei wesentlicher Statusänderung' oder auf Antrag verlangt – unterschiedliche Triggermechanismen und Fristen.",
+    "whyK": "Gemeinsamer Kern ist die Zwischenberichterstattung bei andauerndem Vorfall, doch A knüpft an Fristablauf und verlangt zusätzlich einen Abschlussbericht binnen Monatsfrist, während B ereignisbasiert (Statusänderung, Behördenantrag) aktualisierte Meldungen verlangt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--11",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Meldung mit Severity-Bewertung an Behörde, aber X hat starre 72h-Frist mit Frühwarnung-Update, während Y erst nach vollständiger Analyse und mit behördenspezifischer Vorlage verlangt – teilweise gemeinsamer Kern, aber unterschiedliche Auslöser und Anforderungen.",
+    "whyK": "Beide verlangen eine Vorfallmeldung an die Behörde mit Schweregrad-/Auswirkungsbewertung, aber A verlangt zusätzlich 72h-Frist, IoCs und Aktualisierung der Frühwarnung, während B eine vorgeschriebene Vorlage, Signifikanz-/Grenzüberschreitungs-Informationen und einen alternativen Übermittlungsweg verlangt."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-17--2",
+    "arm": "T",
+    "actionId": "vorfall-erkennen-behandeln",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die Mitteilungspflicht des Auftragsverarbeiters bei Datenschutzverstößen, Bestimmung 2 fordert technische Früherkennung von IKT-Vorfällen – zwei völlig unterschiedliche Maßnahmen mit unterschiedlichen Adressaten, Auslösern und Zwecken.",
+    "whyK": "A verlangt einen rechtlichen Prüfungs- und Meldeprozess für rechtswidrige Weisungen, B ein technisches Frühwarnsystem zur Erkennung von IKT-Vorfällen – kein gemeinsamer Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-44__dora-art-5",
+    "arm": "K",
+    "actionId": "drittlandtransfer-absichern",
+    "haiku": "intersects",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt umfassende Anwendung aller Kapitel-V-Bestimmungen bei Drittlandtransfers zum Schutz des Datenschutzniveaus; Bestimmung 2 verlangt spezifische Leitlinien für vier Datensicherheitsaspekte. Die Sicherheitsaspekte (Integrität, Vertraulichkeit) können teilweise Kapitel-V-Anforderungen abdecken, aber jede Pflicht hat distinkte zusätzliche Anforderungen, die die andere nicht vollständig erfasst.",
+    "whyK": "Die Umsetzung internationaler Datenübermittlungen nach Kapitel V erfordert andere Maßnahmen als die Einführung organisationsinterner Leitlinien zu Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit."
+  },
+  {
+    "id": "dsgvo-art-25__dora-art-9--2",
+    "arm": "K",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Datenschutz durch Datenminimierung und Grundsatzkonformität; Bestimmung 2 regelt Netzwerksicherheit durch Infrastrukturmanagement und Incident Response — unterschiedliche Risiken, unterschiedliche Maßnahmenkategorien, kein gemeinsamer Kern.",
+    "whyK": "A verlangt datenschutzfreundliche Systemgestaltung (Datenminimierung, Betroffenenrechte), B eine risikobasierte Netzwerk-/Infrastruktur-Sicherheitsstruktur mit Isolierungsmechanismen — verschiedene Schutzziele ohne gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--12",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 verlangt einen umfassenden Abschlussbericht mit fixen Inhalten (incl. grenzüberschreitender Auswirkungen) innerhalb eines Monats; Bestimmung 2 verlangt umgehende Weiterleitung von Vorfalldetails an ausländische Behörde bei spezifischen Bedingungen – gemeinsamer Kern (Meldung grenzüberschreitender Vorfälle), aber jede Pflicht hat zusätzliche, nicht überlappende Anforderungen (Fristen, Adressaten, Bedingungen).",
+    "whyK": "Gemeinsamer Kern ist die Übermittlung von Vorfallinformationen mit grenzüberschreitendem Bezug an Behörden, doch A verlangt einen vollständigen Abschlussbericht mit festen Inhalten binnen eines Monats an die eigene Behörde, während B die umgehende Weiterleitung an die Aufnahmemitgliedstaat-Behörde unter speziellen Auslösevoraussetzungen verlangt."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-9--2",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen Sicherheitsmaßnahmen, aber A fokussiert auf vertragliche Bindung des Auftragsverarbeiters für Datenschutz, B auf operative IKT-Sicherheitstools des Finanzunternehmens selbst – gemeinsamer Kern (Sicherheit), aber unterschiedliche Adressaten und Schwerpunkte.",
+    "whyK": "Gemeinsamer Kern ist der Einsatz technischer/organisatorischer Sicherheitsmaßnahmen zum Schutz von Systemen und Daten, doch A verlangt eine vertragliche Verpflichtung des Auftragsverarbeiters auf datenschutzspezifische TOMs, während B die eigene Implementierung von IKT-Sicherheitstools, -Richtlinien und -Verfahren für sämtliche IKT-Systeme und -Risiken verlangt."
+  },
+  {
+    "id": "dsgvo-art-13__nis2-art-23--2",
+    "arm": "K",
+    "actionId": "betroffene-informieren",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt Transparenzpflichten bei Datenverarbeitung (DSGVO-Kontext), Bestimmung 2 regelt Meldeinhalte für Cybersecurity-Vorfälle (NIS-Kontext); völlig unterschiedliche Regelungsgegenstände und Maßnahmen.",
+    "whyK": "A verlangt eine Datenschutz-Information an Betroffene bei Erhebung (Art.-6(1)(f)-Transparenz), B verlangt inhaltliche Angaben in einer Sicherheitsvorfall-Meldung an das CSIRT – völlig getrennte Maßnahmen ohne gemeinsamen Kern."
+  },
+  {
+    "id": "dsgvo-art-25__nis2-art-21--2",
+    "arm": "K",
+    "actionId": "aufbewahrung-loeschfristen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die zeitliche Begrenzung der Datenspeicherung (Datenschutz), Bestimmung 2 regelt die Sicherheit von IT-Systemen gegen Schwachstellen (IT-Sicherheit) – unterschiedliche Schutzgüter und Maßnahmenkategorien ohne gemeinsamen operativen Kern.",
+    "whyK": "A verlangt TOMs zur Speicherfristenbegrenzung (Löschung/Retention), B verlangt Maßnahmen für sichere Entwicklung und Schwachstellenmanagement — kein gemeinsamer operativer Kern, getrennte Umsetzung nötig."
+  },
+  {
+    "id": "dsgvo-art-28__dora-art-5",
+    "arm": "T",
+    "actionId": "auftragsverarbeiter-steuern",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen eine Prüfung und Dokumentation von Drittanbieter-Vereinbarungen, aber A fokussiert auf Datenschutzgarantien (technisch-organisatorisch), B auf IKT-Risikomanagement-Standards; eine Maßnahme deckt beide nur teilweise ab.",
+    "whyK": "Gemeinsamer Kern ist die Steuerung von Drittrisiken, doch A verlangt fallbezogene hinreichende Datenschutzgarantien vor Einsatz jedes Auftragsverarbeiters, während B eine vom Leitungsorgan genehmigte und regelmäßig überprüfte IKT-Leitlinie für IKT-Drittdienstleister verlangt."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23--5",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A verlangt Beschreibung von Folgen einer Datenschutzverletzung in einer Meldung an Datenschutzbehörden; B verlangt Frühwarnung eines IT-Sicherheitsvorfalls an CSIRT innerhalb 24h mit anderen Informationen – unterschiedliche Vorfalltypen, Adressaten und Inhaltsanforderungen.",
+    "whyK": "Beide verlangen eine behördliche Vorfallmeldung, aber A fordert die Beschreibung wahrscheinlicher Folgen einer Datenschutzverletzung, während B eine 24h-Frühwarnung an CSIRT/Behörde mit anderen Angaben verlangt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--13",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "A regelt Berichterstattung bei andauernden Vorfällen (Fortschritts- und Abschlussbericht mit zeitlichen Staffelungen), B regelt Meldung schwerwiegender IKT-Vorfälle an Behörden (Adressat und Eskalationskette) — unterschiedliche Zwecke, Adressaten und Maßnahmen ohne gemeinsamen Kern.",
+    "whyK": "Gemeinsamer Kern ist die Behördenmeldung von Sicherheits-/IKT-Vorfällen, doch A verlangt ein gestaffeltes Berichtswesen (Fortschrittsbericht bei andauerndem Vorfall, Abschlussbericht binnen Monatsfrist), während B die Zuständigkeitsbestimmung und Meldewege (einzige Behörde, EZB-Weiterleitung) regelt — eine einzelne Maßnahme deckt beide nur teilweise ab."
+  },
+  {
+    "id": "dsgvo-art-32__dora-art-5--4",
+    "arm": "T",
+    "actionId": "betriebskontinuitaet",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "A verlangt technische Backup-/DR-Maßnahmen mit RTO/RPO; B verlangt zusätzlich Governance (Genehmigung, Überwachung, regelmäßige Überprüfung durch Leitungsorgan) — gemeinsamer Kern (Wiederherstellungspläne), aber B hat eigene Governance-Anforderung, die A nicht enthält.",
+    "whyK": "Gemeinsamer Kern sind Wiederherstellungs-/Backup-Pläne, doch A verlangt die technische Implementierung der Wiederherstellungsfähigkeit mit dokumentierten RTOs/RPOs, während B zusätzlich die Genehmigung, Überwachung und regelmäßige Überprüfung der Leitlinie und Pläne durch das Leitungsorgan verlangt."
+  },
+  {
+    "id": "nis2-art-23__dora-art-19--14",
+    "arm": "T",
+    "actionId": "vorfall-benachrichtigen-betroffene",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen unverzügliche Kundenbenachrichtigung bei IKT-Vorfällen, aber A) gilt für erhebliche Sicherheitsvorfälle (allgemein) parallel zur CSIRT-Meldung, während B) spezifisch finanzielle Auswirkungen bei Finanzunternehmen adressiert – jede hat zusätzliche eigene Anforderungen.",
+    "whyK": "Beide verlangen eine unverzügliche Benachrichtigung betroffener Kunden beziehungsweise Diensteempfänger über schwerwiegende Vorfälle, unterscheiden sich aber bei Auslöser, Adressatenkreis und geforderten Inhalten."
+  },
+  {
+    "id": "dsgvo-art-28__nis2-art-21--2",
+    "arm": "K",
+    "actionId": "vorfall-erkennen-behandeln",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "A verlangt interne Benachrichtigung bei Datenschutzrechtsverstößen; B verlangt technische Sicherheitsmaßnahmen in IT-Systemen — unterschiedliche Regelungsbereiche ohne gemeinsamen Kern.",
+    "whyK": "Die eine Pflicht verlangt eine Information des Verantwortlichen bei rechtswidrigen Weisungen (Meldung), die andere technisch-organisatorische Sicherheits- und Schwachstellenmanagement-Maßnahmen bei Systementwicklung und -betrieb — es gibt keinen gemeinsamen Maßnahmenkern."
+  },
+  {
+    "id": "dsgvo-art-33__nis2-art-23--6",
+    "arm": "T",
+    "actionId": "vorfall-melden-behoerde",
+    "haiku": "unrelated",
+    "kimi": "intersects",
+    "whyH": "Bestimmung 1 regelt die zeitlich flexible Bereitstellung von Meldungsinformationen in Tranchen; Bestimmung 2 verlangt eine starre 24-Stunden-Frist für Frühwarnmeldungen an Behörden — unterschiedliche Trigger, unterschiedliche Adressaten, unterschiedliche Timing-Anforderungen ohne Überlappung.",
+    "whyK": "Gemeinsamer Kern ist ein zeitnaher Meldeprozess für Vorfälle an Behörden, doch A verlangt zusätzlich die verzögerungsfreie schrittweise Nachlieferung fehlender Informationen, während B eine 24-Stunden-Frühwarnung mit spezifischen Inhalten (Verdacht rechtswidriger Handlungen, grenzüberschreitende Auswirkungen) fordert — keine Maßnahme deckt die andere vollständig ab."
+  },
+  {
+    "id": "dsgvo-art-12__dora-art-17--2",
+    "arm": "K",
+    "actionId": "betroffenenrechte-bearbeiten",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 regelt die kostenlose Informationsbereitstellung und Bearbeitung von Datenschutzanfragen; Bestimmung 2 verlangt technische Überwachungsmechanismen für IT-Sicherheitsvorfälle – völlig unterschiedliche Maßnahmenbereiche ohne gemeinsamen Kern.",
+    "whyK": "A regelt die Unentgeltlichkeit von Betroffenenrechten (DSGVO-Transparenz), B den Einsatz technischer Frühwarnindikatoren zur Vorfallserkennung — keine inhaltliche Schnittmenge, völlig getrennte Maßnahmen."
+  },
+  {
+    "id": "nis2-art-21__dora-art-9",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "subset",
+    "whyH": "Bestimmung 1 verlangt einen umfassenden gefahrenübergreifenden Sicherheitsrahmen mit spezifischen Elementen (Risikoanalyse, Incident Response, Lieferkette, MFA, Schulungen etc.); Bestimmung 2 fokussiert technische IKT-Lösungen gegen konkrete Bedrohungen (Verfügbarkeit, Vertraulichkeit, Datenverlust). Der Kern überlappt (beide adressieren Cybersicherheit und Schutzziele), aber jede verlangt zusätzlich anderes: B1 ein strukturiertes Governance-System, B2 spezifische technische Implementierungen.",
+    "whyK": "Die enge Pflicht zu präventiven IKT-Lösungen für Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit und gegen Datenverlust ist im umfassenderen gefahrenübergreifenden Maßnahmenpaket A enthalten, das darüber hinaus weitere organisatorische und operative Bereiche verlangt."
+  },
+  {
+    "id": "dsgvo-art-30__dora-art-17",
+    "arm": "K",
+    "actionId": "aufbewahrung-loeschfristen",
+    "haiku": "unrelated",
+    "kimi": "unrelated",
+    "whyH": "Bestimmung 1 verlangt Dokumentation von Datenlöschungsfristen im Verzeichnis; Bestimmung 2 verlangt Incident-Management-Prozesse mit Ursachenanalyse – keine gemeinsame Maßnahme erfüllt beide.",
+    "whyK": "Das Dokumentieren von Löschfristen in einem Verzeichnis ist eine reine Dokumentationspflicht zu Speicherdauern, während die Einrichtung von Incident-Management-Prozessen (Überwachung, Ursachenanalyse, Abstellung) eine operative Prozesspflicht ohne gemeinsamen Kern ist."
+  },
+  {
+    "id": "dsgvo-art-25__dora-art-5--2",
+    "arm": "T",
+    "actionId": "technisch-organisatorische-massnahmen",
+    "haiku": "intersects",
+    "kimi": "intersects",
+    "whyH": "Beide verlangen technisch-organisatorische Maßnahmen zum Datenschutz, aber A) adressiert risikoadaptierte Grundsätze (Datenminimierung, Pseudonymisierung) mit Compliance-Fokus, während B) spezifisch auf vier IT-Sicherheitseigenschaften (Verfügbarkeit, Authentizität, Integrität, Vertraulichkeit) abzielt – teilweise überlappend (z.B. Verschlüsselung für beide relevant), aber mit unterschiedlichen Schwerpunkten und Anforderungslogiken.",
+    "whyK": "Gemeinsamer Kern ist die organisatorische Absicherung von Vertraulichkeit und Integrität von Daten, doch A verlangt risikobasierte TOMs bereits beim Design für alle Datenschutzgrundsätze (z. B. Datenminimierung, Pseudonymisierung), während B zusätzlich Leitlinien des Leitungsorgans zu Verfügbarkeit und Authentizität auch für nicht-personenbezogene Daten fordert."
+  }
+]

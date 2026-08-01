@@ -37,6 +37,27 @@ Positiv-Kontrolle hätte beides sofort aufgedeckt. Sie war nie gefahren worden.*
    stummes Haus ist keine Gegenstimme — es fällt aus der Quote heraus, und das muss sichtbar
    sein, sonst sieht ein Budget-Problem wie inhaltliche Uneinigkeit aus.
 
+## ⚠️ Rubrik-Reparatur 2026-08-01 — die Tore gelten ab jetzt für TYPISIERTE Beziehungen
+
+Ein Experiment ([`typed-relation-experiment.md`](typed-relation-experiment.md)) hat gezeigt, dass die **binäre** Frage des Paar-Richters unterspezifiziert war:
+
+| | κ Haiku ↔ Kimi |
+|---|---|
+| binär | 0,308 |
+| vier Typen nach NIST IR 8477, **sonst alles identisch** | **0,681** |
+
+**70 %** der binären Meinungsverschiedenheiten sind Fälle, in denen beide Häuser `intersects` sagen — sie waren sich einig, dass es *teilweise* ist, und wurden vom Ja/Nein auseinanderdividiert.
+
+**Und `equal` kam in 120 Fällen null Mal vor** — bei wortgleicher Definition. Die zuvor berichteten 35 % waren nicht „eine Maßnahme erfüllt beide", sondern die Mittelkategorie, nach oben gedrückt.
+
+**Konsequenzen für dieses Dokument:**
+
+* Die **Konfidenzstufen** beziehen sich künftig auf den **Typ**, nicht auf ein Ja/Nein:
+  **A** = alle Häuser einig auf `equal`/`subset` · **B** = alle einig auf `intersects` (gemeinsamer Kern, Zusätze ausweisen) · **C** = uneins über den Typ.
+  Damit wird Stufe B auch bei zwei Häusern erreichbar — vorher war sie arithmetisch unmöglich.
+* Wo eine **binäre Sicht** unvermeidlich ist, wird die **Faltung ausdrücklich benannt**. `intersects` fällt dabei auf „nein": „gemeinsamer Kern plus eigene Zusätze" ist nicht „eine Maßnahme erfüllt beide". Diese Zusammenlegung war der ursprüngliche Fehler.
+* Die drei Arm-T-Quoten aus dem Abschnitt „Drei Zahlen" bleiben gültig **als binäre Messung** — sie sind ab jetzt historisch zu lesen und nicht mehr als Produktaussage zu zitieren.
+
 ## Die Tore
 
 | Tor | Schwelle | Bei Verfehlung |
@@ -44,7 +65,8 @@ Positiv-Kontrolle hätte beides sofort aufgedeckt. Sie war nie gefahren worden.*
 | **Positiv-Kontrolle** (Arm P) | ≥ 0,95 | **Lauf ungültig.** `tRate` bleibt `null` und wird auch im Bericht nicht ausgewiesen. Zuerst Prompt und Blendung prüfen — **nie das Modell tunen.** |
 | **Negativ-Kontrolle** (Arm K) | 0 Fehlalarme | **Lauf ungültig.** Katalog zu grob oder Richter zu großzügig: den betroffenen Katalog-Eintrag aufteilen, nicht die Schwelle senken. |
 | **Arm T** (gleiche Handlung) | *kein Tor* | Wird berichtet, nicht bestanden. Das ist der **Wert**, nicht die Qualität. |
-| **κ zwischen den Häusern** | ≥ 0,80 → Auto-Merge zulässig | **Unter 0,80: nur Vorschlag.** Stufe A vorausgewählt, B nicht vorausgewählt, C nur auf Anforderung. Kein Schreibpfad. |
+| **κ zwischen den Häusern** | ≥ 0,80 → Auto-Merge zulässig | **Unter 0,80: nur Vorschlag.** Stufe A vorausgewählt, B nicht vorausgewählt, C nur auf Anforderung. Kein Schreibpfad. Gemessen wird ab 2026-08-01 auf den **vier Typen** (aktuell 0,681), nicht binär. |
+| **κ Richter ↔ Mensch** | ≥ 0,70 | **Bis dahin darf keine Quote aus dem Paar-Richter als Produktaussage zitiert werden.** Läuft unter THE-382 Slice 1 — der Richter ist bisher nur gegen sich selbst und andere Modelle geprüft, nie gegen ein menschliches Urteil. |
 
 > **κ ≥ 0,80 ist für Slice 1 ausdrücklich KEIN Ziel.** Der Slice liefert Vorschläge. Zum Tor
 > wird κ erst, wenn ein späterer Slice automatisch zusammenführen soll. Es jetzt anzustreben
