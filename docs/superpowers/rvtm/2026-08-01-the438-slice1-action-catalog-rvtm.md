@@ -3,7 +3,7 @@
 **Plan:** docs/superpowers/plans/2026-08-01-the438-slice1-action-catalog.md
 **Prämissen-Entscheidung:** THE-538 (Done, 2026-08-01) — Katalog kanonischer Handlungen als Bezugsgröße, mit Auflage
 **Datum:** 2026-08-01 · **Basis:** Branch `mganzmanninfo/the-438-slice1-action-catalog` ab `origin/master`
-**Stand:** Slice 1 gebaut (Tasks 1–8), alle Anforderungen verifiziert bis auf die unten benannten Lücken.
+**Stand:** Slice 1 gebaut (Tasks 1–8), alle drei menschlichen Tore genommen, Anforderungen verifiziert bis auf die unten benannten Lücken.
 
 Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 
@@ -57,7 +57,7 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 |---|---|---|
 | ✅ 🧑 1 | Task 1 | **Katalog-Adjudikation** — die 26 Einträge (ids, Labels, Granularität) am 2026-08-01 abgenommen und als Facette `canonicalActions` (E6 1.8.0) übernommen. `actions:derive` liefert weiterhin nur einen Vorschlag; die Ontologie ändert ein Mensch. |
 | ✅ 🧑 2 | Task 7 | Prüfsatz `actions.v1.json` eingefroren (120 Fälle, T 60 / K 60) |
-| ⬜ 🧑 3 | Task 8 | Freigabe der Tore, insbesondere: κ ist für Slice 1 **kein** Ziel |
+| ✅ 🧑 3 | Task 8 | Tore am 2026-08-01 freigegeben — einschließlich der Festlegung, dass κ für Slice 1 **kein** Ziel ist |
 
 ## Offene Punkte
 
