@@ -22,9 +22,11 @@ import {
   getNormMappings,
   listAvailableCorpusNorms,
 } from '../services/norm.service';
-import { isCorpusConfigured } from '../services/corpusClient.service';
+import { isCorpusConfigured, listTypingSummaries } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
 import { buildApplicabilityReport, loadNormWorldState } from '../services/regulationApplicability.service';
+import { buildProjectLegalApplicability } from '../services/legalApplicability.service';
+import { Project } from '../models/Project';
 import { discoverAndJudge } from '../services/lawDiscovery.service';
 import { setFindingStatus, listFindings } from '../services/lawDiscoveryFinding.service';
 import { mergeApplicability } from '../services/lawApplicabilityMerge.service';
@@ -92,6 +94,34 @@ router.get('/:projectId/norms/applicability', async (req, res) => {
   } catch (err) {
     log.error({ err, projectId: req.params.projectId }, '[norms.applicability] failed');
     return res.status(500).json({ success: false, error: 'failed to assess applicability' });
+  }
+});
+
+// THE-555 — Frage 1 durchgestochen: LegalProfile × Korpus-Typisierung.
+// Statisches Segment, daher vor den :workId-Routen. Antwort im Format der
+// Zweckklärung: „betrifft dich in Rolle X — N von M getypten Normsätzen",
+// vier Zustände statt ja/nein, Korpus-Ausfall als EIGENER Zustand.
+router.get('/:projectId/norms/legal-applicability', async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId).select('legalProfile').lean();
+    if (!project) {
+      return res.status(404).json({ success: false, error: 'project not found' });
+    }
+    if (!isCorpusConfigured()) {
+      // Kein Korpus konfiguriert ist derselbe Wahrheitswert wie „nicht
+      // erreichbar": die Norm-Seite fehlt — nicht „nichts gilt".
+      return res.json({
+        success: true,
+        data: await buildProjectLegalApplicability(project.legalProfile, async () => {
+          throw new Error('corpus not configured');
+        }),
+      });
+    }
+    const data = await buildProjectLegalApplicability(project.legalProfile, listTypingSummaries);
+    return res.json({ success: true, data });
+  } catch (err) {
+    log.error({ err, projectId: req.params.projectId }, '[norms.legal-applicability] failed');
+    return res.status(500).json({ success: false, error: 'failed to assess legal applicability' });
   }
 });
 

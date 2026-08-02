@@ -228,6 +228,47 @@ export async function getRegulationsByKeys(keys: string[]): Promise<ICorpusRegul
 }
 
 /**
+ * Schlanke Typing-Zusammenfassung ALLER Provisions (THE-555): nur die Felder,
+ * die die Anwendbarkeits-Bewertung braucht — bewusst OHNE fullText, der über
+ * den Tailnet-Draht reine Last wäre. Höchste Version je regulationKey
+ * (Muster listCorpusBySource).
+ *
+ * WIRFT bei Korpus-Ausfall — Muster listScopeProvisionsBySource: der Aufrufer
+ * (legalApplicability) MUSS Ausfall (`corpus: 'unavailable'`) von einer leeren
+ * Treffermenge unterscheiden können. Ein stilles [] sähe aus wie „kein Gesetz
+ * betrifft dich" — die gefährliche Fehlerrichtung.
+ */
+export interface CorpusTypingSummary {
+  regulationKey: string;
+  source: string;
+  versionHash: string;
+  typing?: {
+    partyRole?: string | null;
+    obligationKind?: string | null;
+    status: 'suggested' | 'confirmed' | 'rejected';
+    versionHash: string;
+    ontologyVersion: string;
+  };
+}
+
+export async function listTypingSummaries(): Promise<CorpusTypingSummary[]> {
+  // Modell zuerst (öffnet lazy die Verbindung), dann den Handshake abwarten —
+  // sonst wirft die ERSTE Query nach dem Boot mit bufferCommands:false, obwohl
+  // der Korpus erreichbar ist (dieselbe Race wie corpusHealth, THE-470).
+  const model = CorpusRegulation();
+  await waitForCorpusReadyIfConnected(CORPUS_HEALTH_READY_TIMEOUT_MS);
+  const all = await model
+    .find({}, { regulationKey: 1, source: 1, versionHash: 1, typing: 1, version: 1 })
+    .sort({ regulationKey: 1, version: -1 })
+    .lean();
+  const latest = new Map<string, CorpusTypingSummary>();
+  for (const r of all as unknown as (CorpusTypingSummary & { version: number })[]) {
+    if (!latest.has(r.regulationKey)) latest.set(r.regulationKey, r);
+  }
+  return [...latest.values()];
+}
+
+/**
  * Alle (aktuellsten) Korpus-Regulations zu den gegebenen Quellen. Nur die
  * höchste Version je regulationKey (der Crawler legt bei Änderung eine neue
  * Version an). Für den Projekt-Import (import-regulations-from-corpus.ts), weil

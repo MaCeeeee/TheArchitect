@@ -149,7 +149,21 @@ export function assessNormApplicability(
     }
   }
 
-  // 3. Bindet die Norm überhaupt eine Rolle des Profils?
+  // 3. Ist die NORM-Seite überhaupt bekannt? Eine leere Rollenliste heißt
+  //    „keine konsumierbare Typisierung", nicht „bindet niemanden" — die
+  //    Abwesenheit von Wissen als not_applicable auszugeben wäre dieselbe
+  //    Verwechslung wie beim fehlenden Profil, nur auf der anderen Seite.
+  //    (THE-555; die Verdrängung steht bewusst DAVOR: sie hängt an der
+  //    Norm-QUELLE und ist ohne Norm-Rollen entscheidbar.)
+  if (norm.addresseeClasses.length === 0) {
+    return {
+      state: 'undetermined',
+      reason:
+        'No consumable typing for this norm — its addressee classes are unknown. Unknown is not "binds nobody".',
+    };
+  }
+
+  // 4. Bindet die Norm eine Rolle des Profils?
   const matches = norm.addresseeClasses.filter((r) => roles.includes(r));
   if (matches.length === 0) {
     return {
