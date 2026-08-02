@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
+import { getRedis } from '../config/redis';
+import { isSessionActive, touchSession } from '../services/session.service';
 
 // Types are extended via src/types/express.d.ts
 
@@ -43,6 +45,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
       userId: string;
       role: string;
       type: string;
+      sid?: string;
       iat: number;
       exp: number;
     };
@@ -55,13 +58,29 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
       userId: decoded.userId,
       role: decoded.role,
       type: decoded.type as 'access' | 'refresh',
+      sid: decoded.sid,
       iat: decoded.iat,
       exp: decoded.exp,
     };
 
-    User.findById(decoded.userId)
-      .select('-passwordHash -mfaSecret')
+    // THE-535: traegt das Token eine Session-Id, muss die Sitzung noch leben —
+    // sonst wirkt "abmelden" erst mit Token-Ablauf. Faellt Redis aus, faellt
+    // die Pruefung OFFEN aus (Begruendung in session.service.ts); Tokens ohne
+    // sid (API-Key-Bruecke, Alt-Tokens von vor dem Deploy) werden nicht geprueft.
+    const sessionGate: Promise<boolean> = decoded.sid
+      ? isSessionActive(getRedis(), decoded.userId, decoded.sid)
+      : Promise.resolve(true);
+    sessionGate
+      .then((active) => {
+        if (!active) {
+          res.status(401).json({ error: 'Session revoked', code: 'SESSION_REVOKED' });
+          return null;
+        }
+        if (decoded.sid) void touchSession(getRedis(), decoded.userId, decoded.sid);
+        return User.findById(decoded.userId).select('-passwordHash -mfaSecret');
+      })
       .then((user) => {
+        if (user === null) return; // Antwort ist schon raus
         if (!user) {
           return res.status(401).json({ error: 'User not found' });
         }
@@ -124,12 +143,16 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
     });
 }
 
-export function generateAccessToken(userId: string, role: string): string {
-  return jwt.sign({ userId, role, type: 'access' }, JWT_SECRET, { expiresIn: '15m' });
+// THE-535: Tokens tragen die Session-Id (`sid`), damit Widerruf sofort wirkt
+// und die Sessions-Ansicht die aktuelle Sitzung erkennt. Optional, weil der
+// MFA-Zwischen-Token bewusst KEINE Sitzung hat (sie entsteht erst nach
+// vollstaendiger Anmeldung) und Alt-Tokens von vor dem Deploy keine kennen.
+export function generateAccessToken(userId: string, role: string, sessionId?: string): string {
+  return jwt.sign({ userId, role, type: 'access', ...(sessionId ? { sid: sessionId } : {}) }, JWT_SECRET, { expiresIn: '15m' });
 }
 
-export function generateRefreshToken(userId: string, role: string): string {
-  return jwt.sign({ userId, role, type: 'refresh' }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
+export function generateRefreshToken(userId: string, role: string, sessionId?: string): string {
+  return jwt.sign({ userId, role, type: 'refresh', ...(sessionId ? { sid: sessionId } : {}) }, JWT_REFRESH_SECRET, { expiresIn: '7d' });
 }
 
 export function verifyRefreshToken(token: string) {
@@ -137,5 +160,6 @@ export function verifyRefreshToken(token: string) {
     userId: string;
     role: string;
     type: string;
+    sid?: string;
   };
 }

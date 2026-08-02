@@ -16,6 +16,7 @@ import { createAuditEntry } from '../middleware/audit.middleware';
 import { TOTP, generateSecret, generateURI, verifySync } from 'otplib';
 import QRCode from 'qrcode';
 import { getRedis } from '../config/redis';
+import { createSession, revokeSession } from '../services/session.service';
 import {
   exchangeGoogleCode,
   exchangeGithubCode,
@@ -27,6 +28,25 @@ import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email
 import { migrateTemporaryGraph } from '../services/upload.service';
 import { HealthReport } from '../models/HealthReport';
 import { Project } from '../models/Project';
+
+
+// THE-535: EIN Weg fuer "vollstaendig angemeldet". Legt die Sitzung an (Redis,
+// TTL) und stellt beide Tokens mit ihrer `sid` aus. Der MFA-Zwischen-Token
+// laeuft bewusst NICHT hierueber — eine halbe Anmeldung ist keine Sitzung.
+async function issueSessionTokens(
+  user: { _id: unknown; role: string },
+  req: Request,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const userId = String(user._id);
+  const sid = await createSession(getRedis(), userId, {
+    device: req.get('user-agent') || 'Unknown',
+    ip: req.ip || '',
+  });
+  return {
+    accessToken: generateAccessToken(userId, user.role, sid),
+    refreshToken: generateRefreshToken(userId, user.role, sid),
+  };
+}
 
 const router = Router();
 
@@ -71,8 +91,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       );
     }
 
-    const accessToken = generateAccessToken(user._id.toString(), user.role);
-    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+    const { accessToken, refreshToken } = await issueSessionTokens(user, req);
 
     await createAuditEntry({
       userId: user._id.toString(),
@@ -250,8 +269,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       });
     }
 
-    const accessToken = generateAccessToken(user._id.toString(), user.role);
-    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+    const { accessToken, refreshToken } = await issueSessionTokens(user, req);
 
     await createAuditEntry({
       userId: user._id.toString(),
@@ -318,8 +336,7 @@ router.post('/mfa/verify', authLimiter, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid MFA code' });
     }
 
-    const accessToken = generateAccessToken(user._id.toString(), user.role);
-    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+    const { accessToken, refreshToken } = await issueSessionTokens(user, req);
 
     await createAuditEntry({
       userId: user._id.toString(),
@@ -459,8 +476,18 @@ router.post('/refresh', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    const newAccessToken = generateAccessToken(user._id.toString(), user.role);
-    const newRefreshToken = generateRefreshToken(user._id.toString(), user.role);
+    // THE-535: der Refresh fuehrt die BESTEHENDE Sitzung weiter — eine neue
+    // je Refresh wuerde die Ansicht mit Geister-Sitzungen fluten. Alt-Tokens
+    // von vor dem Deploy tragen keine sid und bekommen jetzt eine: so werden
+    // laufende Anmeldungen binnen 15 Minuten sichtbar und widerrufbar.
+    const sid =
+      decoded.sid ??
+      (await createSession(getRedis(), user._id.toString(), {
+        device: req.get('user-agent') || 'Unknown',
+        ip: req.ip || '',
+      }));
+    const newAccessToken = generateAccessToken(user._id.toString(), user.role, sid);
+    const newRefreshToken = generateRefreshToken(user._id.toString(), user.role, sid);
 
     res.json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
   } catch {
@@ -481,8 +508,14 @@ router.get('/me', authenticate, (req: Request, res: Response) => {
   });
 });
 
-// Logout (client-side token removal, audit only)
+// Logout — widerruft die Sitzung (THE-535); vorher war das ein reiner
+// Audit-Eintrag und ein bereits ausgestelltes Token blieb bis zum Ablauf
+// gueltig. Ohne sid (API-Key, Alt-Token) gibt es nichts zu widerrufen.
 router.post('/logout', authenticate, async (req: Request, res: Response) => {
+  const sid = req.jwtPayload?.sid;
+  if (sid) {
+    await revokeSession(getRedis(), req.user!._id.toString(), sid);
+  }
   await createAuditEntry({
     userId: req.user!._id.toString(),
     action: 'logout',
@@ -653,9 +686,13 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   return user;
 }
 
-function redirectWithTokens(res: Response, user: IUser, ip: string, userAgent: string) {
-  const accessToken = generateAccessToken(user._id.toString(), user.role);
-  const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+async function redirectWithTokens(res: Response, user: IUser, ip: string, userAgent: string) {
+  // THE-535: auch OAuth-Anmeldungen sind Sitzungen — sonst waere die
+  // Sessions-Ansicht fuer OAuth-Nutzer wieder strukturell leer.
+  const userId = user._id.toString();
+  const sid = await createSession(getRedis(), userId, { device: userAgent || 'Unknown', ip });
+  const accessToken = generateAccessToken(userId, user.role, sid);
+  const refreshToken = generateRefreshToken(userId, user.role, sid);
 
   createAuditEntry({
     userId: user._id.toString(),
@@ -710,7 +747,7 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
   try {
     const profile = await exchangeGoogleCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] Google callback error:', err);
     return redirectWithError(res, 'Google authentication failed');
@@ -800,8 +837,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
     }
 
     const user = await findOrCreateOAuthUser(profile);
-    const accessToken = generateAccessToken(user._id.toString(), user.role);
-    const refreshToken = generateRefreshToken(user._id.toString(), user.role);
+    const { accessToken, refreshToken } = await issueSessionTokens(user, req);
 
     createAuditEntry({
       userId: user._id.toString(),
@@ -849,7 +885,7 @@ router.get('/oauth/github/callback', async (req: Request, res: Response) => {
   try {
     const profile = await exchangeGithubCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] GitHub callback error:', err);
     return redirectWithError(res, 'GitHub authentication failed');
@@ -889,7 +925,7 @@ router.get('/oauth/microsoft/callback', async (req: Request, res: Response) => {
   try {
     const profile = await exchangeMicrosoftCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] Microsoft callback error:', err);
     return redirectWithError(res, 'Microsoft authentication failed');

@@ -713,6 +713,9 @@ export const settingsAPI = {
   getSessions: () => api.get('/settings/sessions'),
   revokeSession: (sessionId: string) =>
     api.delete(`/settings/sessions/${sessionId}`),
+  // THE-535: meldet alle ANDEREN Geraete ab; die eigene Sitzung bleibt, damit
+  // der Nutzer sich nicht mitten in der Aktion selbst aussperrt.
+  revokeOtherSessions: () => api.delete('/settings/sessions'),
   getApiKeys: () => api.get('/settings/api-keys'),
   createApiKey: (data: { name: string; permissions?: string[]; expiresInDays?: number }) =>
     api.post('/settings/api-keys', data),
