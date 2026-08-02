@@ -1,0 +1,576 @@
+{
+  "name": "Gespraechs-Nachbereitung (Running Lean)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🎙️ Pfad A — Nach jedem Gespraech\n\n**Formular auf dem Handy als Lesezeichen ablegen.**\n\nDirekt nach dem Gespraech: 2–3 Minuten Sprachnotiz aufnehmen (Sprachmemo) und hochladen — oder tippen, wenn es schneller geht.\n\nDer Rest laeuft automatisch:\nWhisper transkribiert → GPT extrahiert die Running-Lean-Felder → Zeile in der Auswertungstabelle.\n\n**Ziel:** den Faktor 3 druecken (Vorbereitung + Nachfassen + Angebot fressen heute 2/3 der Vertriebszeit).",
+        "height": 460,
+        "width": 400,
+        "color": 4
+      },
+      "id": "sticky-a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-80, 0],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## 🧠 Die einzige Regel, die zaehlt\n\nDer Extraktions-Prompt ist darauf getrimmt, **nichts zu erfinden**.\n\nWurde etwas nicht ausgesprochen, steht dort \"nicht genannt\" — nicht die plausibelste Vermutung.\n\nEin halluziniertes Budgetsignal macht die 90-Tage-Freigabe-Entscheidung wertlos. Gleiche Logik wie beim Golden Set: **lieber ehrlich leer als plausibel falsch.**\n\nZitate werden **woertlich** uebernommen — keine Paraphrase. Genau diese Originalsaetze sind spaeter das Material fuer den Mafia Offer.",
+        "height": 460,
+        "width": 380,
+        "color": 3
+      },
+      "id": "sticky-b",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1140, 0],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## ⚙️ Einrichtung (ca. 15 Min)\n\n1. **Google Sheet anlegen** mit genau diesen Spalten (Reihenfolge egal):\nDatum · Unternehmen · Person/Rolle · Gespraechstyp · Ausloeser · Bestehende Alternative · Schmerz woertlich · Top Schmerzen · Mehrfachregulierung genannt · Regularien · Herkunftsnachweis · Wirtschaftlicher Kaeufer · Budget Signal · Budget Zitat · Lieferantenrisiko · Lieferantenrisiko Notiz · Kraft Push · Kraft Pull · Kraft Traegheit · Kraft Angst · Naechster Schritt · Offene Frage · Pitch gehalten · Zitierfaehige Saetze · Transkript\n\n2. In **beiden** Google-Sheets-Knoten die Tabelle auswaehlen (steht aktuell leer).\n\n3. Im Gmail-Knoten die Empfaengeradresse pruefen.\n\n4. Workflow aktivieren → Formular-URL aus dem Trigger-Knoten kopieren → auf dem Handy als Lesezeichen speichern.\n\n**Kosten:** ~0,02 € pro Gespraech (Whisper + GPT). Bei 60 Gespraechen/Jahr rund 1,20 €.",
+        "height": 460,
+        "width": 440,
+        "color": 7
+      },
+      "id": "sticky-c",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [340, 0],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## 📊 Pfad B — Montags 08:00\n\nLiest die Tabelle und zaehlt die **vier vorab festgelegten Freigabekriterien** aus dem Fermi-Doc mit:\n\n1. PROBLEM — mind. 6 von 10 nennen Mehrfachregulierung **unaufgefordert**\n2. PREIS — mind. 3× Budgetsignal ueber 25k\n3. PARTNER — mind. 1 Partnergespraech (Risiko #1)\n4. LIEFERANTENRISIKO — mind. 1× Beschaffbarkeit signalisiert\n\nDazu die **Selbstkontrolle**: In wie vielen Gespraechen hast du gepitcht statt zugehoert?\n\nDas ist die fehlende \"Traction\"-Rubrik — drei Zahlen, jede Woche, ungeschoent.",
+        "height": 420,
+        "width": 400,
+        "color": 5
+      },
+      "id": "sticky-d",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [-80, 900],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "formTitle": "Gespraech erfassen",
+        "formDescription": "Direkt nach dem Gespraech ausfuellen. Sprachnotiz reicht — der Rest laeuft automatisch.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Unternehmen",
+              "placeholder": "z. B. BSH Hausgeraete",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Person und Rolle",
+              "placeholder": "z. B. Frau Weber, Head of Compliance",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Gespraechstyp",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  { "option": "Problem-Gespraech (Endkunde)" },
+                  { "option": "Partner-Gespraech (Kanzlei/Beratung)" },
+                  { "option": "Folgegespraech" },
+                  { "option": "Angebots-/Pilotgespraech" }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Sprachnotiz",
+              "fieldType": "file",
+              "acceptFileTypes": ".m4a,.mp3,.wav,.mp4,.mpeg,.webm",
+              "multipleFiles": false
+            },
+            {
+              "fieldLabel": "Notiz tippen (falls keine Sprachnotiz)",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Auswerten"
+        }
+      },
+      "id": "form-trigger",
+      "name": "Gespraech erfassen",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [-16, 512],
+      "webhookId": "3a1c4e7b-91d2-4f60-8c33-7de2b1f04a10",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1f2a3b4-5d6e-4f70-8a91-b2c3d4e5f601",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ Object.keys($binary || {}).length }}",
+              "rightValue": 0
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "if-sprachnotiz",
+      "name": "Sprachnotiz vorhanden?",
+      "type": "n8n-nodes-base.if",
+      "position": [208, 512],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Das Formular benennt die Binaerdatei nach dem Feldnamen.\n// Whisper erwartet sie unter \"data\" — hier robust umbenennen.\nconst keys = Object.keys($input.item.binary || {});\nif (keys.length === 0) {\n  throw new Error('Keine Sprachnotiz im Upload gefunden.');\n}\nreturn {\n  json: $input.item.json,\n  binary: { data: $input.item.binary[keys[0]] }\n};"
+      },
+      "id": "code-binary",
+      "name": "Sprachnotiz normalisieren",
+      "type": "n8n-nodes-base.code",
+      "position": [432, 400],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "de"
+        }
+      },
+      "id": "whisper",
+      "name": "Transkribieren (Whisper)",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "position": [640, 400],
+      "typeVersion": 1.8,
+      "credentials": {
+        "openAiApi": {
+          "id": "YZ0QF7aw0sxDkl9p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2c3d4-1111-4222-8333-444455556666",
+              "name": "gespraechstext",
+              "type": "string",
+              "value": "={{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-aus-sprache",
+      "name": "Text aus Sprachnotiz",
+      "type": "n8n-nodes-base.set",
+      "position": [864, 400],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2c3d4-7777-4888-8999-aaaabbbbcccc",
+              "name": "gespraechstext",
+              "type": "string",
+              "value": "={{ $json['Notiz tippen (falls keine Sprachnotiz)'] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-aus-text",
+      "name": "Text aus Tippnotiz",
+      "type": "n8n-nodes-base.set",
+      "position": [864, 624],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "text": "=Du wertest ein Kundengespraech nach der Methode \"Running Lean\" (Ash Maurya) aus.\n\n=== ABSOLUTE REGEL — WICHTIGER ALS VOLLSTAENDIGKEIT ===\nErfinde nichts. Leite nichts ab. Ergaenze nichts Plausibles.\nWenn eine Information im Gespraech NICHT ausgesprochen wurde, schreibe exakt: nicht genannt\nEin erfundenes Budgetsignal oder ein geglaetteter Schmerz macht die spaetere Freigabe-Entscheidung wertlos.\nIm Zweifel immer: nicht genannt\n\n=== ZITATE ===\nAlle als woertlich gekennzeichneten Felder werden UNVERAENDERT uebernommen:\nkeine Paraphrase, keine Grammatikkorrektur, keine Hoeflichkeitsglaettung, keine Kuerzung.\nDiese Originalsaetze sind das Material fuer das spaetere Angebot.\n\n=== KONTEXT ===\nUnternehmen: {{ $('Gespraech erfassen').item.json.Unternehmen }}\nPerson und Rolle: {{ $('Gespraech erfassen').item.json['Person und Rolle'] }}\nGespraechstyp: {{ $('Gespraech erfassen').item.json.Gespraechstyp }}\n\n=== GESPRAECHSNOTIZ ===\n{{ $json.gespraechstext }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "Ausloeser",
+              "description": "Der konkrete Ausloeser (Switching Trigger): Was ist passiert, das den Handlungsdruck erzeugt? Ein Stichtag, ein Audit-Befund, eine Aufsichtsmeldung, ein neuer Vorgesetzter, ein Vorfall. Kein allgemeiner Zustand, sondern ein Ereignis. Wenn kein Ereignis genannt wurde: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Bestehende Alternative",
+              "description": "Womit loest der Gespraechspartner das Problem HEUTE konkret? z. B. Excel-Liste, SharePoint, externes Kanzlei-Mandat, GRC-Tool (Name), gar nicht. Wenn nicht genannt: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Schmerz woertlich",
+              "description": "WOERTLICHES Zitat des staerksten geaeusserten Schmerzes, unveraendert. Keine Paraphrase. Wenn kein Schmerz ausgesprochen wurde: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Top Schmerzen",
+              "description": "Die vom Gespraechspartner UNAUFGEFORDERT genannten Hauptprobleme, kommagetrennt, in der genannten Reihenfolge. Nur was von sich aus kam, nicht was auf Nachfrage bestaetigt wurde. Wenn keine: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Mehrfachregulierung genannt",
+              "description": "Wurde das Problem mehrfach geltender Pflichten (dieselbe Anforderung in mehreren Gesetzen) angesprochen? Antworte mit genau einem Wort: ja (unaufgefordert vom Gespraechspartner), nachfrage (erst nach deiner Nachfrage), nein",
+              "required": true
+            },
+            {
+              "name": "Regularien",
+              "description": "Welche Gesetze/Regularien wurden namentlich genannt? Kommagetrennt, z. B. DSGVO, NIS2, DORA, KI-VO, CRA. Wenn keine: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Herkunftsnachweis",
+              "description": "Wie wurde die Nachvollziehbarkeit der Herkunft von Compliance-Aussagen bewertet? Antworte mit genau einem von: Kaufgrund, Nice-to-have, nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Wirtschaftlicher Kaeufer",
+              "description": "Wer entscheidet laut Gespraech ueber das Budget? Antworte mit genau einem von: Governance/Compliance/Risk, IT-Security, Enterprise Architecture, Einkauf, Geschaeftsfuehrung, unklar",
+              "required": true
+            },
+            {
+              "name": "Budget Signal",
+              "description": "Welche Groessenordnung eines Jahresbudgets wurde erkennbar? Antworte mit genau einem von: kein Signal, unter 25k, 25-70k, ueber 70k, unklar. Nur wenn tatsaechlich eine Zahl oder Groessenordnung fiel — sonst: kein Signal",
+              "required": true
+            },
+            {
+              "name": "Budget Zitat",
+              "description": "WOERTLICHES Zitat der Aussage zum Budget oder zur Beschaffung, unveraendert. Wenn nichts gesagt wurde: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Lieferantenrisiko",
+              "description": "Wurde die Frage angesprochen, ob ein kleiner bzw. Ein-Personen-Anbieter ueberhaupt beschaffbar ist (Lieferantenpruefung, ISO 27001, Ausfallsicherheit, Exit-Klausel)? Antworte mit genau einem Wort: ja oder nein",
+              "required": true
+            },
+            {
+              "name": "Lieferantenrisiko Notiz",
+              "description": "Was genau wurde zur Beschaffbarkeit gesagt — Bedenken oder Entwarnung? Wenn nichts: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Kraft Push",
+              "description": "Customer Forces — PUSH: Was treibt weg vom heutigen Zustand (Unzufriedenheit, Leidensdruck)? Ein Satz. Wenn nicht erkennbar: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Kraft Pull",
+              "description": "Customer Forces — PULL: Was zieht zu einer neuen Loesung hin (Erwartung, Wunschzustand)? Ein Satz. Wenn nicht erkennbar: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Kraft Traegheit",
+              "description": "Customer Forces — TRAEGHEIT: Was haelt am Bestehenden fest (Gewohnheit, Umstellungsaufwand, laufende Vertraege)? Ein Satz. Wenn nicht erkennbar: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Kraft Angst",
+              "description": "Customer Forces — ANGST: Welche Sorge spricht gegen den Wechsel (Risiko, Abhaengigkeit, Blamage)? Ein Satz. Wenn nicht erkennbar: nicht genannt",
+              "required": true
+            },
+            {
+              "name": "Naechster Schritt",
+              "description": "Welcher konkrete naechste Schritt wurde VEREINBART (mit wem, bis wann)? Nur wenn tatsaechlich vereinbart. Sonst: keiner vereinbart",
+              "required": true
+            },
+            {
+              "name": "Offene Frage",
+              "description": "Welche wichtige Frage blieb unbeantwortet oder wurde nicht gestellt? Ein Satz.",
+              "required": true
+            },
+            {
+              "name": "Pitch gehalten",
+              "description": "Selbstkontrolle gegen den Innovator's Bias: Hat der Interviewer die eigene Loesung praesentiert, demonstriert oder beworben, statt nur nach der Situation des Gegenuebers zu fragen? Antworte mit genau einem Wort: ja oder nein",
+              "required": true
+            },
+            {
+              "name": "Zitierfaehige Saetze",
+              "description": "Bis zu drei WOERTLICHE Saetze des Gespraechspartners, die spaeter unveraendert in ein Angebot uebernommen werden koennten, getrennt durch ein Pipe-Zeichen. Unveraendert, in seiner Sprache. Wenn keine: nicht genannt",
+              "required": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extractor",
+      "name": "Running-Lean-Extraktion",
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "position": [1216, 512],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "llm-extract",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [1264, 704],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "YZ0QF7aw0sxDkl9p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "value": {
+            "Datum": "={{ $now.toFormat('yyyy-MM-dd') }}",
+            "Unternehmen": "={{ $('Gespraech erfassen').item.json.Unternehmen }}",
+            "Person/Rolle": "={{ $('Gespraech erfassen').item.json['Person und Rolle'] }}",
+            "Gespraechstyp": "={{ $('Gespraech erfassen').item.json.Gespraechstyp }}",
+            "Ausloeser": "={{ $json.output.Ausloeser }}",
+            "Bestehende Alternative": "={{ $json.output['Bestehende Alternative'] }}",
+            "Schmerz woertlich": "={{ $json.output['Schmerz woertlich'] }}",
+            "Top Schmerzen": "={{ $json.output['Top Schmerzen'] }}",
+            "Mehrfachregulierung genannt": "={{ $json.output['Mehrfachregulierung genannt'] }}",
+            "Regularien": "={{ $json.output.Regularien }}",
+            "Herkunftsnachweis": "={{ $json.output.Herkunftsnachweis }}",
+            "Wirtschaftlicher Kaeufer": "={{ $json.output['Wirtschaftlicher Kaeufer'] }}",
+            "Budget Signal": "={{ $json.output['Budget Signal'] }}",
+            "Budget Zitat": "={{ $json.output['Budget Zitat'] }}",
+            "Lieferantenrisiko": "={{ $json.output.Lieferantenrisiko }}",
+            "Lieferantenrisiko Notiz": "={{ $json.output['Lieferantenrisiko Notiz'] }}",
+            "Kraft Push": "={{ $json.output['Kraft Push'] }}",
+            "Kraft Pull": "={{ $json.output['Kraft Pull'] }}",
+            "Kraft Traegheit": "={{ $json.output['Kraft Traegheit'] }}",
+            "Kraft Angst": "={{ $json.output['Kraft Angst'] }}",
+            "Naechster Schritt": "={{ $json.output['Naechster Schritt'] }}",
+            "Offene Frage": "={{ $json.output['Offene Frage'] }}",
+            "Pitch gehalten": "={{ $json.output['Pitch gehalten'] }}",
+            "Zitierfaehige Saetze": "={{ $json.output['Zitierfaehige Saetze'] }}",
+            "Transkript": "={{ $('Text aus Sprachnotiz').isExecuted ? $('Text aus Sprachnotiz').item.json.gespraechstext : $('Text aus Tippnotiz').item.json.gespraechstext }}"
+          },
+          "schema": [],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "sheet-append",
+      "name": "In Auswertungstabelle schreiben",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [1616, 512],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "liYJIhGZv4hbBMKo",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [1],
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "cron",
+      "name": "Montags 08:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [368, 1088],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "options": {}
+      },
+      "id": "sheet-read",
+      "name": "Gespraeche lesen",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [592, 1088],
+      "typeVersion": 4.6,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "liYJIhGZv4hbBMKo",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Zaehlt die vier vorab festgelegten Freigabekriterien aus\n// docs/strategy/2026-08-01-lean-canvas-fermi.md, Teil 5.\n\nconst rows = $input.all().map(i => i.json).filter(r => r && r['Unternehmen']);\nconst t = v => (v === null || v === undefined ? '' : String(v)).trim();\nconst ja = v => t(v).toLowerCase() === 'ja';\n\nconst problem = rows.filter(r => t(r['Gespraechstyp']).startsWith('Problem'));\nconst partner = rows.filter(r => t(r['Gespraechstyp']).startsWith('Partner'));\n\nconst mehrfach   = problem.filter(r => ja(r['Mehrfachregulierung genannt'])).length;\nconst budgetHoch = rows.filter(r => ['25-70k', 'ueber 70k'].includes(t(r['Budget Signal']))).length;\nconst lieferant  = rows.filter(r => ja(r['Lieferantenrisiko'])).length;\nconst kaufgrund  = rows.filter(r => t(r['Herkunftsnachweis']) === 'Kaufgrund').length;\nconst gepitcht   = rows.filter(r => ja(r['Pitch gehalten'])).length;\n\nconst kriterien = [\n  { name: 'PROBLEM — Mehrfachregulierung unaufgefordert', ist: mehrfach,        soll: 6, bezug: problem.length + ' Problem-Gespraeche' },\n  { name: 'PREIS — Budgetsignal ueber 25k',               ist: budgetHoch,      soll: 3, bezug: rows.length + ' Gespraeche' },\n  { name: 'PARTNER — Partnergespraeche (Risiko 1)',       ist: partner.length,  soll: 1, bezug: '90-Tage-Tor' },\n  { name: 'LIEFERANTENRISIKO — Beschaffbarkeit',          ist: lieferant,       soll: 1, bezug: rows.length + ' Gespraeche' }\n];\n\nconst kaeufer = {};\nrows.forEach(r => {\n  const k = t(r['Wirtschaftlicher Kaeufer']) || 'unklar';\n  kaeufer[k] = (kaeufer[k] || 0) + 1;\n});\n\nconst zitate = rows\n  .map(r => t(r['Zitierfaehige Saetze']))\n  .filter(z => z && z !== 'nicht genannt')\n  .slice(-5);\n\nconst zeile = k => {\n  const ok = k.ist >= k.soll;\n  return '<tr><td>' + (ok ? '✅' : '⬜') + '</td><td>' + k.name + '</td>'\n       + '<td align=\"right\"><b>' + k.ist + '</b> / ' + k.soll + '</td>'\n       + '<td>' + k.bezug + '</td></tr>';\n};\n\nconst erfuellt = kriterien.filter(k => k.ist >= k.soll).length;\n\nconst html =\n  '<h2>Running Lean — Stand nach ' + rows.length + ' Gespraechen</h2>' +\n  '<p><b>' + erfuellt + ' von 4</b> Freigabekriterien erfuellt.</p>' +\n  '<table cellpadding=\"6\" border=\"1\" style=\"border-collapse:collapse\">' +\n  '<tr><th></th><th align=\"left\">Kriterium</th><th>Ist / Soll</th><th align=\"left\">Bezug</th></tr>' +\n  kriterien.map(zeile).join('') +\n  '</table>' +\n  '<h3>Selbstkontrolle</h3>' +\n  '<p>In <b>' + gepitcht + ' von ' + rows.length + '</b> Gespraechen wurde die eigene Loesung praesentiert. ' +\n  'In der Problem-Phase soll dieser Wert bei 0 liegen.</p>' +\n  '<p>Herkunftsnachweis als Kaufgrund genannt: <b>' + kaufgrund + '</b></p>' +\n  '<h3>Wer entscheidet ueber das Budget</h3><ul>' +\n  Object.keys(kaeufer).map(k => '<li>' + k + ': ' + kaeufer[k] + '</li>').join('') +\n  '</ul>' +\n  '<h3>Zuletzt zitierfaehig (Material fuer das Angebot)</h3><ul>' +\n  (zitate.length ? zitate.map(z => '<li><i>' + z + '</i></li>').join('') : '<li>noch keine</li>') +\n  '</ul>' +\n  '<hr><p style=\"color:#666\">Messlatte aus docs/strategy/2026-08-01-lean-canvas-fermi.md, Teil 5. ' +\n  'Werden die Kriterien nach 90 Tagen verfehlt, wird das Primaermodell gekippt — nicht die Messlatte.</p>';\n\nreturn [{ json: { html, gespraeche: rows.length, erfuellt, gepitcht } }];"
+      },
+      "id": "code-auswertung",
+      "name": "Freigabekriterien auswerten",
+      "type": "n8n-nodes-base.code",
+      "position": [816, 1088],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sendTo": "m.ganzmann.info@gmail.com",
+        "subject": "=Running Lean — {{ $json.erfuellt }}/4 Kriterien nach {{ $json.gespraeche }} Gespraechen",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "gmail-digest",
+      "name": "Stand per Mail",
+      "type": "n8n-nodes-base.gmail",
+      "position": [1056, 1088],
+      "webhookId": "8f2b6c10-4a7e-4d19-9b52-c0d3e4f5a6b7",
+      "typeVersion": 2.1,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ecPVPXovc91BrJl0",
+          "name": "Gmail account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gespraech erfassen": {
+      "main": [
+        [
+          { "node": "Sprachnotiz vorhanden?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Sprachnotiz vorhanden?": {
+      "main": [
+        [
+          { "node": "Sprachnotiz normalisieren", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Text aus Tippnotiz", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Sprachnotiz normalisieren": {
+      "main": [
+        [
+          { "node": "Transkribieren (Whisper)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Transkribieren (Whisper)": {
+      "main": [
+        [
+          { "node": "Text aus Sprachnotiz", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Text aus Sprachnotiz": {
+      "main": [
+        [
+          { "node": "Running-Lean-Extraktion", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Text aus Tippnotiz": {
+      "main": [
+        [
+          { "node": "Running-Lean-Extraktion", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          { "node": "Running-Lean-Extraktion", "type": "ai_languageModel", "index": 0 }
+        ]
+      ]
+    },
+    "Running-Lean-Extraktion": {
+      "main": [
+        [
+          { "node": "In Auswertungstabelle schreiben", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Montags 08:00": {
+      "main": [
+        [
+          { "node": "Gespraeche lesen", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Gespraeche lesen": {
+      "main": [
+        [
+          { "node": "Freigabekriterien auswerten", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Freigabekriterien auswerten": {
+      "main": [
+        [
+          { "node": "Stand per Mail", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
