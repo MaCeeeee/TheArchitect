@@ -12,13 +12,13 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 | ID | Anforderung | Plan-Task | Verifikation | Status |
 |---|---|---|---|---|
 | **S1.1** | Menschliches Gold auf einer Stichprobe aus `actions.v1` (40 Paare, quer über T und K, blind gezogen), adjudiziert von einem EA | Task 3, 4, 5 | `actions.human.v1.json` existiert, Schema-valide, `annotator` + `blinded` gesetzt | ⬜ |
-| **S1.2** | Judge-vs-Mensch-Übereinstimmung gemessen, **≥ 0,7 Kappa** — auf den **vier Typen**, nicht binär | Task 2, 8 | `pairs:agreement` gibt κ + Konfusionsmatrix + Typ-Verteilung aus | ⬜ |
+| **S1.2** | Judge-vs-Mensch-Übereinstimmung gemessen, **≥ 0,7 Kappa** — auf den **vier Typen**, nicht binär | Task 2, 8 | `pairs:agreement` gibt κ + Konfusionsmatrix + Typ-Verteilung aus | 🟡 Skript ✅, wartet auf Gold |
 | **S1.3** | Die 35 % werden **umgedeutet**: nicht „eine Maßnahme erfüllt beide" (`equal`, 0/120), sondern „gemeinsamer Kern, ausgewiesene Zusätze" (`intersects`) | Task 8 | Kommentar an THE-438 + Abschnitt in `action-release-gates.md` + Korrektur im Bericht | ⬜ |
 | **S1.7** | Rubrik typisiert **vor** dem menschlichen Gold — ein binäres Gold wäre teuer erhobener Müll | Task 1 | `PAIR_RELATION_SYSTEM` existiert; `equal`-Definition wortgleich zur binären Vorgängerin | ✅ |
-| **S1.8** | Konfidenzstufen auf Typen umgestellt: A = `equal`/`subset`, B = `intersects`, C = uneins | Task 7 | Unit: Stufe B ist mit zwei Häusern erreichbar (vorher arithmetisch unmöglich) | ⬜ |
-| **S1.4** | Canary-Injektion, **Catch-Rate ≥ 90 % als Tor** | Task 6, 7 | Unit: Tor kippt den Lauf; Harness weist Rate aus | ⬜ |
-| **S1.5** | Verdikt-Verteilung + Typ-Verteilung je Arm geloggt, Kollaps-Alarm | Task 2, 7 | Unit: `collapseSignal`; Bericht zeigt Ablehnungsquote | ⬜ |
-| **S1.6** | Richter zitiert die tragende Textstelle beider Pflichten | Task 1 | Review: `PAIR_RELATION_SYSTEM` verlangt Begründung; Stichprobe im Lauf | ⬜ |
+| **S1.8** | Konfidenzstufen auf Typen umgestellt: A = `equal`/`subset`, B = `intersects`, C = uneins | Task 7 | Unit: Stufe B ist mit zwei Häusern erreichbar (vorher arithmetisch unmöglich) | ✅ |
+| **S1.4** | Canary-Injektion, **Catch-Rate ≥ 90 % als Tor** | Task 6, 7 | Unit: Tor kippt den Lauf; Harness weist Rate aus | 🟡 Tor gebaut, Lauf offen |
+| **S1.5** | Verdikt-Verteilung + Typ-Verteilung je Arm geloggt, Kollaps-Alarm | Task 2, 7 | Unit: `collapseSignal`; Bericht zeigt Ablehnungsquote | ✅ |
+| **S1.6** | Richter zitiert die tragende Textstelle beider Pflichten | Task 1 | Review: `PAIR_RELATION_SYSTEM` verlangt Begründung; Stichprobe im Lauf | ✅ |
 
 ## Messvalidität — die Punkte, an denen dieser Slice selbst scheitern kann
 
@@ -26,17 +26,17 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert
 |---|---|---|---|---|
 | **MV-1** | **Mensch sieht dieselbe geblendete Darstellung wie der Richter** — sonst ist eine Abweichung doppeldeutig (Urteil vs. Informationsvorsprung) | Task 4 | Unit: Arbeitsblatt enthält keinen Gesetzesnamen; `blinded: true` im Gold | ✅ |
 | **MV-2** | **Kein Maschinenurteil im Arbeitsblatt** — ein vorbelegter Wert misst Zustimmung, nicht Urteil | Task 4 | Unit: HTML enthält keinen Vorschlag, keine Arm-Kennzeichnung, keine Katalog-Handlung | ✅ |
-| **MV-3** | **„Unsicher" ist ein zulässiges Urteil** und wird aus dem Kappa ausgeschlossen, nicht als Dissens gezählt | Task 3, 8 | Unit: `relation: null` schema-valide; Vergleich überspringt sie | 🟡 Schema ✅, Vergleich = Task 8 |
+| **MV-3** | **„Unsicher" ist ein zulässiges Urteil** und wird aus dem Kappa ausgeschlossen, nicht als Dissens gezählt | Task 3, 8 | Unit: `relation: null` schema-valide; Vergleich überspringt sie | 🟡 Schema ✅, Vergleich gebaut, Lauf offen |
 | **MV-9** | **`intersects` wird NICHT mit `equal` verrechnet.** Wo eine binäre Sicht nötig ist, wird die Faltung ausdrücklich benannt | Task 1, 2, 7 | Unit: `foldRelation('intersects') === false`; Report nennt die Faltung | ✅ |
 | **MV-10** | **Mensch und Richter bekommen dieselbe Rubrik** — sonst misst der Kappa die Differenz der Rubriken statt der Urteile | Task 4 | Unit: Arbeitsblatt enthält die vier Definitionen wörtlich | ✅ |
 | **MV-11** | **Binäre Vorgängerfassung bleibt erhalten** — der eingefrorene Vergleichslauf muss reproduzierbar bleiben | Task 1 | `PAIR_JUDGE_SYSTEM` weiterhin exportiert, als historisch gekennzeichnet | ✅ |
 | **MV-12** | **`subset` trägt eine Richtung.** IR 8477 unterscheidet subset-of von superset-of; ohne sie ist das Vokabular nicht auf einen externen Katalog abbildbar (O-6). Der Antwortraum bleibt bei **vier**, damit κ 0,681 Vergleichsmaßstab bleibt | Task 1, 3, 4 | Unit: `subset` ohne lesbare Richtung wird verworfen, nicht still angenommen; `toIr8477` bildet beide Richtungen ab | ✅ |
 | **MV-4** | **Stichprobe deterministisch** — der Anker darf zwischen Läufen nicht wackeln | Task 3 | Unit: zweimal gezogen = identisch, arm-proportional | ✅ |
-| **MV-5** | **Kanarienvögel mechanisch konstruiert, nicht generiert** — ein Modell erbte seine eigenen blinden Flecken | Task 6 | Unit: kein LLM-Aufruf; deterministisch; beide Hälften aus Arm T | ⬜ |
-| **MV-6** | **Leere Canary-Menge ≠ bestanden** (`null` statt 100 %) und **fehlende Antwort ≠ gefangen** | Task 6 | Unit: `canaryCatchRate([])` ist `null`; `null`-Votum zählt nicht als gefangen | ⬜ |
-| **MV-7** | **Kanarienvögel erreichen nie die Stufen oder Arm-Quoten** | Task 7 | Unit: kein `canary__`-Eintrag in `tiers` | ⬜ |
-| **MV-8** | **Kanarienvögel gemischt, nicht als Block** — sonst erkennt ein Modell das Muster | Task 7 | Review der Reihenfolge im Harness | 🟡 Blatt ✅ (`interleaveByArm`), Harness = Task 7 |
-| **ADD-1** | Rein additiv: binäre Fassung bleibt exportiert, bestehende Aufrufe unverändert gültig | Task 1, 2 | Bestands-Suiten grün ohne Anpassung | ⬜ |
+| **MV-5** | **Kanarienvögel mechanisch konstruiert, nicht generiert** — ein Modell erbte seine eigenen blinden Flecken | Task 6 | Unit: kein LLM-Aufruf; deterministisch; beide Hälften aus Arm T | ✅ |
+| **MV-6** | **Leere Canary-Menge ≠ bestanden** (`null` statt 100 %) und **fehlende Antwort ≠ gefangen** | Task 6 | Unit: `canaryCatchRate([])` ist `null`; `null`-Votum zählt nicht als gefangen | ✅ |
+| **MV-7** | **Kanarienvögel erreichen nie die Stufen oder Arm-Quoten** | Task 7 | Unit: kein `canary__`-Eintrag in `tiers` | ✅ |
+| **MV-8** | **Kanarienvögel gemischt, nicht als Block** — sonst erkennt ein Modell das Muster | Task 7 | Review der Reihenfolge im Harness | ✅ |
+| **ADD-1** | Rein additiv: binäre Fassung bleibt exportiert, bestehende Aufrufe unverändert gültig | Task 1, 2 | Bestands-Suiten grün ohne Anpassung | ✅ |
 
 ## Menschliche Tore
 
