@@ -324,3 +324,11 @@ export function collapseKey(f: CollapseFields): string {
   const norm = (s: string): string => s.trim().toLowerCase().replace(/\s+/g, ' ');
   return [norm(f.schutzgut), norm(f.verpflichteter), norm(f.ausloeser), norm(f.nachweis)].join('␟');
 }
+
+/**
+ * Zwei Systemanforderungen nebeneinander für den typisierten Richter —
+ * geblendet, wie jeder andere Prompt dieses Moduls.
+ */
+export function buildSysReqPairUserPrompt(a: { text: string }, b: { text: string }): string {
+  return `A) ${blindLawNames(a.text)}\n\nB) ${blindLawNames(b.text)}`;
+}
