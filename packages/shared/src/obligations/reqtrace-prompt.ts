@@ -177,3 +177,150 @@ export function splitByAction(c: StakeholderCandidate): StakeholderCandidate[] {
   if (c.handlungen.length === 1) return [c];
   return c.handlungen.map((h) => ({ ...c, handlungen: [h] }));
 }
+
+// ─── Stufe 2: Stakeholder-Anforderung → Systemanforderung ────────────────
+
+/**
+ * Eine Systemanforderung: was das Unternehmen können muss, implementierungsfrei.
+ *
+ * Die vier Schlüsselfelder sind nicht Schmuck, sondern der Zusammenfall-Test
+ * aus ADR-0007 E5: zwei Anforderungen fallen genau dann zusammen, wenn alle
+ * vier identisch sind — dann lässt sich die Systemanforderung wortgleich
+ * formulieren. Damit ist die Entscheidung ein Feldvergleich, kein Ermessen.
+ */
+export interface SystemRequirement {
+  text: string;
+  /** Was geschützt wird — personenbezogene Daten ≠ IKT-Assets ≠ Netzsysteme. */
+  schutzgut: string;
+  /** Wer verpflichtet ist, als Adressatenklasse. */
+  verpflichteter: string;
+  /** Was sie auslöst — Frist und Schwelle hängen daran. */
+  ausloeser: string;
+  /** Wem gegenüber und womit nachgewiesen wird. */
+  nachweis: string;
+  /** Rückverweis auf ≥1 Stakeholder-Anforderung (15288 §6.4.3.2 f). */
+  derivedFrom: string[];
+  /** Ergebnis des Lexikon-Tors — der Lauf zählt Verstöße, verwirft sie nie still. */
+  implementationFree: boolean;
+}
+
+/**
+ * Wörter, die eine LÖSUNG statt einer Fähigkeit benennen.
+ *
+ * Bewusst eine Datenzeile und bewusst konservativ: ein zu scharfes Lexikon
+ * verwirft jede Systemanforderung und lässt den Lauf wie „die Kette trägt
+ * nicht" aussehen — ein falsches Negativ, das teurer wäre als ein
+ * durchgerutschter Einzelfall. Jede Erweiterung ist ein Eintrag hier, kein
+ * Prompt-Umbau.
+ */
+export const IMPLEMENTATION_LEXICON: readonly string[] = [
+  'aes', 'rsa', 'sha-', 'tls', 'ssl', 'https', 'vpn', 'siem', 'soar', 'edr', 'dlp',
+  'firewall', 'antivirus', 'blockchain', 'kubernetes', 'docker', 'active directory',
+  'ldap', 'oauth', 'saml', 'mfa-token', 'smartcard',
+];
+
+/** Versionsbehaftete Produktnennungen: `AES-256`, `TLS 1.3`, `ISO 27001`. */
+const VERSIONED_PRODUCT = /\b[A-Z][A-Za-z]{1,}[- ]\d{1,4}(\.\d+)?\b/;
+
+/**
+ * Prüft Implementierungsfreiheit (15288 §6.4.3.1) — mechanisch, per Lexikon.
+ *
+ * „AES-256 einsetzen" ist eine Implementierung. „Ruhende Daten nach Stand der
+ * Technik unlesbar halten" ist eine Fähigkeit. Der Unterschied ist am Wort
+ * ablesbar und gehört deshalb nicht vor ein Modell.
+ */
+export function violatesImplementationFreedom(text: string): boolean {
+  const t = text.toLowerCase();
+  if (IMPLEMENTATION_LEXICON.some((w) => t.includes(w))) return true;
+  return VERSIONED_PRODUCT.test(text);
+}
+
+export const SYSTEM_REQ_SYSTEM = `Du überführst EINE Anforderung aus einem Rechtsakt in eine SYSTEMANFORDERUNG an ein Unternehmen.
+
+Eine Systemanforderung sagt, WAS das Unternehmen können muss — implementierungsfrei.
+Sie nennt keine Technologie, kein Produkt, kein Verfahren und keinen Anbieter.
+
+  schlecht: "Daten mit AES-256 verschlüsseln"
+  gut:      "ruhende personenbezogene Daten für Unbefugte unlesbar halten"
+
+Nenne zusätzlich vier Bestandteile, jeweils als kurze Phrase:
+
+- "schutzgut":      WAS geschützt wird (z. B. personenbezogene Daten, IKT-Assets,
+                    Netz- und Informationssysteme).
+- "verpflichteter": WER die Pflicht trägt.
+- "ausloeser":      WAS sie auslöst — Ereignis, Schwelle oder Dauerzustand.
+- "nachweis":       WEM gegenüber und WOMIT die Erfüllung nachgewiesen wird.
+
+Diese vier entscheiden später, ob zwei Anforderungen dieselbe sind. Formuliere sie
+knapp und einheitlich, nicht als Satz.
+
+Antworte NUR mit JSON:
+{"text":"Das Unternehmen muss …","schutzgut":"…","verpflichteter":"…","ausloeser":"…","nachweis":"…"}`;
+
+/** Die Stakeholder-Anforderung, geblendet — dieselbe Garantie wie überall. */
+export function buildSystemReqUserPrompt(c: StakeholderCandidate): string {
+  return blindLawNames(c.text);
+}
+
+/**
+ * Parst eine Systemanforderung.
+ *
+ * `derivedFrom` ist PFLICHT: 15288 §6.4.3.2 f) verlangt Rückverfolgbarkeit auf
+ * die Stakeholder-Anforderung. Ohne Rückverweis ist die Anforderung erfunden,
+ * nicht abgeleitet — und genau das wäre nicht bemerkbar.
+ *
+ * Ein Lexikon-Verstoß macht die Anforderung NICHT unlesbar: er wird als
+ * `implementationFree: false` mitgeführt, damit der Lauf ihn zählen und
+ * ausweisen kann. Still verwerfen hieße, die Fehlerquote zu verstecken.
+ */
+export function parseSystemReq(raw: string, derivedFrom: string[]): SystemRequirement | null {
+  if (derivedFrom.length === 0) return null;
+
+  const m = raw.replace(/^```json\s*|\s*```$/g, '').match(/\{[\s\S]*\}/);
+  if (!m) return null;
+
+  let o: Record<string, unknown>;
+  try {
+    o = JSON.parse(m[0]);
+  } catch {
+    return null;
+  }
+
+  const fields = ['text', 'schutzgut', 'verpflichteter', 'ausloeser', 'nachweis'] as const;
+  for (const f of fields) {
+    if (typeof o[f] !== 'string' || String(o[f]).trim() === '') return null;
+  }
+
+  const text = String(o.text);
+  return {
+    text,
+    schutzgut: String(o.schutzgut),
+    verpflichteter: String(o.verpflichteter),
+    ausloeser: String(o.ausloeser),
+    nachweis: String(o.nachweis),
+    derivedFrom,
+    implementationFree: !violatesImplementationFreedom(text),
+  };
+}
+
+/** Die vier Felder, an denen der Zusammenfall hängt. */
+export type CollapseFields = Pick<
+  SystemRequirement,
+  'schutzgut' | 'verpflichteter' | 'ausloeser' | 'nachweis'
+>;
+
+/**
+ * Der Zusammenfall-Schlüssel (ADR-0007 E5).
+ *
+ * Zwei Systemanforderungen sind dieselbe, wenn dieser Schlüssel gleich ist —
+ * dann ließe sich der Satz wortgleich formulieren. Sonst bleiben es zwei
+ * Anforderungen, die sich eine Maßnahme teilen.
+ *
+ * Der Trenner ist bedeutungstragend: ohne ihn wäre ⟨"ab","c"⟩ gleich
+ * ⟨"a","bc"⟩. Normalisiert wird nur Groß-/Kleinschreibung und Rand-Leerraum —
+ * alles Weitere wäre eine stille Angleichung, die Unterschiede verschluckt.
+ */
+export function collapseKey(f: CollapseFields): string {
+  const norm = (s: string): string => s.trim().toLowerCase().replace(/\s+/g, ' ');
+  return [norm(f.schutzgut), norm(f.verpflichteter), norm(f.ausloeser), norm(f.nachweis)].join('␟');
+}
