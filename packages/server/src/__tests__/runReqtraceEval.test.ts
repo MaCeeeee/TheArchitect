@@ -186,7 +186,7 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
       requirementsPerClause: 0.95, sysReqs: 95, implFreedomFailures: 0,
       grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {}, cappedPairs: 0 },
       goldHits: [], goldHitCount: 4, ambiguousGoldMatches: [],
-      negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {},
+      negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {}, sysReqActions: {},
       verdict: 'traegt', verdictReason: '', markdown: '',
       ...over,
     }) as ReqtraceEvalResult;
@@ -274,3 +274,51 @@ describe('Eindeutige Anforderungs-Ids (THE-545)', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+/**
+ * Adressaten-korrektes Gold (THE-545, Korrektur nach Lauf 3).
+ *
+ * Lauf 3 zeigte: GOV-02 und RSK-01 verlangen laut SCF alle drei Rechtsakte —
+ * und sind damit unter unseren eigenen Regeln UNERREICHBAR, weil die Kante
+ * dora-nis2 immer verdraengt wird. Der Katalog ist adressaten-blind; fuer ein
+ * konkretes Unternehmen gilt immer nur DSGVO+DORA oder DSGVO+NIS2.
+ */
+describe('Erreichbarkeit des Golds (THE-545)', () => {
+  it('never requires dora AND nis2 in the same law set — that pair is always displaced', () => {
+    // Ein Gold-Eintrag, der beide zugleich verlangt, koennte nie bestehen:
+    // die Verdraengung schliesst die Kante aus, bevor ein Modell urteilt.
+    for (const g of SCF_GOLD) {
+      for (const set of g.lawSets) {
+        const laws: readonly string[] = set;
+        expect(laws.includes('dora') && laws.includes('nis2')).toBe(false);
+      }
+    }
+  });
+
+  it('keeps every gold entry reachable by a two-law candidate', () => {
+    // Ein Paar deckt zwei Gesetze ab. Verlangt ein Eintrag mehr, muss eine
+    // Clique ihn tragen — und die braeuchte die verdraengte Kante.
+    for (const g of SCF_GOLD) {
+      expect(g.lawSets.some((s2) => s2.length <= 2)).toBe(true);
+    }
+  });
+
+  it('records the actionId per requirement so a run can be re-scored offline', () => {
+    // Bis Lauf 3 fehlte das Feld — und machte jede Neuauswertung ohne neue
+    // LLM-Aufrufe unmoeglich.
+    expect(Object.keys(renderReqtraceReport(fakeResult()).sysReqActions)).toBeDefined();
+  });
+});
+
+function fakeResult(): ReqtraceEvalResult {
+  return {
+    articles: 1, clauses: 1, clausesPerArticle: 1, candidates: 1, afterSplit: 1,
+    splitCount: 0, unsingular: 0, clausesWithoutRequirement: 0, unreadableExtractions: 0,
+    requirementsPerClause: 1, sysReqs: 1, implFreedomFailures: 0,
+    grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {}, cappedPairs: 0 },
+    goldHits: [], goldHitCount: 0, ambiguousGoldMatches: [],
+    negativeMechanical: true, negativeSemantic: true, canaryPassed: true,
+    sysReqTexts: {}, sysReqActions: {},
+    verdict: 'traegt', verdictReason: '', markdown: '',
+  };
+}
