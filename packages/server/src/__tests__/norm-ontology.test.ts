@@ -26,6 +26,8 @@ import {
   ProvisionKindSchema,
   PARTY_ROLE_IDS,
   PartyRoleSchema,
+  findDisplacement,
+  DISPLACEMENTS,
 } from '@thearchitect/shared';
 
 describe('E6 Norm-Ontology (THE-429)', () => {
@@ -316,7 +318,68 @@ describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430 / THE-515)'
   });
 
   it('pins the shipped ontology version (deliberate gate, mirrors the CHANGELOG)', () => {
-    // 1.8.0 — canonicalActions (THE-438/THE-538). Bewusst mit dem CHANGELOG bewegt.
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.8.0');
+    // 1.9.0 — displacements (THE-545/ADR-0007). Bewusst mit dem CHANGELOG bewegt.
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.9.0');
+  });
+});
+
+/**
+ * Verdrängungs-Kanten — v1.9.0 (THE-545, ADR-0007 E6).
+ *
+ * Die Relationstypen PREVAILS_OVER/DEROGATED_BY existieren seit v1.0 als
+ * TYPEN; es gab nur nie eine konkrete Kante. Ohne sie waren am 2026-08-01
+ * ZEHN VON SECHZEHN Harmonisierungs-Kandidaten rechtlich gegenstandslos —
+ * DORA und NIS2 treffen denselben Adressaten nie gleichzeitig.
+ */
+describe('displacements facet (THE-545, ADR-0007 E6)', () => {
+  it('records DORA-over-NIS2 with citations from BOTH sides', () => {
+    const d = DISPLACEMENTS.find((x) => x.id === 'dora-prevails-nis2');
+    expect(d).toBeDefined();
+    expect(d!.prevailing.source).toBe('dora');
+    expect(d!.displaced.source).toBe('nis2');
+    expect(d!.addresseeClass).toBe('financial_entity');
+    // Beide Seiten der Herleitung: DORA erklaert sich zur lex specialis,
+    // NIS2 zieht die Konsequenz und nennt DORA ausdruecklich.
+    const cites = d!.citations.join(' ');
+    expect(cites).toMatch(/Art\.\s?1\s?Abs\.\s?2/);
+    expect(cites).toMatch(/Art\.\s?4/);
+  });
+
+  it('findDisplacement fires only for the addressee class recorded on the edge', () => {
+    // Dieselbe Klasse, die die Paar-Pruefung die "vorrangige Seite" nennt:
+    // die Kante traegt die Klasse, FUER die die Verdraengung beisst.
+    expect(findDisplacement('nis2', 'financial_entity')).toBeTruthy();
+    // Eine wesentliche Einrichtung, die KEIN Finanzunternehmen ist, bleibt
+    // unter NIS2 — die Kante ist adressaten-scharf, kein Pauschalausschluss.
+    expect(findDisplacement('nis2', 'essential_important_entity')).toBeNull();
+    // Die DSGVO wird nicht verdraengt, sie gilt daneben (DORA ErwG 16).
+    expect(findDisplacement('dsgvo', 'financial_entity')).toBeNull();
+    // Und die Richtung zaehlt: DORA wird von NIS2 nicht verdraengt.
+    expect(findDisplacement('dora', 'financial_entity')).toBeNull();
+  });
+
+  it('returns the citation with the hit — an audit needs the WHY', () => {
+    const hit = findDisplacement('nis2', 'financial_entity');
+    expect(hit!.citations.length).toBeGreaterThanOrEqual(2);
+    expect(hit!.scope.length).toBeGreaterThan(5);
+  });
+
+  it('reuses the existing PREVAILS_OVER relation type — no new type invented', () => {
+    for (const d of DISPLACEMENTS) {
+      expect(RELATION_TYPE_IDS).toContain(d.relationType);
+    }
+  });
+
+  it('references only known sources and party roles', () => {
+    for (const d of DISPLACEMENTS) {
+      expect(isNormSource(d.prevailing.source)).toBe(true);
+      expect(isNormSource(d.displaced.source)).toBe(true);
+      expect(PARTY_ROLE_IDS).toContain(d.addresseeClass);
+    }
+  });
+
+  it('bumps the ontology version to 1.9.0', () => {
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.9.0');
+    expect(() => assertOntologyValid()).not.toThrow();
   });
 });

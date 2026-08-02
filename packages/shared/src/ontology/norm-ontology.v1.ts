@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.8.0',
-  updatedAt: '2026-08-01',
+  ontologyVersion: '1.9.0',
+  updatedAt: '2026-08-02',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -32,6 +32,40 @@ export const NORM_ONTOLOGY = {
     // (kindFromStandardType) — data rows, not code special-cases.
     { id: 'framework', label: 'Architecture/Management Framework', bindingnessDefault: 'voluntary-de-facto' },
     { id: 'custom', label: 'User-curated / Custom', bindingnessDefault: 'voluntary-de-facto' },
+  ],
+
+  /**
+   * E6 — konkrete VERDRÄNGUNGS-Kanten (lex specialis). ADR-0007 E6.
+   *
+   * Die Relationstypen `PREVAILS_OVER`/`DEROGATED_BY` gibt es seit v1.0 als
+   * TYPEN — eine konkrete Kante gab es nie. Das war teuer: am 2026-08-01
+   * erwiesen sich **zehn von sechzehn** Harmonisierungs-Kandidaten als
+   * rechtlich gegenstandslos, weil DORA und NIS2 denselben Adressaten nie
+   * gleichzeitig treffen (`docs/strategy/2026-08-01-the538-dora-meldepflicht.md`).
+   *
+   * Eine Kante ist ein FAKT über das Recht, belegt am Primärtext und für alle
+   * Kunden identisch. Ob sie für ein konkretes Unternehmen greift, wird zur
+   * Abfragezeit berechnet (`findDisplacement`) und NIE gespeichert — das ist
+   * eine Eigenschaft des Adressaten, nicht der Norm.
+   *
+   * `addresseeClass` ist die Klasse, FÜR DIE die Verdrängung beißt: ein
+   * Finanzunternehmen ist zugleich wesentliche Einrichtung, und genau dann
+   * verdrängt DORA. Eine wesentliche Einrichtung ohne Finanzaufsicht bleibt
+   * unter NIS2.
+   */
+  displacements: [
+    {
+      id: 'dora-prevails-nis2',
+      relationType: 'PREVAILS_OVER',
+      prevailing: { source: 'dora' },
+      displaced: { source: 'nis2' },
+      addresseeClass: 'financial_entity',
+      scope: 'Risikomanagement- und Meldepflichten (NIS2 Kapitel IV)',
+      citations: [
+        'DORA Art. 1 Abs. 2 — lex specialis zur NIS2-Richtlinie (ErwG 16)',
+        'NIS2 Art. 4 + ErwG 28 — nennt DORA ausdrücklich; die NIS2-Vorschriften zu Risikomanagement und Meldepflichten gelten dann nicht',
+      ],
+    },
   ],
 
   /** E6 — how binding a norm is (orthogonal to kind). */

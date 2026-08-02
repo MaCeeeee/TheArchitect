@@ -61,6 +61,34 @@ export const isProvisionKind = (v: string): boolean => PROVISION_KIND_ID_SET.has
 /** Bezugsgröße der Harmonisierung (THE-438) — Schreibgrenze wie die übrigen Facetten. */
 export const isCanonicalAction = (v: string): boolean => CANONICAL_ACTION_ID_SET.has(v);
 
+export type Displacement = (typeof NORM_ONTOLOGY.displacements)[number];
+
+/** Alle Verdrängungs-Kanten (lex specialis). ADR-0007 E6. */
+export const DISPLACEMENTS: readonly Displacement[] = NORM_ONTOLOGY.displacements;
+
+/**
+ * Wird `displacedSource` für einen Adressaten dieser Klasse verdrängt?
+ *
+ * `null` heißt „keine Verdrängung" — beide Normen gelten nebeneinander. Der
+ * Treffer trägt die Zitate mit: eine Verdrängung ohne Begründung ist für ein
+ * Audit wertlos.
+ *
+ * Bewusst adressaten-scharf: DORA verdrängt NIS2 nur für Finanzunternehmen.
+ * Eine wesentliche Einrichtung ohne Finanzaufsicht bleibt unter NIS2, und die
+ * DSGVO wird gar nicht verdrängt — sie gilt daneben (DORA ErwG 16).
+ */
+export function findDisplacement(displacedSource: string, addresseeClass: string): Displacement | null {
+  return (
+    DISPLACEMENTS.find(
+      (d) => d.displaced.source === displacedSource && d.addresseeClass === addresseeClass,
+    ) ?? null
+  );
+}
+
+const PARTY_ROLE_ID_SET = new Set<string>(PARTY_ROLE_IDS);
+/** Ist der Wert eine Adressatenklasse der Ontologie? (THE-545) */
+export const isPartyRole = (v: string): boolean => PARTY_ROLE_ID_SET.has(v);
+
 // ─── Derived convenience literal unions (authoring/UI only) ──────────
 export type NormKindId = (typeof NORM_ONTOLOGY.normKinds)[number]['id'];
 export type BindingnessId = (typeof NORM_ONTOLOGY.bindingness)[number]['id'];

@@ -22,6 +22,7 @@
  *
  * Linear: THE-438 · Vorgeschichte: THE-538
  */
+import { CANARY_CATCH_MIN } from './canaries';
 
 /** Ein Prüfer-Votum. `null` = Haus hat nicht geantwortet (Ausfall, keine Ablehnung). */
 export type Vote = boolean | null;
@@ -69,6 +70,69 @@ export function cohensKappa(a: boolean[], b: boolean[]): number | null {
   return pe === 1 ? null : (po - pe) / (1 - pe);
 }
 
+/**
+ * Cohen's Kappa über n Kategorien — die Verallgemeinerung von `cohensKappa` auf
+ * die typisierte Rubrik (`equal` · `subset` · `intersects` · `unrelated`).
+ *
+ * Warum es die binäre Fassung nicht ersetzt: `cohensKappa` bleibt für echte
+ * Ja/Nein-Reihen zuständig. Beide teilen dieselben zwei Regeln — `null` bei
+ * konstantem Prüfer (Prävalenz-Paradox) und Wurf bei ungleicher Länge.
+ *
+ * Der Grund für die n-kategoriale Fassung ist gemessen: auf denselben 120
+ * Fällen stieg das Kappa zwischen den Häusern von 0,308 auf 0,681, allein weil
+ * die Mittelkategorie existierte (`docs/evals/typed-relation-experiment.md`).
+ */
+export function relationKappa(a: string[], b: string[]): number | null {
+  if (a.length !== b.length) {
+    throw new Error(`relationKappa: ungleiche Länge (${a.length} vs ${b.length}) — Prüferreihen gehören paarweise zusammen`);
+  }
+  const n = a.length;
+  if (n === 0) return null;
+
+  // Ein konstanter Prüfer macht Kappa rechnerisch 0, ohne dass Uneinigkeit
+  // vorläge. Genau diese Falle hat das Wegwerf-Skript des Experiments erwischt:
+  // 98 % Rohübereinstimmung, kollabiertes Kappa 0,000.
+  if (new Set(a).size === 1 || new Set(b).size === 1) return null;
+
+  const labels = new Set([...a, ...b]);
+  let agree = 0;
+  for (let i = 0; i < n; i++) if (a[i] === b[i]) agree++;
+  const po = agree / n;
+
+  let pe = 0;
+  for (const l of labels) {
+    pe += (a.filter((v) => v === l).length / n) * (b.filter((v) => v === l).length / n);
+  }
+  return pe === 1 ? null : (po - pe) / (1 - pe);
+}
+
+/**
+ * Zählt die Zellen der Konfusionsmatrix als `"<a>|<b>"`.
+ *
+ * Ohne sie lässt ein Dissens sich nur zählen, nicht adjudizieren. Im Experiment
+ * war genau diese Matrix der Befund: 19 der 27 Meinungsverschiedenheiten sassen
+ * in der Zelle `intersects|intersects` — die Häuser waren sich einig, dass es
+ * teilweise ist, und wurden von der binären Frage auseinanderdividiert.
+ */
+export function relationConfusion(a: string[], b: string[]): Record<string, number> {
+  if (a.length !== b.length) {
+    throw new Error(`relationConfusion: ungleiche Länge (${a.length} vs ${b.length})`);
+  }
+  const out: Record<string, number> = {};
+  for (let i = 0; i < a.length; i++) {
+    const key = `${a[i]}|${b[i]}`;
+    out[key] = (out[key] ?? 0) + 1;
+  }
+  return out;
+}
+
+/** Häufigkeit je Typ. Ausfälle (`null`) zählen nicht mit. */
+export function relationCounts(votes: (string | null)[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const v of votes) if (v !== null) out[v] = (out[v] ?? 0) + 1;
+  return out;
+}
+
 export interface HouseAgreement {
   a: string;
   b: string;
@@ -79,8 +143,51 @@ export interface HouseAgreement {
   n: number;
 }
 
+export interface RelationAgreement extends HouseAgreement {
+  /** Wo der Dissens sitzt — `"<a>|<b>"` → Anzahl. */
+  confusion: Record<string, number>;
+}
+
 /**
- * Kappa über alle Haus-Paare. Fälle, in denen eines der beiden Häuser
+ * Kappa über alle Haus-Paare auf den vier Typen. Wie `pairwiseKappa`, nur
+ * n-kategorial und mit Konfusionsmatrix: ohne sie lässt ein Dissens sich nur
+ * zählen, nicht adjudizieren.
+ */
+export function pairwiseRelationKappa(votesByHouse: Record<string, (string | null)[]>): RelationAgreement[] {
+  const names = Object.keys(votesByHouse);
+  const out: RelationAgreement[] = [];
+
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const [na, nb] = [names[i], names[j]];
+      const va = votesByHouse[na];
+      const vb = votesByHouse[nb];
+      const pa: string[] = [];
+      const pb: string[] = [];
+      for (let k = 0; k < Math.min(va.length, vb.length); k++) {
+        // Ein Ausfall ist keine Meinung — er darf die Uebereinstimmung weder
+        // heben noch senken.
+        if (va[k] !== null && vb[k] !== null) {
+          pa.push(va[k] as string);
+          pb.push(vb[k] as string);
+        }
+      }
+      const agree = pa.filter((v, k) => v === pb[k]).length;
+      out.push({
+        a: na,
+        b: nb,
+        kappa: relationKappa(pa, pb),
+        agreement: pa.length === 0 ? 0 : agree / pa.length,
+        n: pa.length,
+        confusion: relationConfusion(pa, pb),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Kappa über alle Haus-Paare, binär. Fälle, in denen eines der beiden Häuser
  * ausgefallen ist (`null`), fließen nicht ein — ein Ausfall ist keine Meinung
  * und darf die Übereinstimmung weder heben noch senken.
  */
@@ -115,7 +222,34 @@ export function pairwiseKappa(votesByHouse: Record<string, Vote[]>): HouseAgreem
 }
 
 /**
- * Konfidenzstufe aus dem Mehrhausvotum.
+ * Konfidenzstufe aus dem typisierten Mehrhausvotum.
+ *
+ * | Stufe | Kriterium |
+ * |---|---|
+ * | **A** | alle Häuser einig auf `equal` oder `subset` |
+ * | **B** | alle Häuser einig auf `intersects` — gemeinsamer Kern, Zusätze ausweisen |
+ * | **C** | keine Einigkeit über den Typ |
+ *
+ * Das repariert einen Konstruktionsfehler der binären Fassung: dort war Stufe B
+ * „Mehrheit ≥2/3" und damit bei ZWEI Häusern arithmetisch unerreichbar — eine
+ * Stufe, die nie vorkommen kann, ist keine Stufe. Jetzt trägt sie die Kategorie,
+ * die real vorkommt (44 bzw. 51 von 120 Fällen im Experiment).
+ *
+ * Ausgefallene Häuser (`null`) zählen NICHT als Gegenstimme.
+ */
+export function tierForRelations(votes: (string | null)[]): Tier {
+  const valid = votes.filter((v): v is string => v !== null);
+  if (valid.length === 0) return 'C';
+  const first = valid[0];
+  if (!valid.every((v) => v === first)) return 'C';
+  if (first === 'equal' || first === 'subset') return 'A';
+  if (first === 'intersects') return 'B';
+  return 'C';
+}
+
+/**
+ * Konfidenzstufe aus dem BINÄREN Mehrhausvotum — Vorgängerfassung, erhalten für
+ * den eingefrorenen Vergleichslauf. Für neue Läufe `tierForRelations`.
  *
  * Ausgefallene Häuser (`null`) zählen NICHT als Gegenstimme — ein stummes Haus
  * ist keine Ablehnung. Sonst würde ein Budget- oder Netzproblem systematisch
@@ -160,7 +294,18 @@ export interface ActionReport {
  *   T — gleiche kanonische Handlung: der eigentliche Messwert.
  *   K — verschiedene Handlung: darf NIE „ja" ergeben.
  */
-export function buildActionReport(arms: { P: boolean[]; T: boolean[]; K: boolean[] }): ActionReport {
+export function buildActionReport(
+  arms: { P: boolean[]; T: boolean[]; K: boolean[] },
+  /**
+   * Fangquote der Kanarienvögel — die ZWEITE Vorbedingung neben Arm P.
+   *
+   * `undefined` = binäre Vorgängerfassung ohne Kanarienvögel (nur für den
+   * eingefrorenen Vergleichslauf). `null` = typisierter Lauf, in dem KEINE
+   * Kanarienvögel geurteilt wurden → ungültig, aus demselben Grund wie ein
+   * fehlender Arm P: nicht geprüft heißt nicht bestanden.
+   */
+  canaryRate?: number | null,
+): ActionReport {
   const p = armRates(arms.P);
   const t = armRates(arms.T);
   const k = armRates(arms.K);
@@ -168,7 +313,17 @@ export function buildActionReport(arms: { P: boolean[]; T: boolean[]; K: boolean
   let valid = true;
   let reason = 'Kontrollen bestanden.';
 
-  if (p.n === 0) {
+  if (canaryRate === null) {
+    valid = false;
+    reason =
+      'Keine Kanarienvögel geurteilt — die zweite Vorbedingung ist nicht geprüft. ' +
+      'Ein Richter, der alles durchwinkt, besteht Arm P mit 100 %; erst die Kanarienvögel zeigen das.';
+  } else if (canaryRate !== undefined && canaryRate < CANARY_CATCH_MIN) {
+    valid = false;
+    reason =
+      `Kanarienvögel nur zu ${(100 * canaryRate).toFixed(0)} % gefangen (< ${100 * CANARY_CATCH_MIN} %) — ` +
+      'der Richter stempelt ab. Arm T wird nicht berichtet.';
+  } else if (p.n === 0) {
     // "Kein Arm P" heisst nicht "bestanden", sondern "nie geprueft" — genau der
     // Zustand, in dem die drei Vormittags-Messungen erhoben wurden.
     valid = false;
@@ -198,6 +353,13 @@ export function buildActionReport(arms: { P: boolean[]; T: boolean[]; K: boolean
     valid && p.rate > 0
       ? `Arm T gegen die Decke des Instruments: ${((100 * t.rate) / p.rate).toFixed(0)} %.`
       : 'Lauf ungültig — Arm T wird bewusst nicht ausgewiesen.',
+    '',
+    // MV-9: Eine gefaltete Quote sieht aus wie eine gemessene. Wer sie zitiert,
+    // muss im selben Text lesen koennen, dass `intersects` NICHT eingerechnet
+    // ist — genau diese stille Zusammenlegung erzeugte die 35 %.
+    'Lesehinweis: Die Quoten sind binär. Wo typisierte Urteile zugrunde liegen, ' +
+      'sind sie über `foldRelation` **gefaltet** — `intersects` („gemeinsamer Kern, ' +
+      'ausgewiesene Zusätze") zählt dabei NICHT als Treffer.',
     '',
     reason,
   ].join('\n');

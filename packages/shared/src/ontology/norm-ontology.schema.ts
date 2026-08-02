@@ -45,6 +45,21 @@ const RelationTypeEntry = z.object({
 const PartyRoleEntry = IdLabel.extend({ origin: z.string().min(1) });
 const MaturityScaleEntry = IdLabel.extend({ stages: z.array(z.string().min(1)).min(1) });
 const JurisdictionEntry = IdLabel.extend({ lifecycle: z.array(z.string().min(1)).min(1) });
+/**
+ * Eine konkrete Verdrängungs-Kante (ADR-0007 E6). `citations` ist Pflicht und
+ * braucht BEIDE Seiten der Herleitung — ein Audit muss lesen können, warum
+ * eine Norm die andere verdrängt, nicht nur dass sie es tut.
+ */
+const DisplacementEntry = z.object({
+  id: z.string().min(1),
+  relationType: z.string().min(1),
+  prevailing: z.object({ source: z.string().min(1) }),
+  displaced: z.object({ source: z.string().min(1) }),
+  addresseeClass: z.string().min(1),
+  scope: z.string().min(5),
+  citations: z.array(z.string().min(10)).min(2),
+});
+
 const AssuranceAxisEntry = z.object({ id: z.string().min(1), levels: z.array(z.string().min(1)).min(1) });
 const AssuranceSchemeEntry = IdLabel.extend({ axes: z.array(AssuranceAxisEntry).min(1) });
 const NormSourceEntry = z.object({
@@ -61,6 +76,7 @@ export const NormOntologySchema = z.object({
   obligationKinds: z.array(IdLabel).min(1),
   provisionKinds: z.array(IdLabel).min(1),
   relationTypes: z.array(RelationTypeEntry).min(1),
+  displacements: z.array(DisplacementEntry),
   partyRoles: z.array(PartyRoleEntry).min(1),
   canonicalActions: z.array(CanonicalActionEntry).min(1),
   maturityScales: z.array(MaturityScaleEntry).min(1),
@@ -90,6 +106,7 @@ export function assertOntologyValid(ontology: unknown = NORM_ONTOLOGY): void {
     ['obligationKinds', o.obligationKinds.map((x) => x.id)],
     ['provisionKinds', o.provisionKinds.map((x) => x.id)],
     ['relationTypes', o.relationTypes.map((x) => x.id)],
+    ['displacements', o.displacements.map((x) => x.id)],
     ['partyRoles', o.partyRoles.map((x) => x.id)],
     ['canonicalActions', o.canonicalActions.map((x) => x.id)],
     ['jurisdictions', o.jurisdictions.map((x) => x.id)],
@@ -100,6 +117,29 @@ export function assertOntologyValid(ontology: unknown = NORM_ONTOLOGY): void {
   for (const [facet, ids] of facets) {
     const d = dupes(ids);
     if (d.length) throw new Error(`ontology: duplicate ${facet} ids: ${d.join(', ')}`);
+  }
+
+  // Verdraengungs-Kanten zeigen nur auf Werte, die es gibt. Eine Kante auf
+  // eine erfundene Rolle waere stumm: sie fuerde nie feuern und saehe wie
+  // "keine Verdraengung" aus (ADR-0007 E6).
+  const relationIdSet = new Set(o.relationTypes.map((r) => r.id));
+  const sourceIdSet = new Set(o.normSources.map((s) => s.id));
+  const roleIdSet = new Set(o.partyRoles.map((p) => p.id));
+  for (const d of o.displacements) {
+    if (!relationIdSet.has(d.relationType)) {
+      throw new Error(`ontology: displacement '${d.id}' relationType '${d.relationType}' not in relationTypes`);
+    }
+    for (const [side, src] of [['prevailing', d.prevailing.source], ['displaced', d.displaced.source]] as const) {
+      if (!sourceIdSet.has(src)) {
+        throw new Error(`ontology: displacement '${d.id}' ${side} source '${src}' not in normSources`);
+      }
+    }
+    if (!roleIdSet.has(d.addresseeClass)) {
+      throw new Error(`ontology: displacement '${d.id}' addresseeClass '${d.addresseeClass}' not in partyRoles`);
+    }
+    if (d.prevailing.source === d.displaced.source) {
+      throw new Error(`ontology: displacement '${d.id}' displaces its own source`);
+    }
   }
 
   const bindingIds = new Set(o.bindingness.map((b) => b.id));
