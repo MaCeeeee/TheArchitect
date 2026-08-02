@@ -1,11 +1,22 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import crypto from 'crypto';
+import { resolveCredentialKey } from './credentialKey';
 
-const ENCRYPTION_KEY = process.env.CREDENTIAL_ENCRYPTION_KEY
-  || '0'.repeat(64); // dev fallback — 32 bytes hex
+// THE-534: der Schluessel wird geprueft, nicht geraten. In Produktion gibt es
+// keinen Ersatz — `resolveCredentialKey` wirft. Lazy aufgeloest (nicht beim
+// Import), damit der Start-Check in `index.ts` die Meldung zuerst sauber
+// ausgeben kann und Tests die Umgebung kontrollieren koennen.
+let _key: string | null = null;
+function encryptionKey(): string {
+  if (_key === null) {
+    _key = resolveCredentialKey(process.env.CREDENTIAL_ENCRYPTION_KEY, process.env.NODE_ENV);
+  }
+  return _key;
+}
 
-if (!process.env.CREDENTIAL_ENCRYPTION_KEY) {
-  console.warn('[Connection] CREDENTIAL_ENCRYPTION_KEY not set — using insecure dev key');
+/** Test-Naht: erzwingt eine erneute Aufloesung (z. B. nach env-Wechsel). */
+export function __resetCredentialKeyCache(): void {
+  _key = null;
 }
 
 export interface IConnection extends Document {
@@ -42,7 +53,7 @@ export const Connection = mongoose.model<IConnection>('Connection', connectionSc
 // ─── Credential Encryption ───
 
 export function encryptCredentials(plain: Record<string, string>): string {
-  const key = Buffer.from(ENCRYPTION_KEY, 'hex');
+  const key = Buffer.from(encryptionKey(), 'hex');
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   const json = JSON.stringify(plain);
@@ -55,7 +66,7 @@ export function decryptCredentials(blob: string): Record<string, string> {
   if (!blob) return {};
   try {
     const [ivHex, authTagHex, encryptedHex] = blob.split(':');
-    const key = Buffer.from(ENCRYPTION_KEY, 'hex');
+    const key = Buffer.from(encryptionKey(), 'hex');
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(ivHex, 'hex'));
     decipher.setAuthTag(Buffer.from(authTagHex, 'hex'));
     const decrypted = Buffer.concat([decipher.update(Buffer.from(encryptedHex, 'hex')), decipher.final()]);
