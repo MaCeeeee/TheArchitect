@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { Project } from '../models/Project';
+import { validateLegalProfile } from '@thearchitect/shared';
 import { CompliancePipelineState } from '../models/CompliancePipelineState';
 import { SimulationRun } from '../models/SimulationRun';
 import { runCypher } from '../config/neo4j';
@@ -155,8 +156,18 @@ router.put(
   audit({ action: 'update_project', entityType: 'project' }),
   async (req: Request, res: Response) => {
     try {
-      const { name, description, tags, settings, togafPhase, vision, stakeholders } = req.body;
+      const { name, description, tags, settings, togafPhase, vision, stakeholders, legalProfile } = req.body;
       const update: Record<string, unknown> = {};
+      // THE-548/555: das Anwendbarkeitsprofil ist pflegbar — aber nur mit
+      // Werten aus der Ontologie. Ein stiller zweiter Rollenraum entstuende
+      // sonst genau hier, am Rand der API.
+      if (legalProfile !== undefined) {
+        const problems = validateLegalProfile(legalProfile ?? {});
+        if (problems.length > 0) {
+          return res.status(400).json({ error: 'Invalid legal profile', details: problems });
+        }
+        update.legalProfile = legalProfile;
+      }
       if (name !== undefined) update.name = name;
       if (description !== undefined) update.description = description;
       if (tags !== undefined) update.tags = tags;
