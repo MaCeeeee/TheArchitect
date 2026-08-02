@@ -84,6 +84,18 @@ describe('assessNormApplicability — die vier Zustände (THE-548 AC-3/AC-4)', (
     expect(r.state).toBe('undetermined');
   });
 
+  it('says undetermined when the NORM side is untyped — unknown is not "binds nobody" (THE-555)', () => {
+    const r = assessNormApplicability(BANK, { source: 'lksg', addresseeClasses: [] });
+    expect(r.state).toBe('undetermined');
+  });
+
+  it('still displaces on an untyped norm — displacement hangs on the SOURCE, not the roles', () => {
+    // Bank × NIS2 ohne Norm-Rollen: die Verdraengungskante kennt nur die
+    // Quelle und die Profilrolle — sie bleibt entscheidbar.
+    const r = assessNormApplicability(BANK, { source: 'nis2', addresseeClasses: [] });
+    expect(r.state).toBe('displaced');
+  });
+
   it('checks displacement BEFORE membership — lex specialis makes the membership question moot', () => {
     // Eine Bank, die `essential_important_entity` NICHT im Profil führt:
     // Die wahre Antwort auf "gilt NIS2?" ist trotzdem "verdrängt durch DORA" —
