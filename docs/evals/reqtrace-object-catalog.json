@@ -1,0 +1,158 @@
+{
+  "catalog": [
+    {
+      "id": "sicherheitsvorfall",
+      "label": "Sicherheitsvorfall",
+      "description": "Ein Ereignis, das die Verfügbarkeit, Integrität, Vertraulichkeit oder Authentizität von Systemen oder Daten beeinträchtigt oder zu beeinträchtigen droht."
+    },
+    {
+      "id": "sicherheitsvorfall-meldung",
+      "label": "Sicherheitsvorfall-Meldung",
+      "description": "Die Benachrichtigung zuständiger Behörden oder betroffener Parteien über einen Sicherheitsvorfall, einschließlich Erstmeldung, Zwischenmeldung und Abschlussbericht."
+    },
+    {
+      "id": "datenschutzverletzung",
+      "label": "Datenschutzverletzung",
+      "description": "Die unbefugte oder zufällige Vernichtung, der Verlust, die Änderung, die unberechtigte Offenlegung von oder der Zugriff auf personenbezogene Daten."
+    },
+    {
+      "id": "cyberbedrohung",
+      "label": "Cyberbedrohung",
+      "description": "Eine identifizierte oder sich abzeichnende böswillige Aktivität oder ein Ereignis mit Potenzial, Schaden an IKT-Systemen oder Diensten zu verursachen."
+    },
+    {
+      "id": "beinahe-vorfall",
+      "label": "Beinahe-Vorfall",
+      "description": "Ein Ereignis oder eine Situation, die einen Sicherheitsvorfall hätte verursachen können, jedoch verhindert oder durch Kontrollen begrenzt wurde."
+    },
+    {
+      "id": "ikt-system",
+      "label": "IKT-System",
+      "description": "Ein Netz- und Informationssystem oder eine technische Infrastruktur für Datenverarbeitung, -speicherung und -übertragung."
+    },
+    {
+      "id": "ikt-system-aenderung",
+      "label": "Änderung an IKT-System",
+      "description": "Eine Modifikation, ein Update oder eine Umkonfiguration von IKT-Systemen, einschließlich Patches, neue Versionen und strukturelle Änderungen."
+    },
+    {
+      "id": "ikt-risiko",
+      "label": "IKT-Risiko",
+      "description": "Die Möglichkeit und das Ausmaß, dass eine Gefährdung oder ein Schwachstelle eines IKT-Systems Schaden verursacht."
+    },
+    {
+      "id": "ikt-risikomanagement",
+      "label": "IKT-Risikomanagement",
+      "description": "Der Prozess der Identifikation, Bewertung, Behandlung und Überwachung von Risiken für IKT-Systeme und deren Kontrollen."
+    },
+    {
+      "id": "schwachstelle",
+      "label": "Schwachstelle",
+      "description": "Eine Sicherheitslücke oder ein Mangel in einem IKT-System, einer Software oder einer Konfiguration, das Angriffen ausgesetzt ist."
+    },
+    {
+      "id": "personenbezogene-daten",
+      "label": "Personenbezogene Daten",
+      "description": "Informationen, die sich auf eine identifizierte oder identifizierbare natürliche Person beziehen."
+    },
+    {
+      "id": "datenverfuegbarkeit-integritaet-vertraulichkeit",
+      "label": "Datenverfügbarkeit, Integrität und Vertraulichkeit",
+      "description": "Grundlegende Schutzziele für Daten: Erreichbarkeit, Unverändertheit und Schutz vor unbefugtem Zugriff."
+    },
+    {
+      "id": "authentifizierung",
+      "label": "Authentifizierung",
+      "description": "Der Prozess oder das Verfahren zur Überprüfung der Identität eines Benutzers oder Systems, einschließlich Authentifizierungsfaktoren und -mechanismen."
+    },
+    {
+      "id": "zugriffskontrolle",
+      "label": "Zugriffskontrolle",
+      "description": "Die Regulierung von Zugang und Zugriffsrechten auf Informations- und IKT-Assets basierend auf Berechtigungen."
+    },
+    {
+      "id": "verschluesselung",
+      "label": "Verschlüsselung",
+      "description": "Die technische Maßnahme zur Umwandlung von Daten in eine unlesbbare Form und Schutz durch kryptografische Schlüssel."
+    },
+    {
+      "id": "ikt-revision",
+      "label": "IKT-Revision",
+      "description": "Die unabhängige Überprüfung und Bewertung der IKT-Risikomanagement-Systeme, -Kontrollen und deren Einhaltung."
+    },
+    {
+      "id": "ikt-governance",
+      "label": "IKT-Governance",
+      "description": "Die Governance- und Kontrollrahmen, -Strukturen und -Regelungen für die Verwaltung und Überwachung von IKT-Funktionen und -Risiken."
+    },
+    {
+      "id": "informationssicherheit",
+      "label": "Informationssicherheit",
+      "description": "Die Leitlinien, Maßnahmen und Praktiken zum Schutz von Informationen und Informationsassets vor unbefugtem Zugriff, Verwendung oder Offenlegung."
+    },
+    {
+      "id": "sicherheitsmassnahme",
+      "label": "Sicherheitsmaßnahme",
+      "description": "Eine technische, organisatorische oder prozessuale Aktion zur Prävention, Erkennung, Begrenzung oder Behebung von Sicherheitsrisiken."
+    },
+    {
+      "id": "geschaeftskontinuitaet",
+      "label": "Geschäftskontinuität",
+      "description": "Die Fähigkeit, kritische Funktionen und Dienste nach Ausfällen, Notfällen oder Störungen aufrechtzuerhalten oder wiederherzustellen."
+    },
+    {
+      "id": "korrekturmassnahme",
+      "label": "Korrekturmaßnahme",
+      "description": "Eine Maßnahme zur Behebung oder Minderung von Schwachstellen, Risiken oder Feststellungen aus Audits und Vorfällen."
+    },
+    {
+      "id": "digitale-operationale-resilienz",
+      "label": "Digitale operationale Resilienz",
+      "description": "Die Fähigkeit eines Unternehmens, digitale Risiken zu bewältigen und die Widerstandsfähigkeit von IKT-Systemen und operativen Prozessen zu gewährleisten."
+    },
+    {
+      "id": "ikt-drittdienstleister",
+      "label": "IKT-Drittdienstleister",
+      "description": "Externe Anbieter, die IKT-Dienstleistungen, -Funktionen oder -Infrastruktur bereitstellen, einschließlich deren Vereinbarungen und Risiken."
+    },
+    {
+      "id": "lieferketten-risiko",
+      "label": "Lieferketten-Risiko",
+      "description": "Das Risiko, das sich aus Abhängigkeiten von externen IKT-Drittdienstleistern und deren kritischen Lieferketten ergibt."
+    },
+    {
+      "id": "kommunikation-vorfallmeldung",
+      "label": "Kommunikation bei Vorfallmeldung",
+      "description": "Die interne und externe Kommunikation, Benachrichtigung und Mitteilung bei Sicherheitsvorfällen gegenüber Behörden und betroffenen Personen."
+    },
+    {
+      "id": "schulung-bewusstsein",
+      "label": "Schulung und Bewusstsein",
+      "description": "Programme und Maßnahmen zur Schulung und Sensibilisierung von Personal und Leitungsorganen zu IKT-Sicherheit und -Risiken."
+    },
+    {
+      "id": "budgetmittel-ressourcen",
+      "label": "Budgetmittel und Ressourcen",
+      "description": "Die finanzielle und personelle Ausstattung für IKT-Sicherheit, Schulung, Geschäftskontinuität und Risikomanagement."
+    },
+    {
+      "id": "verdaechtige-transaktion",
+      "label": "Verdächtige Transaktion",
+      "description": "Eine Transaktion, die Anzeichen für Betrug, Geldwäsche oder andere Verstöße aufweist und meldungspflichtig ist."
+    },
+    {
+      "id": "notfallkommunikation",
+      "label": "Notfallkommunikationssystem",
+      "description": "Die technischen und organisatorischen Mittel zur Aufrechterhaltung von Sprach-, Video- und Textkommunikation bei Notfällen und Ausfällen."
+    },
+    {
+      "id": "abhilfemassnahme",
+      "label": "Abhilfemaßnahme",
+      "description": "Eine Maßnahme zur technischen Unterstützung und Beratung bei der Planung und Durchführung von Abhilfe nach Sicherheitsvorfällen."
+    }
+  ],
+  "anmerkung": "Die Liste ist stark regulatorisch geprägt und konzentriert sich auf Meldepflichten, Governance und Risikomanagement. Viele Einträge sind synonyme Varianten derselben konzeptuellen Gegenstände (z.B. 20 Varianten für IKT-Risikomanagement). Das Vokabular fokussiert auf die tatsächlich unterschiedlichen GEGENSTÄNDE: Vorfälle, Meldungen, Systeme, Risiken, Maßnahmen, Drittdienstleister und governance-bezogene Arrangements. Einträge wie ‚verdächtige Transaktion' stehen isoliert und wirken aus dem finanziellen Kontext — gehören aber zu den Meldepflichten. Keine künstlichen Bündelungen erzwungen; wo fachlich klar unterscheidbar (Vorfall vs. Meldung, System vs. Daten), wurden separate Einträge gesetzt.",
+  "rawCount": 223,
+  "ratio": 7.433333333333334,
+  "unassigned": 36
+}

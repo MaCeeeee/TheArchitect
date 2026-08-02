@@ -154,6 +154,13 @@ export interface GroupingResult {
   judged: number;
   /** Verteilung der Urteile — ein Kollaps auf einen Typ ist ein Alarm. */
   relationCounts: Record<string, number>;
+  /**
+   * Paare, die wegen der Obergrenze NICHT beurteilt wurden.
+   *
+   * Sichtbar, nicht still: ein abgeschnittener Lauf liest sich sonst wie
+   * „mehr gab es nicht" — und die Trefferquote waere unerklaerlich niedrig.
+   */
+  cappedPairs: number;
 }
 
 export type JudgeFn = (system: string, user: string) => Promise<string>;
@@ -167,7 +174,12 @@ export type JudgeFn = (system: string, user: string) => Promise<string>;
  */
 export async function groupIntoMeasures(
   reqs: GroupableSysReq[],
-  opts: { judge: JudgeFn },
+  opts: {
+    judge: JudgeFn;
+    /** Obergrenze beurteilter Paare. Ueberschuss wird gezaehlt, nicht verschwiegen. */
+    maxJudgedPairs?: number;
+    onProgress?: (done: number, total: number) => void;
+  },
 ): Promise<GroupingResult> {
   const sorted = [...reqs].sort((x, y) => x.id.localeCompare(y.id));
   const excludedByDisplacement: DisplacementExclusion[] = [];
@@ -176,6 +188,10 @@ export async function groupIntoMeasures(
   const relationCounts: Record<string, number> = {};
   let judged = 0;
 
+  // Kandidaten ZUERST sammeln: nur so kennt der Fortschritt seine Gesamtzahl.
+  // Die Schleife ist quadratisch — in Lauf 2 ergaben 304 Anforderungen 2124
+  // Kandidaten-Paare, und die Phase lief ueber eine Stunde ohne Lebenszeichen.
+  const toJudge: [GroupableSysReq, GroupableSysReq][] = [];
   for (let i = 0; i < sorted.length; i++) {
     for (let j = i + 1; j < sorted.length; j++) {
       const a = sorted[i];
@@ -193,9 +209,18 @@ export async function groupIntoMeasures(
         excludedByDisplacement.push(displaced);
         continue;
       }
+      toJudge.push([a, b]);
+    }
+  }
 
+  const cap = opts.maxJudgedPairs ?? Number.POSITIVE_INFINITY;
+  const cappedPairs = Math.max(0, toJudge.length - cap);
+
+  {
+    for (const [a, b] of toJudge.slice(0, cap)) {
       // (3) Erst jetzt der typisierte Richter.
       judged += 1;
+      opts.onProgress?.(judged, Math.min(toJudge.length, cap));
       const verdict = parsePairRelation(await opts.judge(PAIR_RELATION_SYSTEM, buildSysReqPairUserPrompt(a, b)));
       if (!verdict) continue;
       relationCounts[verdict.relation] = (relationCounts[verdict.relation] ?? 0) + 1;
@@ -293,5 +318,5 @@ export async function groupIntoMeasures(
     .sort((x, y) => x.id.localeCompare(y.id));
   void inAMeasure;
 
-  return { measures, sharedCorePairs, excludedByDisplacement, collapsed, judged, relationCounts };
+  return { measures, sharedCorePairs, excludedByDisplacement, collapsed, judged, relationCounts, cappedPairs };
 }

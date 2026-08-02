@@ -56,12 +56,49 @@ import { groupIntoMeasures, type GroupableSysReq, type GroupingResult } from './
  * Quelle: docs/strategy/2026-08-01-the538-scf-durchrechnung.md
  */
 export const SCF_GOLD = [
-  { id: 'BCD-01', label: 'Business Continuity Management System', laws: ['dsgvo', 'nis2'] },
-  { id: 'CRY-01', label: 'Use of Cryptographic Controls', laws: ['dsgvo', 'nis2'] },
-  { id: 'GOV-02', label: 'Publishing Security, Compliance & Resilience Documentation', laws: ['dora', 'dsgvo', 'nis2'] },
-  { id: 'HRS-03', label: 'Defined Roles & Responsibilities', laws: ['dora', 'dsgvo'] },
-  { id: 'RSK-01', label: 'Risk Management Program', laws: ['dora', 'dsgvo', 'nis2'] },
+  { id: 'BCD-01', label: 'Business Continuity Management System', lawSets: [['dsgvo', 'nis2']] },
+  { id: 'CRY-01', label: 'Use of Cryptographic Controls', lawSets: [['dsgvo', 'nis2']] },
+  {
+    id: 'GOV-02',
+    label: 'Publishing Security, Compliance & Resilience Documentation',
+    lawSets: [
+      ['dora', 'dsgvo'],
+      ['dsgvo', 'nis2'],
+    ],
+  },
+  { id: 'HRS-03', label: 'Defined Roles & Responsibilities', lawSets: [['dora', 'dsgvo']] },
+  {
+    id: 'RSK-01',
+    label: 'Risk Management Program',
+    lawSets: [
+      ['dora', 'dsgvo'],
+      ['dsgvo', 'nis2'],
+    ],
+  },
 ] as const;
+
+/*
+ * ── WARUM `lawSets` UND NICHT `laws` — KORREKTUR NACH LAUF 3 ──
+ *
+ * Das SCF fuehrt GOV-02 und RSK-01 mit DORA **und** DSGVO **und** NIS2. Lauf 3
+ * zeigte, dass beide unter unseren eigenen Regeln UNERREICHBAR sind: die Kante
+ * dora-nis2 wird immer verdraengt (1007 Faelle), ein Paar deckt zwei Gesetze
+ * ab, und eine Clique aus drei braeuchte genau diese Kante. In den Daten kommen
+ * nur `dora+dsgvo` und `dsgvo+nis2` vor — nie alle drei.
+ *
+ * Der Grund liegt im Gold selbst: ein Kontroll-Katalog ist ADRESSATEN-BLIND.
+ * Nach unserer eigenen Primaerquellen-Pruefung vom 2026-08-01 binden DORA und
+ * NIS2 nie dasselbe Unternehmen (DORA Art. 1 Abs. 2; NIS2 Art. 4 + ErwG 28).
+ * Fuer einen konkreten Adressaten ist GOV-02 immer nur DSGVO+DORA ODER
+ * DSGVO+NIS2. Von der Kette eine Drei-Gesetze-Massnahme zu verlangen hiesse,
+ * die Blindheit zu verlangen, die wir am Katalog selbst kritisiert haben —
+ * dieselbe, die die Wert-Zahl von 16 auf 5-6 gedrueckt hat.
+ *
+ * OFFEN AUSGEWIESEN: Diese Aenderung faellt NACH Lauf 3 und nach Kenntnis des
+ * Ergebnisses. Sie ist vom Entscheider bestaetigt und wendet einen zuvor
+ * belegten Befund auf das Gold an — sie senkt keine Schwelle und aendert keine
+ * Regel der Kette. Die urspruengliche Lesart bleibt im Bericht sichtbar.
+ */
 
 /**
  * Kanonische Handlung → SCF-Kontrolle.
@@ -93,7 +130,8 @@ export const REG2REQ_RATE = 1.1;
 
 export interface GoldHit {
   id: string;
-  laws: readonly string[];
+  /** Die akzeptierten Gesetzes-Mengen — mehrere, wo der Adressat sie trennt. */
+  lawSets: readonly (readonly string[])[];
   /** Die Massnahme, die ihn wiedergefunden hat — `null` = nicht gefunden. */
   matchedBy: string | null;
 }
@@ -122,6 +160,15 @@ export interface ReqtraceEvalResult {
   canaryPassed: boolean;
   /** Id → Text der Systemanforderung — das Arbeitsblatt braucht sie zum Rendern. */
   sysReqTexts: Record<string, string>;
+  /**
+   * Id → kanonische Handlung.
+   *
+   * Fehlte bis Lauf 3 und machte jede Offline-Neuauswertung unmoeglich: der
+   * Gold-Abgleich braucht die Handlung, und aus dem Text ist sie nicht
+   * rekonstruierbar. Ein Ergebnis, das man nicht nachrechnen kann, ist als
+   * Beleg nur die Haelfte wert.
+   */
+  sysReqActions: Record<string, string | null>;
   verdict: 'traegt' | 'traegt-nicht';
   verdictReason: string;
   markdown: string;
@@ -132,7 +179,12 @@ export type AskFn = (system: string, user: string) => Promise<string>;
 /** Kern der Kette. Haeuser injiziert — kein Netz im Test. */
 export async function evaluateReqtrace(
   articles: ReqtraceArticle[],
-  opts: { ask: AskFn; onProgress?: (done: number, total: number) => void },
+  opts: {
+    ask: AskFn;
+    onProgress?: (done: number, total: number) => void;
+    onPairProgress?: (done: number, total: number) => void;
+    maxJudgedPairs?: number;
+  },
 ): Promise<ReqtraceEvalResult> {
   const perArticle = articles.map((a) => ({ article: a, clauses: segmentClauses(a) }));
   const allClauses: { article: ReqtraceArticle; clause: Clause }[] = perArticle.flatMap((p) =>
@@ -167,7 +219,7 @@ export async function evaluateReqtrace(
     }
     candidates += parsed.length;
 
-    for (const c of parsed) {
+    for (const [ci, c] of parsed.entries()) {
       const parts = splitByAction(c);
       if (parts.length > 1) splitCount += 1;
       afterSplit += parts.length;
@@ -191,7 +243,12 @@ export async function evaluateReqtrace(
 
         sysReqs.push({
           ...sys,
-          id: `${clause.id}:s${k + 1}`,
+          // Der Kandidaten-Index MUSS mit hinein: eine Klausel liefert im
+          // Schnitt 1,68 Kandidaten, und ohne ihn beginnt die Teil-Zaehlung
+          // je Kandidat wieder bei 1. Lauf 2 hatte dadurch 87 Id-Kollisionen —
+          // zwei Anforderungen wurden zu einem Knoten, und die semantische
+          // Kontrolle las die Handlung der falschen.
+          id: `${clause.id}:q${ci + 1}s${k + 1}`,
           source: article.source,
           actionId: assignment?.actionId ?? part.handlungen[0] ?? null,
           addresseeClass: article.addresseeClass,
@@ -200,7 +257,11 @@ export async function evaluateReqtrace(
     }
   }
 
-  const grouping = await groupIntoMeasures(sysReqs, { judge: opts.ask });
+  const grouping = await groupIntoMeasures(sysReqs, {
+    judge: opts.ask,
+    maxJudgedPairs: opts.maxJudgedPairs,
+    onProgress: (d, t) => opts.onPairProgress?.(d, t),
+  });
 
   // ── Positiv-Kontrolle: das externe Gold wiederfinden ────────────────────
   const byId = new Map(sysReqs.map((s) => [s.id, s]));
@@ -223,11 +284,11 @@ export async function evaluateReqtrace(
   const goldHits: GoldHit[] = SCF_GOLD.map((g) => {
     const hit = goldCandidates.find(
       (c) =>
-        g.laws.every((l) => lawsOf(c.ids).includes(l)) &&
+        g.lawSets.some((set) => set.every((l) => lawsOf(c.ids).includes(l))) &&
         actionsOf(c.ids).some((a) => (ACTION_TO_SCF[a] ?? []).includes(g.id)),
     );
     if (hit) matchesByMeasure.set(hit.id, [...(matchesByMeasure.get(hit.id) ?? []), g.id]);
-    return { id: g.id, laws: g.laws, matchedBy: hit?.id ?? null };
+    return { id: g.id, lawSets: g.lawSets, matchedBy: hit?.id ?? null };
   });
 
   // ── Negativ-Kontrollen ─────────────────────────────────────────────────
@@ -281,6 +342,7 @@ export async function evaluateReqtrace(
     negativeSemantic,
     canaryPassed,
     sysReqTexts: Object.fromEntries(sysReqs.map((s) => [s.id, s.text])),
+    sysReqActions: Object.fromEntries(sysReqs.map((s) => [s.id, s.actionId])),
     verdict: 'traegt' as const,
     verdictReason: '',
     markdown: '',
@@ -344,7 +406,7 @@ export function renderReqtraceReport(r: ReqtraceEvalResult): ReqtraceEvalResult 
     '',
     `| SCF | Gesetze | wiedergefunden durch |`,
     '| --- | --- | --- |',
-    ...r.goldHits.map((g) => `| ${g.id} | ${g.laws.join(' + ')} | ${g.matchedBy ?? '—'} |`),
+    ...r.goldHits.map((g) => `| ${g.id} | ${g.lawSets.map((s2) => s2.join(' + ')).join(' *oder* ')} | ${g.matchedBy ?? '—'} |`),
     '',
     `**${r.goldHitCount} von ${SCF_GOLD.length}** (Schwelle ${GOLD_HITS_MIN}).`,
     r.ambiguousGoldMatches.length
@@ -361,7 +423,10 @@ export function renderReqtraceReport(r: ReqtraceEvalResult): ReqtraceEvalResult 
     `| Kanarienvogel — dieselbe Anforderung zweimal ergibt eine Maßnahme | ${r.canaryPassed ? '✅' : '❌'} |`,
     '',
     `Durch Verdrängung ausgeschlossen: ${r.grouping.excludedByDisplacement.length} Paar(e). ` +
-      `Vom Richter geurteilt: ${r.grouping.judged}.`,
+      `Vom Richter geurteilt: ${r.grouping.judged}.` +
+      (r.grouping.cappedPairs
+        ? ` ⚠️ **${r.grouping.cappedPairs} Paar(e) wurden NICHT beurteilt** (Obergrenze erreicht) — die Trefferquote ist dadurch eher zu niedrig.`
+        : ''),
     '',
     '## 3. Kalibrierung der Extraktion',
     '',
@@ -416,7 +481,8 @@ async function main(): Promise<void> {
   const laws = loadReqtraceLaws();
   const result = await evaluateReqtrace(laws.articles, {
     ask,
-    onProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Klausel ${d}/${t}`),
+    onProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Klausel ${d}/${t}   `),
+    onPairProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Paar ${d}/${t}   `),
   });
 
   console.log(`\n${result.markdown}`);

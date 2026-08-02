@@ -99,11 +99,23 @@ work happens and where effort is shared across laws.
 _Avoid_: Requirement, Control (ambiguous: catalogues call both the demand and its realisation
 a "control")
 
+**Business Capability**:
+**What** the enterprise is able to do, named **noun + verb** — the noun being a business
+object, "a single, persistent thing that is of interest to the business" (TOGAF G233 §6.1.1).
+A Capability is what gets "managed and developed together as a single, autonomous unit"
+(ArchiMate Cookbook §8.2.9), which makes it the unit on which sharing across laws is decided.
+A Measure is a Capability **instantiated** — with people, processes and tools. Two System
+Requirements may share a Measure only if they call for the same Capability; the same verb on
+a different business object is a different Capability.
+_Avoid_: Function, Feature, Fähigkeit-as-skill (a Capability belongs to the enterprise, not to
+a person or a component)
+
 **Harmonisation**:
 Two Stakeholder Requirements from different legal acts collapse into **one** System
 Requirement **only if** protected interest, obliged party, trigger and evidence are identical
 — i.e. the System Requirement can be worded identically. Otherwise they remain two System
-Requirements sharing **one** Measure. The shared Measure is the normal case; the collapse is
+Requirements sharing **one** Measure. Sharing is decided at the **Capability** level: same
+business object *and* same action. The shared Measure is the normal case; the collapse is
 the exception and is tested, never assumed. Measured 2026-08-01: `equal` occurred in 0 of 120
 pairs.
 _Avoid_: Merge, Deduplication (both suggest one of the two demands disappears — it does not;
