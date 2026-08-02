@@ -19,6 +19,7 @@ import RemediateGateway from './RemediateGateway';
 import GapAnalysis from './GapAnalysis';
 import RegulationsPanel from './RegulationsPanel';
 import ApplicabilityCheck from './ApplicabilityCheck';
+import LegalApplicabilityCheck from './LegalApplicabilityCheck';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -140,6 +141,8 @@ export default function CompliancePage() {
                   navigate(`/project/${projectId}/compliance/matrix`);
                 }}
               />
+              {/* THE-548/555 — does this law bind US? Profile x corpus typing, four states */}
+              <LegalApplicabilityCheck />
               {/* UC-LAW-001 — which laws apply, derived from elements + wizard context */}
               <ApplicabilityCheck />
               {/* THE-390 P4b — corpus laws enter the pipeline from here */}

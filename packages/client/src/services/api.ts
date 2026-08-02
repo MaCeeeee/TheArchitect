@@ -417,6 +417,9 @@ export const normsAPI = {
   // check over elements (incl. AI-wizard provenance) + project context.
   applicability: (projectId: string) =>
     api.get(`/projects/${projectId}/norms/applicability`),
+  // THE-555: Frage 1 — LegalProfile x Korpus-Typisierung, vier Zustaende je Gesetz.
+  legalApplicability: (projectId: string) =>
+    api.get(`/projects/${projectId}/norms/legal-applicability`),
   // UC-LAW-002 — corpus-wide discovery (LLM judge). Explicit user action, costs provider money.
   // Long-running: with LAW_DISCOVERY_HYDE on, a run is one HyDE rewrite + one vector search +
   // up to LAW_DISCOVERY_MAX_JUDGE sequential judge calls. The default 30s tripped once HyDE
