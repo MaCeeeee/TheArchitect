@@ -1,5 +1,7 @@
 # Dependencies
-node_modules/
+# No trailing slash: also ignores node_modules symlinks (git worktrees create
+# these), not just real directories. A trailing slash matches directories only.
+node_modules
 
 # Build output
 dist/
