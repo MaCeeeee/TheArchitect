@@ -8,6 +8,8 @@ declare global {
         userId: string;
         role: string;
         type: 'access' | 'refresh';
+        /** Session-Id (THE-535) — fehlt bei API-Keys und Alt-Tokens von vor dem Deploy. */
+        sid?: string;
         iat: number;
         exp: number;
       };

@@ -10,6 +10,7 @@ import { Project } from '../models/Project';
 import { getAllConnectorTypes, getConnector } from '../services/connectors';
 import type { ConnectorConfig, ConnectorType, AuthMethod } from '../services/connectors/base.connector';
 import { getRedis } from '../config/redis';
+import { listSessions, revokeSession, revokeAllSessions } from '../services/session.service';
 
 const router = Router();
 
@@ -200,42 +201,35 @@ router.delete('/oauth-providers/:provider', async (req: Request, res: Response) 
   res.json({ message: `${provider} unlinked` });
 });
 
-// GET /sessions
+// GET /sessions — THE-535: die Schreibseite existiert jetzt (session.service),
+// diese Ansicht ist nicht mehr strukturell leer. `current` kommt aus der
+// Session-Id im Token — der alte Vergleich gegen `iat` (Sekunden!) haette
+// zwei Anmeldungen derselben Sekunde zu einer Sitzung verschmolzen.
 router.get('/sessions', async (req: Request, res: Response) => {
-  const redis = getRedis();
-  const userId = String(req.user!._id);
-  const keys = await redis.keys(`session:${userId}:*`);
-  const sessions = [];
-
-  for (const key of keys) {
-    const data = await redis.get(key);
-    if (data) {
-      try {
-        const session = JSON.parse(data);
-        const sessionId = key.split(':').pop();
-        sessions.push({
-          id: sessionId,
-          device: session.device || 'Unknown',
-          ip: session.ip || '',
-          lastActive: session.lastActive || session.createdAt,
-          current: sessionId === req.jwtPayload?.iat?.toString(),
-        });
-      } catch {
-        // Skip invalid session data
-      }
-    }
-  }
-
+  const sessions = await listSessions(getRedis(), String(req.user!._id), req.jwtPayload?.sid);
   res.json(sessions);
+});
+
+// DELETE /sessions — alle ANDEREN Sitzungen abmelden (Geraeteverlust-Fall).
+// Die eigene bleibt: wer "ueberall abmelden" klickt, will nicht selbst
+// mitten in der Aktion ausgesperrt werden.
+router.delete('/sessions', async (req: Request, res: Response) => {
+  const userId = String(req.user!._id);
+  const revoked = await revokeAllSessions(getRedis(), userId, req.jwtPayload?.sid);
+  await createAuditEntry({
+    userId,
+    action: 'settings.session.revoke_all',
+    entityType: 'session',
+    ip: (typeof req.ip === 'string' ? req.ip : '') || '',
+    userAgent: req.get('user-agent') || '',
+  });
+  res.json({ revoked });
 });
 
 // DELETE /sessions/:sessionId
 router.delete('/sessions/:sessionId', async (req: Request, res: Response) => {
-  const redis = getRedis();
   const userId = String(req.user!._id);
-  const key = `session:${userId}:${req.params.sessionId}`;
-
-  const deleted = await redis.del(key);
+  const deleted = await revokeSession(getRedis(), userId, String(req.params.sessionId));
   if (!deleted) return res.status(404).json({ error: 'Session not found' });
 
   await createAuditEntry({
