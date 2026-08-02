@@ -11,6 +11,8 @@
 > | **THE-549** | REQ-REQHARM-001.5a — Fristobjekt ⟨Dauer, Bezugspunkt, Stufe⟩ | 80,0 |
 > | THE-550 | ENTSCHEIDUNG Absatz-Granularität + stabile Norm-Id — nur angelegt | — |
 > | THE-551 | ENTSCHEIDUNG Ziel-Architekturebene — nur angelegt | — |
+>
+> **RVTM:** `docs/superpowers/rvtm/2026-08-03-kundenseite-meldepflicht-rvtm.md`
 
 **Der Befund in einem Satz:** Das Modell kennt das Recht ausgezeichnet und den Kunden gar nicht.
 

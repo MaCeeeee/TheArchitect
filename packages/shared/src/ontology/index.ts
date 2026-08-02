@@ -144,3 +144,17 @@ export function exportForOntoLearner(ontology = NORM_ONTOLOGY): OntoLearnerExpor
     taxonomy: [],
   };
 }
+
+// ── THE-548: Anwendbarkeitsprofil des Unternehmens ─────────────────────────
+// Die Kundenseite zur Norm-Seite oben — und der erste Produktaufrufer von
+// `findDisplacement`.
+export {
+  assessNormApplicability,
+  validateLegalProfile,
+} from './legal-profile';
+export type {
+  LegalProfile,
+  NormDescriptor,
+  LegalApplicabilityState,
+  LegalApplicabilityAssessment,
+} from './legal-profile';
