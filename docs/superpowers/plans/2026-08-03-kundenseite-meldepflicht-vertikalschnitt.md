@@ -1,5 +1,17 @@
 # Tagesplan 2026-08-03 — die Kundenseite, senkrecht durch die Meldepflicht
 
+> **Pre-Flight gefahren am 2026-08-02, Tickets angelegt.** Die Stufe 1 hat ein Beinahe-Duplikat
+> gefunden: **THE-544** („Verdrängung als Ausschluss-Gate") baut bereits den Konsumenten von
+> `PREVAILS_OVER` — er löst nur bewusst *nicht* nach Kunde auf, weil es kein Kundenprofil gibt.
+> Block 2 wurde daraufhin verkleinert: **nur das Profil, nicht das Gate.**
+>
+> | Ticket | | Score |
+> | --- | --- | --- |
+> | **THE-548** | REQ-LAW-001.11 (F5) — Anwendbarkeitsprofil, *blockt THE-544* | 94,3 |
+> | **THE-549** | REQ-REQHARM-001.5a — Fristobjekt ⟨Dauer, Bezugspunkt, Stufe⟩ | 80,0 |
+> | THE-550 | ENTSCHEIDUNG Absatz-Granularität + stabile Norm-Id — nur angelegt | — |
+> | THE-551 | ENTSCHEIDUNG Ziel-Architekturebene — nur angelegt | — |
+
 **Der Befund in einem Satz:** Das Modell kennt das Recht ausgezeichnet und den Kunden gar nicht.
 
 **Die schärfste Illustration, am Bestand verifiziert:** `findDisplacement(displacedSource, addresseeClass)` ist korrekt gebaut, am Primärtext belegt und mit zwei Zitaten hinterlegt — und hat **null Produktaufrufer**. Einziger Aufruf: `packages/server/src/evals/reqtrace/measureGrouping.ts:105`, also der Eval-Pfad. Das zweite Argument hat im Produkt keine Quelle, weil `Project.ts` kein einziges Feld für Sektor, Rolle, Größe oder Jurisdiktion führt.
