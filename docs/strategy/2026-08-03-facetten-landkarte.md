@@ -43,11 +43,11 @@ Dieselbe Facette kann an fünf Stellen leben, und der Bestand zeigt: **sie tut e
 |---|---|---|
 | D1 | ✅ 19 `partyRoles` | `norm-ontology.v1.ts:162` |
 | D2 | ✅ Typisierung gemessen (THE-421/THE-515) | `evals/typingGolden.ts`, `typingMetrics.ts` |
-| D3 | ❌ **0× `partyRole` im Korpus** — die Typisierung blieb im Prüfstand | `norms.json`: 0 Treffer |
-| D4 | ⚠️ Kundenseite ✅ (`LegalProfile.addresseeClasses`) · **Norm-Seite ❌** — keine Provision trägt ihre Rolle | `Project.ts:164` · [THE-540](https://linear.app/thearchitect/issue/THE-540) Backlog |
-| D5 | ❌ | — |
+| D3 | ✅ **korrigiert 03.08.:** der Korpus (Server B) trägt `typing.partyRole` auf **77 %** von 1640 Provisions (Status `suggested`) | THE-540 Pre-Flight-Messung · `corpusClient.service.ts:88-103` |
+| D4 | ✅ beide Seiten: Kundenseite `LegalProfile` · Norm-Seite `typedProvision.service.ts` mit Hausregel (`rejected` raus, `versionHash`-Match) | `Project.ts:164` · `typedProvision.service.ts` |
+| D5 | ❌ Konsumenten des Joins sind **Skripte** (`build-pairs-v2`, `obligation-slots`), keine Route | — |
 
-**Das ist die teuerste einzelne Lücke:** ich habe am 02.08. die Kundenseite gebaut — und übersehen, dass die **Norm-Seite dieselbe Lücke hat**. In den Gate-Tests steht die Rolle je Norm von Hand (`legalProfile.test.ts:32-37`). Frage 1 braucht beide Enden.
+> **Korrektur 03.08. an der Erstfassung:** hier stand *„0× `partyRole` im Korpus — die Typisierung blieb im Prüfstand"*. **Falsch.** Der Beleg war der lokale Export `norms.json` — der das `typing`-Subdokument schlicht nicht enthält. Die Datenbank auf Server B trägt es (Messung im THE-540-Pre-Flight: 1263/1640). **Ein Export ist kein Datenbankstand.** Die echte Lücke dieser Facette ist D5, nicht D3 — und THE-540 Achse 1 ist gebaut und getestet (23/23), nicht offen.
 
 ### 3. Kanonische Handlung — dient Fragen 3, 6 · **das Gelenk**
 
@@ -99,7 +99,7 @@ Der Extraktionspfad existiert; der Werteraum wäre bottom-up ableitbar wie Handl
 |---|---|---|
 | D1 | ✅ `obligationKinds` (3) · Slot `modalitaet` | `norm-ontology.v1.ts:86` · `slots.ts:103` |
 | D2 | ✅ Slots gemessen; `requirement`/`constraint`-Trennung | THE-438/545 |
-| D3 | ❌ 0 im Korpus | `norms.json` |
+| D3 | ⚠️ **korrigiert 03.08.:** `typing.obligationKind` auf **82 %** der Provisions (Server B) — vorhanden, aber unter dem Freigabe-Tor (macro-F1 0,579 < 0,75) und darum **nicht konsumierbar** | THE-540 Pre-Flight · `typing-release-gates.md` |
 | D4/D5 | ⚠️ Projektion trennt constraint/requirement — aber als **Signalwort-Heuristik**, nicht über den gemessenen Slot-Weg | `requirementProjection.service.ts:48` |
 
 Zwei Wege für dieselbe Facette: der gemessene (Slots) und der produktive (Heuristik) — **sie sind nicht verbunden.** Dasselbe Muster wie bei der Handlung.
@@ -137,7 +137,7 @@ Zwei Wege für dieselbe Facette: der gemessene (Slots) und der produktive (Heuri
 
 | # | Frage | Reife | Der eine fehlende Schritt |
 |---|---|---|---|
-| 1 | Betrifft mich das Gesetz? | ⚠️ **halb** | Norm-Seite: Rolle je Provision in den Korpus (THE-540) + Anschluss von `assessNormApplicability` |
+| 1 | Betrifft mich das Gesetz? | ⚠️ **halb** | *(korrigiert 03.08.)* beide Datenquellen existieren — fehlt: `assessNormApplicability` an den Korpus-Join anschließen und einem Nutzer zeigen (D5) |
 | 2 | Welcher Teil? | ⚠️ **grob** | Absatz-Granularität (THE-550) |
 | 3 | Anforderungen an Prozess/App/Daten/Org? | ❌ | Ebenen-Facette — erst messen (THE-551) |
 | 4 | Erfülle ich es — wo? | ⚠️ **halb** | Drei-Tore-Status + Evidenz-Objekt (**kein Ticket**) |
@@ -154,10 +154,12 @@ Zwei Wege für dieselbe Facette: der gemessene (Slots) und der produktive (Heuri
 ```
 D1 Werteraum      ████████░  8 von 9 Facetten
 D2 gemessen       ███████░░  7 von 9
-D3 im Korpus      █░░░░░░░░  1 von 9  ⟵ DER GRABEN
+D3 im Korpus      ███░░░░░░  3 von 9  ⟵ korrigiert 03.08. (war fälschlich 1)
 D4 Produktmodell  ████░░░░░  punktuell
-D5 Konsument      ██░░░░░░░  2 von 9
+D5 Konsument      ██░░░░░░░  2 von 9  ⟵ DER GRABEN sitzt hier
 ```
+
+> **Korrektur 03.08.:** Die Erstfassung zählte D3 mit 1 von 9 — auf Basis des Exports `norms.json`, der das `typing`-Subdokument nicht enthält. Gemessen an der Datenbank (Server B) tragen auch Adressat/Rolle (77 %) und Deontik (82 %, unter Qualitätstor) den Korpus. **Der Graben ist real, aber er sitzt eine Ebene höher:** zwischen dem, was der Korpus weiß, und dem, was ein Nutzer erreicht.
 
 **Alles Gemessene blieb im Prüfstand.** Die Typisierung (THE-421), die Handlungs-Klassifikation (THE-438), die Anforderungskette (THE-545), das Fristobjekt (THE-549) — vier saubere Messungen, und keine hat je in den Korpus zurückgeschrieben. Das ist kein Zufall, sondern war je Ticket die **richtige** Vorsicht („read-only, keine Produktionsdaten"). In Summe ist daraus aber ein Systemzustand geworden: **die Ontologie weiß viel, der Korpus weiß nichts davon.**
 
@@ -169,7 +171,7 @@ Die Konsequenz für jede weitere Arbeit: **nicht mehr Facetten bauen — die geb
 
 | # | Lücke | Fragen | Ticket | Charakter |
 |---|---|---|---|---|
-| 1 | **Rolle + Deontik je Provision in den Korpus** (Typisierung anwenden statt nur messen) | 1, 2 | THE-540 (Backlog) | Bau — Prämisse gemessen (THE-421) |
+| 1 | ~~Rolle + Deontik je Provision in den Korpus~~ **korrigiert 03.08.: liegt im Korpus.** Achse 1 (Adressat) ist gebaut + getestet; offen sind **Achse 2** (Deontik, gesperrt bis macro-F1 ≥ 0,75) und der **Produkt-Konsum** des Joins | 1, 2 | THE-540 (Achse 1 ✅ · Achse 2 ⛔) | Entsperrung via THE-421 Typing-Slice |
 | 2 | **Absatz-Granularität + stabile Norm-Id** | 2, 5, 7 | THE-550 | Entscheidung — vor jedem Skalieren |
 | 3 | **`assessNormApplicability` anschließen** (Route/Report) | 1 | Teil von THE-544-Umfeld | Bau, klein |
 | 4 | **Drei-Tore-Status + Evidenz-Objekt** | 4, 7 | [THE-552](https://linear.app/thearchitect/issue/THE-552) · 77,1 | größter Bau — **eigener Pre-Flight vor jeder Zeile Code** |
