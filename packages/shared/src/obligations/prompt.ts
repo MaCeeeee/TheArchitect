@@ -164,6 +164,57 @@ export function buildClassifyUserPrompt(o: ObligationRef): string {
   return renderObligation(o);
 }
 
+// ─── 2b. Empfänger-Vokabular ─────────────────────────────────────────────
+/**
+ * Leitet aus den freien `empfaenger`-Formulierungen ein Vokabular ab —
+ * dieselbe Methode wie beim Handlungs-Katalog: erst frei extrahieren, dann
+ * bündeln, KEINE Vorgabeliste.
+ *
+ * Warum das gebraucht wird: „Aufsichtsbehörde", „die zuständige Behörde", „das
+ * CSIRT", „EBA, ESMA oder EIOPA" sind Freitext. Auf Freitext lässt sich nicht
+ * paaren — und die Empfängerklasse ist eine der vier Achsen, auf denen zwei
+ * Pflichten überhaupt vergleichbar sind (THE-382, Prüfsatz-Reparatur).
+ */
+export const RECIPIENT_DERIVE_SYSTEM = `Du leitest aus einer Liste von EMPFÄNGERN regulatorischer Pflichten ein Vokabular ab.
+
+Der Empfänger ist, an WEN eine Pflicht adressiert ist — wer die Meldung, die Auskunft, die
+Unterlage bekommt. NICHT wer verpflichtet ist.
+
+Regeln:
+- Bündle Formulierungen, die DENSELBEN Empfänger meinen ("Aufsichtsbehörde", "die zuständige
+  Behörde" gehören zusammen).
+- Trenne, was rechtlich verschieden ist: eine Behörde ist nicht dasselbe wie die betroffene
+  Person, und eine Fachaufsicht nicht dasselbe wie eine Datenschutzaufsicht.
+- Wenn eine Pflicht keinen externen Empfänger hat (rein interne Maßnahme), ist das eine
+  eigene Klasse.
+- Gib KEINE Anzahl vor und erfinde keine Klassen, die in der Liste nicht vorkommen.
+- Lässt sich eine Formulierung NICHT sinnvoll bündeln, sag das ausdrücklich.
+
+Antworte NUR mit JSON:
+{"classes":[{"id":"<kebab-case>","label":"<kurz>","description":"<ein Satz>"}],"unbundled":["<Formulierung>"]}`;
+
+/**
+ * Ordnet einen einzelnen Empfänger einer der abgeleiteten Klassen zu.
+ * `keine` ist eine erstklassige Antwort — ein erzwungener Treffer verfälscht
+ * die Achse und paart Pflichten, die nichts miteinander zu tun haben.
+ */
+export function buildRecipientClassifySystem(
+  classes: { id: string; label: string; description: string }[],
+): string {
+  const list = classes.map((c) => `- ${c.id}: ${c.label} — ${c.description}`).join('\n');
+  return `Ordne den Empfänger GENAU EINER Klasse zu.
+
+${list}
+- ${NO_ACTION}: keine der Klassen passt
+
+Antworte NUR mit JSON: {"id":"<klassen-id oder ${NO_ACTION}>"}`;
+}
+
+/** Der Empfänger, geblendet wie alles andere. */
+export function buildRecipientClassifyUserPrompt(recipient: string): string {
+  return `Empfänger: ${blindLawNames(recipient)}`;
+}
+
 // ─── 3. Paar-Richter, binäre Vorgängerfassung ────────────────────────────
 /**
  * BINÄRE VORGÄNGERFASSUNG. Am 2026-08-01 als unterspezifiziert gemessen und
@@ -317,6 +368,39 @@ export function parseActionAssignment(raw: string): { actionId: string | null } 
   if (!obj || typeof obj.id !== 'string') return null;
   if (obj.id === NO_ACTION) return { actionId: null };
   return isCanonicalAction(obj.id) ? { actionId: obj.id } : null;
+}
+
+export interface RecipientClass {
+  id: string;
+  label: string;
+  description: string;
+}
+
+/** `null` = unlesbar. Eine leere Klassenliste ist KEIN gültiges Vokabular. */
+export function parseRecipientClasses(raw: string): { classes: RecipientClass[]; unbundled: string[] } | null {
+  const o = firstJsonObject(raw) as { classes?: unknown; unbundled?: unknown } | null;
+  if (!o || !Array.isArray(o.classes) || o.classes.length === 0) return null;
+  const classes: RecipientClass[] = [];
+  for (const c of o.classes as Record<string, unknown>[]) {
+    if (typeof c?.id !== 'string' || typeof c?.label !== 'string') return null;
+    classes.push({ id: c.id, label: c.label, description: String(c.description ?? '') });
+  }
+  return { classes, unbundled: Array.isArray(o.unbundled) ? (o.unbundled as string[]).map(String) : [] };
+}
+
+/**
+ * `{ classId: null }` heißt „keine Klasse passt" — ein GÜLTIGES Ergebnis.
+ * `null` heißt „unlesbar". Dieselbe Trennung wie bei `parseActionAssignment`:
+ * ein erzwungener Treffer würde Pflichten paaren, die nichts verbindet.
+ */
+export function parseRecipientAssignment(
+  raw: string,
+  validIds: readonly string[],
+): { classId: string | null } | null {
+  const o = firstJsonObject(raw) as { id?: unknown } | null;
+  if (!o || typeof o.id !== 'string') return null;
+  if (o.id === NO_ACTION) return { classId: null };
+  return validIds.includes(o.id) ? { classId: o.id } : null;
 }
 
 export interface PairVerdict {

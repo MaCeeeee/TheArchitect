@@ -46,6 +46,7 @@
     "pairs:worksheet": "ts-node src/scripts/pair-worksheet.ts",
     "pairs:ingest": "ts-node src/scripts/pair-ingest.ts",
     "pairs:agreement": "ts-node src/scripts/pair-agreement.ts",
+    "pairs:build": "ts-node src/scripts/build-pairs-v2.ts",
     "actions:classify": "ts-node src/scripts/classify-obligations.ts",
     "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
