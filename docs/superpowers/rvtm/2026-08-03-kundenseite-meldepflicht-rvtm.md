@@ -62,14 +62,14 @@ am 2026-08-02:
 
 | ID | Anforderung | Plan-Block | Verifikation | Status |
 |---|---|---|---|---|
-| **AC-1** | `Deadline` **neben** `bedingung`, nicht statt seiner | Block 4 | Unit: `bedingung` unverändert, `Deadline` additiv | ⬜ |
-| **AC-2** | Jedes Objekt trägt seinen **Quell-Freitext** | Block 4 | Unit: `quelle` nie leer, wenn `Deadline` gesetzt ist | ⬜ |
-| **AC-3** | Nicht ableitbar → `null`, **kein** Default-Bezugspunkt | Block 4 | Unit: unklare Klausel erzeugt `null` | ⬜ |
-| **AC-4** | Bindende Frist = kürzeste Dauer **bei gleichem Bezugspunkt** | Block 4 | Unit: verschiedene Bezugspunkte werden **nicht** verrechnet | ⬜ |
-| **P-1** | Über A–D **mindestens drei verschiedene** `bezugspunkt`-Werte | Block 4 | Lauf über die vier Normsätze | ⬜ |
-| **P-2** | DORA Art. 19 Stufe 2 → `vorherige-meldung`; NIS2 Art. 23 Stufe 2 → `kenntnis` | Block 4 | derselbe Lauf | ⬜ |
-| **N-1** | 4 h (ab Einstufung) und 72 h (ab Kenntnis) ergeben **nicht** „4 h" | Block 4 | Unit | ⬜ |
-| **N-2** | Klausel ohne Frist → `null`, kein erfundener Wert | Block 4 | Unit | ⬜ |
+| **AC-1** | `Deadline` **neben** `bedingung`, nicht statt seiner | Block 4 | Unit: `bedingung` unverändert, `Deadline` additiv | ✅ |
+| **AC-2** | Jedes Objekt trägt seinen **Quell-Freitext** | Block 4 | Unit: `quelle` nie leer, wenn `Deadline` gesetzt ist | ✅ |
+| **AC-3** | Nicht ableitbar → `null`, **kein** Default-Bezugspunkt | Block 4 | Unit: unklare Klausel erzeugt `null` | ✅ |
+| **AC-4** | Bindende Frist = kürzeste Dauer **bei gleichem Bezugspunkt** | Block 4 | Unit: verschiedene Bezugspunkte werden **nicht** verrechnet | ✅ |
+| **P-1** | Über A–D **mindestens drei verschiedene** `bezugspunkt`-Werte | Block 4 | Lauf über die vier Normsätze | ✅ |
+| **P-2** | DORA Art. 19 Stufe 2 → `vorherige-meldung`; NIS2 Art. 23 Stufe 2 → `kenntnis` | Block 4 | derselbe Lauf | ✅ |
+| **N-1** | 4 h (ab Einstufung) und 72 h (ab Kenntnis) ergeben **nicht** „4 h" | Block 4 | Unit | ✅ |
+| **N-2** | Klausel ohne Frist → `null`, kein erfundener Wert | Block 4 | Unit | ✅ |
 
 **Abbruch:** < 3 verschiedene Bezugspunkte → Ticket schließt **negativ**, die Achse ist nicht extrahierbar.
 
