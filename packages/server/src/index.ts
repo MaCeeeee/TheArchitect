@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import { checkCredentialKeyAtStartup, KEY_GENERATION_HINT } from './models/credentialKey';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -91,6 +92,20 @@ process.on('uncaughtException', (err) => {
 const PORT = process.env.PORT || 4000;
 
 async function main() {
+  // THE-534 (SECURITY) — VOR allem anderen: ohne gueltigen Credential-Schluessel
+  // laegen die Connector-Zugangsdaten der Nutzer faktisch im Klartext. In
+  // Produktion ist das ein Startabbruch, kein Warnhinweis: ein Server, der
+  // nicht startet, faellt sofort auf — unsicher abgelegte Zugangsdaten unter
+  // Umstaenden nie.
+  const keyCheck = checkCredentialKeyAtStartup();
+  if (!keyCheck.ok) {
+    if (keyCheck.fatal) {
+      log.fatal({ remedy: KEY_GENERATION_HINT }, `[security] ${keyCheck.message} — refusing to start`);
+      process.exit(1);
+    }
+    log.warn(`[security] ${keyCheck.message} — using the insecure dev key (non-production only)`);
+  }
+
   const app = express();
   const server = http.createServer(app);
 
