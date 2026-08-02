@@ -139,6 +139,14 @@ export interface CollapsedPair {
 
 export interface GroupingResult {
   measures: Measure[];
+  /**
+   * Als `intersects` geurteilte Paare, die zu KEINER Gruppe gefuehrt haben.
+   *
+   * Sie sind nicht verloren, nur nicht verkettet: „gemeinsamer Kern" zwischen
+   * A und B sagt nichts ueber A und C. Der Bericht weist sie als
+   * paarweise Kandidaten aus.
+   */
+  sharedCorePairs: MeasureEdge[];
   excludedByDisplacement: DisplacementExclusion[];
   /** Zusammenfall auf Anforderungsebene — erwartete Häufigkeit nahe null. */
   collapsed: CollapsedPair[];
@@ -203,27 +211,78 @@ export async function groupIntoMeasures(
     }
   }
 
-  // (5) Massnahme = Zusammenhangskomponente ueber die Richter-Kanten.
+  // ── (5) Gruppenbildung: Transitivitaet nur, wo sie gilt ─────────────────
+  //
+  // Lauf 1 vom 2026-08-02 erzeugte EINE Massnahme mit 159 Anforderungen ueber
+  // alle drei Gesetze — 442 von 576 Urteilen waren `intersects`, und
+  // Zusammenhangskomponenten behandeln die Relation als Aequivalenz. Das ist
+  // ein Kategorienfehler: unsere eigene Rubrik definiert `intersects` als
+  // „gemeinsamer Kern, aber JEDE Pflicht verlangt zusaetzlich etwas". Aus
+  // A~B und B~C folgt nichts ueber A~C.
+  //
+  // Schlimmer: ueber die DSGVO als Bruecke landeten NIS2 Art. 23 und DORA
+  // Art. 19 in derselben Massnahme — das Paar, das lex specialis fuer jeden
+  // Adressaten ausschliesst. Die mechanische Kontrolle bestand dem Buchstaben
+  // nach und verfehlte ihren Zweck.
+  //
+  // Deshalb:
+  //   `equal`/`subset` → transitiv verschmelzen (das SIND sie)
+  //   `intersects`     → nur als CLIQUE: eine Gruppe entsteht, wenn JEDES
+  //                      Paar darin einzeln als ueberschneidend geurteilt
+  //                      wurde. Das unterstellt keine Transitivitaet, es
+  //                      verlangt sie als beobachtet.
   const parent = new Map<string, string>(sorted.map((r) => [r.id, r.id]));
   const find = (x: string): string => {
     let root = x;
     while (parent.get(root) !== root) root = parent.get(root) as string;
     return root;
   };
-  for (const e of edges) {
+  for (const e of edges.filter((x) => x.relation === 'equal' || x.relation === 'subset')) {
     const [ra, rb] = [find(e.a), find(e.b)];
     if (ra !== rb) parent.set(ra, rb);
   }
 
-  const byRoot = new Map<string, GroupableSysReq[]>();
+  const groups = new Map<string, string[]>();
   for (const r of sorted) {
     const root = find(r.id);
-    (byRoot.get(root) ?? byRoot.set(root, []).get(root) as GroupableSysReq[]).push(r);
+    groups.set(root, [...(groups.get(root) ?? []), r.id]);
   }
 
-  const measures: Measure[] = [...byRoot.values()]
-    .map((members) => {
-      const memberIds = members.map((m) => m.id).sort();
+  // Cliquen-Wachstum ueber `intersects`: deterministisch, in Id-Reihenfolge.
+  // Ein Kandidat tritt einer Gruppe nur bei, wenn er mit JEDEM ihrer
+  // Mitglieder eine Kante hat.
+  const intersectsKey = new Set(
+    edges.filter((e) => e.relation === 'intersects').map((e) => [e.a, e.b].sort().join('␟')),
+  );
+  const connected = (x: string, y: string): boolean => intersectsKey.has([x, y].sort().join('␟'));
+
+  const assigned = new Set<string>();
+  const cliques: string[][] = [];
+  for (const seedRoot of [...groups.keys()].sort()) {
+    const seed = (groups.get(seedRoot) as string[]).slice().sort();
+    if (seed.some((id) => assigned.has(id))) continue;
+    const members = [...seed];
+    for (const cand of sorted.map((r) => r.id)) {
+      if (members.includes(cand) || assigned.has(cand)) continue;
+      if (members.every((m) => connected(m, cand))) members.push(cand);
+    }
+    members.sort();
+    members.forEach((m) => assigned.add(m));
+    cliques.push(members);
+  }
+
+  const inAMeasure = new Set(cliques.filter((c) => c.length > 1).flat());
+  const sharedCorePairs = edges.filter(
+    (e) =>
+      e.relation === 'intersects' &&
+      !cliques.some((c) => c.includes(e.a) && c.includes(e.b) && c.length > 1),
+  );
+
+  const measures: Measure[] = cliques
+    .map((memberIds) => {
+      const members = memberIds
+        .map((id) => sorted.find((r) => r.id === id) as GroupableSysReq)
+        .filter(Boolean);
       return {
         id: `measure__${memberIds[0]}`,
         memberIds,
@@ -232,6 +291,7 @@ export async function groupIntoMeasures(
       };
     })
     .sort((x, y) => x.id.localeCompare(y.id));
+  void inAMeasure;
 
-  return { measures, excludedByDisplacement, collapsed, judged, relationCounts };
+  return { measures, sharedCorePairs, excludedByDisplacement, collapsed, judged, relationCounts };
 }

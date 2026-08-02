@@ -203,15 +203,29 @@ export async function evaluateReqtrace(
   const grouping = await groupIntoMeasures(sysReqs, { judge: opts.ask });
 
   // ── Positiv-Kontrolle: das externe Gold wiederfinden ────────────────────
+  const byId = new Map(sysReqs.map((s) => [s.id, s]));
+  const actionsOf = (ids: string[]): string[] =>
+    ids.map((id) => byId.get(id)?.actionId).filter((a): a is string => Boolean(a));
+  const lawsOf = (ids: string[]): string[] => [...new Set(ids.map((id) => byId.get(id)?.source).filter(Boolean))] as string[];
+
+  // Kandidaten fuer den Gold-Abgleich sind BEIDE Formen der Harmonisierung:
+  // die Massnahme (verschmolzen ueber equal/subset bzw. als Clique) UND das
+  // einzelne `intersects`-Paar. Letzteres IST die Harmonisierungs-Aussage nach
+  // ADR-0007 E4 („geteilt wird das realisierende Element") — es aus dem
+  // Abgleich zu nehmen hiesse, eine 0/5 ueber die Zaehlweise statt ueber die
+  // Kette zu berichten. Was NICHT zaehlt, ist die Verkettung.
+  const goldCandidates: { id: string; ids: string[] }[] = [
+    ...grouping.measures.filter((m) => m.memberIds.length > 1).map((m) => ({ id: m.id, ids: m.memberIds })),
+    ...grouping.sharedCorePairs.map((e) => ({ id: `pair__${e.a}__${e.b}`, ids: [e.a, e.b] })),
+  ];
+
   const matchesByMeasure = new Map<string, string[]>();
   const goldHits: GoldHit[] = SCF_GOLD.map((g) => {
-    const hit = grouping.measures.find((m) => {
-      if (!g.laws.every((l) => m.laws.includes(l))) return false;
-      const actions = m.memberIds
-        .map((id) => sysReqs.find((s) => s.id === id)?.actionId)
-        .filter((a): a is string => Boolean(a));
-      return actions.some((a) => (ACTION_TO_SCF[a] ?? []).includes(g.id));
-    });
+    const hit = goldCandidates.find(
+      (c) =>
+        g.laws.every((l) => lawsOf(c.ids).includes(l)) &&
+        actionsOf(c.ids).some((a) => (ACTION_TO_SCF[a] ?? []).includes(g.id)),
+    );
     if (hit) matchesByMeasure.set(hit.id, [...(matchesByMeasure.get(hit.id) ?? []), g.id]);
     return { id: g.id, laws: g.laws, matchedBy: hit?.id ?? null };
   });
@@ -370,6 +384,8 @@ export function renderReqtraceReport(r: ReqtraceEvalResult): ReqtraceEvalResult 
           .filter((m) => m.memberIds.length > 1)
           .map((m) => `- \`${m.id}\` — ${m.laws.join(' + ')} · ${m.memberIds.length} Anforderungen`)
       : ['- keine geteilte Maßnahme entstanden']),
+    '',
+    `Paarweise Kandidaten („gemeinsamer Kern", NICHT verkettet): ${r.grouping.sharedCorePairs.length}.`,
     '',
     `Zusammenfall auf Anforderungsebene: ${r.grouping.collapsed.length} ` +
       '(erwartete Häufigkeit nahe null — `equal` kam im Experiment vom 2026-08-01 in 120 Fällen null Mal vor).',

@@ -28,6 +28,7 @@ import {
   COMPATIBLE_ENTERPRISE_ROLES,
   areAddresseesCompatible,
   type GroupableSysReq,
+  type JudgeFn,
 } from '../evals/reqtrace/measureGrouping';
 
 const rel = (r: string): string => `{"relation":"${r}","why":"stub"}`;
@@ -163,9 +164,13 @@ describe('groupIntoMeasures — Gruppierung (THE-545, DoD-1/DoD-3)', () => {
     expect(r.measures.filter((m) => m.memberIds.length > 1)).toHaveLength(0);
   });
 
-  it('forms a THREE-law measure over a bridge, without a direct edge', async () => {
-    // GOV-02/RSK-01 verlangen dora+dsgvo+nis2, aber NIS2xDORA ist verdraengt.
-    // Die DSGVO ist die Bruecke — paarweise Gruppen koennten das nie.
+  it('does NOT let a bridge re-unite what displacement separated', async () => {
+    // DER BEFUND AUS LAUF 1: ueber die DSGVO als Bruecke landeten NIS2 Art. 23
+    // und DORA Art. 19 in DERSELBEN Massnahme — das Paar, das lex specialis
+    // fuer jeden Adressaten ausschliesst. Die mechanische Kontrolle bestand
+    // dem Buchstaben nach (der Richter sah das Paar nie) und verfehlte ihren
+    // Zweck. Die Clique verhindert das: dora kann nur beitreten, wenn es mit
+    // JEDEM Mitglied verbunden ist — und die Kante zu nis2 existiert nicht.
     const dora6 = req({
       id: 'dora:art6:s1',
       source: 'dora',
@@ -173,11 +178,11 @@ describe('groupIntoMeasures — Gruppierung (THE-545, DoD-1/DoD-3)', () => {
       text: 'Das Unternehmen muss IKT-Risiken bewerten. [M-1]',
     });
     const r = await groupIntoMeasures([dsgvo32, nis2_21, dora6], { judge: markerJudge });
-    expect(r.measures).toHaveLength(1);
-    expect(r.measures[0].laws.sort()).toEqual(['dora', 'dsgvo', 'nis2']);
-    // Die verdraengte Direktkante wurde NICHT geurteilt.
     expect(r.excludedByDisplacement).toHaveLength(1);
     expect(r.judged).toBe(2);
+    for (const m of r.measures) {
+      expect(m.laws).not.toEqual(expect.arrayContaining(['dora', 'nis2']));
+    }
   });
 
   it('is deterministic — same input, same measures', async () => {
@@ -219,5 +224,75 @@ describe('groupIntoMeasures — Zusammenfall (THE-545, ADR-0007 E5)', () => {
     const b = req({ id: 'b', source: 'nis2', addresseeClass: 'essential_important_entity', ausloeser: 'erheblicher Vorfall' });
     const r = await groupIntoMeasures([a, b], { judge: markerJudge });
     expect(r.collapsed).toEqual([]);
+  });
+});
+
+/**
+ * Transitivität (THE-545, Befund aus Lauf 1 vom 2026-08-02).
+ *
+ * Lauf 1 erzeugte EINE Maßnahme mit 159 Anforderungen über alle drei Gesetze —
+ * 442 der 576 Urteile waren `intersects`, und Zusammenhangskomponenten
+ * behandeln die Relation als Äquivalenz. Das ist ein Kategorienfehler:
+ * unsere eigene Rubrik definiert `intersects` als „gemeinsamer Kern, aber JEDE
+ * Pflicht verlangt zusätzlich etwas" — daraus folgt für A–B und B–C NICHTS
+ * über A–C.
+ *
+ * Schlimmer: über die DSGVO als Brücke landeten NIS2 Art. 23 und DORA Art. 19
+ * in derselben Maßnahme — das Paar, das lex specialis für jeden Adressaten
+ * ausschließt. Die mechanische Kontrolle bestand dem Buchstaben nach (der
+ * Richter sah das Paar nie) und verfehlte ihren Zweck.
+ *
+ * `equal` und `subset` bleiben transitiv — sie sind es.
+ */
+describe('groupIntoMeasures — Transitivität (THE-545)', () => {
+  // WICHTIG: der DORA-Eintrag traegt hier `controller`, nicht
+  // `financial_entity` — sonst greift die Verdraengung nis2xdora und der Test
+  // pruefte sie statt der Transitivitaet. Ein Finanzunternehmen IST auch
+  // Verantwortlicher, die Konstellation ist also nicht konstruiert.
+  const r = (id: string, source: string, addresseeClass = 'controller'): GroupableSysReq =>
+    req({ id, source, addresseeClass, text: `Anforderung ${id}. [M-1]` });
+
+  const judgeFor = (map: Record<string, string>): JudgeFn =>
+    async (_s, u) => {
+      const ids = [...u.matchAll(/Anforderung ([a-z0-9]+)\./g)].map((m) => m[1]).sort();
+      const r = map[ids.join('-')] ?? 'unrelated';
+      // `subset` OHNE Richtung wird vom Parser verworfen (THE-382, Task 1) —
+      // der Stub muss sie mitliefern, sonst entsteht gar keine Kante.
+      return r === 'subset' ? '{"relation":"subset","wider":"A","why":"stub"}' : rel(r);
+    };
+
+  it('does NOT chain intersects — A~B and B~C without A~C stays two measures', async () => {
+    const g = await groupIntoMeasures([r('a', 'dsgvo'), r('b', 'nis2', 'essential_important_entity'), r('c', 'dora')], {
+      judge: judgeFor({ 'a-b': 'intersects', 'b-c': 'intersects', 'a-c': 'unrelated' }),
+    });
+    const big = g.measures.filter((m) => m.memberIds.length > 1);
+    expect(big.every((m) => m.memberIds.length === 2)).toBe(true);
+    expect(big.some((m) => m.memberIds.length === 3)).toBe(false);
+  });
+
+  it('forms a three-law measure when ALL THREE pairs were judged intersects', async () => {
+    // Eine Clique unterstellt keine Transitivitaet — sie verlangt sie als
+    // beobachtet. GOV-02/RSK-01 bleiben damit erreichbar.
+    const g = await groupIntoMeasures([r('a', 'dsgvo'), r('b', 'nis2', 'essential_important_entity'), r('c', 'dora')], {
+      judge: judgeFor({ 'a-b': 'intersects', 'b-c': 'intersects', 'a-c': 'intersects' }),
+    });
+    expect(g.measures.find((m) => m.memberIds.length === 3)?.laws.sort()).toEqual(['dora', 'dsgvo', 'nis2']);
+  });
+
+  it('DOES chain equal and subset — those relations are transitive', async () => {
+    const g = await groupIntoMeasures([r('a', 'dsgvo'), r('b', 'nis2', 'essential_important_entity'), r('c', 'dora')], {
+      judge: judgeFor({ 'a-b': 'equal', 'b-c': 'subset', 'a-c': 'unrelated' }),
+    });
+    expect(g.measures.find((m) => m.memberIds.length === 3)).toBeTruthy();
+  });
+
+  it('reports intersects pairs that formed no group as shared-core candidates', async () => {
+    const g = await groupIntoMeasures([r('a', 'dsgvo'), r('b', 'nis2', 'essential_important_entity'), r('c', 'dora')], {
+      judge: judgeFor({ 'a-b': 'intersects', 'b-c': 'intersects', 'a-c': 'unrelated' }),
+    });
+    // Nichts geht verloren: jede geurteilte Ueberschneidung bleibt sichtbar.
+    // a~b bildet die Massnahme; nur b~c bleibt uebrig — es ist mit a nicht
+    // verbunden und darf deshalb nicht angehaengt werden.
+    expect(g.sharedCorePairs.length).toBe(1);
   });
 });

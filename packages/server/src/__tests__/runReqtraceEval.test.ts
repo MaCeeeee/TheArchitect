@@ -184,7 +184,7 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
       articles: 9, clauses: 100, clausesPerArticle: 11, candidates: 90, afterSplit: 95,
       splitCount: 5, unsingular: 0, clausesWithoutRequirement: 10, unreadableExtractions: 0,
       requirementsPerClause: 0.95, sysReqs: 95, implFreedomFailures: 0,
-      grouping: { measures: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {} },
+      grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {} },
       goldHits: [], goldHitCount: 4, ambiguousGoldMatches: [],
       negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {},
       verdict: 'traegt', verdictReason: '', markdown: '',
