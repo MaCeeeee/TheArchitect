@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { JURISDICTION_IDS, PARTY_ROLE_IDS, type LegalProfile } from '@thearchitect/shared';
 
 export interface IStakeholder {
   id: string;
@@ -70,6 +71,14 @@ export interface IProject extends Document {
       warnings: string[];
     };
   }>;
+  /**
+   * Anwendbarkeitsprofil des Unternehmens (THE-548) — die Kundenseite der
+   * Rechtslage: Rollen, Jurisdiktionen, Sektoren, Größenklasse. OPTIONAL und
+   * additiv: ohne Profil verhält sich alles wie vor THE-548; die Anwendbarkeits-
+   * Antwort ist dann `undetermined`, nie „gilt nicht". Werteräume für Rollen
+   * und Jurisdiktionen kommen aus NORM_ONTOLOGY (kein zweiter Rollenraum).
+   */
+  legalProfile?: LegalProfile;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -144,6 +153,25 @@ const projectSchema = new Schema<IProject>(
         warnings: [String],
       },
     }],
+    // THE-548: optional, kein default-{} — ein nie gesetztes Profil bleibt
+    // `undefined`, damit „kein Profil" von „leeres Profil" unterscheidbar ist.
+    legalProfile: {
+      type: {
+        jurisdictions: { type: [{ type: String, enum: JURISDICTION_IDS }], default: undefined },
+        // Freitext — die Sektor-Zuordnung ist eine Rechtsfrage, kein Enum
+        // (RVTM Watch-Point THE-548; Begründung in shared/ontology/legal-profile.ts).
+        sectors: { type: [String], default: undefined },
+        addresseeClasses: { type: [{ type: String, enum: PARTY_ROLE_IDS }], default: undefined },
+        size: {
+          type: { employees: { type: Number }, revenueEur: { type: Number } },
+          default: undefined,
+          _id: false,
+        },
+        dataKinds: { type: [String], default: undefined },
+      },
+      default: undefined,
+      _id: false,
+    },
   },
   { timestamps: true }
 );
