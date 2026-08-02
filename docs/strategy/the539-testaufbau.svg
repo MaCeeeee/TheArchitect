@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1220" viewBox="0 0 1600 1220" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1600" height="1220" fill="#ffffff"/>
+<defs>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ah868e96" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#868e96"/></marker>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ah2f9e44" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2f9e44"/></marker>
+<marker id="ah1971c2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1971c2"/></marker>
+</defs>
+<rect x="300" y="130" width="130" height="60" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="365.0" y="154.07999999999998" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">DSGVO</text>
+<text x="365.0" y="177.27999999999997" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">14 Artikel</text>
+<rect x="445" y="130" width="130" height="60" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="510.0" y="154.07999999999998" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">NIS2</text>
+<text x="510.0" y="177.27999999999997" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">2 Artikel</text>
+<rect x="590" y="130" width="130" height="60" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="655.0" y="154.07999999999998" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">DORA</text>
+<text x="655.0" y="177.27999999999997" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">5 Artikel</text>
+<rect x="300" y="235" width="420" height="105" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="510.0" y="281.58000000000004" font-size="16" fill="#e03131" text-anchor="middle" font-weight="600">REQGEN  (Claude, 1 Artikel je Aufruf)</text>
+<text x="510.0" y="304.78000000000003" font-size="16" fill="#e03131" text-anchor="middle" font-weight="400">erzeugt die Pflichten, die wir vergleichen</text>
+<rect x="300" y="385" width="420" height="70" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="510.0" y="414.08000000000004" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">219 Pflichten</text>
+<text x="510.0" y="437.28000000000003" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">DSGVO 149  ·  DORA 50  ·  NIS2 20</text>
+<rect x="300" y="500" width="420" height="70" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="510.0" y="529.08" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">Paarbildung, nur über Gesetzesgrenzen</text>
+<text x="510.0" y="552.2800000000001" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">11.430 Paare</text>
+<rect x="300" y="615" width="420" height="100" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="510.0" y="659.08" font-size="16" fill="#2f9e44" text-anchor="middle" font-weight="600">RANKING-VERFAHREN</text>
+<text x="510.0" y="682.2800000000001" font-size="16" fill="#2f9e44" text-anchor="middle" font-weight="400">Welches Paar kommt nach oben?</text>
+<rect x="300" y="770" width="420" height="80" rx="10" fill="#a5d8ff" stroke="#1971c2" stroke-width="2"/>
+<text x="510.0" y="804.08" font-size="16" fill="#1971c2" text-anchor="middle" font-weight="600">RICHTER  ·  claude-haiku-4-5</text>
+<text x="510.0" y="827.2800000000001" font-size="16" fill="#1971c2" text-anchor="middle" font-weight="400">„Erfüllt EINE Umsetzung beide Pflichten?"</text>
+<rect x="300" y="895" width="420" height="100" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="510.0" y="927.5600000000001" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="600">ERGEBNIS</text>
+<text x="510.0" y="950.7600000000001" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">Ranking gerettet — Ausbeute nicht.</text>
+<text x="510.0" y="973.96" font-size="16" fill="#1e1e1e" text-anchor="middle" font-weight="400">1 Treffer im Top-30, der bereits bekannte.</text>
+<rect x="800" y="775" width="380" height="90" rx="10" fill="#b2f2bb" stroke="#2f9e44" stroke-width="2"/>
+<text x="990.0" y="803.65" font-size="15" fill="#2f9e44" text-anchor="middle" font-weight="600">POSITIV-KONTROLLE</text>
+<text x="990.0" y="825.4" font-size="15" fill="#2f9e44" text-anchor="middle" font-weight="400">DSGVO Art. 32  ≙  NIS2 Art. 21</text>
+<text x="990.0" y="847.15" font-size="15" fill="#2f9e44" text-anchor="middle" font-weight="400">muss nach oben</text>
+<rect x="1200" y="775" width="380" height="90" rx="10" fill="#ffc9c9" stroke="#e03131" stroke-width="2"/>
+<text x="1390.0" y="803.65" font-size="15" fill="#e03131" text-anchor="middle" font-weight="600">NEGATIV-KONTROLLE</text>
+<text x="1390.0" y="825.4" font-size="15" fill="#e03131" text-anchor="middle" font-weight="400">NIS2 Art. 23  ×  DORA Art. 19</text>
+<text x="1390.0" y="847.15" font-size="15" fill="#e03131" text-anchor="middle" font-weight="400">darf NICHT nach oben</text>
+<rect x="60" y="1075" width="1520" height="90" rx="10" fill="none" stroke="#e03131" stroke-width="2" stroke-dasharray="8 5"/>
+<text x="820.0" y="1102.56" font-size="16" fill="#e03131" text-anchor="middle" font-weight="600">OFFEN — und von dieser Messung NICHT beantwortet:</text>
+<text x="820.0" y="1125.76" font-size="16" fill="#e03131" text-anchor="middle" font-weight="400">Wenn REQGEN den Wortlaut an den Quellartikel kettet — vergleichen wir dann Maßnahmen,</text>
+<text x="820.0" y="1148.96" font-size="16" fill="#e03131" text-anchor="middle" font-weight="400">oder nur zwei Formulierungen desselben Extraktors?</text>
+<text x="60" y="56.0" font-size="28" fill="#1e1e1e" text-anchor="start" font-weight="600" xml:space="preserve">THE-539 — was testen wir wogegen, und womit?</text>
+<text x="60" y="84.0" font-size="16" fill="#868e96" text-anchor="start" font-weight="600" xml:space="preserve">Messung 2026-08-01 · 219 Pflichten · 11.430 Cross-Gesetz-Paare</text>
+<text x="280" y="158.0" font-size="15" fill="#868e96" text-anchor="end" font-weight="600" xml:space="preserve">GEGEBEN</text>
+<text x="280" y="179.75" font-size="15" fill="#868e96" text-anchor="end" font-weight="400" xml:space="preserve">Rechtstext, deutsch</text>
+<text x="280" y="270.0" font-size="15" fill="#e03131" text-anchor="end" font-weight="600" xml:space="preserve">NICHT GETESTET</text>
+<text x="280" y="291.75" font-size="15" fill="#e03131" text-anchor="end" font-weight="400" xml:space="preserve">Annahme, nicht Messung</text>
+<text x="800" y="247.0" font-size="15" fill="#e03131" text-anchor="start" font-weight="600" xml:space="preserve">Drei Prompt-Regeln, die Treffer unterdrücken können:</text>
+<text x="800" y="268.75" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve"></text>
+<text x="800" y="290.5" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">1   „given ONE regulation paragraph"</text>
+<text x="800" y="312.25" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">      → kein Kontext aus den anderen Gesetzen</text>
+<text x="800" y="334.0" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve"></text>
+<text x="800" y="355.75" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">2   „title + description = SAME language as the regulation</text>
+<text x="800" y="377.5" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">      text … must match the source"</text>
+<text x="800" y="399.25" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">      → Wortlaut wird an den Quellartikel gekettet</text>
+<text x="800" y="421.0" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve"></text>
+<text x="800" y="442.75" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">3   „MAXIMUM 10 requirements per paragraph"</text>
+<text x="800" y="464.5" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">      → Granularität = Artikeldichte ÷ feste 10,</text>
+<text x="800" y="486.25" font-size="15" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">         nicht = Maßnahme</text>
+<text x="280" y="650.0" font-size="15" fill="#2f9e44" text-anchor="end" font-weight="600" xml:space="preserve">DAS TESTEN WIR</text>
+<text x="280" y="671.75" font-size="15" fill="#2f9e44" text-anchor="end" font-weight="400" xml:space="preserve">fünf Verfahren</text>
+<text x="800" y="615.0" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="600" xml:space="preserve">Rang des bekannten Positiv-Paars (von 11.430):</text>
+<text x="800" y="636.75" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve"></text>
+<text x="800" y="658.5" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve">     17     Jaccard  (lexikalisch, Erstmessung)</text>
+<text x="800" y="680.25" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve">       3     all-mpnet-base-v2   ← im Produkt verbaut</text>
+<text x="800" y="702.0" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve">       1     multilingual-e5-base</text>
+<text x="800" y="723.75" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve">   177     multi-qa-mpnet-base-dot-v1  (Paper-Sieger)</text>
+<text x="800" y="745.5" font-size="15" fill="#2f9e44" text-anchor="start" font-weight="400" xml:space="preserve">   526     paraphrase-multilingual-mpnet-base-v2</text>
+<text x="280" y="795.0" font-size="15" fill="#1971c2" text-anchor="end" font-weight="600" xml:space="preserve">KONSTANT GEHALTEN</text>
+<text x="280" y="816.75" font-size="15" fill="#1971c2" text-anchor="end" font-weight="400" xml:space="preserve">gleiches Modell und</text>
+<text x="280" y="838.5" font-size="15" fill="#1971c2" text-anchor="end" font-weight="400" xml:space="preserve">gleicher Prompt wie zuvor</text>
+<text x="800" y="765.0" font-size="17" fill="#1e1e1e" text-anchor="start" font-weight="600" xml:space="preserve">WOGEGEN WIR MESSEN</text>
+<text x="1200" y="889.0" font-size="14" fill="#e03131" text-anchor="start" font-weight="600" xml:space="preserve">steht bei Jaccard UND beim Encoder auf Rang 1</text>
+<text x="1200" y="909.3" font-size="14" fill="#e03131" text-anchor="start" font-weight="400" xml:space="preserve">— nur der Richter trennt die zwei Meldewege</text>
+<path d="M 510.0,190 L 510.0,233" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 510.0,340 L 510.0,383" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 510.0,455 L 510.0,498" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 510.0,570 L 510.0,613" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 510.0,715 L 510.0,768" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 510.0,850 L 510.0,893" fill="none" stroke="#1e1e1e" stroke-width="2" marker-end="url(#ah1e1e1e)"/>
+<path d="M 795,815 L 735,810" fill="none" stroke="#868e96" stroke-width="1" stroke-dasharray="7 5" marker-end="url(#ah868e96)"/>
+<path d="M 1200,930 L 1120,960 L 735,945" fill="none" stroke="#868e96" stroke-width="1" stroke-dasharray="7 5" marker-end="url(#ah868e96)"/>
+<path d="M 300,300 L 70,300 L 70,1070" fill="none" stroke="#e03131" stroke-width="1" stroke-dasharray="7 5" marker-end="url(#ahe03131)"/>
+</svg>
