@@ -1,0 +1,651 @@
+{
+  "annotator": "Matthias Ganzmann",
+  "labeledAt": "2026-08-02",
+  "run": "reqtrace-run-4.json",
+  "lens": "Business Capability (TOGAF G233 / ArchiMate Cookbook)",
+  "accepted": 22,
+  "rejected": 10,
+  "unsure": 0,
+  "measures": {
+    "measure__dora:art19:c01:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c01:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss schwerwiegende IKT-bezogene Vorfälle der zuständigen Behörde melden."
+        },
+        {
+          "id": "dsgvo:art33:c01:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss Datenschutzverletzungen, die ein Risiko für Rechte und Freiheiten natürlicher Personen darstellen, der zuständigen Aufsichtsbehörde unverzüglich und spätestens innerhalb von 72 Stunden nach Bekanntwerden melden."
+        }
+      ]
+    },
+    "measure__dora:art19:c02:q1s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c02:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss schwerwiegende IKT-bezogene Vorfälle unverzüglich der zuständigen nationalen Behörde mitteilen."
+        },
+        {
+          "id": "dsgvo:art33:c01:q2s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss bei Überschreitung der 72-Stunden-Frist eine Begründung für die Verzögerung der Meldung dokumentieren und der Aufsichtsbehörde vorlegen."
+        }
+      ]
+    },
+    "measure__dora:art19:c03:q1s2": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c03:q1s2",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Finanzunternehmen muss nach Erfassung und Analyse aller relevanten Informationen eine Meldung in vorgegebener Vorlage an die zuständige Behörde übermitteln."
+        },
+        {
+          "id": "dsgvo:art33:c04:q1s3",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Beschreibung der Art, der betroffenen Datenkategorien, der ungefähren Anzahl betroffener Personen und der ungefähren Anzahl betroffener personenbezogener Datensätze bei einer Verletzung des Schutzes personenbezogener Daten bereitstellen."
+        }
+      ]
+    },
+    "measure__dora:art19:c03:q1s5": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c03:q1s5",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Finanzunternehmen muss nach Erfassung und Analyse aller relevanten Informationen Meldungen in der vorgegebenen Behördenvorlage erstellen und der zuständigen Behörde übermitteln."
+        },
+        {
+          "id": "dsgvo:art33:c04:q1s4",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Beschreibung einer Datenschutzverletzung bereitstellen, die Art der Verletzung, betroffene Datenkategorien, ungefähre Anzahl betroffener Personen und ungefähre Anzahl betroffener Datensätze umfasst."
+        }
+      ]
+    },
+    "measure__dora:art19:c04:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c04:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss bei der Meldung eines schwerwiegenden IKT-bezogenen Vorfalls alle Informationen bereitstellen, die die zuständige Behörde zur Bewertung der Signifikanz des Vorfalls und zur Einschätzung möglicher grenzüberschreitender Auswirkungen benötigt."
+        },
+        {
+          "id": "dsgvo:art33:c04:q1s5",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Beschreibung der Art der Datenschutzverletzung, der betroffenen Datenkategorien, der ungefähren Anzahl betroffener Personen und der ungefähren Anzahl betroffener Datensätze bereitstellen."
+        }
+      ]
+    },
+    "measure__dora:art19:c05:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c05:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Finanzunternehmen muss Meldungen über Sicherheitsvorfälle den von den Mitgliedstaaten benannten zuständigen Behörden oder Computer-Notfallteams verfügbar machen."
+        },
+        {
+          "id": "dsgvo:art33:c02:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Datenschutzverletzung dem Verantwortlichen ohne schuldhaften Verzug mitteilen."
+        }
+      ]
+    },
+    "measure__dora:art19:c05:q1s2": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c05:q1s2",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Finanzunternehmen muss Erstmeldungen und Folgemeldungen zu Sicherheitsvorfällen den zuständigen Behörden oder Computer-Notfallteams zur Verfügung stellen, wenn die Mitgliedstaaten dies vorgeben."
+        },
+        {
+          "id": "dsgvo:art33:c07:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Beschreibung der ergriffenen oder geplanten Maßnahmen zur Behebung einer Datenschutzverletzung dokumentieren und bereitstellen."
+        }
+      ]
+    },
+    "measure__dora:art19:c08:q1s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-melden-behoerde",
+      "members": [
+        {
+          "id": "dora:art19:c08:q1s1",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss erhebliche Cyberbedrohungen der zuständigen nationalen Behörde unverzüglich melden können"
+        },
+        {
+          "id": "dsgvo:art33:c07:q1s2",
+          "action": "vorfall-melden-behoerde",
+          "text": "Das Unternehmen muss eine Dokumentation der Maßnahmen zur Behebung einer Datenschutzverletzung bereitstellen und diese nachvollziehbar beschreiben."
+        }
+      ]
+    },
+    "measure__dora:art19:c11:q1s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "compliance-nachweisen",
+      "members": [
+        {
+          "id": "dora:art19:c11:q1s1",
+          "action": "compliance-nachweisen",
+          "text": "Das Finanzunternehmen muss der zuständigen Behörde Informationen, Berichte oder Nachweise in den vorgegebenen Fristen übermitteln."
+        },
+        {
+          "id": "dsgvo:art24:c01:q2s1",
+          "action": "compliance-nachweisen",
+          "text": "Das Unternehmen muss nachweisen können, dass es personenbezogene Daten gemäß den Anforderungen dieser Verordnung verarbeitet."
+        }
+      ]
+    },
+    "measure__dora:art5:c04:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art5:c04:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Leitlinien etablieren und umsetzen, die sicherstellen, dass Daten jederzeit verfügbar sind, ihre Herkunft nachweisbar ist, unbefugt nicht verändert werden können und für Unbefugte unzugänglich bleiben."
+        },
+        {
+          "id": "dsgvo:art24:c01:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss technische und organisatorische Maßnahmen umsetzen und aufrechterhalten, um sicherzustellen, dass personenbezogene Daten nur gemäß den Grundsätzen und Vorgaben dieser Verordnung verarbeitet werden."
+        }
+      ]
+    },
+    "measure__dora:art5:c07:q2s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "betriebskontinuitaet",
+      "members": [
+        {
+          "id": "dora:art5:c07:q2s1",
+          "action": "betriebskontinuitaet",
+          "text": "Das Leitungsorgan muss regelmäßig überprüfen, dass die Maßnahmen zur Gewährleistung der Geschäftsfortführung bei Ausfällen oder Störungen von Informations- und Kommunikationstechnologie umgesetzt und wirksam sind."
+        },
+        {
+          "id": "dsgvo:art32:c04:q1s1",
+          "action": "betriebskontinuitaet",
+          "text": "Das Unternehmen muss personenbezogene Daten und den Zugang zu ihnen nach physischen oder technischen Zwischenfällen rasch wiederherstellen können."
+        }
+      ]
+    },
+    "measure__dora:art5:c07:q3s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "wirksamkeit-pruefen",
+      "members": [
+        {
+          "id": "dora:art5:c07:q3s1",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Leitungsorgan muss die Wirksamkeit und Einhaltung seiner Maßnahmen zur Sicherung der Geschäftsfortführung von Informations- und Kommunikationstechnologie regelmäßig bewerten und dokumentieren."
+        },
+        {
+          "id": "dsgvo:art32:c05:q1s2",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss die Wirksamkeit seiner technischen und organisatorischen Maßnahmen zur Sicherheit der Datenverarbeitung regelmäßig überprüfen, bewerten und evaluieren."
+        }
+      ]
+    },
+    "measure__dora:art5:c07:q5s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "betriebskontinuitaet",
+      "members": [
+        {
+          "id": "dora:art5:c07:q5s1",
+          "action": "betriebskontinuitaet",
+          "text": "Das Unternehmen muss die Umsetzung seiner IKT-Reaktions- und Wiederherstellungspläne regelmäßig überwachen und deren Funktionsfähigkeit sicherstellen."
+        },
+        {
+          "id": "dsgvo:art32:c04:q1s2",
+          "action": "betriebskontinuitaet",
+          "text": "Das Unternehmen muss personenbezogene Daten nach einem physischen oder technischen Zwischenfall zeitnah verfügbar und zugreifbar machen können."
+        }
+      ]
+    },
+    "measure__dora:art6:c05:q3s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "compliance-nachweisen",
+      "members": [
+        {
+          "id": "dora:art6:c05:q3s1",
+          "action": "compliance-nachweisen",
+          "text": "Das Unternehmen muss auf Anforderung der zuständigen Behörde einen Bericht über die Überprüfung des IKT-Risikomanagementrahmens vorlegen können."
+        },
+        {
+          "id": "dsgvo:art33:c09:q2s1",
+          "action": "compliance-nachweisen",
+          "text": "Das Unternehmen muss Dokumentation führen und bereitstellen, aus der die Erfüllung der geltenden Bestimmungen nachvollziehbar ist."
+        }
+      ]
+    },
+    "measure__dora:art6:c11:q1s2": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "wirksamkeit-pruefen",
+      "members": [
+        {
+          "id": "dora:art6:c11:q1s2",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss messbare Ziele für die Informationssicherheit definieren und regelmäßig anhand von Leistungsindikatoren und Risikokennzahlen überprüfen."
+        },
+        {
+          "id": "dsgvo:art24:c01:q3s1",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss implementierte Sicherheitsmaßnahmen regelmäßig überprüfen und bei Bedarf anpassen."
+        }
+      ]
+    },
+    "measure__dora:art6:c13:q1s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-erkennen-behandeln",
+      "members": [
+        {
+          "id": "dora:art6:c13:q1s1",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss dokumentieren, welche technischen und organisatorischen Mechanismen es einsetzt, um IKT-Sicherheitsvorfälle zu erkennen, ihre Auswirkungen zu begrenzen und ihren Eintritt zu verhindern."
+        },
+        {
+          "id": "dsgvo:art33:c04:q1s2",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss bei einer Verletzung des Schutzes personenbezogener Daten eine Dokumentation bereitstellen, die Art, betroffene Datenkategorien, ungefähre Anzahl betroffener Personen und ungefähre Anzahl betroffener Datensätze beschreibt."
+        }
+      ]
+    },
+    "measure__dora:art6:c13:q1s2": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-erkennen-behandeln",
+      "members": [
+        {
+          "id": "dora:art6:c13:q1s2",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss die Mechanismen dokumentieren und darstellen, mit denen es IKT-Vorfälle erkennt, ihnen vorbeugt und ihre Auswirkungen begrenzt."
+        },
+        {
+          "id": "dsgvo:art33:c09:q1s1",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss jede Verletzung des Schutzes personenbezogener Daten dokumentieren und dabei die Umstände, Auswirkungen und eingeleiteten Abhilfemaßnahmen festhalten."
+        }
+      ]
+    },
+    "measure__dora:art6:c13:q1s3": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-erkennen-behandeln",
+      "members": [
+        {
+          "id": "dora:art6:c13:q1s3",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss die eingesetzten Mechanismen zur Erkennung, Prävention und Folgenminderung von IKT-Vorfällen dokumentieren und nachweisen."
+        },
+        {
+          "id": "dsgvo:art33:c09:q1s2",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss jede Verletzung des Schutzes personenbezogener Daten dokumentieren und dabei die Fakten, Auswirkungen und ergriffenen Abhilfemaßnahmen festhalten."
+        }
+      ]
+    },
+    "measure__dora:art6:c14:q1s3": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "wirksamkeit-pruefen",
+      "members": [
+        {
+          "id": "dora:art6:c14:q1s3",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss die Wirksamkeit seiner Maßnahmen zur Vermeidung schwerwiegender IKT-Vorfälle systematisch bewerten und dokumentieren."
+        },
+        {
+          "id": "dsgvo:art24:c01:q3s2",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss die implementierten Sicherheitsmaßnahmen regelmäßig überprüfen und bei Bedarf aktualisieren."
+        }
+      ]
+    },
+    "measure__dora:art6:c16:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-erkennen-behandeln",
+      "members": [
+        {
+          "id": "dora:art6:c16:q1s1",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss eine Kommunikationsstrategie für IKT-bezogene Vorfälle entwickeln und dokumentieren."
+        },
+        {
+          "id": "dsgvo:art33:c09:q1s3",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss jede Verletzung des Schutzes personenbezogener Daten dokumentieren und dabei die Fakten der Verletzung, ihre Auswirkungen und die ergriffenen Abhilfemaßnahmen erfassen und nachvollziehbar aufzeichnen."
+        }
+      ]
+    },
+    "measure__dora:art9:c05:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c05:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Maßnahmen implementieren, um die Verfügbarkeit, Integrität und Vertraulichkeit seiner Daten und Systeme zu gewährleisten und damit Geschätsausfallrisiken zu minimieren."
+        },
+        {
+          "id": "dsgvo:art24:c02:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Datenschutzvorkehrungen implementieren, die dem Risiko und Umfang der Datenverarbeitung angemessen sind."
+        }
+      ]
+    },
+    "measure__dora:art9:c05:q1s3": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c05:q1s3",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Maßnahmen implementieren und aufrechterhalten, um die Verfügbarkeit, Integrität und Vertraulichkeit seiner kritischen Daten und Systeme gegen Korruption, Verlust, unbefugten Zugriff und technische Ausfälle zu schützen."
+        },
+        {
+          "id": "dsgvo:art32:c01:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss technische und organisatorische Maßnahmen ergreifen, die dem Risiko für die Rechte und Freiheiten betroffener Personen angemessen sind."
+        }
+      ]
+    },
+    "measure__dora:art9:c05:q1s4": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c05:q1s4",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Massnahmen implementieren und unterhalten, um Risiken für die Verfügbarkeit, Integrität und Vertraulichkeit seiner Systeme und Daten zu identifizieren, zu bewerten und auf ein tolerierbares Niveau zu reduzieren."
+        },
+        {
+          "id": "dsgvo:art32:c01:q1s2",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss technische und organisatorische Maßnahmen implementieren, deren Schutzwirkung dem Risiko für die betroffenen Personen angemessen ist."
+        }
+      ]
+    },
+    "measure__dora:art9:c06:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c06:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Maßnahmen implementieren, um Beeinträchtigungen der Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten sowie Datenverluste zu verhindern."
+        },
+        {
+          "id": "dsgvo:art32:c03:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss die Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit seiner Systeme und Dienste zur Datenverarbeitung kontinuierlich gewährleisten."
+        }
+      ]
+    },
+    "measure__dora:art9:c06:q1s3": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c06:q1s3",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss die Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten sowie deren Bestand vor Beeinträchtigungen und Verlust schützen."
+        },
+        {
+          "id": "dsgvo:art32:c03:q1s2",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss die Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit seiner Systeme und Dienste zur Datenverarbeitung kontinuierlich aufrechterhalten."
+        }
+      ]
+    },
+    "measure__dora:art9:c06:q1s5": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c06:q1s5",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss Maßnahmen implementieren, um Verfügbarkeit, Authentizität, Integrität und Vertraulichkeit von Daten sicherzustellen sowie Datenverluste zu verhindern."
+        },
+        {
+          "id": "dsgvo:art32:c03:q1s3",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss die Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit seiner Systeme und Dienste zur Datenverarbeitung dauerhaft gewährleisten."
+        }
+      ]
+    },
+    "measure__dora:art9:c07:q1s1": {
+      "oneMeasure": false,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "technisch-organisatorische-massnahmen",
+      "members": [
+        {
+          "id": "dora:art9:c07:q1s1",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss bei der Verarbeitung personenbezogener Daten Maßnahmen ergreifen, um Risiken durch unzureichende Verwaltungspraktiken, fehlerhafte Verarbeitungsprozesse und menschliches Versagen wirksam zu minimieren."
+        },
+        {
+          "id": "dsgvo:art32:c03:q1s4",
+          "action": "technisch-organisatorische-massnahmen",
+          "text": "Das Unternehmen muss die Vertraulichkeit, Integrität, Verfügbarkeit und Belastbarkeit seiner Systeme und Dienste, die personenbezogene Daten verarbeiten, dauerhaft gewährleisten."
+        }
+      ]
+    },
+    "measure__dora:art9:c10:q2s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "vorfall-erkennen-behandeln",
+      "members": [
+        {
+          "id": "dora:art9:c10:q2s1",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss betroffene Informationsassets im Falle eines erkannten Cyberangriffs automatisiert vom Netz isolieren können."
+        },
+        {
+          "id": "dsgvo:art33:c09:q1s4",
+          "action": "vorfall-erkennen-behandeln",
+          "text": "Das Unternehmen muss alle Vorfälle, bei denen personenbezogene Daten unbefugtem Zugriff, Verlust oder Beschädigung ausgesetzt waren, dokumentieren und dabei die Umstände, Folgen und eingeleiteten Gegenmaßnahmen festhalten."
+        }
+      ]
+    },
+    "measure__dora:art9:c11:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dora",
+        "dsgvo"
+      ],
+      "action": "zugriffskontrolle",
+      "members": [
+        {
+          "id": "dora:art9:c11:q1s1",
+          "action": "zugriffskontrolle",
+          "text": "Das Unternehmen muss den Zugang zu Informations- und IKT-Assets auf das notwendige Maß für autorisierte Funktionen und Tätigkeiten begrenzen."
+        },
+        {
+          "id": "dsgvo:art32:c08:q1s1",
+          "action": "zugriffskontrolle",
+          "text": "Das Unternehmen muss sicherstellen, dass Mitarbeiter personenbezogene Daten nur auf dokumentierte Anweisung des Verantwortlichen verarbeiten."
+        }
+      ]
+    },
+    "measure__dsgvo:art32:c05:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dsgvo",
+        "nis2"
+      ],
+      "action": "wirksamkeit-pruefen",
+      "members": [
+        {
+          "id": "dsgvo:art32:c05:q1s1",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss die Wirksamkeit seiner technischen und organisatorischen Sicherheitsmaßnahmen regelmäßig überprüfen, bewerten und evaluieren."
+        },
+        {
+          "id": "nis2:art21:c17:q1s1",
+          "action": "wirksamkeit-pruefen",
+          "text": "Das Unternehmen muss unverzüglich angemessene und verhältnismäßige Korrekturmaßnahmen einleiten, wenn es eine Nichterfüllung der erforderlichen Maßnahmen feststellt."
+        }
+      ]
+    },
+    "measure__dsgvo:art32:c06:q1s1": {
+      "oneMeasure": true,
+      "laws": [
+        "dsgvo",
+        "nis2"
+      ],
+      "action": "risikobewertung",
+      "members": [
+        {
+          "id": "dsgvo:art32:c06:q1s1",
+          "action": "risikobewertung",
+          "text": "Das Unternehmen muss bei der Festlegung von Schutzmaßnahmen die Risiken für personenbezogene Daten bewerten, insbesondere Vernichtung, Verlust, Veränderung, unbefugte Offenlegung und unbefugten Zugang."
+        },
+        {
+          "id": "nis2:art21:c01:q1s1",
+          "action": "risikobewertung",
+          "text": "Das Unternehmen muss Risiken für die Sicherheit seiner Netz- und Informationssysteme durch geeignete und verhältnismäßige Maßnahmen beherrschen."
+        }
+      ]
+    },
+    "measure__dsgvo:art33:c07:q2s2": {
+      "oneMeasure": true,
+      "laws": [
+        "dsgvo",
+        "nis2"
+      ],
+      "action": "risikobewertung",
+      "members": [
+        {
+          "id": "dsgvo:art33:c07:q2s2",
+          "action": "risikobewertung",
+          "text": "Das Unternehmen muss Maßnahmen zur Abmilderung identifizierter Risiken entwickeln, dokumentieren und bereitstellen."
+        },
+        {
+          "id": "nis2:art21:c03:q1s1",
+          "action": "risikobewertung",
+          "text": "Das Unternehmen muss bei der Auswahl von Sicherheitsmaßnahmen deren Verhältnismäßigkeit anhand von Risikoexposition, Unternehmensgröße, Eintrittswahrscheinlichkeit und Schwere von Sicherheitsvorfällen sowie deren gesellschaftlichen und wirtschaftlichen Auswirkungen bewerten."
+        }
+      ]
+    }
+  }
+}

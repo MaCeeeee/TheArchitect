@@ -32,6 +32,8 @@ Keines der gesichteten Papers löst das: Reg2Req springt von der Klausel direkt 
 
 **Produkt-Konsequenz, bewusst in Kauf genommen:** Der Bericht gliedert nach **Maßnahmen**, nicht nach Anforderungen. Das ist die ehrlichere Darstellung als eine Anforderungsliste, in der Dubletten wegretuschiert wurden.
 
+> **Präzisierung vom 2026-08-02, aus dem menschlichen Tor von THE-545.** Geteilt wird nicht, wo dieselbe *Handlung* verlangt ist, sondern wo dieselbe **Capability** verlangt ist. Eine Capability heißt nach TOGAF G233 §6.1.1 **Substantiv + Verb** — der Gegenstand *und* die Handlung; die Maßnahme ist ihre Instanziierung. Der Adjudikator hat die 32 Kandidaten genau so beurteilt (22 ja / 10 nein), und **alle zehn Ablehnungen** paaren dieselbe Handlung mit einem anderen Gegenstand: „Vorfall melden" neben „Fristüberschreitung begründen", „Geschäftsfortführung prüfen" neben „personenbezogene Daten wiederherstellen". Unser Slot-Modell (`obligations/slots.ts`) führt Handlung, Empfänger, Modalität und Bedingung — **keinen Gegenstand**; `empfaenger` ist, an wen zu leisten ist, nicht, woran gehandelt wird. Der Harmonisierungs-Schlüssel ist damit die halbe Capability. Die Erklärung ist **nach** den Ablehnungen entstanden und deshalb unbelegt: sie ist blind gegen neue Fälle zu prüfen, bevor sie als Regel gilt. Beleg: `docs/evals/reqtrace-decision.md`.
+
 **E5 — Zusammenfall auf Anforderungsebene nur bei Wortgleichheit — ein Test, kein Ermessen.**
 
 > Zwei Stakeholder-Anforderungen führen auf **eine** Systemanforderung genau dann, wenn Schutzgut, Verpflichteter, Auslöser und Nachweis identisch sind — die Systemanforderung sich also wortgleich formulieren lässt. Sonst: zwei Anforderungen, **eine** Maßnahme.
