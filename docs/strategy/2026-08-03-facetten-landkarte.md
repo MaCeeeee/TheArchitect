@@ -30,7 +30,7 @@ Dieselbe Facette kann an fünf Stellen leben, und der Bestand zeigt: **sie tut e
 | D2 | ✅ Gate 8/8 an zwei Fixture-Profilen | `legalProfile.test.ts` |
 | D3 | ❌ **Schwellen/Prädikate der Norm-Seite nirgends strukturiert** | Korpus-Export: 0 Treffer |
 | D4 | ✅ Kundenseite seit 02.08.: `LegalProfile` | `Project.ts:164` |
-| D5 | ❌ **`assessNormApplicability` hat keinen Aufrufer** — keine Route, kein Service | grep: nur `ontology/index.ts:152` (Export) |
+| D5 | ✅ **durchgestochen 03.08. (THE-555):** `GET /:projectId/norms/legal-applicability` — vier Zustände je Gesetz, am echten Korpus verifiziert (13 Gesetze, NIS2 `displaced` durch DORA live) | `norms.routes.ts` · `legalApplicability.service.ts` |
 
 > **Korrektur an der eigenen Meldung vom 02.08.:** „produktwirksam" war zu stark. Richtig ist:
 > *im Produktionscode angekommen, nicht angeschlossen.* Die element-basierte Applicability
@@ -137,7 +137,7 @@ Zwei Wege für dieselbe Facette: der gemessene (Slots) und der produktive (Heuri
 
 | # | Frage | Reife | Der eine fehlende Schritt |
 |---|---|---|---|
-| 1 | Betrifft mich das Gesetz? | ⚠️ **halb** | *(korrigiert 03.08.)* beide Datenquellen existieren — fehlt: `assessNormApplicability` an den Korpus-Join anschließen und einem Nutzer zeigen (D5) |
+| 1 | Betrifft mich das Gesetz? | ✅ **auf API-Ebene beantwortbar** (THE-555, 03.08.) | offen: UI-Fläche im Client · Größen-/Territoriums-Schwellen (Art.-2-Prädikate, Facette 1 D3) |
 | 2 | Welcher Teil? | ⚠️ **grob** | Absatz-Granularität (THE-550) |
 | 3 | Anforderungen an Prozess/App/Daten/Org? | ❌ | Ebenen-Facette — erst messen (THE-551) |
 | 4 | Erfülle ich es — wo? | ⚠️ **halb** | Drei-Tore-Status + Evidenz-Objekt (**kein Ticket**) |
