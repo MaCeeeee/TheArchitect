@@ -33,7 +33,13 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { PAIR_JUDGE_SYSTEM, buildPairJudgeUserPrompt, parsePairVerdict } from '@thearchitect/shared';
+import {
+  PAIR_RELATION_SYSTEM,
+  buildPairRelationUserPrompt,
+  parsePairRelation,
+  foldRelation,
+  type PairRelation,
+} from '@thearchitect/shared';
 import {
   loadActionGolden,
   buildPositiveControls,
@@ -43,15 +49,22 @@ import {
 } from './actionGolden';
 import {
   buildActionReport,
-  pairwiseKappa,
-  tierFor,
+  pairwiseRelationKappa,
+  tierForRelations,
+  relationCounts,
   meetsCoherenceGate,
   COHERENCE_GATE,
   type ActionReport,
-  type HouseAgreement,
+  type RelationAgreement,
   type Tier,
-  type Vote,
 } from './actionMetrics';
+import {
+  buildCanaries,
+  canaryCatchRate,
+  meetsCanaryGate,
+  isCanaryId,
+  CANARY_CATCH_MIN,
+} from './canaries';
 import {
   createRaterClient,
   withEmptyResponseRetry,
@@ -62,13 +75,22 @@ import {
 /** Ein Prüfer-Haus: System- und User-Prompt rein, Rohtext raus. */
 export type HouseFn = (system: string, user: string) => Promise<string>;
 
+/** Ein typisiertes Votum. `null` = Haus hat nicht geantwortet oder war unlesbar. */
+export type RelationVote = PairRelation | null;
+
 export interface ActionEvalResult {
   version: string;
   houses: string[];
   report: ActionReport;
-  /** Konfidenzstufe je Fall des Prüfsatzes (Arm T und K). */
+  /** Konfidenzstufe je Fall des Prüfsatzes (Arm T und K) — NIE für Kanarienvögel. */
   tiers: Record<string, Tier>;
-  agreements: HouseAgreement[];
+  agreements: RelationAgreement[];
+  /** Typ-Verteilung je Arm — die Zahl, an der `equal` sichtbar wird (oder eben nicht). */
+  relationsByArm: { T: Record<string, number>; K: Record<string, number> };
+  /** Fangquote der Kanarienvögel. `null` = keine geurteilt → Lauf ungültig. */
+  canaryRate: number | null;
+  /** Kanarienvögel, die NICHT gefangen wurden — jeder einzelne ist zu lesen. */
+  canaryMisses: { id: string; house: string; relation: PairRelation }[];
   /** Verwertbare Antworten je Haus — ein stummes Haus muss sichtbar sein. */
   usable: Record<string, number>;
   /** caseIds je Arm — damit Stufen auf dem richtigen Nenner berichtet werden. */
@@ -79,18 +101,18 @@ export interface ActionEvalResult {
    * vorgeschriebene Abhilfe („Katalog-Eintrag aufteilen") wäre nicht
    * ausführbar. Ein Befund, den man nicht lokalisieren kann, ist kein Befund.
    */
-  votesByCase: Record<string, Record<string, Vote>>;
+  votesByCase: Record<string, Record<string, RelationVote>>;
   stats: ReturnType<typeof actionGoldenStats>;
 }
 
 async function askAll(
   houses: Record<string, HouseFn>,
   user: string,
-): Promise<Record<string, Vote>> {
-  const out: Record<string, Vote> = {};
+): Promise<Record<string, RelationVote>> {
+  const out: Record<string, RelationVote> = {};
   for (const [name, ask] of Object.entries(houses)) {
-    const verdict = parsePairVerdict(await ask(PAIR_JUDGE_SYSTEM, user));
-    out[name] = verdict ? verdict.same : null;
+    const verdict = parsePairRelation(await ask(PAIR_RELATION_SYSTEM, user));
+    out[name] = verdict ? verdict.relation : null;
   }
   return out;
 }
@@ -109,40 +131,79 @@ export async function evaluateActions(
 ): Promise<ActionEvalResult> {
   const names = Object.keys(houses);
   const controls = buildPositiveControls(set);
-  const total = controls.length + set.cases.length;
+  const canaries = buildCanaries(set);
+
+  // Kanarienvögel GEMISCHT, nicht als Block: ein Modell, das zehn absurde Paare
+  // hintereinander sieht, erkennt das Muster und lehnt den elften reflexhaft ab.
+  // Der Rhythmus ist deterministisch, damit zwei Läufe vergleichbar bleiben.
+  const step = canaries.length ? Math.max(1, Math.floor(set.cases.length / canaries.length)) : 0;
+  const queue: ({ kind: 'case'; c: (typeof set.cases)[number] } | { kind: 'canary'; c: (typeof canaries)[number] })[] = [];
+  let ci = 0;
+  set.cases.forEach((c, i) => {
+    queue.push({ kind: 'case', c });
+    if (step && (i + 1) % step === 0 && ci < canaries.length) queue.push({ kind: 'canary', c: canaries[ci++] });
+  });
+  while (ci < canaries.length) queue.push({ kind: 'canary', c: canaries[ci++] });
+
+  const total = controls.length + queue.length;
   let done = 0;
 
-  const votesP: Record<string, Vote[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const votesP: Record<string, RelationVote[]> = Object.fromEntries(names.map((n) => [n, []]));
   for (const c of controls) {
-    const v = await askAll(houses, buildPairJudgeUserPrompt(c.a, c.b));
+    const v = await askAll(houses, buildPairRelationUserPrompt(c.a, c.b));
     for (const n of names) votesP[n].push(v[n]);
     onProgress?.(++done, total);
   }
 
-  const votesByCase: Record<string, Record<string, Vote>> = {};
-  const votesT: Record<string, Vote[]> = Object.fromEntries(names.map((n) => [n, []]));
-  const votesK: Record<string, Vote[]> = Object.fromEntries(names.map((n) => [n, []]));
-  const votesDecision: Record<string, Vote[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const votesByCase: Record<string, Record<string, RelationVote>> = {};
+  const votesT: Record<string, RelationVote[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const votesK: Record<string, RelationVote[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const votesDecision: Record<string, RelationVote[]> = Object.fromEntries(names.map((n) => [n, []]));
+  const canaryVotes: RelationVote[] = [];
+  const canaryMisses: { id: string; house: string; relation: PairRelation }[] = [];
 
-  for (const c of set.cases) {
-    const v = await askAll(houses, buildPairJudgeUserPrompt(c.a, c.b));
-    votesByCase[c.id] = v;
-    for (const n of names) {
-      (c.arm === 'T' ? votesT : votesK)[n].push(v[n]);
-      votesDecision[n].push(v[n]);
+  for (const item of queue) {
+    const v = await askAll(houses, buildPairRelationUserPrompt(item.c.a, item.c.b));
+    votesByCase[item.c.id] = v;
+
+    if (item.kind === 'canary') {
+      // Kanarienvögel fließen NIE in Arm-Quoten, Stufen oder Kappa ein — sie
+      // sind kein Messwert über den Katalog, sondern über den Richter.
+      for (const n of names) {
+        canaryVotes.push(v[n]);
+        if (v[n] === 'equal' || v[n] === 'subset') {
+          canaryMisses.push({ id: item.c.id, house: n, relation: v[n] as PairRelation });
+        }
+      }
+    } else {
+      for (const n of names) {
+        (item.c.arm === 'T' ? votesT : votesK)[n].push(v[n]);
+        votesDecision[n].push(v[n]);
+      }
     }
     onProgress?.(++done, total);
   }
 
   // Für die Arm-Quoten zählen nur verwertbare Stimmen: ein Ausfall ist keine
   // Ablehnung und darf die Quote nicht drücken (er taucht in `usable` auf).
-  const flatten = (votes: Record<string, Vote[]>): boolean[] =>
-    names.flatMap((n) => votes[n].filter((v): v is boolean => v !== null));
+  // `foldRelation` faltet auf Ja/Nein — `intersects` zählt dabei NICHT als
+  // Treffer; die Faltung wird im Bericht ausdrücklich benannt (MV-9).
+  const flatten = (votes: Record<string, RelationVote[]>): boolean[] =>
+    names.flatMap((n) => votes[n].filter((v): v is PairRelation => v !== null).map(foldRelation));
 
-  const report = buildActionReport({ P: flatten(votesP), T: flatten(votesT), K: flatten(votesK) });
+  const canaryRate = canaryCatchRate(canaryVotes);
+  const report = buildActionReport(
+    { P: flatten(votesP), T: flatten(votesT), K: flatten(votesK) },
+    canaryRate,
+  );
 
   const tiers: Record<string, Tier> = {};
-  for (const c of set.cases) tiers[c.id] = tierFor(names.map((n) => votesByCase[c.id][n]));
+  for (const c of set.cases) tiers[c.id] = tierForRelations(names.map((n) => votesByCase[c.id][n]));
+
+  // MV-7 als ausführbare Zusicherung statt als Kommentar: ein Kanarienvogel in
+  // den Stufen wäre ein erfundener Vorschlag an den Nutzer.
+  const leaked = Object.keys(tiers).filter(isCanaryId);
+  if (leaked.length) throw new Error(`Kanarienvogel in den Konfidenzstufen: ${leaked.join(', ')}`);
 
   const usable = Object.fromEntries(
     names.map((n) => [n, [...votesP[n], ...votesDecision[n]].filter((v) => v !== null).length]),
@@ -153,7 +214,13 @@ export async function evaluateActions(
     houses: names,
     report,
     tiers,
-    agreements: pairwiseKappa(votesDecision),
+    agreements: pairwiseRelationKappa(votesDecision),
+    relationsByArm: {
+      T: relationCounts(names.flatMap((n) => votesT[n])),
+      K: relationCounts(names.flatMap((n) => votesK[n])),
+    },
+    canaryRate,
+    canaryMisses,
     usable,
     armCaseIds: {
       T: set.cases.filter((c) => c.arm === 'T').map((c) => c.id),
@@ -178,11 +245,19 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
     const d = r.armCaseIds[arm].length;
     return d ? `${Math.round((100 * n) / d)} %` : '—';
   };
-  // Fehlalarme lokalisieren: Arm-K-Fälle, in denen mindestens ein Haus "ja" sagte.
+  // Fehlalarme lokalisieren: Arm-K-Fälle, in denen mindestens ein Haus die
+  // Paarung als gemeinsam erfüllbar einstufte (`equal`/`subset` — `intersects`
+  // ist bei zwei Compliance-Pflichten kein Fehlalarm, sondern erwartbar).
   const falseAlarms = r.armCaseIds.K.map((id) => ({
     id,
-    houses: r.houses.filter((h) => r.votesByCase[id]?.[h] === true),
+    houses: r.houses.filter((h) => {
+      const v = r.votesByCase[id]?.[h];
+      return v === 'equal' || v === 'subset';
+    }),
   })).filter((f) => f.houses.length > 0);
+
+  const dist = (counts: Record<string, number>): string =>
+    ['equal', 'subset', 'intersects', 'unrelated'].map((k) => `${k} ${counts[k] ?? 0}`).join(' · ');
 
   const tierRow = (t: Tier, kriterium: string, verhalten: string): string =>
     `| ${t} | ${kriterium} | ${tierIn('T', t)} / ${r.armCaseIds.T.length} (${pctIn('T', tierIn('T', t))}) ` +
@@ -200,13 +275,42 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
       'weder die Quote eines einzelnen Hauses noch die Mehrheitsquote aus der Stufen-Tabelle — drei ' +
       'verschiedene Zahlen, die nicht gegeneinander zitiert werden dürfen.',
     '',
+    '## Typ-Verteilung je Arm',
+    '',
+    '| Arm | Verteilung |',
+    '| --- | --- |',
+    `| T *(gleiche kanonische Handlung)* | ${dist(r.relationsByArm.T)} |`,
+    `| K *(verschiedene Handlung)* | ${dist(r.relationsByArm.K)} |`,
+    '',
+    (r.relationsByArm.T.equal ?? 0) === 0
+      ? '`equal` kommt in Arm T NICHT vor — die Aussage lautet „gemeinsamer Kern, ausgewiesene Zusätze", ' +
+        'nicht „eine Maßnahme erfüllt beide". Deckt sich mit dem Experiment (0 von 120).'
+      : `\`equal\` kommt in Arm T ${r.relationsByArm.T.equal}× vor — das WIDERSPRICHT dem Experiment ` +
+        '(0 von 120). Vor jeder Veröffentlichung klären, was sich geändert hat.',
+    '',
+    '## Kanarienvögel',
+    '',
+    r.canaryRate === null
+      ? '**Keine geurteilt** — die zweite Vorbedingung ist nicht geprüft. Nicht geprüft heißt nicht bestanden.'
+      : `Gefangen: **${(100 * r.canaryRate).toFixed(0)} %** (Tor ${100 * CANARY_CATCH_MIN} %) — ` +
+        `${meetsCanaryGate(r.canaryRate) ? 'bestanden' : '**GERISSEN**'}. ` +
+        'Gefangen ist `unrelated` oder `intersects`; `equal`/`subset` bei zusammengewürfelten Pflichten ist der Rubber-Stamp.',
+    '',
+    ...(r.canaryMisses.length
+      ? [
+          '| Kanarienvogel | Haus | Urteil |',
+          '| --- | --- | --- |',
+          ...r.canaryMisses.map((m) => `| \`${m.id}\` | ${m.house} | ${m.relation} |`),
+          '',
+        ]
+      : []),
     '## Konfidenzstufen',
     '',
     '| Stufe | Kriterium | Arm T | Arm K *(muss 0 sein)* | Verhalten |',
     '| --- | --- | --- | --- | --- |',
-    tierRow('A', 'alle Häuser einig', 'vorschlagen, vorausgewählt'),
-    tierRow('B', 'Mehrheit ≥2/3', 'vorschlagen, nicht vorausgewählt'),
-    tierRow('C', 'sonst', 'nur auf Anforderung sichtbar'),
+    tierRow('A', 'alle einig auf `equal`/`subset`', 'vorschlagen, vorausgewählt'),
+    tierRow('B', 'alle einig auf `intersects`', 'vorschlagen, Zusätze ausweisen'),
+    tierRow('C', 'uneins über den Typ', 'nur auf Anforderung sichtbar'),
     '',
     'Die Arm-K-Spalte ist eine zweite Ablesung der Negativ-Kontrolle: dort muss überall 0 stehen.',
     '',
@@ -214,8 +318,9 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
       ? [
           '### Fehlalarme der Negativ-Kontrolle',
           '',
-          'Diese Paare tragen VERSCHIEDENE kanonische Handlungen, wurden aber als gemeinsam erfüllbar',
-          'beurteilt. Jedes einzelne ist zu adjudizieren: entweder ist der Katalog-Eintrag zu grob',
+          'Diese Paare tragen VERSCHIEDENE kanonische Handlungen, wurden aber als `equal` oder `subset`',
+          'beurteilt — also als gemeinsam erfüllbar. Jedes einzelne ist zu adjudizieren: entweder ist der',
+          'Katalog-Eintrag zu grob',
           '(dann aufteilen) oder der Prüfsatz-Fall falsch einsortiert (dann korrigieren).',
           '',
           '| Fall | Haus/Häuser |',
@@ -226,7 +331,7 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
       : []),
     '## Übereinstimmung der Häuser',
     '',
-    '| Paar | κ | roh | n |',
+    '| Paar | κ *(4 Typen)* | roh | n |',
     '| --- | --- | --- | --- |',
     ...r.agreements.map(
       (a) =>
@@ -234,6 +339,17 @@ export function renderActionReportMarkdown(r: ActionEvalResult): string {
         `${(100 * a.agreement).toFixed(0)} % | ${a.n} |`,
     ),
     '',
+    ...r.agreements.flatMap((a) => {
+      // Wo der Dissens sitzt. Ohne diese Zellen laesst er sich zaehlen, aber
+      // nicht adjudizieren — und im Experiment war genau hier der Befund.
+      const cells = Object.entries(a.confusion)
+        .filter(([k]) => k.split('|')[0] !== k.split('|')[1])
+        .sort((x, y) => y[1] - x[1])
+        .slice(0, 5);
+      return cells.length
+        ? [`Dissens ${a.a} ↔ ${a.b}: ` + cells.map(([k, v]) => `\`${k}\` ${v}×`).join(' · '), '']
+        : [];
+    }),
     gateOk
       ? `Alle κ ≥ ${COHERENCE_GATE} — das Kohärenz-Tor ist erfüllt.`
       : `Mindestens ein κ liegt unter dem Kohärenz-Tor ${COHERENCE_GATE}: die Häuser sind sich über die ` +
