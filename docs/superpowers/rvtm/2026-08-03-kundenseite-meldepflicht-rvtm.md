@@ -29,21 +29,21 @@ am 2026-08-02:
 
 | ID | Anforderung | Plan-Block | Verifikation | Status |
 |---|---|---|---|---|
-| **AC-1** | `LegalProfile` als **optionales** Feld am Projekt; ohne Profil verhält sich alles wie heute | Block 2 | Unit: Projekt ohne Profil erzeugt identische Ausgabe wie vor der Änderung | ⬜ |
-| **AC-2** | Werteräume aus `NORM_ONTOLOGY` (`jurisdictions`, `partyRoles`), **kein** zweiter Rollenraum | Block 2 | Unit: jeder zulässige Wert existiert in der Ontologie; Fremdwert wird abgelehnt | ⬜ |
-| **AC-3** | **Drei** Zustände: `anwendbar` · `verdrängt (durch X, Beleg Y)` · `nicht anwendbar (Rolle fehlt)` | Block 2 | Unit: alle drei sind unterscheidbar; die Verdrängung trägt ihr Zitat | ⬜ |
-| **AC-4** | **Unbekannt ≠ nicht anwendbar** — ohne Profil lautet die Antwort `unbestimmt` | Block 2 | Unit: Projekt ohne Profil → 4× `unbestimmt`, nie `nicht anwendbar` | ⬜ |
-| **AC-5** | `findDisplacement` bekommt seinen **ersten Produktaufrufer** | Block 2 | grep: mindestens ein Aufruf außerhalb von `evals/` und `__tests__/` | ⬜ |
-| **AC-6** | `addresseeClasses` ist eine **Liste** — dieselbe Firma kann Verantwortlicher *und* Auftragsverarbeiter sein | Block 2 | Unit: zwei Rollen gleichzeitig führen zu zwei Pflichtenbündeln | ⬜ |
+| **AC-1** | `LegalProfile` als **optionales** Feld am Projekt; ohne Profil verhält sich alles wie heute | Block 2 | Unit: Projekt ohne Profil erzeugt identische Ausgabe wie vor der Änderung | ✅ |
+| **AC-2** | Werteräume aus `NORM_ONTOLOGY` (`jurisdictions`, `partyRoles`), **kein** zweiter Rollenraum | Block 2 | Unit: jeder zulässige Wert existiert in der Ontologie; Fremdwert wird abgelehnt | ✅ |
+| **AC-3** | **Drei** Zustände: `anwendbar` · `verdrängt (durch X, Beleg Y)` · `nicht anwendbar (Rolle fehlt)` | Block 2 | Unit: alle drei sind unterscheidbar; die Verdrängung trägt ihr Zitat | ✅ |
+| **AC-4** | **Unbekannt ≠ nicht anwendbar** — ohne Profil lautet die Antwort `unbestimmt` | Block 2 | Unit: Projekt ohne Profil → 4× `unbestimmt`, nie `nicht anwendbar` | ✅ |
+| **AC-5** | `findDisplacement` bekommt seinen **ersten Produktaufrufer** | Block 2 | grep: mindestens ein Aufruf außerhalb von `evals/` und `__tests__/` | ✅ |
+| **AC-6** | `addresseeClasses` ist eine **Liste** — dieselbe Firma kann Verantwortlicher *und* Auftragsverarbeiter sein | Block 2 | Unit: zwei Rollen gleichzeitig führen zu zwei Pflichtenbündeln | ✅ |
 
 ### 🚦 Gate: die acht Zellen — vorab festgelegt, wird nicht angepasst
 
 | Normsatz | Bank (`financial_entity`) | Energieversorger (`essential_important_entity`) | Status |
 |---|---|---|---|
-| DSGVO Art. 33 | ✅ anwendbar | ✅ anwendbar | ⬜ |
-| DSGVO Art. 34 | ✅ anwendbar | ✅ anwendbar | ⬜ |
-| NIS2 Art. 23 | ❌ **verdrängt** (DORA Art. 1(2)) | ✅ anwendbar | ⬜ |
-| DORA Art. 19 | ✅ anwendbar | ❌ **nicht anwendbar** (Rolle fehlt) | ⬜ |
+| DSGVO Art. 33 | ✅ anwendbar | ✅ anwendbar | ✅ |
+| DSGVO Art. 34 | ✅ anwendbar | ✅ anwendbar | ✅ |
+| NIS2 Art. 23 | ❌ **verdrängt** (DORA Art. 1(2)) | ✅ anwendbar | ✅ |
+| DORA Art. 19 | ✅ anwendbar | ❌ **nicht anwendbar** (Rolle fehlt) | ✅ |
 
 **8/8 → Block 4. Sonst Stopp und Bericht.** Mechanischer Test, kein Modellaufruf.
 
@@ -51,8 +51,8 @@ am 2026-08-02:
 
 | ID | Bedingung | Status |
 |---|---|---|
-| **N-1** | Projekt **ohne** Profil → alle vier `unbestimmt` | ⬜ |
-| **N-2** | Profil `['controller','financial_entity']` verdrängt NIS2, lässt die DSGVO **unberührt** | ⬜ |
+| **N-1** | Projekt **ohne** Profil → alle vier `unbestimmt` | ✅ |
+| **N-2** | Profil `['controller','financial_entity']` verdrängt NIS2, lässt die DSGVO **unberührt** | ✅ |
 
 ---
 
