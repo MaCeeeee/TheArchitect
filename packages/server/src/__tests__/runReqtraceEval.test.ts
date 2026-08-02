@@ -186,7 +186,7 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
       requirementsPerClause: 0.95, sysReqs: 95, implFreedomFailures: 0,
       grouping: { measures: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {} },
       goldHits: [], goldHitCount: 4, ambiguousGoldMatches: [],
-      negativeMechanical: true, negativeSemantic: true, canaryPassed: true,
+      negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {},
       verdict: 'traegt', verdictReason: '', markdown: '',
       ...over,
     }) as ReqtraceEvalResult;

@@ -49,6 +49,7 @@
     "pairs:build": "ts-node src/scripts/build-pairs-v2.ts",
     "reqtrace:export-laws": "ts-node src/scripts/export-reqtrace-laws.ts",
     "reqtrace:eval": "ts-node src/evals/reqtrace/runReqtraceEval.ts",
+    "reqtrace:worksheet": "ts-node src/scripts/reqtrace-worksheet.ts",
     "actions:classify": "ts-node src/scripts/classify-obligations.ts",
     "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",

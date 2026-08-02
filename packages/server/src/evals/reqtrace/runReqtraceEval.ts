@@ -120,6 +120,8 @@ export interface ReqtraceEvalResult {
   negativeMechanical: boolean;
   negativeSemantic: boolean;
   canaryPassed: boolean;
+  /** Id → Text der Systemanforderung — das Arbeitsblatt braucht sie zum Rendern. */
+  sysReqTexts: Record<string, string>;
   verdict: 'traegt' | 'traegt-nicht';
   verdictReason: string;
   markdown: string;
@@ -264,6 +266,7 @@ export async function evaluateReqtrace(
     negativeMechanical,
     negativeSemantic,
     canaryPassed,
+    sysReqTexts: Object.fromEntries(sysReqs.map((s) => [s.id, s.text])),
     verdict: 'traegt' as const,
     verdictReason: '',
     markdown: '',
