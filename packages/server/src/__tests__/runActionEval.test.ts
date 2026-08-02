@@ -107,7 +107,16 @@ describe('actionGolden — der eingefrorene Prüfsatz (THE-438)', () => {
   });
 
   it('pins the ontology version it was labelled against', () => {
-    expect(set.ontologyVersion).toBe(NORM_ONTOLOGY.ontologyVersion);
+    // NICHT Gleichheit mit der aktuellen Version: Ontologie-Aenderungen sind
+    // additiv, bestehende Labels bleiben gueltig (CHANGELOG-Politik seit
+    // 1.6.0). Eine Gleichheits-Pruefung machte aus jeder Erhoehung einen
+    // Fehlalarm — und setzte denjenigen unter Druck, den eingefrorenen
+    // Pruefsatz stillschweigend nachzuziehen. Geprueft wird deshalb: der
+    // Prüfsatz nennt SEINEN Stand, und der liegt nicht in der Zukunft.
+    expect(set.ontologyVersion).toMatch(/^\d+\.\d+\.\d+$/);
+    const asNum = (v: string): number =>
+      v.split('.').reduce((acc, part) => acc * 1000 + Number(part), 0);
+    expect(asNum(set.ontologyVersion)).toBeLessThanOrEqual(asNum(NORM_ONTOLOGY.ontologyVersion));
   });
 
   it('keeps arm K genuinely off-action — same action would make it an arm-T case', () => {

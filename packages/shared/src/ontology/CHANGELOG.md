@@ -7,6 +7,22 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.9.0 — 2026-08-02 (THE-545 / ADR-0007)
+
+* **Neue Facette `displacements`** — konkrete Verdrängungs-Kanten (*lex specialis*), erste Kante: `dora-prevails-nis2`.
+
+  Auslöser ist wie bei 1.6.0–1.8.0 eine **Messung**, keine Meinung. Bei der Durchrechnung des Kontroll-Katalogs am 2026-08-01 erwiesen sich **zehn von sechzehn** gesetzesübergreifenden Harmonisierungs-Kandidaten als rechtlich **gegenstandslos**: DORA erklärt sich in Art. 1 Abs. 2 zur lex specialis, NIS2 Art. 4 und ErwG 28 ziehen die Konsequenz und nennen DORA ausdrücklich. Für ein und denselben Adressaten können die Risikomanagement- und Meldepflichten beider Rechtsakte **nie gleichzeitig** gelten.
+
+  Die Relationstypen `PREVAILS_OVER`/`DEROGATED_BY` gibt es seit v1.0 — als **Typen**. Eine konkrete Kante gab es nie, und deshalb konnte kein Konsument die Frage stellen.
+
+* **Warum als Daten und nicht als Code:** Eine Verdrängung ist ein Fakt über das Recht, belegt am Primärtext, für alle Kunden identisch — genau die Sorte Wissen, die nach ADR-0004 in diese Datei gehört. `citations` ist Pflicht und verlangt **beide** Seiten der Herleitung: ein Audit muss lesen können, *warum* verdrängt wird.
+
+* **Anwendbarkeit wird berechnet, nie gespeichert** (`findDisplacement(displacedSource, addresseeClass)`). Ob eine Kante beißt, ist eine Eigenschaft des **Adressaten**, nicht der Norm. `addresseeClass` ist die Klasse, FÜR DIE sie beißt: ein Finanzunternehmen ist zugleich wesentliche Einrichtung — eine wesentliche Einrichtung ohne Finanzaufsicht bleibt unter NIS2, und die DSGVO wird gar nicht verdrängt (DORA ErwG 16), sie gilt daneben.
+
+* **Referenz-Integrität** in `assertOntologyValid`: `relationType`, beide `source`-Angaben und `addresseeClass` müssen existieren, und eine Norm darf sich nicht selbst verdrängen. Eine Kante auf eine erfundene Rolle wäre stumm — sie würde nie feuern und sähe aus wie „keine Verdrängung".
+
+* **Rein additiv.** Bestehende Labels und Prüfsätze bleiben gültig; neu gelabelt wird gegen 1.9.0.
+
 ## 1.8.0 — 2026-08-01 (THE-438 / THE-538)
 
 - **canonicalActions** NEU (26 Einträge) — additive Facette, keine bestehende id
