@@ -172,13 +172,16 @@ Die Konsequenz für jede weitere Arbeit: **nicht mehr Facetten bauen — die geb
 | 1 | **Rolle + Deontik je Provision in den Korpus** (Typisierung anwenden statt nur messen) | 1, 2 | THE-540 (Backlog) | Bau — Prämisse gemessen (THE-421) |
 | 2 | **Absatz-Granularität + stabile Norm-Id** | 2, 5, 7 | THE-550 | Entscheidung — vor jedem Skalieren |
 | 3 | **`assessNormApplicability` anschließen** (Route/Report) | 1 | Teil von THE-544-Umfeld | Bau, klein |
-| 4 | **Drei-Tore-Status + Evidenz-Objekt** | 4, 7 | **kein Ticket** — eigener Pre-Flight nötig | größter Bau |
+| 4 | **Drei-Tore-Status + Evidenz-Objekt** | 4, 7 | [THE-552](https://linear.app/thearchitect/issue/THE-552) · 77,1 | größter Bau — **eigener Pre-Flight vor jeder Zeile Code** |
 | 5 | **Ebenen-Facette messen** | 3, 4 | THE-551 | Entscheidung |
-| 6 | **Nachweisform-Werteraum** bottom-up ableiten | 4, 5 | **kein Ticket** | klein — Muster existiert (216→26, 223→30) |
-| 7 | **Sanktions-Facette** | 7 | **kein Ticket** | halb mechanisch |
-| 8 | **Auslöser-Taxonomie** | 5 | **kein Ticket** | klein, nach Nachweisform |
+| 6+8 | **Nachweisform- und Auslöser-Werteraum** bottom-up | 4, 5 | [THE-553](https://linear.app/thearchitect/issue/THE-553) · 71,4 | klein — Muster existiert (216→26, 223→30) |
+| 7 | **Sanktions-Facette** | 7 | [THE-554](https://linear.app/thearchitect/issue/THE-554) · 60,0 | halb mechanisch |
 
-Drei Lücken haben **kein Ticket** (4, 6/8, 7) — sie hier zu benennen ist der Zweck dieser Landkarte, sie anzulegen ist eine Entscheidung des Entscheiders.
+**Alle acht Lücken sind jetzt ticketiert** (angelegt 2026-08-03, nach Linear-Suche ohne Dublettenbefund). Drei Anmerkungen aus der Ticket-Erstellung, die die Landkarte nicht vorhergesehen hatte:
+
+- **Lücken 6 und 8 wurden gebündelt** — dieselbe Maschinerie, aber mit **getrennten** Akzeptanzkriterien je Facette, damit ein gebündeltes Ticket nicht auf einer besteht und die andere mitzieht.
+- **Die Nachweisform ist heikler als gedacht:** sie steckt bereits im Zusammenfall-Schlüssel (`collapseKey:307-310`) — als roher Freitext-Vergleich. Ein Werteraum kann den Zusammenfall dort *einebnen*; deshalb trägt THE-553 eine Negativ-Kontrolle gegen genau das.
+- **Die Sanktion ist keine 1:1-Kante.** DSGVO Art. 83 Abs. 4 nennt Artikel-Gruppen, NIS2 Art. 34 verweist auf Kapitel. Als Attribut an der Pflicht modelliert, erfände sie eine Genauigkeit, die der Rechtstext nicht hat.
 
 ## Was ausdrücklich NICHT fehlt
 
