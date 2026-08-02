@@ -132,7 +132,12 @@ export type AskFn = (system: string, user: string) => Promise<string>;
 /** Kern der Kette. Haeuser injiziert — kein Netz im Test. */
 export async function evaluateReqtrace(
   articles: ReqtraceArticle[],
-  opts: { ask: AskFn; onProgress?: (done: number, total: number) => void },
+  opts: {
+    ask: AskFn;
+    onProgress?: (done: number, total: number) => void;
+    onPairProgress?: (done: number, total: number) => void;
+    maxJudgedPairs?: number;
+  },
 ): Promise<ReqtraceEvalResult> {
   const perArticle = articles.map((a) => ({ article: a, clauses: segmentClauses(a) }));
   const allClauses: { article: ReqtraceArticle; clause: Clause }[] = perArticle.flatMap((p) =>
@@ -167,7 +172,7 @@ export async function evaluateReqtrace(
     }
     candidates += parsed.length;
 
-    for (const c of parsed) {
+    for (const [ci, c] of parsed.entries()) {
       const parts = splitByAction(c);
       if (parts.length > 1) splitCount += 1;
       afterSplit += parts.length;
@@ -191,7 +196,12 @@ export async function evaluateReqtrace(
 
         sysReqs.push({
           ...sys,
-          id: `${clause.id}:s${k + 1}`,
+          // Der Kandidaten-Index MUSS mit hinein: eine Klausel liefert im
+          // Schnitt 1,68 Kandidaten, und ohne ihn beginnt die Teil-Zaehlung
+          // je Kandidat wieder bei 1. Lauf 2 hatte dadurch 87 Id-Kollisionen —
+          // zwei Anforderungen wurden zu einem Knoten, und die semantische
+          // Kontrolle las die Handlung der falschen.
+          id: `${clause.id}:q${ci + 1}s${k + 1}`,
           source: article.source,
           actionId: assignment?.actionId ?? part.handlungen[0] ?? null,
           addresseeClass: article.addresseeClass,
@@ -200,7 +210,11 @@ export async function evaluateReqtrace(
     }
   }
 
-  const grouping = await groupIntoMeasures(sysReqs, { judge: opts.ask });
+  const grouping = await groupIntoMeasures(sysReqs, {
+    judge: opts.ask,
+    maxJudgedPairs: opts.maxJudgedPairs,
+    onProgress: (d, t) => opts.onPairProgress?.(d, t),
+  });
 
   // ── Positiv-Kontrolle: das externe Gold wiederfinden ────────────────────
   const byId = new Map(sysReqs.map((s) => [s.id, s]));
@@ -361,7 +375,10 @@ export function renderReqtraceReport(r: ReqtraceEvalResult): ReqtraceEvalResult 
     `| Kanarienvogel — dieselbe Anforderung zweimal ergibt eine Maßnahme | ${r.canaryPassed ? '✅' : '❌'} |`,
     '',
     `Durch Verdrängung ausgeschlossen: ${r.grouping.excludedByDisplacement.length} Paar(e). ` +
-      `Vom Richter geurteilt: ${r.grouping.judged}.`,
+      `Vom Richter geurteilt: ${r.grouping.judged}.` +
+      (r.grouping.cappedPairs
+        ? ` ⚠️ **${r.grouping.cappedPairs} Paar(e) wurden NICHT beurteilt** (Obergrenze erreicht) — die Trefferquote ist dadurch eher zu niedrig.`
+        : ''),
     '',
     '## 3. Kalibrierung der Extraktion',
     '',
@@ -416,7 +433,8 @@ async function main(): Promise<void> {
   const laws = loadReqtraceLaws();
   const result = await evaluateReqtrace(laws.articles, {
     ask,
-    onProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Klausel ${d}/${t}`),
+    onProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Klausel ${d}/${t}   `),
+    onPairProgress: (d, t) => process.stdout.write(`\r[reqtrace:eval] Paar ${d}/${t}   `),
   });
 
   console.log(`\n${result.markdown}`);

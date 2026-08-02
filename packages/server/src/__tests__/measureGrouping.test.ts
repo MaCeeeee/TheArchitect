@@ -296,3 +296,36 @@ describe('groupIntoMeasures — Transitivität (THE-545)', () => {
     expect(g.sharedCorePairs.length).toBe(1);
   });
 });
+
+/**
+ * Laufzeit-Schutz (THE-545, Befund aus Lauf 2).
+ *
+ * Die Paar-Schleife ist quadratisch: 304 Anforderungen ergaben 2124
+ * Kandidaten-Paare, davon 980 beurteilt — die Gruppierungsphase lief ueber
+ * eine Stunde OHNE ein einziges Lebenszeichen. Beides ist zu beheben, und
+ * die Deckelung muss sichtbar sein: ein stilles Abschneiden liest sich im
+ * Bericht wie „mehr gab es nicht".
+ */
+describe('groupIntoMeasures — Laufzeit-Schutz (THE-545)', () => {
+  const many = Array.from({ length: 6 }, (_, i) =>
+    req({ id: `r${i}`, source: i % 2 === 0 ? 'dsgvo' : 'nis2', addresseeClass: i % 2 === 0 ? 'controller' : 'essential_important_entity' }),
+  );
+
+  it('reports progress while judging — an hour without a sign of life is not acceptable', async () => {
+    const seen: [number, number][] = [];
+    await groupIntoMeasures(many, { judge: markerJudge, onProgress: (d, t) => seen.push([d, t]) });
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen[seen.length - 1][0]).toBe(seen[seen.length - 1][1]);
+  });
+
+  it('caps the number of judged pairs and SAYS so', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge, maxJudgedPairs: 2 });
+    expect(r.judged).toBe(2);
+    expect(r.cappedPairs).toBeGreaterThan(0);
+  });
+
+  it('reports zero capping when the cap was never reached', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge });
+    expect(r.cappedPairs).toBe(0);
+  });
+});

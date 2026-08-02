@@ -184,7 +184,7 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
       articles: 9, clauses: 100, clausesPerArticle: 11, candidates: 90, afterSplit: 95,
       splitCount: 5, unsingular: 0, clausesWithoutRequirement: 10, unreadableExtractions: 0,
       requirementsPerClause: 0.95, sysReqs: 95, implFreedomFailures: 0,
-      grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {} },
+      grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {}, cappedPairs: 0 },
       goldHits: [], goldHitCount: 4, ambiguousGoldMatches: [],
       negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {},
       verdict: 'traegt', verdictReason: '', markdown: '',
@@ -226,5 +226,51 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
   it('flags a measure that matches several gold entries', () => {
     const md = renderReqtraceReport(fake({ ambiguousGoldMatches: ['measure__x'] })).markdown;
     expect(md).toMatch(/mehrdeutig|mehrere Gold-Eintr/i);
+  });
+});
+
+/**
+ * Eindeutigkeit der Anforderungs-Ids (THE-545, Befund aus Lauf 2).
+ *
+ * Lauf 2 zaehlte 304 Anforderungen bei nur 217 verschiedenen Ids — 87
+ * Kollisionen. Die Id lautete `<klausel>:s<teil>`, und `<teil>` zaehlte
+ * INNERHALB eines Kandidaten. Liefert eine Klausel mehrere Kandidaten (im
+ * Schnitt 1,68), beginnt die Zaehlung wieder bei 1.
+ *
+ * Die Folgen zogen sich durch alles: `find(id)` traf die erste, die
+ * Gruppierung behandelte zwei Anforderungen als einen Knoten, dieselbe Id
+ * tauchte in mehreren Massnahmen auf — und die semantische Kontrolle las die
+ * Handlung der falschen Anforderung.
+ */
+describe('Eindeutige Anforderungs-Ids (THE-545)', () => {
+  const twoCandidatesTwoActions = async (system: string, user: string): Promise<string> => {
+    if (system === STAKEHOLDER_REQ_SYSTEM) {
+      const one = (t: string, actions: string[]) => ({
+        text: t,
+        handlungen: actions,
+        empfaenger: ['—'],
+        modalitaeten: ['pflicht'],
+        bedingungen: ['laufend'],
+      });
+      return JSON.stringify({
+        candidates: [
+          one('erste Forderung', ['betriebskontinuitaet', 'verzeichnis-fuehren']),
+          one('zweite Forderung', ['risikobewertung', 'zugriffskontrolle']),
+        ],
+      });
+    }
+    return house()(system, user);
+  };
+
+  it('gives every requirement its own id — even with several candidates per clause', async () => {
+    const r = await evaluateReqtrace(only('dsgvo:art32'), { ask: twoCandidatesTwoActions });
+    expect(r.sysReqs).toBe(r.clauses * 4); // 2 Kandidaten x 2 Handlungen
+    expect(Object.keys(r.sysReqTexts)).toHaveLength(r.sysReqs);
+  });
+
+  it('never lets one requirement appear in two measures', async () => {
+    const r = await evaluateReqtrace(only('dsgvo:art32', 'nis2:art21'), { ask: twoCandidatesTwoActions });
+    const ids = r.grouping.measures.flatMap((m) => m.memberIds);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
