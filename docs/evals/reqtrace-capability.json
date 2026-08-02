@@ -1,0 +1,75 @@
+{
+  "rejectionsRemoved": 10,
+  "rejectionsTotal": 10,
+  "acceptsLost": 19,
+  "acceptsTotal": 22,
+  "agreement": 0.40625,
+  "agreementBefore": 0.6875,
+  "undeterminable": 0,
+  "goldHits": [
+    {
+      "id": "BCD-01",
+      "lawSets": [
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "CRY-01",
+      "lawSets": [
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": "pair__dsgvo:art32:c01:q1s1__nis2:art21:c01:q1s2"
+    },
+    {
+      "id": "GOV-02",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ],
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "HRS-03",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "RSK-01",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ],
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": "measure__dsgvo:art32:c06:q1s1"
+    }
+  ],
+  "goldHitCount": 2,
+  "survivingMeasures": 3,
+  "survivingPairs": 44,
+  "pairsBefore": 512,
+  "verdict": "traegt-nicht",
+  "verdictReason": "19 von 22 Annahmen verloren (zulässig ≤ 3) — über-segmentiert. Gold-Quote auf 2/5 gefallen (verlangt ≥ 4)."
+}
