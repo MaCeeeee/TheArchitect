@@ -214,7 +214,9 @@ describe('displacements facet — v1.9.0 (THE-545, ADR-0007 E6)', () => {
     expect(d!.citations.join(' ')).toMatch(/Art\.\s?4/);
   });
 
-  it('findDisplacement fires only for the displaced addressee class', () => {
+  it('findDisplacement fires only for the addressee class recorded on the edge', () => {
+    // Dieselbe Klasse, die Task 6 die "vorrangige Seite" nennt: die Kante
+    // traegt die Klasse, FUER die die Verdraengung beisst (financial_entity).
     expect(findDisplacement('nis2', 'financial_entity')).toBeTruthy();
     // Eine wesentliche Einrichtung, die KEIN Finanzunternehmen ist, bleibt
     // unter NIS2 — die Kante ist adressaten-scharf, kein Pauschalausschluss.
