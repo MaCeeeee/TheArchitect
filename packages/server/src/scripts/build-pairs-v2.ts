@@ -30,6 +30,10 @@
  *
  * Linear: THE-382 · Vorgeschichte: THE-438, THE-538, THE-540
  */
+// Schluessel aus .env lesen, statt sie auf der Kommandozeile zu verlangen:
+// ein inline gesetzter Schluessel landet in der Shell-History, und ein
+// falsch kopierter Platzhalter kostet einen Fehlversuch (2026-08-02).
+import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -157,19 +161,39 @@ async function main(): Promise<void> {
   }
   const withParty = records.filter((r) => r.partyRole).length;
   console.log(`\n[pairs:build] Verpflichteter aus der Typisierung: ${withParty}/${records.length}`);
-  if (withParty === 0) {
+
+  // Ohne die Achse "Verpflichteter" faellt genau der Defekt NICHT heraus, der
+  // die Reparatur ausgeloest hat (Behoerdenpflicht gegen Unternehmenspflicht).
+  // Deshalb ist der Abbruch die Vorgabe. `--allow-missing-party` erlaubt einen
+  // Blick auf DREI Achsen — dann traegt aber die Ausgabe den Vorbehalt im Namen,
+  // damit niemand sie spaeter fuer den strengen Pruefsatz haelt.
+  const threeAxesOnly = argv.includes('--allow-missing-party');
+  if (withParty === 0 && !threeAxesOnly) {
     console.error(
       '[pairs:build] FEHLER: kein einziger Verpflichteter aufgelöst. Entweder ist der Korpus nicht erreichbar ' +
-        'oder die Schlüssel passen nicht (erwartet: "<gesetz>:<paragraph>"). Ohne diese Achse ist die ' +
-        'Reparatur wirkungslos — Abbruch statt stiller Paarung auf drei Achsen.',
+        '(CORPUS_MONGODB_URI zeigt lokal auf localhost — der Korpus liegt auf Server B) oder die Schlüssel ' +
+        'passen nicht (erwartet: "<gesetz>:<paragraph>"). Abbruch statt stiller Paarung auf drei Achsen.\n' +
+        '[pairs:build] Für einen ausdrücklich gekennzeichneten Blick auf drei Achsen: --allow-missing-party',
     );
     process.exitCode = 1;
     return;
   }
+  if (threeAxesOnly && withParty < records.length) {
+    console.warn(
+      `[pairs:build] WARNUNG: ${records.length - withParty} Pflichten ohne Verpflichteten. Die Achse ist ` +
+        'ABGESCHALTET — Behördenpflichten können weiterhin gegen Unternehmenspflichten stehen. ' +
+        'Ergebnis nur als Vorschau lesen, nicht adjudizieren.',
+    );
+    for (const r of records) if (!r.partyRole) r.partyRole = 'unbekannt';
+  }
 
   // ── 5. Paaren ──────────────────────────────────────────────────────────
   const result = buildStrictPairs(records, { maxUsesPerObligation: 2, maxPerArm: 60 });
-  const out = toGoldenSet(result, 'actions.v2.draft', NORM_ONTOLOGY.ontologyVersion);
+  const out = toGoldenSet(
+    result,
+    threeAxesOnly ? 'actions.v2.vorschau-3-achsen' : 'actions.v2.draft',
+    NORM_ONTOLOGY.ontologyVersion,
+  );
 
   const recordsPath = arg(argv, '--records');
   if (recordsPath) {
