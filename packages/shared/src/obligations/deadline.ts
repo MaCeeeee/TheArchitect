@@ -61,7 +61,7 @@ export interface Deadline {
 const DURATION_PATTERNS: readonly [RegExp, (m: RegExpMatchArray) => DeadlineDuration][] = [
   [/(\d+)\s*Stunden?/i, (m) => ({ wert: Number(m[1]), einheit: 'h' })],
   [/(\d+)\s*Tage?n?\b/i, (m) => ({ wert: Number(m[1]), einheit: 'd' })],
-  [/(?:(\d+)|einen|einem)\s*Monat(?:e|en|s)?\b/i, (m) => ({ wert: m[1] ? Number(m[1]) : 1, einheit: 'mon' })],
+  [/(?:(\d+)|eines|einen|einem)\s*Monat(?:s|e|en)?\b/i, (m) => ({ wert: m[1] ? Number(m[1]) : 1, einheit: 'mon' })],
 ];
 
 // ── Bezugspunkt ──────────────────────────────────────────────────────────
@@ -74,6 +74,10 @@ const REFERENCE_PATTERNS: readonly [RegExp, DeadlineReference][] = [
   // Übermittlung einer früheren Meldung / eines früheren Berichts — DORAs Uhr.
   [/nach\s+(?:der\s+)?Übermittlung/i, 'vorherige-meldung'],
   [/nach\s+(?:der\s+)?(?:Erstmeldung|letzten\s+Aktualisierung)/i, 'vorherige-meldung'],
+  // Korpus-Wortlaut (Befund 2026-08-03, nis2:art23): der NIS2-Abschlussbericht
+  // zaehlt "nach (dessen) Meldung" — dieselbe Uhr wie "nach Uebermittlung".
+  [/nach\s+(?:dessen\s+|deren\s+)?Meldung\b/i, 'vorherige-meldung'],
+  [/nach\s+Eingang\s+der\s+(?:Früh)?(?:warnung|meldung)/i, 'vorherige-meldung'],
   [/nach\s+dem\s+(?:Vorfall|Ereignis|Zwischenfall)/i, 'ereignis'],
 ];
 
@@ -106,7 +110,11 @@ export function deriveDeadline(text: string): Deadline | null {
   }
   if (!duration) return null;
 
-  // Frühester Bezugspunkt-Treffer NACH der Dauer.
+  // Bezugspunkt: bevorzugt der frueheste Treffer NACH der Dauer ("72 Stunden,
+  // nachdem ..."). Der echte Korpus stellt die Uhr aber oft VORAN ("nach
+  // Kenntnisnahme ... spaetestens innerhalb von 72 Stunden") — dann gilt der
+  // Treffer, der der Dauer am naechsten VORAUSgeht (Befund 2026-08-03 an
+  // nis2:art23; drei woertliche Faelle stehen im Test).
   const tail = text.slice(durationEnd);
   let reference: DeadlineReference | null = null;
   let referencePos = Number.POSITIVE_INFINITY;
@@ -115,6 +123,17 @@ export function deriveDeadline(text: string): Deadline | null {
     if (m && m.index !== undefined && m.index < referencePos) {
       reference = ref;
       referencePos = m.index;
+    }
+  }
+  if (!reference) {
+    const head = text.slice(0, Math.max(0, durationEnd));
+    let bestPos = -1;
+    for (const [re, ref] of REFERENCE_PATTERNS) {
+      const m = head.match(re);
+      if (m && m.index !== undefined && m.index > bestPos) {
+        reference = ref;
+        bestPos = m.index;
+      }
     }
   }
   if (!reference) return null;

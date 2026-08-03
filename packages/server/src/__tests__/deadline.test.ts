@@ -186,3 +186,45 @@ describe('Der Satz aus dem Plan — jetzt berechenbar', () => {
     expect(result[0].binding.dauer).toEqual({ wert: 24, einheit: 'h' });
   });
 });
+
+describe('deriveDeadline am ECHTEN Korpustext (THE-549-Abdeckung, Befund 2026-08-03)', () => {
+  // Diese Faelle stammen woertlich aus Lauf 4 (sysReqTexts, nis2:art23) —
+  // der Parser scheiterte an allen vieren, obwohl die Frist klar dastand.
+  it('reads the clock when it comes BEFORE the duration — the common corpus word order', () => {
+    const d = deriveDeadline(
+      'Das Unternehmen muss nach Kenntnisnahme eines erheblichen Sicherheitsvorfalls unverzüglich, spätestens innerhalb von 72 Stunden, eine Meldung übermitteln.',
+    );
+    expect(d?.dauer).toEqual({ wert: 72, einheit: 'h' });
+    expect(d?.bezugspunkt).toBe('kenntnis');
+  });
+
+  it('reads the genitive month — "innerhalb eines Monats"', () => {
+    const d = deriveDeadline(
+      'Das Unternehmen muss einen Abschlussbericht zum Sicherheitsvorfall innerhalb eines Monats nach dessen Meldung übermitteln.',
+    );
+    expect(d?.dauer).toEqual({ wert: 1, einheit: 'mon' });
+    expect(d?.bezugspunkt).toBe('vorherige-meldung');
+  });
+
+  it('reads "einen Monat nach Meldung" — the NIS2 final report clock', () => {
+    const d = deriveDeadline(
+      'Das Unternehmen muss spätestens einen Monat nach Meldung eines Sicherheitsvorfalls einen Abschlussbericht erstellen.',
+    );
+    expect(d?.dauer).toEqual({ wert: 1, einheit: 'mon' });
+    expect(d?.bezugspunkt).toBe('vorherige-meldung');
+  });
+
+  it('still yields null for genuinely clock-less duties — "unverzüglich" alone', () => {
+    expect(
+      deriveDeadline('Das Unternehmen muss sein CSIRT unverzüglich benachrichtigen, wenn ein Sicherheitsvorfall eintritt.'),
+    ).toBeNull();
+  });
+
+  it('does not misread periodic reporting as an incident deadline', () => {
+    // "alle drei Monate" ist ein Turnus (Ausloeser-Taxonomie, THE-553) —
+    // ein Bezugspunkt-Fund waere hier eine Erfindung.
+    expect(
+      deriveDeadline('Das Unternehmen muss der ENISA alle drei Monate einen zusammenfassenden Bericht übermitteln.'),
+    ).toBeNull();
+  });
+});
