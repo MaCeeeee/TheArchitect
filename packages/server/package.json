@@ -55,6 +55,7 @@
     "reqtrace:capability": "ts-node src/scripts/reqtrace-capability-eval.ts",
     "credentials:reencrypt": "ts-node src/scripts/reencrypt-credentials.ts",
     "reqtrace:object-catalog": "ts-node src/scripts/reqtrace-object-catalog.ts",
+    "reqtrace:article": "ts-node src/scripts/reqtrace-article-eval.ts",
     "actions:classify": "ts-node src/scripts/classify-obligations.ts",
     "relations:parser-eval": "ts-node src/scripts/interprets-parser-eval.ts",
     "backfill:provenance": "ts-node src/scripts/backfill-provenance.ts",
