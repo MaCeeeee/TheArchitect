@@ -26,6 +26,12 @@ export interface IChainSystemRequirement extends Document {
   ausloeser: string;
   nachweis: string;
   stakeholderRequirementIds: mongoose.Types.ObjectId[];
+  /**
+   * THE-569: Cache der kanonischen Handlung MIT Katalog-Stand — eine
+   * Klassifikation ohne ontologyVersion ist später nicht deutbar
+   * (THE-438-Muster). actionId null = bewusst „keine passende Handlung".
+   */
+  actionClassification?: { actionId: string | null; ontologyVersion: string };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +51,11 @@ const chainSystemRequirementSchema = new Schema<IChainSystemRequirement>(
         validator: (v: unknown[]) => Array.isArray(v) && v.length >= 1,
         message: 'a system requirement without a stakeholder requirement has no provenance (ISO 15288 §6.4.3.2 f)',
       },
+    },
+    actionClassification: {
+      type: { actionId: { type: String, default: null }, ontologyVersion: { type: String, required: true } },
+      default: undefined,
+      _id: false,
     },
   },
   { timestamps: true },
