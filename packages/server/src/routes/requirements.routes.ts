@@ -28,6 +28,11 @@ import { Project } from '../models/Project';
 import { isFreshEvidence } from '../services/evidence.service';
 import { Regulation } from '../models/Regulation';
 import { chainPreview, persistChainItem } from '../services/chainGenerate.service';
+import {
+  proposeSharedMeasures,
+  confirmSharedMeasure,
+  HarmonizationError,
+} from '../services/harmonization.service';
 import { violatesImplementationFreedom } from '@thearchitect/shared';
 import {
   generateRequirementsFromText,
@@ -163,6 +168,95 @@ const generateRateLimit = rateLimit({
   max: 30,
   name: 'requirements-generate',
 });
+
+// ─── ADR-0008 / THE-569: Harmonisierungs-Vorschlag ───────────────────────
+// NUR explizit (POST + Rate-Limit): der Judge kostet. Die Kosten stehen in
+// der Antwort (pairsJudged/cappedPairs), nie im Log. Verdraengte Paare
+// erreichen den Richter nie und kommen als eigener Fall mit Zitat zurueck.
+const harmonizeRateLimit = rateLimit({
+  windowMs: 60_000,
+  max: 5,
+  name: 'requirements-harmonize',
+});
+
+const ProposeBodySchema = z.object({
+  maxJudgedPairs: z.number().int().min(0).max(200).optional(),
+});
+
+router.post(
+  '/:projectId/requirements/harmonization/propose',
+  requireProjectAccess('editor'),
+  harmonizeRateLimit,
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const parsed = ProposeBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    try {
+      const { makeHarmonizationAsk } = await import('../services/harmonizationAsk');
+      const ask = makeHarmonizationAsk();
+      const result = await proposeSharedMeasures(projectId, {
+        ask,
+        judge: ask,
+        maxJudgedPairs: parsed.data.maxJudgedPairs ?? 50,
+      });
+      res.json({ success: true, data: result });
+    } catch (err) {
+      log.error({ err, projectId }, '[requirements.harmonization] propose failed');
+      res.status(502).json({ success: false, error: 'harmonization proposal failed' });
+    }
+  },
+);
+
+const ConfirmSharedSchema = z.object({
+  systemRequirementIds: z.array(z.string().min(1)).min(2),
+  elementId: z.string().min(1).max(200),
+});
+
+router.post(
+  '/:projectId/requirements/harmonization/confirm',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const parsed = ConfirmSharedSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    try {
+      const result = await confirmSharedMeasure({
+        projectId,
+        systemRequirementIds: parsed.data.systemRequirementIds,
+        elementId: parsed.data.elementId,
+      });
+      if (req.user) {
+        await createAuditEntry({
+          userId: req.user._id.toString(),
+          projectId,
+          action: 'requirements.harmonization.confirm',
+          entityType: 'ComplianceRequirement',
+          ip: req.ip,
+          userAgent: req.get('user-agent') ?? undefined,
+          riskLevel: 'high',
+          after: { elementId: parsed.data.elementId, members: parsed.data.systemRequirementIds, linked: result.linkedRequirements },
+        });
+      }
+      res.json({ success: true, data: result });
+    } catch (err) {
+      if (err instanceof HarmonizationError) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      log.error({ err, projectId }, '[requirements.harmonization] confirm failed');
+      res.status(500).json({ success: false, error: 'confirm failed' });
+    }
+  },
+);
 
 router.post(
   '/:projectId/requirements/generate',
