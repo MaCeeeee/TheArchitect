@@ -125,8 +125,13 @@ export function RequirementsForElementSection({
         const { data } = await requirementsAPI.setGate(projectId, id, { gate, state, reason });
         setRequirements((prev) => prev?.map((r) => (r._id === id ? { ...r, gates: data.data?.gates ?? r.gates } : r)) ?? null);
         toast.success(`${gate} recorded`);
-      } catch {
-        toast.error('Failed to set gate — a reason is required');
+      } catch (err) {
+        // THE-558: die Server-Begruendung ist die Botschaft — z. B. "attested
+        // requires at least one fresh (non-stale) evidence record".
+        const msg =
+          (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+          'Failed to set gate';
+        toast.error(msg);
       }
     },
     [projectId],
