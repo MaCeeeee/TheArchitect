@@ -22,6 +22,8 @@ import { createAuditEntry } from '../middleware/audit.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { emptyGates, deriveCovered, applyHumanGate } from '../services/requirementGates.service';
+import { Evidence } from '../models/Evidence';
+import { isFreshEvidence } from '../services/evidence.service';
 import { Regulation } from '../models/Regulation';
 import {
   generateRequirementsFromText,
@@ -503,6 +505,82 @@ router.get(
 
 // ─── PATCH /:id (status + assignee Update) ──────────────────────
 
+// THE-558: Nachweise — append-only Verweise mit Hash und Textstand.
+// `collectedBy` kommt aus der Session; das Zod-Schema kennt das Feld nicht.
+const EvidenceBodySchema = z.object({
+  kind: z.string().min(1),
+  ref: z.string().min(1),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/i, 'sha256 must be 64 hex characters'),
+  collectedAt: z.string().datetime().optional(),
+  regulationKey: z.string().min(1).optional(),
+  regulationVersionHash: z.string().min(1).optional(),
+  supersedes: z.string().optional(),
+});
+
+router.post(
+  '/:projectId/requirements/:id/evidence',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const id = String(req.params.id);
+    if (!mongoose.isValidObjectId(projectId) || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, error: 'invalid id' });
+    }
+    const parsed = EvidenceBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    if (parsed.data.supersedes && !mongoose.isValidObjectId(parsed.data.supersedes)) {
+      return res.status(400).json({ success: false, error: 'invalid supersedes id' });
+    }
+    const requirement = await ComplianceRequirement.findOne({ _id: id, projectId }).select('_id');
+    if (!requirement) return res.status(404).json({ success: false, error: 'requirement not found' });
+
+    try {
+      const doc = await Evidence.create({
+        projectId,
+        requirementId: id,
+        kind: parsed.data.kind,
+        ref: parsed.data.ref,
+        sha256: parsed.data.sha256.toLowerCase(),
+        collectedAt: parsed.data.collectedAt ? new Date(parsed.data.collectedAt) : new Date(),
+        collectedBy: String(req.user!._id),
+        ...(parsed.data.regulationKey ? { regulationKey: parsed.data.regulationKey } : {}),
+        ...(parsed.data.regulationVersionHash ? { regulationVersionHash: parsed.data.regulationVersionHash } : {}),
+        ...(parsed.data.supersedes ? { supersedes: parsed.data.supersedes } : {}),
+      });
+      await createAuditEntry({
+        userId: String(req.user!._id),
+        projectId,
+        action: 'requirement.evidence.add',
+        entityType: 'Evidence',
+        entityId: String(doc._id),
+        after: { requirementId: id, kind: parsed.data.kind, sha256: parsed.data.sha256.toLowerCase() },
+        ip: req.ip || '',
+        userAgent: req.get('user-agent') || '',
+      });
+      return res.status(201).json({ success: true, data: doc });
+    } catch (err) {
+      // Schema-Validatoren (Credential-Guard, sha256) landen hier — mit Grund.
+      return res.status(400).json({ success: false, error: (err as Error).message });
+    }
+  },
+);
+
+router.get(
+  '/:projectId/requirements/:id/evidence',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const id = String(req.params.id);
+    if (!mongoose.isValidObjectId(projectId) || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, error: 'invalid id' });
+    }
+    const items = await Evidence.find({ projectId, requirementId: id }).sort({ collectedAt: -1 }).lean();
+    return res.json({ success: true, data: items, fresh: items.filter((e) => isFreshEvidence(e)).length });
+  },
+);
+
 // THE-557: Notar-Akt — enforced/attested setzt NUR ein Mensch. `setBy` kommt
 // server-seitig aus der Session (Spoof-Schutz wie certification.routes.ts);
 // ein `setBy` im Body wird ignoriert, weil das Schema es gar nicht kennt.
@@ -529,6 +607,20 @@ router.post(
     if (!doc) return res.status(404).json({ success: false, error: 'requirement not found' });
 
     const userId = String(req.user!._id);
+
+    // THE-558: das Nachweis-Tor braucht einen Nachweis. Mindestens eine
+    // NICHT-stale Evidenz — eine stale zaehlt nicht, auch wenn sie die
+    // einzige ist ("ein Protokoll von 2023 belegt 2026 nichts mehr").
+    if (parsed.data.gate === 'attested' && parsed.data.state === 'yes') {
+      const fresh = await Evidence.countDocuments({ requirementId: id, stale: { $ne: true } });
+      if (fresh === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'attested requires at least one fresh (non-stale) evidence record — add evidence first (THE-558)',
+        });
+      }
+    }
+
     try {
       // covered wird beim ersten Notar-Akt mitabgeleitet, falls nie bewertet —
       // so entsteht kein Tripel, dessen Maschinen-Tor grundlos unknown bleibt.
