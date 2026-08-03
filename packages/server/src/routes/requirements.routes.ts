@@ -33,6 +33,7 @@ import {
   confirmSharedMeasure,
   HarmonizationError,
 } from '../services/harmonization.service';
+import { forwardTrace, backwardTrace } from '../services/traceability.service';
 import { violatesImplementationFreedom } from '@thearchitect/shared';
 import {
   generateRequirementsFromText,
@@ -168,6 +169,36 @@ const generateRateLimit = rateLimit({
   max: 30,
   name: 'requirements-generate',
 });
+
+// ─── THE-565: Bidirektionale Traceability (rein lesend) ──────────────────
+// Vorwaerts: Norm -> Klauseln -> Stand. Rueckwaerts: Element -> Anforderungen
+// samt Frist/Rechtsgrundlage + Ausmustern-Impact. Die THE-305-Route
+// /by-element bleibt byte-gleich — dies sind NEUE, reichere Sichten.
+router.get(
+  '/:projectId/requirements/trace/forward',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    res.json({ success: true, data: await forwardTrace(projectId) });
+  },
+);
+
+router.get(
+  '/:projectId/requirements/trace/by-element/:elementId',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const elementId = String(req.params.elementId);
+    if (!elementId) return res.status(400).json({ success: false, error: 'elementId required' });
+    res.json({ success: true, data: await backwardTrace(projectId, elementId) });
+  },
+);
 
 // ─── ADR-0008 / THE-569: Harmonisierungs-Vorschlag ───────────────────────
 // NUR explizit (POST + Rate-Limit): der Judge kostet. Die Kosten stehen in
