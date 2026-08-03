@@ -26,11 +26,25 @@
  *
  * Linear: THE-545 · Rahmen: ADR-0007
  */
+import { clauseContentId } from '@thearchitect/shared';
 import type { ReqtraceArticle } from './lawsFixture';
 
 export interface Clause {
-  /** `<source>:<article>:c<NN>` — stabil, fortlaufend in Textreihenfolge. */
+  /**
+   * `<source>:<article>:c<NN>` — positional, fortlaufend in Textreihenfolge.
+   * Bleibt für Anzeige und Lauf-Reproduzierbarkeit. REFERENZEN gehören auf
+   * `contentId` — gemessen THE-550: eine umnummerierende Novelle verschiebt
+   * 24/30 positionale Ids auf die falsche Klausel, contentId findet 30/30.
+   */
   id: string;
+  /**
+   * Inhalts-basierte Identität: sha256-Präfix über den normalisierten
+   * Klauseltext. Überlebt Umnummerierung; nur tatsächlich veränderter Text
+   * fällt heraus. Bekannte Grenze (Folge-Ticket, THE-560 AC 4): ein Einschub
+   * im Novellen-Stil „(1a)" wird nicht als Absatzgrenze erkannt und bleibt
+   * als eigene Klausel unsichtbar.
+   */
+  contentId: string;
   /** Menschenlesbarer Pfad: `Abs. 2 Buchst. c` — der Rückverweis der Traceability. */
   path: string;
   text: string;
@@ -149,6 +163,7 @@ export function segmentClauses(article: ReqtraceArticle): Clause[] {
         n += 1;
         clauses.push({
           id: `${article.source}:${article.article}:c${String(n).padStart(2, '0')}`,
+          contentId: clauseContentId(sentence),
           path: `Abs. ${span.num}${lit.letter ? ` Buchst. ${lit.letter}` : ''}`,
           text: sentence,
         });

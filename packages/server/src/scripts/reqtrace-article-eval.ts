@@ -24,14 +24,17 @@ import { loadReqtraceLaws, type ReqtraceArticle } from '../evals/reqtrace/lawsFi
 import { evaluateReqtrace, type AskFn } from '../evals/reqtrace/runReqtraceEval';
 import type { Clause } from '../evals/reqtrace/clauseSegmenter';
 import { stripEditorialArtefacts } from '../evals/reqtrace/clauseSegmenter';
+import { clauseContentId } from '@thearchitect/shared';
 
 /** Ein Artikel = EINE Klausel. Gleiche Blendung wie der echte Segmenter. */
 export function articleAsSingleClause(a: ReqtraceArticle): Clause[] {
+  const text = stripEditorialArtefacts(a.fullText);
   return [
     {
       id: `${a.source}:${a.article}:c00`,
+      contentId: clauseContentId(text),
       path: `${a.source} ${a.article}`,
-      text: stripEditorialArtefacts(a.fullText),
+      text,
     },
   ];
 }
