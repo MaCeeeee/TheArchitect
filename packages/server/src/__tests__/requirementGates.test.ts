@@ -74,3 +74,40 @@ describe('HUMAN_ONLY_GATES', () => {
     expect([...HUMAN_ONLY_GATES].sort()).toEqual(['attested', 'enforced']);
   });
 });
+
+describe('ComplianceRequirement model — gates ist additiv (THE-557)', () => {
+  const { ComplianceRequirement } = require('../models/ComplianceRequirement');
+  const base = {
+    projectId: '507f1f77bcf86cd799439011',
+    regulationId: '507f1f77bcf86cd799439012',
+    sourceParagraph: 'Art. 32',
+    title: 'Meldeprozess etablieren', description: 'Vorfall binnen Frist an die Behörde melden', priority: 'must',
+    linkedElementIds: [], createdBy: 'human',
+  };
+
+  it('a document WITHOUT gates validates exactly as before — Bestand unberührt', () => {
+    const doc = new ComplianceRequirement({ ...base, status: 'done' });
+    expect(doc.validateSync()).toBeUndefined();
+    expect(doc.gates).toBeUndefined(); // kein default-{} — Abwesenheit bleibt sichtbar
+  });
+
+  it('accepts a full gates tripel', () => {
+    const doc = new ComplianceRequirement({
+      ...base,
+      gates: {
+        covered: { state: 'yes', setBy: 'system', setAt: new Date().toISOString(), reason: 'derived: 1' },
+        enforced: { state: 'unknown' },
+        attested: { state: 'unknown' },
+      },
+    });
+    expect(doc.validateSync()).toBeUndefined();
+  });
+
+  it('rejects an invalid gate state at schema level', () => {
+    const doc = new ComplianceRequirement({
+      ...base,
+      gates: { covered: { state: 'kaputt' }, enforced: { state: 'unknown' }, attested: { state: 'unknown' } },
+    });
+    expect(doc.validateSync()).toBeDefined();
+  });
+});

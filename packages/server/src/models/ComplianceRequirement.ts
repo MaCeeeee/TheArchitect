@@ -5,6 +5,7 @@ import type {
   ComplianceRequirementProvenance,
   Art30Criticality,
   TraceTarget,
+  RequirementGates,
 } from '@thearchitect/shared';
 
 /**
@@ -39,6 +40,8 @@ export interface IComplianceRequirement extends Document {
   priority: ComplianceRequirementPriority;
   linkedElementIds: string[];
   status: ComplianceRequirementStatus;
+  /** THE-557: Drei-Tore-Tripel — Abwesenheit heißt „nie bewertet", nicht 3× unknown. */
+  gates?: RequirementGates;
   assigneeId?: mongoose.Types.ObjectId;
   dueDate?: Date;
   createdBy: ComplianceRequirementProvenance;
@@ -97,6 +100,18 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
       type: String,
       enum: STATUS_ENUM,
       default: 'open',
+    },
+    // THE-557: Drei-Tore-Erfüllungsgrad — ADDITIV, kein default-{}: ein nie
+    // gesetztes Tripel bleibt `undefined`, damit „nie bewertet" von „bewertet:
+    // 3× unknown" unterscheidbar ist. Ein Bestands-`done` erbt KEINE Tiefe.
+    gates: {
+      type: {
+        covered: { state: { type: String, enum: ['unknown', 'no', 'yes'] }, setBy: String, setAt: String, reason: String },
+        enforced: { state: { type: String, enum: ['unknown', 'no', 'yes'] }, setBy: String, setAt: String, reason: String },
+        attested: { state: { type: String, enum: ['unknown', 'no', 'yes'] }, setBy: String, setAt: String, reason: String },
+      },
+      default: undefined,
+      _id: false,
     },
     assigneeId: { type: Schema.Types.ObjectId, ref: 'User' },
     dueDate: { type: Date },
