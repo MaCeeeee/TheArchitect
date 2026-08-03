@@ -11,26 +11,26 @@ Status: ⬜ offen · 🟡 in Arbeit · ✅ verifiziert · ❌ gerissen
 
 | ID | Anforderung | Plan-Task | Verifikation | Status |
 |---|---|---|---|---|
-| **AC-1** | `gates` additiv mit drei Toren; je Tor `state/setBy/setAt`; Default-Verhalten: Abwesenheit = 3× `unknown`, **kein** default-`{}` | 1, 2 | Unit: `emptyGates`; Modell ohne `gates` validiert wie vorher, `doc.gates === undefined` | ⬜ |
-| **AC-2** | `covered` automatisch mit `setBy: 'system'` + Ableitungsgrund; `enforced`/`attested` **nur Mensch**, Notar-Muster, auditiert | 1, 3 | Unit: `deriveCovered` (yes/no je Verknüpfung, Grund benannt); Route auditiert via `createAuditEntry` | ⬜ |
-| **AC-3** | Kein LLM-Pfad auf `enforced`/`attested` | 1, 3 | strukturell: `applyHumanGate` verlangt Session-`userId`; kein maschineller Aufrufer (grep im Abschluss) | ⬜ |
-| **AC-4** | Nie Boolean, nie Prozent aggregiert | alle | kein Aggregat-Feld/-Endpoint; Kommentar am shared-Typ | ⬜ |
-| **AC-5** | UI: Tripel-Badge **neben** dem Status; Setzen mit Begründungspflicht | 4, 5 | Component-Tests: Dialog vor `onSet`, `covered` unklickbar | ⬜ |
+| **AC-1** | `gates` additiv mit drei Toren; je Tor `state/setBy/setAt`; Default-Verhalten: Abwesenheit = 3× `unknown`, **kein** default-`{}` | 1, 2 | Unit: `emptyGates`; Modell ohne `gates` validiert wie vorher, `doc.gates === undefined` | ✅ |
+| **AC-2** | `covered` automatisch mit `setBy: 'system'` + Ableitungsgrund; `enforced`/`attested` **nur Mensch**, Notar-Muster, auditiert | 1, 3 | Unit: `deriveCovered` (yes/no je Verknüpfung, Grund benannt); Route auditiert via `createAuditEntry` | ✅ |
+| **AC-3** | Kein LLM-Pfad auf `enforced`/`attested` | 1, 3 | strukturell: `applyHumanGate` verlangt Session-`userId`; kein maschineller Aufrufer (grep im Abschluss) | ✅ |
+| **AC-4** | Nie Boolean, nie Prozent aggregiert | alle | kein Aggregat-Feld/-Endpoint; Kommentar am shared-Typ | ✅ |
+| **AC-5** | UI: Tripel-Badge **neben** dem Status; Setzen mit Begründungspflicht | 4, 5 | Component-Tests: Dialog vor `onSet`, `covered` unklickbar | ✅ |
 
 ## Positiv-Kontrolle
 
 | ID | Bedingung | Plan-Task | Status |
 |---|---|---|---|
-| **P-1** | Requirement mit verknüpften Elementen → `covered: yes (system)`; `enforced`/`attested` bleiben `unknown`, bis ein Mensch handelt | 1, 3 | ⬜ |
+| **P-1** | Requirement mit verknüpften Elementen → `covered: yes (system)`; `enforced`/`attested` bleiben `unknown`, bis ein Mensch handelt | 1, 3 | ✅ |
 
 ## Negativ-Kontrollen
 
 | ID | Bedingung | Plan-Task | Status |
 |---|---|---|---|
-| **N-1** | Bestands-`done` zeigt `gates` 3× `unknown` — **das Häkchen erbt keine Tiefe** | 2 (Modell), 4 (Badge) | ⬜ |
-| **N-2** | `setBy` im Body wird ignoriert — Zod-Schema kennt das Feld nicht, Identität aus der Session | 3 | ⬜ |
-| **N-3** | Leere Begründung → 400/Throw | 1 (Service), 3 (Zod `min(1)`), 4 (Dialog) | ⬜ |
-| **N-4** | `covered` per Notar-Route setzen → 400 — das Maschinen-Tor ist keine Menschen-Entscheidung | 1, 3 | ⬜ |
+| **N-1** | Bestands-`done` zeigt `gates` 3× `unknown` — **das Häkchen erbt keine Tiefe** | 2 (Modell), 4 (Badge) | ✅ |
+| **N-2** | `setBy` im Body wird ignoriert — Zod-Schema kennt das Feld nicht, Identität aus der Session | 3 | ✅ |
+| **N-3** | Leere Begründung → 400/Throw | 1 (Service), 3 (Zod `min(1)`), 4 (Dialog) | ✅ |
+| **N-4** | `covered` per Notar-Route setzen → 400 — das Maschinen-Tor ist keine Menschen-Entscheidung | 1, 3 | ✅ |
 
 ## Benannte Grenzen (gelten ab Merge, stehen im Ticket)
 
