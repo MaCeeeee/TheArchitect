@@ -97,6 +97,13 @@ export default function SharedMeasuresPanel() {
             {result.stats.total} chain requirements · {result.stats.pairsJudged} pairs judged ·{' '}
             {result.grouping.cappedPairs} capped · {result.stats.unmappedAddressee} unmapped addressee ·{' '}
             {result.stats.unclassified} unclassified
+            {/* THE-591: Woher der Adressat kam. Eine Rolle ohne erkennbare
+                Quelle ist im Pruefungsfall wertlos — die Herkunft gehoert
+                neben die Quote, nicht in ein Log. */}
+            <span data-testid="addressee-provenance">
+              {' '}· addressee: {result.stats.addresseeFromCorpus} from corpus,{' '}
+              {result.stats.addresseeFromLexicon} from lexicon
+            </span>
           </div>
 
           {result.grouping.excludedByDisplacement.length > 0 && (

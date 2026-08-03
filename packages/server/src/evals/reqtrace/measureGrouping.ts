@@ -42,6 +42,14 @@ export interface GroupableSysReq extends SystemRequirement {
   /** Kanonische Handlung; `null` = nicht zuordenbar, dann kein Kandidat. */
   actionId: string | null;
   addresseeClass: string;
+  /**
+   * Woher die Adressatenklasse stammt (THE-591). Optional, weil der Prüfstand
+   * sie aus der Fixture setzt und keine Herkunft kennt. Im Produkt ist sie
+   * Pflicht-Information: Eine Rolle ohne erkennbare Quelle ist im Prüfungsfall
+   * wertlos — `corpus` ist die typisierte Provision, `lexicon` der Rückfall
+   * über den Freitext.
+   */
+  addresseeSource?: 'corpus' | 'lexicon';
 }
 
 /**

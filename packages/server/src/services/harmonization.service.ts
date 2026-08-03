@@ -9,12 +9,14 @@
  * liefert ihr nur produktive Inputs:
  *
  *   source          mechanisch aus dem regulationKey-Präfix der StR
- *   addresseeClass  Adressaten-Lexikon über den verpflichteter-Freitext —
- *                   im Eval kam sie aus dem handkuratierten Fixture, das es
- *                   im Produkt nicht gibt. Unmappbares nimmt NICHT teil
+ *   addresseeClass  ZUERST aus der typisierten Korpus-Provision (THE-540
+ *                   Achse 1), Freitext-Lexikon nur als Rückfall (THE-591).
+ *                   Der Grund ist gemessen: Das Lexikon liest den
+ *                   Verpflichteten einer PARAPHRASE zurück, der Korpus trägt
+ *                   die Rolle am Originaltext. Unmappbares nimmt NICHT teil
  *                   (unmappedAddressee-Quote): eine falsche Klasse würde das
  *                   Verdrängungs-Gate für Paare öffnen, die es ausschließen
- *                   müsste.
+ *                   müsste — gemessen in THE-589.
  *   actionId        Produktions-Klassifikator (classifyObligation), am
  *                   Dokument GECACHT mit ontologyVersion (THE-438-Muster).
  *
@@ -27,6 +29,7 @@ import mongoose from 'mongoose';
 import { NORM_ONTOLOGY } from '@thearchitect/shared';
 import { classifyObligation, type AskFn } from './obligationAction.service';
 import { mapVerpflichteterToPartyRole } from './addresseeLexicon';
+import { resolveTypedAddressees, type FetchProvisions } from './typedProvision.service';
 import { ChainSystemRequirement } from '../models/ChainSystemRequirement';
 import { StakeholderRequirement } from '../models/StakeholderRequirement';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
@@ -42,6 +45,17 @@ export interface EnrichStats {
   total: number;
   unmappedAddressee: number;
   unclassified: number;
+  /** THE-591: Adressat aus der typisierten Korpus-Provision — der Regelfall. */
+  addresseeFromCorpus: number;
+  /** Adressat aus dem Freitext-Lexikon — der Rückfall. */
+  addresseeFromLexicon: number;
+  /**
+   * Provisions, zu denen der Korpus nichts sagt (ungetypt oder nicht
+   * erreichbar). Steht NEBEN `unmappedAddressee`, damit die Lücke nicht bloß
+   * eine Ebene weiterwandert: „der Korpus kennt sie nicht" und „niemand kennt
+   * sie" sind verschiedene Aussagen.
+   */
+  untypedProvisions: number;
 }
 
 export interface BuildGroupablesResult {
@@ -49,32 +63,77 @@ export interface BuildGroupablesResult {
   stats: EnrichStats;
 }
 
+/** Produktions-Zugriff auf die typisierten Provisions. Im Test ein Stub. */
+const defaultFetchProvisions: FetchProvisions = async (keys) => {
+  const { getRegulationsByKeys } = await import('./corpusClient.service');
+  return (await getRegulationsByKeys(keys)) as never;
+};
+
 export async function buildGroupables(
   projectId: mongoose.Types.ObjectId | string,
-  ctx: { ask: AskFn },
+  ctx: { ask: AskFn; fetchProvisions?: FetchProvisions },
 ): Promise<BuildGroupablesResult> {
   const sysReqs = await ChainSystemRequirement.find({ projectId }).sort({ _id: 1 });
-  const stats: EnrichStats = { total: sysReqs.length, unmappedAddressee: 0, unclassified: 0 };
+  const stats: EnrichStats = {
+    total: sysReqs.length,
+    unmappedAddressee: 0,
+    unclassified: 0,
+    addresseeFromCorpus: 0,
+    addresseeFromLexicon: 0,
+    untypedProvisions: 0,
+  };
   const groupables: GroupableSysReq[] = [];
 
+  // ── Ein Read für alle Klauseln, ein Read für alle Provisions ────────────
+  //
+  // Vorher holte die Schleife dieselbe StakeholderRequirement ZWEIMAL je
+  // Anforderung. Auf einer Liste, die im Alltag lang wird, ist das ein N+1 auf
+  // einem heißen Pfad — und der Korpus-Zugriff käme als dritter dazu.
+  const strById = new Map<string, { regulationKey: string }>();
+  const strIds = sysReqs.map((d) => d.stakeholderRequirementIds[0]).filter(Boolean);
+  if (strIds.length > 0) {
+    const strs = await StakeholderRequirement.find({ _id: { $in: strIds } })
+      .select('regulationKey')
+      .lean();
+    for (const s of strs) strById.set(String(s._id), { regulationKey: s.regulationKey });
+  }
+  const keyOf = (doc: { stakeholderRequirementIds: unknown[] }): string =>
+    strById.get(String(doc.stakeholderRequirementIds[0]))?.regulationKey ?? '';
+
+  // THE-591: Der Adressat kommt aus der typisierten Provision (THE-540 Achse
+  // 1), nicht aus einer Regex über die Paraphrase. `resolveTypedAddressees`
+  // liefert bei Korpus-Ausfall eine LEERE Map statt eines Wurfs — der Lauf
+  // fällt dann auf das Lexikon zurück, statt Pflichten zu verlieren.
+  const typedByKey = await resolveTypedAddressees(
+    sysReqs.map(keyOf).filter(Boolean),
+    ctx.fetchProvisions ?? defaultFetchProvisions,
+  );
+
   for (const doc of sysReqs) {
-    const addresseeClass = mapVerpflichteterToPartyRole(doc.verpflichteter);
+    const regulationKey = keyOf(doc);
+    // Korpus zuerst, Lexikon als Rückfall — und die Herkunft bleibt ablesbar.
+    // Eine Rolle ohne erkennbare Quelle ist im Prüfungsfall wertlos.
+    const fromCorpus = typedByKey.get(regulationKey);
+    if (!fromCorpus) stats.untypedProvisions += 1;
+    const addresseeClass = fromCorpus ?? mapVerpflichteterToPartyRole(doc.verpflichteter);
     if (!addresseeClass) {
       // Kein Klassifikations-Call für Unpaarbares — Kosten sichtbar sparen.
       stats.unmappedAddressee += 1;
       continue;
     }
+    const addresseeSource: 'corpus' | 'lexicon' = fromCorpus ? 'corpus' : 'lexicon';
+    if (fromCorpus) stats.addresseeFromCorpus += 1;
+    else stats.addresseeFromLexicon += 1;
 
     let actionId: string | null;
     const cached = doc.actionClassification;
     if (cached && cached.ontologyVersion === NORM_ONTOLOGY.ontologyVersion) {
       actionId = cached.actionId;
     } else {
-      const str = await StakeholderRequirement.findById(doc.stakeholderRequirementIds[0]).lean();
       const assignment = await classifyObligation(
         {
-          law: str?.regulationKey.split(':')[0] ?? 'unknown',
-          para: str?.regulationKey ?? '',
+          law: regulationKey.split(':')[0] || 'unknown',
+          para: regulationKey,
           title: doc.text.slice(0, 120),
           text: doc.text,
         },
@@ -89,12 +148,12 @@ export async function buildGroupables(
       await doc.save();
     }
 
-    const str = await StakeholderRequirement.findById(doc.stakeholderRequirementIds[0]).lean();
     groupables.push({
       id: String(doc._id),
-      source: str?.regulationKey.split(':')[0] ?? 'unknown',
+      source: regulationKey.split(':')[0] || 'unknown',
       actionId,
       addresseeClass,
+      addresseeSource,
       text: doc.text,
       schutzgut: doc.schutzgut,
       verpflichteter: doc.verpflichteter,
@@ -125,9 +184,12 @@ export interface ProposeResult {
 /** Der explizite Vorschlags-Lauf — Kosten stehen in der Antwort, nie im Log. */
 export async function proposeSharedMeasures(
   projectId: mongoose.Types.ObjectId | string,
-  ctx: { ask: AskFn; judge: JudgeFn; maxJudgedPairs?: number },
+  ctx: { ask: AskFn; judge: JudgeFn; maxJudgedPairs?: number; fetchProvisions?: FetchProvisions },
 ): Promise<ProposeResult> {
-  const { groupables, stats } = await buildGroupables(projectId, { ask: ctx.ask });
+  const { groupables, stats } = await buildGroupables(projectId, {
+    ask: ctx.ask,
+    ...(ctx.fetchProvisions ? { fetchProvisions: ctx.fetchProvisions } : {}),
+  });
   let pairsJudged = 0;
   const countingJudge: JudgeFn = async (system, user) => {
     pairsJudged += 1;

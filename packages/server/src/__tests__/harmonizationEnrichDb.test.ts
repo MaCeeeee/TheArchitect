@@ -80,7 +80,16 @@ describe('buildGroupables — Anreicherung mit Cache und Quoten', () => {
     expect(nis2.actionId).toBe('vorfall-melden-behoerde');
     expect(r.groupables.find((g) => g.id === doraId)!.source).toBe('dora');
     expect(stub.calls()).toBe(2);
-    expect(r.stats).toEqual({ total: 2, unmappedAddressee: 0, unclassified: 0 });
+    expect(r.stats).toEqual({
+      total: 2,
+      unmappedAddressee: 0,
+      unclassified: 0,
+      // Ohne Korpus-Stub kennt der Lauf keine typisierte Provision — beide
+      // Adressaten kommen aus dem Lexikon (THE-591-Rückfall).
+      addresseeFromCorpus: 0,
+      addresseeFromLexicon: 2,
+      untypedProvisions: 2,
+    });
   });
 
   it('caches the classification with ontologyVersion — second run makes zero classify calls', async () => {
@@ -133,5 +142,109 @@ describe('buildGroupables — Anreicherung mit Cache und Quoten', () => {
     const r = await buildGroupables(projectId, { ask });
     expect(r.stats.unclassified).toBe(1);
     expect(r.groupables.map((g) => g.id)).toEqual([ok]);
+  });
+});
+
+// ─── THE-591: der Adressat kommt aus dem Korpus, das Lexikon ist Rückfall ──
+//
+// Entschieden in THE-589 (docs/evals/the589-adressat-entscheid.md). Der Grund
+// ist gemessen: Das Lexikon liest den Verpflichteten einer PARAPHRASE zurück
+// („Das Unternehmen muss …"); der Korpus trägt die Rolle an der Provision
+// selbst, aus dem Originaltext klassifiziert.
+//
+// Der Rückfall ist Pflicht, nicht Höflichkeit: 23 % der Provisions sind
+// ungetypt, und Server B hängt am Tailnet. Ein Infrastruktur-Ausfall darf
+// keine Pflicht verlieren.
+describe('THE-591 — Adressat aus der typisierten Provision', () => {
+  /** Korpus-Stub: liefert typisierte Provisions für die genannten Schlüssel. */
+  const corpusWith = (roleByKey: Record<string, string>) => async (keys: string[]) =>
+    keys
+      .filter((k) => roleByKey[k])
+      .map((k) => ({
+        regulationKey: k,
+        versionHash: 'v1',
+        typing: { partyRole: roleByKey[k], status: 'suggested', versionHash: 'v1' },
+      })) as never;
+
+  it('prefers the corpus role over the lexicon — even when both would answer', async () => {
+    // Das Lexikon würde „wesentliche Einrichtung" auf essential_important_entity
+    // abbilden. Der Korpus sagt hier bewusst etwas ANDERES, damit der Test
+    // zeigt, welche Quelle gewinnt.
+    const id = await seedSysReq({ regulationKey: 'nis2:art23', verpflichteter: 'wesentliche Einrichtung' });
+    const r = await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: corpusWith({ 'nis2:art23': 'financial_entity' }),
+    });
+    const g = r.groupables.find((x) => x.id === id)!;
+    expect(g.addresseeClass).toBe('financial_entity');
+    expect(g.addresseeSource).toBe('corpus');
+    expect(r.stats.addresseeFromCorpus).toBe(1);
+    expect(r.stats.addresseeFromLexicon).toBe(0);
+  });
+
+  it('falls back to the lexicon when the corpus has no typing for that provision', async () => {
+    const id = await seedSysReq({ regulationKey: 'nis2:art.-23', verpflichteter: 'wesentliche Einrichtung' });
+    const r = await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: corpusWith({}), // Korpus kennt den Schlüssel nicht
+    });
+    const g = r.groupables.find((x) => x.id === id)!;
+    expect(g.addresseeClass).toBe('essential_important_entity');
+    expect(g.addresseeSource).toBe('lexicon');
+    expect(r.stats.addresseeFromLexicon).toBe(1);
+    expect(r.stats.untypedProvisions).toBe(1);
+  });
+
+  it('a corpus outage loses NO obligation — the run continues on the lexicon', async () => {
+    // resolveTypedAddressees faengt den Wurf ab; hier wird geprueft, dass die
+    // Zerlegung ihn ebenfalls uebersteht und nicht still alles verwirft.
+    const id = await seedSysReq({ regulationKey: 'nis2:art23', verpflichteter: 'wesentliche Einrichtung' });
+    const r = await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: async () => {
+        throw new Error('tailnet down');
+      },
+    });
+    expect(r.groupables.find((x) => x.id === id)!.addresseeSource).toBe('lexicon');
+    expect(r.stats.unmappedAddressee).toBe(0);
+  });
+
+  it('neither source knows it → dropped and counted, never guessed', async () => {
+    await seedSysReq({ regulationKey: 'nis2:art.-23', verpflichteter: 'Unternehmen' });
+    const r = await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: corpusWith({}),
+    });
+    expect(r.groupables).toHaveLength(0);
+    expect(r.stats.unmappedAddressee).toBe(1);
+    expect(r.stats.untypedProvisions).toBe(1);
+  });
+
+  it('DER GEMESSENE FALL: „Unternehmen" wird paarbar, sobald der Korpus die Provision kennt', async () => {
+    // Genau der Verlust aus dem schmalen Schnitt: verpflichteter „Unternehmen"
+    // → Lexikon verwirft → BCD-01 fiel aus. Mit der Korpus-Rolle traegt er.
+    const id = await seedSysReq({ regulationKey: 'dsgvo:art32', verpflichteter: 'Unternehmen' });
+    const r = await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: corpusWith({ 'dsgvo:art32': 'controller' }),
+    });
+    expect(r.groupables.find((x) => x.id === id)!.addresseeClass).toBe('controller');
+    expect(r.stats.unmappedAddressee).toBe(0);
+  });
+
+  it('resolves ALL keys in one corpus read — no N+1 on a hot path', async () => {
+    await seedSysReq({ regulationKey: 'nis2:art23', verpflichteter: 'wesentliche Einrichtung' });
+    await seedSysReq({ regulationKey: 'dora:art19', verpflichteter: 'Finanzunternehmen' });
+    await seedSysReq({ regulationKey: 'dsgvo:art32', verpflichteter: 'Verantwortlicher' });
+    let reads = 0;
+    await buildGroupables(projectId, {
+      ask: classifyStub().ask,
+      fetchProvisions: async (keys) => {
+        reads += 1;
+        expect(keys).toHaveLength(3); // alle Schluessel in EINEM Aufruf
+        return [] as never;
+      },
+    });
+    expect(reads).toBe(1);
   });
 });

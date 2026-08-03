@@ -529,7 +529,18 @@ export interface HarmonizationProposeResult {
     cappedPairs: number;
   };
   memberDetails: HarmonizationMemberDetail[];
-  stats: { total: number; unmappedAddressee: number; unclassified: number; pairsJudged: number };
+  stats: {
+    total: number;
+    unmappedAddressee: number;
+    unclassified: number;
+    pairsJudged: number;
+    /** THE-591: Adressat aus der typisierten Korpus-Provision — der Regelfall. */
+    addresseeFromCorpus: number;
+    /** Adressat aus dem Freitext-Lexikon — der Rueckfall. */
+    addresseeFromLexicon: number;
+    /** Provisions, zu denen der Korpus nichts sagt. */
+    untypedProvisions: number;
+  };
 }
 
 // THE-565: bidirektionale Traceability (rein lesend) + expliziter Klausel-Drift.
