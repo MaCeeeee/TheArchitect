@@ -25,6 +25,11 @@ import type { PartyRoleId } from '@thearchitect/shared';
 
 const LEXICON: ReadonlyArray<[RegExp, PartyRoleId]> = [
   [/wesentliche[nr]?\s+(und\s+wichtige[nr]?\s+)?einrichtung(en)?|wichtige[nr]?\s+einrichtung(en)?/i, 'essential_important_entity'],
+  // NIS2-Rueckverweis-Form: "die betroffenen Einrichtungen" referenziert die
+  // zuvor genannten wesentlichen/wichtigen Einrichtungen (Art. 23-Wortlaut).
+  // "Einrichtung" ist NIS2-Vokabular — DSGVO sagt Verantwortlicher, DORA
+  // Finanzunternehmen; die Zuordnung ist daher nicht mehrdeutig.
+  [/betroffene[n]?\s+einrichtung(en)?/i, 'essential_important_entity'],
   [/finanzunternehmen/i, 'financial_entity'],
   [/auftragsverarbeiter/i, 'processor'],
   [/verantwortliche[nr]?\b/i, 'controller'],

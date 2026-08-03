@@ -648,19 +648,37 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
                           placeholder="Concrete action: WHAT must be done HOW?"
                         />
 
-                        {/* Two explainability scores */}
-                        <div className="flex items-center gap-2">
-                          <ScorePill
-                            label="Extraction"
-                            value={req.extractionConfidence ?? 0}
-                            tip="How certain the AI is that this is a genuine legal obligation stated in the text (anti-hallucination)."
-                          />
-                          <ScorePill
-                            label="Mapping"
-                            value={req.mappingConfidence ?? 0}
-                            tip="How well the linked architecture elements actually implement this obligation. 0 = no element matched."
-                          />
-                        </div>
+                        {/* Provenance: chain candidates carry clause refs instead of
+                            one-shot confidence scores — showing 0.00 there would read
+                            as a bad score where none exists (ADR-0008). */}
+                        {req.chain ? (
+                          <div className="flex items-center gap-1.5" data-testid="chain-provenance">
+                            <span className="rounded bg-[#7c3aed22] px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-wider text-[#a78bfa]">
+                              ISO chain
+                            </span>
+                            <span
+                              className="text-[9px] text-[var(--text-tertiary)] cursor-help"
+                              title={req.chain.clauseText}
+                            >
+                              {req.chain.clausePath ?? req.chain.clauseContentId.slice(0, 8)} · {req.chain.regulationKey}
+                              {req.chain.stakeholderRequirement.deadline &&
+                                ` · ${req.chain.stakeholderRequirement.deadline.dauer.wert}${req.chain.stakeholderRequirement.deadline.dauer.einheit} from ${req.chain.stakeholderRequirement.deadline.bezugspunkt}`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <ScorePill
+                              label="Extraction"
+                              value={req.extractionConfidence ?? 0}
+                              tip="How certain the AI is that this is a genuine legal obligation stated in the text (anti-hallucination)."
+                            />
+                            <ScorePill
+                              label="Mapping"
+                              value={req.mappingConfidence ?? 0}
+                              tip="How well the linked architecture elements actually implement this obligation. 0 = no element matched."
+                            />
+                          </div>
+                        )}
 
                         {/* Linked Elements */}
                         {req.linkedElementIds.length > 0 && (

@@ -15,6 +15,8 @@ describe('mapVerpflichteterToPartyRole', () => {
     ['wesentliche Einrichtung', 'essential_important_entity'],
     ['wichtige Einrichtungen', 'essential_important_entity'],
     ['wesentliche und wichtige Einrichtungen', 'essential_important_entity'],
+    ['betroffene Einrichtungen', 'essential_important_entity'],
+    ['die betroffenen Einrichtungen', 'essential_important_entity'],
     ['Finanzunternehmen', 'financial_entity'],
     ['das Finanzunternehmen', 'financial_entity'],
     ['Verantwortlicher', 'controller'],
