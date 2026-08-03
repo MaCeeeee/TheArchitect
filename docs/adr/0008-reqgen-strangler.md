@@ -1,6 +1,6 @@
 # ADR-0008: REQGEN-Ablösung als additiver Strangler — die ISO-Kette speist das bestehende Requirement, bevor sie es ersetzt
 
-**Status:** proposed (2026-08-03) — Abnahme durch Product Owner ausstehend
+**Status:** accepted (2026-08-03, Product Owner)
 **Kontext-Ticket:** THE-566 (REQ-REQTRACE-001.7) · Rahmen: ADR-0007 (Requirements-Kette nach ISO/IEC/IEEE 15288) · Präzedenz: THE-390 (Unified-Norm-Strangler)
 
 ## Kontext
