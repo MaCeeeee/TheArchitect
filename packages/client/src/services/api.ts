@@ -724,6 +724,18 @@ export const requirementsAPI = {
   setGate: (projectId: string, id: string, body: { gate: 'enforced' | 'attested'; state: 'yes' | 'no'; reason: string }) =>
     api.post(`/projects/${projectId}/requirements/${id}/gates`, body),
 
+  // THE-576: Nachweise zum dritten Tor. Der `sha256` wird LOKAL gebildet
+  // (evidenceHash.ts) — die Datei wird nie hochgeladen, nur ihr Fingerabdruck.
+  listEvidence: (projectId: string, id: string) =>
+    api.get<{ success: boolean; data: EvidenceDoc[]; fresh: number }>(
+      `/projects/${projectId}/requirements/${id}/evidence`,
+    ),
+  addEvidence: (projectId: string, id: string, body: { kind: string; ref: string; sha256: string; supersedes?: string }) =>
+    api.post<{ success: boolean; data: EvidenceDoc }>(
+      `/projects/${projectId}/requirements/${id}/evidence`,
+      body,
+    ),
+
   // THE-559: Prüfer-Bündel — PDF als Blob, JSON als Daten. Auditiert server-seitig.
   auditBundlePdf: (projectId: string, regulationId?: string) =>
     api.get(`/projects/${projectId}/requirements/audit-bundle`, {
@@ -758,6 +770,22 @@ export const requirementsAPI = {
 };
 
 // UC-GAP-001 (THE-307) — gap analysis DTOs (mirror of compliance-gaps.service.ts)
+/**
+ * Ein Nachweis der ERFÜLLUNG (THE-558/576) — Verweis + Fingerabdruck, nie das
+ * Artefakt selbst. `stale` setzt der Drift-Lauf, nie die Fläche; ein veralteter
+ * Nachweis wird nicht gelöscht, er zählt nur nicht mehr.
+ */
+export interface EvidenceDoc {
+  _id: string;
+  kind: string;
+  ref: string;
+  sha256: string;
+  collectedAt: string;
+  collectedBy: string;
+  stale?: boolean;
+  supersedes?: string;
+}
+
 export interface GapItem {
   _id: string;
   regulationId: string;
