@@ -7,6 +7,7 @@ import { Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { requirementsAPI, traceAPI, type TraceBackwardRequirement, type RequirementDoc } from '../../services/api';
 import RequirementGatesBadge from './RequirementGatesBadge';
+import EvidencePanel from './EvidencePanel';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -288,6 +289,16 @@ export function RequirementsForElementSection({
                     onSet={(gate, state, reason) => void setGate(req._id, gate, state, reason)}
                   />
                 </div>
+                {/* THE-576: Belegen gehört neben das Attestieren. Das Bauteil
+                    setzt selbst KEIN Tor — es zeigt nur, ob das Attest gedeckt
+                    ist, und lässt Nachweise anhängen. */}
+                {projectId && (
+                  <EvidencePanel
+                    projectId={projectId}
+                    requirementId={req._id}
+                    attested={req.gates?.attested?.state === 'yes'}
+                  />
+                )}
               </div>
             );
           })}
