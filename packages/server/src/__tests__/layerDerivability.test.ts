@@ -89,3 +89,17 @@ describe('CODER_A_TABLE — strukturelle Invarianten (nicht der Inhalt)', () => 
     }
   });
 });
+
+describe('normalizeGoldLayer — Vokabular-Brücke, kein Weichzeichner', () => {
+  const { normalizeGoldLayer } = require('../evals/layerDerivability');
+
+  it('maps the ArchiMate word "information" to the TOGAF domain "data"', () => {
+    expect(normalizeGoldLayer('information')).toBe('data');
+  });
+
+  it('passes every other layer through unchanged — no silent smoothing', () => {
+    for (const l of ['business', 'application', 'technology', 'strategy', 'motivation']) {
+      expect(normalizeGoldLayer(l)).toBe(l);
+    }
+  });
+});

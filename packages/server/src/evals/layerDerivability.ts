@@ -115,9 +115,20 @@ export function derivedLayerSet(c: LayerCoding): Set<TogafLayer> {
   return new Set(c.secondary ? [c.primary, c.secondary] : [c.primary]);
 }
 
-/** Treffer ⇔ die Ebene des Gold-Elements liegt in der abgeleiteten Menge. */
+/**
+ * Vokabular-Brücke: die req-self-Goldens sprechen ArchiMate („information" für
+ * `data_object`-Elemente), der Antwortraum TOGAF („data"). OHNE die Brücke
+ * fielen alle Daten-Elemente am Wort statt an der Ableitung (gemessen:
+ * 0/24 im ersten Lauf). Nur diese eine, belegte Äquivalenz — kein weiteres
+ * Weichzeichnen.
+ */
+export function normalizeGoldLayer(layer: string): string {
+  return layer === 'information' ? 'data' : layer;
+}
+
+/** Treffer ⇔ die (normalisierte) Ebene des Gold-Elements liegt in der Menge. */
 export function layerHit(goldLayer: string, set: Set<TogafLayer>): boolean {
-  return (set as Set<string>).has(goldLayer);
+  return (set as Set<string>).has(normalizeGoldLayer(goldLayer));
 }
 
 /**

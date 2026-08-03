@@ -1,0 +1,853 @@
+{
+  "kappa": 0.6157635467980296,
+  "rawAgree": 20,
+  "pairCount": 26,
+  "unparseableB": 0,
+  "disagreements": [
+    "betroffenenrechte-bearbeiten: A=business · B=application",
+    "loeschung-durchfuehren: A=application · B=technology",
+    "folgenabschaetzung: A=business · B=data",
+    "verzeichnis-fuehren: A=business · B=data",
+    "resilienz-governance: A=business · B=strategy",
+    "revision-ueberwachung: A=business · B=technology"
+  ],
+  "pairResults": [
+    {
+      "caseId": "dsgvo-art30-vvt",
+      "actionId": "verzeichnis-fuehren",
+      "unparseable": false,
+      "goldId": "el-vvt-app",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "lksg-p6-praevention",
+      "actionId": "lieferkette-bewerten",
+      "unparseable": false,
+      "goldId": "el-supplier-dd",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "lksg-p6-praevention",
+      "actionId": "lieferkette-bewerten",
+      "unparseable": false,
+      "goldId": "el-training-mgmt",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art33-breach-bsh",
+      "actionId": "vorfall-melden-behoerde",
+      "unparseable": false,
+      "goldId": "bsh-proc-gdpr-incident",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art32-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "el-isms",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art32-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "el-encryption",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art32-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "el-backup",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art17-erasure-bsh",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "bsh-app-salesforce",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-art17-erasure-bsh",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "bsh-tech-snowflake",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-art17-erasure-bsh",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "bsh-app-supplier-portal",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "nis2-art21-riskmgmt-bsh",
+      "actionId": "resilienz-governance",
+      "unparseable": false,
+      "goldId": "bsh-tech-mes",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "nis2-art21-riskmgmt-bsh",
+      "actionId": "resilienz-governance",
+      "unparseable": false,
+      "goldId": "bsh-tech-azure",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "nis2-art21-riskmgmt-bsh",
+      "actionId": "resilienz-governance",
+      "unparseable": false,
+      "goldId": "bsh-proc-supplier-risk",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "lksg-p3-sorgfalt-bsh",
+      "actionId": "lieferkette-bewerten",
+      "unparseable": false,
+      "goldId": "bsh-cap-supplier-dd",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "lksg-p3-sorgfalt-bsh",
+      "actionId": "lieferkette-bewerten",
+      "unparseable": false,
+      "goldId": "bsh-proc-supplier-risk",
+      "goldLayer": "business",
+      "hit": true
+    },
+    {
+      "caseId": "lksg-p6-praevention-bsh",
+      "actionId": null,
+      "unparseable": false,
+      "goldId": "bsh-cap-supplier-dd",
+      "goldLayer": "business",
+      "hit": null
+    },
+    {
+      "caseId": "lksg-p8-beschwerde-bsh",
+      "actionId": null,
+      "unparseable": false,
+      "goldId": "bsh-app-grievance",
+      "goldLayer": "application",
+      "hit": null
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-retention",
+      "actionId": "aufbewahrung-loeschfristen",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a5-security",
+      "actionId": "technisch-organisatorische-massnahmen",
+      "unparseable": false,
+      "goldId": "4193802f-tech-caddy",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a15-access",
+      "actionId": "betroffenenrechte-bearbeiten",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-erase",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-vps",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-dataserver",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-anthropic",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-openai",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a17-propagate",
+      "actionId": "loeschung-durchfuehren",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "actionId": "auftragsverarbeiter-steuern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-vps",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "actionId": "auftragsverarbeiter-steuern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-dataserver",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "actionId": "auftragsverarbeiter-steuern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-anthropic",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "actionId": "auftragsverarbeiter-steuern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-openai",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a28-dpa",
+      "actionId": "auftragsverarbeiter-steuern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-encrypt",
+      "actionId": "verschluesselung-pseudonymisierung",
+      "unparseable": false,
+      "goldId": "4193802f-tech-caddy",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-svc-auth",
+      "goldLayer": "application",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-tech-mongodb",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-tech-neo4j",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-tech-redis",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": true
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-data-graph",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-data-mongo",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-data-redis",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a32-access",
+      "actionId": "zugriffskontrolle",
+      "unparseable": false,
+      "goldId": "4193802f-data-audit",
+      "goldLayer": "information",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a44-transfer",
+      "actionId": "drittlandtransfer-absichern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-anthropic",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a44-transfer",
+      "actionId": "drittlandtransfer-absichern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-openai",
+      "goldLayer": "technology",
+      "hit": false
+    },
+    {
+      "caseId": "dsgvo-a44-transfer",
+      "actionId": "drittlandtransfer-absichern",
+      "unparseable": false,
+      "goldId": "4193802f-tech-resend",
+      "goldLayer": "technology",
+      "hit": false
+    }
+  ],
+  "hitRateChain": 0.37209302325581395,
+  "hitRateAssigned": 0.38095238095238093,
+  "chainGaps": 2,
+  "separations": [
+    {
+      "pair": "betroffene-informieren ↔ verschluesselung-pseudonymisierung",
+      "primaries": "business vs technology",
+      "separates": true,
+      "overlap": []
+    },
+    {
+      "pair": "verzeichnis-fuehren ↔ zugriffskontrolle",
+      "primaries": "business vs technology",
+      "separates": true,
+      "overlap": [
+        "application"
+      ]
+    },
+    {
+      "pair": "einwilligung-verwalten ↔ revision-ueberwachung",
+      "primaries": "application vs business",
+      "separates": true,
+      "overlap": [
+        "business"
+      ]
+    }
+  ],
+  "concentration": 0.6923076923076923,
+  "setSize": 1.7307692307692308,
+  "verdict": "trägt nicht",
+  "coderB": {
+    "rechtsgrundlage-dokumentieren": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "zweck-festlegen": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "aufbewahrung-loeschfristen": {
+      "primary": "data",
+      "secondary": "technology"
+    },
+    "datenminimierung": {
+      "primary": "data",
+      "secondary": "application"
+    },
+    "betroffene-informieren": {
+      "primary": "business",
+      "secondary": "application"
+    },
+    "betroffenenrechte-bearbeiten": {
+      "primary": "application",
+      "secondary": "data"
+    },
+    "einwilligung-verwalten": {
+      "primary": "application",
+      "secondary": "data"
+    },
+    "loeschung-durchfuehren": {
+      "primary": "technology",
+      "secondary": "business"
+    },
+    "technisch-organisatorische-massnahmen": {
+      "primary": "technology",
+      "secondary": "business"
+    },
+    "verschluesselung-pseudonymisierung": {
+      "primary": "technology",
+      "secondary": "data"
+    },
+    "zugriffskontrolle": {
+      "primary": "technology",
+      "secondary": "business"
+    },
+    "risikobewertung": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "folgenabschaetzung": {
+      "primary": "data",
+      "secondary": "business"
+    },
+    "wirksamkeit-pruefen": {
+      "primary": "business",
+      "secondary": "technology"
+    },
+    "verzeichnis-fuehren": {
+      "primary": "data",
+      "secondary": "business"
+    },
+    "auftragsverarbeiter-steuern": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "compliance-nachweisen": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "vorfall-erkennen-behandeln": {
+      "primary": "technology",
+      "secondary": "business"
+    },
+    "vorfall-melden-behoerde": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "vorfall-benachrichtigen-betroffene": {
+      "primary": "business",
+      "secondary": "application"
+    },
+    "drittlandtransfer-absichern": {
+      "primary": "business",
+      "secondary": "data"
+    },
+    "resilienz-governance": {
+      "primary": "strategy",
+      "secondary": "business"
+    },
+    "betriebskontinuitaet": {
+      "primary": "business",
+      "secondary": "technology"
+    },
+    "revision-ueberwachung": {
+      "primary": "technology",
+      "secondary": "business"
+    },
+    "cyberhygiene-schulung": {
+      "primary": "business",
+      "secondary": "technology"
+    },
+    "lieferkette-bewerten": {
+      "primary": "business",
+      "secondary": "technology"
+    }
+  },
+  "rescoreAfterVocabularyBridge": {
+    "hits": 44,
+    "total": 86,
+    "hitRateChain": 0.5116279069767442,
+    "hitRateAssigned": 0.5238095238095238,
+    "perLayer": {
+      "application": "7/10",
+      "business": "7/8",
+      "technology": "18/44",
+      "data": "12/24"
+    },
+    "note": "information->data normalisiert (normalizeGoldLayer); Verdikt unveraendert: traegt nicht"
+  }
+}
