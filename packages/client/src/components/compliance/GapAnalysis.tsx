@@ -8,13 +8,37 @@
 // cached pipeline stats (THE-389 design constraint).
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Target, Download, Wrench, Sparkles, CheckCircle2, Link2Off } from 'lucide-react';
+import { Target, Download, Wrench, Sparkles, CheckCircle2, Link2Off, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { architectureAPI } from '../../services/api';
 import type { GapItem } from '../../services/api';
 import { sortRequirementsForDisplay } from './RequirementsForElementSection';
+
+/**
+ * Die Frist als EIN Satzfragment: Dauer + Bezugspunkt (+ Stufe).
+ *
+ * Die Dauer allein wäre irreführend. „24 h" beantwortet nicht, ab WANN — und
+ * ohne Startereignis läuft keine Uhr. Deshalb reisen beide immer zusammen.
+ *
+ * BEWUSST KEINE Umrechnung in einen absoluten Zeitpunkt und KEINE Ordnung
+ * über Bezugspunkte hinweg: „4 h ab Einstufung" und „72 h ab Kenntnis" stehen
+ * auf verschiedenen Uhren (THE-549). Sie zu vergleichen behauptete eine
+ * Ordnung, die es nicht gibt.
+ */
+const STAGE_LABEL: Record<string, string> = {
+  erst: 'initial',
+  zwischen: 'interim',
+  abschluss: 'final',
+};
+
+export function formatDeadline(d: NonNullable<GapItem['deadline']>): string {
+  const unit = d.dauer.einheit === 'mon' ? 'month' : d.dauer.einheit;
+  const duration = `${d.dauer.wert} ${unit}${d.dauer.einheit === 'mon' && d.dauer.wert !== 1 ? 's' : ''}`;
+  const stage = d.stufe ? ` · ${STAGE_LABEL[d.stufe] ?? d.stufe}` : '';
+  return `${duration} from ${d.bezugspunkt}${stage}`;
+}
 
 const PRIORITY_BADGE: Record<GapItem['priority'], { label: string; bg: string; fg: string }> = {
   must:   { label: 'MUST',   bg: '#dc2626', fg: '#fff' },
@@ -315,7 +339,23 @@ export default function GapAnalysis() {
                         >
                           {badge.label}
                         </span>
-                        <span className="text-sm font-medium text-white leading-snug flex-1">{gap.title}</span>
+                        <span data-testid="gap-title" className="text-sm font-medium text-white leading-snug flex-1">
+                          {gap.title}
+                        </span>
+                        {/* THE-574: Dauer UND Bezugspunkt zusammen. „24 h" allein
+                            ist keine Dringlichkeit — ohne Startereignis läuft
+                            keine Uhr. Fehlt die Frist, fehlt das Abzeichen
+                            (kein „—", kein „unbefristet"). */}
+                        {gap.deadline && (
+                          <span
+                            data-testid="gap-deadline"
+                            className="flex items-center gap-1 rounded border border-[#334155] px-1.5 py-0.5 text-[9px] text-[#eab308] shrink-0 cursor-help"
+                            title={gap.deadline.quelle}
+                          >
+                            <Clock size={9} />
+                            {formatDeadline(gap.deadline)}
+                          </span>
+                        )}
                         {gap.linkedElementIds.length === 0 && (
                           <span
                             className="flex items-center gap-1 text-[9px] text-[#eab308] shrink-0"

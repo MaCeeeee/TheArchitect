@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { buildRegulationKey } from '@thearchitect/shared';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
+import { StakeholderRequirement } from '../models/StakeholderRequirement';
 import { Regulation } from '../models/Regulation';
 import { ContextTrace } from '../models/ContextTrace';
 import { computeComplianceGaps } from '../services/compliance-gaps.service';
@@ -245,5 +246,108 @@ describe('computeComplianceGaps() → ContextTrace (THE-423 Task 8)', () => {
     const traces = await ContextTrace.find({ feature: 'gap', projectId: PROJECT_ID });
     expect(traces).toHaveLength(1);
     expect(traces[0].consumed).toHaveLength(0);
+  });
+});
+
+// ─── THE-574: die Frist erreicht die Lücken-Ansicht ──────────────────────
+//
+// Gemessen in der Abnahme (THE-571): 13 von 15 Stakeholder-Anforderungen
+// tragen eine strukturierte Frist — im Lücken-Eintrag kam sie nur noch als
+// Fließtext in der Beschreibung an. Bei einer Meldepflicht IST die Uhr das
+// Handlungsrelevante; sie fiel genau dort heraus, wo gehandelt wird.
+describe('THE-574 — die Frist reist bis in den Lücken-Eintrag', () => {
+  async function createChainRequirement(opts: {
+    title: string;
+    deadline?: Record<string, unknown>;
+  }) {
+    const str = await StakeholderRequirement.create({
+      projectId: PROJECT_ID,
+      regulationKey: 'nis2:art-23',
+      clause: { contentId: 'aaaa19b2c4d5e6f7', text: 'Die Einrichtungen melden unverzüglich.' },
+      text: 'Das Unternehmen meldet den Vorfall.',
+      slots: { action: 'melden', recipient: 'CSIRT', modality: 'pflicht', condition: '' },
+      kind: 'requirement',
+      ...(opts.deadline ? { deadline: opts.deadline } : {}),
+    });
+    return ComplianceRequirement.create({
+      projectId: PROJECT_ID,
+      regulationId: new mongoose.Types.ObjectId(),
+      title: opts.title,
+      description: 'Das Unternehmen meldet den Vorfall nachweisbar.',
+      priority: 'must',
+      status: 'open',
+      createdBy: 'human',
+      linkedElementIds: [],
+      chain: {
+        clauseContentId: 'aaaa19b2c4d5e6f7',
+        stakeholderRequirementIds: [str._id],
+        systemRequirementId: new mongoose.Types.ObjectId(),
+      },
+    });
+  }
+
+  afterEach(async () => {
+    await StakeholderRequirement.deleteMany({});
+  });
+
+  it('carries the deadline as a STRUCTURE, not as prose', async () => {
+    await createChainRequirement({
+      title: 'Frühwarnung übermitteln',
+      deadline: { dauer: { wert: 24, einheit: 'h' }, bezugspunkt: 'kenntnis', stufe: 'erst', quelle: 'binnen 24 Stunden nach Kenntnisnahme' },
+    });
+
+    const r = await computeComplianceGaps(PROJECT_ID, {});
+    const item = r.items.find((i) => i.title === 'Frühwarnung übermitteln')!;
+    expect(item.deadline).toEqual({
+      dauer: { wert: 24, einheit: 'h' },
+      bezugspunkt: 'kenntnis',
+      stufe: 'erst',
+      quelle: 'binnen 24 Stunden nach Kenntnisnahme',
+    });
+  });
+
+  it('keeps the source sentence — a deadline without it is unverifiable', async () => {
+    await createChainRequirement({
+      title: 'Abschlussbericht vorlegen',
+      deadline: { dauer: { wert: 1, einheit: 'mon' }, bezugspunkt: 'vorherige-meldung', stufe: 'abschluss', quelle: 'spätestens einen Monat nach Übermittlung der Meldung' },
+    });
+
+    const r = await computeComplianceGaps(PROJECT_ID, {});
+    const item = r.items.find((i) => i.title === 'Abschlussbericht vorlegen')!;
+    expect(item.deadline!.quelle).toMatch(/einen Monat nach Übermittlung/);
+    expect(item.deadline!.stufe).toBe('abschluss');
+  });
+
+  it('keeps multi-stage deadlines distinguishable — NIS2 Art. 23 has three', async () => {
+    await createChainRequirement({ title: 'Frühwarnung', deadline: { dauer: { wert: 24, einheit: 'h' }, bezugspunkt: 'kenntnis', stufe: 'erst', quelle: 'binnen 24 Stunden' } });
+    await createChainRequirement({ title: 'Meldung', deadline: { dauer: { wert: 72, einheit: 'h' }, bezugspunkt: 'kenntnis', stufe: 'erst', quelle: 'binnen 72 Stunden' } });
+    await createChainRequirement({ title: 'Abschluss', deadline: { dauer: { wert: 1, einheit: 'mon' }, bezugspunkt: 'vorherige-meldung', stufe: 'abschluss', quelle: 'binnen eines Monats' } });
+
+    const r = await computeComplianceGaps(PROJECT_ID, {});
+    const byTitle = new Map(r.items.map((i) => [i.title, i.deadline]));
+    expect(byTitle.get('Frühwarnung')!.dauer).toEqual({ wert: 24, einheit: 'h' });
+    expect(byTitle.get('Meldung')!.dauer).toEqual({ wert: 72, einheit: 'h' });
+    expect(byTitle.get('Abschluss')!.bezugspunkt).toBe('vorherige-meldung');
+  });
+
+  it('NEGATIV-KONTROLLE: no deadline means NO field — never "unbefristet"', async () => {
+    // Fehlen ist kein Ergebnis. Ein Platzhalter wie „—" oder „unbefristet"
+    // läse sich wie eine erhobene Aussage; das Feld bleibt schlicht weg.
+    await createChainRequirement({ title: 'Ohne Frist' });
+
+    const r = await computeComplianceGaps(PROJECT_ID, {});
+    const item = r.items.find((i) => i.title === 'Ohne Frist')!;
+    expect(item.deadline).toBeUndefined();
+    expect('deadline' in item).toBe(false);
+  });
+
+  it('legacy requirements without a chain pass through untouched', async () => {
+    const reg = await createRegulation('LkSG');
+    await createRequirement({ regulationId: String(reg._id), title: 'Altbestand ohne Kette' });
+
+    const r = await computeComplianceGaps(PROJECT_ID, {});
+    const item = r.items.find((i) => i.title === 'Altbestand ohne Kette')!;
+    expect(item.deadline).toBeUndefined();
+    expect(item.title).toBe('Altbestand ohne Kette'); // sonst unverändert
   });
 });
