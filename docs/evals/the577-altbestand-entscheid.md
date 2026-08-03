@@ -71,13 +71,52 @@ weiterhin Anforderungen aus eingefügtem Text, also weiterhin Paraphrasen ohne A
 > **Daraus folgt zwingend: erst THE-570 ausliefern, dann migrieren.**
 > Andernfalls repariert die Migration einen Bestand, der weiterwächst, während sie läuft.
 
-## Prod-Betroffenheit — was belegt ist und was nicht
+## Prod-Betroffenheit — nachgemessen am 03.08. nach dem Deploy
 
-| | |
-|---|---|
-| **Belegt** | Beim Rollout `8023ea2` heute früh entstanden die Ketten-Sammlungen **leer** (Nachweis im Daily: „Bestand vorher = nachher (10 · 20 · 327 · 0), neue Sammlungen leer entstanden"). Zu diesem Zeitpunkt gab es in Produktion **keinen** Altbestand dieser Art. |
-| **Nicht belegt** | Der Stand **jetzt**. Server A ist von hier nicht erreichbar — SSH-Schlüssel nicht autorisiert, HTTP/HTTPS ohne Antwort. Das ist der bekannte Zustand seit heute früh (gesperrte eigene IP), derselbe, der schon die THE-551-Messung auf die Golden-Stichprobe verwiesen hat. |
-| **Folgerung** | Die Betroffenheit ist heute **0 oder nahe 0** und **wächst mit jeder Nutzung**, bis THE-570 ausgeliefert ist. Die Zählung ist beim Deploy nachzuholen — sie ist ein Einzeiler und gehört in den Rollout-Nachweis. |
+**Ergebnis: null.** Produktion trägt keinen Paraphrasen-Altbestand.
+
+```
+DB: thearchitect
+compliancerequirements:   10     ← Positiv-Kontrolle
+stakeholderrequirements:   0
+chainsystemrequirements:   0
+projects:                 20     ← Positiv-Kontrolle
+
+Ketten-Anforderungen:      0
+mit Korpus-Anker:          0
+Paraphrasen-Altbestand:    0
+```
+
+**Die Positiv-Kontrolle war hier Pflicht, nicht Zierde.** Eine Null heißt entweder „nichts
+da" oder „falsch gemessen", und beides sieht identisch aus — die Lehre vom 01.08.
+(*„dreimal 0 Treffer, jedes Mal das Messgerät"*). Dass dieselbe Abfrage
+`compliancerequirements: 10` und `projects: 20` liefert — deckungsgleich mit dem
+Rollout-Nachweis vom Vormittag (10 · 20 · 327 · 0) — belegt: richtige Datenbank,
+funktionierende Zählung. Erst dadurch ist die Null eine Aussage.
+
+### Zwei Altbestände, die man nicht verwechseln darf
+
+Die 10 Anforderungen in Produktion haben **gar keine Kette** — deshalb stehen Stakeholder-
+und Systemanforderungen auf 0. Sie stammen aus dem alten Generator und sind ein anderes
+Ding als das Problem dieses Entscheids:
+
+| | Paraphrasen-Altbestand (dieser Entscheid) | REQGEN-Altbestand (Produktion) |
+|---|---|---|
+| Hat eine Kette? | ja | **nein** |
+| Behauptet Klausel-Herkunft? | ja — und deckt sie nicht | nein |
+| Problem? | **ja**, Provenienz ohne Deckung | nein — ADR-0008 deutet ihn nie rückwirkend um |
+
+**Der Fund betrifft ausschließlich lokale Demo-Daten.** Kein Kunde, kein Prod-Projekt.
+Die Migration [THE-578](https://linear.app/thearchitect/issue/THE-578) hätte eine leere
+Menge bearbeitet und ist geschlossen.
+
+### Wie der Zustand gehalten wird
+
+THE-570 ist seit dem 03.08. in Produktion (Stand `2a7e215`, Wirksamkeit am ausgelieferten
+Bündel belegt). Der Generator erzeugt dort ab jetzt **verankerte** Anforderungen — es kann
+also gar kein neuer Paraphrasen-Bestand mehr entstehen. Der Entscheid „neu ableiten statt
+umhängen" bleibt gültig als **Regel für den Fall, dass ein solcher Bestand je wieder
+auftaucht**; er hat heute nur nichts zu tun.
 
 ## Negativ-Kontrolle: die Anzahl ändert sich, und zwar sichtbar
 
