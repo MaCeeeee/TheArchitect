@@ -214,6 +214,30 @@ export type ComplianceRequirementStatus =
 
 export type ComplianceRequirementProvenance = 'llm' | 'human';
 
+// ─── THE-557 (UC-ATTEST-001): Drei-Tore-Erfüllungsgrad ────────────────────
+/** Ein Tor des Erfüllungsgrads. */
+export type GateState = 'unknown' | 'no' | 'yes';
+
+export interface GateDecision {
+  state: GateState;
+  /** User-Id oder 'system' (nur bei `covered`). NIE aus dem Request-Body. */
+  setBy?: string;
+  setAt?: string; // ISO
+  /** Bei human gates Pflicht; bei covered der Ableitungsgrund. */
+  reason?: string;
+}
+
+/**
+ * Drei-Tore-Erfüllungsgrad (ADR-0003: COVER · ENFORCE · ATTEST).
+ * NIE zu Boolean oder Prozent aggregieren — „73 % Compliance" ist die Zahl,
+ * die keiner Prüfung standhält.
+ */
+export interface RequirementGates {
+  covered: GateDecision;
+  enforced: GateDecision;
+  attested: GateDecision;
+}
+
 // ─── WFCOMP (UC-WFCOMP-001 / REQ-WFCOMP-001.1, THE-352) ───
 // Art.-30-Kritikalitätsklasse: HART (lit. a–d, "sämtliche Angaben"),
 // BEDINGT (lit. e, "gegebenenfalls"), WEICH (lit. f/g, "wenn möglich").
@@ -280,6 +304,8 @@ export interface ComplianceRequirementDTO {
   priority: ComplianceRequirementPriority;
   linkedElementIds: string[];    // ArchiMate elements that must implement this
   status: ComplianceRequirementStatus;
+  /** THE-557: Drei-Tore-Tripel — Abwesenheit heißt „nie bewertet", nicht 3× unknown. */
+  gates?: RequirementGates;
   assigneeId?: string;
   dueDate?: string;              // ISO date
   createdBy: ComplianceRequirementProvenance;
