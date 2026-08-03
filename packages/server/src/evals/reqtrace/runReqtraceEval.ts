@@ -184,9 +184,17 @@ export async function evaluateReqtrace(
     onProgress?: (done: number, total: number) => void;
     onPairProgress?: (done: number, total: number) => void;
     maxJudgedPairs?: number;
+    /**
+     * THE-550: injizierbare Segmentierung — der Artikel-Ebenen-Vergleich
+     * ersetzt sie durch "ein Artikel = eine Klausel". Default ist der
+     * mechanische Klausel-Segmenter; alle Lauf-4-Ergebnisse sind damit
+     * unveraendert reproduzierbar.
+     */
+    segment?: (a: ReqtraceArticle) => Clause[];
   },
 ): Promise<ReqtraceEvalResult> {
-  const perArticle = articles.map((a) => ({ article: a, clauses: segmentClauses(a) }));
+  const segment = opts.segment ?? segmentClauses;
+  const perArticle = articles.map((a) => ({ article: a, clauses: segment(a) }));
   const allClauses: { article: ReqtraceArticle; clause: Clause }[] = perArticle.flatMap((p) =>
     p.clauses.map((clause) => ({ article: p.article, clause })),
   );

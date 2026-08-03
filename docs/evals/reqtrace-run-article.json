@@ -1,0 +1,167 @@
+{
+  "articles": 9,
+  "clauses": 9,
+  "clausesPerArticle": 1,
+  "candidates": 4,
+  "afterSplit": 6,
+  "splitCount": 2,
+  "unsingular": 2,
+  "clausesWithoutRequirement": 0,
+  "unreadableExtractions": 8,
+  "requirementsPerClause": 0.6666666666666666,
+  "sysReqs": 6,
+  "implFreedomFailures": 0,
+  "grouping": {
+    "measures": [
+      {
+        "id": "measure__dsgvo:art24:c00:q1s1",
+        "memberIds": [
+          "dsgvo:art24:c00:q1s1"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      },
+      {
+        "id": "measure__dsgvo:art24:c00:q1s2",
+        "memberIds": [
+          "dsgvo:art24:c00:q1s2"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      },
+      {
+        "id": "measure__dsgvo:art24:c00:q2s1",
+        "memberIds": [
+          "dsgvo:art24:c00:q2s1"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      },
+      {
+        "id": "measure__dsgvo:art24:c00:q3s1",
+        "memberIds": [
+          "dsgvo:art24:c00:q3s1"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      },
+      {
+        "id": "measure__dsgvo:art24:c00:q3s2",
+        "memberIds": [
+          "dsgvo:art24:c00:q3s2"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      },
+      {
+        "id": "measure__dsgvo:art24:c00:q4s1",
+        "memberIds": [
+          "dsgvo:art24:c00:q4s1"
+        ],
+        "laws": [
+          "dsgvo"
+        ],
+        "relations": []
+      }
+    ],
+    "sharedCorePairs": [],
+    "excludedByDisplacement": [],
+    "collapsed": [],
+    "judged": 0,
+    "relationCounts": {},
+    "cappedPairs": 0
+  },
+  "goldHits": [
+    {
+      "id": "BCD-01",
+      "lawSets": [
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "CRY-01",
+      "lawSets": [
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "GOV-02",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ],
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "HRS-03",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ]
+      ],
+      "matchedBy": null
+    },
+    {
+      "id": "RSK-01",
+      "lawSets": [
+        [
+          "dora",
+          "dsgvo"
+        ],
+        [
+          "dsgvo",
+          "nis2"
+        ]
+      ],
+      "matchedBy": null
+    }
+  ],
+  "goldHitCount": 0,
+  "ambiguousGoldMatches": [],
+  "negativeMechanical": true,
+  "negativeSemantic": true,
+  "canaryPassed": true,
+  "sysReqTexts": {
+    "dsgvo:art24:c00:q1s1": "Das Unternehmen muss technische und organisatorische Maßnahmen implementieren, um sicherzustellen, dass alle Verarbeitungsvorgänge personenbezogener Daten den Anforderungen der Verordnung entsprechen.",
+    "dsgvo:art24:c00:q1s2": "Das Unternehmen muss technische und organisatorische Maßnahmen implementieren und aufrechterhalten, um die Einhaltung aller Anforderungen der Verordnung bei der Verarbeitung personenbezogener Daten zu gewährleisten.",
+    "dsgvo:art24:c00:q2s1": "Das Unternehmen muss die Einhaltung der Verarbeitungsgrundsätze und Rechtskonformität dokumentieren und nachweisen können.",
+    "dsgvo:art24:c00:q3s1": "Das Unternehmen muss die Schutzmaßnahmen regelmäßig überprüfen und bei Bedarf aktualisieren, um ihre Wirksamkeit und Aktualität zu gewährleisten.",
+    "dsgvo:art24:c00:q3s2": "Das Unternehmen muss Maßnahmen zur Erfüllung seiner Pflichten regelmäßig überprüfen und bei Bedarf aktualisieren.",
+    "dsgvo:art24:c00:q4s1": "Das Unternehmen muss Schutzmaßnahmen für personenbezogene Daten implementieren und anwenden, deren Umfang und Ausgestaltung in angemessenem Verhältnis zu Art, Umfang und Risiken der Datenverarbeitung stehen."
+  },
+  "sysReqActions": {
+    "dsgvo:art24:c00:q1s1": "technisch-organisatorische-massnahmen",
+    "dsgvo:art24:c00:q1s2": "technisch-organisatorische-massnahmen",
+    "dsgvo:art24:c00:q2s1": "compliance-nachweisen",
+    "dsgvo:art24:c00:q3s1": "wirksamkeit-pruefen",
+    "dsgvo:art24:c00:q3s2": "wirksamkeit-pruefen",
+    "dsgvo:art24:c00:q4s1": "technisch-organisatorische-massnahmen"
+  },
+  "verdict": "traegt-nicht",
+  "verdictReason": "Positiv-Kontrolle: nur 0 von 5 SCF-Kandidaten wiedergefunden (< 3)."
+}
