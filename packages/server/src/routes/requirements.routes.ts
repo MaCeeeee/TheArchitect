@@ -23,6 +23,8 @@ import { rateLimit } from '../middleware/rateLimit.middleware';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { emptyGates, deriveCovered, applyHumanGate } from '../services/requirementGates.service';
 import { Evidence } from '../models/Evidence';
+import { buildAuditBundle, renderAuditBundlePdf, type AuditBundleRequirementInput } from '../services/auditBundle.service';
+import { Project } from '../models/Project';
 import { isFreshEvidence } from '../services/evidence.service';
 import { Regulation } from '../models/Regulation';
 import {
@@ -504,6 +506,100 @@ router.get(
 );
 
 // ─── PATCH /:id (status + assignee Update) ──────────────────────
+
+// THE-559: Prüfer-Bündel — Export je Norm (PDF/JSON), auditiert. Das Bündel
+// behauptet nur, was die Tore hergeben; Ehrlichkeits-Labels und stale-Marker
+// entstehen im reinen Builder (auditBundle.service.ts).
+router.get(
+  '/:projectId/requirements/audit-bundle',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const format = req.query.format === 'pdf' ? 'pdf' : 'json';
+    const regulationId = typeof req.query.regulationId === 'string' ? req.query.regulationId : undefined;
+    if (regulationId && !mongoose.isValidObjectId(regulationId)) {
+      return res.status(400).json({ success: false, error: 'invalid regulationId' });
+    }
+
+    const filter: Record<string, unknown> = { projectId: new mongoose.Types.ObjectId(projectId) };
+    if (regulationId) filter.regulationId = new mongoose.Types.ObjectId(regulationId);
+    const [project, requirements] = await Promise.all([
+      Project.findById(projectId).select('name').lean(),
+      ComplianceRequirement.find(filter).lean(),
+    ]);
+    if (!project) return res.status(404).json({ success: false, error: 'project not found' });
+
+    const reqIds = requirements.map((r) => r._id);
+    const [evidences, regulations] = await Promise.all([
+      Evidence.find({ requirementId: { $in: reqIds } }).sort({ collectedAt: -1 }).lean(),
+      Regulation.find({ _id: { $in: [...new Set(requirements.map((r) => String(r.regulationId)))] } })
+        .select('title paragraphNumber source')
+        .lean(),
+    ]);
+    const evidenceByReq = new Map<string, typeof evidences>();
+    for (const e of evidences) {
+      const k = String(e.requirementId);
+      evidenceByReq.set(k, [...(evidenceByReq.get(k) ?? []), e]);
+    }
+    const regLabel = new Map(
+      regulations.map((r) => [String(r._id), `${r.source ?? ''} ${r.paragraphNumber ?? ''} — ${r.title}`.trim()]),
+    );
+
+    // Je Norm eine Sektion — ungeordnete Requirements landen unter ihrer Norm.
+    const byNorm = new Map<string, AuditBundleRequirementInput[]>();
+    for (const r of requirements) {
+      const label = regLabel.get(String(r.regulationId)) ?? `Regulation ${String(r.regulationId)}`;
+      const list = byNorm.get(label) ?? [];
+      list.push({
+        id: String(r._id),
+        title: r.title,
+        priority: r.priority,
+        status: r.status,
+        gates: r.gates,
+        evidence: (evidenceByReq.get(String(r._id)) ?? []).map((e) => ({
+          id: String(e._id),
+          kind: e.kind,
+          ref: e.ref,
+          sha256: e.sha256,
+          collectedAt: e.collectedAt instanceof Date ? e.collectedAt.toISOString() : String(e.collectedAt),
+          ...(e.regulationVersionHash ? { regulationVersionHash: e.regulationVersionHash } : {}),
+          ...(e.stale ? { stale: true } : {}),
+          ...(e.supersedes ? { supersedes: String(e.supersedes) } : {}),
+        })),
+      });
+      byNorm.set(label, list);
+    }
+
+    const bundle = buildAuditBundle({
+      projectName: project.name,
+      generatedAt: new Date().toISOString(),
+      norms: [...byNorm.entries()].map(([label, reqs]) => ({ label, requirements: reqs })),
+    });
+
+    if (req.user) {
+      await createAuditEntry({
+        userId: String(req.user._id),
+        projectId,
+        action: 'requirements.audit-bundle.export',
+        entityType: 'ComplianceRequirement',
+        after: { format, norms: bundle.norms.length, requirements: requirements.length },
+        ip: req.ip || '',
+        userAgent: req.get('user-agent') || '',
+      });
+    }
+
+    if (format === 'pdf') {
+      const pdf = await renderAuditBundlePdf(bundle);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="audit-bundle-${projectId}.pdf"`);
+      return res.send(pdf);
+    }
+    return res.json({ success: true, data: bundle });
+  },
+);
 
 // THE-558: Nachweise — append-only Verweise mit Hash und Textstand.
 // `collectedBy` kommt aus der Session; das Zod-Schema kennt das Feld nicht.

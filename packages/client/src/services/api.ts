@@ -604,6 +604,17 @@ export const requirementsAPI = {
   setGate: (projectId: string, id: string, body: { gate: 'enforced' | 'attested'; state: 'yes' | 'no'; reason: string }) =>
     api.post(`/projects/${projectId}/requirements/${id}/gates`, body),
 
+  // THE-559: Prüfer-Bündel — PDF als Blob, JSON als Daten. Auditiert server-seitig.
+  auditBundlePdf: (projectId: string, regulationId?: string) =>
+    api.get(`/projects/${projectId}/requirements/audit-bundle`, {
+      params: { format: 'pdf', ...(regulationId ? { regulationId } : {}) },
+      responseType: 'blob',
+    }),
+  auditBundleJson: (projectId: string, regulationId?: string) =>
+    api.get(`/projects/${projectId}/requirements/audit-bundle`, {
+      params: { format: 'json', ...(regulationId ? { regulationId } : {}) },
+    }),
+
   delete: (projectId: string, id: string) =>
     api.delete(`/projects/${projectId}/requirements/${id}`),
 
