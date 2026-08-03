@@ -98,6 +98,54 @@ describe('proposeSharedMeasures', () => {
     expect(r.memberDetails.map((d) => d.systemRequirementId).sort()).toEqual([...allMembers].sort());
   });
 
+
+  // ─── THE-591: die Negativ-Kontrolle des Anschlusses ────────────────────
+  //
+  // Der Adressat kommt jetzt aus dem Korpus. Die entscheidende Frage ist NICHT,
+  // ob dadurch mehr Paare entstehen — sondern ob das Verdraengungs-Gate weiter
+  // greift. Gemessen in THE-589: Die Kante `dora-prevails-nis2` haengt an
+  // `financial_entity`; eine generische Rolle macht das Gate blind.
+  //
+  // Hier liefert der KORPUS die Rollen. Das Gate muss unveraendert schliessen.
+  it('THE-591 NEGATIV-KONTROLLE: corpus roles do not open the displacement gate', async () => {
+    const nis2 = await seed('nis2:art23', 'irgendein Freitext ohne Lexikon-Treffer');
+    const dora = await seed('dora:art19', 'ebenfalls unmappbarer Freitext');
+
+    // Beide waeren ohne Korpus unmappbar — die Rollen kommen ausschliesslich
+    // von dort. Genau so wird sichtbar, ob das Gate mit ihnen arbeitet.
+    const judged: string[] = [];
+    const r = await proposeSharedMeasures(projectId, {
+      ask: askNever,
+      judge: async (_s, user) => {
+        judged.push(user);
+        return JSON.stringify({ relation: 'subset', wider: 'A', why: 'stub' });
+      },
+      maxJudgedPairs: 50,
+      fetchProvisions: async (keys) =>
+        keys.map((k) => ({
+          regulationKey: k,
+          versionHash: 'v1',
+          typing: {
+            partyRole: k.startsWith('dora') ? 'financial_entity' : 'essential_important_entity',
+            status: 'suggested',
+            versionHash: 'v1',
+          },
+        })) as never,
+    });
+
+    // Die Rollen stammen aus dem Korpus — nicht aus dem Lexikon.
+    expect(r.stats.addresseeFromCorpus).toBe(2);
+    expect(r.stats.addresseeFromLexicon).toBe(0);
+
+    // UND das Gate schliesst trotzdem: das Paar erreicht den Richter nie.
+    expect(r.grouping.excludedByDisplacement).toHaveLength(1);
+    expect([r.grouping.excludedByDisplacement[0].a, r.grouping.excludedByDisplacement[0].b].sort()).toEqual(
+      [dora, nis2].sort(),
+    );
+    expect(judged).toHaveLength(0);
+    expect(r.stats.pairsJudged).toBe(0);
+  });
+
   it('exposes the cap — judged pairs never exceed maxJudgedPairs, capping is visible', async () => {
     await seed('nis2:art23', 'wesentliche Einrichtung');
     await seed('dsgvo:art33', 'Verantwortlicher');
