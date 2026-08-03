@@ -22,6 +22,7 @@ import ApplicabilityCheck from './ApplicabilityCheck';
 import LegalApplicabilityCheck from './LegalApplicabilityCheck';
 import AuditBundleButton from './AuditBundleButton';
 import SharedMeasuresPanel from './SharedMeasuresPanel';
+import ClauseCoveragePanel from './ClauseCoveragePanel';
 // Governance components
 import ComplianceDashboard from '../governance/ComplianceDashboard';
 import ApprovalWorkflow from '../governance/ApprovalWorkflow';
@@ -147,6 +148,8 @@ export default function CompliancePage() {
               <AuditBundleButton />
               {/* THE-569 — shared measures: system proposes the group, the human picks the element */}
               <SharedMeasuresPanel />
+              {/* THE-565 — forward trace: per-clause coverage + explicit clause drift check */}
+              <ClauseCoveragePanel />
               {/* THE-548/555 — does this law bind US? Profile x corpus typing, four states */}
               <LegalApplicabilityCheck />
               {/* UC-LAW-001 — which laws apply, derived from elements + wizard context */}

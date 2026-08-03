@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { requirementsAPI, type RequirementDoc } from '../../services/api';
+import { requirementsAPI, traceAPI, type TraceBackwardRequirement, type RequirementDoc } from '../../services/api';
 import RequirementGatesBadge from './RequirementGatesBadge';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -76,6 +76,10 @@ export function RequirementsForElementSection({
   elementId: string;
 }) {
   const [requirements, setRequirements] = useState<RequirementDoc[] | null>(null);
+  // THE-565: Anreicherung aus der trace-Route — Frist, Rechtsgrundlage,
+  // Ausmustern-Impact. Optional: bei Fehler bleibt das heutige Verhalten.
+  const [trace, setTrace] = useState<Map<string, TraceBackwardRequirement> | null>(null);
+  const [impact, setImpact] = useState<{ wouldLoseCoverage: number; laws: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
 
@@ -94,6 +98,18 @@ export function RequirementsForElementSection({
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
+      });
+    void traceAPI
+      .byElement(projectId, elementId)
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data;
+        if (!data) return;
+        setTrace(new Map(data.requirements.map((r) => [r.id, r])));
+        setImpact(data.impact);
+      })
+      .catch(() => {
+        /* Anreicherung optional — Grundfunktion bleibt (THE-305 byte-gleich). */
       });
     return () => {
       cancelled = true;
@@ -162,6 +178,15 @@ export function RequirementsForElementSection({
         const openMust = openReqs.filter((r) => r.priority === 'must').length;
         return (
         <div className="space-y-1.5">
+          {impact && impact.wouldLoseCoverage > 0 && (
+            <div
+              className="rounded border border-red-900/60 bg-red-950/30 px-2 py-1 text-[10px] text-red-300"
+              data-testid="retirement-warning"
+            >
+              Retiring this element breaks {impact.wouldLoseCoverage} law{impact.wouldLoseCoverage === 1 ? '' : 's'} (
+              {impact.laws.map((l) => l.toUpperCase()).join(', ')}) — it is the only linked measure there.
+            </div>
+          )}
           <div className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] px-1" data-testid="req-element-kpi">
             {sorted.length} requirement{sorted.length === 1 ? '' : 's'} ·{' '}
             <span style={{ color: openReqs.length > 0 ? '#ef4444' : '#22c55e' }}>
@@ -192,6 +217,27 @@ export function RequirementsForElementSection({
                 <p className="text-[10px] text-[var(--text-secondary)] leading-snug" title={req.description}>
                   {req.description}
                 </p>
+                {(() => {
+                  const t = trace?.get(req._id);
+                  if (!t) return null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5" data-testid="trace-chips">
+                      <span className="rounded bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 text-[8px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                        {t.legalBasis}
+                      </span>
+                      {t.deadline && (
+                        <span className="rounded bg-amber-950/40 px-1.5 py-0.5 text-[8px] font-medium text-amber-300">
+                          {t.deadline.dauer.wert}{t.deadline.dauer.einheit} from {t.deadline.bezugspunkt}
+                        </span>
+                      )}
+                      {t.soleCoverage && (
+                        <span className="rounded bg-red-950/40 px-1.5 py-0.5 text-[8px] font-medium text-red-300">
+                          sole coverage
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Two explainability scores + their rationales (audit-grade) */}
                 {(typeof req.extractionConfidence === 'number' || typeof req.mappingConfidence === 'number') && (

@@ -528,6 +528,41 @@ export interface HarmonizationProposeResult {
   stats: { total: number; unmappedAddressee: number; unclassified: number; pairsJudged: number };
 }
 
+// THE-565: bidirektionale Traceability (rein lesend) + expliziter Klausel-Drift.
+export interface TraceBackwardRequirement {
+  id: string;
+  title: string;
+  priority: string;
+  legalBasis: string;
+  deadline: { dauer: { wert: number; einheit: 'h' | 'd' | 'mon' }; bezugspunkt: string; stufe: string | null; quelle: string } | null;
+  soleCoverage: boolean;
+}
+
+export interface TraceForwardResult {
+  norms: Array<{
+    regulationKey: string;
+    clauses: Array<{
+      contentId: string;
+      clausePath?: string;
+      clauseText: string | null;
+      requirements: Array<{ id: string; title: string; priority: string; gates?: RequirementDoc['gates'] }>;
+      linkedElementIds: string[];
+    }>;
+  }>;
+  withoutClauseAnchor: { count: number; requirementIds: string[] };
+}
+
+export const traceAPI = {
+  forward: (projectId: string) =>
+    api.get<{ success: boolean; data: TraceForwardResult }>(`/projects/${projectId}/requirements/trace/forward`),
+  byElement: (projectId: string, elementId: string) =>
+    api.get<{ success: boolean; data: { elementId: string; requirements: TraceBackwardRequirement[]; impact: { wouldLoseCoverage: number; laws: string[] } } }>(
+      `/projects/${projectId}/requirements/trace/by-element/${encodeURIComponent(elementId)}`),
+  driftCheck: (projectId: string) =>
+    api.post<{ success: boolean; data: { checked: number; staled: number; skipped: number; evidenceStaled: number; attestedReset: number } }>(
+      `/projects/${projectId}/requirements/trace/drift-check`, {}),
+};
+
 export const harmonizationAPI = {
   propose: (projectId: string, body: { maxJudgedPairs?: number } = {}) =>
     api.post<{ success: boolean; data: HarmonizationProposeResult }>(
