@@ -19,8 +19,18 @@
  * `resetAttestedForStale` mit sichtbarem Grund.
  *
  * EXPLIZITER Aufruf (POST) — der Anschluss an den Drift-Cron ist benannte
- * Folgearbeit. Welten ohne abrufbaren Text werden gezählt (`skipped`),
- * nie still übersprungen.
+ * Folgearbeit.
+ *
+ * ── DIE ZUSAGE DIESES DIENSTES (THE-575) ──
+ *
+ * `checked + skipped + unanchored` ergibt IMMER die Zahl der
+ * Ketten-Requirements des Projekts. Nichts fällt lautlos heraus.
+ *
+ * Die Zusage stand schon vorher im Kopf dieser Datei — sie griff nur eine
+ * Ebene zu spät: `skipped` erfasste, was den Anker-Filter PASSIERT und dessen
+ * Text fehlt, nicht das, was am Filter scheitert. Am echten Bestand meldete
+ * der Lauf `{checked: 2, skipped: 0}` bei 15 Requirements und las sich wie
+ * „alles geprüft". 13 waren nie im Blick.
  */
 import mongoose from 'mongoose';
 import { clauseContentId } from '@thearchitect/shared';
@@ -38,36 +48,73 @@ export interface ChainDriftReport {
   staled: number;
   /** Requirements ohne abrufbaren Normtext — gezählt, nie still. */
   skipped: number;
+  /**
+   * Ketten-Requirements OHNE Korpus-Anker (`normId`/`sectionEId`) — für diesen
+   * Lauf grundsätzlich unprüfbar.
+   *
+   * DER GRUND FÜR DIESES FELD (THE-575): Sie fallen aus der Abfrage heraus und
+   * wurden deshalb WEDER als `checked` NOCH als `skipped` gezählt. Der Bericht
+   * meldete `{checked: 2, skipped: 0}` bei 15 Ketten-Requirements und las sich
+   * wie „alles geprüft, nichts veraltet" — während 13 nie im Blick waren.
+   *
+   * INVARIANTE: `checked + skipped + unanchored` = Ketten-Requirements des
+   * Projekts. Solange sie hält, kann nichts mehr lautlos herausfallen.
+   */
+  unanchored: number;
   /** Evidenz-Dokumente, die dabei stale wurden. */
   evidenceStaled: number;
   /** Attestierte Tore, die mit sichtbarem Grund zurückfielen. */
   attestedReset: number;
 }
 
+/**
+ * Trennzeichen des Gruppenschlüssels: ASCII 31 (Unit Separator).
+ *
+ * Gewählt, weil es in keiner `normId` und keiner `eId` vorkommen kann — ein
+ * `:` oder `#` täte das sehr wohl. Als Literal geschrieben wäre es UNSICHTBAR
+ * (`key.split('')` liest sich dann wie ein Bug); deshalb steht es als
+ * benannte Konstante hier.
+ */
+const GROUP_SEP = '\x1f';
+
 export async function chainDriftCheck(
   projectId: mongoose.Types.ObjectId | string,
 ): Promise<ChainDriftReport> {
-  const report: ChainDriftReport = { checked: 0, staled: 0, skipped: 0, evidenceStaled: 0, attestedReset: 0 };
+  const report: ChainDriftReport = {
+    checked: 0, staled: 0, skipped: 0, unanchored: 0, evidenceStaled: 0, attestedReset: 0,
+  };
 
-  const reqs = await ComplianceRequirement.find({
+  const anchorQuery = {
     projectId,
     chain: { $exists: true },
     normId: { $exists: true, $ne: null },
     sectionEId: { $exists: true, $ne: null },
-  });
+  };
+
+  // Was der Lauf NICHT ansehen kann, wird ZUERST gezählt (THE-575). Vorher
+  // fielen diese Requirements schlicht aus der Abfrage — und damit aus dem
+  // Bericht. Ein Lauf, der 87 % des Bestands verschweigt, erzeugt Vertrauen
+  // ohne Deckung; das ist schlimmer als gar keine Antwort.
+  const [total, anchoredCount] = await Promise.all([
+    ComplianceRequirement.countDocuments({ projectId, chain: { $exists: true } }),
+    ComplianceRequirement.countDocuments(anchorQuery),
+  ]);
+  report.unanchored = total - anchoredCount;
+
+  const reqs = await ComplianceRequirement.find(anchorQuery);
   if (reqs.length === 0) return report;
 
   // Gruppieren nach (normId, sectionEId) — ein Text-Abruf und eine
   // Segmentierung je Section, nicht je Requirement.
   const groups = new Map<string, typeof reqs>();
   for (const r of reqs) {
-    const key = `${r.normId}${r.sectionEId}`;
+    const key = `${r.normId}${GROUP_SEP}${r.sectionEId}`;
     if (!groups.has(key)) groups.set(key, [] as unknown as typeof reqs);
     groups.get(key)!.push(r);
   }
 
   for (const [key, members] of groups) {
-    const [normId, sectionEId] = key.split('');
+    const [normId, sectionEId] = key.split(GROUP_SEP);
     const norm = await getPipelineNorm(String(projectId), normId);
     const section = norm?.sections.find((s) => s.id === sectionEId);
     if (!norm || !section || !section.content?.trim()) {

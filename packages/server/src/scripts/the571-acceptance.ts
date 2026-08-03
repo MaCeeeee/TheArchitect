@@ -253,6 +253,12 @@ async function main(): Promise<void> {
   head(7, 'Was hat sich geändert? / Was zuerst? / Wer ist zuständig?');
   const drift = await chainDriftCheck(projectId);
   console.log(`7a Änderung — Drift-Lauf: ${JSON.stringify(drift)}`);
+  // THE-575: die Invariante muss am ECHTEN Bestand halten, nicht nur im Test.
+  const driftSum = drift.checked + drift.skipped + drift.unanchored;
+  console.log(
+    `     Bilanz: checked ${drift.checked} + skipped ${drift.skipped} + unanchored ${drift.unanchored}` +
+      ` = ${driftSum} · Ketten-Anforderungen ${reqs.length} → ${driftSum === reqs.length ? 'AUSGEGLICHEN' : 'LÜCKE!'}`,
+  );
   const anchoredCount = await ComplianceRequirement.countDocuments({
     projectId, chain: { $exists: true }, normId: { $exists: true, $ne: null }, sectionEId: { $exists: true, $ne: null },
   });

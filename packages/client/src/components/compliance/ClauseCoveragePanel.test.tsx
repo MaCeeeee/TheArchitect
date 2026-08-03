@@ -4,7 +4,7 @@
  * die Lücke ist sichtbar, Legacy ehrlich getrennt, leer ist gültig.
  */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('../../services/api', () => ({
@@ -16,6 +16,7 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('react-router-dom', () => ({ useParams: () => ({ projectId: 'p1' }) }));
 
 import { traceAPI } from '../../services/api';
+import toast from 'react-hot-toast';
 import ClauseCoveragePanel from './ClauseCoveragePanel';
 
 const forward = vi.mocked(traceAPI.forward);
@@ -69,4 +70,46 @@ test('an empty state is a valid result, not an error', async () => {
 
   render(<ClauseCoveragePanel />);
   await waitFor(() => expect(screen.getByText(/No chain requirements yet/)).toBeInTheDocument());
+});
+
+// ─── THE-575: der Lauf verschweigt nicht, was er nicht angesehen hat ──────
+//
+// Der Bericht meldete am echten Bestand `{checked: 2, skipped: 0}` bei 15
+// Ketten-Anforderungen. Ein Nutzer las „2 geprüft, 0 veraltet" und durfte
+// glauben, sein Bestand sei durchgesehen. 13 waren nie im Blick.
+test('THE-575: the drift toast names what it could NOT examine', async () => {
+  forward.mockResolvedValue({
+    data: { success: true, data: { norms: [], withoutClauseAnchor: { count: 0, requirementIds: [] } } },
+  } as never);
+  vi.mocked(traceAPI.driftCheck).mockResolvedValue({
+    data: { success: true, data: { checked: 2, staled: 0, skipped: 0, unanchored: 13, evidenceStaled: 0, attestedReset: 0 } },
+  } as never);
+
+  render(<ClauseCoveragePanel />);
+  await waitFor(() => expect(screen.getByRole('button', { name: /drift check/i })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: /drift check/i }));
+
+  await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  const msg = vi.mocked(toast.success).mock.calls[0][0] as string;
+  expect(msg).toMatch(/2 checked/);
+  // DIE Zeile: ohne sie liest sich der Bericht wie „alles geprüft".
+  expect(msg).toMatch(/13 not checkable/i);
+});
+
+test('THE-575 NEGATIV-KONTROLLE: nothing checkable does not look like nothing to do', async () => {
+  forward.mockResolvedValue({
+    data: { success: true, data: { norms: [], withoutClauseAnchor: { count: 0, requirementIds: [] } } },
+  } as never);
+  vi.mocked(traceAPI.driftCheck).mockResolvedValue({
+    data: { success: true, data: { checked: 0, staled: 0, skipped: 0, unanchored: 15, evidenceStaled: 0, attestedReset: 0 } },
+  } as never);
+
+  render(<ClauseCoveragePanel />);
+  await waitFor(() => expect(screen.getByRole('button', { name: /drift check/i })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: /drift check/i }));
+
+  await waitFor(() => expect(toast.success).toHaveBeenCalled());
+  const msg = vi.mocked(toast.success).mock.calls[0][0] as string;
+  // „0 geprüft, 0 veraltet" allein wäre von „alles in Ordnung" nicht zu unterscheiden.
+  expect(msg).toMatch(/15 not checkable/i);
 });
