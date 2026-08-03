@@ -135,17 +135,36 @@ Zwei Wege für dieselbe Facette: der gemessene (Slots) und der produktive (Heuri
 
 ## Die sieben Fragen — Reifegrad
 
-| # | Frage | Reife | Der eine fehlende Schritt |
-|---|---|---|---|
-| 1 | Betrifft mich das Gesetz? | ✅ **auf API-Ebene beantwortbar** (THE-555, 03.08.) | offen: UI-Fläche im Client · Größen-/Territoriums-Schwellen (Art.-2-Prädikate, Facette 1 D3) |
-| 2 | Welcher Teil? | ⚠️ **grob** | Absatz-Granularität (THE-550) |
-| 3 | Anforderungen an Prozess/App/Daten/Org? | ❌ | Ebenen-Facette — erst messen (THE-551) |
-| 4 | Erfülle ich es — wo? | ⚠️ **halb** | Drei-Tore-Status + Evidenz-Objekt (**kein Ticket**) |
-| 5 | Wenn nein — was tun? | ⚠️ **halb** | `Deadline` an `ComplianceRequirement` anschließen |
-| 6 | Harmonisierbar? | ⚠️ **gemessen, nicht produktiv** | Kette läuft im Eval; Verdrängungs-Gate = THE-544 |
-| 7 | Was hat sich geändert? / Was zuerst? / Wer? | ❌ | Norm-Id-Stabilität (THE-550) · Sanktion (**kein Ticket**) · Handlung→Rolle (Teil von THE-551) |
+> **Abgenommen am 03.08. an einem echten Fall** ([THE-571](https://linear.app/thearchitect/issue/THE-571),
+> Befund: `docs/evals/the571-abnahme-sieben-fragen.md`). Die Spalte *Stufe* ist gemessen,
+> nicht geschätzt: **A** = über die Oberfläche · **B** = nur per API/Skript · **C** = gebaut,
+> unerreichbar · **D** = Struktur fehlt. Wo die Abnahme von der Erstfassung abweicht, steht
+> die alte Einschätzung daneben — überschrieben wird nichts.
 
-**Keine Frage ist durchgängig beantwortbar. Frage 3 ist und bleibt der Engpass** — Fragen 4–6 setzen sie voraus.
+| # | Frage | Stufe | Erstfassung | Der eine fehlende Schritt |
+|---|---|---|---|---|
+| 1 | Betrifft mich das Gesetz? | **A** | ✅ „nur API" | Größen-/Territoriums-Prädikate — das Urteil ruht allein auf der Rolle |
+| 2 | Welcher Teil? | **B** | ⚠️ grob | `assessLawsForProfile` muss die bindenden eIds **zurückgeben**, nicht zählen |
+| 3 | Anforderungen an Prozess/App/Daten/Org? | **D** | ❌ | Ebene aus der **Landschaft**, nicht aus der Norm (THE-551 bestätigt) |
+| 4 | Erfülle ich es — wo? | **B** | ⚠️ halb | Fläche zum Anhängen von Nachweisen (`POST …/evidence`: 0 Client-Aufrufer) |
+| 5 | Wenn nein — was tun? | **B** | ⚠️ halb | **Frist** in den Lücken-Eintrag durchreichen |
+| 6 | Harmonisierbar? | **A** | ⚠️ nicht produktiv | — · gemessen: 1 Maßnahme über DSGVO + NIS2, 3 Mitglieder |
+| 7 | Geändert / zuerst / wer? | **D** | ❌ | 7a **A** (Drift läuft) · 7b **D** (keine Sanktion) · 7c **D** (Rolle bleibt Freitext) |
+
+**Drei Korrekturen an der Erstfassung:**
+
+- **Frage 1 war unterschätzt.** „Offen: UI-Fläche im Client" stimmte am Vormittag nicht mehr —
+  `LegalApplicabilityCheck.tsx` schreibt Rollen, Jurisdiktionen und Sektoren und zeigt das
+  Urteil je Gesetz. Gemessen: 13 Gesetze, 8 anwendbar.
+- **Frage 6 war deutlich unterschätzt.** „Gemessen, nicht produktiv" gilt nicht mehr: die
+  Fläche existiert, und am echten Fall entsteht eine gesetzesübergreifende Maßnahme.
+- **Frage 2 war überschätzt.** „Grob" klang nach Granularität; der wirkliche Grund ist
+  härter — `citations` kommt bei **0 von 13** Gesetzen zurück. Die Oberfläche rendert die
+  Zitat-Liste bereits, der Dienst füllt sie nie.
+
+**Frage 3 bleibt der Engpass**, jetzt aus der Abnahme belegt statt vermutet: kein
+Ziel-Ebenen-Feld an `ChainSystemRequirement`, und THE-551 hat gemessen, dass es aus der
+Norm auch nicht ableitbar wäre.
 
 ---
 
