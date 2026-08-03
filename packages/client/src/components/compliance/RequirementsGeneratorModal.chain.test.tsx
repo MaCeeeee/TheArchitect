@@ -104,3 +104,50 @@ test('no chain stats box for a legacy (reqgen) response', async () => {
   await waitFor(() => expect(generate).toHaveBeenCalled());
   expect(screen.queryByTestId('chain-stats')).not.toBeInTheDocument();
 });
+
+test('a chain candidate shows chain provenance instead of misleading 0.00 scores', async () => {
+  generate.mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        engine: 'chain',
+        regulation: { source: 'nis2', paragraphNumber: 'Art. 23' },
+        requirements: [
+          {
+            title: 'Meldung übermitteln',
+            description: 'Das Unternehmen meldet Sicherheitsvorfälle fristgerecht.',
+            priority: 'must',
+            linkedElementIds: [],
+            chain: {
+              regulationKey: 'nis2:art23',
+              clauseContentId: 'a3f19b2c4d5e6f70',
+              clausePath: 'Abs. 2',
+              clauseText: 'Die Einrichtungen übermitteln … eine Meldung.',
+              stakeholderRequirement: {
+                text: 'Das Unternehmen übermittelt eine Meldung an das CSIRT.',
+                slots: { action: 'Meldung übermitteln', recipient: 'CSIRT', modality: 'pflicht', condition: '' },
+                kind: 'requirement',
+                deadline: null,
+              },
+              systemRequirement: {
+                text: 'Das Unternehmen meldet Sicherheitsvorfälle fristgerecht.',
+                schutzgut: 'Netzsysteme', verpflichteter: 'wesentliche Einrichtung',
+                ausloeser: 'Vorfall', nachweis: 'Meldung', implementationFree: true,
+              },
+            },
+          },
+        ],
+        chainStats: { clauses: 1, unreadableExtractions: 0, splitCount: 0, clausesWithoutRequirement: 0, implFreedomViolations: 0, unreadableSysReqs: 0 },
+      },
+    },
+  } as never);
+
+  render(<RequirementsGeneratorModal isOpen onClose={() => {}} />);
+  fireEvent.change(screen.getByPlaceholderText(/paste/i), {
+    target: { value: 'Die Einrichtungen übermitteln binnen 72 Stunden nach Kenntnisnahme eine Meldung an das CSIRT.' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /generate/i }));
+  await waitFor(() => expect(screen.getByTestId('chain-provenance')).toBeInTheDocument());
+  expect(screen.getByTestId('chain-provenance').textContent).toMatch(/Abs\. 2/);
+  expect(screen.queryByText(/Extraction/)).not.toBeInTheDocument(); // keine 0.00-Pille bei chain
+});
