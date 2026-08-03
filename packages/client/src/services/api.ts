@@ -563,8 +563,18 @@ export const traceAPI = {
     api.get<{ success: boolean; data: { elementId: string; requirements: TraceBackwardRequirement[]; impact: { wouldLoseCoverage: number; laws: string[] } } }>(
       `/projects/${projectId}/requirements/trace/by-element/${encodeURIComponent(elementId)}`),
   driftCheck: (projectId: string) =>
-    api.post<{ success: boolean; data: { checked: number; staled: number; skipped: number; evidenceStaled: number; attestedReset: number } }>(
-      `/projects/${projectId}/requirements/trace/drift-check`, {}),
+    api.post<{
+      success: boolean;
+      data: {
+        checked: number;
+        staled: number;
+        skipped: number;
+        /** Ketten-Anforderungen ohne Korpus-Anker — unprüfbar, aber gezählt (THE-575). */
+        unanchored: number;
+        evidenceStaled: number;
+        attestedReset: number;
+      };
+    }>(`/projects/${projectId}/requirements/trace/drift-check`, {}),
 };
 
 export const harmonizationAPI = {

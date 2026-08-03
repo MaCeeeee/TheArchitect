@@ -42,9 +42,14 @@ export default function ClauseCoveragePanel() {
     try {
       const res = await traceAPI.driftCheck(projectId);
       const r = res.data.data;
+      // THE-575: `unanchored` steht NEBEN `checked`, nicht in einer Fußnote.
+      // Ohne diese Zahl las sich der Bericht wie „alles geprüft" — am echten
+      // Bestand waren 13 von 15 Anforderungen nie im Blick.
+      const notCheckable =
+        r.unanchored > 0 ? ` · ${r.unanchored} not checkable (no corpus anchor)` : '';
       toast.success(
-        `Drift check: ${r.checked} checked · ${r.staled} staled · ${r.skipped} skipped · ${r.attestedReset} attestations reset`,
-        { duration: 6000 },
+        `Drift check: ${r.checked} checked · ${r.staled} staled · ${r.skipped} skipped${notCheckable} · ${r.attestedReset} attestations reset`,
+        { duration: 8000 },
       );
       await load();
     } catch (err: unknown) {

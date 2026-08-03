@@ -151,3 +151,74 @@ describe('chainDriftCheck — nur die veränderte Klausel fällt', () => {
     expect(r.staled).toBe(0);
   });
 });
+
+// ─── THE-575: was der Lauf NICHT ansieht, muss er zählen ─────────────────
+//
+// `skipped` deckte bisher nur ab, was den Filter PASSIERT und dessen Text
+// fehlt. Anforderungen ohne Korpus-Anker fielen aus der Abfrage heraus und
+// tauchten in keinem Feld auf — der Bericht las sich wie „alles geprüft".
+//
+// Am echten Fall gemessen (THE-571): `{"checked":2,"skipped":0}` bei 15
+// Ketten-Anforderungen. 13 waren nie im Blick.
+describe('THE-575 — der Bericht verschweigt nicht, was er übersprungen hat', () => {
+  /** Eine Ketten-Anforderung OHNE Korpus-Anker — der Altbestand aus THE-577. */
+  async function seedUnanchored(clauseText: string) {
+    return seedChainReq(clauseText, { normId: undefined, sectionEId: undefined });
+  }
+
+  it('counts requirements that carry no corpus anchor at all', async () => {
+    mockNormWith(ORIGINAL_TEXT);
+    await seedChainReq(CLAUSE_1);
+    await seedUnanchored(CLAUSE_2);
+
+    const r = await chainDriftCheck(projectId);
+    expect(r.checked).toBe(1);
+    expect(r.unanchored).toBe(1);
+  });
+
+  it('keeps the books balanced: checked + skipped + unanchored = every chain requirement', async () => {
+    // DIE Invariante. Solange sie hält, kann nichts mehr lautlos herausfallen.
+    mockNormWith(ORIGINAL_TEXT);
+    await seedChainReq(CLAUSE_1);
+    await seedChainReq(CLAUSE_2);
+    await seedUnanchored(CLAUSE_1);
+    await seedUnanchored(CLAUSE_2);
+
+    const r = await chainDriftCheck(projectId);
+    const total = await ComplianceRequirement.countDocuments({ projectId, chain: { $exists: true } });
+    expect(r.checked + r.skipped + r.unanchored).toBe(total);
+    expect(total).toBe(4);
+  });
+
+  it('reproduces the measured case: 2 anchored, 13 unanchored — and says so', async () => {
+    // Der Regressionstest gegen genau den Bestand, an dem der Fehler auffiel.
+    mockNormWith(ORIGINAL_TEXT);
+    await seedChainReq(CLAUSE_1);
+    await seedChainReq(CLAUSE_2);
+    for (let i = 0; i < 13; i += 1) {
+      await seedUnanchored(`Absatz ${i}: Die Einrichtungen erfüllen eine weitere Pflicht nachweisbar.`);
+    }
+
+    const r = await chainDriftCheck(projectId);
+    expect(r.checked).toBe(2);
+    expect(r.unanchored).toBe(13);
+    expect(r.checked + r.skipped + r.unanchored).toBe(15);
+  });
+
+  it('NEGATIV-KONTROLLE: nothing anchored is distinguishable from nothing to do', async () => {
+    // Der eigentliche Fehler war NICHT die fehlende Prüfung, sondern dass
+    // „nichts prüfbar" und „alles geprüft, nichts veraltet" identisch aussahen.
+    await seedUnanchored(CLAUSE_1);
+    await seedUnanchored(CLAUSE_2);
+
+    const r = await chainDriftCheck(projectId);
+    expect(r.checked).toBe(0);
+    expect(r.staled).toBe(0);
+    expect(r.unanchored).toBe(2); // ← ohne dieses Feld wäre der Bericht leer und beruhigend
+  });
+
+  it('an empty project reports zeros without pretending anything was examined', async () => {
+    const r = await chainDriftCheck(projectId);
+    expect(r).toMatchObject({ checked: 0, staled: 0, skipped: 0, unanchored: 0 });
+  });
+});
