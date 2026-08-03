@@ -29,10 +29,10 @@ import {
   buildSysReqPairUserPrompt,
   parsePairRelation,
   collapseKey,
-  findDisplacement,
   type PairRelation,
   type SystemRequirement,
 } from '@thearchitect/shared';
+import { evaluateDisplacement } from '../../services/displacementGate.service';
 
 /** Eine Systemanforderung mit dem Kontext, den die Gruppierung braucht. */
 export interface GroupableSysReq extends SystemRequirement {
@@ -98,24 +98,10 @@ export interface DisplacementExclusion {
  * Kante existiert.
  */
 function displacementFor(a: GroupableSysReq, b: GroupableSysReq): DisplacementExclusion | null {
-  for (const [x, y] of [
-    [a, b],
-    [b, a],
-  ] as const) {
-    const hit = findDisplacement(x.source, y.addresseeClass);
-    if (hit && hit.prevailing.source === y.source) {
-      return {
-        a: a.id,
-        b: b.id,
-        displaced: x.source,
-        prevailing: y.source,
-        addresseeClass: y.addresseeClass,
-        scope: hit.scope,
-        citations: hit.citations,
-      };
-    }
-  }
-  return null;
+  // Seit THE-563 liegt die Paar-Semantik im Produkt-Service — der Eval
+  // konsumiert denselben Codepfad (Muster obligationAction.service).
+  const verdict = evaluateDisplacement(a, b);
+  return verdict ? { a: a.id, b: b.id, ...verdict } : null;
 }
 
 export interface MeasureEdge {
