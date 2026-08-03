@@ -195,6 +195,66 @@ test('THE-570: picking a law from the corpus loads its articles and previews the
   expect(screen.queryByTestId('no-anchor-hint')).not.toBeInTheDocument();
 });
 
+// ─── Produktionsfehler 03.08.: „source must be one of …" ────────────────
+//
+// Der Gruppenschlüssel der Auswahl ist eine ANZEIGE-Konstruktion (der
+// gemeinsame Wortstamm zweier Sprachfassungen), KEINE Normquelle. Beim AI Act
+// heißt der Stamm `ai-act` — den gibt es als Quelle nicht, es gibt nur
+// `ai-act-de` und `ai-act-en`. Das Speichern brach mit 400 ab.
+//
+// WARUM DIE BESTEHENDEN TESTS DAS DURCHLIESSEN: Die Fixture kannte nur `nis2`
+// und `lksg`. Deren Stamm IST zufällig eine gültige Quelle — der Fehler war
+// unsichtbar, solange niemand ein Gesetz mit Sprach-Suffix in BEIDEN Fassungen
+// speicherte. Deshalb steht der AI Act ab jetzt in der Fixture.
+import { regulationsAPI } from '../../services/api';
+
+test('THE-570 regression: saving uses the resolved norm source, not the display group key', async () => {
+  normsList.mockResolvedValue({
+    data: {
+      data: [],
+      available: [
+        { identity: { workId: 'corpus:ai-act-de', expressionLanguage: 'de' }, source: 'corpus', title: 'ai-act-de', sectionCount: 113,
+          sections: [{ eId: 'ai-act-de:art-50', number: 'Art. 50', heading: 'Transparenzpflichten' }] },
+        { identity: { workId: 'corpus:ai-act-en', expressionLanguage: 'en' }, source: 'corpus', title: 'ai-act-en', sectionCount: 112,
+          sections: [{ eId: 'ai-act-en:art-50', number: 'Art. 50', heading: 'Transparency obligations' }] },
+      ],
+    },
+  } as never);
+  getSection.mockResolvedValue({
+    data: { success: true, data: { eId: 'ai-act-de:art-50', heading: 'Transparenzpflichten', number: 'Art. 50',
+      text: 'Das Unternehmen muss offenlegen, dass Text kuenstlich erzeugt oder manipuliert wurde, bevor er verbreitet wird.',
+      expressionLanguage: 'de' } },
+  } as never);
+  generate.mockResolvedValue({
+    data: { success: true, data: { engine: 'chain', regulation: { source: 'ai-act-de', paragraphNumber: 'Art. 50' },
+      requirements: [{ title: 'offenlegen, dass Text kuenstlich erzeugt wurde',
+        description: 'Das Unternehmen muss der Oeffentlichkeit offenlegen, dass Text kuenstlich erzeugt wurde.',
+        priority: 'must', linkedElementIds: [] }] } },
+  } as never);
+  vi.mocked(regulationsAPI.create).mockResolvedValue({ data: { data: { _id: 'reg1' } } } as never);
+  vi.mocked(requirementsAPI.confirm).mockResolvedValue({ data: { success: true, data: [] } } as never);
+
+  render(<RequirementsGeneratorModal isOpen onClose={() => {}} />);
+  const sourceSelect = screen.getAllByRole('combobox')[0];
+  await waitFor(() => expect(within(sourceSelect).getByText('AI-ACT')).toBeInTheDocument());
+
+  // Der Nutzer wählt „AI-ACT" — der Optionswert ist der Gruppenschlüssel.
+  fireEvent.change(sourceSelect, { target: { value: 'ai-act' } });
+  await waitFor(() => expect(screen.getByTestId('section-select')).toBeInTheDocument());
+  fireEvent.change(screen.getByTestId('section-select'), { target: { value: 'ai-act-de:art-50' } });
+  await waitFor(() => expect((screen.getByTestId('regulation-text') as HTMLTextAreaElement).value).toMatch(/kuenstlich/));
+
+  fireEvent.click(screen.getByRole('button', { name: /generate/i }));
+  await waitFor(() => expect(screen.getByRole('button', { name: /save 1 requirement/i })).toBeInTheDocument());
+  fireEvent.click(screen.getByRole('button', { name: /save 1 requirement/i }));
+
+  await waitFor(() => expect(regulationsAPI.create).toHaveBeenCalled());
+  const body = vi.mocked(regulationsAPI.create).mock.calls[0][1] as { source: string; title: string };
+  // DIE Zeile: `ai-act` waere keine Normquelle und der Server antwortet 400.
+  expect(body.source).toBe('ai-act-de');
+  expect(body.title).toMatch(/AI-ACT-DE/);
+});
+
 test('THE-570: a law with only one language version says so instead of loading the wrong one', async () => {
   normsList.mockResolvedValue({ data: corpusNorms } as never);
   render(<RequirementsGeneratorModal isOpen onClose={() => {}} />);
