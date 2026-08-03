@@ -19,6 +19,7 @@ import { createAuditEntry } from '../middleware/audit.middleware';
 import {
   listNorms,
   getNorm,
+  getNormSection,
   getNormMappings,
   listAvailableCorpusNorms,
 } from '../services/norm.service';
@@ -256,20 +257,12 @@ router.get('/:projectId/norms/discover/findings', async (req, res) => {
 // Sections bewusst OHNE `text` (Payload), hier ist genau einer gefragt.
 router.get('/:projectId/norms/:workId/sections/:eId', async (req, res) => {
   try {
-    const norm = await getNorm(req.params.projectId, req.params.workId);
-    if (!norm) return res.status(404).json({ success: false, error: 'norm not found' });
-    const section = norm.sections.find(s => s.eId === req.params.eId);
+    // getNormSection statt getNorm: Eine verkürzte Projekt-Kopie darf das
+    // vollständige Korpus-Gesetz nicht überschatten (THE-573 — am echten
+    // Korpus gemessen: 3 von 47 bindenden Artikeln waren so unauffindbar).
+    const section = await getNormSection(req.params.projectId, req.params.workId, req.params.eId);
     if (!section) return res.status(404).json({ success: false, error: 'section not found' });
-    return res.json({
-      success: true,
-      data: {
-        eId: section.eId,
-        heading: section.heading,
-        number: section.number ?? '',
-        text: section.text ?? '',
-        expressionLanguage: norm.identity.expressionLanguage,
-      },
-    });
+    return res.json({ success: true, data: section });
   } catch (err) {
     log.error({ err, workId: req.params.workId, eId: req.params.eId }, '[norms.section] failed');
     return res.status(500).json({ success: false, error: 'failed to load section' });

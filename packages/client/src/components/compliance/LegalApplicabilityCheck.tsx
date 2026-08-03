@@ -46,6 +46,15 @@ interface LawRow {
   missingRoles?: string[];
   matchedRoles?: string[];
   provisionsBinding?: number;
+  /**
+   * WELCHE Artikel binden (THE-573) — gekürzt auf die ersten N. Die volle Zahl
+   * steht in `provisionsBinding`; die Differenz ist der Rest und wird
+   * ausgewiesen, nie verschwiegen.
+   *
+   * NICHT `citations`: das sind die Belege der VERDRÄNGUNGS-Kante („warum gilt
+   * DORA statt NIS2"). Zwei Listen, zwei Fragen.
+   */
+  bindingProvisionEIds?: string[];
   provisionsTyped: number;
   provisionsTotal: number;
 }
@@ -73,6 +82,14 @@ export default function LegalApplicabilityCheck() {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<LegalProfile>({});
   const [sectorsText, setSectorsText] = useState('');
+  /** Der gerade nachgeschlagene Artikeltext (THE-573). */
+  const [article, setArticle] = useState<{
+    eId: string;
+    heading: string;
+    text: string;
+    loading: boolean;
+    failed?: boolean;
+  } | null>(null);
 
   const load = useCallback(async () => {
     if (!projectId) return;
@@ -96,6 +113,35 @@ export default function LegalApplicabilityCheck() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  /**
+   * Der Artikeltext zu einer bindenden Provision (THE-573 / REQ-573.2).
+   *
+   * Die `workId` ergibt sich aus der Fassung der Zeile: `dsgvo` → `corpus:dsgvo`.
+   * Die Route stammt aus THE-570 — dieselbe, die der Generator für die
+   * Vorschau nutzt. Eine Kennung, die man nicht nachlesen kann, ist nur eine
+   * hübschere Zahl.
+   */
+  const openArticle = useCallback(
+    async (expression: string, eId: string) => {
+      if (!projectId) return;
+      setArticle({ eId, heading: '', text: '', loading: true });
+      try {
+        const res = await normsAPI.getSection(projectId, `corpus:${expression}`, eId);
+        const s = res.data?.data as { heading?: string; number?: string; text?: string } | undefined;
+        setArticle({
+          eId,
+          heading: [s?.number, s?.heading].filter(Boolean).join(' — '),
+          text: s?.text ?? '',
+          loading: false,
+        });
+      } catch {
+        // Kein stiller Abbruch: der Nutzer hat geklickt und erwartet eine Antwort.
+        setArticle({ eId, heading: '', text: '', loading: false, failed: true });
+      }
+    },
+    [projectId],
+  );
 
   const toggleRole = (role: string) => {
     setProfile((p) => {
@@ -285,8 +331,42 @@ export default function LegalApplicabilityCheck() {
               {open && (
                 <div className="px-10 pb-3 text-xs text-slate-300 space-y-1">
                   <div>{law.reason}</div>
+
+                  {/* THE-573: WELCHE Artikel binden. Der Nutzer sah bisher nur
+                      eine Zahl — „3/35" beantwortet nicht, wo er nachlesen muss.
+                      Die Kennungen SIND die Section-eIds der Norm (gemessen
+                      46/46), deshalb ohne Umweg bis zum Gesetzestext auflösbar. */}
+                  {law.bindingProvisionEIds && law.bindingProvisionEIds.length > 0 && (
+                    <div data-testid="binding-provisions" className="pt-1">
+                      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-1">
+                        Binding articles
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {law.bindingProvisionEIds.map((eId) => (
+                          <button
+                            key={eId}
+                            type="button"
+                            onClick={() => void openArticle(law.expression, eId)}
+                            className="rounded border border-[#334155] px-1.5 py-0.5 font-mono text-[10px] text-slate-300 hover:border-[#7c3aed] hover:text-white"
+                          >
+                            {eId}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Gekürzt wird sichtbar. Eine stille Kappung liest sich
+                          wie Vollständigkeit — das ist der eigentliche Fehler. */}
+                      {typeof law.provisionsBinding === 'number' &&
+                        law.provisionsBinding > law.bindingProvisionEIds.length && (
+                          <div className="mt-1 text-slate-500">
+                            … and {law.provisionsBinding - law.bindingProvisionEIds.length} more
+                          </div>
+                        )}
+                    </div>
+                  )}
+
+                  {/* Die Belege der VERDRÄNGUNG — eine andere Aussage als oben. */}
                   {law.citations && law.citations.length > 0 && (
-                    <div className="text-slate-400">
+                    <div data-testid="displacement-citations" className="text-slate-400">
                       {law.citations.map((c, i) => (
                         <div key={i}>§ {c}</div>
                       ))}
@@ -306,6 +386,26 @@ export default function LegalApplicabilityCheck() {
           );
         })}
       </div>
+
+      {article && (
+        <div data-testid="article-preview" className="mx-5 mb-3 rounded border border-[#334155] bg-[#0f172a] p-3">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="text-[10px] uppercase tracking-wider text-slate-500">
+              {article.heading || article.eId} — from corpus, read only
+            </div>
+            <button type="button" onClick={() => setArticle(null)} className="text-slate-500 hover:text-white text-xs">
+              ✕
+            </button>
+          </div>
+          <div className="max-h-48 overflow-y-auto whitespace-pre-wrap text-[11px] text-slate-300">
+            {article.loading
+              ? 'Loading article text…'
+              : article.failed
+                ? 'Could not load the article text from the corpus.'
+                : article.text}
+          </div>
+        </div>
+      )}
 
       <div className="px-5 py-3 border-t border-[#334155] text-[11px] text-slate-500">
         {data.disclaimer}

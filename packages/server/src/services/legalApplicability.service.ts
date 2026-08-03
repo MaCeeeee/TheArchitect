@@ -64,9 +64,25 @@ export interface LawRoleAggregate {
   provisionsTotal: number;
   /** Davon mit konsumierbarer Typisierung (Hausregel). */
   provisionsTyped: number;
-  /** Rolle → Anzahl bindender Provisions. */
-  roleCounts: Map<string, number>;
+  /**
+   * Rolle → die Kennungen der Provisions, die sie binden.
+   *
+   * Bewusst die LISTE, nicht die Zahl: Die Kennung IST die Section-`eId` der
+   * Norm (gemessen THE-573: 46 von 46 bei nis2-de), also bis zum Gesetzestext
+   * auflösbar. Die Anzahl ist `.length` — eine Quelle, damit Zahl und Liste
+   * nicht auseinanderdriften können.
+   */
+  roleKeys: Map<string, string[]>;
 }
+
+/**
+ * Wie viele bindende Artikel die Antwort namentlich nennt.
+ *
+ * DSGVO band im Referenzfall 39 Provisions — eine ungekürzte Liste wäre
+ * Rauschen. Gekürzt wird trotzdem nicht still: `provisionsBinding` trägt
+ * weiterhin die VOLLE Zahl, der Rest ist damit an der Antwort ablesbar.
+ */
+export const BINDING_PROVISIONS_CAP = 10;
 
 /**
  * Verdichtet Korpus-Zusammenfassungen zu Rollen je Gesetz. REIN.
@@ -88,16 +104,16 @@ export function aggregateTypedRoles(docs: TypedCorpusSummary[]): Map<string, Law
   for (const [law, variants] of variantsByLaw) {
     const expression = pickExpression([...variants]);
     const chosen = docs.filter((d) => d.source === expression);
-    const roleCounts = new Map<string, number>();
+    const roleKeys = new Map<string, string[]>();
     let typed = 0;
     for (const d of chosen) {
       if (!isConsumableTyping(d)) continue;
       const role = d.typing?.partyRole;
       if (!role) continue;
       typed += 1;
-      roleCounts.set(role, (roleCounts.get(role) ?? 0) + 1);
+      roleKeys.set(role, [...(roleKeys.get(role) ?? []), d.regulationKey]);
     }
-    out.set(law, { law, expression, provisionsTotal: chosen.length, provisionsTyped: typed, roleCounts });
+    out.set(law, { law, expression, provisionsTotal: chosen.length, provisionsTyped: typed, roleKeys });
   }
   return out;
 }
@@ -111,6 +127,20 @@ export interface LegalApplicabilityRow extends LegalApplicabilityAssessment {
   provisionsBinding?: number;
   /** Bei `applicable`: welche Profilrollen greifen. */
   matchedRoles?: string[];
+  /**
+   * Bei `applicable`: WELCHE Artikel binden — die Antwort auf Frage 2
+   * (THE-573). Die Kennungen sind die Section-`eId`s der Norm und damit über
+   * `GET /:projectId/norms/corpus:<expression>/sections/:eId` bis zum
+   * Gesetzestext auflösbar.
+   *
+   * NICHT `citations` — das Feld gehört den Belegen der VERDRÄNGUNGS-Kante
+   * („warum gilt DORA statt NIS2"). Beide beantworten im Prüfungsfall
+   * verschiedene Fragen und dürfen nicht vermengt werden.
+   *
+   * Auf `BINDING_PROVISIONS_CAP` gekürzt; die volle Zahl steht in
+   * `provisionsBinding`, der Rest ist die Differenz.
+   */
+  bindingProvisionEIds?: string[];
 }
 
 const STATE_ORDER: Record<LegalApplicabilityAssessment['state'], number> = {
@@ -132,7 +162,7 @@ export function assessLawsForProfile(
 ): LegalApplicabilityRow[] {
   const rows: LegalApplicabilityRow[] = [];
   for (const agg of aggregates.values()) {
-    const normRoles = [...agg.roleCounts.keys()];
+    const normRoles = [...agg.roleKeys.keys()];
     const assessment = assessNormApplicability(profile, {
       source: agg.law,
       addresseeClasses: normRoles,
@@ -150,7 +180,12 @@ export function assessLawsForProfile(
       const profileRoles = profile?.addresseeClasses ?? [];
       const matched = normRoles.filter((r) => profileRoles.includes(r));
       row.matchedRoles = matched;
-      row.provisionsBinding = matched.reduce((n, r) => n + (agg.roleCounts.get(r) ?? 0), 0);
+      // Nur was eine PROFILROLLE bindet — nicht jeder getypte Artikel.
+      const binding = matched.flatMap((r) => agg.roleKeys.get(r) ?? []);
+      row.provisionsBinding = binding.length;
+      // Die volle Zahl bleibt oben stehen; gekürzt wird nur die Namensliste,
+      // und die Differenz ist damit ablesbar statt verschwiegen.
+      row.bindingProvisionEIds = binding.slice(0, BINDING_PROVISIONS_CAP);
     }
     rows.push(row);
   }

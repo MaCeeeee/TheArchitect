@@ -212,6 +212,82 @@ function corpusRegToRegulationView(r: ICorpusRegulation): RegulationView {
 }
 
 /** Eine Norm per workId (`upload:<standardId>` | `corpus:<source>`). */
+/**
+ * Ein aufgelöster Artikel, wie die Fläche ihn braucht: Text garantiert
+ * vorhanden (anders als `NormSectionView`, wo `text` optional ist) und mit der
+ * Sprachfassung, aus der er stammt.
+ */
+export interface ResolvedNormSection {
+  eId: string;
+  heading: string;
+  number: string;
+  text: string;
+  expressionLanguage?: string;
+}
+
+/**
+ * EIN Artikel eines Gesetzes — mit Korpus-Rückfall, wenn die Projekt-Kopie ihn
+ * nicht trägt (THE-573, REQ-573.2 AC 3).
+ *
+ * ── WARUM DAS NICHT `getNorm` ERLEDIGT ──
+ *
+ * `getNorm` bevorzugt die Projekt-Kopie und fragt den Korpus nur, wenn gar
+ * keine da ist. Trägt das Projekt eine VERKÜRZTE Kopie — etwa einen Stummel
+ * mit einer einzigen eingefügten Klausel aus dem alten Einfüge-Weg —, dann
+ * überschattet sie das vollständige Gesetz, und ein völlig gültiger Artikel
+ * ist nicht auffindbar.
+ *
+ * Am echten Korpus gemessen (THE-573): 44 von 47 bindenden Artikeln lösten
+ * auf, drei nicht — alle drei unter einer solchen Stummel-Norm. Dieselbe Falle
+ * wie im Generator-Dropdown am 03.08. (1 statt 46 Artikel).
+ *
+ * Die Regel: **Eine Projekt-Kopie, welche die Antwort nicht enthält, ist kein
+ * Grund, den Korpus nicht zu fragen.**
+ *
+ * Die Leser sind injizierbar — der Test braucht dadurch kein Tailnet.
+ */
+export async function getNormSection(
+  projectId: string,
+  workId: string,
+  eId: string,
+  deps: {
+    readProject?: (workId: string) => Promise<NormView | null>;
+    readCorpus?: (workId: string) => Promise<NormView | null>;
+  } = {},
+): Promise<ResolvedNormSection | null> {
+  const readProject =
+    deps.readProject ??
+    (async (w: string) => (await listNorms(projectId)).find(n => n.identity.workId === w) ?? null);
+  const readCorpus =
+    deps.readCorpus ??
+    (async (w: string) => {
+      if (!w.startsWith('corpus:') || !isCorpusConfigured()) return null;
+      const source = w.slice('corpus:'.length);
+      const regs = await listCorpusBySource([source]);
+      if (regs.length === 0) return null;
+      return regulationsToNormView(projectId, source, regs.map(corpusRegToRegulationView));
+    });
+
+  const pick = (norm: NormView | null): ResolvedNormSection | null => {
+    const s = norm?.sections.find(x => x.eId === eId);
+    // Ein Artikel OHNE Text ist kein Treffer — sonst zeigt die Fläche einen
+    // leeren Kasten, der sich wie „dieser Artikel sagt nichts" liest.
+    if (!s || !s.text?.trim()) return null;
+    return {
+      eId: s.eId,
+      heading: s.heading,
+      number: s.number ?? '',
+      text: s.text,
+      expressionLanguage: norm?.identity.expressionLanguage,
+    };
+  };
+
+  const fromProject = pick(await readProject(workId));
+  if (fromProject) return fromProject;
+  if (!workId.startsWith('corpus:')) return null;
+  return pick(await readCorpus(workId));
+}
+
 export async function getNorm(projectId: string, workId: string): Promise<NormView | null> {
   const norms = await listNorms(projectId);
   const found = norms.find(n => n.identity.workId === workId);
