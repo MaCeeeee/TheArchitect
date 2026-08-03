@@ -108,9 +108,20 @@ async function main(): Promise<void> {
     // Die Oberfläche RENDERT eine Zitat-Liste (LegalApplicabilityCheck.tsx:287ff).
     // Trägt die Antwort sie? Das entscheidet, ob Frage 2 „welcher Teil" beantwortet
     // ist oder nur gezählt wird.
-    const withCitations = laws.filter((l) => Array.isArray(l.citations) && (l.citations as unknown[]).length > 0);
-    console.log(`  Gesetze MIT Paragraphen-Zitaten: ${withCitations.length} von ${laws.length}`);
-    for (const l of laws) console.log(`     ${String(l.law).padEnd(16)} ${String(l.state).padEnd(15)} bindend=${l.provisionsBinding ?? '—'}/${l.provisionsTyped}`);
+    // THE-573: seit dem Bau trägt die Antwort die bindenden Artikel selbst.
+    // `citations` bleibt den Verdrängungs-Belegen vorbehalten — zwei Listen,
+    // zwei Aussagen.
+    const withBinding = laws.filter((l) => Array.isArray(l.bindingProvisionEIds) && (l.bindingProvisionEIds as unknown[]).length > 0);
+    console.log(`  Gesetze MIT benannten bindenden Artikeln: ${withBinding.length} von ${laws.length}`);
+    for (const l of laws) {
+      const eids = (l.bindingProvisionEIds as string[] | undefined) ?? [];
+      const total = (l.provisionsBinding as number | undefined) ?? 0;
+      const rest = total > eids.length ? ` (+${total - eids.length} weitere)` : '';
+      console.log(
+        `     ${String(l.law).padEnd(16)} ${String(l.state).padEnd(15)} bindend=${l.provisionsBinding ?? '—'}/${l.provisionsTyped}` +
+          (eids.length ? `  → ${eids.slice(0, 4).join(', ')}${rest}` : ''),
+      );
+    }
   } catch (e) {
     console.log(`  FEHLER: ${(e as Error).message}`);
   }

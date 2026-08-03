@@ -15,6 +15,7 @@ import {
   pickExpression,
   aggregateTypedRoles,
   assessLawsForProfile,
+  BINDING_PROVISIONS_CAP,
   type TypedCorpusSummary,
 } from '../services/legalApplicability.service';
 import type { LegalProfile } from '@thearchitect/shared';
@@ -92,7 +93,7 @@ describe('aggregateTypedRoles', () => {
     expect(dora.expression).toBe('dora');
     expect(dora.provisionsTotal).toBe(3); // art-5, art-6, art-99 — ohne dora-de
     expect(dora.provisionsTyped).toBe(2);
-    expect(dora.roleCounts.get('financial_entity')).toBe(2);
+    expect(dora.roleKeys.get('financial_entity')).toEqual(['dora:art-5', 'dora:art-6']);
   });
 
   it('applies the Hausregel — rejected and stale count as absent', () => {
@@ -100,7 +101,7 @@ describe('aggregateTypedRoles', () => {
     // art-32 (controller) + art-28 (processor); art-83 rejected, art-30 stale
     expect(dsgvo.provisionsTotal).toBe(4);
     expect(dsgvo.provisionsTyped).toBe(2);
-    expect(dsgvo.roleCounts.get('supervisory_authority')).toBeUndefined();
+    expect(dsgvo.roleKeys.get('supervisory_authority')).toBeUndefined();
   });
 
   it('keeps an untyped law visible with zero typed provisions', () => {
@@ -159,6 +160,75 @@ describe('assessLawsForProfile — die Vier-Zustands-Antwort je Gesetz', () => {
   });
 });
 
+
+// ─── THE-573: WELCHE Artikel binden, nicht nur wie viele ─────────────────
+//
+// Die Fläche sagte bisher „binds 3/35 typed provisions" und hörte dort auf.
+// Die Kennungen fließen längst durch (`listTypingSummaries` projiziert
+// `regulationKey`) — `aggregateTypedRoles` warf sie nur weg, indem es zählte.
+//
+// GEMESSEN im Pre-Flight: `regulationKey` IST die Section-`eId` der Norm
+// (46 von 46 bei nis2-de). Deshalb sind die Kennungen ohne Abbildungsschicht
+// bis zum Gesetzestext auflösbar.
+describe('THE-573 — die bindenden Artikel stehen in der Antwort', () => {
+  const rows = assessLawsForProfile(BANK, aggregateTypedRoles(CORPUS));
+  const row = (law: string) => rows.find((r) => r.law === law)!;
+
+  it('names the binding articles of an applicable law', () => {
+    expect(row('dora').bindingProvisionEIds).toEqual(['dora:art-5', 'dora:art-6']);
+  });
+
+  it('lists only what binds a PROFILE role — not every typed article', () => {
+    // dsgvo:art-32 bindet `controller` (im Profil), art-28 bindet `processor` (nicht).
+    expect(row('dsgvo').bindingProvisionEIds).toEqual(['dsgvo:art-32']);
+  });
+
+  it('keeps the count and the list in agreement — no drift between them', () => {
+    const r = row('dora');
+    expect(r.bindingProvisionEIds).toHaveLength(r.provisionsBinding!);
+  });
+
+  it('carries NO binding list where nothing binds — not_applicable, displaced, undetermined', () => {
+    expect(row('mdr').bindingProvisionEIds).toBeUndefined();      // not_applicable
+    expect(row('nis2').bindingProvisionEIds).toBeUndefined();     // displaced
+    expect(row('lksg').bindingProvisionEIds).toBeUndefined();     // undetermined
+  });
+
+  it('caps a long list AND leaves the remainder derivable — silent truncation is the bug', () => {
+    // DSGVO band im echten Fall 39 Provisions — eine ungekürzte Liste wäre Rauschen,
+    // eine stille Kürzung eine Lüge. Die volle Zahl bleibt in `provisionsBinding`.
+    const many = Array.from({ length: 40 }, (_, i) => doc('dsgvo', `dsgvo:art-${i}`, 'controller'));
+    const r = assessLawsForProfile(BANK, aggregateTypedRoles(many)).find((x) => x.law === 'dsgvo')!;
+    expect(r.provisionsBinding).toBe(40);
+    expect(r.bindingProvisionEIds).toHaveLength(BINDING_PROVISIONS_CAP);
+    expect(r.provisionsBinding! - r.bindingProvisionEIds!.length).toBe(40 - BINDING_PROVISIONS_CAP);
+  });
+});
+
+// ─── THE-573 Negativ-Kontrolle (REQ-573.3) ───────────────────────────────
+//
+// Eine leere Liste ist die häufigste stille Lüge in diesem System. „Kein
+// Artikel bindet dich" und „diese Fassung ist nicht typisiert" sehen gleich
+// aus, wenn man sie gleich darstellt — sind aber gegensätzliche Aussagen.
+describe('THE-573 — fehlende Typisierung sieht anders aus als „nichts bindet"', () => {
+  const rows = assessLawsForProfile(BANK, aggregateTypedRoles(CORPUS));
+
+  it('an untyped law stays undetermined and keeps an HONEST denominator', () => {
+    const lksg = rows.find((r) => r.law === 'lksg')!;
+    expect(lksg.state).toBe('undetermined');
+    expect(lksg.bindingProvisionEIds).toBeUndefined();
+    expect(lksg.provisionsTyped).toBe(0);
+    // Der Punkt: es GIBT Artikel — wir können nur nichts über sie sagen.
+    // provisionsTotal > 0 bei provisionsTyped === 0 ist genau der Unterschied
+    // zu „geprüft und nichts gefunden".
+    expect(lksg.provisionsTotal).toBeGreaterThan(0);
+  });
+
+  it('an applicable law admits how much of it is untyped — dora has an unteypd article', () => {
+    const dora = rows.find((r) => r.law === 'dora')!;
+    expect(dora.provisionsTotal).toBeGreaterThan(dora.provisionsTyped);
+  });
+});
 
 describe('buildProjectLegalApplicability — Korpus-Ausfall ist ein Zustand, keine leere Liste', () => {
   it('marks the corpus unavailable instead of pretending "nothing applies"', async () => {
