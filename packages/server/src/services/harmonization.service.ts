@@ -108,8 +108,17 @@ export async function buildGroupables(
   return { groupables, stats };
 }
 
+export interface MemberDetail {
+  systemRequirementId: string;
+  requirementId: string | null;
+  title: string | null;
+  linkedElementIds: string[];
+}
+
 export interface ProposeResult {
   grouping: GroupingResult;
+  /** Fuer die Confirm-UI: je Gruppen-Mitglied Titel + bereits verlinkte Elemente. */
+  memberDetails: MemberDetail[];
   stats: EnrichStats & { pairsJudged: number };
 }
 
@@ -128,7 +137,27 @@ export async function proposeSharedMeasures(
     judge: countingJudge,
     maxJudgedPairs: ctx.maxJudgedPairs ?? 50,
   });
-  return { grouping, stats: { ...stats, pairsJudged } };
+
+  // Confirm-UI-Futter: das System schlaegt die GRUPPE vor — welches Element
+  // geteilt wird, waehlt der Mensch aus den BEREITS verlinkten der Mitglieder.
+  const memberIds = grouping.measures.flatMap((m) => m.memberIds);
+  const reqs = memberIds.length
+    ? await ComplianceRequirement.find({
+        projectId,
+        'chain.systemRequirementId': { $in: memberIds.map((id) => new mongoose.Types.ObjectId(id)) },
+      })
+        .select('title linkedElementIds chain.systemRequirementId')
+        .lean()
+    : [];
+  const byId = new Map(reqs.map((r) => [String(r.chain!.systemRequirementId), r]));
+  const memberDetails: MemberDetail[] = memberIds.map((id) => ({
+    systemRequirementId: id,
+    requirementId: byId.has(id) ? String(byId.get(id)!._id) : null,
+    title: byId.get(id)?.title ?? null,
+    linkedElementIds: byId.get(id)?.linkedElementIds ?? [],
+  }));
+
+  return { grouping, memberDetails, stats: { ...stats, pairsJudged } };
 }
 
 /**

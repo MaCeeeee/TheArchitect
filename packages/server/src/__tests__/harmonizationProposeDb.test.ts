@@ -92,6 +92,10 @@ describe('proposeSharedMeasures', () => {
     expect(r.grouping.measures.length).toBeGreaterThanOrEqual(1);
     const allMembers = r.grouping.measures.flatMap((m) => m.memberIds);
     expect(allMembers).toContain(dsgvo);
+
+    // Confirm-UI-Futter: je Mitglied ein Detail-Eintrag (hier ohne
+    // materialisierte Requirements -> requirementId null, Elemente leer).
+    expect(r.memberDetails.map((d) => d.systemRequirementId).sort()).toEqual([...allMembers].sort());
   });
 
   it('exposes the cap — judged pairs never exceed maxJudgedPairs, capping is visible', async () => {
