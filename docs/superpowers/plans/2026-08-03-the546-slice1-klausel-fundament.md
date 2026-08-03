@@ -1,6 +1,6 @@
 # THE-546 Slice 1 — Klausel-Fundament + Verdrängungs-Gate Implementation Plan
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Die zwei gemessen-fundierten Bausteine von UC-REQTRACE-001 produktfähig machen: änderungsstabile Klausel-Identität (REQ-REQTRACE-001.1 / THE-560) und das Verdrängungs-Gate als geteilter Codepfad (REQ-REQTRACE-001.4 / THE-563).
 
@@ -28,7 +28,7 @@
 - Test: `packages/server/src/__tests__/clauseIdentity.test.ts`
 - Modify: `packages/shared/src/obligations/index.ts` (Export ergänzen; falls kein Barrel: `packages/shared/src/index.ts`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 /**
@@ -71,12 +71,12 @@ describe('clauseContentId', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (Mac): `cd packages/server && npx jest src/__tests__/clauseIdentity.test.ts`
 Expected: FAIL — `normalizeClauseText` is not exported.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 ```typescript
 /**
@@ -104,12 +104,12 @@ export function clauseContentId(text: string): string {
 }
 ```
 
-- [ ] **Step 4: Export aus shared, shared bauen, Test grün**
+- [x] **Step 4: Export aus shared, shared bauen, Test grün**
 
 Run (Mac): `cd packages/shared && npm run build && cd ../server && npx jest src/__tests__/clauseIdentity.test.ts`
 Expected: PASS (5 Tests). ⚠️ Erst shared bauen — Lektion `reference_client_tsc_cold_fail`: stale `dist` maskiert Typfehler.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/shared/src packages/server/src/__tests__/clauseIdentity.test.ts
@@ -122,7 +122,7 @@ git commit -m "feat(the-560): clauseIdentity — Content-Hash-Identitaet fuer Kl
 - Modify: `packages/server/src/evals/reqtrace/clauseSegmenter.ts` (Interface `Clause` + `segmentClauses`)
 - Test: `packages/server/src/__tests__/clauseSegmenter.novelle.test.ts` (neu)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 /**
@@ -167,12 +167,12 @@ describe('segmentClauses — contentId überlebt die Novelle (THE-550 gemessen)'
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (Mac): `npx jest src/__tests__/clauseSegmenter.novelle.test.ts`
 Expected: FAIL — `contentId` existiert nicht am `Clause`.
 
-- [ ] **Step 3: Minimal implementation**
+- [x] **Step 3: Minimal implementation**
 
 In `clauseSegmenter.ts`: `Clause` um `contentId: string` erweitern; in `segmentClauses` beim Push `contentId: clauseContentId(sentence)` setzen (Import aus `@thearchitect/shared`). Kommentar an der Id-Zeile:
 
@@ -184,12 +184,12 @@ In `clauseSegmenter.ts`: `Clause` um `contentId: string` erweitern; in `segmentC
 // Absatzgrenze erkannt und bleibt als eigene Klausel unsichtbar.
 ```
 
-- [ ] **Step 4: Alle Reqtrace-Tests grün (Regressionsschutz Lauf 4)**
+- [x] **Step 4: Alle Reqtrace-Tests grün (Regressionsschutz Lauf 4)**
 
 Run (Mac): `npx jest src/__tests__/clauseSegmenter.novelle.test.ts src/__tests__/runReqtraceEval.test.ts src/__tests__/reqtraceLaws.test.ts`
 Expected: PASS, 0 Regressionen (positionale Ids unverändert — Lauf 4 bleibt reproduzierbar).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/server/src
@@ -205,7 +205,7 @@ git commit -m "feat(the-560): Segmenter traegt contentId — Novellen-Experiment
 - Modify: `packages/server/src/evals/reqtrace/measureGrouping.ts` (privates `displacementFor` durch Service-Aufruf ersetzen)
 - Test: `packages/server/src/__tests__/displacementGate.test.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 /**
@@ -245,21 +245,21 @@ describe('evaluateDisplacement', () => {
 
 Hinweis an den Implementierer: exakte Semantik von `addresseeClass`-Matching und Rückgabeform an `measureGrouping.displacementFor` (Zeile ~100) ausrichten — das ist die gemessene, funktionierende Logik; der Service HEBT sie, er erfindet sie nicht neu. Falls `displacementFor` keine addresseeClass prüft, die Ontologie-Kante aber eine trägt: die Kante gewinnt, und der Eval-Test bleibt grün (nachweisen).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run (Mac): `npx jest src/__tests__/displacementGate.test.ts`
 Expected: FAIL — Modul existiert nicht.
 
-- [ ] **Step 3: Implement — Logik aus `measureGrouping.displacementFor` herausheben**
+- [x] **Step 3: Implement — Logik aus `measureGrouping.displacementFor` herausheben**
 
 Service liest `NORM_ONTOLOGY.displacements` (KEINE Kopie der Kante im Code — Daten bleiben Daten). Rückgabe `{ displaced: 'a' | 'b', edgeId, citations, scope } | null`. Dann `measureGrouping.ts` auf den Service umstellen (Import, private Funktion löschen).
 
-- [ ] **Step 4: Beide Testfelder grün**
+- [x] **Step 4: Beide Testfelder grün**
 
 Run (Mac): `npx jest src/__tests__/displacementGate.test.ts src/__tests__/measureGrouping.test.ts`
 Expected: PASS — der Eval fährt jetzt nachweislich denselben Codepfad wie das Produkt.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/server/src
@@ -268,9 +268,9 @@ git commit -m "feat(the-563): displacementGate.service — Eval-Logik wird der e
 
 ### Task 4: Ontologie-Version + CHANGELOG prüfen (AC 4)
 
-- [ ] **Step 1:** Prüfen, ob `NORM_ONTOLOGY.ontologyVersion` + CHANGELOG die Kante `dora-prevails-nis2` bereits ausweisen (sie stammt aus THE-421/THE-544-Umfeld). Wenn ja: RVTM-Zeile „AC 4 = Bestand, Beleg <Datei:Zeile>". Wenn nein: CHANGELOG-Eintrag ergänzen, patch-Version, Commit `docs(the-563): Ontologie-CHANGELOG — Verdraengungs-Kante ausgewiesen`.
+- [x] **Step 1:** Prüfen, ob `NORM_ONTOLOGY.ontologyVersion` + CHANGELOG die Kante `dora-prevails-nis2` bereits ausweisen (sie stammt aus THE-421/THE-544-Umfeld). Wenn ja: RVTM-Zeile „AC 4 = Bestand, Beleg <Datei:Zeile>". Wenn nein: CHANGELOG-Eintrag ergänzen, patch-Version, Commit `docs(the-563): Ontologie-CHANGELOG — Verdraengungs-Kante ausgewiesen`.
 
 ### Task 5: RVTM vervollständigen + Abschluss
 
-- [ ] **Step 1:** RVTM-Datei: jede AC-Zeile aus THE-560 + THE-563 → Task + Verifikation + Status. Die zwei bewusst offenen Punkte EXPLIZIT: „(1a)"-Folge-Ticket (THE-560 AC 4 = nur Doku-Pflicht, erfüllt) und Vier-Zustände-API (THE-563 AC 3 — Typ-Ebene erfüllt durch Rückgabewert, API-Konsum verschoben auf THE-548-Anschluss, Begründung im Plan-Kopf).
-- [ ] **Step 2:** `cd packages/server && npx tsc --noEmit && npx jest src/__tests__/clauseIdentity.test.ts src/__tests__/clauseSegmenter.novelle.test.ts src/__tests__/displacementGate.test.ts` — alles grün, dann Commit + Push + PR gegen master.
+- [x] **Step 1:** RVTM-Datei: jede AC-Zeile aus THE-560 + THE-563 → Task + Verifikation + Status. Die zwei bewusst offenen Punkte EXPLIZIT: „(1a)"-Folge-Ticket (THE-560 AC 4 = nur Doku-Pflicht, erfüllt) und Vier-Zustände-API (THE-563 AC 3 — Typ-Ebene erfüllt durch Rückgabewert, API-Konsum verschoben auf THE-548-Anschluss, Begründung im Plan-Kopf).
+- [x] **Step 2:** `cd packages/server && npx tsc --noEmit && npx jest src/__tests__/clauseIdentity.test.ts src/__tests__/clauseSegmenter.novelle.test.ts src/__tests__/displacementGate.test.ts` — alles grün, dann Commit + Push + PR gegen master.
