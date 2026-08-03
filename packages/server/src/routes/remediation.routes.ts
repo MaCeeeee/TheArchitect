@@ -277,6 +277,8 @@ router.post(
           connectionsCreated: result.connectionIds.length,
           elementIds: result.elementIds,
           connectionIds: result.connectionIds,
+          // THE-568: die Rueckschreibung ist sichtbar, nie still.
+          linkedRequirements: result.linkedRequirements,
         },
       });
     } catch (err) {

@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { runCypher, runCypherTransaction, serializeNeo4jProperties } from '../config/neo4j';
 import { RemediationProposal } from '../models/RemediationProposal';
+import { linkAppliedElements, unlinkAppliedElements } from './remediationBacklink.service';
 import { LAYER_Y } from '@thearchitect/shared';
 import type { ElementStatus, ProposalElement, ProposalConnection } from '@thearchitect/shared';
 
@@ -27,7 +28,7 @@ export async function applyProposal(
   proposalId: string,
   userId: string,
   selectedTempIds?: string[],
-): Promise<{ elementIds: string[]; connectionIds: string[] }> {
+): Promise<{ elementIds: string[]; connectionIds: string[]; linkedRequirements: number }> {
   // Atomically claim the proposal (concurrency guard)
   const proposal = await RemediationProposal.findOneAndUpdate(
     {
@@ -163,7 +164,19 @@ export async function applyProposal(
   proposal.appliedBy = userId as any;
   await proposal.save();
 
-  return { elementIds: createdElementIds, connectionIds: createdConnectionIds };
+  // THE-568: die Schleife Gap -> Massnahme -> Nachweis schliessen. Mechanisch,
+  // sichtbar in der Rueckgabe — nie still (Details im Backlink-Service).
+  const backlink = await linkAppliedElements({
+    projectId: proposal.projectId,
+    sourceRef: proposal.sourceRef,
+    elementIds: createdElementIds,
+  });
+
+  return {
+    elementIds: createdElementIds,
+    connectionIds: createdConnectionIds,
+    linkedRequirements: backlink.linkedRequirements,
+  };
 }
 
 // ─── Rollback Proposal ───
@@ -176,6 +189,17 @@ export async function rollbackProposal(proposalId: string): Promise<void> {
 
   if (!proposal.appliedElementIds?.length && !proposal.appliedConnectionIds?.length) {
     throw new Error('No applied elements to rollback.');
+  }
+
+  // THE-568: Verknuepfungen ZUERST zuruecknehmen — nach dem Leeren von
+  // appliedElementIds waere nicht mehr bekannt, was zu entfernen ist
+  // (der Plan-Watch-Point). covered wird dabei neu abgeleitet.
+  if (proposal.appliedElementIds?.length) {
+    await unlinkAppliedElements({
+      projectId: proposal.projectId,
+      sourceRef: proposal.sourceRef,
+      elementIds: proposal.appliedElementIds,
+    });
   }
 
   // Delete connections first, then elements (to avoid constraint issues)
