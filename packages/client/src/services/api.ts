@@ -665,6 +665,9 @@ export const requirementsAPI = {
   // Confirm: persist user-curated requirements (createdBy=human, explainability preserved)
   confirm: (projectId: string, body: {
     regulationId: string;
+    /** THE-570: Korpus-Anker — ohne ihn findet der Klausel-Drift die Anforderung nicht. */
+    normId?: string;
+    sectionEId?: string;
     sourceParagraph: string;
     requirements: Array<{
       title: string;
@@ -675,6 +678,7 @@ export const requirementsAPI = {
       extractionRationale?: string;
       mappingConfidence?: number;
       mappingRationale?: string;
+      chain?: RequirementCandidate['chain'];
     }>;
   }) =>
     api.post(`/projects/${projectId}/requirements`, body),

@@ -426,6 +426,12 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       // 2) Persist only the SELECTED requirements
       const confirmRes = await requirementsAPI.confirm(projectId, {
         regulationId,
+        // THE-570: der Anker muss MITGESPEICHERT werden — ohne normId +
+        // sectionEId am Requirement findet der Klausel-Drift es spaeter nicht
+        // und meldet `skipped`. Generieren mit Anker und Speichern ohne waere
+        // eine stille Luecke.
+        ...(normId ? { normId } : {}),
+        ...(sectionEId ? { sectionEId } : {}),
         sourceParagraph: text.trim().slice(0, 5000),
         requirements: chosen.map((r) => ({
           title: r.title.trim(),
