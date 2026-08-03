@@ -317,7 +317,12 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
         const res = await normsAPI.list(projectId);
         const d = res.data as { data?: Array<{ identity: { workId: string }; sections?: Array<{ eId: string; number?: string; heading: string }> }>; available?: typeof d.data };
         const all = [...(d.data ?? []), ...(d.available ?? [])];
-        const norm = all.find((n) => n.identity.workId === version.workId);
+        // Dieselbe workId kann zweimal vorkommen (App-DB-Fallback mit einzelnen
+        // Klauseln vs. vollstaendiges Korpus-Gesetz) — die vollstaendigere
+        // Fassung gewinnt, sonst stehen 1 statt 46 Artikeln zur Wahl.
+        const norm = all
+          .filter((n) => n.identity.workId === version.workId)
+          .sort((a, b) => (b.sections?.length ?? 0) - (a.sections?.length ?? 0))[0];
         setSections((norm?.sections ?? []).map((sec) => ({ eId: sec.eId, number: sec.number ?? '', heading: sec.heading })));
       } catch {
         setSections([]);

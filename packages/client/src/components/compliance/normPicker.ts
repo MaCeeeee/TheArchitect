@@ -48,6 +48,19 @@ export function groupCorpusNorms(norms: PickerNorm[]): NormGroup[] {
     if (n.source !== 'corpus') continue;
     const key = stemOf(n.identity.workId);
     const group = byStem.get(key) ?? { key, label: key.toUpperCase(), versions: [] };
+    // Dieselbe workId kann ZWEIMAL kommen: als Projekt-Norm (die bei einem
+    // Korpus-Miss aus der App-DB stammt und dann nur einzelne eingefuegte
+    // Klauseln traegt) und als vollstaendiges Korpus-Gesetz. Die vollstaendigere
+    // Fassung gewinnt — sonst bietet die Auswahl 1 Artikel statt 46 an
+    // (am 03.08. in der Handprobe genau so passiert).
+    const existing = group.versions.find((v) => v.workId === n.identity.workId);
+    if (existing) {
+      if (n.sectionCount > existing.sectionCount) {
+        existing.sectionCount = n.sectionCount;
+        existing.language = n.identity.expressionLanguage ?? existing.language;
+      }
+      continue;
+    }
     group.versions.push({
       language: n.identity.expressionLanguage ?? 'unknown',
       workId: n.identity.workId,
@@ -56,7 +69,13 @@ export function groupCorpusNorms(norms: PickerNorm[]): NormGroup[] {
     byStem.set(key, group);
   }
   for (const g of byStem.values()) {
-    g.versions.sort((a, b) => a.language.localeCompare(b.language));
+    // Sprache aufsteigend, innerhalb einer Sprache die VOLLSTAENDIGERE zuerst:
+    // dieselbe Sprache kann zweimal vorkommen — als verkuerzte Projekt-Norm
+    // (Korpus-Miss → App-DB-Fallback mit einzelnen Klauseln) und als
+    // vollstaendiges Korpus-Gesetz. Wer generiert, will alle Artikel.
+    g.versions.sort(
+      (a, b) => a.language.localeCompare(b.language) || b.sectionCount - a.sectionCount,
+    );
   }
   return [...byStem.values()].sort((a, b) => a.label.localeCompare(b.label));
 }

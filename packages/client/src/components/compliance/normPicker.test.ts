@@ -53,6 +53,33 @@ describe('groupCorpusNorms — ein Eintrag je Rechtsakt', () => {
   });
 });
 
+describe('Dubletten — dieselbe workId aus zwei Quellen', () => {
+  // In der Praxis liefert die Norm-Liste dieselbe workId zweimal: als
+  // Projekt-Norm (die bei einem Korpus-Miss aus der App-DB kommt und dann nur
+  // die eine eingefuegte Klausel traegt) UND als Korpus-Gesetz mit allen
+  // Artikeln. Am 03.08. zeigte das Dropdown deshalb 1 statt 46 Artikeln.
+  test('keeps the more complete version when the same workId appears twice', () => {
+    const groups = groupCorpusNorms([
+      n('corpus:nis2', 'de', 1), // App-DB-Fallback: nur die eingefuegte Klausel
+      n('corpus:nis2', 'en', 46), // echtes Korpus-Gesetz
+      n('corpus:nis2-de', 'de', 46),
+    ]);
+    const nis2 = groups.find((g) => g.key === 'nis2')!;
+    expect(nis2.versions).toHaveLength(2);
+    expect(nis2.versions.find((v) => v.workId === 'corpus:nis2')!.sectionCount).toBe(46);
+  });
+});
+
+describe('zwei Fassungen DERSELBEN Sprache — die vollstaendigere gewinnt', () => {
+  // Realfall 03.08.: das Projekt referenziert `corpus:nis2`, dessen Sections
+  // bei einem Korpus-Miss aus der App-DB kommen (1 eingefuegte Klausel).
+  // Daneben liegt `corpus:nis2-de` mit allen 46 Artikeln — beide deutsch.
+  test('resolveVersion picks the fuller version when two share a language', () => {
+    const group = groupCorpusNorms([n('corpus:nis2', 'de', 1), n('corpus:nis2-de', 'de', 46)])[0];
+    expect(resolveVersion(group, 'de')!.workId).toBe('corpus:nis2-de');
+  });
+});
+
 describe('resolveVersion — die Sprachwahl ist ehrlich', () => {
   const nis2 = groupCorpusNorms([n('corpus:nis2', 'en'), n('corpus:nis2-de', 'de')])[0];
   const lksg = groupCorpusNorms([n('corpus:lksg', 'de')])[0];
