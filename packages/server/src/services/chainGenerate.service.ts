@@ -24,10 +24,8 @@
  */
 import Anthropic from '@anthropic-ai/sdk';
 import mongoose from 'mongoose';
-import {
-  segmentClauses,
-  type ReqtraceArticle,
-} from '../evals/reqtrace/clauseSegmenter';
+import { segmentClauses } from '../evals/reqtrace/clauseSegmenter';
+import type { ReqtraceArticle } from '../evals/reqtrace/lawsFixture';
 import {
   deriveChain,
   type AskFn,
