@@ -5,7 +5,7 @@
  * Fläche, nicht in einer Fußnote.
  */
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('../../services/api', () => ({
@@ -15,6 +15,8 @@ vi.mock('../../services/api', () => ({
     projectToModel: vi.fn(),
   },
   regulationsAPI: { create: vi.fn() },
+  // THE-570: der Dialog laedt die Korpus-Gesetze beim Oeffnen.
+  normsAPI: { list: vi.fn().mockResolvedValue({ data: { data: [], available: [] } }), getSection: vi.fn() },
 }));
 vi.mock('react-hot-toast', () => ({
   default: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
@@ -150,4 +152,57 @@ test('a chain candidate shows chain provenance instead of misleading 0.00 scores
   await waitFor(() => expect(screen.getByTestId('chain-provenance')).toBeInTheDocument());
   expect(screen.getByTestId('chain-provenance').textContent).toMatch(/Abs\. 2/);
   expect(screen.queryByText(/Extraction/)).not.toBeInTheDocument(); // keine 0.00-Pille bei chain
+});
+
+// ─── THE-570: Korpus-Auswahl statt Kopieren-und-Einfuegen ───────────────
+import { normsAPI } from '../../services/api';
+const normsList = vi.mocked(normsAPI.list);
+const getSection = vi.mocked(normsAPI.getSection);
+
+const corpusNorms = {
+  data: [],
+  available: [
+    { identity: { workId: 'corpus:nis2', expressionLanguage: 'en' }, source: 'corpus', title: 'nis2', sectionCount: 46,
+      sections: [{ eId: 'nis2:art23', number: 'Art. 23', heading: 'Meldepflichten' }] },
+    { identity: { workId: 'corpus:nis2-de', expressionLanguage: 'de' }, source: 'corpus', title: 'nis2-de', sectionCount: 46,
+      sections: [{ eId: 'nis2-de:art23', number: 'Art. 23', heading: 'Berichtspflichten' }] },
+    { identity: { workId: 'corpus:lksg', expressionLanguage: 'de' }, source: 'corpus', title: 'lksg', sectionCount: 24,
+      sections: [{ eId: 'lksg:p6', number: '§ 6', heading: 'Praeventionsmassnahmen' }] },
+  ],
+};
+
+test('THE-570: picking a law from the corpus loads its articles and previews the text read-only', async () => {
+  normsList.mockResolvedValue({ data: corpusNorms } as never);
+  getSection.mockResolvedValue({
+    data: { success: true, data: { eId: 'nis2-de:art23', heading: 'Berichtspflichten', number: 'Art. 23',
+      text: 'Die Einrichtungen uebermitteln binnen 24 Stunden eine Fruehwarnung.', expressionLanguage: 'de' } },
+  } as never);
+
+  render(<RequirementsGeneratorModal isOpen onClose={() => {}} />);
+  const sourceSelect = await screen.findByRole('combobox', { name: /source/i }).catch(() => screen.getAllByRole('combobox')[0]);
+  await waitFor(() => expect(within(sourceSelect as HTMLElement).getByText('NIS2')).toBeInTheDocument());
+
+  fireEvent.change(sourceSelect as HTMLElement, { target: { value: 'nis2' } });
+  await waitFor(() => expect(screen.getByTestId('section-select')).toBeInTheDocument());
+
+  fireEvent.change(screen.getByTestId('section-select'), { target: { value: 'nis2-de:art23' } });
+  await waitFor(() =>
+    expect((screen.getByTestId('regulation-text') as HTMLTextAreaElement).value).toMatch(/Fruehwarnung/),
+  );
+  // Vorschau ist schreibgeschuetzt — der Text kommt aus dem Korpus, nicht aus der Tastatur.
+  expect((screen.getByTestId('regulation-text') as HTMLTextAreaElement).readOnly).toBe(true);
+  // Und der Anker-Hinweis erscheint NICHT, weil es einen Anker gibt.
+  expect(screen.queryByTestId('no-anchor-hint')).not.toBeInTheDocument();
+});
+
+test('THE-570: a law with only one language version says so instead of loading the wrong one', async () => {
+  normsList.mockResolvedValue({ data: corpusNorms } as never);
+  render(<RequirementsGeneratorModal isOpen onClose={() => {}} />);
+  const sourceSelect = screen.getAllByRole('combobox')[0];
+  await waitFor(() => expect(within(sourceSelect).getByText('LKSG')).toBeInTheDocument());
+
+  // Dialog steht auf Deutsch, LkSG existiert nur deutsch → kein Hinweis noetig.
+  fireEvent.change(sourceSelect, { target: { value: 'lksg' } });
+  await waitFor(() => expect(screen.getByTestId('section-select')).toBeInTheDocument());
+  expect(screen.queryByTestId('lang-hint')).not.toBeInTheDocument();
 });

@@ -251,6 +251,31 @@ router.get('/:projectId/norms/discover/findings', async (req, res) => {
   }
 });
 
+// THE-570: EINE Section mit Volltext — fuer die Vorschau im Requirements-
+// Generator, bevor daraus Anforderungen abgeleitet werden. Die Liste liefert
+// Sections bewusst OHNE `text` (Payload), hier ist genau einer gefragt.
+router.get('/:projectId/norms/:workId/sections/:eId', async (req, res) => {
+  try {
+    const norm = await getNorm(req.params.projectId, req.params.workId);
+    if (!norm) return res.status(404).json({ success: false, error: 'norm not found' });
+    const section = norm.sections.find(s => s.eId === req.params.eId);
+    if (!section) return res.status(404).json({ success: false, error: 'section not found' });
+    return res.json({
+      success: true,
+      data: {
+        eId: section.eId,
+        heading: section.heading,
+        number: section.number ?? '',
+        text: section.text ?? '',
+        expressionLanguage: norm.identity.expressionLanguage,
+      },
+    });
+  } catch (err) {
+    log.error({ err, workId: req.params.workId, eId: req.params.eId }, '[norms.section] failed');
+    return res.status(500).json({ success: false, error: 'failed to load section' });
+  }
+});
+
 router.get('/:projectId/norms/:workId/mappings', async (req, res) => {
   try {
     const mappings = await getNormMappings(req.params.projectId, req.params.workId);
