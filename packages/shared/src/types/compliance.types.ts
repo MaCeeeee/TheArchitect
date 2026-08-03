@@ -212,7 +212,21 @@ export type ComplianceRequirementStatus =
   | 'done'
   | 'waived';
 
-export type ComplianceRequirementProvenance = 'llm' | 'human';
+export type ComplianceRequirementProvenance = 'llm' | 'human' | 'chain';
+
+/**
+ * Rueckverweise der ISO-Kette (ADR-0008 Phase 1): ein via Kette erzeugtes
+ * Requirement kennt seine Klausel (aenderungsstabile contentId, THE-560),
+ * seine Stakeholder-Anforderung(en) und seine Systemanforderung. Fehlt das
+ * Feld, stammt das Dokument aus dem Alt-Pfad (REQGEN) — Abwesenheit ist der
+ * Legacy-Zustand, kein leeres Objekt.
+ */
+export interface ComplianceRequirementChainRefs {
+  clauseContentId: string;
+  clausePath?: string;
+  stakeholderRequirementIds: string[];
+  systemRequirementId: string;
+}
 
 // ─── THE-557 (UC-ATTEST-001): Drei-Tore-Erfüllungsgrad ────────────────────
 /** Ein Tor des Erfüllungsgrads. */
@@ -309,6 +323,7 @@ export interface ComplianceRequirementDTO {
   assigneeId?: string;
   dueDate?: string;              // ISO date
   createdBy: ComplianceRequirementProvenance;
+  chain?: ComplianceRequirementChainRefs;
   // ─── Explainability layer (audit-grade, UC-REQGEN-001 Explainability) ───
   // Extraction = "is this a genuine obligation from the text?" (anti-hallucination)
   extractionConfidence?: number;  // ∈ [0,1] — LLM certainty this is a real duty, only when createdBy='llm'

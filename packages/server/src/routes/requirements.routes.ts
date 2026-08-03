@@ -27,6 +27,8 @@ import { buildAuditBundle, renderAuditBundlePdf, type AuditBundleRequirementInpu
 import { Project } from '../models/Project';
 import { isFreshEvidence } from '../services/evidence.service';
 import { Regulation } from '../models/Regulation';
+import { chainPreview, persistChainItem } from '../services/chainGenerate.service';
+import { violatesImplementationFreedom } from '@thearchitect/shared';
 import {
   generateRequirementsFromText,
   RequirementGeneratorError,
@@ -54,6 +56,9 @@ const GenerateBodySchema = z.object({
   paragraphNumber: z.string().min(1).max(100).default('preview'),
   language: z.enum(['de', 'en']).default('de'),
   jurisdiction: z.string().min(1).max(50).default('EU'),
+  // ADR-0008 Phase 1: Engine-Weiche. Ohne Angabe entscheidet REQUIREMENTS_ENGINE
+  // (default 'chain'); 'reqgen' ist der Feature-Flag-Rollback.
+  engine: z.enum(['chain', 'reqgen']).optional(),
   regulationId: z.string().optional(),  // wenn vorhanden: persist sofort
   // THE-390 P3: kanonische Norm-Referenz (`corpus:<source>` | `upload:<standardId>`).
   normId: z.string().optional(),
@@ -83,6 +88,42 @@ const ConfirmBodySchema = z.object({
         extractionRationale: z.string().max(1000).optional(),
         mappingConfidence: z.number().min(0).max(1).optional(),
         mappingRationale: z.string().max(1000).optional(),
+        // ADR-0008 Phase 1: Ketten-Material aus dem Preview. Optional — Items
+        // ohne `chain` laufen exakt wie bisher.
+        chain: z
+          .object({
+            regulationKey: z.string().min(1).max(200),
+            clauseContentId: z.string().regex(/^[0-9a-f]{16}$/),
+            clausePath: z.string().max(200).optional(),
+            clauseText: z.string().min(1).max(10_000),
+            stakeholderRequirement: z.object({
+              text: z.string().min(5).max(2000),
+              slots: z.object({
+                action: z.string().max(500),
+                recipient: z.string().max(500),
+                modality: z.string().max(100),
+                condition: z.string().max(500),
+              }),
+              kind: z.enum(['requirement', 'constraint']),
+              deadline: z
+                .object({
+                  dauer: z.object({ wert: z.number(), einheit: z.enum(['h', 'd', 'mon']) }),
+                  bezugspunkt: z.enum(['kenntnis', 'einstufung', 'vorherige-meldung', 'ereignis']),
+                  stufe: z.enum(['erst', 'zwischen', 'abschluss']).nullable(),
+                  quelle: z.string().max(1000),
+                })
+                .nullable(),
+            }),
+            systemRequirement: z.object({
+              text: z.string().min(5).max(2000),
+              schutzgut: z.string().max(500),
+              verpflichteter: z.string().max(500),
+              ausloeser: z.string().max(500),
+              nachweis: z.string().max(500),
+              implementationFree: z.boolean(),
+            }),
+          })
+          .optional(),
       }),
     )
     .min(1)
@@ -179,6 +220,41 @@ router.post(
       return res
         .status(400)
         .json({ success: false, error: 'text or (normId + sectionEId) required' });
+    }
+
+    // ── ADR-0008 Phase 1: Engine-Weiche ──────────────────────────────
+    // 'chain' ist der Default; REQUIREMENTS_ENGINE=reqgen (oder body.engine)
+    // ist der Rollback. Der Alt-Pfad darunter bleibt unveraendert.
+    const engine =
+      parsed.data.engine ?? (process.env.REQUIREMENTS_ENGINE === 'reqgen' ? 'reqgen' : 'chain');
+    if (engine === 'chain') {
+      // regulationKey: fuer Corpus-Normen IST die Section-Id der Key (siehe
+      // oben); sonst mechanischer Slug aus source+paragraph.
+      const regulationKey =
+        parsed.data.sectionEId ??
+        `${source}:${paragraphNumber}`.toLowerCase().replace(/\s+/g, '-');
+      try {
+        const result = await chainPreview({ text, source, paragraphNumber, regulationKey });
+        return res.json({
+          success: true,
+          data: {
+            engine: 'chain',
+            regulation: {
+              source,
+              paragraphNumber,
+              language: parsed.data.language,
+              normId: parsed.data.normId,
+              sectionEId: parsed.data.sectionEId,
+            },
+            requirements: result.candidates,
+            // Die Quoten sind Teil der Antwort, nicht des Logs (THE-561 AC 1+2).
+            chainStats: result.stats,
+          },
+        });
+      } catch (err) {
+        log.error({ err, projectId }, '[requirements.generate] chain engine failed');
+        return res.status(502).json({ success: false, error: 'chain generation failed' });
+      }
     }
 
     const candidateElements = await loadProjectCandidateElements(projectId).catch(() => []);
@@ -283,6 +359,28 @@ router.post(
       projectId,
     });
 
+    // ── ADR-0008 Phase 1: Ketten-Items ──────────────────────────────
+    // Serverseitiges Gate (nie dem Client trauen): eine implementierungs-
+    // gebundene Beschreibung wird abgelehnt, nicht gespeichert (THE-562 AC 1).
+    for (const [i, r] of parsed.data.requirements.entries()) {
+      if (r.chain && violatesImplementationFreedom(r.description)) {
+        return res.status(400).json({
+          success: false,
+          error: `requirement ${i} is implementation-bound — a system requirement names a capability, not a product`,
+        });
+      }
+    }
+    // Kette persistieren (StR -> SysReq) und Refs je Titel merken. Grenze
+    // (dokumentiert): ein Re-Confirm desselben Titels erzeugt eine NEUE
+    // Ketten-Ableitung; die alte bleibt als auffindbare Waise liegen
+    // (WORM-Geist — Ableitungen werden nicht umgeschrieben).
+    const chainRefsByTitle = new Map<string, Awaited<ReturnType<typeof persistChainItem>>>();
+    for (const r of parsed.data.requirements) {
+      if (r.chain) {
+        chainRefsByTitle.set(r.title, await persistChainItem(projectObjectId, r.chain));
+      }
+    }
+
     const ops = parsed.data.requirements.map(r => ({
       updateOne: {
         filter: {
@@ -311,6 +409,9 @@ router.post(
             ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
             ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
             ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
+            // ADR-0008 Phase 1: Rueckverweise der Kette — nur wenn das Item
+            // aus der Chain-Engine stammt; Alt-Items bleiben byte-gleich.
+            ...(chainRefsByTitle.has(r.title) && { chain: chainRefsByTitle.get(r.title) }),
           },
         },
         upsert: true,

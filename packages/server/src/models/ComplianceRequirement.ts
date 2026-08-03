@@ -45,6 +45,13 @@ export interface IComplianceRequirement extends Document {
   assigneeId?: mongoose.Types.ObjectId;
   dueDate?: Date;
   createdBy: ComplianceRequirementProvenance;
+  /** ADR-0008 Phase 1 — nur bei createdBy='chain'; Abwesenheit = Alt-Pfad. */
+  chain?: {
+    clauseContentId: string;
+    clausePath?: string;
+    stakeholderRequirementIds: mongoose.Types.ObjectId[];
+    systemRequirementId: mongoose.Types.ObjectId;
+  };
   // Explainability layer (audit-grade, UC-REQGEN-001)
   extractionConfidence?: number;  // "genuine obligation?" — required when createdBy='llm'
   extractionRationale?: string;   // why genuine + why this score
@@ -59,7 +66,7 @@ export interface IComplianceRequirement extends Document {
 
 const PRIORITY_ENUM: ComplianceRequirementPriority[] = ['must', 'should', 'may'];
 const STATUS_ENUM: ComplianceRequirementStatus[] = ['open', 'in_progress', 'done', 'waived'];
-const PROVENANCE_ENUM: ComplianceRequirementProvenance[] = ['llm', 'human'];
+const PROVENANCE_ENUM: ComplianceRequirementProvenance[] = ['llm', 'human', 'chain'];
 
 const complianceRequirementSchema = new Schema<IComplianceRequirement>(
   {
@@ -119,6 +126,26 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
       type: String,
       enum: PROVENANCE_ENUM,
       required: true,
+    },
+    // ADR-0008 Phase 1: Rueckverweise der ISO-Kette. ADDITIV, default
+    // undefined — ein Bestands-Dokument ohne `chain` ist der Legacy-Zustand
+    // (Muster gates/THE-557: Abwesenheit ist Information).
+    chain: {
+      type: {
+        clauseContentId: { type: String, required: true, match: /^[0-9a-f]{16}$/ },
+        clausePath: { type: String },
+        stakeholderRequirementIds: {
+          type: [{ type: Schema.Types.ObjectId, ref: 'StakeholderRequirement' }],
+          required: true,
+          validate: {
+            validator: (v: unknown[]) => Array.isArray(v) && v.length >= 1,
+            message: 'chain refs need at least one stakeholder requirement',
+          },
+        },
+        systemRequirementId: { type: Schema.Types.ObjectId, ref: 'ChainSystemRequirement', required: true },
+      },
+      default: undefined,
+      _id: false,
     },
     // ─── Explainability layer (audit-grade) ───
     // extractionConfidence Pflicht wenn createdBy='llm'. Function-syntax weil
