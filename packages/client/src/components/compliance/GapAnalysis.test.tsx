@@ -156,3 +156,83 @@ describe('GapAnalysis view', () => {
     expect(useComplianceStore.getState().error).toBe('boom');
   });
 });
+
+// ─── THE-574 (REQ-574.2): die Uhr steht am Eintrag ───────────────────────
+//
+// Bei einer Meldepflicht IST die Frist das Handlungsrelevante. Sie war
+// erhoben und strukturiert — kam in der Lücken-Ansicht aber nur noch als
+// Fließtext in der Beschreibung an (gemessen THE-571).
+describe('THE-574 — Frist am Lücken-Eintrag', () => {
+  test('shows duration AND reference point together — a duration alone is no urgency', async () => {
+    gapsMock.mockResolvedValue({
+      data: { success: true, data: {
+        items: [gapItem({
+          _id: 'g1', title: 'Frühwarnung übermitteln', priority: 'must', status: 'open',
+          deadline: { dauer: { wert: 24, einheit: 'h' }, bezugspunkt: 'kenntnis', stufe: 'erst', quelle: 'binnen 24 Stunden nach Kenntnisnahme' },
+        })],
+        summary: summary({ total: 1, open: 1, openMust: 1 }),
+      } },
+    } as never);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Frühwarnung übermitteln')).toBeInTheDocument());
+    const badge = screen.getByTestId('gap-deadline');
+    // „24 h" allein wäre keine Dringlichkeit — der Bezugspunkt gehört dazu.
+    expect(badge.textContent).toMatch(/24\s*h/);
+    expect(badge.textContent).toMatch(/kenntnis/i);
+  });
+
+  test('the source sentence stays reachable — a deadline without it is unverifiable', async () => {
+    gapsMock.mockResolvedValue({
+      data: { success: true, data: {
+        items: [gapItem({
+          _id: 'g1', title: 'Abschlussbericht', priority: 'must', status: 'open',
+          deadline: { dauer: { wert: 1, einheit: 'mon' }, bezugspunkt: 'vorherige-meldung', stufe: 'abschluss', quelle: 'spätestens einen Monat nach Übermittlung der Meldung' },
+        })],
+        summary: summary({ total: 1, open: 1, openMust: 1 }),
+      } },
+    } as never);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByTestId('gap-deadline')).toBeInTheDocument());
+    expect(screen.getByTestId('gap-deadline').getAttribute('title')).toMatch(/einen Monat nach Übermittlung/);
+  });
+
+  test('NEGATIV-KONTROLLE: an item without a deadline shows NO badge — not "—", not "unbefristet"', async () => {
+    // Fehlen ist kein Ergebnis. Ein Platzhalter läse sich wie eine Aussage.
+    gapsMock.mockResolvedValue({
+      data: { success: true, data: {
+        items: [gapItem({ _id: 'g1', title: 'Ohne Frist', priority: 'must', status: 'open' })],
+        summary: summary({ total: 1, open: 1, openMust: 1 }),
+      } },
+    } as never);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Ohne Frist')).toBeInTheDocument());
+    expect(screen.queryByTestId('gap-deadline')).not.toBeInTheDocument();
+  });
+
+  test('does NOT reorder across reference points — that would assert an order that does not exist', async () => {
+    // THE-549 hält ausdrücklich fest: „4 h ab Einstufung" und „72 h ab
+    // Kenntnis" stehen auf VERSCHIEDENEN Uhren. Eine Sortierung nach
+    // Stundenwert quer darüber wäre eine Behauptung, keine Ordnung.
+    // Die Reihenfolge bleibt Priorität → Status, wie bisher.
+    gapsMock.mockResolvedValue({
+      data: { success: true, data: {
+        items: [
+          gapItem({ _id: 'g1', title: 'Lang aber MUST', priority: 'must', status: 'open',
+            deadline: { dauer: { wert: 1, einheit: 'mon' }, bezugspunkt: 'vorherige-meldung', stufe: 'abschluss', quelle: 'ein Monat' } }),
+          gapItem({ _id: 'g2', title: 'Kurz aber SHOULD', priority: 'should', status: 'open',
+            deadline: { dauer: { wert: 4, einheit: 'h' }, bezugspunkt: 'einstufung', stufe: 'erst', quelle: 'vier Stunden' } }),
+        ],
+        summary: summary({ total: 2, open: 2, openMust: 1 }),
+      } },
+    } as never);
+
+    renderPage();
+    await waitFor(() => expect(screen.getByText('Lang aber MUST')).toBeInTheDocument());
+    const titles = screen.getAllByTestId('gap-title').map((n) => n.textContent);
+    // MUST bleibt vor SHOULD — die 4-Stunden-Frist zieht NICHT nach oben.
+    expect(titles).toEqual(['Lang aber MUST', 'Kurz aber SHOULD']);
+  });
+});

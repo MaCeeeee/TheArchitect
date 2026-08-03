@@ -204,6 +204,14 @@ async function main(): Promise<void> {
   for (const f of ['deadline', 'gates', 'chain'] as const) {
     console.log(`  trägt „${f}": ${f in first ? 'ja' : 'NEIN'}`);
   }
+  // THE-574: wie viele Einträge tragen die Uhr wirklich — und welche?
+  const gapItems = (gaps as unknown as { items: Array<Record<string, unknown>> }).items;
+  const gapsWithDeadline = gapItems.filter((i) => i.deadline);
+  console.log(`  Einträge MIT Frist: ${gapsWithDeadline.length} von ${gapItems.length}`);
+  for (const i of gapsWithDeadline.slice(0, 5)) {
+    const d = i.deadline as Record<string, Record<string, unknown>>;
+    console.log(`     ${String(i.title).slice(0, 44).padEnd(46)} ${d.dauer.wert}${d.dauer.einheit} ab ${d.bezugspunkt} · ${d.stufe ?? '—'}`);
+  }
   const strs = await StakeholderRequirement.find({ projectId }).lean();
   const withDeadline = strs.filter((s) => (s as Record<string, unknown>).deadline != null);
   console.log(`Stakeholder-Anforderungen mit Frist: ${withDeadline.length} von ${strs.length}`);

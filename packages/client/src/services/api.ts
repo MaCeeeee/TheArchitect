@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../stores/authStore';
-import type { PolicyDraft, ContextTraceRecord } from '@thearchitect/shared';
+import type { PolicyDraft, ContextTraceRecord, Deadline } from '@thearchitect/shared';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -770,6 +770,11 @@ export interface GapItem {
   ageDays: number;
   createdBy: string;
   createdAt: string;
+  /**
+   * Die Frist der Klausel (THE-574). FEHLT, wenn keine erhoben wurde —
+   * niemals „unbefristet". Fehlen ist kein Ergebnis.
+   */
+  deadline?: Deadline;
 }
 
 export interface RegulationGapSummary {

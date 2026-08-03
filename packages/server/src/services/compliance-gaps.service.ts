@@ -17,9 +17,10 @@
  * outstanding work.
  */
 import mongoose from 'mongoose';
-import { buildRegulationKey } from '@thearchitect/shared';
+import { buildRegulationKey, type Deadline } from '@thearchitect/shared';
 import type { ConsumedRef } from '@thearchitect/shared';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
+import { StakeholderRequirement } from '../models/StakeholderRequirement';
 import { Regulation } from '../models/Regulation';
 import { getPipelineNorm } from './norm.service';
 import { recordContextTrace } from './contextTrace.service';
@@ -43,6 +44,18 @@ export interface GapItem {
   ageDays: number;
   createdBy: string;
   createdAt: Date;
+  /**
+   * Die Frist der Klausel, an der diese Anforderung hängt (THE-574).
+   *
+   * FEHLT, wenn keine erhoben wurde — nie als „unbefristet" oder „—".
+   * Fehlen ist kein Ergebnis: eine Anforderung ohne Fristangabe bedeutet
+   * nicht, dass sie keine hat.
+   *
+   * Warum strukturiert und nicht als Text: Bei einer Meldepflicht IST die Uhr
+   * das Handlungsrelevante. Als Fließtext in der Beschreibung ist sie weder
+   * auswertbar noch verlässlich sichtbar (gemessen THE-571).
+   */
+  deadline?: Deadline;
 }
 
 export interface RegulationGapSummary {
@@ -160,6 +173,24 @@ export async function computeComplianceGaps(
     if (norm) normTitleById.set(normId, norm.name);
   }
 
+  // THE-574: Die Frist hängt an der Klausel (StakeholderRequirement), nicht an
+  // der Anforderung. EIN Read für alle Einträge — je Eintrag wäre N+1 auf
+  // einer Liste, die im Alltag lang wird.
+  const strIds = requirements
+    .filter((r) => r.chain)
+    .map((r) => r.chain!.stakeholderRequirementIds[0])
+    .filter(Boolean);
+  const deadlineByStrId = new Map<string, Deadline>();
+  if (strIds.length > 0) {
+    const strs = await StakeholderRequirement.find({ _id: { $in: strIds } })
+      .select('deadline')
+      .lean();
+    for (const s of strs) {
+      const d = (s as { deadline?: Deadline }).deadline;
+      if (d) deadlineByStrId.set(String(s._id), d);
+    }
+  }
+
   const now = Date.now();
   const items: GapItem[] = requirements.map((r) => ({
     _id: String(r._id),
@@ -175,6 +206,12 @@ export async function computeComplianceGaps(
     ageDays: r.createdAt ? Math.max(0, Math.floor((now - new Date(r.createdAt).getTime()) / MS_PER_DAY)) : 0,
     createdBy: r.createdBy,
     createdAt: r.createdAt,
+    // Spread statt `deadline: … ?? undefined`: Ohne Frist soll das Feld GAR
+    // NICHT existieren, nicht als `undefined` dastehen. Ein Platzhalter läse
+    // sich wie eine erhobene Aussage — Fehlen ist kein Ergebnis.
+    ...(r.chain && deadlineByStrId.has(String(r.chain.stakeholderRequirementIds[0]))
+      ? { deadline: deadlineByStrId.get(String(r.chain.stakeholderRequirementIds[0]))! }
+      : {}),
   }));
 
   // ── Global counters ──
