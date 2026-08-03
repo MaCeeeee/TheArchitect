@@ -34,6 +34,7 @@ import {
   HarmonizationError,
 } from '../services/harmonization.service';
 import { forwardTrace, backwardTrace } from '../services/traceability.service';
+import { chainDriftCheck } from '../services/chainDrift.service';
 import { violatesImplementationFreedom } from '@thearchitect/shared';
 import {
   generateRequirementsFromText,
@@ -197,6 +198,39 @@ router.get(
     const elementId = String(req.params.elementId);
     if (!elementId) return res.status(400).json({ success: false, error: 'elementId required' });
     res.json({ success: true, data: await backwardTrace(projectId, elementId) });
+  },
+);
+
+// EXPLIZITER Klausel-Drift-Pass (THE-565 AC 3): Re-Segmentierung + contentId-
+// Diff — nur verschwundene Klauseln stalen (THE-550 als Produktverhalten).
+// Cron-Anschluss ist benannte Folgearbeit.
+router.post(
+  '/:projectId/requirements/trace/drift-check',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    try {
+      const report = await chainDriftCheck(projectId);
+      if (req.user) {
+        await createAuditEntry({
+          userId: req.user._id.toString(),
+          projectId,
+          action: 'requirements.trace.drift-check',
+          entityType: 'ComplianceRequirement',
+          ip: req.ip,
+          userAgent: req.get('user-agent') ?? undefined,
+          riskLevel: 'medium',
+          after: { ...report },
+        });
+      }
+      res.json({ success: true, data: report });
+    } catch (err) {
+      log.error({ err, projectId }, '[requirements.trace] drift-check failed');
+      res.status(500).json({ success: false, error: 'drift check failed' });
+    }
   },
 );
 
