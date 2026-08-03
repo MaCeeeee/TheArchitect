@@ -18,6 +18,11 @@ vi.mock('../../services/api', () => ({
     byElement: vi.fn(),
     update: vi.fn(),
   },
+  // THE-565: Anreicherung ist optional — Default-Mock lehnt ab, damit die
+  // Bestandstests das heutige Verhalten pruefen (Fallback-Garantie).
+  traceAPI: {
+    byElement: vi.fn().mockRejectedValue(new Error('trace unavailable')),
+  },
 }));
 vi.mock('react-hot-toast', () => ({ default: { error: vi.fn(), success: vi.fn() } }));
 
@@ -103,4 +108,63 @@ describe('RequirementsForElementSection', () => {
       expect(update).toHaveBeenCalledWith('p1', 'req-9', { status: 'in_progress' }),
     );
   });
+});
+
+// ─── THE-565: Rueckwaerts-Anreicherung (Frist, Rechtsgrundlage, Impact) ───
+import { traceAPI } from '../../services/api';
+const traceByElement = vi.mocked(traceAPI.byElement);
+
+test('THE-565: shows retirement warning and per-requirement trace chips when the trace route answers', async () => {
+  byElement.mockResolvedValue({
+    data: { success: true, data: [req({ _id: 'r1', title: 'Frühwarnung senden', priority: 'must', status: 'open' })] },
+  } as never);
+  traceByElement.mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        elementId: 'el-1',
+        requirements: [
+          {
+            id: 'r1',
+            title: 'Frühwarnung senden',
+            priority: 'must',
+            legalBasis: 'nis2:art23',
+            deadline: { dauer: { wert: 72, einheit: 'h' }, bezugspunkt: 'kenntnis', stufe: null, quelle: 'binnen 72 Stunden' },
+            soleCoverage: true,
+          },
+        ],
+        impact: { wouldLoseCoverage: 1, laws: ['nis2'] },
+      },
+    },
+  } as never);
+
+  render(<RequirementsForElementSection projectId="p1" elementId="el-1" />);
+  await waitFor(() => expect(screen.getByTestId('retirement-warning')).toBeInTheDocument());
+  expect(screen.getByTestId('retirement-warning').textContent).toMatch(/breaks 1 law \(NIS2\)/);
+  const chips = screen.getByTestId('trace-chips');
+  expect(chips.textContent).toMatch(/nis2:art23/);
+  expect(chips.textContent).toMatch(/72h from kenntnis/);
+  expect(chips.textContent).toMatch(/sole coverage/);
+});
+
+test('THE-565: no warning when no requirement depends solely on this element', async () => {
+  byElement.mockResolvedValue({
+    data: { success: true, data: [req({ _id: 'r1', title: 'Meldung übermitteln', priority: 'must', status: 'open' })] },
+  } as never);
+  traceByElement.mockResolvedValue({
+    data: {
+      success: true,
+      data: {
+        elementId: 'el-1',
+        requirements: [
+          { id: 'r1', title: 'Meldung übermitteln', priority: 'must', legalBasis: 'dsgvo:art33', deadline: null, soleCoverage: false },
+        ],
+        impact: { wouldLoseCoverage: 0, laws: [] },
+      },
+    },
+  } as never);
+
+  render(<RequirementsForElementSection projectId="p1" elementId="el-1" />);
+  await waitFor(() => expect(screen.getByTestId('trace-chips')).toBeInTheDocument());
+  expect(screen.queryByTestId('retirement-warning')).not.toBeInTheDocument();
 });

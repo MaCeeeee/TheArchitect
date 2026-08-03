@@ -45,6 +45,12 @@ export interface IComplianceRequirement extends Document {
   assigneeId?: mongoose.Types.ObjectId;
   dueDate?: Date;
   createdBy: ComplianceRequirementProvenance;
+  /**
+   * THE-565: true, wenn die Klausel dieses Ketten-Requirements im aktuellen
+   * Normtext nicht mehr vorkommt (contentId-Diff des chainDrift-Passes) —
+   * gleiche Semantik wie am ComplianceMapping (THE-368).
+   */
+  regulationVersionMismatch?: boolean;
   /** ADR-0008 Phase 1 — nur bei createdBy='chain'; Abwesenheit = Alt-Pfad. */
   chain?: {
     clauseContentId: string;
@@ -127,6 +133,8 @@ const complianceRequirementSchema = new Schema<IComplianceRequirement>(
       enum: PROVENANCE_ENUM,
       required: true,
     },
+    // THE-565: Klausel-Drift-Marker (contentId-Diff), Muster THE-368.
+    regulationVersionMismatch: { type: Boolean },
     // ADR-0008 Phase 1: Rueckverweise der ISO-Kette. ADDITIV, default
     // undefined — ein Bestands-Dokument ohne `chain` ist der Legacy-Zustand
     // (Muster gates/THE-557: Abwesenheit ist Information).
