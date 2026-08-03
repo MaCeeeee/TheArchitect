@@ -413,14 +413,25 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
 
     setIsPersisting(true);
     try {
+      // Der Gruppenschlüssel der Korpus-Auswahl ist eine ANZEIGE-Konstruktion:
+      // der gemeinsame Wortstamm der Sprachfassungen („ai-act"). Als NORMQUELLE
+      // gibt es ihn nicht — nur `ai-act-de` und `ai-act-en`. Die Quelle steht
+      // in der aufgelösten workId; ohne diese Ableitung antwortet der Server
+      // 400 „source must be one of …" (Produktionsfehler 03.08.).
+      //
+      // Warum es bei NIS2 gutging: dessen Stamm `nis2` IST zufällig eine
+      // gültige Quelle. Der Fehler war unsichtbar, bis ein Gesetz gespeichert
+      // wurde, das in beiden Sprachfassungen vorliegt.
+      const normSource = normId ? normId.replace(/^corpus:/, '') : source;
+
       // 1) Erzeuge die Regulation in DB (sofern noch nicht persistiert)
       const regRes = await regulationsAPI.create(projectId, {
-        source,
+        source: normSource,
         paragraphNumber: paragraphNumber.trim() || 'live-paste',
-        title: `${source.toUpperCase()} ${paragraphNumber.trim() || 'Live'}`,
+        title: `${normSource.toUpperCase()} ${paragraphNumber.trim() || 'Live'}`,
         fullText: text.trim(),
         language,
-        jurisdiction: jurisdiction.trim() || (source === 'lksg' ? 'DE' : 'EU'),
+        jurisdiction: jurisdiction.trim() || (normSource === 'lksg' ? 'DE' : 'EU'),
         sourceUrl: 'user-pasted',
       });
       const regulationId = regRes.data?.data?._id;
@@ -456,7 +467,7 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
 
       const persisted = (confirmRes.data?.data ?? []) as Array<{ _id: string }>;
       toast.success(
-        `✓ ${chosen.length} requirement${chosen.length === 1 ? '' : 's'} saved to ${source.toUpperCase()} ${paragraphNumber || ''}`,
+        `✓ ${chosen.length} requirement${chosen.length === 1 ? '' : 's'} saved to ${normSource.toUpperCase()} ${paragraphNumber || ''}`,
       );
       // Move to the post-save state instead of closing → offer projection into the model
       setSavedCount(chosen.length);
