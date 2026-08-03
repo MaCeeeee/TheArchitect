@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { requirementsAPI, type RequirementDoc } from '../../services/api';
+import RequirementGatesBadge from './RequirementGatesBadge';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -117,6 +118,20 @@ export function RequirementsForElementSection({
     [projectId],
   );
 
+  // THE-557: Notar-Akt — optimistisches Update, Server ist die Wahrheit.
+  const setGate = useCallback(
+    async (id: string, gate: 'enforced' | 'attested', state: 'yes' | 'no', reason: string) => {
+      try {
+        const { data } = await requirementsAPI.setGate(projectId, id, { gate, state, reason });
+        setRequirements((prev) => prev?.map((r) => (r._id === id ? { ...r, gates: data.data?.gates ?? r.gates } : r)) ?? null);
+        toast.success(`${gate} recorded`);
+      } catch {
+        toast.error('Failed to set gate — a reason is required');
+      }
+    },
+    [projectId],
+  );
+
   const sorted = useMemo(
     () => (requirements ? sortRequirementsForDisplay(requirements) : null),
     [requirements],
@@ -216,6 +231,11 @@ export function RequirementsForElementSection({
                       <Sparkles size={8} /> AI
                     </span>
                   )}
+                  {/* THE-557: Drei-Tore-Tripel — neben dem Status, nicht statt seiner */}
+                  <RequirementGatesBadge
+                    gates={req.gates}
+                    onSet={(gate, state, reason) => void setGate(req._id, gate, state, reason)}
+                  />
                 </div>
               </div>
             );

@@ -530,6 +530,12 @@ export interface RequirementDoc extends RequirementCandidate {
   regulationId: string;
   sourceParagraph: string;
   status: 'open' | 'in_progress' | 'done' | 'waived';
+  /** THE-557: Drei-Tore-Tripel — Abwesenheit heißt „nie bewertet". */
+  gates?: {
+    covered: { state: 'unknown' | 'no' | 'yes'; setBy?: string; setAt?: string; reason?: string };
+    enforced: { state: 'unknown' | 'no' | 'yes'; setBy?: string; setAt?: string; reason?: string };
+    attested: { state: 'unknown' | 'no' | 'yes'; setBy?: string; setAt?: string; reason?: string };
+  };
   createdBy: 'llm' | 'human';
   assigneeId?: string;
   dueDate?: string;
@@ -593,6 +599,10 @@ export const requirementsAPI = {
     linkedElementIds: string[];
   }>) =>
     api.patch(`/projects/${projectId}/requirements/${id}`, body),
+
+  // THE-557: Notar-Akt — nur enforced/attested, Begründung Pflicht.
+  setGate: (projectId: string, id: string, body: { gate: 'enforced' | 'attested'; state: 'yes' | 'no'; reason: string }) =>
+    api.post(`/projects/${projectId}/requirements/${id}/gates`, body),
 
   delete: (projectId: string, id: string) =>
     api.delete(`/projects/${projectId}/requirements/${id}`),

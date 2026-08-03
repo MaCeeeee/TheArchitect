@@ -21,6 +21,7 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
+import { emptyGates, deriveCovered, applyHumanGate } from '../services/requirementGates.service';
 import { Regulation } from '../models/Regulation';
 import {
   generateRequirementsFromText,
@@ -299,6 +300,8 @@ router.post(
             linkedElementIds: r.linkedElementIds,
             status: 'open' as const,
             createdBy: 'human' as const,
+            // THE-557: Deckung mechanisch bei der Anlage — Mensch-Tore bleiben unknown.
+            gates: { ...emptyGates(), covered: deriveCovered(r.linkedElementIds) },
             // Preserve LLM explainability through human curation (optional, audit trail)
             ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
             ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
@@ -500,6 +503,56 @@ router.get(
 
 // ─── PATCH /:id (status + assignee Update) ──────────────────────
 
+// THE-557: Notar-Akt — enforced/attested setzt NUR ein Mensch. `setBy` kommt
+// server-seitig aus der Session (Spoof-Schutz wie certification.routes.ts);
+// ein `setBy` im Body wird ignoriert, weil das Schema es gar nicht kennt.
+const GateBodySchema = z.object({
+  gate: z.enum(['enforced', 'attested']),
+  state: z.enum(['yes', 'no']),
+  reason: z.string().min(1),
+});
+
+router.post(
+  '/:projectId/requirements/:id/gates',
+  requireProjectAccess('editor'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    const id = String(req.params.id);
+    if (!mongoose.isValidObjectId(projectId) || !mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ success: false, error: 'invalid id' });
+    }
+    const parsed = GateBodySchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'invalid body', details: parsed.error.issues });
+    }
+    const doc = await ComplianceRequirement.findOne({ _id: id, projectId });
+    if (!doc) return res.status(404).json({ success: false, error: 'requirement not found' });
+
+    const userId = String(req.user!._id);
+    try {
+      // covered wird beim ersten Notar-Akt mitabgeleitet, falls nie bewertet —
+      // so entsteht kein Tripel, dessen Maschinen-Tor grundlos unknown bleibt.
+      const current = doc.gates ?? { ...emptyGates(), covered: deriveCovered(doc.linkedElementIds ?? []) };
+      doc.gates = applyHumanGate(current, parsed.data.gate, parsed.data.state, userId, parsed.data.reason);
+    } catch (err) {
+      return res.status(400).json({ success: false, error: (err as Error).message });
+    }
+    await doc.save();
+
+    await createAuditEntry({
+      userId,
+      projectId,
+      action: `requirement.gate.${parsed.data.gate}`,
+      entityType: 'ComplianceRequirement',
+      entityId: id,
+      after: { gate: parsed.data.gate, state: parsed.data.state, reason: parsed.data.reason },
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+    return res.json({ success: true, data: doc });
+  },
+);
+
 router.patch(
   '/:projectId/requirements/:id',
   requireProjectAccess('editor'),
@@ -535,6 +588,8 @@ router.patch(
     if (parsed.data.priority !== undefined) setFields.priority = parsed.data.priority;
     if (parsed.data.linkedElementIds !== undefined) {
       setFields.linkedElementIds = parsed.data.linkedElementIds;
+      // THE-557: Deckung folgt der Verknüpfung — mechanisch, mit Grund.
+      setFields['gates.covered'] = deriveCovered(parsed.data.linkedElementIds);
     }
 
     if (Object.keys(setFields).length === 0) {
