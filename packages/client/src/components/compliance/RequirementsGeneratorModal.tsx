@@ -32,6 +32,7 @@ import {
   regulationsAPI,
   architectureAPI,
   type RequirementCandidate,
+  type ChainStats,
 } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
 
@@ -173,6 +174,8 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<EditableRequirement[] | null>(null);
   const [durationMs, setDurationMs] = useState<number | null>(null);
+  // ADR-0008 Phase 1: Quoten + Engine der Ketten-Generierung (nur chain-Engine).
+  const [chainStats, setChainStats] = useState<ChainStats | null>(null);
   const [isPersisting, setIsPersisting] = useState(false);
   const [savedIds, setSavedIds] = useState<string[] | null>(null);  // post-save state → enables projection
   const [savedCount, setSavedCount] = useState(0);
@@ -233,6 +236,7 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       });
       const data = res.data?.data;
       const reqs: RequirementCandidate[] = data?.requirements ?? [];
+      setChainStats(data?.chainStats ?? null);
       const editable: EditableRequirement[] = reqs.map((r, i) => ({
         ...r,
         _localId: `${Date.now()}-${i}`,
@@ -341,6 +345,9 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
           extractionRationale: r.extractionRationale,
           mappingConfidence: r.mappingConfidence,
           mappingRationale: r.mappingRationale,
+          // ADR-0008 Phase 1: Ketten-Material durchreichen — der Server
+          // persistiert StR/SysReq und setzt die chain-Refs.
+          ...(r.chain ? { chain: r.chain } : {}),
         })),
       });
 
@@ -564,6 +571,20 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
                   )}
                 </div>
               </div>
+
+              {chainStats && (
+                <div className="mb-2 rounded border border-[var(--border-primary)] bg-[var(--bg-secondary)] px-2 py-1.5">
+                  <div className="flex items-center gap-2 text-[10px] text-[var(--text-tertiary)]">
+                    <span className="rounded bg-[var(--accent-bg,#7c3aed22)] px-1.5 py-0.5 font-medium text-[var(--accent-text)]">ISO chain</span>
+                    <span data-testid="chain-stats">
+                      {chainStats.clauses} clauses · {chainStats.clausesWithoutRequirement} without requirement · {chainStats.splitCount} split · {chainStats.implFreedomViolations} rejected (implementation-bound) · {chainStats.unreadableExtractions + chainStats.unreadableSysReqs} unreadable
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-[var(--text-secondary)]">
+                    In about 1 of 3 cases the chain merges what an architect would build separately (measured: 68.8% agreement with human judgement). Review before confirming.
+                  </p>
+                </div>
+              )}
 
               {preview.length === 0 ? (
                 <div className="text-[11px] text-[var(--text-secondary)] italic py-2">

@@ -511,11 +511,47 @@ export const complianceMappingAPI = {
 };
 
 // UC-REQGEN-001 Compliance Requirements Generator (LLM extracts actionable requirements)
+/** ADR-0008 Phase 1: Quoten der Ketten-Engine — Teil der Antwort, nie nur Log. */
+export interface ChainStats {
+  clauses: number;
+  unreadableExtractions: number;
+  splitCount: number;
+  clausesWithoutRequirement: number;
+  implFreedomViolations: number;
+  unreadableSysReqs: number;
+}
+
 export interface RequirementCandidate {
   title: string;
   description: string;
   priority: 'must' | 'should' | 'may';
   linkedElementIds: string[];
+  /** ADR-0008 Phase 1: Ketten-Material aus der Chain-Engine — beim Confirm durchreichen. */
+  chain?: {
+    regulationKey: string;
+    clauseContentId: string;
+    clausePath?: string;
+    clauseText: string;
+    stakeholderRequirement: {
+      text: string;
+      slots: { action: string; recipient: string; modality: string; condition: string };
+      kind: 'requirement' | 'constraint';
+      deadline: {
+        dauer: { wert: number; einheit: 'h' | 'd' | 'mon' };
+        bezugspunkt: 'kenntnis' | 'einstufung' | 'vorherige-meldung' | 'ereignis';
+        stufe: 'erst' | 'zwischen' | 'abschluss' | null;
+        quelle: string;
+      } | null;
+    };
+    systemRequirement: {
+      text: string;
+      schutzgut: string;
+      verpflichteter: string;
+      ausloeser: string;
+      nachweis: string;
+      implementationFree: boolean;
+    };
+  };
   // Explainability layer (audit-grade): two distinct axes + their rationales.
   // Optional because human-curated / legacy docs may lack them; LLM preview always sets them.
   extractionConfidence?: number;   // "is this a genuine obligation?" (anti-hallucination)
