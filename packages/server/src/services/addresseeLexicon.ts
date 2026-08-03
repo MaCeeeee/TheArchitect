@@ -36,11 +36,40 @@ const LEXICON: ReadonlyArray<[RegExp, PartyRoleId]> = [
   [/ikt-?drittdienstleister/i, 'ict_third_party_provider'],
 ];
 
+/**
+ * Freitext-Verpflichteter → Rolle, oder `null`.
+ *
+ * ── WARUM ALLE REGELN GEPRÜFT WERDEN, NICHT NUR BIS ZUM ERSTEN TREFFER ──
+ *
+ * Nennt ein Text ZWEI verschiedene Rollen, ist er mehrdeutig — genau wie
+ * „Anbieter", das aus demselben Grund verworfen wird. Der frühere Ausstieg
+ * beim ersten Treffer machte daraus eine Entscheidung, die nicht der Text
+ * traf, sondern die ZEILENREIHENFOLGE dieser Liste: „Unternehmen als
+ * Verantwortlicher oder Auftragsverarbeiter" wurde `processor`, weil die
+ * Auftragsverarbeiter-Regel eine Zeile höher steht (gemessen THE-588,
+ * docs/evals/scf-gold-produktpfad.md).
+ *
+ * Gezählt werden deshalb die getroffenen ROLLEN, nicht die Regeln:
+ *
+ *   0 Rollen  → null (unbekannt)
+ *   1 Rolle   → diese Rolle — auch wenn mehrere Regeln sie trafen
+ *               („wesentliche und wichtige Einrichtungen" ist eine Rolle)
+ *   ≥2 Rollen → null (mehrdeutig)
+ *
+ * Bewusst wird NICHT nach „oder" gesucht. Die Zählung fängt auch „/", „bzw.",
+ * „sowie" und die bloße Aufzählung — jede Schreibweise, die eine
+ * Konnektor-Liste übersehen würde.
+ *
+ * Die gefährliche Richtung bleibt damit geschlossen: Ein Text, der DORA- und
+ * NIS2-Vokabular mischt, bekommt keine Rolle und läuft nicht am
+ * Verdrängungs-Gate vorbei.
+ */
 export function mapVerpflichteterToPartyRole(text: string): PartyRoleId | null {
   const t = text.trim();
   if (!t) return null;
+  const roles = new Set<PartyRoleId>();
   for (const [pattern, role] of LEXICON) {
-    if (pattern.test(t)) return role;
+    if (pattern.test(t)) roles.add(role);
   }
-  return null;
+  return roles.size === 1 ? [...roles][0] : null;
 }

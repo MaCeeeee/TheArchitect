@@ -135,12 +135,63 @@ das Argument, es zu priorisieren — und in der Zwischenzeit zwei kleinere Schri
 2. **Die „oder"-Aufzählung** gehört auf `null`, nicht auf die erstbeste Regel. Das ist kein
    Abwägen, sondern die Doktrin des Moduls auf sich selbst angewandt.
 
+---
+
+# Nachtrag 2026-08-03: die Korrektur senkt die Quote — und das ist richtig so
+
+[THE-588](https://linear.app/thearchitect/issue/THE-588) ist gebaut: Das Lexikon zählt jetzt
+die getroffenen **Rollen** statt beim ersten Treffer auszusteigen. Nennt ein Text zwei
+verschiedene Rollen, liefert es `null`.
+
+**Genau eine der zwölf Zuordnungen ändert sich — und sie kostet einen Gold-Treffer:**
+
+```
+≠ dsgvo:art32:c06:q1s1   processor  →  — verworfen     ⟵ trug RSK-01
+
+Gold über den Produktpfad: 2 von 5   (vorher 3)
+```
+
+| SCF | vorher | nachher |
+|---|---|---|
+| BCD-01 | ❌ verloren | ❌ verloren |
+| CRY-01 | ✅ | ✅ |
+| GOV-02 | ✅ | ✅ |
+| RSK-01 | ⚠️ hielt als `processor` | ❌ **verloren** |
+| HRS-03 | ❌ | ❌ |
+
+## Warum die fallende Zahl kein Rückschritt ist
+
+**RSK-01 wurde nie legitim gehalten.** Sein DSGVO-Träger bekam `processor`, weil diese Regel
+im Array eine Zeile höher stand — ein Münzwurf, der zufällig auf einer Rolle landete, die das
+Kompatibilitäts-Tor passiert. Die Quote von 3 war ein Zufallstreffer, keine Leistung.
+
+Dass sie jetzt auf 2 fällt, ist **die Messung, die zum ersten Mal die Wahrheit sagt** — dasselbe
+Muster wie beim Drift-Lauf, wo `checked: 2` erst durch die ehrliche Zählung offenlegte, dass
+13 Anforderungen nie angesehen worden waren. Eine Zahl, die sinkt, weil eine Lüge wegfällt, ist
+besser als eine, die stimmt, weil zwei Fehler sich aufheben.
+
+## Was das für die offene Entscheidung bedeutet
+
+Der Befund **verschärft** [THE-589](https://linear.app/thearchitect/issue/THE-589) und
+[THE-540](https://linear.app/thearchitect/issue/THE-540), statt sie zu entlasten: Beide
+verbliebenen Verluste — BCD-01 und RSK-01 — hängen an genau einer Ursache, der
+**Abdeckung des Lexikons für unspezifische Unternehmens-Formulierungen**. Kein Zufall,
+kein Rauschen, eine Ursache.
+
+Der saubere Weg bleibt der, den der Modul-Kopf selbst nennt: die `partyRole` je Provision aus
+dem Korpus statt der Ableitung aus Freitext.
+
 ## Nachvollziehen
 
 ```
 packages/server$ npx ts-node --transpile-only src/scripts/scf-gold-narrow-cut.ts --dry   # kostenlos
 packages/server$ npx ts-node --transpile-only src/scripts/scf-gold-narrow-cut.ts         # 17 Aufrufe
 packages/server$ npx ts-node --transpile-only src/scripts/scf-gold-addressee-probe.ts    # kostenlos
+packages/server$ npx ts-node --transpile-only src/scripts/the588-impact-probe.ts        # kostenlos
 ```
+
+`the588-impact-probe` hält die zwölf gemessenen `verpflichteter`-Werte eingefroren und rechnet
+die Gold-Quote gegen das JEWEILS aktuelle Lexikon durch. Wer daran etwas ändert, sieht die
+Wirkung sofort und ohne einen einzigen LLM-Aufruf.
 
 Beide read-only; sie schreiben nichts in die Datenbank.
