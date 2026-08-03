@@ -410,6 +410,10 @@ export const normsAPI = {
     api.get(`/projects/${projectId}/norms`),
   getMappings: (projectId: string, workId: string) =>
     api.get(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/mappings`),
+  // THE-570: eine Section mit Volltext — Vorschau im Requirements-Generator.
+  getSection: (projectId: string, workId: string, eId: string) =>
+    api.get<{ success: boolean; data: { eId: string; heading: string; number: string; text: string; expressionLanguage?: string } }>(
+      `/projects/${projectId}/norms/${encodeURIComponent(workId)}/sections/${encodeURIComponent(eId)}`),
   // "Add regulation to pipeline" — creates the pipeline state + initial stats.
   addToPipeline: (projectId: string, workId: string) =>
     api.post(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/pipeline`),
@@ -644,7 +648,11 @@ export interface RequirementDoc extends RequirementCandidate {
 export const requirementsAPI = {
   // Preview: LLM extracts requirements, no persist
   generate: (projectId: string, body: {
-    text: string;
+    /** Freitext-Weg. Alternativ THE-570: normId + sectionEId (Server holt den Text). */
+    text?: string;
+    /** THE-570: Korpus-Anker — der Server loest den Section-Text auf und setzt den regulationKey. */
+    normId?: string;
+    sectionEId?: string;
     source?: string;
     paragraphNumber?: string;
     language?: 'de' | 'en';
@@ -657,6 +665,9 @@ export const requirementsAPI = {
   // Confirm: persist user-curated requirements (createdBy=human, explainability preserved)
   confirm: (projectId: string, body: {
     regulationId: string;
+    /** THE-570: Korpus-Anker — ohne ihn findet der Klausel-Drift die Anforderung nicht. */
+    normId?: string;
+    sectionEId?: string;
     sourceParagraph: string;
     requirements: Array<{
       title: string;
@@ -667,6 +678,7 @@ export const requirementsAPI = {
       extractionRationale?: string;
       mappingConfidence?: number;
       mappingRationale?: string;
+      chain?: RequirementCandidate['chain'];
     }>;
   }) =>
     api.post(`/projects/${projectId}/requirements`, body),

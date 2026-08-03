@@ -35,6 +35,8 @@ import {
   type ChainStats,
 } from '../../services/api';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { normsAPI } from '../../services/api';
+import { groupCorpusNorms, resolveVersion, type NormGroup, type PickerNorm } from './normPicker';
 
 type Priority = 'must' | 'should' | 'may';
 
@@ -176,10 +178,37 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
   const [durationMs, setDurationMs] = useState<number | null>(null);
   // ADR-0008 Phase 1: Quoten + Engine der Ketten-Generierung (nur chain-Engine).
   const [chainStats, setChainStats] = useState<ChainStats | null>(null);
+  // THE-570: Korpus-Auswahl statt Kopieren-und-Einfuegen.
+  const [groups, setGroups] = useState<NormGroup[]>([]);
+  const [sections, setSections] = useState<Array<{ eId: string; number: string; heading: string }>>([]);
+  const [sectionEId, setSectionEId] = useState<string>('');
+  const [normId, setNormId] = useState<string>('');
+  const [langHint, setLangHint] = useState<string | null>(null);
+  const [isLoadingText, setIsLoadingText] = useState(false);
   const [isPersisting, setIsPersisting] = useState(false);
   const [savedIds, setSavedIds] = useState<string[] | null>(null);  // post-save state → enables projection
   const [savedCount, setSavedCount] = useState(0);
   const [isProjecting, setIsProjecting] = useState(false);
+
+  // THE-570: Korpus-Gesetze laden — Projekt-Normen UND noch nicht
+  // referenzierte (ein Endpunkt liefert beides, THE-390 P4b).
+  useEffect(() => {
+    if (!isOpen || !projectId) return;
+    let cancelled = false;
+    void normsAPI
+      .list(projectId)
+      .then((res) => {
+        if (cancelled) return;
+        const d = res.data as { data?: PickerNorm[]; available?: PickerNorm[] };
+        setGroups(groupCorpusNorms([...(d.data ?? []), ...(d.available ?? [])]));
+      })
+      .catch(() => {
+        // Kein Korpus erreichbar → nur „Custom" bleibt nutzbar. Kein Fehler:
+        // der Einfuege-Weg funktioniert weiter.
+        if (!cancelled) setGroups([]);
+      });
+    return () => { cancelled = true; };
+  }, [isOpen, projectId]);
 
   // Reset on close
   useEffect(() => {
@@ -197,6 +226,10 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       setSavedIds(null);
       setSavedCount(0);
       setIsProjecting(false);
+      setSectionEId('');
+      setNormId('');
+      setLangHint(null);
+      setSections([]);
     }
   }, [isOpen]);
 
@@ -227,8 +260,12 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
     const t0 = performance.now();
 
     try {
+      // THE-570: Korpus-Weg schickt den ANKER (normId + sectionEId) — der
+      // Server holt den Text selbst und setzt den regulationKey, an dem
+      // spaeter der Drift-Check haengt. Der Custom-Weg schickt Text.
+      const usingCorpus = Boolean(normId && sectionEId);
       const res = await requirementsAPI.generate(projectId, {
-        text: text.trim(),
+        ...(usingCorpus ? { normId, sectionEId } : { text: text.trim() }),
         source,
         paragraphNumber: paragraphNumber.trim() || 'preview',
         language,
@@ -255,6 +292,66 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       setIsLoading(false);
     }
   }, [projectId, text, source, paragraphNumber, language, jurisdiction]);
+
+  // THE-570: Gesetz gewaehlt → Fassung aufloesen (Sprache aus dem Korpus,
+  // nicht aus dem Suffix) und dessen Artikel anbieten.
+  const selectSource = useCallback(
+    async (value: string) => {
+      setSource(value);
+      setSectionEId('');
+      setNormId('');
+      setLangHint(null);
+      setSections([]);
+      setText('');
+      if (value === 'custom' || !projectId) return;
+
+      const group = groups.find((g) => g.key === value);
+      if (!group) return;
+      const version = resolveVersion(group, language);
+      if (!version) return;
+      setNormId(version.workId);
+      if (!version.exact) {
+        setLangHint(`Only the ${version.language.toUpperCase()} version exists for this act.`);
+      }
+      try {
+        const res = await normsAPI.list(projectId);
+        const d = res.data as { data?: Array<{ identity: { workId: string }; sections?: Array<{ eId: string; number?: string; heading: string }> }>; available?: typeof d.data };
+        const all = [...(d.data ?? []), ...(d.available ?? [])];
+        // Dieselbe workId kann zweimal vorkommen (App-DB-Fallback mit einzelnen
+        // Klauseln vs. vollstaendiges Korpus-Gesetz) — die vollstaendigere
+        // Fassung gewinnt, sonst stehen 1 statt 46 Artikeln zur Wahl.
+        const norm = all
+          .filter((n) => n.identity.workId === version.workId)
+          .sort((a, b) => (b.sections?.length ?? 0) - (a.sections?.length ?? 0))[0];
+        setSections((norm?.sections ?? []).map((sec) => ({ eId: sec.eId, number: sec.number ?? '', heading: sec.heading })));
+      } catch {
+        setSections([]);
+      }
+    },
+    [groups, language, projectId],
+  );
+
+  // THE-570: Artikel gewaehlt → Volltext als Vorschau laden. Der Nutzer sieht,
+  // was verarbeitet wird, statt einer Blackbox zu vertrauen.
+  const selectSection = useCallback(
+    async (eId: string) => {
+      setSectionEId(eId);
+      setText('');
+      if (!eId || !projectId || !normId) return;
+      setIsLoadingText(true);
+      try {
+        const res = await normsAPI.getSection(projectId, normId, eId);
+        const sec = res.data.data;
+        setText(sec.text);
+        setParagraphNumber(sec.number || sec.heading.slice(0, 60));
+      } catch {
+        setError('Could not load the article text from the corpus.');
+      } finally {
+        setIsLoadingText(false);
+      }
+    },
+    [projectId, normId],
+  );
 
   const handleClipboardPaste = useCallback(async () => {
     try {
@@ -334,6 +431,12 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
       // 2) Persist only the SELECTED requirements
       const confirmRes = await requirementsAPI.confirm(projectId, {
         regulationId,
+        // THE-570: der Anker muss MITGESPEICHERT werden — ohne normId +
+        // sectionEId am Requirement findet der Klausel-Drift es spaeter nicht
+        // und meldet `skipped`. Generieren mit Anker und Speichern ohne waere
+        // eine stille Luecke.
+        ...(normId ? { normId } : {}),
+        ...(sectionEId ? { sectionEId } : {}),
         sourceParagraph: text.trim().slice(0, 5000),
         requirements: chosen.map((r) => ({
           title: r.title.trim(),
@@ -458,25 +561,52 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
               <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Source</label>
               <select
                 value={source}
-                onChange={(e) => setSource(e.target.value)}
+                onChange={(e) => void selectSource(e.target.value)}
                 className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-xs text-white outline-none focus:border-[#7c3aed]"
                 disabled={isLoading || !!preview}
               >
-                {SOURCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
+                {groups.length > 0 ? (
+                  <>
+                    <option value="">Select law from corpus…</option>
+                    {groups.map((g) => (
+                      <option key={g.key} value={g.key}>{g.label}</option>
+                    ))}
+                    <option value="custom">Custom (paste text)</option>
+                  </>
+                ) : (
+                  SOURCE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))
+                )}
               </select>
             </div>
             <div>
               <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Paragraph</label>
-              <input
-                type="text"
-                value={paragraphNumber}
-                onChange={(e) => setParagraphNumber(e.target.value)}
-                placeholder="§ 6 / Art. 21"
-                className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-xs text-white outline-none focus:border-[#7c3aed]"
-                disabled={isLoading || !!preview}
-              />
+              {sections.length > 0 ? (
+                <select
+                  value={sectionEId}
+                  onChange={(e) => void selectSection(e.target.value)}
+                  className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-xs text-white outline-none focus:border-[#7c3aed]"
+                  disabled={isLoading || !!preview}
+                  data-testid="section-select"
+                >
+                  <option value="">Select article…</option>
+                  {sections.map((sec) => (
+                    <option key={sec.eId} value={sec.eId}>
+                      {sec.number ? `${sec.number} — ` : ''}{sec.heading.slice(0, 70)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={paragraphNumber}
+                  onChange={(e) => setParagraphNumber(e.target.value)}
+                  placeholder="§ 6 / Art. 21"
+                  className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-2 py-1 text-xs text-white outline-none focus:border-[#7c3aed]"
+                  disabled={isLoading || !!preview}
+                />
+              )}
             </div>
             <div>
               <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Language</label>
@@ -498,9 +628,9 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                  Paste regulation paragraph
+                  {normId ? 'Article text (from corpus — read only)' : 'Paste regulation paragraph'}
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2" style={{ display: normId ? 'none' : undefined }}>
                   <button
                     onClick={handleClipboardPaste}
                     className="flex items-center gap-1 text-[10px] text-[var(--accent-text)] hover:text-white transition"
@@ -521,8 +651,10 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
                 </div>
               </div>
               <textarea
-                value={text}
+                value={isLoadingText ? 'Loading article text…' : text}
                 onChange={(e) => setText(e.target.value)}
+                readOnly={Boolean(normId)}
+                data-testid="regulation-text"
                 placeholder="Paste the full regulation text here (min. 20, max. 12,000 characters)..."
                 rows={8}
                 className="w-full rounded border border-[var(--border-subtle)] bg-[var(--surface-base)] px-3 py-2 text-xs text-white outline-none focus:border-[#7c3aed] font-mono leading-relaxed"
@@ -531,6 +663,14 @@ export default function RequirementsGeneratorModal({ isOpen, onClose }: Props) {
               <div className="flex justify-between text-[10px] text-[var(--text-tertiary)] mt-1">
                 <span>{text.length} chars</span>
                 {text.length > 12000 && <span className="text-red-400">too long — max. 12,000</span>}
+                {/* THE-570: die zwei ehrlichen Hinweise — welche Fassung, und
+                    dass eingefuegter Text keinen Drift-Check bekommt. */}
+                {langHint && <span className="text-amber-300" data-testid="lang-hint">{langHint}</span>}
+                {!normId && text.length > 0 && (
+                  <span className="text-amber-300" data-testid="no-anchor-hint">
+                    pasted text has no corpus anchor — no drift check later
+                  </span>
+                )}
               </div>
             </div>
           )}
