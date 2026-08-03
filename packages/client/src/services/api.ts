@@ -510,6 +510,33 @@ export const complianceMappingAPI = {
     api.post(`/projects/${projectId}/compliance/mappings/confirm`, body),
 };
 
+// ADR-0008 / THE-569: Harmonisierungs-Vorschlag — geteilte Massnahme.
+export interface HarmonizationMemberDetail {
+  systemRequirementId: string;
+  requirementId: string | null;
+  title: string | null;
+  linkedElementIds: string[];
+}
+
+export interface HarmonizationProposeResult {
+  grouping: {
+    measures: Array<{ id: string; memberIds: string[]; laws: string[] }>;
+    excludedByDisplacement: Array<{ a: string; b: string; displaced: string; prevailing: string; citations: string[] }>;
+    cappedPairs: number;
+  };
+  memberDetails: HarmonizationMemberDetail[];
+  stats: { total: number; unmappedAddressee: number; unclassified: number; pairsJudged: number };
+}
+
+export const harmonizationAPI = {
+  propose: (projectId: string, body: { maxJudgedPairs?: number } = {}) =>
+    api.post<{ success: boolean; data: HarmonizationProposeResult }>(
+      `/projects/${projectId}/requirements/harmonization/propose`, body, { timeout: 180_000 }),
+  confirm: (projectId: string, body: { systemRequirementIds: string[]; elementId: string }) =>
+    api.post<{ success: boolean; data: { linkedRequirements: number } }>(
+      `/projects/${projectId}/requirements/harmonization/confirm`, body),
+};
+
 // UC-REQGEN-001 Compliance Requirements Generator (LLM extracts actionable requirements)
 /** ADR-0008 Phase 1: Quoten der Ketten-Engine — Teil der Antwort, nie nur Log. */
 export interface ChainStats {
