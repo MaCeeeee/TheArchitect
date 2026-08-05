@@ -12,6 +12,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import {
   proposeSharedMeasures,
   confirmSharedMeasure,
+  previewCandidatePairs,
+  DEFAULT_MAX_JUDGED_PAIRS,
   HarmonizationError,
 } from '../services/harmonization.service';
 import { StakeholderRequirement } from '../models/StakeholderRequirement';
@@ -38,7 +40,11 @@ beforeEach(async () => {
 
 const projectId = new mongoose.Types.ObjectId();
 
-async function seed(regulationKey: string, verpflichteter: string): Promise<string> {
+async function seed(
+  regulationKey: string,
+  verpflichteter: string,
+  opts: { classified?: boolean } = {},
+): Promise<string> {
   const str = await StakeholderRequirement.create({
     projectId,
     regulationKey,
@@ -55,7 +61,14 @@ async function seed(regulationKey: string, verpflichteter: string): Promise<stri
     ausloeser: 'Vorfall',
     nachweis: 'Meldung',
     stakeholderRequirementIds: [str._id],
-    actionClassification: { actionId: 'vorfall-melden-behoerde', ontologyVersion: require('@thearchitect/shared').NORM_ONTOLOGY.ontologyVersion },
+    ...(opts.classified === false
+      ? {}
+      : {
+          actionClassification: {
+            actionId: 'vorfall-melden-behoerde',
+            ontologyVersion: require('@thearchitect/shared').NORM_ONTOLOGY.ontologyVersion,
+          },
+        }),
   });
   return String(sysReq._id);
 }
@@ -202,5 +215,98 @@ describe('confirmSharedMeasure — der Mensch verlinkt', () => {
     await expect(
       confirmSharedMeasure({ projectId, systemRequirementIds: [s1, s2], elementId: 'el-nowhere' }),
     ).rejects.toThrow(HarmonizationError);
+  });
+});
+
+/**
+ * THE-590 Slice 1 — die Vorschau.
+ *
+ * Der Kern ist eine Selbstverstaendlichkeit, die leicht verlorengeht: **eine
+ * Kostenvorschau, die selbst Kosten verursacht, hebt sich auf.**
+ * `buildGroupables` klassifiziert heute jede Anforderung ohne gueltigen
+ * Cache-Eintrag — eine naive Vorschau wuerde also genau die Modellaufrufe
+ * ausloesen, vor denen sie warnen soll.
+ *
+ * Durchgesetzt wird das nicht mit einem Schalter, sondern ueber die
+ * ABHAENGIGKEIT: ohne `ask` gibt es keinen Klassifikator, also kann nicht
+ * klassifiziert werden. Ein boolescher Schalter kann falsch stehen; eine
+ * fehlende Abhaengigkeit kann es nicht.
+ */
+describe('previewCandidatePairs (THE-590)', () => {
+  it('counts the candidate pairs without a judge and without a classifier', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dsgvo:art33', 'Verantwortlicher');
+
+    const preview = await previewCandidatePairs(projectId, { cap: DEFAULT_MAX_JUDGED_PAIRS });
+
+    expect(preview.candidatePairs).toBe(1);
+    expect(preview.total).toBe(2);
+    expect(preview.needsClassification).toBe(0);
+    expect(preview.wouldCap).toBe(0);
+    expect(preview.cap).toBe(DEFAULT_MAX_JUDGED_PAIRS);
+  });
+
+  // Die Verdraengung gehoert getrennt ausgewiesen: ein ausgeschlossenes Paar
+  // ist KEIN Kandidat, der weggekappt wurde (THE-563).
+  it('reports displaced pairs separately — they were never candidates', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dora:art19', 'Finanzunternehmen');
+
+    const preview = await previewCandidatePairs(projectId, { cap: DEFAULT_MAX_JUDGED_PAIRS });
+
+    expect(preview.excludedByDisplacement).toBe(1);
+    expect(preview.candidatePairs).toBe(0);
+  });
+
+  it('names what it could NOT place — the count is a floor, not a promise', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dsgvo:art33', 'Verantwortlicher', { classified: false });
+
+    const preview = await previewCandidatePairs(projectId, { cap: DEFAULT_MAX_JUDGED_PAIRS });
+
+    expect(preview.total).toBe(2);
+    expect(preview.needsClassification).toBe(1);
+    // Ohne die zweite Seite gibt es kein Paar — und die Vorschau sagt WARUM.
+    expect(preview.candidatePairs).toBe(0);
+  });
+
+  it('leaves the unclassified requirement untouched — the preview does not write', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dsgvo:art33', 'Verantwortlicher', { classified: false });
+
+    await previewCandidatePairs(projectId, { cap: DEFAULT_MAX_JUDGED_PAIRS });
+
+    const after = await ChainSystemRequirement.findOne({ projectId, text: /dsgvo/ });
+    expect(after?.actionClassification).toBeFalsy();
+  });
+
+  it('announces the capping BEFORE the run', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dsgvo:art33', 'Verantwortlicher');
+
+    const preview = await previewCandidatePairs(projectId, { cap: 0 });
+
+    expect(preview.candidatePairs).toBe(1);
+    expect(preview.wouldCap).toBe(1);
+  });
+
+  // Die tragende Zusage: was die Vorschau ankuendigt, urteilt der Lauf auch.
+  // Zwei Kopien desselben Filters waeren genau die Sorte Duplikat, die
+  // auseinanderlaeuft — dann zeigte die Vorschau eine Zahl, die nie eintritt.
+  it('agrees with the real run — the preview and the judge see the same pairs', async () => {
+    await seed('nis2:art23', 'wesentliche Einrichtung');
+    await seed('dsgvo:art33', 'Verantwortlicher');
+    await seed('dora:art19', 'Finanzunternehmen');
+
+    const preview = await previewCandidatePairs(projectId, { cap: DEFAULT_MAX_JUDGED_PAIRS });
+    const run = await proposeSharedMeasures(projectId, {
+      ask: askNever,
+      judge: async () => JSON.stringify({ relation: 'unrelated', why: 'stub' }),
+      maxJudgedPairs: DEFAULT_MAX_JUDGED_PAIRS,
+    });
+
+    expect(preview.candidatePairs).toBe(run.grouping.candidatePairs);
+    expect(preview.excludedByDisplacement).toBe(run.grouping.excludedByDisplacement.length);
+    expect(run.stats.pairsJudged).toBe(preview.candidatePairs);
   });
 });

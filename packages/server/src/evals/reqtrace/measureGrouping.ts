@@ -155,9 +155,91 @@ export interface GroupingResult {
    * „mehr gab es nicht" — und die Trefferquote waere unerklaerlich niedrig.
    */
   cappedPairs: number;
+  /**
+   * Paare, die den Richter erreichen WUERDEN — nach Filter und Verdraengung,
+   * vor dem Deckel (THE-590).
+   *
+   * Ein eigenes Feld, kein abgeleitetes: `cappedPairs` beantwortet die Frage
+   * „wie viele blieben uebrig?", nicht „wie viele gab es?". Wer die Gesamtzahl
+   * brauchte, musste sie bisher aus zwei Feldern zusammenrechnen — oder mit
+   * `maxJudgedPairs: 0` einen Lauf faelschen, der die Zahl als „gekappt"
+   * verkleidet zurueckgibt. Ein Zaehler, den man nur ueber einen Trick
+   * erreicht, ist kein Zaehler.
+   *
+   * Die Bilanz muss aufgehen: `judged + cappedPairs === candidatePairs`.
+   * Verdraengte Paare stehen NICHT darin — sie sind keine Kandidaten, die
+   * weggekappt wurden, sondern haetten den Richter nie erreicht.
+   */
+  candidatePairs: number;
+  /** Wonach ausgewaehlt wurde, falls gekappt. Stabil, keine Rangfolge. */
+  selectionOrder: PairSelectionOrder;
 }
 
 export type JudgeFn = (system: string, user: string) => Promise<string>;
+
+/**
+ * Wonach ausgewählt wird, wenn der Deckel greift (THE-590).
+ *
+ * `id-ascending` ist **stabil, aber keine Rangfolge**: die alphabetische
+ * Reihenfolge der Anforderungs-Ids trägt kein fachliches Kriterium. „Die
+ * ersten 200" liest sich wie „die wichtigsten 200" — es sind aber nur die
+ * ersten. Wer das nicht weiß, hält die weggelassenen Paare für die weniger
+ * relevanten.
+ *
+ * Stabil genügt hier: ein wackelnder Ausschnitt wäre als Beleg wertlos. Eine
+ * inhaltlich bessere Auswahl (nach Handlung, nach Gesetzespaar, reihum) ist
+ * eine fachliche Entscheidung mit eigener Prämisse und gehört nicht in dieses
+ * Feld, sondern in ein Entscheidungs-Ticket. Was dieser Wert leistet, ist
+ * nicht die bessere Wahl — sondern dass die getroffene benennbar ist.
+ */
+export const PAIR_SELECTION_ORDER = 'id-ascending' as const;
+export type PairSelectionOrder = typeof PAIR_SELECTION_ORDER;
+
+export interface CandidateEnumeration {
+  /** Paare, die den Richter erreichen würden — in `PAIR_SELECTION_ORDER`. */
+  pairs: [GroupableSysReq, GroupableSysReq][];
+  excludedByDisplacement: DisplacementExclusion[];
+}
+
+/**
+ * Die Kandidaten-Aufzählung — **ohne** ein einziges Modellurteil.
+ *
+ * Herausgelöst, damit die Vorschau (THE-590) und der teure Lauf beweisbar
+ * **denselben** Filter benutzen. Zwei Kopien derselben drei Bedingungen wären
+ * genau die Sorte Duplikat, die irgendwann auseinanderläuft — und dann zeigt
+ * die Vorschau eine Zahl, die der Lauf nie erreicht.
+ *
+ * Die Reihenfolge der Bedingungen ist die Kontrolle, nicht eine Optimierung:
+ * die Verdrängung filtert **vor** allem Weiteren, damit für ein verdrängtes
+ * Paar kein Codepfad zum Richter existiert (THE-563).
+ */
+export function enumerateCandidatePairs(reqs: GroupableSysReq[]): CandidateEnumeration {
+  const sorted = [...reqs].sort((x, y) => x.id.localeCompare(y.id));
+  const excludedByDisplacement: DisplacementExclusion[] = [];
+  const pairs: [GroupableSysReq, GroupableSysReq][] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const a = sorted[i];
+      const b = sorted[j];
+
+      // (1) Nur gesetzesuebergreifend, gleiche Handlung, vertraegliche Adressaten.
+      if (a.source === b.source) continue;
+      if (!a.actionId || !b.actionId || a.actionId !== b.actionId) continue;
+      if (!areAddresseesCompatible(a.addresseeClass, b.addresseeClass)) continue;
+
+      // (2) VERDRAENGUNG ZUERST — ab hier gibt es fuer dieses Paar keinen
+      //     Codepfad zum Richter. Das ist die mechanische Negativ-Kontrolle.
+      const displaced = displacementFor(a, b);
+      if (displaced) {
+        excludedByDisplacement.push(displaced);
+        continue;
+      }
+      pairs.push([a, b]);
+    }
+  }
+  return { pairs, excludedByDisplacement };
+}
 
 /**
  * Gruppiert Systemanforderungen zu Maßnahmen.
@@ -176,7 +258,6 @@ export async function groupIntoMeasures(
   },
 ): Promise<GroupingResult> {
   const sorted = [...reqs].sort((x, y) => x.id.localeCompare(y.id));
-  const excludedByDisplacement: DisplacementExclusion[] = [];
   const edges: MeasureEdge[] = [];
   const collapsed: CollapsedPair[] = [];
   const relationCounts: Record<string, number> = {};
@@ -185,27 +266,9 @@ export async function groupIntoMeasures(
   // Kandidaten ZUERST sammeln: nur so kennt der Fortschritt seine Gesamtzahl.
   // Die Schleife ist quadratisch — in Lauf 2 ergaben 304 Anforderungen 2124
   // Kandidaten-Paare, und die Phase lief ueber eine Stunde ohne Lebenszeichen.
-  const toJudge: [GroupableSysReq, GroupableSysReq][] = [];
-  for (let i = 0; i < sorted.length; i++) {
-    for (let j = i + 1; j < sorted.length; j++) {
-      const a = sorted[i];
-      const b = sorted[j];
-
-      // (1) Nur gesetzesuebergreifend, gleiche Handlung, vertraegliche Adressaten.
-      if (a.source === b.source) continue;
-      if (!a.actionId || !b.actionId || a.actionId !== b.actionId) continue;
-      if (!areAddresseesCompatible(a.addresseeClass, b.addresseeClass)) continue;
-
-      // (2) VERDRAENGUNG ZUERST — ab hier gibt es fuer dieses Paar keinen
-      //     Codepfad zum Richter. Das ist die mechanische Negativ-Kontrolle.
-      const displaced = displacementFor(a, b);
-      if (displaced) {
-        excludedByDisplacement.push(displaced);
-        continue;
-      }
-      toJudge.push([a, b]);
-    }
-  }
+  // Seit THE-590 liegt sie in `enumerateCandidatePairs`, damit die Vorschau
+  // beweisbar denselben Filter benutzt wie der Lauf.
+  const { pairs: toJudge, excludedByDisplacement } = enumerateCandidatePairs(sorted);
 
   const cap = opts.maxJudgedPairs ?? Number.POSITIVE_INFINITY;
   const cappedPairs = Math.max(0, toJudge.length - cap);
@@ -312,5 +375,15 @@ export async function groupIntoMeasures(
     .sort((x, y) => x.id.localeCompare(y.id));
   void inAMeasure;
 
-  return { measures, sharedCorePairs, excludedByDisplacement, collapsed, judged, relationCounts, cappedPairs };
+  return {
+    measures,
+    sharedCorePairs,
+    excludedByDisplacement,
+    collapsed,
+    judged,
+    relationCounts,
+    cappedPairs,
+    candidatePairs: toJudge.length,
+    selectionOrder: PAIR_SELECTION_ORDER,
+  };
 }

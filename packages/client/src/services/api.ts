@@ -527,6 +527,13 @@ export interface HarmonizationProposeResult {
     measures: Array<{ id: string; memberIds: string[]; laws: string[] }>;
     excludedByDisplacement: Array<{ a: string; b: string; displaced: string; prevailing: string; citations: string[] }>;
     cappedPairs: number;
+    /**
+     * Paare, ueber die der Lauf urteilen WOLLTE — vor dem Deckel (THE-590).
+     * `pairsJudged + cappedPairs === candidatePairs`.
+     */
+    candidatePairs: number;
+    /** Wonach ausgewaehlt wurde, falls gekappt. Stabil, keine Rangfolge. */
+    selectionOrder: 'id-ascending';
   };
   memberDetails: HarmonizationMemberDetail[];
   stats: {
@@ -588,7 +595,30 @@ export const traceAPI = {
     }>(`/projects/${projectId}/requirements/trace/drift-check`, {}),
 };
 
+/**
+ * Was der Lauf kosten wuerde — vor dem Lauf (THE-590).
+ *
+ * `candidatePairs` ist eine UNTERGRENZE: Anforderungen ohne gecachte Handlung
+ * nehmen nicht teil und stehen als `needsClassification` daneben. Sonst laese
+ * sich „0 Kandidaten" als Befund, wo nur nicht klassifiziert wurde.
+ */
+export interface HarmonizationCandidatePreview {
+  total: number;
+  candidatePairs: number;
+  excludedByDisplacement: number;
+  cap: number;
+  wouldCap: number;
+  needsClassification: number;
+  unmappedAddressee: number;
+  selectionOrder: 'id-ascending';
+}
+
 export const harmonizationAPI = {
+  /** Lesezugriff: kein Richter, kein Klassifikator, kein Schreibzugriff. */
+  candidates: (projectId: string, cap?: number) =>
+    api.get<{ success: boolean; data: HarmonizationCandidatePreview }>(
+      `/projects/${projectId}/requirements/harmonization/candidates`,
+      cap === undefined ? undefined : { params: { cap } }),
   propose: (projectId: string, body: { maxJudgedPairs?: number } = {}) =>
     api.post<{ success: boolean; data: HarmonizationProposeResult }>(
       `/projects/${projectId}/requirements/harmonization/propose`, body, { timeout: 180_000 }),

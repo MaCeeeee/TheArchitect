@@ -36,15 +36,38 @@ import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { deriveCovered, emptyGates } from './requirementGates.service';
 import {
   groupIntoMeasures,
+  enumerateCandidatePairs,
+  PAIR_SELECTION_ORDER,
   type GroupableSysReq,
   type GroupingResult,
   type JudgeFn,
+  type PairSelectionOrder,
 } from '../evals/reqtrace/measureGrouping';
+
+/**
+ * Der Deckel, der greift, wenn der Aufrufer keinen nennt.
+ *
+ * Stand bis THE-590 als nackte 50 an ZWEI Stellen (hier und in der Route).
+ * Die Vorschau muss denselben Wert zeigen, den der Lauf verwendet — zwei
+ * Literale, die auseinanderlaufen, machen aus der Vorschau eine Luege.
+ */
+export const DEFAULT_MAX_JUDGED_PAIRS = 50;
+/** Das Maximum, das die Route zulaesst. Gemessen zu niedrig — siehe THE-590 Slice 2. */
+export const MAX_ALLOWED_JUDGED_PAIRS = 200;
 
 export interface EnrichStats {
   total: number;
   unmappedAddressee: number;
   unclassified: number;
+  /**
+   * Anforderungen ohne gueltigen Klassifikations-Cache, die NICHT klassifiziert
+   * wurden, weil kein Klassifikator uebergeben war (Vorschau-Modus, THE-590).
+   *
+   * Steht NEBEN `unclassified`: „wir haben nicht gefragt" und „wir haben
+   * gefragt und keine Antwort bekommen" sind verschiedene Aussagen. Nur so ist
+   * die Kandidatenzahl als Untergrenze lesbar statt als Versprechen.
+   */
+  needsClassification: number;
   /** THE-591: Adressat aus der typisierten Korpus-Provision — der Regelfall. */
   addresseeFromCorpus: number;
   /** Adressat aus dem Freitext-Lexikon — der Rückfall. */
@@ -69,15 +92,27 @@ const defaultFetchProvisions: FetchProvisions = async (keys) => {
   return (await getRegulationsByKeys(keys)) as never;
 };
 
+/**
+ * ── WARUM `ask` OPTIONAL IST (THE-590) ──
+ *
+ * Ohne Klassifikator laeuft dieselbe Funktion im VORSCHAU-Modus: sie nutzt nur
+ * bereits gecachte Handlungen und zaehlt, was sie deshalb nicht einordnen
+ * kann. Das ist keine Bequemlichkeit, sondern die Durchsetzung — eine
+ * Kostenvorschau, die selbst Modellaufrufe ausloest, hebt sich auf. Ein
+ * boolescher Schalter koennte falsch stehen; eine fehlende Abhaengigkeit kann
+ * es nicht: ohne `ask` gibt es keinen Codepfad zum Klassifikator und damit
+ * auch keinen zu `doc.save()`.
+ */
 export async function buildGroupables(
   projectId: mongoose.Types.ObjectId | string,
-  ctx: { ask: AskFn; fetchProvisions?: FetchProvisions },
+  ctx: { ask?: AskFn; fetchProvisions?: FetchProvisions },
 ): Promise<BuildGroupablesResult> {
   const sysReqs = await ChainSystemRequirement.find({ projectId }).sort({ _id: 1 });
   const stats: EnrichStats = {
     total: sysReqs.length,
     unmappedAddressee: 0,
     unclassified: 0,
+    needsClassification: 0,
     addresseeFromCorpus: 0,
     addresseeFromLexicon: 0,
     untypedProvisions: 0,
@@ -129,6 +164,12 @@ export async function buildGroupables(
     const cached = doc.actionClassification;
     if (cached && cached.ontologyVersion === NORM_ONTOLOGY.ontologyVersion) {
       actionId = cached.actionId;
+    } else if (!ctx.ask) {
+      // Vorschau: nicht klassifizieren, sondern zaehlen. Die Anforderung nimmt
+      // an dieser Aufzaehlung nicht teil — die Kandidatenzahl ist dadurch eine
+      // Untergrenze, und `needsClassification` sagt, wie weit sie es ist.
+      stats.needsClassification += 1;
+      continue;
     } else {
       const assignment = await classifyObligation(
         {
@@ -167,6 +208,59 @@ export async function buildGroupables(
   return { groupables, stats };
 }
 
+export interface CandidatePreview {
+  /** Ketten-Anforderungen im Projekt. */
+  total: number;
+  /** Paare, ueber die der Lauf urteilen wuerde — nach Filter und Verdraengung. */
+  candidatePairs: number;
+  /** Paare, die lex specialis ausschliesst. KEINE Kandidaten (THE-563). */
+  excludedByDisplacement: number;
+  /** Der Deckel, der bei diesem Lauf greifen wuerde. */
+  cap: number;
+  /** Wie viele Kandidaten der Deckel abschneiden wuerde. */
+  wouldCap: number;
+  /** Anforderungen, die der echte Lauf erst klassifizieren muesste. */
+  needsClassification: number;
+  unmappedAddressee: number;
+  /** Wonach ausgewaehlt wuerde, falls gekappt. Stabil, keine Rangfolge. */
+  selectionOrder: PairSelectionOrder;
+}
+
+/**
+ * Was dieser Lauf kosten wuerde — **ohne** ihn zu bezahlen (THE-590).
+ *
+ * Kein Richter, kein Klassifikator, kein Schreibzugriff. Beides ist nicht
+ * zugesichert, sondern erzwungen: `buildGroupables` bekommt kein `ask`, also
+ * existiert kein Pfad zum Modell und keiner zu `doc.save()`.
+ *
+ * Die Zahl ist eine **Untergrenze**. Anforderungen ohne gecachte Handlung
+ * nehmen nicht teil und stehen als `needsClassification` daneben — sonst
+ * laese sich „0 Kandidaten" als Befund, wo in Wahrheit nur nicht klassifiziert
+ * wurde. Genau diese Verwechslung ist die Fehlerklasse, die dieses Ticket
+ * schliesst.
+ */
+export async function previewCandidatePairs(
+  projectId: mongoose.Types.ObjectId | string,
+  ctx: { cap?: number; fetchProvisions?: FetchProvisions },
+): Promise<CandidatePreview> {
+  const cap = ctx.cap ?? DEFAULT_MAX_JUDGED_PAIRS;
+  const { groupables, stats } = await buildGroupables(projectId, {
+    ...(ctx.fetchProvisions ? { fetchProvisions: ctx.fetchProvisions } : {}),
+  });
+  // Derselbe Filter, den der Lauf benutzt — nicht eine zweite Kopie davon.
+  const { pairs, excludedByDisplacement } = enumerateCandidatePairs(groupables);
+  return {
+    total: stats.total,
+    candidatePairs: pairs.length,
+    excludedByDisplacement: excludedByDisplacement.length,
+    cap,
+    wouldCap: Math.max(0, pairs.length - cap),
+    needsClassification: stats.needsClassification,
+    unmappedAddressee: stats.unmappedAddressee,
+    selectionOrder: PAIR_SELECTION_ORDER,
+  };
+}
+
 export interface MemberDetail {
   systemRequirementId: string;
   requirementId: string | null;
@@ -197,7 +291,7 @@ export async function proposeSharedMeasures(
   };
   const grouping = await groupIntoMeasures(groupables, {
     judge: countingJudge,
-    maxJudgedPairs: ctx.maxJudgedPairs ?? 50,
+    maxJudgedPairs: ctx.maxJudgedPairs ?? DEFAULT_MAX_JUDGED_PAIRS,
   });
 
   // Confirm-UI-Futter: das System schlaegt die GRUPPE vor — welches Element

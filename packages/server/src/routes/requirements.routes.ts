@@ -31,6 +31,9 @@ import { chainPreview, persistChainItem } from '../services/chainGenerate.servic
 import {
   proposeSharedMeasures,
   confirmSharedMeasure,
+  previewCandidatePairs,
+  DEFAULT_MAX_JUDGED_PAIRS,
+  MAX_ALLOWED_JUDGED_PAIRS,
   HarmonizationError,
 } from '../services/harmonization.service';
 import { forwardTrace, backwardTrace } from '../services/traceability.service';
@@ -245,8 +248,42 @@ const harmonizeRateLimit = rateLimit({
 });
 
 const ProposeBodySchema = z.object({
-  maxJudgedPairs: z.number().int().min(0).max(200).optional(),
+  maxJudgedPairs: z.number().int().min(0).max(MAX_ALLOWED_JUDGED_PAIRS).optional(),
 });
+
+// THE-590: Was der Lauf kosten WUERDE — vor dem Lauf, ohne ihn zu bezahlen.
+//
+// GET, weil es ein Lesezugriff ist: kein Richter, kein Klassifikator, kein
+// Schreibzugriff. Deshalb auch kein Rate-Limit und `viewer` statt `editor` —
+// die Zahl zu kennen, bevor man den teuren Lauf ausloest, darf nicht teurer
+// sein als der Lauf selbst.
+const CandidatesQuerySchema = z.object({
+  cap: z.coerce.number().int().min(0).max(MAX_ALLOWED_JUDGED_PAIRS).optional(),
+});
+
+router.get(
+  '/:projectId/requirements/harmonization/candidates',
+  requireProjectAccess('viewer'),
+  async (req: Request, res: Response) => {
+    const projectId = String(req.params.projectId);
+    if (!mongoose.isValidObjectId(projectId)) {
+      return res.status(400).json({ success: false, error: 'invalid projectId' });
+    }
+    const parsed = CandidatesQuerySchema.safeParse(req.query ?? {});
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, error: 'invalid query', details: parsed.error.issues });
+    }
+    try {
+      const preview = await previewCandidatePairs(projectId, {
+        cap: parsed.data.cap ?? DEFAULT_MAX_JUDGED_PAIRS,
+      });
+      res.json({ success: true, data: preview });
+    } catch (err) {
+      log.error({ err, projectId }, '[requirements.harmonization] candidate preview failed');
+      res.status(500).json({ success: false, error: 'candidate preview failed' });
+    }
+  },
+);
 
 router.post(
   '/:projectId/requirements/harmonization/propose',
@@ -267,7 +304,7 @@ router.post(
       const result = await proposeSharedMeasures(projectId, {
         ask,
         judge: ask,
-        maxJudgedPairs: parsed.data.maxJudgedPairs ?? 50,
+        maxJudgedPairs: parsed.data.maxJudgedPairs ?? DEFAULT_MAX_JUDGED_PAIRS,
       });
       res.json({ success: true, data: result });
     } catch (err) {
