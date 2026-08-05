@@ -27,6 +27,7 @@ import {
   groupIntoMeasures,
   COMPATIBLE_ENTERPRISE_ROLES,
   areAddresseesCompatible,
+  PAIR_SELECTION_ORDER,
   type GroupableSysReq,
   type JudgeFn,
 } from '../evals/reqtrace/measureGrouping';
@@ -327,5 +328,83 @@ describe('groupIntoMeasures — Laufzeit-Schutz (THE-545)', () => {
   it('reports zero capping when the cap was never reached', async () => {
     const r = await groupIntoMeasures(many, { judge: markerJudge });
     expect(r.cappedPairs).toBe(0);
+  });
+});
+
+/**
+ * THE-590 Slice 1 — die Ehrlichkeit des Deckels.
+ *
+ * `cappedPairs` allein beantwortet die falsche Frage. Es sagt, wie viele
+ * ÜBRIG blieben, nicht wie viele es GAB — und wer die Gesamtzahl braucht,
+ * muss sie aus zwei Feldern zusammenrechnen. Genau diese stille
+ * Doppeldeutigkeit war der Watch-Point des Pre-Flights: ein Aufruf mit
+ * `maxJudgedPairs: 0` liefert die Kandidatenzahl heute schon — verkleidet
+ * als „gekappt". Ein Zähler, den man nur über einen Trick erreicht, ist
+ * kein Zähler.
+ */
+describe('groupIntoMeasures — Kandidatenzahl und Auswahlkriterium (THE-590)', () => {
+  // Jede Anforderung traegt eine EIGENE Marke: nur so kann der
+  // Determinismus-Test sagen, WELCHE Paare gekappt wurden, statt nur wie viele.
+  const many = Array.from({ length: 6 }, (_, i) =>
+    req({
+      id: `r${i}`,
+      source: i % 2 === 0 ? 'dsgvo' : 'nis2',
+      addresseeClass: i % 2 === 0 ? 'controller' : 'essential_important_entity',
+      text: `Das Unternehmen muss Risiken bewerten. [M-${i}]`,
+    }),
+  );
+
+  it('names the candidate pairs as their own field — not derivable from cappedPairs', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge, maxJudgedPairs: 2 });
+    expect(r.candidatePairs).toBe(9); // 3 dsgvo × 3 nis2, gleiche Handlung, verträgliche Rollen
+    expect(r.judged).toBe(2);
+  });
+
+  it('keeps the ledger balanced under a cap — judged + capped = candidates', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge, maxJudgedPairs: 4 });
+    expect(r.judged + r.cappedPairs).toBe(r.candidatePairs);
+  });
+
+  it('keeps the ledger balanced without a cap', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge });
+    expect(r.cappedPairs).toBe(0);
+    expect(r.judged).toBe(r.candidatePairs);
+  });
+
+  it('keeps the ledger balanced at cap zero — the count without a single judgement', async () => {
+    const judge: JudgeFn = async () => {
+      throw new Error('the judge must not run at cap zero');
+    };
+    const r = await groupIntoMeasures(many, { judge, maxJudgedPairs: 0 });
+    expect(r.judged).toBe(0);
+    expect(r.candidatePairs).toBe(9);
+    expect(r.cappedPairs).toBe(9);
+  });
+
+  // Die Verdrängung sitzt VOR dem Deckel: ein ausgeschlossenes Paar ist kein
+  // Kandidat, der weggekappt wurde — es hätte den Richter nie erreicht.
+  // Beides in eine Zahl zu werfen, würde die Negativ-Kontrolle unlesbar machen.
+  it('does not count displaced pairs as candidates', async () => {
+    const r = await groupIntoMeasures([nis2Art23, doraArt19], { judge: markerJudge });
+    expect(r.excludedByDisplacement).toHaveLength(1);
+    expect(r.candidatePairs).toBe(0);
+    expect(r.judged).toBe(0);
+  });
+
+  it('reports the selection order, and it is stable rather than a ranking', async () => {
+    const r = await groupIntoMeasures(many, { judge: markerJudge, maxJudgedPairs: 2 });
+    expect(r.selectionOrder).toBe(PAIR_SELECTION_ORDER);
+  });
+
+  it('caps the SAME pairs on a repeated run — a shifting excerpt would be worthless as evidence', async () => {
+    const seen: string[][] = [];
+    const spy: JudgeFn = async (_s, u) => {
+      seen.push([...u.matchAll(/\[M-(\d)\]/g)].map((m) => m[0]));
+      return UNRELATED;
+    };
+    await groupIntoMeasures(many, { judge: spy, maxJudgedPairs: 3 });
+    const first = seen.splice(0, seen.length);
+    await groupIntoMeasures(many, { judge: spy, maxJudgedPairs: 3 });
+    expect(seen).toEqual(first);
   });
 });

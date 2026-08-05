@@ -84,6 +84,10 @@ describe('buildGroupables — Anreicherung mit Cache und Quoten', () => {
       total: 2,
       unmappedAddressee: 0,
       unclassified: 0,
+      // THE-590: mit `ask` wird klassifiziert statt gezählt — der
+      // Vorschau-Zähler bleibt null. Er ist die Gegenprobe dazu, dass hier
+      // wirklich der teure Pfad lief.
+      needsClassification: 0,
       // Ohne Korpus-Stub kennt der Lauf keine typisierte Provision — beide
       // Adressaten kommen aus dem Lexikon (THE-591-Rückfall).
       addresseeFromCorpus: 0,

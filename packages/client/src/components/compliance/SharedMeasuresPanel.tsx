@@ -9,21 +9,55 @@
  *      (THE-551: die Ebene ist eine Landschafts-Entscheidung). Der
  *      Fehlerrest-Satz steht in der Fläche, nicht in einer Fußnote.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Loader2, GitMerge, ShieldOff } from 'lucide-react';
+import { Loader2, GitMerge, ShieldOff, ScanLine, AlertTriangle } from 'lucide-react';
 import {
   harmonizationAPI,
   type HarmonizationProposeResult,
+  type HarmonizationCandidatePreview,
 } from '../../services/api';
+
+/**
+ * Wonach ausgewaehlt wurde, in Prosa (THE-590 AC-2).
+ *
+ * Ein `Record` ueber den Union-Typ, kein `switch` mit Default: kommt je eine
+ * neue Reihenfolge dazu, erzwingt TypeScript hier einen Text. Sonst waere der
+ * erste stille Fehler ein Deckel, der nach etwas anderem auswaehlt, als in der
+ * Flaeche steht — und das ist genau die Sorte Luege, die dieses Ticket
+ * schliesst.
+ */
+const SELECTION_ORDER_LABEL: Record<HarmonizationProposeResult['grouping']['selectionOrder'], string> = {
+  'id-ascending': 'taking the first pairs in stable id order — that is not a ranking',
+};
 
 export default function SharedMeasuresPanel() {
   const { projectId } = useParams<{ projectId: string }>();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<HarmonizationProposeResult | null>(null);
+  const [preview, setPreview] = useState<HarmonizationCandidatePreview | null>(null);
   const [selectedElement, setSelectedElement] = useState<Record<string, string>>({});
   const [confirming, setConfirming] = useState<string | null>(null);
+
+  // THE-590: Der Umfang steht VOR dem teuren Lauf. Das ist ein Lesezugriff —
+  // kein Richter, kein Klassifikator —, deshalb darf er ohne Klick laufen.
+  // Waere er teuer, waere die Kostenvorschau ihre eigene Kostenstelle.
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    harmonizationAPI
+      .candidates(projectId)
+      .then((res) => {
+        if (!cancelled) setPreview(res.data.data);
+      })
+      // Stumm: die Vorschau ist eine Zugabe. Faellt sie aus, bleibt der Lauf
+      // benutzbar — eine Fehlermeldung fuer eine Zusatzinformation waere Laerm.
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   const propose = useCallback(async () => {
     if (!projectId) return;
@@ -91,6 +125,35 @@ export default function SharedMeasuresPanel() {
         before confirming.
       </p>
 
+      {/* THE-590: der Umfang, bevor der Nutzer bezahlt. Asilomar #16 setzt
+          voraus, dass der Mensch weiss, WORUEBER er entscheidet. */}
+      {preview && (
+        <div
+          className="mt-2 flex items-start gap-1.5 rounded border border-[#334155] bg-[#1e293b] px-2 py-1.5 text-[11px] text-slate-300"
+          data-testid="candidate-preview"
+        >
+          <ScanLine className="mt-0.5 h-3 w-3 shrink-0 text-slate-400" />
+          <span>
+            This run would judge <strong className="text-white">{preview.candidatePairs} candidate pairs</strong>{' '}
+            from {preview.total} chain requirements
+            {preview.excludedByDisplacement > 0 && (
+              <> · {preview.excludedByDisplacement} excluded upfront as mutually exclusive regimes</>
+            )}
+            {preview.wouldCap > 0 && (
+              <span className="text-amber-300">
+                {' '}· {preview.wouldCap} of them would <strong>not be judged</strong> — the cap is {preview.cap}
+              </span>
+            )}
+            {preview.needsClassification > 0 && (
+              <>
+                {' '}· {preview.needsClassification} requirements are not classified yet, so this is a{' '}
+                <strong className="text-white">lower bound</strong> — the run would classify them first
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
       {result && (
         <div className="mt-3 space-y-3">
           <div className="text-[10px] text-slate-500" data-testid="harmonization-stats">
@@ -105,6 +168,24 @@ export default function SharedMeasuresPanel() {
               {result.stats.addresseeFromLexicon} from lexicon
             </span>
           </div>
+
+          {/* THE-590 AC-3: Ein gekappter Lauf darf nicht wie ein vollstaendiger
+              aussehen. Die Warnung steht UEBER dem Ergebnis, nicht als vierte
+              Zahl in einer 10px-Zeile — dieselbe Fehlerklasse, die THE-575 in
+              der Drift-Bilanz geschlossen hat. */}
+          {result.grouping.cappedPairs > 0 && (
+            <div className="rounded border border-amber-600/70 bg-amber-950/40 p-2" data-testid="incomplete-run">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-300">
+                <AlertTriangle className="h-3 w-3" /> Partial proposal — not every candidate was looked at
+              </div>
+              <p className="mt-1 text-[10px] text-amber-200/80">
+                Judged {result.stats.pairsJudged} of {result.grouping.candidatePairs} candidate pairs.
+                The remaining {result.grouping.cappedPairs} were selected away by{' '}
+                {SELECTION_ORDER_LABEL[result.grouping.selectionOrder]}. Treat what follows as an
+                excerpt: pairs that were never judged cannot appear as measures.
+              </p>
+            </div>
+          )}
 
           {result.grouping.excludedByDisplacement.length > 0 && (
             <div className="rounded border border-amber-900/60 bg-amber-950/30 p-2" data-testid="displacement-info">
@@ -121,9 +202,21 @@ export default function SharedMeasuresPanel() {
           )}
 
           {result.grouping.measures.length === 0 ? (
-            <p className="text-[11px] italic text-slate-400">
-              No shared-measure candidates in this run. That is a valid result.
-            </p>
+            /* Der Unterschied, auf den es ankommt: „nichts gefunden" ist ein
+               Befund — „nichts gefunden, weil abgeschnitten" ist eine
+               Nichtaussage. Beides gleich zu formulieren waere die Luege, die
+               dieses Ticket schliesst. */
+            result.grouping.cappedPairs > 0 ? (
+              <p className="text-[11px] italic text-amber-300" data-testid="empty-because-capped">
+                No shared measure among the {result.stats.pairsJudged} pairs this run looked at — but{' '}
+                {result.grouping.cappedPairs} were never judged. This is not a finding; raise the cap
+                or narrow the project to get one.
+              </p>
+            ) : (
+              <p className="text-[11px] italic text-slate-400">
+                No shared-measure candidates in this run. That is a valid result.
+              </p>
+            )
           ) : (
             result.grouping.measures.map((m) => {
               const linkable = [

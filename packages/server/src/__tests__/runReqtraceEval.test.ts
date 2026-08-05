@@ -8,6 +8,7 @@
  * Die Häuser sind injiziert: kein Live-LLM, derselbe Codepfad wie im echten
  * Lauf (Muster: runActionEval).
  */
+import { PAIR_SELECTION_ORDER } from '../evals/reqtrace/measureGrouping';
 import {
   evaluateReqtrace,
   renderReqtraceReport,
@@ -184,7 +185,11 @@ describe('Verdikt und Bericht (THE-545, DoD-V)', () => {
       articles: 9, clauses: 100, clausesPerArticle: 11, candidates: 90, afterSplit: 95,
       splitCount: 5, unsingular: 0, clausesWithoutRequirement: 10, unreadableExtractions: 0,
       requirementsPerClause: 0.95, sysReqs: 95, implFreedomFailures: 0,
-      grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {}, cappedPairs: 0 },
+      grouping: {
+      measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [],
+      judged: 0, relationCounts: {}, cappedPairs: 0,
+      candidatePairs: 0, selectionOrder: PAIR_SELECTION_ORDER,
+    },
       goldHits: [], goldHitCount: 4, ambiguousGoldMatches: [],
       negativeMechanical: true, negativeSemantic: true, canaryPassed: true, sysReqTexts: {}, sysReqActions: {},
       verdict: 'traegt', verdictReason: '', markdown: '',
@@ -315,7 +320,11 @@ function fakeResult(): ReqtraceEvalResult {
     articles: 1, clauses: 1, clausesPerArticle: 1, candidates: 1, afterSplit: 1,
     splitCount: 0, unsingular: 0, clausesWithoutRequirement: 0, unreadableExtractions: 0,
     requirementsPerClause: 1, sysReqs: 1, implFreedomFailures: 0,
-    grouping: { measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [], judged: 0, relationCounts: {}, cappedPairs: 0 },
+    grouping: {
+      measures: [], sharedCorePairs: [], excludedByDisplacement: [], collapsed: [],
+      judged: 0, relationCounts: {}, cappedPairs: 0,
+      candidatePairs: 0, selectionOrder: PAIR_SELECTION_ORDER,
+    },
     goldHits: [], goldHitCount: 0, ambiguousGoldMatches: [],
     negativeMechanical: true, negativeSemantic: true, canaryPassed: true,
     sysReqTexts: {}, sysReqActions: {},
