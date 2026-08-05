@@ -78,16 +78,50 @@ an einer. Die Vorschau muss den Deckel zeigen, den der Lauf verwendet — zwei L
 auseinanderlaufen, machen aus der Vorschau eine Lüge. Jetzt `DEFAULT_MAX_JUDGED_PAIRS` und
 `MAX_ALLOWED_JUDGED_PAIRS`.
 
+## Am echten Bestand gemessen
+
+Projekt `6a705449293587c4708d4f19`, Korpus verbunden:
+
+```
+Ketten-Anforderungen        15        105 rohe Paare
+davon unklassifiziert        0
+Adressat unmappbar           0        ⟵ deckt sich mit THE-591
+durch Verdrängung raus       0
+KANDIDATEN-PAARE            25        = 23,8 % der rohen
+Deckel (Default)            50   →  würde gekappt: 0
+```
+
+| Kontrolle | Ergebnis |
+|---|---|
+| **Schreibt die Vorschau?** | Klassifikationen vorher 15 · nachher 15 → **nein** |
+| **Vorschau == Lauf-Pfad?** | 25 = 25, bei **0** Klassifikations-Aufrufen (werfender Stub nie gerufen) → **identisch** |
+| **Macht die Vorschau Modellaufrufe?** | **nicht anwendbar** — siehe unten |
+
+### Zwei Messfehler, die dieser Lauf offengelegt hat
+
+**1. Der erste Lauf maß den falschen Pfad.** Er meldete `unmappedAddressee: 1` statt 0 — die
+Korpus-Verbindung war nicht abgewartet (`bufferCommands = false`), der Client fing das als
+„Korpus nicht erreichbar" ab und fiel still auf das Lexikon zurück. **Derselbe Fehler wie in
+der THE-571-Abnahme.** Die Sonde wartet jetzt auf `getCorpusConnection().asPromise()` und
+schreibt den Korpus-Status in ihre erste Zeile — ein Lauf, der nicht sagt, auf welchem Pfad
+er lief, ist als Beleg wertlos.
+
+**2. Eine Kontrolle bestand, weil es nichts zu prüfen gab.** „Die Vorschau macht keine
+Modellaufrufe" lässt sich an diesem Bestand nicht zeigen: 0 Anforderungen sind
+unklassifiziert, also hätte auch der teure Pfad nichts zu klassifizieren. Die Sonde führt
+das jetzt als **NICHT ANWENDBAR** statt als Häkchen. Belegt ist die Zusage durch den
+Dienst-Test mit werfendem Stub — nicht durch diesen Lauf.
+
 ## Grenzen — was NICHT gemessen ist
 
-- **Keine Messung am echten Bestand.** Die Sonde `the590-preview-probe.ts` ist geschrieben,
-  aber **nicht gelaufen**: Docker läuft nicht, damit ist die lokale Dev-Mongo nicht
-  erreichbar. In Produktion liegen 0 Ketten-Anforderungen (gemessen THE-577), dort hätte sie
-  ohnehin nur Nullen gezeigt. Die beiden Kontrollen, die sie nachprüft (kein Schreibzugriff,
-  kein Modellaufruf), sind durch Dienst-Tests abgedeckt — die Sonde wäre die
-  Bestätigung am echten Datensatz gewesen, nicht der einzige Beleg.
 - **Nicht am Klick geprüft.** Bauteil-Tests mit gestubbtem API-Client, kein angemeldeter
   Browser.
+- **Der Bestand ist klein.** 15 Anforderungen → 25 Kandidaten, weit unter dem Deckel. Der
+  Deckel beißt erst bei Größenordnungen, die lokal nicht vorliegen — die 762 des
+  Referenzlaufs stammen aus dem Prüfstand mit 290 Anforderungen. Was der Deckel im Alltag
+  bedeutet, bleibt damit hochgerechnet, nicht beobachtet.
+- **In Produktion liegen 0 Ketten-Anforderungen** (gemessen THE-577); dort zeigte die
+  Vorschau heute nur Nullen.
 - **Die Deckelhöhe bleibt unverändert** (Default 50, Maximum 200 gegen 762 nötige Urteile im
   Referenzlauf). Das ist Slice 2 und **blockiert**: die Prämisse „ein ungedeckelter Lauf ist
   bezahlbar" ist ungemessen. Slice 1 macht den Deckel ablesbar, nicht höher.
