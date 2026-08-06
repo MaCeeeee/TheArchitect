@@ -54,3 +54,49 @@ describe('evaluateDisplacement — die Kante entscheidet, mit Zitat', () => {
     ).toBeNull();
   });
 });
+
+/**
+ * THE-600 — die Kante gilt für das GESETZ, nicht für die Schreibweise.
+ *
+ * Der Korpus-Pfad (seit THE-570 der Hauptpfad) liefert Werk-Stämme wie
+ * `nis2-de`; die Ontologie-Kante ist auf `nis2` gestellt. Vor diesem Fix
+ * verglich das Gate exakt — drei von vier Stamm-Kombinationen waren stumm,
+ * und ein rechtlich gegenstandsloses Paar erreichte den Richter. Gemessen
+ * am 2026-08-05 (Pre-Flight-Probe), nicht vermutet.
+ */
+describe('evaluateDisplacement — Werk-Stämme (THE-600)', () => {
+  const doraDe = { source: 'dora-de', addresseeClass: 'financial_entity' };
+  const nis2De = { source: 'nis2-de', addresseeClass: 'essential_important_entity' };
+
+  it('fires for -de work stems — the canonical corpus path', () => {
+    const r = evaluateDisplacement(nis2De, doraDe);
+    expect(r).not.toBeNull();
+    // Das Verdikt behält die SPRACHFASSUNG der Beteiligten — die Anzeige
+    // darf nicht verlieren, welches Werk tatsächlich im Paar stand.
+    expect(r!.displaced).toBe('nis2-de');
+    expect(r!.prevailing).toBe('dora-de');
+    expect(r!.citations.join(' ')).toMatch(/Art\. 1|Art\. 4/);
+  });
+
+  it('fires for mixed stems — both directions', () => {
+    expect(evaluateDisplacement({ ...nis2De, source: 'nis2' }, doraDe)).not.toBeNull();
+    expect(evaluateDisplacement(nis2De, { ...doraDe, source: 'dora' })).not.toBeNull();
+  });
+
+  it('treats two expressions of the SAME law as one law — no self-displacement, no pair', () => {
+    expect(
+      evaluateDisplacement({ source: 'nis2', addresseeClass: 'essential_important_entity' }, nis2De),
+    ).toBeNull();
+  });
+
+  it('does not confuse a real suffix with a name that merely ends alike', () => {
+    // Ein Gesetz, dessen Name auf „de" endet, ohne Sprachsuffix zu sein,
+    // bleibt es selbst — normalizeCorpusSource schneidet nur `-de`/`-en`.
+    expect(
+      evaluateDisplacement(
+        { source: 'trade', addresseeClass: 'financial_entity' },
+        doraReq,
+      ),
+    ).toBeNull();
+  });
+});
