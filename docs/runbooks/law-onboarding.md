@@ -203,6 +203,34 @@ docker compose -f docker-compose.prod.yml up -d app
 
 ---
 
+### Schritt 9b — Den Prod-Vektorindex nachziehen 🟢
+
+**Der Schritt, der beim ESG-Durchlauf gefehlt hat und fast durchgerutscht wäre.**
+
+Es gibt **zwei** Vektorspeicher. Der Crawler bettet in den auf Server B ein; die
+Anwendung durchsucht ihren **eigenen, lokalen** (`QDRANT_URL=http://qdrant:6333`).
+Zwischen beiden gleicht nichts von selbst ab.
+
+```
+docker exec thearchitect-app node packages/server/dist/scripts/sync-corpus-vectors.js
+docker exec thearchitect-app node packages/server/dist/scripts/sync-corpus-vectors.js --apply
+```
+
+Erst ohne, dann mit `--apply`. Das Skript rechnet nichts neu — die fertigen Vektoren
+liegen im `embedding`-Feld der Korpus-Mongo. Idempotent, mehrfaches Ausführen
+schadet nicht.
+
+**Warum das kein optionaler Schritt ist:** `drift = 0` in Schritt 8 misst nur Server
+B. Am 2026-08-06 stand dort alles auf grün, während in Produktion **214 Vektoren
+fehlten** — die ESG-VO und, seit elf Tagen unbemerkt, die Anleihegesetze aus
+THE-519. `corpus/health` meldete dabei `ok: true` und die volle Dokumentenzahl,
+weil es Mongo misst und nicht den Vektorindex.
+
+Ursachenbehebung (ein Index statt zwei, und eine Gesundheitsmeldung, die den
+Vektorindex mitmisst) = THE-621. Bis dahin ist dieser Schritt Pflicht.
+
+---
+
 ### Schritt 10 — Fachliche Abnahme 🔴
 
 Semantische Suche zu einem Sachverhalt des neuen Gesetzes: kommen Artikel zurück,
@@ -238,7 +266,21 @@ Erst wenn das steht, ist das Gesetz aufgenommen.
 | 9 | `embed-all` | `total: 0` — nichts nachzuholen | < 1 min |
 | 10 | `corpus/status` | **drift = 0** beidseitig, 1746 = 1746, 27 Quellen | < 1 min |
 | 11 | Textqualität | 0 Tabellenmüll, Art. 1–53 lückenlos, **1 Artikel am Cap** → THE-620 | ~3 min |
-| 12 | Server-A-Deploy | **blockiert** — kein Schreibzugriff | — |
+| 12 | Server-A-Deploy | Gate 134/134, App kennt die Quelle, `corpus/health` 1746 | ~5 min |
+| 13 | **Prod-Vektorindex: 1532 statt 1746** | 214 fehlten, davon 108 seit 11 Tagen → THE-621 | ~10 min |
+| 14 | Nachzug gebaut + ausgeführt | `sync-corpus-vectors --apply`, 1532 → **1746** | ~25 min |
+| 15 | Fachliche Abnahme | ESG-Treffer auf Platz 1 mit **0,804** | ~2 min |
+
+### Die zweite Lehre: `drift = 0` ist nur die halbe Wahrheit
+
+Schritt 8 meldete für beide Sprachfassungen saubere Deckungsgleichheit — und war
+trotzdem kein Beweis dafür, dass die Anwendung das Gesetz findet. Gemessen wurde
+Server B; durchsucht wird Server A. **Ein Gesetz kann in beiden Speichern eines
+Servers vollständig liegen und im Produkt trotzdem nicht existieren.**
+
+Für das Script heißt das: die Abnahme fragt **beide** Vektorspeicher ab, nicht nur
+`corpus/status`. Und die letzte Prüfung ist keine Zahl, sondern eine echte
+Bedeutungssuche — bei fachlich scharfer Frage muss das neue Gesetz oben stehen.
 
 ### Die eigentliche Lehre dieses Durchlaufs: der Redeploy war der teuerste Schritt
 
