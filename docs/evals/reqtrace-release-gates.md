@@ -86,6 +86,34 @@ die am 03.08. gemessen wurden (BCD-01, RSK-01). Damit hängt der Wächter nicht 
 selbst, sondern an einer echten historischen Messung. Weicht das ab, bildet das Tor den
 Produktpfad nicht mehr nach — unabhängig davon, ob es gerade grün ist.
 
+## Wann die Anker-Prüfung laufen muss — gemessen, nicht geraten
+
+Am 2026-08-06 als natürliches Experiment gefahren: Die ESG-Rating-VO ging in den Korpus
+(THE-614), Umfang **1640 → 1746** Provisions. Die Anker davor und danach:
+
+```
+4 von 4 unverändert — Rollen UND versionHashes identisch
+Gold 4/5 eingefroren · 4/5 live
+```
+
+**Ein Gesetzes-Onboarding rührt bestehende Typisierungen nicht an.** Die Anker danach zu
+prüfen ist deshalb nicht nötig — und eine Route, die darauf lauert, hätte nichts zu melden.
+Genau daran ist die geplante Drift-Route gestorben, bevor sie ein Ticket bekam.
+
+Der echte Auslöser ist ein anderer:
+
+| Korpus-Operation | Anker prüfen? | Grund |
+|---|---|---|
+| Neues Gesetz onboarden | nein | gemessen 2026-08-06: bestehende Typisierung unberührt |
+| **Bestehendes Gesetz neu typisieren** | **ja** | schreibt `typing.partyRole` und `versionHash` der gepinnten Provisions |
+| Gesetzestext neu crawlen (Novelle) | **ja** | neuer `versionHash` → die Typisierung wird stale |
+| Vektorindex abgleichen | nein | berührt die Typisierung nicht (ADR-0009) |
+
+**Warum diese Drift sich NICHT selbst heilen darf.** THE-621 lässt die Vektor-Drift
+automatisch nachziehen — richtig, denn sie ist mechanisch auflösbar. Anker-Drift ist es
+nicht: Sie stellt die Frage, ob der Korpus richtig liegt oder unser Tor. Die Fixture
+automatisch nachzuziehen wäre die Aufhebung des Tors, nicht seine Pflege.
+
 ## Wenn das Tor rot wird
 
 1. **Nicht die Erwartung nachziehen.** Weder Schwelle noch Fixture werden angepasst, um Grün
