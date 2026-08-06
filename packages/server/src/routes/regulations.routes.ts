@@ -26,6 +26,7 @@ import {
   isCorpusConfigured,
   listCorpusRelationSuggestionDocs,
 } from '../services/corpusClient.service';
+import { corpusVectorIndexHealth } from '../services/corpusVectorSync.service';
 import { getFallbackStats, isStrictCorpusReads } from '../services/regulationResolver.service';
 import {
   isNormSource,
@@ -49,6 +50,13 @@ const router = Router();
 router.get('/regulations/corpus/health', async (_req: Request, res: Response) => {
   const configured = isCorpusConfigured();
   const health = configured ? await corpusHealth() : { ok: false };
+  // THE-623: der Endpoint meldete am 2026-08-06 grün und 1746, während der
+  // Index, den die App durchsucht, bei 1532 stand — er maß nur Mongo. Jetzt
+  // misst er den lokalen Vektorindex mit. Top-Level-`ok` behält seine Bedeutung
+  // (Korpus lesbar; n8n-Healthcheck + STRICT-Readiness hängen daran); die
+  // Semantik-Frische steht in `vectorIndex.ok`. Warn-Log bei Drift kommt aus
+  // dem Service.
+  const vectorIndex = await corpusVectorIndexHealth();
   // THE-419 cutover-readiness telemetry: app-DB fallback counters since process
   // start. When both are 0 over a full traffic window, the corpus serves every
   // read and CORPUS_STRICT_READS can be flipped safely. `fallbackStats` is
@@ -58,6 +66,7 @@ router.get('/regulations/corpus/health', async (_req: Request, res: Response) =>
     configured,
     health,
     ok: health.ok,
+    vectorIndex,
     strictReads: isStrictCorpusReads(),
     fallbackStats: getFallbackStats(),
     uptimeSeconds: Math.round(process.uptime()),

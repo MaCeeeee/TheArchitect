@@ -5,7 +5,8 @@ import { buildRegulationKey, computeVersionHash } from '../db/regulationKey';
 import { getSourceEntry } from '../sources/source-registry';
 import { isNormSource, NORM_ONTOLOGY } from '@thearchitect/shared';
 import { config } from '../config';
-import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
+import { isEmbeddingConfigured, tryEmbedAndIndex, getQdrantClient, countPoints } from '../embeddings';
+import { runEmbedBackfill, type BackfillResult } from '../embeddings/backfill';
 import { requireCrawlerToken } from '../lib/requireToken';
 
 export const CrawlBodySchema = z.object({
@@ -123,6 +124,40 @@ export async function crawlRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
-    return reply.code(200).send({ results, errors, embeddingEnabled: willEmbed });
+    // ── Reconcile-Nachlauf (THE-622) ────────────────────────────────────
+    // Der Inline-Embed oben kann still übersprungen werden (Sidecar down,
+    // Teil-Failure) — das Dokument liegt dann in Mongo und nie in Qdrant, und
+    // kein Signal zeigt es an. So lag DORA sechs Artikel lang halb im Korpus
+    // (2026-07-12). Deshalb läuft der Backfill jetzt als Teil der Route: er
+    // holt idempotent nur nach, was fehlt (`total: 0` = nichts lag brach).
+    let reconcile: BackfillResult | null = null;
+    if (willEmbed) {
+      try {
+        reconcile = await runEmbedBackfill({ embeddingConfig });
+        if (reconcile.total > 0) {
+          request.log.info(
+            { total: reconcile.total, embedded: reconcile.embedded, failed: reconcile.failed },
+            'crawl reconcile: backfilled regulations the inline embed had skipped'
+          );
+        }
+        // Drift-Probe aus dem Ziel selbst — der Backfill-Rückgabewert ist kein
+        // Beweis. Zählerdifferenz ⇒ Warn-Log mit beiden Zahlen, damit die Drift
+        // im Log steht statt nur in einer Hand-Query.
+        const mongoCount = await Regulation.estimatedDocumentCount();
+        const qdrantCount = await countPoints(getQdrantClient(embeddingConfig.qdrantUrl, embeddingConfig.qdrantApiKey));
+        if (mongoCount !== qdrantCount) {
+          request.log.warn(
+            { mongoCount, qdrantCount, drift: mongoCount - qdrantCount },
+            'crawl reconcile: Mongo and Qdrant still disagree after backfill — inspect /corpus/status'
+          );
+        }
+      } catch (err) {
+        // Nachlauf-Fehler dürfen den Crawl-Erfolg nicht verschlucken — die
+        // gecrawlten Dokumente SIND in Mongo. Loggen, Response trägt reconcile:null.
+        request.log.error({ err }, 'crawl reconcile failed — run POST /embed-all manually');
+      }
+    }
+
+    return reply.code(200).send({ results, errors, embeddingEnabled: willEmbed, reconcile });
   });
 }
