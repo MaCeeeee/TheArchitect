@@ -28,6 +28,7 @@
  */
 import {
   assessNormApplicability,
+  normalizeCorpusSource,
   type LegalProfile,
   type LegalApplicabilityAssessment,
 } from '@thearchitect/shared';
@@ -38,10 +39,15 @@ export interface TypedCorpusSummary extends TypedProvisionDoc {
   source: string;
 }
 
-/** `dora-de` → `dora`, `mdr-en` → `mdr`. Nur echte Sprachsuffixe. */
-export function normalizeCorpusSource(source: string): string {
-  return source.replace(/-(de|en)$/, '');
-}
+/**
+ * `dora-de` → `dora`, `mdr-en` → `mdr`. Nur echte Sprachsuffixe.
+ *
+ * Liegt seit THE-600 in `shared` neben den Verdrängungs-Kanten — dort braucht
+ * das Paar-Gate sie ebenfalls, und zwei Ableitungen wären eine Kopie, die
+ * irgendwann anders schneidet. Hier nur weitergereicht, damit die bisherigen
+ * Aufrufer unverändert bleiben.
+ */
+export { normalizeCorpusSource };
 
 /**
  * Eine Sprachfassung je Gesetz — Priorität bar > `-de` > `-en`.

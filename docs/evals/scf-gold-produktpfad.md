@@ -195,3 +195,72 @@ die Gold-Quote gegen das JEWEILS aktuelle Lexikon durch. Wer daran etwas ändert
 Wirkung sofort und ohne einen einzigen LLM-Aufruf.
 
 Beide read-only; sie schreiben nichts in die Datenbank.
+
+---
+
+# Nachtrag 2026-08-05 — die Schwelle ist gehalten, und ein zweiter blinder Fleck kam heraus
+
+**Verdikt: 4 von 5 · Schwelle ≥ 4 · gehalten.** Nachvollziehbar mit
+`packages/server/src/scripts/the602-gold-productpath-probe.ts` — **null Modellaufrufe**.
+
+## Was sich seit dem 03.08. geändert hat
+
+| | 03.08. | 05.08. |
+|---|---|---|
+| Adressat | Lexikon über die Paraphrase | **Korpus-Provision** (THE-591) |
+| Werk-Vergleich | exakter Stamm | **Familie** (THE-600) |
+| Gold über den Produktpfad | 3 → 2 von 5 | **4 von 5** |
+
+```
+TRÄGER                   PRÜFSTAND                    PRODUKTPFAD                  HERKUNFT
+✓ dsgvo:art32:c04:q1s1   controller                   controller                   corpus   ⟵ BCD-01, war verloren
+✓ dsgvo:art32:c06:q1s1   controller                   controller                   corpus   ⟵ RSK-01, war verloren
+✓ dsgvo:art24:c01:q1s1   controller                   controller                   corpus
+✓ dsgvo:art24:c01:q2s1   controller                   controller                   corpus
+✓ nis2:art21:c01:q1s1    essential_important_entity   essential_important_entity   corpus
+✓ nis2:art21:c01:q1s2    essential_important_entity   essential_important_entity   corpus
+✓ nis2:art21:c01:q2s1    essential_important_entity   essential_important_entity   corpus
+✓ dora:art19:c11:q1s1    financial_entity             financial_entity             corpus
+
+8 von 8 gleiche Rolle · alle aus dem Korpus · 0 Modellaufrufe   (03.08.: 8 von 12, 17 Aufrufe)
+```
+
+**Beide Verluste saßen auf demselben Artikel.** `dsgvo:art-32` liefert aus dem Korpus
+`controller` — unabhängig davon, ob die Transformation „Unternehmen" oder „Unternehmen als
+Verantwortlicher oder Auftragsverarbeiter" paraphrasiert hat. Der Umweg über die Paraphrase
+entfällt, und mit ihm beide Fehlerquellen: das zu generische „Unternehmen" (BCD-01) und die
+Zweideutigkeit, die THE-588 zu Recht verwarf (RSK-01).
+
+## Der zweite blinde Fleck, im Pre-Flight gefunden
+
+Auf dem Weg zu dieser Messung fiel ein Fehler auf, der mit dem Gold nichts zu tun hat und
+schwerer wiegt: **das Verdrängungs-Gate war für Werk-Stämme stumm** (THE-600). Die
+Ontologie-Kante steht auf `nis2`, der Korpus-Pfad liefert `nis2-de` — `findDisplacement`
+vergleicht exakt.
+
+```
+dora    × nis2       → GREIFT
+dora-de × nis2-de    → ❌ greift NICHT      ⟵ der seit THE-570 kanonische Pfad
+nis2    × nis2-de    → galt als gesetzesübergreifendes Paar (eine Norm gegen sich selbst)
+```
+
+Am echten Bestand: **25 → 13 Kandidaten-Paare**, alle 12 entfallenen waren `nis2 × nis2-de`,
+**null** neue. Zwölf Modellurteile, die eine Norm mit sich selbst verglichen hätten.
+
+> Dasselbe Muster wie beim Adressaten: **der Prüfstand misst mit sauberen Werten, das Produkt
+> bekommt die echten.** Zweimal in drei Tagen dieselbe Lücke, an verschiedenen Achsen. Das ist
+> kein Zufall mehr, sondern eine Eigenschaft der Bauweise — jede Fixture-Annotation, die im
+> Produkt aus Daten kommt, ist ein Verdachtsfall.
+
+## Grenzen — was diese Zahl NICHT deckt
+
+- **Zwei Achsen gemessen, eine geerbt.** Adressat und Werk-Familie sind gemessen; die
+  kanonische Handlung ist auf beiden Pfaden dieselbe (derselbe Klassifikator, derselbe Text)
+  und wird vom Prüfstand übernommen. Lauf 4 hat die zugewiesenen Handlungen nicht in den
+  Bericht geschrieben — sie nachzubauen hieße, Werte zu erfinden.
+  *(Ein erster Sondenentwurf tat genau das und meldete CRY-01 fälschlich als verloren. Der
+  Fehler lag in der Sonde, nicht im Produktpfad.)*
+- **Eine Beobachtung, keine Verteilung** — die `verpflichteter`-Texte stammen aus dem Lauf vom
+  03.08.
+- **Extraktions- und Richter-Varianz unverändert** gegenüber Lauf 4.
+- **Nicht am Klick geprüft.**

@@ -29,10 +29,14 @@
  * gegenstandslos ohne dieses Gate) · Kante: `dora-prevails-nis2` (Art. 1
  * Abs. 2 DORA; Art. 4 NIS2 + ErwG 28).
  */
-import { findDisplacement } from '@thearchitect/shared';
+import { findDisplacement, normalizeCorpusSource } from '@thearchitect/shared';
 
 /** Eine Seite des Paars: Rechtsakt + Adressatenklasse der Pflicht. */
 export interface DisplacementParty {
+  /**
+   * Rechtsakt — als Familie (`nis2`) ODER als Sprachfassung (`nis2-de`).
+   * Gerechnet wird auf der Familie, ausgewiesen wird, was hereinkam.
+   */
   source: string;
   addresseeClass: string;
 }
@@ -52,18 +56,34 @@ export interface DisplacementVerdict {
  * Schließen sich die beiden Pflichten für einen gemeinsamen Adressaten aus?
  * `null` = keine Kante greift, das Paar bleibt beurteilbar. REIN, symmetrisch:
  * das Ergebnis hängt an der Kante, nicht an der Argument-Reihenfolge.
+ *
+ * ── DIE KANTE GILT FÜR DAS GESETZ, NICHT FÜR DIE SCHREIBWEISE (THE-600) ──
+ *
+ * Verglichen wird auf der Werk-FAMILIE. Der Korpus-Pfad (seit THE-570 der
+ * Hauptpfad) liefert Sprachfassungen als Schlüssel-Stamm — `nis2-de`,
+ * `dora-de` —, die Ontologie-Kanten stehen auf `nis2`/`dora`. Ein exakter
+ * Vergleich war deshalb für drei von vier Stamm-Kombinationen stumm, und ein
+ * rechtlich gegenstandsloses DORA×NIS2-Paar erreichte den Richter. Gemessen,
+ * nicht vermutet.
+ *
+ * Das VERDIKT trägt weiterhin die Sprachfassung, wie sie hereinkam: die
+ * Familie ist die Rechenachse, die Fassung die Auskunft. Wer im Audit liest
+ * „nis2 fällt", muss wissen, welches Werk tatsächlich im Paar stand.
  */
 export function evaluateDisplacement(
   a: DisplacementParty,
   b: DisplacementParty,
 ): DisplacementVerdict | null {
-  if (a.source === b.source) return null;
-  for (const [x, y] of [
-    [a, b],
-    [b, a],
+  const famA = normalizeCorpusSource(a.source);
+  const famB = normalizeCorpusSource(b.source);
+  // Zwei Fassungen desselben Gesetzes sind ein Gesetz — es verdrängt sich nicht.
+  if (famA === famB) return null;
+  for (const [x, xFam, y, yFam] of [
+    [a, famA, b, famB],
+    [b, famB, a, famA],
   ] as const) {
-    const hit = findDisplacement(x.source, y.addresseeClass);
-    if (hit && hit.prevailing.source === y.source) {
+    const hit = findDisplacement(xFam, y.addresseeClass);
+    if (hit && hit.prevailing.source === yFam) {
       return {
         displaced: x.source,
         prevailing: y.source,

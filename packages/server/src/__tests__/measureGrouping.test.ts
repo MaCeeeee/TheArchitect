@@ -408,3 +408,63 @@ describe('groupIntoMeasures — Kandidatenzahl und Auswahlkriterium (THE-590)', 
     expect(seen).toEqual(first);
   });
 });
+
+/**
+ * THE-600 — Werk-Stämme: die Kette rechnet auf dem GESETZ, nicht auf der
+ * Schreibweise.
+ *
+ * Der Korpus-Pfad (seit THE-570 der Hauptpfad) liefert `nis2-de`/`dora-de`
+ * als Schlüssel-Stamm. Vor diesem Fix verglich alles exakt: das
+ * Verdrängungs-Gate war für drei von vier Stamm-Kombinationen stumm
+ * (gemessen 2026-08-05), und zwei Sprachfassungen DESSELBEN Gesetzes galten
+ * als gesetzesübergreifendes Paar. Der Richter throws hier bewusst — die
+ * Kontrolle ist strukturell, nicht inhaltlich: sieht er das Paar überhaupt,
+ * ist sie gerissen, egal wie er urteilt.
+ */
+describe('groupIntoMeasures — Werk-Stämme (THE-600)', () => {
+  const neverJudge: JudgeFn = async () => {
+    throw new Error('the judge must never see this pair');
+  };
+  const nis2DeArt23 = req({
+    ...nis2Art23,
+    id: 'nis2-de:art23:s1',
+    source: 'nis2-de',
+  });
+  const doraDeArt19 = req({
+    ...doraArt19,
+    id: 'dora-de:art19:s1',
+    source: 'dora-de',
+  });
+
+  it('excludes dora-de × nis2-de BEFORE any judge — the canonical corpus path', async () => {
+    const r = await groupIntoMeasures([nis2DeArt23, doraDeArt19], { judge: neverJudge });
+    expect(r.excludedByDisplacement).toHaveLength(1);
+    expect(r.excludedByDisplacement[0].displaced).toBe('nis2-de');
+    expect(r.judged).toBe(0);
+    expect(r.candidatePairs).toBe(0);
+  });
+
+  it('treats nis2 × nis2-de as ONE law — no candidate, no exclusion, no judge', async () => {
+    // Gleiche Handlung, verträgliche Rollen — nur die Familie trennt das Paar
+    // von der Beurteilung. Es ist kein Verdrängungs-Fall (ein Gesetz verdrängt
+    // sich nicht selbst), sondern gar kein gesetzesübergreifendes Paar.
+    const r = await groupIntoMeasures([nis2Art23, nis2DeArt23], { judge: neverJudge });
+    expect(r.candidatePairs).toBe(0);
+    expect(r.excludedByDisplacement).toHaveLength(0);
+    expect(r.judged).toBe(0);
+  });
+
+  it('counts measure.laws as families — nis2-de contributes as nis2', async () => {
+    // Sonst zählt dieselbe Norm doppelt, und das Gold-Matching am Produktpfad
+    // reißt mechanisch an 'nis2-de' ≠ 'nis2'.
+    const dsgvo = req({
+      id: 'dsgvo:art33:s1',
+      source: 'dsgvo',
+      actionId: 'vorfall-melden-behoerde',
+      text: 'Das Unternehmen muss die Verletzung melden. [M-9]',
+    });
+    const r = await groupIntoMeasures([dsgvo, nis2DeArt23], { judge: markerJudge });
+    expect(r.measures).toHaveLength(1);
+    expect(r.measures[0].laws).toEqual(['dsgvo', 'nis2']);
+  });
+});

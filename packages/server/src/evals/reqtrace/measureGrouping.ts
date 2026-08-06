@@ -25,6 +25,7 @@
  * Linear: THE-545 · Rahmen: ADR-0007 E5/E6
  */
 import {
+  normalizeCorpusSource,
   PAIR_RELATION_SYSTEM,
   buildSysReqPairUserPrompt,
   parsePairRelation,
@@ -224,7 +225,12 @@ export function enumerateCandidatePairs(reqs: GroupableSysReq[]): CandidateEnume
       const b = sorted[j];
 
       // (1) Nur gesetzesuebergreifend, gleiche Handlung, vertraegliche Adressaten.
-      if (a.source === b.source) continue;
+      //
+      // „Gesetzesuebergreifend" heisst FAMILIE, nicht Schreibweise (THE-600):
+      // `nis2` und `nis2-de` sind zwei Fassungen DESSELBEN Gesetzes. Exakt
+      // verglichen waeren sie ein Paar — eine Norm gegen sich selbst, mit
+      // einem Modellurteil bezahlt.
+      if (normalizeCorpusSource(a.source) === normalizeCorpusSource(b.source)) continue;
       if (!a.actionId || !b.actionId || a.actionId !== b.actionId) continue;
       if (!areAddresseesCompatible(a.addresseeClass, b.addresseeClass)) continue;
 
@@ -368,7 +374,10 @@ export async function groupIntoMeasures(
       return {
         id: `measure__${memberIds[0]}`,
         memberIds,
-        laws: [...new Set(members.map((m) => m.source))].sort(),
+        // FAMILIEN, nicht Schreibweisen (THE-600): sonst zaehlt `nis2` und
+        // `nis2-de` als zwei Gesetze, und das Gold-Matching am Produktpfad
+        // reisst mechanisch an `'nis2-de' !== 'nis2'`.
+        laws: [...new Set(members.map((m) => normalizeCorpusSource(m.source)))].sort(),
         relations: edges.filter((e) => memberIds.includes(e.a) && memberIds.includes(e.b)),
       };
     })

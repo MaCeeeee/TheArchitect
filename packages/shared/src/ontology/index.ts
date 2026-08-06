@@ -67,6 +67,27 @@ export type Displacement = (typeof NORM_ONTOLOGY.displacements)[number];
 export const DISPLACEMENTS: readonly Displacement[] = NORM_ONTOLOGY.displacements;
 
 /**
+ * Sprachfassung → Werk-Familie: `dora-de` → `dora`, `mdr-en` → `mdr`.
+ *
+ * ── WARUM DAS HIER STEHT ──
+ *
+ * Der Korpus führt dasselbe Gesetz in mehreren Sprachfassungen; die
+ * Ontologie-Kanten sind auf die FAMILIE gestellt (`displaced.source: 'nis2'`).
+ * Wer `findDisplacement` mit einer Sprachfassung aufruft, findet die Kante
+ * nicht — sie ist dann stumm, und ein rechtlich gegenstandsloses Paar läuft
+ * durch (gemessen THE-600: drei von vier Stamm-Kombinationen).
+ *
+ * Die Funktion liegt deshalb NEBEN den Kanten, nicht in einem Aufrufer: sie
+ * gehört zur Frage „welches Gesetz ist das?", und jede zweite Ableitung
+ * anderswo wäre eine Kopie, die irgendwann anders schneidet.
+ *
+ * Bewusst nur echte Sprachsuffixe: `trade` bleibt `trade`, nicht `tra`.
+ */
+export function normalizeCorpusSource(source: string): string {
+  return source.replace(/-(de|en)$/, '');
+}
+
+/**
  * Wird `displacedSource` für einen Adressaten dieser Klasse verdrängt?
  *
  * `null` heißt „keine Verdrängung" — beide Normen gelten nebeneinander. Der
@@ -76,6 +97,10 @@ export const DISPLACEMENTS: readonly Displacement[] = NORM_ONTOLOGY.displacement
  * Bewusst adressaten-scharf: DORA verdrängt NIS2 nur für Finanzunternehmen.
  * Eine wesentliche Einrichtung ohne Finanzaufsicht bleibt unter NIS2, und die
  * DSGVO wird gar nicht verdrängt — sie gilt daneben (DORA ErwG 16).
+ *
+ * ERWARTET EINE FAMILIE. Der Aufrufer normalisiert mit
+ * `normalizeCorpusSource`; hier zu normalisieren würde die Kanten-Daten
+ * hinter einer Bequemlichkeit verstecken.
  */
 export function findDisplacement(displacedSource: string, addresseeClass: string): Displacement | null {
   return (
