@@ -27,6 +27,22 @@ RUN npm run --workspace=packages/shared build \
     && cd packages/server && npx tsc --noCheck \
     && cd /app/packages/client && npx vite build
 
+# ── DIE FREIGABE-TORE ────────────────────────────────────────────────────────
+#
+# Der einzige Ort, an dem ein Tor unumgehbar ist: ohne gruenen Lauf entsteht
+# kein Image, und ohne Image gibt es kein Deploy. GitHub Actions faellt als
+# Ort aus (Konto gesperrt, letzte Laeufe 2026-05-22, beide rot) — ein Workflow
+# dort waere ein Waechter, der nicht wacht.
+#
+# Bewusst NUR die mechanischen Tor-Suiten (jest.gate.config.ts): kein Modell,
+# kein Netz, keine Datenbank, ~1 Sekunde. Der volle Lauf hat 60 DB-Suiten und
+# vorbestehende Worker-Flakes (THE-435) — ein Tor, dessen Rot man routinemaessig
+# wegdrueckt, ist keins.
+#
+# Eigene Schicht, damit der Fehlschlag im Build-Log fuer sich steht.
+# Was die Tore pruefen: docs/evals/reqtrace-release-gates.md
+RUN cd /app/packages/server && npm run gate
+
 # Stage 2: Production
 FROM node:22-alpine AS production
 WORKDIR /app

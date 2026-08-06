@@ -94,10 +94,31 @@ Produktpfad nicht mehr nach — unabhängig davon, ob es gerade grün ist.
 3. Anker-Prüfung fahren: liegt es am Code oder am Korpus?
 4. Erst dann entscheiden, was falsch liegt — und den Entscheid belegen.
 
+## Wo das Tor verdrahtet ist
+
+**Nicht in GitHub Actions.** Das Konto ist gesperrt — die letzten Läufe stammen vom
+2026-05-22 und sind beide rot; seither startet nichts. Ein Workflow dort wäre ein Wächter,
+der nicht wacht, also genau der Fehlermodus, gegen den dieses Tor gebaut wurde.
+
+| Ort | Wirkung | Umgehbar? |
+|---|---|---|
+| **Docker-Build** (`Dockerfile`, Schicht `npm run gate`) | Ohne grünen Lauf **kein Image**, ohne Image **kein Deploy** | nein |
+| `npm run gate` (Wurzel oder `packages/server`) | ~1 s, jederzeit von Hand | — |
+| `.github/workflows/gate.yml` | **ruht**, bis das Konto frei ist | entfällt |
+
+Das Build-Tor ist die wirksame Stelle. Belegt, nicht angenommen: eine absichtlich
+verfälschte Fixture (`dsgvo:art-32` → `data_subject`) ließ den Build mit Exit 1 abbrechen und
+nannte drei rote Tests. Erst danach wurde die Fixture wiederhergestellt.
+
+**Warum nicht `npm test`?** Der volle Lauf fährt 236 Suiten, 60 davon mit Datenbank, und ein
+Teil ist vorbestehend flaky (Worker-Crashes unter Parallelität, THE-435). Ein rotes Ergebnis
+wäre mehrdeutig — und ein Tor, dessen Rot man routinemäßig wegdrückt, ist keins. Der
+Tor-Lauf ist rein mechanisch und dauert ~1 Sekunde; **rot heißt hier: etwas ist kaputt.**
+
 ## Nachvollziehen
 
 ```
-packages/server$ npx jest src/__tests__/goldGuard.test.ts
+$ npm run gate                # alle Tore, ~1 s, netzfrei
 packages/server$ npx ts-node --transpile-only -r dotenv/config src/scripts/the613-gold-anchor-check.ts
 ```
 
