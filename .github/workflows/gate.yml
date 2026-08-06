@@ -1,0 +1,49 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  ⚠️  DIESER WORKFLOW LÄUFT HEUTE NICHT.
+#
+#  GitHub Actions ist für dieses Konto gesperrt — die letzten Läufe stammen vom
+#  2026-05-22 und sind beide fehlgeschlagen; seither startet nichts mehr.
+#
+#  **Verlass dich nicht auf diese Datei.** Das wirksame Tor sitzt im
+#  Docker-Build (`Dockerfile`, Schicht `npm run gate`): ohne grünen Lauf
+#  entsteht kein Image, und ohne Image gibt es kein Deploy. Das gilt heute und
+#  unabhängig von GitHub.
+#
+#  Diese Datei liegt hier für den Tag, an dem das Konto wieder frei ist. Sie
+#  ERSETZT das Build-Tor nicht — sie zieht es nur nach vorn, damit ein roter
+#  Lauf schon im Pull Request auffällt statt erst beim Deploy.
+#
+#  Was die Tore prüfen: docs/evals/reqtrace-release-gates.md
+# ══════════════════════════════════════════════════════════════════════════════
+name: Freigabe-Tore
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  gate:
+    name: Tore (mechanisch, ~1s)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # shared MUSS vor dem Server gebaut werden — sonst laufen die Tore gegen
+      # ein fehlendes @thearchitect/shared und melden einen Ladefehler, der wie
+      # ein inhaltlicher Fehlschlag aussieht.
+      - name: shared bauen
+        run: npm run build --workspace=@thearchitect/shared
+
+      # Bewusst NUR die Tor-Suiten, nicht `npm test`: der volle Lauf hat 60
+      # DB-Suiten und vorbestehende Worker-Flakes (THE-435). Ein Tor, dessen Rot
+      # man routinemäßig wegdrückt, ist keins.
+      - name: Tore fahren
+        run: npm run gate

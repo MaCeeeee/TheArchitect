@@ -12,6 +12,7 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "gate": "npm run gate --workspace=@thearchitect/server",
     "clean": "turbo run clean",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
