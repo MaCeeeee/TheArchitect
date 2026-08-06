@@ -103,7 +103,7 @@ der nicht wacht, also genau der Fehlermodus, gegen den dieses Tor gebaut wurde.
 | Ort | Wirkung | Umgehbar? |
 |---|---|---|
 | **Docker-Build** (`Dockerfile`, Schicht `npm run gate`) | Ohne grünen Lauf **kein Image**, ohne Image **kein Deploy** | nein |
-| `npm run gate` (Wurzel oder `packages/server`) | ~1 s, jederzeit von Hand | — |
+| `npm run gate` (Wurzel oder `packages/server`) | lokal < 1 s, jederzeit von Hand | — |
 | `.github/workflows/gate.yml` | **ruht**, bis das Konto frei ist | entfällt |
 
 Das Build-Tor ist die wirksame Stelle. Belegt, nicht angenommen: eine absichtlich
@@ -113,12 +113,17 @@ nannte drei rote Tests. Erst danach wurde die Fixture wiederhergestellt.
 **Warum nicht `npm test`?** Der volle Lauf fährt 236 Suiten, 60 davon mit Datenbank, und ein
 Teil ist vorbestehend flaky (Worker-Crashes unter Parallelität, THE-435). Ein rotes Ergebnis
 wäre mehrdeutig — und ein Tor, dessen Rot man routinemäßig wegdrückt, ist keins. Der
-Tor-Lauf ist rein mechanisch und dauert ~1 Sekunde; **rot heißt hier: etwas ist kaputt.**
+Tor-Lauf ist rein mechanisch; **rot heißt hier: etwas ist kaputt.**
+
+**Laufzeit, gemessen statt geschätzt:** lokal unter 1 s (warmer ts-jest-Cache), im
+Docker-Build auf dem VPS **14 s** (kalt kompiliert, Schicht 13/13 des Builder-Stages,
+Deploy vom 2026-08-06). Die erste Angabe „~1 s" stammte aus dem warmen lokalen Lauf und
+war für den Ort, an dem es zählt, zu optimistisch.
 
 ## Nachvollziehen
 
 ```
-$ npm run gate                # alle Tore, ~1 s, netzfrei
+$ npm run gate                # alle Tore, netzfrei, lokal < 1 s
 packages/server$ npx ts-node --transpile-only -r dotenv/config src/scripts/the613-gold-anchor-check.ts
 ```
 

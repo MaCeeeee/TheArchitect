@@ -35,7 +35,8 @@ RUN npm run --workspace=packages/shared build \
 # dort waere ein Waechter, der nicht wacht.
 #
 # Bewusst NUR die mechanischen Tor-Suiten (jest.gate.config.ts): kein Modell,
-# kein Netz, keine Datenbank, ~1 Sekunde. Der volle Lauf hat 60 DB-Suiten und
+# kein Netz, keine Datenbank. Gemessen ~14 s hier im Container (ts-jest kompiliert
+# kalt); lokal mit warmem Cache unter 1 s. Der volle Lauf hat 60 DB-Suiten und
 # vorbestehende Worker-Flakes (THE-435) — ein Tor, dessen Rot man routinemaessig
 # wegdrueckt, ist keins.
 #
