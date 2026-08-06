@@ -122,6 +122,11 @@ export const SOURCE_CRAWL_CONFIG: Record<string, CrawlConfig> = {
   'standardisation-de': { celex: '32012R1025', language: 'de', jurisdiction: 'EU', effectiveFrom: '2013-01-01', transport: 'eur-lex' },
   'emoney-en': { celex: '32009L0110', language: 'en', jurisdiction: 'EU', effectiveFrom: '2011-04-30', transport: 'eur-lex' },
   'emoney-de': { celex: '32009L0110', language: 'de', jurisdiction: 'EU', effectiveFrom: '2011-04-30', transport: 'eur-lex' },
+  // THE-614: ESG-Rating-VO. `effectiveFrom` = Geltungsbeginn (Art. 39), nicht das
+  // Inkrafttreten (2025-01-02) — konsistent mit dora/nis2, wo ebenfalls der Tag
+  // steht, ab dem die Pflichten greifen. Ganzes Gesetz (Crawl-ganze-Gesetze-Regel).
+  'esg-rating-en': { celex: '32024R3005', language: 'en', jurisdiction: 'EU', effectiveFrom: '2026-07-02', transport: 'eur-lex' },
+  'esg-rating-de': { celex: '32024R3005', language: 'de', jurisdiction: 'EU', effectiveFrom: '2026-07-02', transport: 'eur-lex' },
 };
 
 /**

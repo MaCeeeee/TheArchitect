@@ -93,6 +93,15 @@ export const LAW_FAMILY_PATTERNS: Record<string, RegExp[]> = {
     /European Standardisation Regulation/i,
     /Normungsverordnung/i,
   ],
+  // THE-614: ESG-Rating-VO. Bewusst nur Amtsnummer und Eigenname — „ESG-Rating"
+  // allein wäre ein Thema, kein Verweis, und holte genau die Themenzwillinge
+  // zurück, deren Ausschluss der Sinn dieses Moduls ist.
+  esgRating: [
+    /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2024\/3005/i,
+    /ESG-?Rating-?Verordnung/i,
+    /ESG Ratings? Regulation/i,
+    /Transparenz und Integrität von ESG-?Rating/i,
+  ],
   emoney: [
     /(?:Richtlinie|Directive)\s*2009\/110(?:\/E[GC])?/i,
     /\(EU\)\s*(?:(?:Nr|No)\.?\s*)?2009\/110/i,
@@ -136,6 +145,9 @@ export const SOURCE_TO_FAMILY: Record<string, keyof typeof LAW_FAMILY_PATTERNS> 
   'standardisation-en': 'standardisation',
   'emoney-de': 'emoney',
   'emoney-en': 'emoney',
+  // THE-614: ESG-Rating-VO (EU) 2024/3005.
+  'esg-rating-de': 'esgRating',
+  'esg-rating-en': 'esgRating',
 };
 
 export interface LawReferenceMatch {
