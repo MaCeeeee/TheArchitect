@@ -16,6 +16,7 @@
  */
 import mongoose, { Schema, Document } from 'mongoose';
 import { triggerCrawl, CrawlerUnreachableError } from './complianceCrawler.service';
+import { runPostCrawlVectorSync, maybeRunVectorDriftCheck, isVectorSyncEnabled } from './corpusVectorSync.service';
 import { isNormSource } from '@thearchitect/shared';
 import { log } from '../config/logger';
 
@@ -122,6 +123,12 @@ export async function runCrawlJob(
       { jobId: job.id, ...agg, sourceErrors: res.errors.length },
       '[crawl-scheduler] crawl completed',
     );
+    // THE-624: Der Crawl embeddete nach Server B — der Index, den DIESE App
+    // durchsucht, ist der lokale. Ohne diesen Nachzug wäre jedes frisch
+    // gecrawlte Gesetz hier semantisch unsichtbar (der 214-Punkte-Vorfall vom
+    // 2026-08-06). Wirft nie; ein Ausfall wird vom periodischen Drift-Check
+    // beim nächsten Takt nachgeholt.
+    await runPostCrawlVectorSync();
     return doc;
   } catch (err) {
     const message =
@@ -150,6 +157,12 @@ let schedulerTimer: ReturnType<typeof setInterval> | null = null;
 
 async function runSchedulerCycle(): Promise<void> {
   try {
+    // THE-624: Drift-Check je Takt (selbst gedrosselt auf VECTOR_SYNC_INTERVAL_
+    // MINUTES, Vorgabe 6 h). Deckt den Fall ab, den der Post-Crawl-Hook nicht
+    // sieht: ein manueller Crawl direkt auf Server B — wie die beiden, die den
+    // 214-Punkte-Rückstand erzeugt haben. Wirft nie.
+    await maybeRunVectorDriftCheck();
+
     const registry = buildJobRegistry();
     for (const job of registry) {
       if (activeJobs.has(job.id)) continue;
@@ -168,9 +181,15 @@ async function runSchedulerCycle(): Promise<void> {
 export function startRegulationCrawlScheduler(): void {
   if (schedulerTimer) return;
   const registry = buildJobRegistry();
-  if (registry.length === 0) {
-    log.info('[crawl-scheduler] disabled / no sources configured — not starting');
+  // THE-624: Der Takt trägt AUCH den Vektor-Drift-Check. Ein deaktivierter
+  // Crawl-Scheduler darf den Nachzug nicht mit stilllegen — sonst wäre der
+  // Drift-Schutz an eine fremde Konfiguration gekoppelt und fiele lautlos weg.
+  if (registry.length === 0 && !isVectorSyncEnabled()) {
+    log.info('[crawl-scheduler] disabled / no sources configured, vector sync disabled — not starting');
     return;
+  }
+  if (registry.length === 0) {
+    log.info('[crawl-scheduler] no crawl jobs — starting for the vector drift check only');
   }
   log.info(
     { jobs: registry.map(j => ({ id: j.id, sources: j.sources, intervalMinutes: j.intervalMinutes })) },

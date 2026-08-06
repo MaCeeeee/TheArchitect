@@ -12,9 +12,9 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Regulation } from '../db/regulation.model';
 import { config } from '../config';
-import { isEmbeddingConfigured, tryEmbedAndIndex } from '../embeddings';
+import { isEmbeddingConfigured } from '../embeddings';
+import { runEmbedBackfill } from '../embeddings/backfill';
 import { requireCrawlerToken } from '../lib/requireToken';
 
 const EmbedAllBodySchema = z.object({
@@ -46,41 +46,16 @@ export async function embedAllRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-    const filter: Record<string, unknown> = {};
-    if (!force) {
-      filter.$or = [{ embedding: { $exists: false } }, { embedding: { $size: 0 } }];
-    }
+    // Kernlogik geteilt mit dem Crawl-Nachlauf (THE-622) — ein Codepfad, zwei Aufrufer.
+    const result = await runEmbedBackfill({ embeddingConfig, force, concurrency });
 
-    const all = await Regulation.find(filter);
-    const total = all.length;
-
-    if (total === 0) {
+    if (result.total === 0) {
       return reply.code(200).send({
-        total: 0,
-        embedded: 0,
-        failed: 0,
-        errors: [],
+        ...result,
         message: force ? 'no regulations in corpus' : 'all regulations already embedded',
       });
     }
 
-    let embedded = 0;
-    let failed = 0;
-    const errors: Array<{ regulationId: string; error: string }> = [];
-
-    // Bounded concurrency: process in batches
-    for (let i = 0; i < all.length; i += concurrency) {
-      const batch = all.slice(i, i + concurrency);
-      const settled = await Promise.all(batch.map(reg => tryEmbedAndIndex(reg, embeddingConfig)));
-      for (const r of settled) {
-        if (r.ok) embedded += 1;
-        else {
-          failed += 1;
-          if (r.error) errors.push({ regulationId: r.regulationId, error: r.error });
-        }
-      }
-    }
-
-    return reply.code(200).send({ total, embedded, failed, errors });
+    return reply.code(200).send(result);
   });
 }
