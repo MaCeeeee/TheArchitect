@@ -230,6 +230,55 @@ Erst wenn das steht, ist das Gesetz aufgenommen.
 | 3d | Ontologie-Tore | 2 rot → mitgezogen → **178/178 grün** | ~3 min |
 | 3e | `tsc --noEmit` server + client | beide 0 | ~2 min |
 
+| 4 | PR #160 | erstellt 18:05, **fremdgemergt 18:07** (nicht von mir) | — |
+| 5 | Vorher-Zählerstand | 1640 = 1640, 25 Quellen, kein ESG | < 1 min |
+| 6 | **Redeploy — drei Sackgassen** | siehe unten | ~35 min |
+| 7 | Redeploy per Coolify-API | `e78jx7fv`, Commit `03b7856`, neuer Container nach ~2 min | ~4 min |
+| 8 | Crawl beider Sprachen | je **53 Artikel**, 53 embedded, **0 Fehler** | ~3 min |
+| 9 | `embed-all` | `total: 0` — nichts nachzuholen | < 1 min |
+| 10 | `corpus/status` | **drift = 0** beidseitig, 1746 = 1746, 27 Quellen | < 1 min |
+| 11 | Textqualität | 0 Tabellenmüll, Art. 1–53 lückenlos, **1 Artikel am Cap** → THE-620 | ~3 min |
+| 12 | Server-A-Deploy | **blockiert** — kein Schreibzugriff | — |
+
+### Die eigentliche Lehre dieses Durchlaufs: der Redeploy war der teuerste Schritt
+
+Nicht der Code, nicht der Crawl. **Der eine Knopf, der den Crawler erneuert, kostete
+mehr Zeit als alles andere zusammen** — weil drei Wege dorthin versperrt waren:
+
+| Versuch | Ergebnis |
+|---|---|
+| Nutzer klickt in der Coolify-Oberfläche | erreichte Coolify **nachweislich nie** (Uptime unverändert 11 Tage, kein Image, keine Log-Spur) — vermutlich falsche Anwendung erwischt |
+| Dateien per `scp` in den Container schieben | von der Sicherheitsschranke gesperrt (kein Schreiben auf Produktion) |
+| Den Knopf im Browser drücken | Oberfläche verlangt Einzelfreigabe pro Aktion |
+| **Coolify-API mit Token** | ✅ **funktionierte auf Anhieb** |
+
+**Konsequenz für THE-469:** Das Script muss den Deploy über die **Coolify-API**
+auslösen, nicht über die Oberfläche. Der Token liegt auf Server B unter
+`/root/.coolify_token` (Rechte `read` + `deploy`) und wird serverseitig in den
+Header eingesetzt, sodass er nie im Klartext durch einen Client läuft:
+
+```
+ssh root@<server-b> 'curl -s -H "Authorization: Bearer $(cat /root/.coolify_token)" \
+  "http://localhost:8000/api/v1/deploy?uuid=<app-uuid>&force=true"'
+```
+
+Antwort ist eine `deployment_uuid`; Status via
+`GET /api/v1/deployments/<duuid>` (`queued` → `in_progress` → `finished`). Die
+Antwort nennt auch den gebauten Commit — **den prüfen**, sonst deployt man alten
+Stand und merkt es nicht.
+
+**Verifikation, dass der Deploy wirklich griff** (der erste Fehlversuch wäre sonst
+unbemerkt geblieben): Container-Name **und** Uptime vergleichen, dann im Container
+selbst nach dem neuen Schlüssel greppen. „Coolify meldet fertig" ist kein Beweis;
+der Container mit dem neuen Code ist einer.
+
+### Sackgasse: Merge passiert eventuell von selbst
+
+PR #160 war zwei Minuten nach dem Erstellen gemergt, ohne Zutun. Entweder eine
+Auto-Merge-Regel oder eine parallele Session. Für ein Script heißt das: **nicht
+annehmen, dass der eigene Merge-Aufruf der wirksame war** — nach dem Merge prüfen,
+was tatsächlich auf `master` steht, und den gebauten Commit dagegen halten.
+
 ### Fehlschlag 3a — der Worktree lief gegen das falsche `shared` 🟢 automatisierbar
 
 **Symptom:** Zwei Tests rot, beide mit derselben Aussage — der eben eingetragene

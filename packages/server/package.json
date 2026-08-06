@@ -21,6 +21,7 @@
     "facts:apply": "ts-node src/scripts/apply-compliance-facts.ts",
     "regs:import": "ts-node src/scripts/import-regulations-from-corpus.ts",
     "regs:seed-web": "ts-node src/scripts/seed-regulations-web.ts",
+    "corpus:sync-vectors": "ts-node src/scripts/sync-corpus-vectors.ts",
     "golden:build-self": "ts-node src/scripts/build-self-golden.ts",
     "req:worksheet": "ts-node src/scripts/requirement-worksheet.ts",
     "req:kappa": "ts-node src/scripts/requirement-kappa.ts",

@@ -8,6 +8,17 @@ dist/
 build/
 .turbo/
 
+# Kompilate NEBEN den Quellen. Entstehen, sobald tsc ohne outDir über eine Datei
+# läuft (z. B. wenn ein Import über die Paketgrenze greift) — sie landen dann in
+# `src/` statt in `dist/` und rutschen unbemerkt in Commits. Beim THE-621-Nachzug
+# hätten so acht Artefakte des Crawlers in einem Server-PR gelegen.
+# `*.d.ts` ist bewusst NICHT dabei: handgeschriebene Deklarationen sind legitim
+# (packages/server/src/types/express.d.ts). Ein tsc-Lauf erzeugt ohnehin immer
+# auch .js/.map, damit greifen die Muster unten.
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts.map
+
 # Environment
 .env
 .env.local
