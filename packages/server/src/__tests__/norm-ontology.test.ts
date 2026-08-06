@@ -318,8 +318,8 @@ describe('partyRoles facet — Regime-Erweiterung (THE-421 / THE-430 / THE-515)'
   });
 
   it('pins the shipped ontology version (deliberate gate, mirrors the CHANGELOG)', () => {
-    // 1.9.0 — displacements (THE-545/ADR-0007). Bewusst mit dem CHANGELOG bewegt.
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.9.0');
+    // 1.10.0 — ESG-Rating-VO als normSources (THE-614). Bewusst mit dem CHANGELOG bewegt.
+    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.10.0');
   });
 });
 
@@ -378,8 +378,14 @@ describe('displacements facet (THE-545, ADR-0007 E6)', () => {
     }
   });
 
-  it('bumps the ontology version to 1.9.0', () => {
-    expect(NORM_ONTOLOGY.ontologyVersion).toBe('1.9.0');
+  // Die Verdrängungs-Facette kam mit 1.9.0 und bleibt gültig, während die
+  // Ontologie weiterwächst — deshalb eine Untergrenze statt eines zweiten
+  // Gleichheits-Tors. Das eigentliche Versions-Tor steht oben (partyRoles) und
+  // wandert dort bewusst mit dem CHANGELOG; hier interessiert nur, dass
+  // displacements nicht hinter ihren Einführungsstand zurückfallen.
+  it('ships displacements from 1.9.0 onwards and keeps the ontology valid', () => {
+    const [major, minor] = NORM_ONTOLOGY.ontologyVersion.split('.').map(Number);
+    expect(major > 1 || (major === 1 && minor >= 9)).toBe(true);
     expect(() => assertOntologyValid()).not.toThrow();
   });
 });

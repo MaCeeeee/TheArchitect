@@ -15,8 +15,8 @@
  * this same object — there is no second store.
  */
 export const NORM_ONTOLOGY = {
-  ontologyVersion: '1.9.0',
-  updatedAt: '2026-08-02',
+  ontologyVersion: '1.10.0',
+  updatedAt: '2026-08-06',
 
   /** E6 — kind of norm. `bindingnessDefault` is a hint, overridable per norm. */
   normKinds: [
@@ -379,6 +379,10 @@ export const NORM_ONTOLOGY = {
     { id: 'standardisation-de', label: 'Normungsverordnung (EU) Nr. 1025/2012 — Deutsch', jurisdiction: 'EU' },
     { id: 'emoney-en', label: 'E-Money Directive 2009/110/EC — English', jurisdiction: 'EU' },
     { id: 'emoney-de', label: 'E-Geld-Richtlinie 2009/110/EG — Deutsch', jurisdiction: 'EU' },
+    // THE-614: erstes ESG-Gesetz im Korpus. Gilt seit 2026-07-02; die ESG-Strecke
+    // (BSH-Demo) hatte bis dahin keine einzige einschlägige Norm zum Entdecken.
+    { id: 'esg-rating-en', label: 'ESG Rating Regulation (EU) 2024/3005 — English', jurisdiction: 'EU' },
+    { id: 'esg-rating-de', label: 'ESG-Rating-Verordnung (EU) 2024/3005 — Deutsch', jurisdiction: 'EU' },
     { id: 'iso27001', label: 'ISO/IEC 27001' },
     // THE-413: PolicySource collapse — modeling-framework sources become data
     // rows so Policy.source validates against the same registry as regulations.

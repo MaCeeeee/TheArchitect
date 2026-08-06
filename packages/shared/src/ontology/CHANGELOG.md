@@ -7,6 +7,31 @@ and traces carry the `ontologyVersion` they were produced against (THE-384 join)
 **Bump rules:** additive value (new id) → MINOR · rename/remove (breaking) → MAJOR +
 migration note · label/metadata-only fix → PATCH.
 
+## 1.10.0 — 2026-08-06 (THE-614)
+
+* **Zwei neue `normSources`** — `esg-rating-en` und `esg-rating-de`: die
+  **ESG-Rating-Verordnung (EU) 2024/3005** (CELEX `32024R3005`), seit dem
+  2026-07-02 anwendbares Recht.
+
+* **Warum:** Das erste ESG-Gesetz im Korpus. Die ESG-Strecke ist die
+  Demo- und Kundenseite (BSH), und bis hierher lag dort keine einzige
+  einschlägige Norm — die Korpus-Discovery aus THE-459 konnte auf ESG-Modellen
+  per Konstruktion nichts finden, weil es nichts zu finden gab. Dieselbe
+  Diagnose wie bei THE-511, nur eine Fachdomäne weiter.
+
+* **Beide Sprachfassungen, wie seit 1.4.0 Regel.** Der kanonische Schlüssel ist
+  `quelle:artikel` — ohne Sprach-Suffix überschriebe der zweite Crawl den ersten
+  beim Upsert. Zusätzlich der belegte Retrieval-Grund: eine einsprachige Quelle
+  punktet schlecht gegen ein anderssprachiges Architekturmodell.
+
+* **Nebenbei der härtere Prüffall.** `esg-rating` hat — anders als `nis2` oder
+  `lksg` — **keinen** suffixlosen Stammschlüssel. Ein Pfad, der Gruppenschlüssel
+  und Normquelle verwechselt, fliegt hier auf statt still durchzugehen (der
+  Fehler vom 2026-08-03, THE-570).
+
+* **Rein additiv.** Keine bestehende id berührt, bestehende Labels und Prüfsätze
+  bleiben gültig.
+
 ## 1.9.0 — 2026-08-02 (THE-545 / ADR-0007)
 
 * **Neue Facette `displacements`** — konkrete Verdrängungs-Kanten (*lex specialis*), erste Kante: `dora-prevails-nis2`.

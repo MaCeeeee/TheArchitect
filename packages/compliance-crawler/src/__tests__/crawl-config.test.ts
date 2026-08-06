@@ -109,6 +109,34 @@ describe('crawl-config (THE-418)', () => {
     expect(SOURCE_CRAWL_CONFIG['dsgvo-en'].language).toBe('en');
   });
 
+  // THE-614: ESG-Rating-VO (EU) 2024/3005 — erstes ESG-Gesetz im Korpus.
+  it('esg-rating-en / esg-rating-de share celex, differ by language (THE-614)', () => {
+    expect(SOURCE_CRAWL_CONFIG['esg-rating-en']).toEqual({
+      celex: '32024R3005',
+      language: 'en',
+      jurisdiction: 'EU',
+      effectiveFrom: '2026-07-02',
+      transport: 'eur-lex',
+    });
+    expect(SOURCE_CRAWL_CONFIG['esg-rating-de']).toEqual({
+      celex: '32024R3005',
+      language: 'de',
+      jurisdiction: 'EU',
+      effectiveFrom: '2026-07-02',
+      transport: 'eur-lex',
+    });
+    // Ganzes Gesetz — kein Demo-Filter (Crawl-ganze-Gesetze-Regel, THE-511).
+    expect(SOURCE_CRAWL_CONFIG['esg-rating-en'].articleNumbers).toBeUndefined();
+    expect(SOURCE_CRAWL_CONFIG['esg-rating-de'].articleNumbers).toBeUndefined();
+  });
+
+  // THE-614: die ESG-VO ist der härtere Namensfall — es gibt KEINEN suffixlosen
+  // Stamm `esg-rating`. Ein Pfad, der Gruppenschlüssel und Normquelle
+  // verwechselt, fliegt hier auf statt (wie bei nis2/lksg) still durchzugehen.
+  it('esg-rating has no suffix-less trunk key (THE-614)', () => {
+    expect(SOURCE_CRAWL_CONFIG['esg-rating']).toBeUndefined();
+  });
+
   it('covers at least the 7 currently-wired sources (superset check — THE-418 Task 4 adds dora as a data-only row without touching this test)', () => {
     const keys = Object.keys(SOURCE_CRAWL_CONFIG);
     for (const id of ['ai-act-de', 'ai-act-en', 'data-act-de', 'data-act-en', 'dsgvo', 'lksg', 'nis2']) {
