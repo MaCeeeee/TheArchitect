@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1860" height="1700" viewBox="0 0 1860 1700" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1860" height="1700" fill="#ffffff"/>
+<defs>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ah0c8599" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#0c8599"/></marker>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ah2f9e44" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2f9e44"/></marker>
+</defs>
+<text x="180" y="74" font-size="30" fill="#1e1e1e" text-anchor="start">Von Wert zu Requirement — und was die Ontologie beiträgt</text>
+<text x="180" y="105" font-size="15" fill="#868e96" text-anchor="start">Taxonomie der Wertkette · TheArchitect · Stand 2026-08-08 · Quellen: Lean-Canvas/Fermi 2026-08-01, Canon-Architektur 2026-07-05 (ADR-0004-R), Pre-Flight-Skill</text>
+<rect x="180" y="150" width="760" height="140" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="189" font-size="19" fill="#1e1e1e" text-anchor="start">0 · WERT — der Anker, gegen den alles zählt</text>
+<text x="204" y="215" font-size="15" fill="#1e1e1e" text-anchor="start">MSC: ~500 k € ARR bis Ende 2029 · Team 2–4</text>
+<text x="204" y="233.75" font-size="15" fill="#1e1e1e" text-anchor="start">Engpass: Vertriebsdurchsatz — nicht der Preis, nicht das Produkt</text>
+<text x="204" y="252.5" font-size="15" fill="#1e1e1e" text-anchor="start">Schlüsselmetrik: erster Audit-Export pro Kunde</text>
+<rect x="180" y="350" width="760" height="180" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="389" font-size="19" fill="#1e1e1e" text-anchor="start">1 · WERT-TREIBER — worauf Wertsteigerung einzahlt</text>
+<rect x="204" y="412" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="441.25" font-size="14" fill="#1e1e1e" text-anchor="middle">ein Nachweis, mehrere Gesetze</text>
+<rect x="567" y="412" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="441.25" font-size="14" fill="#1e1e1e" text-anchor="middle">belegbare Herkunft</text>
+<rect x="204" y="472" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="501.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Partner-/Kanzlei-Kanal</text>
+<rect x="567" y="472" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="501.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Zeit bis zum Audit-Export</text>
+<rect x="180" y="590" width="760" height="210" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="629" font-size="19" fill="#1e1e1e" text-anchor="start">2 · USE CASE (UC-XXX-NNN) — bewegt genau einen Treiber</text>
+<rect x="204" y="652" width="228" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="318" y="683.25" font-size="14" fill="#1e1e1e" text-anchor="middle">St. 1–2 · Bestand</text>
+<rect x="446" y="652" width="228" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="560" y="683.25" font-size="14" fill="#1e1e1e" text-anchor="middle">St. 3 · Prämisse gemessen?</text>
+<rect x="688" y="652" width="228" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="802" y="683.25" font-size="14" fill="#1e1e1e" text-anchor="middle">St. 4 · WSJF (8 Kriterien)</text>
+<rect x="204" y="716" width="349" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="747.25" font-size="14" fill="#1e1e1e" text-anchor="middle">St. 5 · Komplexität (Ousterhout)</text>
+<rect x="567" y="716" width="349" height="52" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="4"/>
+<text x="741.5" y="747.25" font-size="14" fill="#1e1e1e" text-anchor="middle">St. 6 · Loop-Kontrakt ⟵ neu</text>
+<rect x="180" y="860" width="760" height="180" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="899" font-size="19" fill="#1e1e1e" text-anchor="start">3 · REQUIREMENT (REQ-…) — WAS wahr sein muss</text>
+<rect x="204" y="922" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="951.25" font-size="14" fill="#1e1e1e" text-anchor="middle">prüfbare Bedingung, keine Aufgabe</text>
+<rect x="567" y="922" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="951.25" font-size="14" fill="#1e1e1e" text-anchor="middle">eigene Akzeptanzkriterien</text>
+<rect x="204" y="982" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="1011.25" font-size="14" fill="#1e1e1e" text-anchor="middle">1..n je UC (komplex: 3–8)</text>
+<rect x="567" y="982" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="1011.25" font-size="14" fill="#1e1e1e" text-anchor="middle">RVTM: REQ → Task → Beleg</text>
+<rect x="180" y="1100" width="760" height="180" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="1139" font-size="19" fill="#1e1e1e" text-anchor="start">4 · EVIDENZ — woran „fertig" gemessen wird</text>
+<rect x="204" y="1162" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="1191.25" font-size="14" fill="#1e1e1e" text-anchor="middle">E2E grün, nicht Config-Row</text>
+<rect x="567" y="1162" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="1191.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Gold-Set + κ, out-of-sample</text>
+<rect x="204" y="1222" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="378.5" y="1251.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Adjudikation bei Dissens</text>
+<rect x="567" y="1222" width="349" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="741.5" y="1251.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Positiv- + Negativ-Kontrolle</text>
+<rect x="180" y="1340" width="760" height="120" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="1379" font-size="19" fill="#1e1e1e" text-anchor="start">5 · IMPACT (Ist) — Done nennt Wirkung, nicht Aktivität</text>
+<text x="204" y="1405" font-size="15" fill="#1e1e1e" text-anchor="start">„5 von 7 EA-Fragen auf Niveau A/B" statt „deployed" · bei Bugs: E2E-Evidenz</text>
+<text x="204" y="1423.75" font-size="15" fill="#1e1e1e" text-anchor="start">Autoclose per Commit-Titel ⇒ Impact als Kommentar nachtragen</text>
+<polyline points="560,290 560,350" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="582" y="320" font-size="14" fill="#868e96" text-anchor="start">welcher Treiber löst den Engpass?</text>
+<polyline points="560,530 560,590" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="582" y="560" font-size="14" fill="#868e96" text-anchor="start">Pre-Flight St. 3–5</text>
+<polyline points="560,800 560,860" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="582" y="830" font-size="14" fill="#868e96" text-anchor="start">Pre-Flight St. 6</text>
+<polyline points="560,1040 560,1100" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="582" y="1070" font-size="14" fill="#868e96" text-anchor="start">Bau + Verifikation</text>
+<polyline points="560,1280 560,1340" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="582" y="1310" font-size="14" fill="#868e96" text-anchor="start">Abnahme</text>
+<rect x="1240" y="150" width="460" height="1130" rx="10" fill="#f8f9fa" stroke="#0c8599" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="1264" y="191" font-size="19" fill="#0b7285" text-anchor="start">ONTOLOGIE — die gemeinsame Sprache</text>
+<text x="1264" y="219" font-size="13" fill="#868e96" text-anchor="start">Identität = opake workId + NormAlias,</text>
+<text x="1264" y="235.25" font-size="13" fill="#868e96" text-anchor="start">nie ein Publikationsschlüssel (ADR-0004-R)</text>
+<rect x="1264" y="270" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="305.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Norm — workId · Alias · bitemporal</text>
+<rect x="1264" y="390" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="425.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Structure (@eId) — Chapter → Article → Paragraph</text>
+<rect x="1264" y="510" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="545.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Obligation — die Pflicht selbst</text>
+<rect x="1264" y="630" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="665.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Control — die Maßnahme</text>
+<rect x="1264" y="750" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="785.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Subject — Modell · Graph · Workflow</text>
+<rect x="1264" y="870" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="905.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Assessment / Evidence — Beleg + Herkunft</text>
+<rect x="1264" y="990" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="1025.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Finding / Risk — die Lücke</text>
+<rect x="1264" y="1110" width="412" height="60" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1470" y="1145.25" font-size="14" fill="#1e1e1e" text-anchor="middle">Remediation — der Fix</text>
+<polyline points="1470,330 1470,390" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,450 1470,510" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,570 1470,630" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,690 1470,750" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,810 1470,870" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,930 1470,990" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<polyline points="1470,1050 1470,1110" fill="none" stroke="#0c8599" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<text x="1264" y="1213" font-size="13" fill="#0b7285" text-anchor="start">Subject × Norm — drei Tore:</text>
+<text x="1264" y="1229.25" font-size="13" fill="#0b7285" text-anchor="start">COVER · ENFORCE · ATTEST</text>
+<polyline points="1240,440 945,440" fill="none" stroke="#0c8599" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<text x="1090" y="410" font-size="14" fill="#0b7285" text-anchor="middle">eine Pflicht, mehrere Gesetze —</text>
+<text x="1090" y="427.5" font-size="14" fill="#0b7285" text-anchor="middle">„assess once, comply many"</text>
+<polyline points="1240,695 945,695" fill="none" stroke="#0c8599" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<text x="1090" y="665" font-size="14" fill="#0b7285" text-anchor="middle">kanonische Handlungen (26 aus 216)</text>
+<text x="1090" y="682.5" font-size="14" fill="#0b7285" text-anchor="middle">machen UCs komponierbar</text>
+<polyline points="1240,950 945,950" fill="none" stroke="#0c8599" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<text x="1090" y="920" font-size="14" fill="#0b7285" text-anchor="middle">REQ zitiert die Norm-Klausel</text>
+<text x="1090" y="937.5" font-size="14" fill="#0b7285" text-anchor="middle">→ maschinell prüfbar</text>
+<polyline points="1240,1190 945,1190" fill="none" stroke="#0c8599" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah0c8599)"/>
+<text x="1090" y="1160" font-size="14" fill="#0b7285" text-anchor="middle">Text-Anker (versionHash):</text>
+<text x="1090" y="1177.5" font-size="14" fill="#0b7285" text-anchor="middle">Anker gebrochen = Beleg ungültig</text>
+<polyline points="180,1400 90,1400 90,220 175,220" fill="none" stroke="#e03131" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="108" y="310" font-size="14" fill="#e03131" text-anchor="start">Rückkopplung 1 — Loop-Kontrakt:</text>
+<text x="108" y="327.5" font-size="14" fill="#e03131" text-anchor="start">Impact (Ist) gegen Soll</text>
+<polyline points="940,1400 1780,1400 1780,200 1705,200" fill="none" stroke="#2f9e44" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah2f9e44)"/>
+<text x="1300" y="1324" font-size="14" fill="#2f9e44" text-anchor="start">Rückkopplung 2 — Wertsteigerung:</text>
+<text x="1300" y="1341.5" font-size="14" fill="#2f9e44" text-anchor="start">jeder Durchlauf reichert den Korpus an</text>
+<rect x="180" y="1520" width="1520" height="120" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="204" y="1559" font-size="17" fill="#1e1e1e" text-anchor="start">Die Kernaussage</text>
+<text x="204" y="1587" font-size="15" fill="#1e1e1e" text-anchor="start">Wert entsteht je Use Case — linear. WERTSTEIGERUNG entsteht in der Ontologie: jeder Durchlauf reichert Korpus und Handlungs-Katalog an, dadurch</text>
+<text x="204" y="1605.75" font-size="15" fill="#1e1e1e" text-anchor="start">wird der nächste UC billiger und der Nachweis über mehr Gesetze tragfähig. Die Ontologie ist kein Nebenprodukt der Kette, sondern ihr Zinseszins.</text>
+</svg>
