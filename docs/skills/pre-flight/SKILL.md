@@ -1,11 +1,11 @@
 ---
 name: pre-flight
-description: "PFLICHT vor jedem Plan und jeder Implementierung eines UC/REQ/Bugfix. Prüft Bestand, Prämissen, Wert und Komplexität — und legt erst danach Tickets an. Auslöser: neue Aufgabe, 'lass uns X bauen', Ticket aktivieren, vor writing-plans."
+description: "PFLICHT vor jedem Plan und jeder Implementierung eines UC/REQ/Bugfix. Prüft Bestand, Prämissen, Wert und Komplexität, definiert den Loop-Kontrakt — und legt erst danach Tickets an. Auslöser: neue Aufgabe, 'lass uns X bauen', Ticket aktivieren, vor writing-plans."
 ---
 
 # Pre-Flight
 
-Sechs Stufen, bevor geplant oder gebaut wird. Sie beantworten vier Fragen: **Gibt es das schon? Stimmt die Annahme? Lohnt es sich? Was handeln wir uns ein?**
+Sechs Stufen, bevor geplant oder gebaut wird. Sie beantworten fünf Fragen: **Gibt es das schon? Stimmt die Annahme? Lohnt es sich? Was handeln wir uns ein? Und wann hören wir auf?**
 
 **Ankündigen:** „Ich fahre den Pre-Flight für <Vorhaben>."
 
@@ -81,13 +81,26 @@ Erst jetzt entstehen Tickets.
 - **Pflicht: REQ-Unter-Issues** als Kinder (`parentId`), Titel mit `REQ-`-Präfix, Label `Requirement`, je eigene Akzeptanzkriterien.
   - Mindestens 1; komplexe Features 3–8, die verschiedene Aspekte abdecken.
   - REQs beschreiben **WAS wahr sein muss**, wenn es fertig ist — prüfbare Bedingungen, keine Aufgaben.
+- **Pflicht: Loop-Kontrakt** im Parent-Issue — drei Zeilen, die den Bau-Loop regeln, bevor er startet:
+
+  | Feld | Frage | Quelle |
+  |---|---|---|
+  | **Kill-Kriterium** | Welcher Befund beendet das Vorhaben — und was ist der Re-Trigger? | Widerlegung der tragenden Prämisse aus Stufe 3 |
+  | **Loop-Budget** | Nach wie vielen erfolglosen Fix-Zyklen am selben roten Kriterium wird eskaliert? Default: 3 | — |
+  | **Impact-Statement (Soll)** | Welche Zahl belegt nach dem Deploy die Wirkung, und wie wird sie gemessen? | Business Value aus Stufe 4 — „wo erscheint der Effekt?" |
+
+  - Eskalation heißt: stoppen und Befund vorlegen — was probiert, was gelernt, welche Hypothesen bleiben. Kein stiller nächster Versuch.
+  - Zyklen mit **neuer Diagnose** zählen nicht gegen das Budget; wiederholte Patches auf dieselbe Hypothese schon. Spätestens ab dem zweiten roten Zyklus: `systematic-debugging` statt nächster Patch.
+  - Hat ein Vorhaben keinen Impact jenseits seiner Funktion (typisch: Bug), ist das Impact-Statement die E2E-Evidenz („Fehlerbild reproduziert nicht mehr").
+  - *Präzedenz Kill-Kriterium: THE-402 — Self-Host NO-GO, Re-Trigger bei 5k Seiten/Monat. Präzedenz Impact-Format: THE-571 — „5/7 EA-Fragen auf Niveau A/B", nicht „deployed".*
 - Status auf „In Progress", wenn die Arbeit beginnt; REQs einzeln auf Done, sobald ihre Kriterien erfüllt sind.
+- Das Parent-Issue schließt mit dem **Impact (Ist)** im Format des Soll-Statements — nicht mit einer Aktivitätsmeldung. Schließt Linear das Ticket automatisch (Branch-Name/Commit-Titel), wird der Impact als Kommentar nachgetragen.
 
 ---
 
 ## Übergabe
 
-Ergebnis dem Nutzer vorlegen — **Bestand · Prämissen-Urteil · Score · Komplexitäts-Verdikt · Slice-Vorschlag** — und Freigabe abwarten.
+Ergebnis dem Nutzer vorlegen — **Bestand · Prämissen-Urteil · Score · Komplexitäts-Verdikt · Loop-Kontrakt · Slice-Vorschlag** — und Freigabe abwarten.
 
 Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-development`.
 
@@ -97,3 +110,5 @@ Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-developm
 - **Nie** Stufe 1/2 überspringen, weil „das kenne ich doch" — genau dort sitzen die Dubletten und die schon gebauten Teile.
 - **Nie** einen Alt-Score ungeprüft übernehmen.
 - **Nie** mit der Implementierung beginnen, bevor der Nutzer den Plan freigegeben hat.
+- **Nie** ein Done melden, das nur Aktivität benennt („deployed", „gemerged") — Done nennt die gemessene Wirkung oder die E2E-Evidenz.
+- **Nie** das Loop-Budget stillschweigend überziehen — Eskalation mit Befund ist der vorgesehene Ausgang, kein Versagen.
