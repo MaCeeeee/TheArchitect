@@ -132,6 +132,95 @@ Modell 1 ist das mit Abstand attraktivste: Es macht aus einem Vertriebspartner e
 
 ---
 
+## Ansprache-Vorlagen
+
+Alle vier bewusst kurz, ohne Link, ohne Demo-Angebot, ohne Produktnamen. Einzeln versendet, nicht als Serie.
+
+### A — Externer DSB / DSB-Dienstleister (Typ ①)
+
+Sein Schmerz ist **nicht** Regulierung. Sein Schmerz ist wiederkehrende, schlecht abrechenbare Fleißarbeit über viele Mandate. Der Aufhänger ist deshalb seine Kapazität, nicht deine Lösung.
+
+> **Betreff:** 70 Mandanten, eine Pflicht, 70 Nachweise
+>
+> Guten Tag Herr/Frau [Name],
+>
+> seit dem 31. Juli sind Ihre Mandanten beim BSI registriert — und bei jedem einzelnen stellt sich jetzt dieselbe Frage: Wie wird das tatsächlich nachgewiesen.
+>
+> Ich baue etwas, das genau dort ansetzt. Dieselbe Pflicht steht in DSGVO, NIS2 und DORA oft nahezu wortgleich, muss heute aber dreimal getrennt umgesetzt und belegt werden. Bei einem Mandanten ist das ärgerlich. Bei [Zahl] ist es ein Kapazitätsproblem.
+>
+> Ich verkaufe Ihnen nichts und zeige Ihnen nichts. Ich möchte 20 Minuten lang verstehen, welcher Teil dieser Arbeit bei Ihnen wiederkehrt und sich schlecht abrechnen lässt.
+>
+> Hätten Sie in den nächsten zwei Wochen 20 Minuten?
+>
+> Viele Grüße
+> Matthias Ganzmann
+
+*Die Mandantenzahl vorher recherchieren und einsetzen — sie ist der Beleg, dass die Mail nicht an 200 Adressen ging.*
+
+### B — Compliance-/ISMS-Beratung (Typ ②)
+
+Hier lauert ein Einwand, den man nicht umgehen darf: **Ein Werkzeug, das die Arbeit verkürzt, verkürzt auch die abrechenbaren Tage.** Wer das verschweigt, bekommt eine höfliche Antwort. Wer es selbst anspricht, bekommt die ehrliche.
+
+> **Betreff:** Der Teil Ihrer NIS2-Projekte, der jedes Mal gleich ist
+>
+> Guten Tag Herr/Frau [Name],
+>
+> in jedem NIS2- oder DORA-Projekt gibt es einen Abschnitt, der bei jedem Mandanten nahezu identisch abläuft: das Zuordnen der Pflichten zu dem, was im Unternehmen bereits existiert. Notwendig, aber schwer als Beratungsleistung zu verkaufen.
+>
+> Ich baue ein Werkzeug für genau diesen Abschnitt und spreche dafür mit Häusern, die solche Projekte tatsächlich liefern.
+>
+> Zwei Fragen interessieren mich am meisten: Welcher Anteil Ihrer Projektzeit ist diese Zuordnungsarbeit — und wäre es Ihnen recht, wenn sie kürzer würde, oder wäre genau das ein Problem?
+>
+> Ich verkaufe nichts und zeige nichts, 20 Minuten genügen mir.
+>
+> Viele Grüße
+> Matthias Ganzmann
+
+### C — Kanzlei (Typ ⑤)
+
+Kein Kooperationsangebot, kein Vertriebsmodell — ausdrücklich nur fachliche Einschätzung. Die BRAO-Frage kommt **im Gespräch**, nicht in der Mail.
+
+> **Betreff:** 20 Minuten Ihrer Einschätzung zur Nachweisführung
+>
+> Guten Tag Herr/Frau [Name],
+>
+> ich baue eine Software, die Compliance-Anforderungen aus Gesetzestexten ableitet und deren Herkunft belegbar hält — welcher Artikel, welche Fassung, welcher Stand.
+>
+> Bevor ich weitergehe, möchte ich von jemandem hören, der solche Nachweise gegenüber Aufsichtsbehörden vertreten muss, ob die Prüflogik trägt und wo sie aus Ihrer Sicht bricht.
+>
+> Ich möchte Ihnen ausdrücklich nichts verkaufen und schlage Ihnen auch keine Zusammenarbeit vor. Ich hätte gern Ihre fachliche Einschätzung.
+>
+> Viele Grüße
+> Matthias Ganzmann
+
+### D — BvD/GDD-Regionalgruppe: Vortragsangebot
+
+Anderes Genre. Der Adressat ist die Regionalgruppenleitung, und sie fragt sich nur eines: *Ist das ein Vortrag oder ein verkappter Pitch?* Diese Frage muss die Mail selbst beantworten.
+
+> **Betreff:** Vortragsangebot Regionalgruppe [Region] — „Eine Pflicht, drei Gesetze"
+>
+> Guten Tag Frau/Herr [Name],
+>
+> ich würde der Regionalgruppe [Region] gern einen Vortrag anbieten (30 Minuten plus Diskussion):
+>
+> **„Eine Pflicht, drei Gesetze — was sich zwischen DSGVO, NIS2, DORA und KI-VO tatsächlich überschneidet"**
+>
+> Inhalt:
+> - Wo die Pflichten sich wirklich decken, gezeigt an konkreten Artikeln — und wo sie nur ähnlich klingen
+> - Was das für die Nachweisführung bedeutet, wenn man mehrere Mandate parallel betreut
+> - Wo automatisierte Zuordnung trägt und wo sie messbar versagt — mit den Fehlerquoten aus unseren eigenen Prüfläufen, einschließlich der Fälle, in denen unser System abbrechen musste
+>
+> Der dritte Punkt ist mir der wichtigste: Ich zeige die Messwerte, auch die schlechten. Was ich ausdrücklich **nicht** mitbringe, ist eine Produktvorstellung — keine Folie mit Logo, keine Demo.
+>
+> Falls das für ein Treffen in diesem Halbjahr passt, richte ich mich gern nach Ihrem Termin.
+>
+> Viele Grüße
+> Matthias Ganzmann
+
+*Der dritte Inhaltspunkt ist der Grund, warum dieser Vortrag angenommen wird: Ehrliche Fehlerquoten aus echten Prüfläufen sind in diesem Feld selten und für ein DSB-Publikum unmittelbar nützlich. Genau dieses Material hast du — es liegt in den Prüfmaßstäben und Freigabeschwellen des Law-Tracks.*
+
+---
+
 ## Offene Punkte
 
 - Longlist auf 30–50 Einträge füllen (BvD-Regionalgruppen zuerst)
