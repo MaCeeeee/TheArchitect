@@ -11,6 +11,19 @@ Sechs Stufen, bevor geplant oder gebaut wird. Sie beantworten fünf Fragen: **Gi
 
 **Reihenfolge ist bindend.** Jede Stufe kann das Vorhaben stoppen oder umschneiden — das ist ihr Zweck, nicht ein Nebeneffekt.
 
+## Landkarte
+
+Der Pre-Flight ist ein Glied einer Kette; vier Diagramme zeigen sie. Jedes entsteht aus seinem Generator — **ändert sich dieser Skill, wird das zugehörige Diagramm neu gebaut**, sonst driften Text und Bild auseinander.
+
+| Bild | Beantwortet | Generator |
+|---|---|---|
+| `docs/strategy/2026-08-08-taxonomie-wert-zu-requirement.svg` | Wofür bauen wir? Wert → UC → REQ, und was die Ontologie beiträgt | `scripts/gen-taxonomie-diagram.mjs` |
+| `docs/strategy/2026-08-09-preflight-ablauf.svg` ⟵ **dieser Skill** | Was muss vor dem ersten Ticket passieren? | `scripts/gen-preflight-diagram.mjs` |
+| `docs/strategy/2026-08-08-ticket-prozess-linear.svg` | Wie läuft ein Ticket durch Linear? | `scripts/gen-linear-prozess-diagram.mjs` |
+| `docs/strategy/2026-08-09-bau-loop.svg` | Was passiert zwischen Freigabe und Done? | `scripts/gen-bauloop-diagram.mjs` |
+
+Neben jeder `.svg` liegt die `.excalidraw` zum Weiterbearbeiten. Alle vier teilen `scripts/lib/excalidraw.mjs`. **Prüfung:** alle Generatoren laufen lassen — bleibt `git diff` leer, sind Bild und Text im Gleichstand.
+
 ---
 
 ## Stufe 1 — Linear-Suche
@@ -104,7 +117,7 @@ Erst jetzt entstehen Tickets.
 
 Ergebnis dem Nutzer vorlegen — **Bestand · Prämissen-Urteil · Score · Komplexitäts-Verdikt · Loop-Kontrakt · Slice-Vorschlag** — und Freigabe abwarten.
 
-Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-development`.
+Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-development`. Wie es von dort bis zum belegten Done weitergeht — die zwei roten Rückkanten und ihre Grenze —, zeigt `docs/strategy/2026-08-09-bau-loop.svg`.
 
 ## Rote Linien
 
