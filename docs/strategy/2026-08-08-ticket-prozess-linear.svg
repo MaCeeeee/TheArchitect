@@ -1,0 +1,136 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1890" viewBox="0 0 1900 1890" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1900" height="1890" fill="#ffffff"/>
+<defs>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ah868e96" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#868e96"/></marker>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ahc2255c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#c2255c"/></marker>
+<marker id="ah2f9e44" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#2f9e44"/></marker>
+</defs>
+<text x="180" y="74" font-size="30" fill="#1e1e1e" text-anchor="start">Der Ticket-Prozess in Linear — von der Idee zum belegten Done</text>
+<text x="180" y="105" font-size="15" fill="#868e96" text-anchor="start">Team THE · Stand 2026-08-08 · Status und Labels aus dem Workspace gelesen · Quellen: Pre-Flight-Skill, RVTM-Skill, reale Tickets THE-577 / THE-628</text>
+<rect x="180" y="150" width="780" height="110" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="189" font-size="19" fill="#1e1e1e" text-anchor="start">0 · ZULAUF — hier gibt es noch kein Ticket</text>
+<text x="204" y="216" font-size="14" fill="#1e1e1e" text-anchor="start">neue Aufgabe · UC-Idee · Bug aus Prod · Kundenfeedback · ein Blocker ist gefallen</text>
+<text x="204" y="233.5" font-size="14" fill="#1e1e1e" text-anchor="start">Der Pre-Flight läuft VOR dem Ticket und vor dem Plan — nicht erst vor dem Bau.</text>
+<rect x="180" y="320" width="780" height="150" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="359" font-size="19" fill="#1e1e1e" text-anchor="start">1 · PRE-FLIGHT — Pflichtstufen, bevor irgendetwas angelegt wird</text>
+<rect x="204" y="382" width="172.5" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="290.25" y="409.875" font-size="13" fill="#1e1e1e" text-anchor="middle">St. 1–2 · Bestand</text>
+<rect x="390.5" y="382" width="172.5" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="476.75" y="409.875" font-size="13" fill="#1e1e1e" text-anchor="middle">St. 3 · Prämisse</text>
+<rect x="577" y="382" width="172.5" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="663.25" y="409.875" font-size="13" fill="#1e1e1e" text-anchor="middle">St. 4 · WSJF</text>
+<rect x="763.5" y="382" width="172.5" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="849.75" y="409.875" font-size="13" fill="#1e1e1e" text-anchor="middle">St. 5 · Komplexität</text>
+<text x="204" y="453" font-size="13" fill="#868e96" text-anchor="start">Erst Stufe 6 legt Tickets an — vorher existiert in Linear nichts.</text>
+<rect x="180" y="530" width="780" height="270" rx="10" fill="#f8f9fa" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="569" font-size="19" fill="#1e1e1e" text-anchor="start">2 · DIE GABELUNG — welches Ticket überhaupt entstehen darf</text>
+<text x="204" y="601" font-size="15" fill="#868e96" text-anchor="start">Stufe 3 fragt: Ist die tragende Prämisse gemessen oder geglaubt?</text>
+<rect x="204" y="620" width="336" height="160" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="222" y="651" font-size="13" fill="#1e1e1e" text-anchor="start">geglaubt →  ENTSCHEIDUNGS-TICKET</text>
+<text x="222" y="667.25" font-size="13" fill="#1e1e1e" text-anchor="start"></text>
+<text x="222" y="683.5" font-size="13" fill="#1e1e1e" text-anchor="start">Titel: „ENTSCHEIDUNG: …"</text>
+<text x="222" y="699.75" font-size="13" fill="#1e1e1e" text-anchor="start">Label: Feature (kein eigenes)</text>
+<text x="222" y="716" font-size="13" fill="#1e1e1e" text-anchor="start">schließt mit einer belegten Antwort</text>
+<text x="222" y="732.25" font-size="13" fill="#1e1e1e" text-anchor="start">DoD: Positiv- + Negativ-Kontrolle</text>
+<rect x="600" y="620" width="336" height="160" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="618" y="651" font-size="13" fill="#1e1e1e" text-anchor="start">gemessen →  BAU-TICKET (Parent)</text>
+<text x="618" y="667.25" font-size="13" fill="#1e1e1e" text-anchor="start"></text>
+<text x="618" y="683.5" font-size="13" fill="#1e1e1e" text-anchor="start">Titel: „UC-XXX-NNN: …"</text>
+<text x="618" y="699.75" font-size="13" fill="#1e1e1e" text-anchor="start">Label: Feature | Improvement | Bug</text>
+<text x="618" y="716" font-size="13" fill="#1e1e1e" text-anchor="start">schließt mit Code + Impact (Ist)</text>
+<text x="618" y="732.25" font-size="13" fill="#1e1e1e" text-anchor="start">darf erst existieren, wenn</text>
+<text x="618" y="748.5" font-size="13" fill="#1e1e1e" text-anchor="start">die Entscheidung steht</text>
+<polyline points="540,700 600,700" fill="none" stroke="#e03131" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="570" y="686" font-size="12" fill="#e03131" text-anchor="middle">blockiert</text>
+<rect x="180" y="860" width="780" height="220" rx="10" fill="#d0ebff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="899" font-size="19" fill="#1e1e1e" text-anchor="start">3 · TICKET-STRUKTUR — Parent und REQ-Kinder</text>
+<rect x="204" y="918" width="430" height="46" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="419" y="946.25" font-size="14" fill="#1e1e1e" text-anchor="middle">THE-628 · UC-E2E-001 · Label Feature</text>
+<rect x="264" y="986" width="420" height="40" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="474" y="1010.875" font-size="13" fill="#1e1e1e" text-anchor="middle">THE-629 · REQ-E2E-001.1 · Label Requirement</text>
+<rect x="264" y="1032" width="420" height="40" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="474" y="1056.875" font-size="13" fill="#1e1e1e" text-anchor="middle">THE-630 · REQ-E2E-001.2 · Label Requirement</text>
+<polyline points="240,964 240,1006 264,1006" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="240,964 240,1052 264,1052" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<text x="712" y="933" font-size="13" fill="#1e1e1e" text-anchor="start">+ Loop-Kontrakt im Parent:</text>
+<text x="712" y="949.25" font-size="13" fill="#1e1e1e" text-anchor="start">Kill · Budget 3 · Impact-Soll</text>
+<text x="712" y="1013" font-size="13" fill="#868e96" text-anchor="start">REQs beschreiben Bedingungen,</text>
+<text x="712" y="1029.25" font-size="13" fill="#868e96" text-anchor="start">keine Aufgaben.</text>
+<rect x="180" y="1140" width="780" height="280" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="1179" font-size="19" fill="#1e1e1e" text-anchor="start">4 · DER LAUF — die Status im Team THE</text>
+<rect x="204" y="1230" width="117.6" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="262.79999999999995" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Backlog</text>
+<rect x="357.6" y="1230" width="117.6" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="416.40000000000003" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Todo</text>
+<rect x="511.2" y="1230" width="117.6" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="570" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">In Progress</text>
+<rect x="664.8" y="1230" width="117.6" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="723.5999999999999" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">In Review</text>
+<rect x="818.4" y="1230" width="117.6" height="52" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="877.1999999999999" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Done</text>
+<polyline points="321.6,1256 357.6,1256" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="475.20000000000005,1256 511.2,1256" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="628.8,1256 664.8,1256" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="782.4,1256 818.4,1256" fill="none" stroke="#1e1e1e" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="723.5999999999999,1230 723.5999999999999,1200 570,1200 570,1230" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="606" y="1187" font-size="11" fill="#e03131" text-anchor="start">Blocker gefunden → zurück</text>
+<rect x="380" y="1310" width="180" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="470" y="1336.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Eskalation (Mensch)</text>
+<polyline points="570,1282 470,1310" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="380" y="1374" font-size="12" fill="#e03131" text-anchor="start">Loop-Budget erschöpft</text>
+<rect x="600" y="1310" width="150" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="675" y="1336.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Canceled</text>
+<polyline points="570,1282 675,1310" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="600" y="1374" font-size="12" fill="#e03131" text-anchor="start">Kill-Kriterium erfüllt → Re-Trigger notieren</text>
+<rect x="180" y="1480" width="780" height="150" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="204" y="1519" font-size="19" fill="#1e1e1e" text-anchor="start">5 · DONE — was ein geschlossenes Ticket tragen muss</text>
+<text x="204" y="1546" font-size="14" fill="#1e1e1e" text-anchor="start">REQs gehen einzeln auf Done · der Parent schließt mit Impact (Ist)</text>
+<text x="204" y="1563.5" font-size="14" fill="#1e1e1e" text-anchor="start">RVTM: jede Zeile PASS mit konkreter Evidenz — die Matrix ist der Audit-Trail</text>
+<text x="204" y="1581" font-size="14" fill="#1e1e1e" text-anchor="start">Autoclose per Branch-Name oder Commit-Titel ⇒ Impact als Kommentar nachtragen</text>
+<polyline points="570,260 570,320" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="570,470 570,530" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="592" y="502" font-size="14" fill="#868e96" text-anchor="start">Stufe 6 legt an</text>
+<polyline points="570,800 570,860" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="592" y="832" font-size="14" fill="#868e96" text-anchor="start">nur das Bau-Ticket läuft weiter</text>
+<polyline points="570,1080 570,1140" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="592" y="1112" font-size="14" fill="#868e96" text-anchor="start">Status auf In Progress</text>
+<polyline points="570,1420 570,1480" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="592" y="1452" font-size="14" fill="#868e96" text-anchor="start">Abnahme</text>
+<rect x="1250" y="150" width="470" height="1500" rx="10" fill="#f8f9fa" stroke="#c2255c" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="1274" y="191" font-size="19" fill="#c2255c" text-anchor="start">REGELN &amp; FALLEN — was den Lauf absichert</text>
+<text x="1274" y="219" font-size="13" fill="#868e96" text-anchor="start">Jede Regel hängt an genau dem Schritt,</text>
+<text x="1274" y="235.25" font-size="13" fill="#868e96" text-anchor="start">an dem sie zubeißt.</text>
+<rect x="1274" y="340" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1485" y="383.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Score ist eine Momentaufnahme. Beim Aktivieren eines</text>
+<text x="1485" y="399.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Alt-Tickets neu bewerten — gefallene Blocker</text>
+<text x="1485" y="416.125" font-size="13" fill="#1e1e1e" text-anchor="middle">verschieben ihn.</text>
+<polyline points="1250,395 965,395" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1274" y="610" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1485" y="653.625" font-size="13" fill="#1e1e1e" text-anchor="middle">ENTSCHEIDUNG hat kein eigenes Label. Nur das</text>
+<text x="1485" y="669.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Titel-Präfix trennt sie vom Bau-Ticket — beim Suchen</text>
+<text x="1485" y="686.125" font-size="13" fill="#1e1e1e" text-anchor="middle">mitdenken.</text>
+<polyline points="1250,665 965,665" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1274" y="915" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1485" y="966.75" font-size="13" fill="#1e1e1e" text-anchor="middle">REQ ist eine prüfbare Bedingung, keine Aufgabe.</text>
+<text x="1485" y="983" font-size="13" fill="#1e1e1e" text-anchor="middle">Sonst ist am Ende nicht messbar, ob es fertig ist.</text>
+<polyline points="1250,970 965,970" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1274" y="1225" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1485" y="1268.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Parallele Sessions teilen den Git-Index — atomar</text>
+<text x="1485" y="1284.875" font-size="13" fill="#1e1e1e" text-anchor="middle">committen oder im Worktree arbeiten. Squash-Merge</text>
+<text x="1485" y="1301.125" font-size="13" fill="#1e1e1e" text-anchor="middle">schneidet beim damaligen HEAD ab.</text>
+<polyline points="1250,1280 965,1280" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1274" y="1500" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1485" y="1543.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Branch-Name UND Commit-Titel schließen Tickets</text>
+<text x="1485" y="1559.875" font-size="13" fill="#1e1e1e" text-anchor="middle">automatisch. Fehlschließungen auditieren, Impact</text>
+<text x="1485" y="1576.125" font-size="13" fill="#1e1e1e" text-anchor="middle">nachtragen.</text>
+<polyline points="1250,1555 965,1555" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<polyline points="204,700 90,700 90,395 175,395" fill="none" stroke="#2f9e44" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah2f9e44)"/>
+<text x="108" y="499" font-size="13" fill="#2f9e44" text-anchor="start">Entscheidung geschlossen →</text>
+<text x="108" y="515.25" font-size="13" fill="#2f9e44" text-anchor="start">Blocker fällt, Score neu bewerten</text>
+<rect x="180" y="1690" width="1540" height="130" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="204" y="1729" font-size="17" fill="#1e1e1e" text-anchor="start">Die Kernaussage</text>
+<text x="204" y="1757" font-size="15" fill="#1e1e1e" text-anchor="start">Der Prozess trennt zwei Ticket-Arten: eine Entscheidung schließt mit einem Beleg, ein Bau-Ticket mit Code. Ein Bau-Ticket auf geglaubter Prämisse</text>
+<text x="204" y="1775.75" font-size="15" fill="#1e1e1e" text-anchor="start">ist der teuerste Fehler — darum blockiert die Entscheidung, statt dass beide parallel laufen. Und Done heißt Wirkung, nicht Aktivität.</text>
+</svg>
