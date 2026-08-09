@@ -483,6 +483,45 @@ export async function computeNormMappingStats(
   projectId: string,
   ref: string,
 ): Promise<NormMappingStats | null> {
+  // Delegiert an den Remediations-Scope — EINE Zählquelle. Zwei parallele
+  // Ableitungen derselben Zahlen waren die Ursache von THE-638: das
+  // RemediateGateway zählte selbst (`status==='gap'` aus der Upload-Route)
+  // und meldete „No gaps detected" bei 14 offenen MUST-Pflichten.
+  const scope = await computeRemediationScope(projectId, ref);
+  if (!scope) return null;
+  const { openSectionIds: _open, ...stats } = scope;
+  return stats;
+}
+
+/**
+ * Der Remediations-Umfang einer Norm: die Zahlen der Kacheln UND die
+ * Section-Ids, die Generate bekommt — aus einem Guss (THE-638/640).
+ *
+ * ── DIE SEMANTIK JE WELT, AUSDRÜCKLICH ──
+ *
+ * `openSectionIds` heißt: „diese Sektionen darf die Remediation angehen."
+ *
+ *   upload   Mappings mit Status `gap` — byte-gleich zum historischen
+ *            Gateway-Verhalten (Schutzraum THE-568: der Rückschluss hängt an
+ *            genau diesem Scope). Nie gemappte Sektionen zählen als
+ *            `unmapped`, gehen aber NICHT in den Generate-Scope: „nie
+ *            versucht" ist dort ein Map-Thema, kein Remediate-Thema.
+ *
+ *   corpus   Sektionen ohne AKTIVES Mapping (`rejected` zählt nicht). Der
+ *            Korpus kennt kein `gap`-Urteil — „gap entsteht nur als
+ *            `unmapped`" (P2-Projektion, siehe computeNormMappingStats-Doku).
+ *            Deshalb IST `unmapped` hier der Generate-Scope. Genau diese
+ *            Zeile hat gefehlt, als Remediate „No gaps detected" über 14
+ *            offene MUST-Pflichten schrieb (THE-638).
+ */
+export interface RemediationScope extends NormMappingStats {
+  openSectionIds: string[];
+}
+
+export async function computeRemediationScope(
+  projectId: string,
+  ref: string,
+): Promise<RemediationScope | null> {
   const norm = await getPipelineNorm(projectId, ref);
   if (!norm) return null;
 
@@ -498,18 +537,23 @@ export async function computeNormMappingStats(
       partial: mappings.filter(m => m.status === 'partial').length,
       gap: mappings.filter(m => m.status === 'gap').length,
       unmapped: norm.sections.filter(s => !mappedSectionIds.has(s.id)).length,
+      openSectionIds: [...new Set(
+        mappings.filter(m => m.status === 'gap').map(m => m.sectionId),
+      )],
     };
   }
 
   const mappings = await getNormMappings(projectId, norm.id);
   const active = mappings.filter(m => m.status !== 'rejected');
   const mappedSectionIds = new Set(active.map(m => m.sectionEId).filter(Boolean));
+  const openSections = norm.sections.filter(s => !mappedSectionIds.has(s.id));
   return {
     total: norm.sections.length,
     compliant: active.filter(m => m.status === 'confirmed').length,
     partial: active.filter(m => m.status === 'auto').length,
     gap: 0,
-    unmapped: norm.sections.filter(s => !mappedSectionIds.has(s.id)).length,
+    unmapped: openSections.length,
+    openSectionIds: openSections.map(s => s.id),
   };
 }
 

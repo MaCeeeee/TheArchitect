@@ -417,6 +417,16 @@ export const normsAPI = {
   // "Add regulation to pipeline" — creates the pipeline state + initial stats.
   addToPipeline: (projectId: string, workId: string) =>
     api.post(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/pipeline`),
+  /**
+   * THE-638: Zahlen UND Generate-Scope der Remediation aus EINER Quelle.
+   * `openSectionIds` — upload: gap-Mappings (byte-gleich zum alten Verhalten),
+   * corpus: Sektionen ohne aktives Mapping (dort ist `unmapped` der Gap).
+   */
+  remediationScope: (projectId: string, workId: string) =>
+    api.get<{ success: boolean; data: {
+      total: number; compliant: number; partial: number; gap: number; unmapped: number;
+      openSectionIds: string[];
+    } }>(`/projects/${projectId}/norms/${encodeURIComponent(workId)}/remediation-scope`),
   // UC-LAW-001 — which laws apply to this architecture? Deterministic signal
   // check over elements (incl. AI-wizard provenance) + project context.
   applicability: (projectId: string) =>

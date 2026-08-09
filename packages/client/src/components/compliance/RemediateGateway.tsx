@@ -4,7 +4,7 @@ import { Wrench, ArrowRight, CheckCircle2, XCircle, AlertTriangle, Sparkles, Loa
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useRemediationStore } from '../../stores/remediationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
-import { standardsAPI } from '../../services/api';
+import { normsAPI } from '../../services/api';
 import ProposalCard from '../copilot/ProposalCard';
 
 export default function RemediateGateway() {
@@ -60,20 +60,27 @@ export default function RemediateGateway() {
     if (proposals.length === 0 && !isGenerating) {
       loadProposals(projectId);
     }
-    // Load mappings once — gap section IDs and the summary tiles both derive
-    // from this single fetch (THE-389: no second, cached source of truth).
+    // THE-638: Zahlen UND Generate-Scope aus EINER Quelle — der Norm-Facade.
+    //
+    // Vorher zaehlte diese Stelle selbst (`status==='gap'` aus der
+    // Upload-Route) und meldete „No gaps detected" bei 14 offenen
+    // MUST-Pflichten: Der Korpus kennt kein `gap`-Urteil, dort ist die offene
+    // Sektion `unmapped` (dokumentierte P2-Projektion, norm.service.ts).
+    // Eine zweite Ableitung derselben Frage laeuft auseinander — deshalb
+    // liefert der Server beides aus einem Guss.
     if (selectedStandardId) {
-      standardsAPI.getMappings(projectId, selectedStandardId).then((res) => {
-        const raw = res.data?.data || res.data || [];
-        const mappings: Array<{ status: string; sectionId: string }> = Array.isArray(raw) ? raw : [];
-        const ids = [...new Set(
-          mappings.filter((m) => m.status === 'gap').map((m) => m.sectionId),
-        )];
-        setGapSectionIds(ids);
+      normsAPI.remediationScope(projectId, selectedStandardId).then((res) => {
+        const scope = res.data?.data;
+        if (!scope) return;
+        setGapSectionIds(scope.openSectionIds ?? []);
         setMappingCounts({
-          compliant: mappings.filter((m) => m.status === 'compliant').length,
-          partial: mappings.filter((m) => m.status === 'partial').length,
-          gap: mappings.filter((m) => m.status === 'gap').length,
+          compliant: scope.compliant,
+          partial: scope.partial,
+          // Die Gaps-Kachel zaehlt OFFENE Punkte: gap (Upload-Urteil) plus
+          // unmapped (Korpus: Sektion ohne aktives Mapping). Bei Uploads ist
+          // unmapped nach dem Map-Schritt regulaer 0 — die Anzeige bleibt dort
+          // wie gehabt.
+          gap: scope.gap + scope.unmapped,
         });
       }).catch(() => {});
     }
