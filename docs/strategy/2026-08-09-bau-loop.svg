@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1950" height="1875" viewBox="0 0 1950 1875" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1950" height="1875" fill="#ffffff"/>
+<defs>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ah1971c2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1971c2"/></marker>
+</defs>
+<text x="340" y="74" font-size="30" fill="#1e1e1e" text-anchor="start">Der Bau-Loop — von der Freigabe zum belegten Done</text>
+<text x="340" y="105" font-size="15" fill="#868e96" text-anchor="start">Stand 2026-08-09 · das Stück zwischen Pre-Flight und Abnahme · gespiegelt aus writing-plans, TDD, verification-before-completion, finishing-a-development-branch</text>
+<rect x="340" y="150" width="780" height="95" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="187" font-size="17" fill="#1e1e1e" text-anchor="start">FREIGABE — der Pre-Flight ist durch</text>
+<text x="364" y="213" font-size="13" fill="#868e96" text-anchor="start">Bestand · Prämissen-Urteil · Score · Komplexitäts-Verdikt · Loop-Kontrakt · Slice liegen vor.</text>
+<text x="364" y="229.25" font-size="13" fill="#868e96" text-anchor="start">Ohne die Freigabe des Nutzers beginnt hier nichts.</text>
+<rect x="340" y="305" width="780" height="160" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="344" font-size="19" fill="#1e1e1e" text-anchor="start">1 · PLAN + RVTM  (writing-plans)</text>
+<rect x="364" y="380" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="481.3333333333333" y="408.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Tasks in Bissen</text>
+<rect x="612.6666666666666" y="380" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="408.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Plan Review Loop</text>
+<rect x="861.3333333333333" y="380" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="978.6666666666665" y="408.875" font-size="13" fill="#1e1e1e" text-anchor="middle">RVTM: alles PENDING</text>
+<text x="364" y="452.5" font-size="12.5" fill="#868e96" text-anchor="start">Der Plan entsteht vor dem Code — und die RVTM mit ihm, damit die Messlatte nicht nachträglich fällt.</text>
+<rect x="340" y="525" width="780" height="215" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="564" font-size="19" fill="#1e1e1e" text-anchor="start">2 · BAU — Red · Green · Refactor  (TDD)</text>
+<rect x="364" y="600" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="481.3333333333333" y="627.875" font-size="13" fill="#1e1e1e" text-anchor="middle">RED: Test schreiben</text>
+<rect x="612.6666666666666" y="600" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="627.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Verify RED: fallen sehen</text>
+<rect x="861.3333333333333" y="600" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="978.6666666666665" y="627.875" font-size="13" fill="#1e1e1e" text-anchor="middle">GREEN: minimal</text>
+<rect x="364" y="656" width="359" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="543.5" y="683.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Verify GREEN: laufen sehen</text>
+<rect x="737" y="656" width="359" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="916.5" y="683.875" font-size="13" fill="#1e1e1e" text-anchor="middle">REFACTOR</text>
+<text x="364" y="722.5" font-size="12.5" fill="#868e96" text-anchor="start">„Wer den Test nicht hat fallen sehen, weiß nicht, ob er das Richtige prüft."</text>
+<rect x="340" y="800" width="780" height="160" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="839" font-size="19" fill="#1e1e1e" text-anchor="start">3 · VERIFIKATION — Belege vor Behauptungen</text>
+<rect x="364" y="875" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="481.3333333333333" y="902.875" font-size="13" fill="#1e1e1e" text-anchor="middle">jede RVTM-Zeile PASS</text>
+<rect x="612.6666666666666" y="875" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="902.875" font-size="13" fill="#1e1e1e" text-anchor="middle">kein PENDING bleibt</text>
+<rect x="861.3333333333333" y="875" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="978.6666666666665" y="902.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Evidenz = Ausgabe</text>
+<text x="364" y="942.5" font-size="12.5" fill="#868e96" text-anchor="start">„Evidence before claims, always." — ohne Beleg gilt es als nicht fertig, nicht als wahrscheinlich fertig.</text>
+<rect x="340" y="1020" width="780" height="155" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="1059" font-size="19" fill="#1e1e1e" text-anchor="start">4 · REVIEW — früh und oft</text>
+<rect x="364" y="1095" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="481.33333333333337" y="1122.875" font-size="13" fill="#1e1e1e" text-anchor="middle">requesting-code-review</text>
+<rect x="612.6666666666666" y="1095" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="1122.875" font-size="13" fill="#1e1e1e" text-anchor="middle">PR + Diff-Kommentare</text>
+<rect x="861.3333333333333" y="1095" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="978.6666666666666" y="1122.875" font-size="13" fill="#1e1e1e" text-anchor="middle">receiving-code-review</text>
+<text x="364" y="1160.5" font-size="12.5" fill="#868e96" text-anchor="start">Feedback technisch prüfen, nicht performativ zustimmen — Unklares zurückfragen statt blind umsetzen.</text>
+<rect x="340" y="1235" width="780" height="160" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="1274" font-size="19" fill="#1e1e1e" text-anchor="start">5 · MERGE + DEPLOY — den Branch abschließen</text>
+<rect x="364" y="1310" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="481.33333333333337" y="1337.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Tests verifizieren</text>
+<rect x="612.6666666666666" y="1310" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="1337.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Base-Branch bestimmen</text>
+<rect x="861.3333333333333" y="1310" width="234.66666666666666" height="46" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="978.6666666666665" y="1337.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Optionen vorlegen</text>
+<text x="364" y="1377.5" font-size="12.5" fill="#868e96" text-anchor="start">Deploy immer mit `-f docker-compose.prod.yml`, nie `reset --hard` · vor dem Commit den Branch prüfen.</text>
+<rect x="340" y="1455" width="780" height="145" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="364" y="1494" font-size="19" fill="#1e1e1e" text-anchor="start">6 · ABNAHME — Done nennt die Wirkung</text>
+<text x="364" y="1541.5" font-size="13.5" fill="#1e1e1e" text-anchor="start">REQs einzeln auf Done · der Parent schließt mit dem Impact (Ist) im Soll-Format</text>
+<text x="364" y="1558.375" font-size="13.5" fill="#1e1e1e" text-anchor="start">Die fertige RVTM ist der Audit-Trail · bei Linear-Autoclose den Impact als Kommentar nachtragen</text>
+<polyline points="730,245 730,305" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="730,465 730,525" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="752" y="497" font-size="14" fill="#868e96" text-anchor="start">Plan freigegeben</text>
+<polyline points="730,740 730,800" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="730,960 730,1020" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="752" y="992" font-size="14" fill="#868e96" text-anchor="start">grün — sonst zurück nach links</text>
+<polyline points="730,1175 730,1235" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="752" y="1207" font-size="14" fill="#868e96" text-anchor="start">approved</text>
+<polyline points="730,1395 730,1455" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="340,880 270,880 270,632.5 335,632.5" fill="none" stroke="#e03131" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<polyline points="340,1097.5 230,1097.5 230,658.5 335,658.5" fill="none" stroke="#e03131" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="60" y="544" font-size="14" fill="#e03131" text-anchor="start">WENN ES</text>
+<text x="60" y="561.5" font-size="14" fill="#e03131" text-anchor="start">ROT WIRD</text>
+<rect x="60" y="590" width="150" height="84" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="135" y="614.75" font-size="11.5" fill="#1e1e1e" text-anchor="middle">ab dem 2. roten</text>
+<text x="135" y="629.125" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Zyklus:</text>
+<text x="135" y="643.5" font-size="11.5" fill="#1e1e1e" text-anchor="middle">systematic-debugging</text>
+<text x="135" y="657.875" font-size="11.5" fill="#1e1e1e" text-anchor="middle">statt nächster Patch</text>
+<rect x="60" y="835" width="150" height="84" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="135" y="859.75" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Loop-Budget 3 —</text>
+<text x="135" y="874.125" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Zyklen mit NEUER</text>
+<text x="135" y="888.5" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Diagnose zählen nicht</text>
+<text x="135" y="902.875" font-size="11.5" fill="#1e1e1e" text-anchor="middle">mit</text>
+<rect x="60" y="1055" width="150" height="84" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="135" y="1086.9375" font-size="11.5" fill="#1e1e1e" text-anchor="middle">danach Eskalation mit</text>
+<text x="135" y="1101.3125" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Befund, kein vierter</text>
+<text x="135" y="1115.6875" font-size="11.5" fill="#1e1e1e" text-anchor="middle">Versuch</text>
+<text x="60" y="1171.5" font-size="11.5" fill="#e03131" text-anchor="start">Symptom-Fixes sind</text>
+<text x="60" y="1185.875" font-size="11.5" fill="#e03131" text-anchor="start">Scheitern — erst die</text>
+<text x="60" y="1200.25" font-size="11.5" fill="#e03131" text-anchor="start">Ursache, dann der</text>
+<text x="60" y="1214.625" font-size="11.5" fill="#e03131" text-anchor="start">Fix.</text>
+<rect x="1400" y="150" width="470" height="1450" rx="10" fill="#f8f9fa" stroke="#1971c2" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="1424" y="191" font-size="19" fill="#1971c2" text-anchor="start">RVTM — der Faden durch den Lauf</text>
+<text x="1424" y="219" font-size="13" fill="#868e96" text-anchor="start">Requirement → Task → Verifikation → Beleg</text>
+<text x="1424" y="235.25" font-size="13" fill="#868e96" text-anchor="start">Status: PASS · FAIL · PARTIAL · PENDING · N/A · BLOCKED</text>
+<rect x="1424" y="330" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="373.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Entsteht hier: jede Anforderung wird eine Zeile,</text>
+<text x="1635" y="389.875" font-size="13" fill="#1e1e1e" text-anchor="middle">alle auf PENDING. Die Messlatte liegt, bevor Code</text>
+<text x="1635" y="406.125" font-size="13" fill="#1e1e1e" text-anchor="middle">existiert.</text>
+<polyline points="1400,385 1125,385" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1424" y="577.5" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="621.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Nach JEDER fertigen Task nachziehen — geänderte</text>
+<text x="1635" y="637.375" font-size="13" fill="#1e1e1e" text-anchor="middle">Dateien, Status, Evidenz. Nicht am Ende in einem</text>
+<text x="1635" y="653.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Rutsch.</text>
+<polyline points="1400,632.5 1125,632.5" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1424" y="825" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="868.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Ist die Checkliste: kein PENDING darf übrig</text>
+<text x="1635" y="884.875" font-size="13" fill="#1e1e1e" text-anchor="middle">bleiben. Offen heißt jetzt prüfen oder N/A mit</text>
+<text x="1635" y="901.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Begründung.</text>
+<polyline points="1400,880 1125,880" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1424" y="1042.5" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="1094.25" font-size="13" fill="#1e1e1e" text-anchor="middle">Zeigt dem Reviewer, was womit belegt ist — die</text>
+<text x="1635" y="1110.5" font-size="13" fill="#1e1e1e" text-anchor="middle">Diskussion läuft über Belege statt über Meinungen.</text>
+<polyline points="1400,1097.5 1125,1097.5" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1424" y="1260" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="1311.75" font-size="13" fill="#1e1e1e" text-anchor="middle">Wird zum Audit-Trail des Branches: was wurde</text>
+<text x="1635" y="1328" font-size="13" fill="#1e1e1e" text-anchor="middle">versprochen, was ist bewiesen.</text>
+<polyline points="1400,1315 1125,1315" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1424" y="1472.5" width="422" height="110" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1635" y="1524.25" font-size="13" fill="#1e1e1e" text-anchor="middle">Liefert die Zahlen für das Impact-Statement (Ist)</text>
+<text x="1635" y="1540.5" font-size="13" fill="#1e1e1e" text-anchor="middle">— Coverage und Evidenz stehen bereits drin.</text>
+<polyline points="1400,1527.5 1125,1527.5" fill="none" stroke="#1971c2" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="340" y="1660" width="1530" height="145" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="364" y="1699" font-size="17" fill="#1e1e1e" text-anchor="start">Die Kernaussage</text>
+<text x="364" y="1727" font-size="15" fill="#1e1e1e" text-anchor="start">Der Loop dreht sich an der Evidenz, nicht an der Zuversicht: weiter geht es erst, wenn ein Beleg vorliegt. Und bleibt derselbe Befund dreimal</text>
+<text x="364" y="1745.75" font-size="15" fill="#1e1e1e" text-anchor="start">rot, endet der Loop mit einer Eskalation statt mit einem vierten Versuch. Das Budget ist die Grenze, die aus einer Schleife einen Prozess macht.</text>
+</svg>
