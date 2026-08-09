@@ -65,3 +65,8 @@ docs/superpowers/bsh-mirofish-demo-scenarios.pdf
 
 # Superpowers skill scratch (server pids/logs, brainstorm iterations)
 .superpowers/
+
+# E2E-Zugangsdaten — NIE einchecken (THE-629)
+.env.e2e
+e2e-report/
+test-results/
