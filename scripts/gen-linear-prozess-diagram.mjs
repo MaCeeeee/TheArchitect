@@ -74,7 +74,7 @@ text({
     'geglaubt →  ENTSCHEIDUNGS-TICKET',
     '',
     'Titel: „ENTSCHEIDUNG: …"',
-    'Label: Feature (kein eigenes)',
+    'Label: Decision',
     'schließt mit einer belegten Antwort',
     'DoD: Positiv- + Negativ-Kontrolle',
   ],
@@ -175,7 +175,7 @@ text({
 
 const RULES = [
   [MID.preflight, bPreflight, 'Score ist eine Momentaufnahme. Beim Aktivieren eines Alt-Tickets neu bewerten — gefallene Blocker verschieben ihn.'],
-  [MID.fork, bFork, 'ENTSCHEIDUNG hat kein eigenes Label. Nur das Titel-Präfix trennt sie vom Bau-Ticket — beim Suchen mitdenken.'],
+  [MID.fork, bFork, 'Ein Entscheidungs-Ticket ohne Positiv- UND Negativ-Kontrolle in der DoD misst nur, was ohnehin geglaubt wird.'],
   [MID.struktur, bStruktur, 'REQ ist eine prüfbare Bedingung, keine Aufgabe. Sonst ist am Ende nicht messbar, ob es fertig ist.'],
   [MID.lauf, bLauf, 'Parallele Sessions teilen den Git-Index — atomar committen oder im Worktree arbeiten. Squash-Merge schneidet beim damaligen HEAD ab.'],
   [MID.done, bDone, 'Branch-Name UND Commit-Titel schließen Tickets automatisch. Fehlschließungen auditieren, Impact nachtragen.'],

@@ -31,7 +31,7 @@
 <text x="222" y="651" font-size="13" fill="#1e1e1e" text-anchor="start">geglaubt →  ENTSCHEIDUNGS-TICKET</text>
 <text x="222" y="667.25" font-size="13" fill="#1e1e1e" text-anchor="start"></text>
 <text x="222" y="683.5" font-size="13" fill="#1e1e1e" text-anchor="start">Titel: „ENTSCHEIDUNG: …"</text>
-<text x="222" y="699.75" font-size="13" fill="#1e1e1e" text-anchor="start">Label: Feature (kein eigenes)</text>
+<text x="222" y="699.75" font-size="13" fill="#1e1e1e" text-anchor="start">Label: Decision</text>
 <text x="222" y="716" font-size="13" fill="#1e1e1e" text-anchor="start">schließt mit einer belegten Antwort</text>
 <text x="222" y="732.25" font-size="13" fill="#1e1e1e" text-anchor="start">DoD: Positiv- + Negativ-Kontrolle</text>
 <rect x="600" y="620" width="336" height="160" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
@@ -108,9 +108,9 @@
 <text x="1485" y="416.125" font-size="13" fill="#1e1e1e" text-anchor="middle">verschieben ihn.</text>
 <polyline points="1250,395 965,395" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
 <rect x="1274" y="610" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
-<text x="1485" y="653.625" font-size="13" fill="#1e1e1e" text-anchor="middle">ENTSCHEIDUNG hat kein eigenes Label. Nur das</text>
-<text x="1485" y="669.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Titel-Präfix trennt sie vom Bau-Ticket — beim Suchen</text>
-<text x="1485" y="686.125" font-size="13" fill="#1e1e1e" text-anchor="middle">mitdenken.</text>
+<text x="1485" y="653.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Ein Entscheidungs-Ticket ohne Positiv- UND</text>
+<text x="1485" y="669.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Negativ-Kontrolle in der DoD misst nur, was ohnehin</text>
+<text x="1485" y="686.125" font-size="13" fill="#1e1e1e" text-anchor="middle">geglaubt wird.</text>
 <polyline points="1250,665 965,665" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
 <rect x="1274" y="915" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
 <text x="1485" y="966.75" font-size="13" fill="#1e1e1e" text-anchor="middle">REQ ist eine prüfbare Bedingung, keine Aufgabe.</text>

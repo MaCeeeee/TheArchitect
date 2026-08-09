@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="2060" viewBox="0 0 1900 2060" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1900" height="2060" fill="#ffffff"/>
+<defs>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ahc2255c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#c2255c"/></marker>
+</defs>
+<text x="280" y="74" font-size="30" fill="#1e1e1e" text-anchor="start">Der Pre-Flight — sechs Tore, bevor ein Ticket entsteht</text>
+<text x="280" y="105" font-size="15" fill="#868e96" text-anchor="start">Stand 2026-08-09 · gespiegelt aus docs/skills/pre-flight/SKILL.md · Reihenfolge ist bindend — jede Stufe darf stoppen oder umschneiden</text>
+<rect x="280" y="150" width="780" height="90" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="187" font-size="17" fill="#1e1e1e" text-anchor="start">AUSLÖSER — wann der Pre-Flight läuft</text>
+<text x="304" y="209" font-size="13" fill="#868e96" text-anchor="start">neue Aufgabe · „lass uns X bauen" · ein Altticket aktivieren · vor writing-plans — er läuft VOR dem Plan, nicht erst vor dem Bau</text>
+<rect x="280" y="300" width="780" height="130" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="339" font-size="19" fill="#1e1e1e" text-anchor="start">1 · LINEAR-SUCHE — gibt es das schon?</text>
+<rect x="304" y="356" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="421.33333333333337" y="384.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Titel UND Beschreibung</text>
+<rect x="552.6666666666666" y="356" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="670" y="384.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Done-Issues melden</text>
+<rect x="801.3333333333333" y="356" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="918.6666666666666" y="384.875" font-size="13" fill="#1e1e1e" text-anchor="middle">bestehende REQs sammeln</text>
+<rect x="280" y="490" width="780" height="130" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="529" font-size="19" fill="#1e1e1e" text-anchor="start">2 · CODEBASE-SCAN — tut der Code das schon?</text>
+<rect x="304" y="546" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="421.3333333333333" y="574.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Komponenten · Stores · Routen</text>
+<rect x="552.6666666666666" y="546" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="670" y="574.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Ist-Zustand lesen, nicht raten</text>
+<rect x="801.3333333333333" y="546" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="918.6666666666666" y="574.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Explore-Agent: Datei:Zeile</text>
+<rect x="280" y="680" width="780" height="175" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="719" font-size="19" fill="#1e1e1e" text-anchor="start">3 · PRÄMISSEN-PRÜFUNG — stimmt die Annahme?</text>
+<text x="304" y="748" font-size="14" fill="#868e96" text-anchor="start">Was nimmt dieses Vorhaben als wahr an — und ist das gemessen oder geglaubt?</text>
+<rect x="304" y="762" width="359" height="48" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="483.5" y="790.875" font-size="13" fill="#1e1e1e" text-anchor="middle">gemessen → Beleg verlinken, weiter</text>
+<rect x="677" y="762" width="359" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="4"/>
+<text x="856.5" y="790.875" font-size="13" fill="#1e1e1e" text-anchor="middle">geglaubt → STOPP, Decision-Ticket blockt</text>
+<text x="304" y="832.5" font-size="12.5" fill="#868e96" text-anchor="start">Präzedenz THE-438: 7 REQs auf ungeprüfter Annahme — zwei Stunden Messung entzogen ihr die Grundlage.</text>
+<rect x="280" y="915" width="780" height="150" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="954" font-size="19" fill="#1e1e1e" text-anchor="start">4 · WSJF-SCORING — lohnt es sich? (8 Kriterien, je 0–5)</text>
+<text x="304" y="984" font-size="14" fill="#1e1e1e" text-anchor="start">Business Value · Business Risk · Implementation Challenges · Chance of Success</text>
+<text x="304" y="1001.5" font-size="14" fill="#1e1e1e" text-anchor="start">Compliance · Relationship to Requirements · Urgency · Status (abgeleitet)</text>
+<text x="304" y="1036.5" font-size="12.5" fill="#868e96" text-anchor="start">gleich gewichtet (8 × 12,5 %) · bestimmt die Backlog-Reihenfolge · Score in Ticket UND RVTM</text>
+<rect x="280" y="1125" width="780" height="205" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="1164" font-size="19" fill="#1e1e1e" text-anchor="start">5 · KOMPLEXITÄT (Ousterhout) — was handeln wir uns ein?</text>
+<rect x="304" y="1180" width="234.66666666666666" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="421.3333333333333" y="1206.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Change Amplification</text>
+<rect x="552.6666666666666" y="1180" width="234.66666666666666" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="669.9999999999999" y="1206.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Cognitive Load</text>
+<rect x="801.3333333333333" y="1180" width="234.66666666666666" height="44" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="4"/>
+<text x="918.6666666666666" y="1206.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Unknown Unknowns</text>
+<rect x="304" y="1234" width="359" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="483.5" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Hebel: Abhängigkeiten</text>
+<rect x="677" y="1234" width="359" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="856.5" y="1260.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Hebel: Obscurity</text>
+<text x="304" y="1300.5" font-size="12.5" fill="#868e96" text-anchor="start">oben die drei Symptome, unten die zwei Ursachen — drehen lässt sich nur an den Ursachen</text>
+<text x="304" y="1316.125" font-size="12.5" fill="#868e96" text-anchor="start">Regel: hoch bei Unknown Unknowns oder Abhängigkeiten → vor der Issue-Erstellung umschneiden</text>
+<rect x="280" y="1390" width="780" height="200" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="1429" font-size="19" fill="#1e1e1e" text-anchor="start">6 · ISSUE ANLEGEN — erst jetzt entsteht etwas in Linear</text>
+<rect x="304" y="1446" width="359" height="54" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="483.5" y="1469.75" font-size="13" fill="#1e1e1e" text-anchor="middle">Parent: UC-XXX-NNN</text>
+<text x="483.5" y="1486" font-size="13" fill="#1e1e1e" text-anchor="middle">Label Feature | Improvement | Bug</text>
+<rect x="677" y="1446" width="359" height="54" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="856.5" y="1469.75" font-size="13" fill="#1e1e1e" text-anchor="middle">REQ-Kinder: 1..n (komplex 3–8)</text>
+<text x="856.5" y="1486" font-size="13" fill="#1e1e1e" text-anchor="middle">Label Requirement · eigene AC</text>
+<rect x="304" y="1510" width="234.66666666666666" height="44" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="421.33333333333337" y="1536.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Kill-Kriterium + Re-Trigger</text>
+<rect x="552.6666666666666" y="1510" width="234.66666666666666" height="44" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="670" y="1536.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Loop-Budget (Default 3)</text>
+<rect x="801.3333333333333" y="1510" width="234.66666666666666" height="44" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="918.6666666666666" y="1536.875" font-size="13" fill="#1e1e1e" text-anchor="middle">Impact-Statement (Soll)</text>
+<text x="304" y="1576.5" font-size="12.5" fill="#868e96" text-anchor="start">REQs beschreiben, WAS wahr sein muss — prüfbare Bedingungen, keine Aufgaben.</text>
+<rect x="280" y="1650" width="780" height="140" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="304" y="1689" font-size="19" fill="#1e1e1e" text-anchor="start">ÜBERGABE — sechs Ergebnisse, dann Freigabe abwarten</text>
+<text x="304" y="1718" font-size="14" fill="#1e1e1e" text-anchor="start">Bestand · Prämissen-Urteil · Score · Komplexitäts-Verdikt · Loop-Kontrakt · Slice-Vorschlag</text>
+<text x="304" y="1735.5" font-size="14" fill="#1e1e1e" text-anchor="start">Erst nach der Freigabe: writing-plans (Plan + RVTM) → subagent-driven-development</text>
+<polyline points="670,240 670,300" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="670,430 670,490" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="670,620 670,680" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="692" y="652" font-size="14" fill="#868e96" text-anchor="start">Ergebnis aus 1+2 dem Nutzer vorlegen</text>
+<polyline points="670,855 670,915" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="692" y="887" font-size="14" fill="#868e96" text-anchor="start">nur mit gemessener Prämisse</text>
+<polyline points="670,1065 670,1125" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="670,1330 670,1390" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="692" y="1362" font-size="14" fill="#868e96" text-anchor="start">erst wenn der Schnitt steht</text>
+<polyline points="670,1590 670,1650" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="60" y="270" font-size="14" fill="#e03131" text-anchor="start">STOPP oder</text>
+<text x="60" y="287.5" font-size="14" fill="#e03131" text-anchor="start">UMSCHNEIDEN</text>
+<rect x="60" y="333" width="170" height="64" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="145" y="362" font-size="12" fill="#1e1e1e" text-anchor="middle">schon gebaut → Ticket</text>
+<text x="145" y="377" font-size="12" fill="#1e1e1e" text-anchor="middle">schließen</text>
+<polyline points="280,365 235,365" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<rect x="60" y="523" width="170" height="64" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="145" y="552" font-size="12" fill="#1e1e1e" text-anchor="middle">teilweise da → Umfang</text>
+<text x="145" y="567" font-size="12" fill="#1e1e1e" text-anchor="middle">schneiden</text>
+<polyline points="280,555 235,555" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<rect x="60" y="735.5" width="170" height="64" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="145" y="764.5" font-size="12" fill="#1e1e1e" text-anchor="middle">geglaubt →</text>
+<text x="145" y="779.5" font-size="12" fill="#1e1e1e" text-anchor="middle">Entscheidung blockt</text>
+<polyline points="280,767.5 235,767.5" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<rect x="60" y="958" width="170" height="64" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="145" y="987" font-size="12" fill="#1e1e1e" text-anchor="middle">Score zu niedrig →</text>
+<text x="145" y="1002" font-size="12" fill="#1e1e1e" text-anchor="middle">Backlog</text>
+<polyline points="280,990 235,990" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<rect x="60" y="1195.5" width="170" height="64" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="145" y="1224.5" font-size="12" fill="#1e1e1e" text-anchor="middle">Unknown Unknowns hoch</text>
+<text x="145" y="1239.5" font-size="12" fill="#1e1e1e" text-anchor="middle">→ anders schneiden</text>
+<polyline points="280,1227.5 235,1227.5" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<rect x="1350" y="150" width="470" height="1660" rx="10" fill="#f8f9fa" stroke="#c2255c" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="1374" y="191" font-size="19" fill="#c2255c" text-anchor="start">ROTE LINIEN — je Stufe</text>
+<text x="1374" y="219" font-size="13" fill="#868e96" text-anchor="start">Was an genau dieser Stufe</text>
+<text x="1374" y="235.25" font-size="13" fill="#868e96" text-anchor="start">nie passieren darf.</text>
+<rect x="1374" y="310" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="353.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie eine bereits erledigte Arbeit übersehen —</text>
+<text x="1585" y="369.875" font-size="13" fill="#1e1e1e" text-anchor="middle">bestehende REQs sind der Schutzraum, den der Plan</text>
+<text x="1585" y="386.125" font-size="13" fill="#1e1e1e" text-anchor="middle">nicht brechen darf.</text>
+<polyline points="1350,365 1065,365" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="500" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="543.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie den Ist-Zustand raten. Und nie überspringen,</text>
+<text x="1585" y="559.875" font-size="13" fill="#1e1e1e" text-anchor="middle">weil „das kenne ich doch" — genau dort sitzen die</text>
+<text x="1585" y="576.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Dubletten.</text>
+<polyline points="1350,555 1065,555" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="712.5" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="756.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie ein Bau-Ticket auf geglaubter Prämisse. Erst</text>
+<text x="1585" y="772.375" font-size="13" fill="#1e1e1e" text-anchor="middle">das Entscheidungs-Ticket, das per blockedBy</text>
+<text x="1585" y="788.625" font-size="13" fill="#1e1e1e" text-anchor="middle">blockiert.</text>
+<polyline points="1350,767.5 1065,767.5" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="935" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="978.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie einen Alt-Score ungeprüft übernehmen — Scores</text>
+<text x="1585" y="994.875" font-size="13" fill="#1e1e1e" text-anchor="middle">sind Momentaufnahmen, gefallene Blocker</text>
+<text x="1585" y="1011.125" font-size="13" fill="#1e1e1e" text-anchor="middle">verschieben sie.</text>
+<polyline points="1350,990 1065,990" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="1172.5" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="1216.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie bauen, wenn Unknown Unknowns oder</text>
+<text x="1585" y="1232.375" font-size="13" fill="#1e1e1e" text-anchor="middle">Abhängigkeiten hoch sind — vorher anders</text>
+<text x="1585" y="1248.625" font-size="13" fill="#1e1e1e" text-anchor="middle">schneiden.</text>
+<polyline points="1350,1227.5 1065,1227.5" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="1435" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="1486.75" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie ein Done, das nur Aktivität nennt. Nie das</text>
+<text x="1585" y="1503" font-size="13" fill="#1e1e1e" text-anchor="middle">Loop-Budget stillschweigend überziehen.</text>
+<polyline points="1350,1490 1065,1490" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="1374" y="1665" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1585" y="1716.75" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie mit der Implementierung beginnen, bevor der</text>
+<text x="1585" y="1733" font-size="13" fill="#1e1e1e" text-anchor="middle">Nutzer den Plan freigegeben hat.</text>
+<polyline points="1350,1720 1065,1720" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
+<rect x="280" y="1870" width="1540" height="130" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="304" y="1909" font-size="17" fill="#1e1e1e" text-anchor="start">Die Kernaussage</text>
+<text x="304" y="1937" font-size="15" fill="#1e1e1e" text-anchor="start">Die Reihenfolge ist bindend, und jede Stufe darf das Vorhaben stoppen oder umschneiden — das ist ihr Zweck, kein Nebeneffekt. Der Pre-Flight</text>
+<text x="304" y="1955.75" font-size="15" fill="#1e1e1e" text-anchor="start">ist deshalb kein Formular vor dem Bau, sondern die Stelle, an der ein Vorhaben am billigsten stirbt: Stufe 3 kostet Stunden, ein Fehlbau Wochen.</text>
+</svg>
