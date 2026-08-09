@@ -41,10 +41,12 @@ Die tragende Annahme **benennen** und einordnen:
 
 Bei „geglaubt": **zuerst ein Entscheidungs-Ticket**, das das Bau-Ticket per `blockedBy` blockiert.
 
-| Ticket-Art | Schließt mit | Darf existieren, wenn |
-|---|---|---|
-| **Entscheidung** | einer belegten Antwort | immer |
-| **Bau** | Code | seine Prämissen entschieden sind |
+| Ticket-Art | Titel | Label | Schließt mit | Darf existieren, wenn |
+|---|---|---|---|---|
+| **Entscheidung** | `ENTSCHEIDUNG: …` | `Decision` | einer belegten Antwort | immer |
+| **Bau** | `UC-XXX-NNN: …` | `Feature` \| `Improvement` \| `Bug` | Code | seine Prämissen entschieden sind |
+
+Das Label ist die filterbare Unterscheidung — der Titel allein trug sie bis 2026-08-09 und war damit nur per Textsuche auffindbar.
 
 Ein Entscheidungs-Ticket braucht **Positiv- und Negativ-Kontrolle** in der Definition of Done — sonst misst es nur, was ohnehin geglaubt wird.
 
