@@ -22,6 +22,7 @@ import {
   getNormSection,
   getNormMappings,
   listAvailableCorpusNorms,
+  computeRemediationScope,
 } from '../services/norm.service';
 import { isCorpusConfigured, listTypingSummaries } from '../services/corpusClient.service';
 import { refreshMappingStats } from '../services/compliance-pipeline.service';
@@ -276,6 +277,21 @@ router.get('/:projectId/norms/:workId/mappings', async (req, res) => {
   } catch (err) {
     log.error({ err, workId: req.params.workId }, '[norms.mappings] failed');
     return res.status(500).json({ success: false, error: 'failed to load norm mappings' });
+  }
+});
+
+// THE-638: Kacheln UND Generate-Scope der Remediation aus einer Quelle.
+// 404 statt leerem Scope — „Norm unbekannt" darf nicht wie „nichts offen" lesen.
+router.get('/:projectId/norms/:workId/remediation-scope', async (req, res) => {
+  try {
+    const scope = await computeRemediationScope(req.params.projectId, req.params.workId);
+    if (!scope) {
+      return res.status(404).json({ success: false, error: 'norm not found' });
+    }
+    return res.json({ success: true, data: scope });
+  } catch (err) {
+    log.error({ err, workId: req.params.workId }, '[norms.remediation-scope] failed');
+    return res.status(500).json({ success: false, error: 'failed to compute remediation scope' });
   }
 });
 
