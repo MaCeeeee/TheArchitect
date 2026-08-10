@@ -25,7 +25,11 @@ CORPUS_URL="https://thearchitect.site/api/regulations/corpus/health"
 # Source paths that are safe to overwrite from git. Infra files
 # (docker-compose.prod.yml, Caddyfile, .env) are deliberately NOT listed —
 # they are prod-local and divergent from the repo.
-SOURCE_PATHS=(packages package.json package-lock.json Dockerfile turbo.json tsconfig.base.json)
+# `e2e` gehoert dazu, seit das Tor `emptyMeasurement` (THE-653) die Specs im
+# Builder LIEST — ohne das Verzeichnis bricht `COPY e2e/` den Build, bevor
+# irgendetwas passiert. Genau so ist es beim ersten Deploy nach THE-653
+# passiert: Produktion blieb unberuehrt, aber der Deploy stand.
+SOURCE_PATHS=(packages e2e package.json package-lock.json Dockerfile turbo.json tsconfig.base.json)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log()  { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
