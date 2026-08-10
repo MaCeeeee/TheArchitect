@@ -72,6 +72,17 @@ export interface ProposalValidationResult {
 // ─── Proposal Document ───
 
 export interface RemediationSourceRef {
+  /**
+   * Kanonische Norm-Referenz (`corpus:<source>` | `upload:<standardId>`) —
+   * der Schlüssel, unter dem der Rückschluss die auslösende Anforderung
+   * wiederfindet. Gilt für BEIDE Welten (THE-643).
+   */
+  normId?: string;
+  /**
+   * Nur die Upload-Welt: die echte `Standard`-ObjectId. Ein Korpus-Schlüssel
+   * passt hier nicht hinein — das war der Cast-Fehler aus THE-642. Bleibt für
+   * Bestandsdaten, bis THE-390 P4 den Index umlegt (ADR-0004 E4).
+   */
   standardId?: string;
   sectionIds?: string[];
   insightIds?: string[];

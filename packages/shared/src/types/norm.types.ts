@@ -125,6 +125,23 @@ export function deriveNormWorkId(source: NormSource, key: string): string {
   return `${source}:${key}`;
 }
 
+/**
+ * Kanonischer `workId` aus einer Norm-Referenz, wie sie an den Grenzen ankommt.
+ *
+ * Drei Formen laufen dort auf: `corpus:dsgvo` und `upload:<id>` sind bereits
+ * kanonisch, eine rohe Standard-ObjectId ist es nicht. Bis THE-643 hat jede
+ * Aufrufstelle diese Fallunterscheidung selbst gemacht — `remediationBacklink`
+ * gar nicht, weshalb aus `corpus:dsgvo` dort `upload:corpus:dsgvo` wurde, ein
+ * Schlüssel ohne Gegenstück. Wer die Referenz nicht selbst gebildet hat, führt
+ * sie hier durch.
+ *
+ * Idempotent: `toNormWorkId(toNormWorkId(x)) === toNormWorkId(x)`.
+ */
+export function toNormWorkId(ref: string): string {
+  if (ref.startsWith('corpus:') || ref.startsWith('upload:')) return ref;
+  return deriveNormWorkId('upload', ref);
+}
+
 /** Das Gesetz („source") aus einem `regulationKey` wie `dsgvo:art-30`. */
 export function lawSourceFromRegulationKey(regulationKey: string): string {
   const idx = regulationKey.indexOf(':');
