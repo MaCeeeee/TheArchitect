@@ -31,7 +31,7 @@ import {
   ShieldOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { PARTY_ROLE_IDS, JURISDICTION_IDS, type LegalProfile } from '@thearchitect/shared';
+import { PARTY_ROLE_IDS, JURISDICTION_IDS, deriveNormWorkId, type LegalProfile } from '@thearchitect/shared';
 import { normsAPI, projectAPI } from '../../services/api';
 
 type LawState = 'applicable' | 'displaced' | 'not_applicable' | 'undetermined';
@@ -127,7 +127,9 @@ export default function LegalApplicabilityCheck() {
       if (!projectId) return;
       setArticle({ eId, heading: '', text: '', loading: true });
       try {
-        const res = await normsAPI.getSection(projectId, `corpus:${expression}`, eId);
+        // Kanonisch statt handgebaut (THE-653): der workId entsteht über
+        // deriveNormWorkId — dieselbe Funktion, die auch der Server benutzt.
+        const res = await normsAPI.getSection(projectId, deriveNormWorkId('corpus', expression), eId);
         const s = res.data?.data as { heading?: string; number?: string; text?: string } | undefined;
         setArticle({
           eId,

@@ -38,7 +38,7 @@ import {
 } from '../services/harmonization.service';
 import { forwardTrace, backwardTrace } from '../services/traceability.service';
 import { chainDriftCheck } from '../services/chainDrift.service';
-import { violatesImplementationFreedom } from '@thearchitect/shared';
+import { violatesImplementationFreedom, buildRegulationKey } from '@thearchitect/shared';
 import {
   generateRequirementsFromText,
   RequirementGeneratorError,
@@ -425,10 +425,26 @@ router.post(
       parsed.data.engine ?? (process.env.REQUIREMENTS_ENGINE === 'reqgen' ? 'reqgen' : 'chain');
     if (engine === 'chain') {
       // regulationKey: fuer Corpus-Normen IST die Section-Id der Key (siehe
-      // oben); sonst mechanischer Slug aus source+paragraph.
-      const regulationKey =
-        parsed.data.sectionEId ??
-        `${source}:${paragraphNumber}`.toLowerCase().replace(/\s+/g, '-');
+      // oben); sonst der KANONISCHE Schluessel aus source+paragraph.
+      //
+      // Bis THE-653 stand hier eine eigene Normalisierung (`\s+` statt
+      // `[^a-z0-9]+`): aus „Art. 32" wurde `dsgvo:art.-32`, kanonisch ist
+      // `dsgvo:art-32` — vier von vier Testfaellen wichen ab. Derselbe
+      // Paragraph bekam je nach Eingabeweg zwei Identitaeten; ueber die
+      // Chain-Vorschau wurde der abweichende Schluessel in Ketten-Ableitungen
+      // persistiert. Dieselbe Fehlerklasse wie THE-645, eine Naht weiter.
+      let regulationKey: string;
+      try {
+        regulationKey =
+          parsed.data.sectionEId ?? buildRegulationKey(source, paragraphNumber);
+      } catch {
+        // buildRegulationKey wirft, wenn der Paragraph zu leer normalisiert
+        // (z. B. „§"). Vorher entstand daraus ein stiller Nonsens-Schluessel.
+        return res.status(400).json({
+          success: false,
+          error: 'paragraphNumber yields an empty regulation key',
+        });
+      }
       try {
         const result = await chainPreview({ text, source, paragraphNumber, regulationKey });
         return res.json({
