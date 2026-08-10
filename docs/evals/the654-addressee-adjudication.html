@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE-654 — Adressaten-Adjudikation</title>
+<style>
+  :root {
+    --bg:#fbfaf8; --fg:#1a1a1a; --muted:#6b6b6b; --line:#e2ded8; --card:#fff;
+    --ok:#0f7b3f; --ok-bg:#d9f2e4; --fehlt:#b4341c; --fehlt-bg:#ffe0d6;
+    --a:#1565c0; --b:#b4341c; --c:#0f7b3f; --d:#8a6d00;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:0 1rem 6rem; background:var(--bg); color:var(--fg);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif; }
+  .wrap { max-width:52rem; margin:0 auto; }
+  h1 { font-size:1.6rem; margin:2rem 0 .3rem; line-height:1.25; }
+  h2 { font-size:1.15rem; margin:2.5rem 0 .8rem; padding-top:1rem; border-top:2px solid var(--line); }
+  h3 { font-size:1.05rem; margin:.4rem 0 .5rem; }
+  .sub { color:var(--muted); font-size:.9rem; margin:0 0 1.5rem; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:1rem 1.2rem; margin:1.2rem 0; }
+  .box h4 { margin:.2rem 0 .6rem; font-size:.95rem; }
+  table.urteile { width:100%; border-collapse:collapse; font-size:.92rem; }
+  table.urteile td { padding:.45rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  table.urteile tr:last-child td { border-bottom:none; }
+  .kk { font-weight:700; width:1.6rem; }
+  .kk-a{color:var(--a)} .kk-b{color:var(--b)} .kk-c{color:var(--c)} .kk-d{color:var(--d)}
+  mark.akteur-ok { background:var(--ok-bg); color:var(--ok); padding:.05em .25em; border-radius:3px; font-weight:600; }
+  mark.akteur-fehlt { background:var(--fehlt-bg); color:var(--fehlt); padding:.05em .25em; border-radius:3px;
+    font-weight:700; box-shadow:inset 0 -2px 0 var(--fehlt); }
+  .legende { display:flex; gap:1.5rem; flex-wrap:wrap; font-size:.88rem; margin:.6rem 0 0; }
+  article.fall { background:var(--card); border:1px solid var(--line); border-radius:10px;
+    padding:1.1rem 1.3rem 1rem; margin:1.1rem 0; }
+  article.gegenprobe { border-left:4px solid var(--muted); }
+  article header { display:flex; align-items:center; gap:.7rem; font-size:.85rem; color:var(--muted); }
+  .nr { font-weight:700; color:var(--fg); font-size:1rem; }
+  .quelle { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .badge-gegen { margin-left:auto; background:#eee; color:var(--muted); border-radius:99px; padding:.1rem .6rem; font-size:.75rem; }
+  blockquote { margin:.7rem 0 1rem; padding:.8rem 1rem; background:#fdfcfa; border-left:3px solid var(--line);
+    border-radius:0 6px 6px 0; font-size:.93rem; }
+  .hint { display:inline-block; font-size:.82rem; padding:.15rem .55rem; border-radius:99px; margin-bottom:.2rem; }
+  .hint-b { background:var(--fehlt-bg); color:var(--fehlt); font-weight:600; }
+  .hint-a { background:var(--ok-bg); color:var(--ok); }
+  .hint-c { background:#f0eee9; color:var(--muted); }
+  .radios { display:grid; grid-template-columns:repeat(auto-fit,minmax(13rem,1fr)); gap:.4rem; margin-bottom:.5rem; }
+  .opt { display:flex; align-items:center; gap:.45rem; padding:.45rem .6rem; border:1.5px solid var(--line);
+    border-radius:7px; cursor:pointer; font-size:.86rem; background:#fff; }
+  .opt:hover { background:#faf8f5; }
+  .opt .k { font-weight:700; }
+  .opt-a .k{color:var(--a)} .opt-b .k{color:var(--b)} .opt-c .k{color:var(--c)} .opt-d .k{color:var(--d)}
+  .opt:has(input:checked) { border-width:2px; }
+  .opt-a:has(input:checked){border-color:var(--a);background:#e8f1fb}
+  .opt-b:has(input:checked){border-color:var(--b);background:var(--fehlt-bg)}
+  .opt-c:has(input:checked){border-color:var(--c);background:var(--ok-bg)}
+  .opt-d:has(input:checked){border-color:var(--d);background:#fdf6dd}
+  .feld { width:100%; padding:.45rem .6rem; border:1px solid var(--line); border-radius:7px;
+    font:inherit; font-size:.86rem; margin-top:.35rem; background:#fff; }
+  article footer { margin-top:.6rem; font-size:.75rem; color:var(--muted); }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(255,255,255,.97);
+    border-top:1px solid var(--line); padding:.7rem 1rem; display:flex; align-items:center;
+    gap:1rem; justify-content:center; backdrop-filter:blur(6px); }
+  .bar .stand { font-size:.9rem; }
+  .bar button { font:inherit; font-size:.86rem; padding:.45rem .9rem; border-radius:7px;
+    border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .bar button.primary { background:var(--fg); color:#fff; border-color:var(--fg); }
+  .tally { font-family:ui-monospace,monospace; font-size:.85rem; }
+  @media print { .bar{display:none} article{break-inside:avoid} }
+</style></head><body><div class="wrap">
+
+<h1>Hat diese Bestimmung einen Adressaten?</h1>
+<p class="sub">THE-654 · erzeugt am 2026-08-10 aus 1746 Korpus-Bestimmungen ·
+389 ohne Adressatenklasse, davon 102 mit Sachtitel und 128 Rahmenbestimmungen ·
+Stichprobe <strong>30</strong> über <strong>14</strong> Gesetze, plus 5 Gegenproben</p>
+
+<div class="box">
+  <h4>Die Leitfrage</h4>
+  <p style="margin:.2rem 0"><strong>Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?</strong><br>
+  <span style="color:var(--muted)">Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die
+  Normungsorganisation, auch wenn das Wort „Pflicht" nicht vorkommt.</span></p>
+</div>
+
+<div class="box">
+  <h4>Die vier Urteile</h4>
+  <table class="urteile">
+    <tr><td class="kk kk-a">A</td><td>Adressat vorhanden — <strong>und er steht im Typraum</strong></td>
+        <td style="color:var(--muted)">Die Typisierung hat ihn übersehen. Extraktions-Problem.</td></tr>
+    <tr><td class="kk kk-b">B</td><td>Adressat vorhanden — <strong>aber er fehlt im Typraum</strong></td>
+        <td style="color:var(--muted)"><strong>Der gesuchte Fall.</strong> Bitte benennen, wie die Klasse heißen müsste.</td></tr>
+    <tr><td class="kk kk-c">C</td><td><strong>Kein</strong> Normadressat</td>
+        <td style="color:var(--muted)">Verfahren, Definition, Schlussbestimmung. Korrekt leer.</td></tr>
+    <tr><td class="kk kk-d">D</td><td>unklar / mehrdeutig</td>
+        <td style="color:var(--muted)">Eigene Klasse, nicht „Nein".</td></tr>
+  </table>
+</div>
+
+<div class="box">
+  <h4>Die Farben im Gesetzestext</h4>
+  <p style="margin:.2rem 0 .5rem; color:var(--muted); font-size:.92rem">
+    Rein mechanisch markiert — eine <strong>Wortliste, kein Modell</strong>. Die Farbe sagt nicht, wer der
+    Adressat <em>ist</em>; sie zeigt, welche Akteure der Artikel <em>nennt</em> und ob der Typraum sie kennt.
+    Was das Modell vermutet hat, steht bewusst nirgends: es würde das Urteil ankern.</p>
+  <div class="legende">
+    <span><mark class="akteur-ok">Mitgliedstaaten</mark> &nbsp;im Typraum → spricht für <strong style="color:var(--a)">A</strong></span>
+    <span><mark class="akteur-fehlt">Normungsorganisation</mark> &nbsp;fehlt dort → spricht für <strong style="color:var(--b)">B</strong></span>
+  </div>
+  <p style="margin:.7rem 0 0; color:var(--muted); font-size:.85rem">
+    Zeiger auf eine Markierung zeigt die Klasse. Keine Markierung heißt nicht „kein Adressat" —
+    die Liste kennt 19 bekannte und 18 fehlende Begriffe, nicht alle.</p>
+</div>
+
+<div class="box">
+  <h4>Der Typraum heute — 19 Klassen</h4>
+  <p style="margin:.2rem 0; font-family:ui-monospace,monospace; font-size:.82rem; line-height:1.8; color:var(--muted)">
+  member_state · supervisory_authority · financial_entity · provider · manufacturer · controller ·
+  conformity_assessment_body · trust_service_provider · obligated_enterprise · data_holder ·
+  ict_third_party_provider · essential_important_entity · processor · data_subject · ecs_provider ·
+  importer · distributor · authorized_representative · deployer</p>
+</div>
+
+<h2>Stichprobe — 30 Fälle</h2>
+
+<article class="fall" id="f1">
+  <header>
+    <span class="nr">01</span>
+    <span class="quelle">ai-act-de · Art. 56</span>
+    
+  </header>
+  <h3>Praxisleitfäden</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: AI Office · KI-Gremium</span>
+  <blockquote>(1) Das <mark class="akteur-fehlt" title="AI Office">Büro für Künstliche Intelligenz</mark> fördert und erleichtert die Ausarbeitung von Praxisleitfäden auf Unionsebene, um unter Berücksichtigung internationaler Ansätze zur ordnungsgemäßen Anwendung dieser Verordnung beizutragen. (2) Das <mark class="akteur-fehlt" title="AI Office">Büro für Künstliche Intelligenz</mark> und das <mark class="akteur-fehlt" title="KI-Gremium">KI-Gremium</mark> streben an, sicherzustellen, dass die Praxisleitfäden mindestens die in den Artikeln 53 und 55 vorgesehenen Pflichten abdecken, einschließlich der folgenden Aspekte: a) Mittel, mit denen sichergestellt wird, dass die in Artikel 53 Absatz 1 Buchstaben a und b genannten Informationen vor dem Hintergrund der Marktentwicklungen und technologischen Entwicklungen auf dem neuesten Stand gehalten werden; b) die angem…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f1" value="A" data-key="f1">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f1" value="B" data-key="f1">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f1" value="C" data-key="f1">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f1" value="D" data-key="f1">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f1-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f1-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>ai-act-de:art-56</code></footer>
+</article>
+<article class="fall" id="f2">
+  <header>
+    <span class="nr">02</span>
+    <span class="quelle">cra-de · Art. 14</span>
+    
+  </header>
+  <h3>Diese Verordnung ist in allen ihren Teilen verbindlich und gilt unmittelbar in jedem Mitgliedstaat.</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Parlament</span>
+  <blockquote>Geschehen zu Straßburg am 23. Oktober 2024. Im Namen des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s Die Präsidentin R. METSOLA Im Namen des Rates Der Präsident ZSIGMOND B. P. * * * [(1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc1-L_202402847DE.000101-E0001) [ABl. C 100 vom 16.3.2023, S. 101](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:C:2023:100:TOC). [(2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc2-L_202402847DE.000101-E0002) Standpunkt des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s vom 12. März 2024 (noch nicht im Amtsblatt veröffentlicht) und Beschluss des Rates vom 10. Oktober 2024. [(3)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?u…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f2" value="A" data-key="f2">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f2" value="B" data-key="f2">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f2" value="C" data-key="f2">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f2" value="D" data-key="f2">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f2-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f2-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>cra-de:art-14</code></footer>
+</article>
+<article class="fall" id="f3">
+  <header>
+    <span class="nr">03</span>
+    <span class="quelle">data-act-de · Art. 12</span>
+    
+  </header>
+  <h3>Umfang der Pflichten der Dateninhaber, die nach dem Unionsrecht verpflichtet sind, Daten bereitzustellen</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: data_holder</span>
+  <blockquote>(1) Dieses Kapitel gilt, wenn ein <mark class="akteur-ok" title="data_holder">Dateninhaber</mark> im Rahmen von Geschäftsbeziehungen zwischen Unternehmen nach Artikel 5 oder nach geltendem Unionsrecht oder nach im Einklang mit Unionsrecht erlassenen nationalen Rechtsvorschriften verpflichtet ist, einem Datenempfänger Daten bereitzustellen. (2) Eine Vertragsklausel in einer Datenweitergabevereinbarung, die zum Nachteil einer Partei oder gegebenenfalls zum Nachteil des Nutzers die Anwendung dieses Kapitels ausschließt, davon abweicht oder seine Wirkung abändert, ist für diese Partei nicht bindend. KAPITEL IV MISSBRÄUCHLICHE VERTRAGSKLAUSELN IN BEZUG AUF DEN DATENZUGANG UND DIE DATENNUTZUNG ZWISCHEN UNTERNEHMEN</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f3" value="A" data-key="f3">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f3" value="B" data-key="f3">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f3" value="C" data-key="f3">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f3" value="D" data-key="f3">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f3-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f3-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>data-act-de:art-12</code></footer>
+</article>
+<article class="fall" id="f4">
+  <header>
+    <span class="nr">04</span>
+    <span class="quelle">dora-de · Art. 41</span>
+    
+  </header>
+  <h3>Harmonisierung der Voraussetzungen für die Durchführung der Überwachungstätigkeiten</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: ict_third_party_provider</span>
+  <blockquote>(1) Die ESA arbeiten über den Gemeinsamen Ausschuss Entwürfe technischer Regulierungsstandards aus, um Folgendes festzulegen: a) die Informationen, die von einem <mark class="akteur-ok" title="ict_third_party_provider">IKT-Drittdienstleister</mark> in dem Antrag bereitzustellen sind, in dem gemäß Artikel 31 Absatz 11 freiwillig um Einstufung als kritisch ersucht wird; b) Inhalt, Struktur und Format der Informationen, die <mark class="akteur-ok" title="ict_third_party_provider">IKT-Drittdienstleister</mark> gemäß Artikel 35 Absatz 1 übermitteln, offenlegen und melden müssen, einschließlich der Vorlage für die Bereitstellung von Informationen über die Vereinbarungen über die Unterauftragsvergabe; c) die Kriterien für die Festlegung der Zusammensetzung des gemeinsamen Untersuchungsteams, bei der eine ausgewogene Beteili…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f4" value="A" data-key="f4">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f4" value="B" data-key="f4">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f4" value="C" data-key="f4">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f4" value="D" data-key="f4">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f4-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f4-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dora-de:art-41</code></footer>
+</article>
+<article class="fall" id="f5">
+  <header>
+    <span class="nr">05</span>
+    <span class="quelle">dsgvo-en · Art. 48</span>
+    
+  </header>
+  <h3>Transfers or disclosures not authorised by Union law</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Gericht</span>
+  <blockquote>Any judgment of a <mark class="akteur-fehlt" title="Gericht">court or tribunal</mark> and any decision of an administrative authority of a third country requiring a <mark class="akteur-ok" title="controller">controller</mark> or <mark class="akteur-ok" title="processor">processor</mark> to transfer or disclose personal data may only be recognised or enforceable in any manner if based on an international agreement, such as a mutual legal assistance treaty, in force between the requesting third country and the Union or a <mark class="akteur-ok" title="member_state">Member State</mark>, without prejudice to other grounds for transfer pursuant to this Chapter.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f5" value="A" data-key="f5">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f5" value="B" data-key="f5">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f5" value="C" data-key="f5">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f5" value="D" data-key="f5">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f5-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f5-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dsgvo-en:art-48</code></footer>
+</article>
+<article class="fall" id="f6">
+  <header>
+    <span class="nr">06</span>
+    <span class="quelle">eidas-de · Art. 26</span>
+    
+  </header>
+  <h3>Anforderungen an fortgeschrittene elektronische Signaturen</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>Eine fortgeschrittene elektronische Signatur erfüllt alle folgenden Anforderungen: a) Sie ist eindeutig dem Unterzeichner zugeordnet. b) Sie ermöglicht die Identifizierung des Unterzeichners. c) Sie wird unter Verwendung elektronischer Signaturerstellungsdaten erstellt, die der Unterzeichner mit einem hohen Maß an Vertrauen unter seiner alleinigen Kontrolle verwenden kann. d) Sie ist so mit den auf diese Weise unterzeichneten Daten verbunden, dass eine nachträgliche Veränderung der Daten erkannt werden kann.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f6" value="A" data-key="f6">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f6" value="B" data-key="f6">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f6" value="C" data-key="f6">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f6" value="D" data-key="f6">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f6-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f6-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>eidas-de:art-26</code></footer>
+</article>
+<article class="fall" id="f7">
+  <header>
+    <span class="nr">07</span>
+    <span class="quelle">emoney-de · Art. 13</span>
+    
+  </header>
+  <h3>Außergerichtliche Beschwerdeverfahren und Streitbeilegungsverfahren</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>Unbeschadet dieser Richtlinie gilt Titel IV Kapitel 5 der Richtlinie 2007/64/EG für E-Geld-Emittenten hinsichtlich der ihnen aus diesem Titel erwachsenden Verpflichtungen entsprechend. TITEL IV SCHLUSSBESTIMMUNGEN UND DURCHFÜHRUNGSMASSNAHMEN</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f7" value="A" data-key="f7">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f7" value="B" data-key="f7">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f7" value="C" data-key="f7">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f7" value="D" data-key="f7">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f7-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f7-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>emoney-de:art-13</code></footer>
+</article>
+<article class="fall" id="f8">
+  <header>
+    <span class="nr">08</span>
+    <span class="quelle">eprivacy-en · Art. 3</span>
+    
+  </header>
+  <h3>Services concerned</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>1\. This Directive shall apply to the processing of personal data in connection with the provision of publicly available electronic communications services in public communications networks in the Community. 2\. Articles 8, 10 and 11 shall apply to subscriber lines connected to digital exchanges and, where technically possible and if it does not require a disproportionate economic effort, to subscriber lines connected to analogue exchanges. 3\. Cases where it would be technically impossible or require a disproportionate economic effort to fulfil the requirements of Articles 8, 10 and 11 shall be notified to the <mark class="akteur-fehlt" title="Europäische Kommission">Commission</mark> by the <mark class="akteur-ok" title="member_state">Member States</mark>.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f8" value="A" data-key="f8">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f8" value="B" data-key="f8">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f8" value="C" data-key="f8">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f8" value="D" data-key="f8">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f8-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f8-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>eprivacy-en:art-3</code></footer>
+</article>
+<article class="fall" id="f9">
+  <header>
+    <span class="nr">09</span>
+    <span class="quelle">esg-rating-de · Art. 5</span>
+    
+  </header>
+  <h3>Befristete Regelung für kleine ESG-Rating-Anbieter</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: EU-Aufsichtsagentur</span>
+  <blockquote>(1) Abweichend von Artikel 4 unterliegt ein als kleines Unternehmen oder als kleine Gruppe im Sinne von Artikel 3 Absatz 2 Unterabsatz 1 bzw. Artikel 3 Absatz 5 Unterabsatz 1 der Richtlinie 2013/34/EU eingestufter ESG-Rating-<mark class="akteur-ok" title="provider">Anbieter</mark> (im Folgenden „kleiner ESG-Rating-<mark class="akteur-ok" title="provider">Anbieter</mark>“), der in der Union niedergelassen ist und in der Union tätig werden möchte, nur Artikel 15 Absätzen 1, 5 und 7, Artikel 23 und 24 sowie den Artikeln 32 bis 37 der vorliegenden Verordnung, sofern er a) der <mark class="akteur-fehlt" title="EU-Aufsichtsagentur">ESMA</mark> seine Absicht mitteilt, in der Union tätig zu werden und b) von der <mark class="akteur-fehlt" title="EU-Aufsichtsagentur">ESMA</mark> vor Aufnahme seine Tätigkeit in der Union registriert wurde. (2) Innerhalb von 90 Arbeitstagen nach Eingang der in Absatz 1 Buchstabe a gen…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f9" value="A" data-key="f9">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f9" value="B" data-key="f9">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f9" value="C" data-key="f9">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f9" value="D" data-key="f9">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f9-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f9-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>esg-rating-de:art-5</code></footer>
+</article>
+<article class="fall" id="f10">
+  <header>
+    <span class="nr">10</span>
+    <span class="quelle">lksg · § 11</span>
+    
+  </header>
+  <h3>Besondere Prozessstandschaft</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>(1) Wer geltend macht, in einer überragend wichtigen geschützten Rechtsposition aus § 2 Absatz 1 verletzt zu sein, kann zur gerichtlichen Geltendmachung seiner Rechte einer inländischen Gewerkschaft oder Nichtregierungsorganisation die Ermächtigung zur Prozessführung erteilen. (2) Eine Gewerkschaft oder Nichtregierungsorganisation kann nach Absatz 1 nur ermächtigt werden, wenn sie eine auf Dauer angelegte eigene Präsenz unterhält und sich nach ihrer Satzung nicht gewerbsmäßig und nicht nur vorübergehend dafür einsetzt, die Menschenrechte oder entsprechende Rechte im nationalen Recht eines Staates zu realisieren.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f10" value="A" data-key="f10">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f10" value="B" data-key="f10">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f10" value="C" data-key="f10">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f10" value="D" data-key="f10">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f10-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f10-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>lksg:11</code></footer>
+</article>
+<article class="fall" id="f11">
+  <header>
+    <span class="nr">11</span>
+    <span class="quelle">mdr-de · Art. 112</span>
+    
+  </header>
+  <h3>Finanzierung der Tätigkeiten im Zusammenhang mit der Benennung und Überwachung der Benannten Stellen</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> erstattet die bei den gemeinsamen Bewertungstätigkeiten anfallenden Kosten. Sie legt im Wege von Durchführungsrechtsakten den Umfang und die Struktur der erstattungsfähigen Kosten und andere erforderliche Durchführungsvorschriften fest. Diese Durchführungsrechtsakte werden gemäß dem in Artikel 114 Absatz 3 genannten Prüfverfahren erlassen.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f11" value="A" data-key="f11">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f11" value="B" data-key="f11">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f11" value="C" data-key="f11">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f11" value="D" data-key="f11">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f11-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f11-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>mdr-de:art-112</code></footer>
+</article>
+<article class="fall" id="f12">
+  <header>
+    <span class="nr">12</span>
+    <span class="quelle">nis2 · Art. 4</span>
+    
+  </header>
+  <h3>Sector-specific Union legal acts</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: essential_important_entity</span>
+  <blockquote>1. Where sector-specific Union legal acts require <mark class="akteur-ok" title="essential_important_entity">essential or important entities</mark> to adopt cybersecurity risk-management measures or to notify significant incidents and where those requirements are at least equivalent in effect to the obligations laid down in this Directive, the relevant provisions of this Directive, including the provisions on supervision and enforcement laid down in Chapter VII, shall not apply to such entities. Where sector-specific Union legal acts do not cover all entities in a specific sector falling within the scope of this Directive, the relevant provisions of this Directive shall continue to apply to the entities not covered by those sector-specific Union legal acts…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f12" value="A" data-key="f12">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f12" value="B" data-key="f12">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f12" value="C" data-key="f12">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f12" value="D" data-key="f12">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f12-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f12-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>nis2:art-4</code></footer>
+</article>
+<article class="fall" id="f13">
+  <header>
+    <span class="nr">13</span>
+    <span class="quelle">psd2-de · Art. 4</span>
+    
+  </header>
+  <h3>Article 4</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Parlament</span>
+  <blockquote>„(5) In den Fällen, in denen auch die Richtlinie (EU) 2015/2366 des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s und des Rates [(\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntr*1-L_2015337DE.01003501-E0036) Anwendung findet, werden die Bestimmungen des Artikels 3 Absatz 1 der vorliegenden Richtlinie über die Unterrichtung mit Ausnahme von Absatz 2 Buchstaben c bis g, Absatz 3 Buchstaben a, d und e sowie Absatz 4 Buchstabe b durch die Artikel 44, 45, 51 und 52 der Richtlinie (EU) 2015/2366 ersetzt. [(\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntc*1-L_2015337DE.01003501-E0036) Richtlinie (EU) 2015/2366 des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s und des Rate…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f13" value="A" data-key="f13">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f13" value="B" data-key="f13">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f13" value="C" data-key="f13">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f13" value="D" data-key="f13">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f13-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f13-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>psd2-de:art-4</code></footer>
+</article>
+<article class="fall" id="f14">
+  <header>
+    <span class="nr">14</span>
+    <span class="quelle">standardisation-de · Art. 10</span>
+    
+  </header>
+  <h3>Normungsaufträge für europäische Normungsorganisationen</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission · Normungsorganisation</span>
+  <blockquote>(1) Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> kann im Rahmen ihrer in den Verträgen festgelegten Befugnisse ein oder mehrere <mark class="akteur-fehlt" title="Normungsorganisation">europäische Normungsorganisationen</mark> damit beauftragen, innerhalb einer vorgegebenen Frist eine europäische Norm oder ein Dokument der europäischen Normung zu erarbeiten. Europäische Normen und Dokumente der europäischen Normung müssen marktorientiert sein, dem öffentlichen Interesse und den in dem Auftrag der <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> klar dargelegten politischen Zielen Rechnung tragen und auf Konsens gegründet sein. Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> legt die Anforderungen an den Inhalt des in Auftrag gegebenen Dokuments und einen Termin für dessen Annahme fest. (2) Die Entscheidungen nach Absatz 1 sind gemäß dem in Artikel 22 Ab…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f14" value="A" data-key="f14">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f14" value="B" data-key="f14">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f14" value="C" data-key="f14">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f14" value="D" data-key="f14">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f14-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f14-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>standardisation-de:art-10</code></footer>
+</article>
+<article class="fall" id="f15">
+  <header>
+    <span class="nr">15</span>
+    <span class="quelle">ai-act-de · Art. 58</span>
+    
+  </header>
+  <h3>Detaillierte Regelungen für KI-Reallabore und deren Funktionsweise</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>(1) Um eine Zersplitterung in der Union zu vermeiden, erlässt die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> Durchführungsrechtsakte, in denen detaillierte Regelungen für die Einrichtung, Entwicklung, Umsetzung, den Betrieb und die Beaufsichtigung der KI-Reallabore enthalten sind. In den Durchführungsrechtsakten sind gemeinsame Grundsätze zu den folgenden Aspekten festgelegt: a) Voraussetzungen und Auswahlkriterien für eine Beteiligung am KI-Reallabor; b) Verfahren für Antragstellung, Beteiligung, Überwachung, Ausstieg und Beendigung bezüglich des KI-Reallabors, einschließlich Plan und Abschlussbericht für das Reallabor; c) für Beteiligte geltende Anforderungen und Bedingungen. Diese Durchführungsrechtsakte werden gemäß de…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f15" value="A" data-key="f15">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f15" value="B" data-key="f15">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f15" value="C" data-key="f15">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f15" value="D" data-key="f15">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f15-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f15-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>ai-act-de:art-58</code></footer>
+</article>
+<article class="fall" id="f16">
+  <header>
+    <span class="nr">16</span>
+    <span class="quelle">cra-de · Art. 15</span>
+    
+  </header>
+  <h3>Freiwillige Meldungen</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: EU-Agentur</span>
+  <blockquote>(1) <mark class="akteur-ok" title="manufacturer">Hersteller</mark> sowie andere natürliche oder juristische Personen können jede in einem Produkt mit digitalen Elementen enthaltene Schwachstelle sowie Cyberbedrohungen, die sich auf das Risikoprofil eines Produkts mit digitalen Elementen auswirken könnten, freiwillig einem als Koordinator benannten CSIRT oder der <mark class="akteur-fehlt" title="EU-Agentur">ENISA</mark> melden. (2) <mark class="akteur-ok" title="manufacturer">Hersteller</mark> sowie andere natürliche oder juristische Personen können jeden Sicherheitsvorfall, der sich auf die Sicherheit des Produkts mit digitalen Elementen auswirkt, sowie Beinahe-Vorfälle, die zu einem solchen Sicherheitsvorfall hätten führen können, auf freiwilliger Basis einem als Koordinator benannten CSIRT oder der <mark class="akteur-fehlt" title="EU-Agentur">ENISA</mark> melden. (3) Das als Koordinator benann…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f16" value="A" data-key="f16">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f16" value="B" data-key="f16">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f16" value="C" data-key="f16">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f16" value="D" data-key="f16">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f16-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f16-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>cra-de:art-15</code></footer>
+</article>
+<article class="fall" id="f17">
+  <header>
+    <span class="nr">17</span>
+    <span class="quelle">data-act-de · Art. 24</span>
+    
+  </header>
+  <h3>Tragweite der technischen Verpflichtungen</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: provider</span>
+  <blockquote>Die Verantwortung von <mark class="akteur-ok" title="provider">Anbietern</mark> von Datenverarbeitungsdiensten gemäß der Artikel 23, 25, 29, 30 und 34 gilt nur für die Dienste, Verträge oder Geschäftsgepflogenheiten, die vom ursprünglichen <mark class="akteur-ok" title="provider">Anbieter</mark> der Datenverarbeitungsdienste angeboten wurden.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f17" value="A" data-key="f17">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f17" value="B" data-key="f17">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f17" value="C" data-key="f17">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f17" value="D" data-key="f17">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f17-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f17-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>data-act-de:art-24</code></footer>
+</article>
+<article class="fall" id="f18">
+  <header>
+    <span class="nr">18</span>
+    <span class="quelle">dora · Art. 23</span>
+    
+  </header>
+  <h3>Operational or security payment-related incidents concerning credit institutions, payment institutions, account information service providers, and electronic money institutions</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: provider</span>
+  <blockquote>The requirements laid down in this Chapter shall also apply to operational or security payment-related incidents and to major operational or security payment-related incidents, where they concern credit institutions, payment institutions, account information service <mark class="akteur-ok" title="provider">providers</mark>, and electronic money institutions. CHAPTER IV Digital operational resilience testing</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f18" value="A" data-key="f18">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f18" value="B" data-key="f18">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f18" value="C" data-key="f18">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f18" value="D" data-key="f18">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f18-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f18-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dora:art-23</code></footer>
+</article>
+<article class="fall" id="f19">
+  <header>
+    <span class="nr">19</span>
+    <span class="quelle">dsgvo-en · Art. 68</span>
+    
+  </header>
+  <h3>European Data Protection Board</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Datenschutzausschuss · Europäische Kommission</span>
+  <blockquote>1. The <mark class="akteur-fehlt" title="Datenschutzausschuss">European Data Protection Board</mark> (the ‘Board’) is hereby established as a body of the Union and shall have legal personality. 2. The Board shall be represented by its Chair. 3. The Board shall be composed of the head of one <mark class="akteur-ok" title="supervisory_authority">supervisory authority</mark> of each <mark class="akteur-ok" title="member_state">Member State</mark> and of the European Data Protection Supervisor, or their respective representatives. 4. Where in a <mark class="akteur-ok" title="member_state">Member State</mark> more than one <mark class="akteur-ok" title="supervisory_authority">supervisory authority</mark> is responsible for monitoring the application of the provisions pursuant to this Regulation, a joint representative shall be appointed in accordance with that <mark class="akteur-ok" title="member_state">Member State</mark>'s law. 5. The <mark class="akteur-fehlt" title="Europäische Kommission">Commission</mark> shall have the right to participate in the activities and meetings of the Board wit…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f19" value="A" data-key="f19">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f19" value="B" data-key="f19">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f19" value="C" data-key="f19">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f19" value="D" data-key="f19">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f19-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f19-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dsgvo-en:art-68</code></footer>
+</article>
+<article class="fall" id="f20">
+  <header>
+    <span class="nr">20</span>
+    <span class="quelle">eidas-en · Art. 25</span>
+    
+  </header>
+  <h3>Legal effects of electronic signatures</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: member_state</span>
+  <blockquote>1. An electronic signature shall not be denied legal effect and admissibility as evidence in legal proceedings solely on the grounds that it is in an electronic form or that it does not meet the requirements for qualified electronic signatures. 2. A qualified electronic signature shall have the equivalent legal effect of a handwritten signature. 3. A qualified electronic signature based on a qualified certificate issued in one <mark class="akteur-ok" title="member_state">Member State</mark> shall be recognised as a qualified electronic signature in all other <mark class="akteur-ok" title="member_state">Member States</mark>.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f20" value="A" data-key="f20">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f20" value="B" data-key="f20">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f20" value="C" data-key="f20">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f20" value="D" data-key="f20">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f20-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f20-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>eidas-en:art-25</code></footer>
+</article>
+<article class="fall" id="f21">
+  <header>
+    <span class="nr">21</span>
+    <span class="quelle">emoney-de · Art. 14</span>
+    
+  </header>
+  <h3>Durchführungsmaßnahmen</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>(1) Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> kann Maßnahmen erlassen, die zur Aktualisierung der Bestimmungen dieser Richtlinie erforderlich sind, um der Inflation oder technologischen Entwicklungen und Entwicklungen am Markt Rechnung zu tragen. Diese Maßnahmen zur Änderung nicht wesentlicher Bestimmungen dieser Richtlinie werden nach dem in Artikel 15 Absatz 2 genannten Regelungsverfahren mit Kontrolle erlassen. (2) Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> trifft Maßnahmen zur Gewährleistung einer einheitlichen Anwendung der in Artikel 1 Absätze 4 und 5 erwähnten Ausnahmen. Diese Maßnahmen zur Änderung nicht wesentlicher Bestimmungen dieser Richtlinie werden nach dem in Artikel 15 Absatz 2 genannten Regelungsverfahren mit Kontrolle erlassen.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f21" value="A" data-key="f21">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f21" value="B" data-key="f21">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f21" value="C" data-key="f21">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f21" value="D" data-key="f21">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f21-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f21-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>emoney-de:art-14</code></footer>
+</article>
+<article class="fall" id="f22">
+  <header>
+    <span class="nr">22</span>
+    <span class="quelle">lksg · § 24</span>
+    
+  </header>
+  <h3>Bußgeldvorschriften</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>(1) Ordnungswidrig handelt, wer vorsätzlich oder fahrlässig 1.entgegen § 4 Absatz 3 Satz 1 nicht dafür sorgt, dass eine dort genannte Festlegung getroffen ist,2.entgegen § 5 Absatz 1 Satz 1 oder § 9 Absatz 3 Nummer 1 eine Risikoanalyse nicht, nicht richtig, nicht vollständig oder nicht rechtzeitig durchführt,3.entgegen § 6 Absatz 1 eine Präventionsmaßnahme nicht oder nicht rechtzeitig ergreift,4.entgegen § 6 Absatz 5 Satz 1, § 7 Absatz 4 Satz 1 oder § 8 Absatz 5 Satz 1 eine Überprüfung nicht oder nicht rechtzeitig vornimmt,5.entgegen § 6 Absatz 5 Satz 3, § 7 Absatz 4 Satz 3 oder § 8 Absatz 5 Satz 2 eine Maßnahme nicht oder nicht rechtzeitig aktualisiert,6.entgegen § 7 Absatz 1 Satz 1 eine Ab…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f22" value="A" data-key="f22">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f22" value="B" data-key="f22">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f22" value="C" data-key="f22">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f22" value="D" data-key="f22">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f22-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f22-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>lksg:24</code></footer>
+</article>
+<article class="fall" id="f23">
+  <header>
+    <span class="nr">23</span>
+    <span class="quelle">mdr-de · Art. 121</span>
+    
+  </header>
+  <h3>Bewertung</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>Spätestens am 27. Mai 2027 bewertet die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> die Anwendung dieser Verordnung und erstellt einen Bewertungsbericht über die im Hinblick auf die darin enthaltenen Ziele erreichten Fortschritte; dabei werden auch die für die Durchführung dieser Verordnung erforderlichen Ressourcen bewertet. Besonders zu beachten ist die Rückverfolgbarkeit von Medizinprodukten anhand der in Artikel 27 vorgesehenen Erfassung der UDI durch Wirtschaftsakteure, Gesundheitseinrichtungen und Angehörige der Gesundheitsberufe.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f23" value="A" data-key="f23">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f23" value="B" data-key="f23">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f23" value="C" data-key="f23">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f23" value="D" data-key="f23">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f23-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f23-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>mdr-de:art-121</code></footer>
+</article>
+<article class="fall" id="f24">
+  <header>
+    <span class="nr">24</span>
+    <span class="quelle">psd2-de · Art. 98</span>
+    
+  </header>
+  <h3>Technische Regulierungsstandards für die Authentifizierung und die Kommunikation</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: EU-Aufsichtsagentur</span>
+  <blockquote>(1) Die <mark class="akteur-fehlt" title="EU-Aufsichtsagentur">EBA</mark> arbeitet im Einklang mit Artikel 10 der Verordnung (EU) Nr. 1093/2010 in enger Zusammenarbeit mit der EZB und nach Anhörung aller maßgeblichen Akteure, einschließlich des Zahlungsverkehrsmarktes, unter Berücksichtigung der Interessen aller Beteiligten für Zahlungsdienstleister im Sinne des Artikels 1 Absatz 1 dieser Richtlinie technische Regulierungsstandards aus, in denen Folgendes präzisiert wird: a) die Erfordernisse des Verfahrens zur starken Kundenauthentifizierung gemäß Artikel 97 Absätze 1 und 2, b) die Ausnahmen von der Anwendung des Artikels 97 Absätze 1, 2 und 3 unter Zugrundelegung der Kriterien des Absatzes 3 dieses Artikels, c) die Anforderungen, die Sicherheitsmaßna…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f24" value="A" data-key="f24">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f24" value="B" data-key="f24">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f24" value="C" data-key="f24">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f24" value="D" data-key="f24">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f24-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f24-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>psd2-de:art-98</code></footer>
+</article>
+<article class="fall" id="f25">
+  <header>
+    <span class="nr">25</span>
+    <span class="quelle">standardisation-de · Art. 13</span>
+    
+  </header>
+  <h3>Identifizierung referenzierbarer technischer IKT-Spezifikationen</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>(1) Die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> kann entweder auf den Vorschlag eines <mark class="akteur-ok" title="member_state">Mitgliedstaat</mark>s hin oder auf eigene Initiative entscheiden, technische IKT-Spezifikationen zu identifizieren, bei denen es sich nicht um nationale, europäische oder internationale Normen handelt, die jedoch die in Anhang II genannten Anforderungen erfüllen und auf die hauptsächlich zur Herbeiführung der Interoperabilität bei der Vergabe öffentlicher Aufträge Bezug genommen werden kann. (2) Wenn eine gemäß Absatz 1 identifizierten technische IKT-Spezifikation geändert oder zurückgezogen wird oder den Anforderungen des Anhangs II nicht mehr genügt, kann die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> entweder auf den Vorschlag eines <mark class="akteur-ok" title="member_state">Mitgliedstaat</mark>s hin oder auf eigene Ini…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f25" value="A" data-key="f25">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f25" value="B" data-key="f25">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f25" value="C" data-key="f25">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f25" value="D" data-key="f25">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f25-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f25-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>standardisation-de:art-13</code></footer>
+</article>
+<article class="fall" id="f26">
+  <header>
+    <span class="nr">26</span>
+    <span class="quelle">ai-act-de · Art. 66</span>
+    
+  </header>
+  <h3>Aufgaben des KI-Gremiums</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: KI-Gremium · Europäische Kommission · Marktüberwachungsbehörde</span>
+  <blockquote>Das <mark class="akteur-fehlt" title="KI-Gremium">KI-Gremium</mark> berät und unterstützt die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> und die <mark class="akteur-ok" title="member_state">Mitgliedstaaten</mark>, um die einheitliche und wirksame Anwendung dieser Verordnung zu erleichtern. Für diese Zwecke kann das <mark class="akteur-fehlt" title="KI-Gremium">KI-Gremium</mark> insbesondere a) zur Koordinierung zwischen den für die Anwendung dieser Verordnung zuständigen nationalen Behörden beitragen und in Zusammenarbeit mit den betreffenden <mark class="akteur-fehlt" title="Marktüberwachungsbehörde">Marktüberwachungsbehörden</mark> und vorbehaltlich ihrer Zustimmung gemeinsame Tätigkeiten der <mark class="akteur-fehlt" title="Marktüberwachungsbehörde">Marktüberwachungsbehörden</mark> gemäß Artikel 74 Absatz 11 unterstützen; b) technisches und regulatorisches Fachwissen und bewährte Verfahren zusammentragen und unter den <mark class="akteur-ok" title="member_state">Mitgliedstaaten</mark> verbreiten; c) zur Durchführung dieser Verordnung Beratung anbieten, ins…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f26" value="A" data-key="f26">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f26" value="B" data-key="f26">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f26" value="C" data-key="f26">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f26" value="D" data-key="f26">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f26-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f26-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>ai-act-de:art-66</code></footer>
+</article>
+<article class="fall" id="f27">
+  <header>
+    <span class="nr">27</span>
+    <span class="quelle">cra-de · Art. 7</span>
+    
+  </header>
+  <h3>Wichtige Produkte mit digitalen Elementen</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>(1) Produkte mit digitalen Elementen, die die Kernfunktionen einer in Anhang III aufgeführten Produktkategorie aufweisen, gelten als wichtige Produkte mit digitalen Elementen und unterliegen den in Artikel 32 Absätze 2 und 3 genannten Konformitätsbewertungsverfahren. Die Integration eines Produkts mit digitalen Elementen, das die Kernfunktionen einer in Anhang III aufgeführten Produktkategorie aufweist, führt für sich genommen nicht dazu, dass das Produkt, in das es integriert ist, den Konformitätsbewertungsverfahren gemäß Artikel 32 Absätze 2 und 3 unterliegt. (2) Die in Absatz 1 dieses Artikels genannten Kategorien von Produkten mit digitalen Elementen, die gemäß Anhang III in die Klassen …</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f27" value="A" data-key="f27">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f27" value="B" data-key="f27">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f27" value="C" data-key="f27">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f27" value="D" data-key="f27">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f27-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f27-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>cra-de:art-7</code></footer>
+</article>
+<article class="fall" id="f28">
+  <header>
+    <span class="nr">28</span>
+    <span class="quelle">data-act-de · Art. 32</span>
+    
+  </header>
+  <h3>Staatlicher Zugang und staatliche Übermittlung im internationalen Umfeld</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: provider · member_state</span>
+  <blockquote>(1) Unbeschadet der Absätze 2 oder 3 treffen <mark class="akteur-ok" title="provider">Anbieter</mark> von Datenverarbeitungsdiensten alle angemessenen technischen, organisatorischen und rechtlichen Maßnahmen, einschließlich Verträgen, um den staatlichen Zugang zu und die staatliche Übermittlung von in der Union gespeicherten nicht-personenbezogenen Daten im internationalen Umfeld und durch Drittländer zu verhindern, wenn dies im Widerspruch zum Unionsrecht oder zum nationalen Recht des betreffenden <mark class="akteur-ok" title="member_state">Mitgliedstaat</mark>s stehen würde. (2) Für jegliche Entscheidung bzw. jegliches Urteil eines Gerichts eines Drittlands und jegliche Entscheidung einer Verwaltungsbehörde eines Drittlands, die <mark class="akteur-ok" title="provider">Anbieter</mark> von Datenverarbeitungsdiensten auffordern, in den…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f28" value="A" data-key="f28">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f28" value="B" data-key="f28">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f28" value="C" data-key="f28">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f28" value="D" data-key="f28">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f28-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f28-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>data-act-de:art-32</code></footer>
+</article>
+<article class="fall" id="f29">
+  <header>
+    <span class="nr">29</span>
+    <span class="quelle">dora · Art. 32</span>
+    
+  </header>
+  <h3>Structure of the Oversight Framework</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>1. The Joint Committee, in accordance with Article 57(1) of Regulations (EU) No 1093/2010, (EU) No 1094/2010 and (EU) No 1095/2010, shall establish the Oversight Forum as a sub-committee for the purposes of supporting the work of the Joint Committee and of the Lead Overseer referred to in Article 31(1), point (b), in the area of ICT third-party risk across financial sectors. The Oversight Forum shall prepare the draft joint positions and the draft common acts of the Joint Committee in that area. The Oversight Forum shall regularly discuss relevant developments on ICT risk and vulnerabilities and promote a consistent approach in the monitoring of ICT third-party risk at Union level. 2. The Ov…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f29" value="A" data-key="f29">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f29" value="B" data-key="f29">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f29" value="C" data-key="f29">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f29" value="D" data-key="f29">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f29-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f29-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dora:art-32</code></footer>
+</article>
+<article class="fall" id="f30">
+  <header>
+    <span class="nr">30</span>
+    <span class="quelle">dsgvo · Art. 40</span>
+    
+  </header>
+  <h3>Verhaltensregeln</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>(1) Die <mark class="akteur-ok" title="member_state">Mitgliedstaaten</mark>, die <mark class="akteur-ok" title="supervisory_authority">Aufsichtsbehörden</mark>, der Ausschuss und die <mark class="akteur-fehlt" title="Europäische Kommission">Kommission</mark> fördern die Ausarbeitung von Verhaltensregeln, die nach Maßgabe der Besonderheiten der einzelnen Verarbeitungsbereiche und der besonderen Bedürfnisse von Kleinstunternehmen sowie kleinen und mittleren Unternehmen zur ordnungsgemäßen Anwendung dieser Verordnung beitragen sollen. (2) Verbände und andere Vereinigungen, die Kategorien von <mark class="akteur-ok" title="controller">Verantwortlichen</mark> oder <mark class="akteur-ok" title="processor">Auftragsverarbeitern</mark> vertreten, können Verhaltensregeln ausarbeiten oder ändern oder erweitern, mit denen die Anwendung dieser Verordnung beispielsweise zu dem Folgenden präzisiert wird: a) faire und transparente Verarbeitung; b) die berechtigten Interessen de…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f30" value="A" data-key="f30">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f30" value="B" data-key="f30">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f30" value="C" data-key="f30">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f30" value="D" data-key="f30">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f30-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f30-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dsgvo:art-40</code></footer>
+</article>
+
+<h2>Gegenproben — 5 Fälle</h2>
+<p class="sub">Aus den 128 Rahmenbestimmungen gezogen. Sie <em>sollten</em> <strong style="color:var(--c)">C</strong>
+ergeben — tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trennen vorgibt, und die Zahl
+„102 Verdachtsfälle" ist selbst fragwürdig. Ihre Antwort ist trotzdem offen.</p>
+
+<article class="fall gegenprobe" id="f31">
+  <header>
+    <span class="nr">31</span>
+    <span class="quelle">ai-act-de · Art. 108</span>
+    <span class="badge-gegen">Gegenprobe</span>
+  </header>
+  <h3>Änderungen der Verordnung (EU) 2018/1139</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Parlament</span>
+  <blockquote>Die Verordnung (EU) 2018/1139 wird wie folgt geändert: 1. In Artikel 17 wird folgender Absatz angefügt:&lt;br&gt;„(3) Unbeschadet des Absatzes 2 werden beim Erlass von Durchführungsrechtsakten nach Absatz 1, die sich auf Systeme der künstlichen Intelligenz beziehen, bei denen es sich um Sicherheitsbauteile im Sinne der Verordnung (EU) 2024/1689 des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s und des Rates [(\*)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R1689#ntr*-L_202401689DE.000101-E0064) handelt, die in Kapitel III Abschnitt 2 jener Verordnung festgelegten Anforderungen berücksichtigt.&lt;br&gt;[(\*)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R1689#ntc*-L_202401689DE.…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f31" value="A" data-key="f31">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f31" value="B" data-key="f31">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f31" value="C" data-key="f31">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f31" value="D" data-key="f31">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f31-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f31-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>ai-act-de:art-108</code></footer>
+</article>
+<article class="fall gegenprobe" id="f32">
+  <header>
+    <span class="nr">32</span>
+    <span class="quelle">cra-de · Art. 69</span>
+    <span class="badge-gegen">Gegenprobe</span>
+  </header>
+  <h3>Übergangsbestimmungen</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>(1) EU-Baumusterprüfbescheinigungen und Zulassungen, die in Bezug auf Cybersicherheitsanforderungen für Produkte mit digitalen Elementen erteilt wurden, die anderen Harmonisierungsrechtsvorschriften der Union als der vorliegenden Verordnung unterliegen, bleiben bis zum 11. Juni 2028 gültig, sofern sie nicht vor diesem Zeitpunkt ablaufen oder sofern in anderen Harmonisierungsrechtsvorschriften der Union nichts anderes festgelegt ist; in letzterem Fall bleiben sie gemäß den letztgenannten Rechtsvorschriften gültig. (2) Produkte mit digitalen Elementen, die vor dem 11. Dezember 2027 in den Verkehr gebracht wurden, unterliegen den in dieser Verordnung festgelegten Anforderungen nur dann, wenn na…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f32" value="A" data-key="f32">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f32" value="B" data-key="f32">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f32" value="C" data-key="f32">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f32" value="D" data-key="f32">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f32-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f32-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>cra-de:art-69</code></footer>
+</article>
+<article class="fall gegenprobe" id="f33">
+  <header>
+    <span class="nr">33</span>
+    <span class="quelle">data-act-en · Art. 1</span>
+    <span class="badge-gegen">Gegenprobe</span>
+  </header>
+  <h3>Subject matter and scope</h3>
+  <span class="hint hint-b">nennt Akteure außerhalb des Typraums: Europäische Kommission</span>
+  <blockquote>1. This Regulation lays down harmonised rules, inter alia, on: (a) the making available of product data and related service data to the user of the connected product or related service; (b) the making available of data by <mark class="akteur-ok" title="data_holder">data holders</mark> to data recipients; (c) the making available of data by <mark class="akteur-ok" title="data_holder">data holders</mark> to public sector bodies, the <mark class="akteur-fehlt" title="Europäische Kommission">Commission</mark>, the European Central Bank and Union bodies, where there is an exceptional need for those data for the performance of a specific task carried out in the public interest; (d) facilitating switching between data processing services; (e) introducing safeguards against unlawful third-party access to non-personal data; and (f) the development of interoperabil…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f33" value="A" data-key="f33">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f33" value="B" data-key="f33">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f33" value="C" data-key="f33">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f33" value="D" data-key="f33">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f33-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f33-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>data-act-en:art-1</code></footer>
+</article>
+<article class="fall gegenprobe" id="f34">
+  <header>
+    <span class="nr">34</span>
+    <span class="quelle">dora · Art. 1</span>
+    <span class="badge-gegen">Gegenprobe</span>
+  </header>
+  <h3>Subject matter</h3>
+  <span class="hint hint-a">nennt nur bekannte Akteure: financial_entity</span>
+  <blockquote>1. In order to achieve a high common level of digital operational resilience, this Regulation lays down uniform requirements concerning the security of network and information systems supporting the business processes of <mark class="akteur-ok" title="financial_entity">financial entities</mark> as follows: (a) requirements applicable to <mark class="akteur-ok" title="financial_entity">financial entities</mark> in relation to: (i) information and communication technology (ICT) risk management; (ii) reporting of major ICT-related incidents and notifying, on a voluntary basis, significant cyber threats to the competent authorities; (iii) reporting of major operational or security payment-related incidents to the competent authorities by <mark class="akteur-ok" title="financial_entity">financial entities</mark> referred to in Article 2(1), points (a) to (d); (…</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f34" value="A" data-key="f34">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f34" value="B" data-key="f34">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f34" value="C" data-key="f34">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f34" value="D" data-key="f34">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f34-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f34-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dora:art-1</code></footer>
+</article>
+<article class="fall gegenprobe" id="f35">
+  <header>
+    <span class="nr">35</span>
+    <span class="quelle">dsgvo · Art. 1</span>
+    <span class="badge-gegen">Gegenprobe</span>
+  </header>
+  <h3>Gegenstand und Ziele</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>(1) Diese Verordnung enthält Vorschriften zum Schutz natürlicher Personen bei der Verarbeitung personenbezogener Daten und zum freien Verkehr solcher Daten. (2) Diese Verordnung schützt die Grundrechte und Grundfreiheiten natürlicher Personen und insbesondere deren Recht auf Schutz personenbezogener Daten. (3) Der freie Verkehr personenbezogener Daten in der Union darf aus Gründen des Schutzes natürlicher Personen bei der Verarbeitung personenbezogener Daten weder eingeschränkt noch verboten werden.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f35" value="A" data-key="f35">
+        <span class="k">A</span><span class="l">Adressat im Typraum — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f35" value="B" data-key="f35">
+        <span class="k">B</span><span class="l">Adressat fehlt im Typraum</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f35" value="C" data-key="f35">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f35" value="D" data-key="f35">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <input class="feld" type="text" data-key="f35-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <input class="feld" type="text" data-key="f35-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>dsgvo:art-1</code></footer>
+</article>
+
+<h2>Schwelle</h2>
+<div class="box">
+  <p style="margin:.2rem 0">Mindestens <strong>ein</strong> fehlender Klassenkandidat mit <strong>≥ 5</strong>
+  Bestimmungen belegt → Richtung „Typraum erweitern". Bleibt <strong style="color:var(--b)">B</strong> darunter,
+  ist ein explizites <code>noAddressee</code> die ehrliche Antwort und der Rest eine Anzeigefrage.</p>
+  <p style="margin:.6rem 0 0; color:var(--muted)">Hochrechnung: Anteil B × 102 ≈ betroffene Bestimmungen im Korpus.</p>
+</div>
+
+</div>
+<div class="bar">
+  <span class="stand"><strong id="done">0</strong> / 35 beurteilt</span>
+  <span class="tally" id="tally"></span>
+  <button id="copy" class="primary">Ergebnis kopieren</button>
+  <button id="reset">Zurücksetzen</button>
+</div>
+<script>
+(function () {
+  var KEY = 'the654-adjudication';
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { store = {}; }
+
+  function save() { localStorage.setItem(KEY, JSON.stringify(store)); render(); }
+
+  function render() {
+    var total = 35, done = 0;
+    var t = { A: 0, B: 0, C: 0, D: 0 };
+    for (var i = 1; i <= total; i++) {
+      var v = store['f' + i];
+      if (v) { done++; t[v] = (t[v] || 0) + 1; }
+    }
+    document.getElementById('done').textContent = done;
+    document.getElementById('tally').textContent =
+      'A ' + t.A + ' · B ' + t.B + ' · C ' + t.C + ' · D ' + t.D;
+  }
+
+  // Gespeicherten Stand wiederherstellen — ein halb ausgefüllter Bogen darf
+  // durch ein versehentliches Neuladen nicht verloren gehen.
+  document.querySelectorAll('input[type=radio]').forEach(function (el) {
+    if (store[el.dataset.key] === el.value) el.checked = true;
+    el.addEventListener('change', function () { store[el.dataset.key] = el.value; save(); });
+  });
+  document.querySelectorAll('input.feld').forEach(function (el) {
+    if (store[el.dataset.key]) el.value = store[el.dataset.key];
+    el.addEventListener('input', function () { store[el.dataset.key] = el.value; save(); });
+  });
+
+  document.getElementById('copy').addEventListener('click', function () {
+    var rows = ['| # | Quelle | Urteil | Adressat | Notiz |', '|---|---|---|---|---|'];
+    document.querySelectorAll('article.fall').forEach(function (a) {
+      var id = a.id;
+      var nr = a.querySelector('.nr').textContent;
+      var q = a.querySelector('.quelle').textContent;
+      rows.push('| ' + nr + ' | ' + q + ' | ' + (store[id] || '—') + ' | ' +
+        (store[id + '-adressat'] || '') + ' | ' + (store[id + '-notiz'] || '') + ' |');
+    });
+    navigator.clipboard.writeText(rows.join('\n')).then(function () {
+      var b = document.getElementById('copy');
+      var old = b.textContent; b.textContent = 'kopiert ✓';
+      setTimeout(function () { b.textContent = old; }, 1600);
+    });
+  });
+
+  document.getElementById('reset').addEventListener('click', function () {
+    if (!confirm('Alle Urteile verwerfen?')) return;
+    store = {}; localStorage.removeItem(KEY);
+    document.querySelectorAll('input[type=radio]').forEach(function (e) { e.checked = false; });
+    document.querySelectorAll('input.feld').forEach(function (e) { e.value = ''; });
+    render();
+  });
+
+  render();
+})();
+</script>
+</body></html>
