@@ -7,6 +7,7 @@ import { audit } from '../middleware/audit.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 import { generateRemediation } from '../services/remediation.service';
+import { getPipelineNorm } from '../services/norm.service';
 import { applyProposal, rollbackProposal } from '../services/remediation-apply.service';
 import { RemediationProposal } from '../models/RemediationProposal';
 import type { RemediationContext, RemediationStreamEvent } from '@thearchitect/shared';
@@ -69,6 +70,28 @@ router.post(
       const { context } = GenerateSchema.parse(req.body);
       const userId = (req as any).user._id.toString();
 
+      // ── WAS VOR DEM STROM SCHEITERN KANN, SCHEITERT MIT STATUSCODE (THE-644) ──
+      //
+      // Ab `flushHeaders()` steht die 200 unwiderruflich fest — das ist SSE,
+      // kein Fehler. Der Preis: ein Lauscher auf 4xx/5xx schweigt dann, und
+      // beim Cast-Fehler am 10.08. sah fuenf Minuten Stille wie ein
+      // Zeitproblem aus statt wie ein Abbruch.
+      //
+      // Deshalb wandert hierher alles, was OHNE den Strom entscheidbar ist.
+      // Die Norm-Aufloesung ist der Hauptfall: sie deckt geloeschte Normen,
+      // veraltete Client-Zustaende und direkte API-Aufrufe ab. Sie kann keinen
+      // heute funktionierenden Lauf abweisen — die Flaeche ruft dieselbe
+      // Facade ueber `remediation-scope`, bevor der Knopf ueberhaupt erscheint.
+      if (context.source === 'compliance') {
+        const norm = await getPipelineNorm(projectId, context.standardId);
+        if (!norm) {
+          return res.status(404).json({
+            success: false,
+            error: `norm not found: ${context.standardId}`,
+          });
+        }
+      }
+
       // SSE headers
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
@@ -76,6 +99,11 @@ router.post(
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders();
 
+      // Ab hier ist der Strom offen. Was jetzt noch scheitert — Modellaufruf,
+      // Schreibfehler, abgebrochene Verbindung — MUSS ein `error`-Event
+      // bleiben; einen Statuscode gibt es nicht mehr. Das ist die Grenze,
+      // nicht ein Rest zum Aufraeumen: der Client wertet `type: 'error'` aus
+      // (remediationStore) und zeigt ihn (RemediateGateway, THE-644).
       const onEvent = (event: RemediationStreamEvent) => {
         res.write(`data: ${JSON.stringify(event)}\n\n`);
       };

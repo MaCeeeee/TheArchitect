@@ -7,24 +7,29 @@
  * existierte (Pre-Flight 2026-08-03: null Verweise auf linkedElementIds im
  * Apply-Service). Dieser Service schreibt MECHANISCH zurück:
  *
- *   Proposal.sourceRef.{standardId, sectionIds}
- *     → Requirements { projectId, normId: `upload:<standardId>`,
- *                      sectionEId ∈ sectionIds }
+ *   Proposal.sourceRef.{normId, sectionIds}
+ *     → Requirements { projectId, normId, sectionEId ∈ sectionIds }
  *     → $addToSet linkedElementIds + covered-Recompute (THE-557).
  *
  * Kein LLM, kein Raten: Requirements ohne `normId` (Bestand vor THE-390) und
- * Proposals ohne `standardId` (advisor/manual) sind dokumentierte No-ops.
- * Menschliche Tore (enforced/attested) werden NIE berührt — nur `covered`
- * wird aus der neuen Element-Liste abgeleitet.
+ * Proposals ohne jede Norm-Referenz (advisor/manual) sind dokumentierte
+ * No-ops. Menschliche Tore (enforced/attested) werden NIE berührt — nur
+ * `covered` wird aus der neuen Element-Liste abgeleitet.
  *
- * EHRLICHE GRENZE: das greift für die Upload-Welt (Standard-Sections). Der
- * Korpus-/Klausel-Anschluss folgt mit Gap-je-Klausel (ADR-0008 Phase 2).
+ * BEIDE WELTEN (seit THE-643). Bis dahin baute der Join `upload:${standardId}`
+ * von Hand und griff für Korpus-Normen ins Leere. Der Schlüssel kommt jetzt
+ * kanonisch aus `sourceRef.normId`; Bestands-Proposals fallen auf die alte
+ * Ableitung zurück.
  */
 import mongoose from 'mongoose';
+import { toNormWorkId } from '@thearchitect/shared';
 import { ComplianceRequirement } from '../models/ComplianceRequirement';
 import { deriveCovered, emptyGates } from './requirementGates.service';
 
 export interface BacklinkSourceRef {
+  /** Kanonisch, beide Welten (THE-643). Führt, wenn vorhanden. */
+  normId?: string;
+  /** Bestand vor THE-643 — Upload-Welt, ObjectId. */
   standardId?: mongoose.Types.ObjectId | string;
   sectionIds?: string[];
 }
@@ -40,14 +45,33 @@ interface BacklinkArgs {
   elementIds: string[];
 }
 
+/**
+ * Der Schlüssel, unter dem gejoint wird — kanonisch, nicht handgebaut.
+ *
+ * Vorher stand hier `upload:${standardId}`. Für eine Korpus-Norm ergab das
+ * `upload:corpus:dsgvo`, einen Schlüssel ohne Gegenstück: Der Rückschluss griff
+ * ins Leere, und `covered` blieb leer, obwohl die Maßnahme existierte
+ * (THE-643).
+ *
+ * `normId` führt. Fehlt es — jedes Proposal, das vor dieser Änderung entstand —,
+ * bleibt die alte Ableitung als Rückfall, byte-gleich zu vorher: `toNormWorkId`
+ * setzt vor eine rohe ObjectId genau `upload:`. Das ist der Schutzraum
+ * THE-568.
+ */
+function normKeyOf(sourceRef: BacklinkSourceRef): string | null {
+  if (sourceRef.normId) return sourceRef.normId;
+  if (sourceRef.standardId) return toNormWorkId(String(sourceRef.standardId));
+  return null;
+}
+
 function joinFilter(args: BacklinkArgs): Record<string, unknown> | null {
   const { sourceRef, elementIds } = args;
-  if (!sourceRef?.standardId || !sourceRef.sectionIds?.length || elementIds.length === 0) {
-    return null;
-  }
+  if (!sourceRef || !sourceRef.sectionIds?.length || elementIds.length === 0) return null;
+  const normId = normKeyOf(sourceRef);
+  if (!normId) return null;
   return {
     projectId: new mongoose.Types.ObjectId(String(args.projectId)),
-    normId: `upload:${sourceRef.standardId}`,
+    normId,
     sectionEId: { $in: sourceRef.sectionIds },
   };
 }

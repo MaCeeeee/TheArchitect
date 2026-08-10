@@ -4,6 +4,7 @@ export interface IRemediationProposal extends Document {
   projectId: mongoose.Types.ObjectId;
   source: 'compliance' | 'advisor' | 'manual';
   sourceRef?: {
+    normId?: string;
     standardId?: mongoose.Types.ObjectId;
     sectionIds?: string[];
     insightIds?: string[];
@@ -54,6 +55,23 @@ const remediationProposalSchema = new Schema<IRemediationProposal>(
       required: true,
     },
     sourceRef: {
+      // ── ZWEI FELDER FÜR EINEN BEGRIFF, MIT ABLAUFDATUM (THE-643) ──
+      //
+      // `normId` ist der kanonische Schlüssel beider Welten
+      // (`corpus:<source>` | `upload:<standardId>`) und der einzige, über den
+      // der Rückschluss joint. `standardId` bleibt daneben stehen, weil
+      // Bestands-Proposals ihn tragen — NICHT weil er noch etwas trägt: es
+      // gibt kein `populate`, keinen `$lookup`, keinen Leser, der die
+      // ObjectId-Natur braucht (gemessen im Pre-Flight zu THE-642).
+      //
+      // Genau diese Typisierung war der Bug: `corpus:dsgvo` ist ein String,
+      // Mongoose lehnte beim Speichern ab, und der Nutzer sah nichts.
+      //
+      // ABLAUFDATUM: `standardId` stirbt mit dem Index-Flip in THE-390 P4
+      // (ADR-0004 E4), zusammen mit `derivePipelineAnchorId`. Wer das hier
+      // liest und beide Felder pflegen muss: das ist der Grund, und das ist
+      // das Ende.
+      normId: { type: String, trim: true },
       standardId: { type: Schema.Types.ObjectId, ref: 'Standard' },
       sectionIds: [String],
       insightIds: [String],

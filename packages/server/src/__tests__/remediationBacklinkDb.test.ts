@@ -108,6 +108,105 @@ describe('linkAppliedElements — der mechanische Join', () => {
   });
 });
 
+/**
+ * THE-643 — der Rückschluss greift auch in der KORPUS-Welt.
+ *
+ * Bis hierher baute `joinFilter` den Schlüssel von Hand: `upload:${standardId}`.
+ * Für eine Korpus-Norm ergab das `upload:corpus:dsgvo` — einen Schlüssel, den
+ * es nirgends gibt. Selbst nach dem Schema-Fix (der Vorschlag entsteht) wäre
+ * der Rückschluss also ins Leere gegriffen, und `covered` wäre leer geblieben,
+ * obwohl die Maßnahme existiert.
+ *
+ * Der Schlüssel kommt jetzt aus `sourceRef.normId`. Bestands-Proposals ohne
+ * dieses Feld fallen auf die alte Ableitung zurück — das ist der Schutzraum
+ * THE-568 und die eigentliche Bedingung dafür, dass diese Änderung additiv ist.
+ */
+describe('linkAppliedElements — beide Welten (THE-643)', () => {
+  const CORPUS_NORM = 'corpus:dsgvo';
+  const corpusRef = { normId: CORPUS_NORM, sectionIds: ['dsgvo:art-32'] };
+
+  it('KORPUS: findet die Anforderung über normId — nicht über upload:<id>', async () => {
+    const [hit, miss] = await ComplianceRequirement.create([
+      baseReq({ normId: CORPUS_NORM, sectionEId: 'dsgvo:art-32' }),
+      // Dieselbe Sektion, ANDERES Gesetz: der Join darf nicht über die
+      // Sektions-Kennung allein laufen.
+      baseReq({ normId: 'corpus:nis2', sectionEId: 'dsgvo:art-32' }),
+    ]);
+
+    const r = await linkAppliedElements({
+      projectId,
+      sourceRef: corpusRef,
+      elementIds: ['el-corpus'],
+    });
+    expect(r.linkedRequirements).toBe(1);
+
+    const [h, m] = await Promise.all(
+      [hit, miss].map((d) => ComplianceRequirement.findById(d._id).lean()),
+    );
+    expect(h!.linkedElementIds).toEqual(['el-corpus']);
+    expect(h!.gates!.covered.state).toBe('yes');
+    expect(m!.linkedElementIds).toEqual([]);
+  });
+
+  it('SCHUTZRAUM THE-568: Bestand ohne normId greift weiter über standardId', async () => {
+    // Genau die Proposals, die vor dieser Änderung entstanden sind: sie tragen
+    // eine ObjectId und kein `normId`. Bricht dieser Fall, ist der Rückschluss
+    // für alles Bestehende tot — das wäre der teuerste denkbare Regress.
+    const doc = await ComplianceRequirement.create(
+      baseReq({ normId: `upload:${standardId}`, sectionEId: 's1' }),
+    );
+    const r = await linkAppliedElements({ projectId, sourceRef, elementIds: ['el-legacy'] });
+    expect(r.linkedRequirements).toBe(1);
+    const fresh = await ComplianceRequirement.findById(doc._id).lean();
+    expect(fresh!.linkedElementIds).toEqual(['el-legacy']);
+  });
+
+  it('normId gewinnt, wenn beide Felder da sind — der kanonische Schlüssel führt', async () => {
+    const doc = await ComplianceRequirement.create(
+      baseReq({ normId: CORPUS_NORM, sectionEId: 'dsgvo:art-32' }),
+    );
+    const r = await linkAppliedElements({
+      projectId,
+      // Ein Proposal, das BEIDES trägt — so schreibt es der Upload-Weg ab jetzt.
+      // Hier steht absichtlich eine unpassende standardId daneben: gewönne sie,
+      // fände der Join nichts.
+      sourceRef: { ...corpusRef, standardId },
+      elementIds: ['el-both'],
+    });
+    expect(r.linkedRequirements).toBe(1);
+    const fresh = await ComplianceRequirement.findById(doc._id).lean();
+    expect(fresh!.linkedElementIds).toEqual(['el-both']);
+  });
+
+  it('NEGATIV-KONTROLLE: weder normId noch standardId bleibt ein No-op', async () => {
+    await ComplianceRequirement.create(baseReq({ normId: CORPUS_NORM, sectionEId: 'dsgvo:art-32' }));
+    // advisor/manual — dokumentierter No-op, kein Fehler.
+    const r = await linkAppliedElements({
+      projectId,
+      sourceRef: { sectionIds: ['dsgvo:art-32'] },
+      elementIds: ['el-x'],
+    });
+    expect(r.linkedRequirements).toBe(0);
+    const fresh = await ComplianceRequirement.findOne({ projectId }).lean();
+    expect(fresh!.linkedElementIds).toEqual([]);
+  });
+
+  it('der Rückweg ist symmetrisch — unlink findet dieselbe Korpus-Anforderung', async () => {
+    const doc = await ComplianceRequirement.create(
+      baseReq({ normId: CORPUS_NORM, sectionEId: 'dsgvo:art-32' }),
+    );
+    await linkAppliedElements({ projectId, sourceRef: corpusRef, elementIds: ['el-corpus'] });
+    const r = await unlinkAppliedElements({
+      projectId,
+      sourceRef: corpusRef,
+      elementIds: ['el-corpus'],
+    });
+    expect(r.linkedRequirements).toBe(1);
+    const fresh = await ComplianceRequirement.findById(doc._id).lean();
+    expect(fresh!.linkedElementIds).toEqual([]);
+  });
+});
+
 describe('unlinkAppliedElements — der symmetrische Rückweg', () => {
   it('removes the element ids and re-derives covered (empty → no, system reason)', async () => {
     const doc = await ComplianceRequirement.create(

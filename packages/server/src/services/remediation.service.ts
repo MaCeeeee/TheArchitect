@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import mongoose from 'mongoose';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { Standard } from '../models/Standard';
 import { StandardMapping } from '../models/StandardMapping';
@@ -12,6 +13,7 @@ import {
   ARCHIMATE_STANDARD_TYPES,
   ARCHIMATE_STANDARD_CONNECTION_TYPES,
   ELEMENT_TYPES,
+  toNormWorkId,
 } from '@thearchitect/shared';
 import type {
   RemediationContext,
@@ -185,10 +187,25 @@ export async function generateRemediation(
 
 // ─── Source Reference Builder ───
 
+/**
+ * Was der Vorschlag über seinen Ursprung festhält — und woran ihn der
+ * Rückschluss später wiederfindet (THE-568/643).
+ *
+ * `normId` wird IMMER kanonisch geschrieben, in beiden Welten. `standardId`
+ * nur dort, wo es eine echte `Standard`-ObjectId gibt: Ein Korpus-Schlüssel
+ * wie `corpus:dsgvo` scheiterte hier am ObjectId-Cast, bevor irgendetwas
+ * entstand (THE-642). Er ist keine ObjectId und gehört nicht in dieses Feld.
+ */
 function buildSourceRef(context: RemediationContext) {
   switch (context.source) {
     case 'compliance':
-      return { standardId: context.standardId, sectionIds: context.gapSectionIds };
+      return {
+        normId: toNormWorkId(context.standardId),
+        ...(mongoose.isValidObjectId(context.standardId)
+          ? { standardId: context.standardId }
+          : {}),
+        sectionIds: context.gapSectionIds,
+      };
     case 'advisor':
       return { insightIds: context.insightIds };
     case 'manual':

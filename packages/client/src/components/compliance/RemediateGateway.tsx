@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Wrench, ArrowRight, CheckCircle2, XCircle, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
+import { Wrench, ArrowRight, CheckCircle2, XCircle, AlertTriangle, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { useRemediationStore } from '../../stores/remediationStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
@@ -19,6 +19,11 @@ export default function RemediateGateway() {
   const isGenerating = useRemediationStore((s) => s.isGenerating);
   const isApplying = useRemediationStore((s) => s.isApplying);
   const generationProgress = useRemediationStore((s) => s.generationProgress);
+  // THE-644: Der Fehler lag immer schon im Store — diese Flaeche las ihn nur
+  // nie aus. Bei SSE kann der Server nach `flushHeaders()` keinen Statuscode
+  // mehr aendern; das `error`-Event IST der Kanal, und wer ihn nicht rendert,
+  // laesst den Nutzer vor einem unveraenderten Knopf stehen.
+  const error = useRemediationStore((s) => s.error);
   const applyProposal = useRemediationStore((s) => s.applyProposal);
   const rollbackProposal = useRemediationStore((s) => s.rollbackProposal);
   const editProposal = useRemediationStore((s) => s.editProposal);
@@ -175,6 +180,24 @@ export default function RemediateGateway() {
             All {gapSectionIds.length} gap{gapSectionIds.length !== 1 ? 's have' : ' has'} a proposal — review them below
           </div>
         )
+      )}
+
+      {/* Generation failed — THE-644 */}
+      {error && !isGenerating && (
+        <div
+          data-testid="remediate-error"
+          className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-4"
+        >
+          <AlertCircle size={14} className="text-red-400 mt-0.5 shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-red-300">Generating the fix failed</p>
+            {/* Die Server-Meldung im Klartext. Ein generisches „Something went
+                wrong" haette den Cast-Fehler ebenso verschluckt wie das
+                Schweigen zuvor — die Meldung ist das Einzige, was zur Ursache
+                fuehrt. `break-words`, weil Mongoose-Meldungen lang werden. */}
+            <p className="text-xs text-red-300/80 break-words">{error}</p>
+          </div>
+        </div>
       )}
 
       {/* Generation Progress */}
