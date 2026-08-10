@@ -243,45 +243,87 @@ test.describe('Kette — Remediation', () => {
       );
     }
 
-    const generate = page.getByRole('button', { name: /generate ai fix/i });
-    await expect(
-      generate,
-      'Kein „Generate AI Fix"-Knopf — der Reiter kennt keine unbehandelten Lücken',
-    ).toBeVisible({ timeout: 20_000 });
-    const genLabel = ((await generate.innerText()) || '').replace(/\s+/g, ' ').trim();
-    line(`  Knopf: „${genLabel}"`);
-
-    line(`\n  ⚠ Ab hier laufen echte Modellaufrufe.`);
+    // ── 3a. Erzeugen — aber NUR, wenn noch kein Vorschlag da ist ────────
+    //
+    // `RemediateGateway` filtert Sektionen weg, die bereits einen Vorschlag
+    // tragen (unprocessedGapSectionIds). Nach einem erfolgreichen Lauf gibt es
+    // den Knopf also gar nicht mehr, sondern „All 1 gap has a proposal".
+    // Das ist richtig so — und es waere falsch, hier einen Fehlschlag zu
+    // melden oder erneut Modellaufrufe zu verbrennen. Der Gegenstand dieser
+    // Station ist der RUECKSCHLUSS, nicht das Erzeugen.
     const started = Date.now();
-    const [genRes] = await Promise.all([
-      page
-        .waitForResponse((r) => /remediation/.test(new URL(r.url()).pathname) && r.request().method() === 'POST', {
-          timeout: 420_000,
-        })
-        .catch(() => null),
-      generate.click(),
-    ]);
-    if (!genRes) {
-      throw new Error(
-        'Der Klick auf „Generate AI Fix" hat KEINEN Serveraufruf ausgeloest.\n' +
-          '  Der Knopf ist da und zaehlt richtig — aber er tut nichts. Das ist ein\n' +
-          '  eigener Befund, kein Zeitproblem.',
-      );
+    const generate = page.getByRole('button', { name: /generate ai fix/i });
+    if (await generate.isVisible().catch(() => false)) {
+      const genLabel = ((await generate.innerText()) || '').replace(/\s+/g, ' ').trim();
+      line(`  Knopf: „${genLabel}"`);
+      line(`\n  ⚠ Ab hier laufen echte Modellaufrufe.`);
+      const [genRes] = await Promise.all([
+        page
+          .waitForResponse((r) => /remediation/.test(new URL(r.url()).pathname) && r.request().method() === 'POST', {
+            timeout: 420_000,
+          })
+          .catch(() => null),
+        generate.click(),
+      ]);
+      if (!genRes) {
+        throw new Error(
+          'Der Klick auf „Generate AI Fix" hat KEINEN Serveraufruf ausgeloest.\n' +
+            '  Der Knopf ist da und zaehlt richtig — aber er tut nichts. Das ist ein\n' +
+            '  eigener Befund, kein Zeitproblem.',
+        );
+      }
+      line(`  Generate: ${genRes.status()} nach ${Math.round((Date.now() - started) / 1000)} s`);
+    } else {
+      line(`  (Ein Vorschlag liegt bereits vor — kein neuer Modellaufruf.)`);
     }
-    line(`  Generate: ${genRes.status()} nach ${Math.round((Date.now() - started) / 1000)} s`);
 
-    // Der Vorschlag braucht das Modell — grosszuegig warten, aber auf ein
-    // ERGEBNIS, nicht auf eine Zeitspanne.
-    const apply = page.getByRole('button', { name: /apply|accept|übernehmen/i }).first();
+    // ── 3b. Der Vorschlag muss AUFGEKLAPPT werden ───────────────────────
+    //
+    // `ProposalCard` startet zugeklappt (useState(false)); Apply liegt im
+    // eingeklappten Teil. Der erste Lauf wartete 5 Minuten auf einen Knopf,
+    // den es sichtbar nie gab — waehrend die Karte daneben „Validated · 83%
+    // confidence · 3 elements, 3 connections" zeigte. Eine Zusicherung, die
+    // eine unsichtbare Schaltflaeche sucht, misst die Anzeige statt der
+    // Wirkung.
+    //
+    // Der Anker ist bewusst die Zeile „N elements, M connections": sie kommt
+    // aus dem Code (ProposalCard:117), waehrend der Titel daneben vom Modell
+    // stammt und von Lauf zu Lauf anders lautet.
+    const cardHead = page
+      .getByRole('button')
+      .filter({ hasText: /\d+ elements?, \d+ connections?/i })
+      .first();
     await expect(
-      apply,
-      'Der Vorschlag lieferte nichts Anwendbares — die Server-Antworten unten sagen, warum',
+      cardHead,
+      'Der Vorschlag lieferte nichts Anwendbares — die Server-Antworten oben sagen, warum',
     ).toBeVisible({ timeout: 300_000 });
-    line(`  Vorschlag nach ${Math.round((Date.now() - started) / 1000)} s`);
+    line(`  Vorschlag nach ${Math.round((Date.now() - started) / 1000)} s: ` +
+      `„${((await cardHead.innerText()) || '').replace(/\s+/g, ' ').trim().slice(0, 90)}"`);
 
-    await apply.click();
-    await page.waitForTimeout(8_000);
-    line(`  Angewendet.`);
+    await cardHead.click();
+
+    const apply = page.getByRole('button', { name: /^apply\b/i }).first();
+    await expect(apply, 'Die aufgeklappte Karte trägt keinen Apply-Knopf').toBeVisible({
+      timeout: 20_000,
+    });
+    line(`  Apply: „${((await apply.innerText()) || '').replace(/\s+/g, ' ').trim()}"`);
+
+    // Auf die SERVER-Antwort warten, nicht auf eine Zeitspanne: Apply schreibt
+    // Elemente in Neo4j UND zieht den Rueckschluss nach (linkAppliedElements).
+    const [applyRes] = await Promise.all([
+      page
+        .waitForResponse(
+          (r) => /remediation\/.*\/apply/.test(new URL(r.url()).pathname) && r.request().method() === 'POST',
+          { timeout: 120_000 },
+        )
+        .catch(() => null),
+      apply.click(),
+    ]);
+    if (!applyRes) {
+      throw new Error('Der Klick auf Apply hat KEINEN Serveraufruf ausgeloest.');
+    }
+    line(`  Angewendet: ${applyRes.status()} ${(await applyRes.text().catch(() => '')).slice(0, 220)}`);
+    await page.waitForTimeout(5_000);
 
     // ── 3. DER KERN: trägt die Anforderung jetzt ein Element? ────────────
     const after = await gapCount();
