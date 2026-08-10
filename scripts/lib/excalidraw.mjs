@@ -153,11 +153,33 @@ export function newCanvas({ width, height }) {
   }
 
   // Prüft, ob gebundener Text breiter ist als sein Container — der häufigste Layoutfehler.
+  // Prueft zwei Faelle: gebundener Text, der seinen Chip sprengt, und freier
+  // Text, der aus dem Band laeuft, in dem er sitzt. Der zweite Fall fehlte
+  // anfangs und hat eine zu lange Zeile im Preflight-Diagramm durchgelassen.
   function overflows() {
     const byId = new Map(els.map((e) => [e.id, e]))
-    return els
-      .filter((e) => e.type === 'text' && e.containerId && e.width > byId.get(e.containerId).width - 16)
-      .map((e) => e.text.replace(/\n/g, ' / '))
+    const rects = els.filter((e) => e.type === 'rectangle')
+    const out = []
+
+    for (const e of els.filter((e) => e.type === 'text' && e.containerId)) {
+      if (e.width > byId.get(e.containerId).width - 16) {
+        out.push(`Chip zu schmal für: ${e.text.replace(/\n/g, ' / ')}`)
+      }
+    }
+
+    for (const e of els.filter((e) => e.type === 'text' && !e.containerId)) {
+      // kleinstes Rechteck, in dem der Textanfang liegt
+      const host = rects
+        .filter((r) => e.x >= r.x && e.x < r.x + r.width && e.y >= r.y && e.y < r.y + r.height)
+        .sort((a, b) => a.width * a.height - b.width * b.height)[0]
+      if (!host) continue
+      const dx = host.x + host.width - (e.x + e.width)
+      const dy = host.y + host.height - (e.y + e.height)
+      if (dx < 0 || dy < 0) {
+        out.push(`ragt aus dem Kasten (rechts ${Math.round(dx)}, unten ${Math.round(dy)}): „${e.text.split('\n')[0]}"`)
+      }
+    }
+    return out
   }
 
   // Findet einander überlappende Textblöcke — der zweithäufigste Layoutfehler,

@@ -9,7 +9,8 @@
 <text x="280" y="105" font-size="15" fill="#868e96" text-anchor="start">Stand 2026-08-09 · gespiegelt aus docs/skills/pre-flight/SKILL.md · Reihenfolge ist bindend — jede Stufe darf stoppen oder umschneiden</text>
 <rect x="280" y="150" width="780" height="90" rx="10" fill="#f1f3f5" stroke="#1e1e1e" stroke-width="2"/>
 <text x="304" y="187" font-size="17" fill="#1e1e1e" text-anchor="start">AUSLÖSER — wann der Pre-Flight läuft</text>
-<text x="304" y="209" font-size="13" fill="#868e96" text-anchor="start">neue Aufgabe · „lass uns X bauen" · ein Altticket aktivieren · vor writing-plans — er läuft VOR dem Plan, nicht erst vor dem Bau</text>
+<text x="304" y="209" font-size="13" fill="#868e96" text-anchor="start">neue Aufgabe · „lass uns X bauen" · ein Altticket aktivieren · vor writing-plans</text>
+<text x="304" y="225.25" font-size="13" fill="#868e96" text-anchor="start">Er läuft VOR dem Plan, nicht erst vor dem Bau.</text>
 <rect x="280" y="300" width="780" height="130" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
 <text x="304" y="339" font-size="19" fill="#1e1e1e" text-anchor="start">1 · LINEAR-SUCHE — gibt es das schon?</text>
 <rect x="304" y="356" width="234.66666666666666" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
@@ -33,7 +34,8 @@
 <text x="483.5" y="790.875" font-size="13" fill="#1e1e1e" text-anchor="middle">gemessen → Beleg verlinken, weiter</text>
 <rect x="677" y="762" width="359" height="48" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="4"/>
 <text x="856.5" y="790.875" font-size="13" fill="#1e1e1e" text-anchor="middle">geglaubt → STOPP, Decision-Ticket blockt</text>
-<text x="304" y="832.5" font-size="12.5" fill="#868e96" text-anchor="start">Präzedenz THE-438: 7 REQs auf ungeprüfter Annahme — zwei Stunden Messung entzogen ihr die Grundlage.</text>
+<text x="304" y="832.5" font-size="12.5" fill="#868e96" text-anchor="start">Pflicht: Optionen (mind. 2, „nichts tun" zählt) · Konsequenzen je Option · Rückholbarkeit</text>
+<text x="304" y="848.125" font-size="12.5" fill="#868e96" text-anchor="start">Präzedenz THE-438: 7 REQs auf ungeprüfter Annahme — zwei Stunden Messung entzogen ihr die Grundlage.</text>
 <rect x="280" y="915" width="780" height="150" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
 <text x="304" y="954" font-size="19" fill="#1e1e1e" text-anchor="start">4 · WSJF-SCORING — lohnt es sich? (8 Kriterien, je 0–5)</text>
 <text x="304" y="984" font-size="14" fill="#1e1e1e" text-anchor="start">Business Value · Business Risk · Implementation Challenges · Chance of Success</text>
@@ -119,9 +121,9 @@
 <text x="1585" y="576.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Dubletten.</text>
 <polyline points="1350,555 1065,555" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
 <rect x="1374" y="712.5" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
-<text x="1585" y="756.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie ein Bau-Ticket auf geglaubter Prämisse. Erst</text>
-<text x="1585" y="772.375" font-size="13" fill="#1e1e1e" text-anchor="middle">das Entscheidungs-Ticket, das per blockedBy</text>
-<text x="1585" y="788.625" font-size="13" fill="#1e1e1e" text-anchor="middle">blockiert.</text>
+<text x="1585" y="756.125" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie ein Bau-Ticket auf geglaubter Prämisse. Und</text>
+<text x="1585" y="772.375" font-size="13" fill="#1e1e1e" text-anchor="middle">nie eine Entscheidung ohne die verworfenen</text>
+<text x="1585" y="788.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Alternativen samt ihrem Preis.</text>
 <polyline points="1350,767.5 1065,767.5" fill="none" stroke="#c2255c" stroke-width="3" stroke-linejoin="round" marker-end="url(#ahc2255c)"/>
 <rect x="1374" y="935" width="422" height="110" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
 <text x="1585" y="978.625" font-size="13" fill="#1e1e1e" text-anchor="middle">Nie einen Alt-Score ungeprüft übernehmen — Scores</text>

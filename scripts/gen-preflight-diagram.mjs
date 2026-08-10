@@ -44,8 +44,10 @@ text({
 
 const bAusloeser = mainBand({ y: 150, h: 90, bg: C.ausloeser, head: 'AUSLÖSER — wann der Pre-Flight läuft', headFs: 17 })
 text({
-  x: MAIN_X + 24, y: 196, fs: 13, color: MUTED,
-  lines: 'neue Aufgabe · „lass uns X bauen" · ein Altticket aktivieren · vor writing-plans — er läuft VOR dem Plan, nicht erst vor dem Bau',
+  x: MAIN_X + 24, y: 196, fs: 13, color: MUTED, lines: [
+    'neue Aufgabe · „lass uns X bauen" · ein Altticket aktivieren · vor writing-plans',
+    'Er läuft VOR dem Plan, nicht erst vor dem Bau.',
+  ],
 })
 
 const b1 = mainBand({ y: 300, h: 130, bg: C.bestand, head: '1 · LINEAR-SUCHE — gibt es das schon?' })
@@ -73,8 +75,10 @@ mainRow({
   ],
 })
 text({
-  x: MAIN_X + 24, y: 820, fs: 12.5, color: MUTED,
-  lines: 'Präzedenz THE-438: 7 REQs auf ungeprüfter Annahme — zwei Stunden Messung entzogen ihr die Grundlage.',
+  x: MAIN_X + 24, y: 820, fs: 12.5, color: MUTED, lines: [
+    'Pflicht: Optionen (mind. 2, „nichts tun" zählt) · Konsequenzen je Option · Rückholbarkeit',
+    'Präzedenz THE-438: 7 REQs auf ungeprüfter Annahme — zwei Stunden Messung entzogen ihr die Grundlage.',
+  ],
 })
 
 const b4 = mainBand({ y: 915, h: 150, bg: C.score, head: '4 · WSJF-SCORING — lohnt es sich? (8 Kriterien, je 0–5)' })
@@ -174,7 +178,7 @@ text({
 const RULES = [
   [b1, 'Nie eine bereits erledigte Arbeit übersehen — bestehende REQs sind der Schutzraum, den der Plan nicht brechen darf.'],
   [b2, 'Nie den Ist-Zustand raten. Und nie überspringen, weil „das kenne ich doch" — genau dort sitzen die Dubletten.'],
-  [b3, 'Nie ein Bau-Ticket auf geglaubter Prämisse. Erst das Entscheidungs-Ticket, das per blockedBy blockiert.'],
+  [b3, 'Nie ein Bau-Ticket auf geglaubter Prämisse. Und nie eine Entscheidung ohne die verworfenen Alternativen samt ihrem Preis.'],
   [b4, 'Nie einen Alt-Score ungeprüft übernehmen — Scores sind Momentaufnahmen, gefallene Blocker verschieben sie.'],
   [b5, 'Nie bauen, wenn Unknown Unknowns oder Abhängigkeiten hoch sind — vorher anders schneiden.'],
   [b6, 'Nie ein Done, das nur Aktivität nennt. Nie das Loop-Budget stillschweigend überziehen.'],

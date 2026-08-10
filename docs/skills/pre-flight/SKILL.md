@@ -63,6 +63,27 @@ Das Label ist die filterbare Unterscheidung — der Titel allein trug sie bis 20
 
 Ein Entscheidungs-Ticket braucht **Positiv- und Negativ-Kontrolle** in der Definition of Done — sonst misst es nur, was ohnehin geglaubt wird.
 
+**Pflichtblock „Optionen".** Eine Entscheidung *für* etwas ist immer auch eine Entscheidung *gegen* etwas. Beides gehört ins Ticket, sonst ist später weder nachvollziehbar, was verworfen wurde, noch warum. Mindestens zwei Optionen — und **„nichts tun / beim Bestehenden bleiben" ist immer eine davon.**
+
+| Option | Was sie kostet | Was sie verbaut oder eröffnet | Rückholbarkeit |
+|---|---|---|---|
+| **A — …** | Bau- *und* Betriebsaufwand | welche Wege danach zu bzw. offen sind | billig · teuer · gar nicht |
+| **B — …** | | | |
+| **nichts tun** | | | |
+
+- **Rückholbarkeit ist die wichtigste Spalte.** Was sich billig revidieren lässt, darf schnell entschieden werden; was sich nicht zurückholen lässt, verdient die lange Prüfung. Ohne diese Spalte bekommt jede Frage dieselbe Gründlichkeit — die teuren zu wenig, die billigen zu viel.
+- Bei einer reinen **Messfrage** sind die Optionen die möglichen Ausgänge: was geschieht, wenn die Prämisse hält — und was, wenn sie fällt. Auch das steht **vor** der Messung im Ticket, sonst wird das Ergebnis hinterher passend gedeutet.
+
+**So schließt es** — als Blockzitat oben im Ticket, damit es beim Öffnen sofort sichtbar ist:
+
+> **ENTSCHIEDEN am TT.MM.JJJJ: Option B.** Beleg: Link auf Messung, Eval oder Doku.
+> **Verworfen:** A, weil … — *kommt zurück, wenn <Bedingung>*. C, weil … — endgültig.
+> **Preis:** was wir uns mit B einhandeln, offen benannt.
+
+Eine verworfene Option ist selten tot — sie hat meist eine Bedingung, unter der sie zurückkommt. Diese Bedingung **ist** das Re-Trigger des Loop-Kontrakts (Stufe 6): wird sie am Bau-Ticket gebraucht, wandert sie dorthin. *Präzedenz: THE-403 verwarf Self-Host auf Kostenbasis, THE-402 trägt seither den Re-Trigger bei ≥ 3.000 Seiten/Monat.*
+
+Prägt die Entscheidung die Architektur dauerhaft, wandern dieselben drei Blöcke beim Schließen in ein ADR unter `docs/adr/` — gleiche Überschriften, damit es Übernahme statt Neuschreiben ist.
+
 *Präzedenz: THE-438 war ein voll ausgearbeitetes Bau-Ticket (7 REQs, Datenmodell, Migration) auf einer ungeprüften Annahme. Zwei Stunden Messung entzogen ihr die Grundlage → THE-538 blockiert seither.*
 
 ## Stufe 4 — WSJF-Scoring (8 Kriterien)
@@ -124,6 +145,7 @@ Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-developm
 - **Nie** ein Bau-Ticket anlegen, dessen tragende Prämisse ungemessen ist.
 - **Nie** Stufe 1/2 überspringen, weil „das kenne ich doch" — genau dort sitzen die Dubletten und die schon gebauten Teile.
 - **Nie** einen Alt-Score ungeprüft übernehmen.
+- **Nie** eine Entscheidung schließen, ohne zu benennen, was damit verworfen ist, was es kostet und ob es sich zurückholen lässt.
 - **Nie** mit der Implementierung beginnen, bevor der Nutzer den Plan freigegeben hat.
 - **Nie** ein Done melden, das nur Aktivität benennt („deployed", „gemerged") — Done nennt die gemessene Wirkung oder die E2E-Evidenz.
 - **Nie** das Loop-Budget stillschweigend überziehen — Eskalation mit Befund ist der vorgesehene Ausgang, kein Versagen.
