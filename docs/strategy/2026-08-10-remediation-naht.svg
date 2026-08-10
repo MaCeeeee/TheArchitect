@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1960" height="1810" viewBox="0 0 1960 1810" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="1960" height="1810" fill="#ffffff"/>
+<defs>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+<marker id="ahe03131" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e03131"/></marker>
+<marker id="ah1971c2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1971c2"/></marker>
+</defs>
+<text x="430" y="70" font-size="30" fill="#1e1e1e" text-anchor="start">Remediate über die Zwei-Welten-Naht</text>
+<text x="430" y="101" font-size="15" fill="#868e96" text-anchor="start">Vom Klick zur gedeckten Anforderung · Stand PR #171 (THE-642 / THE-643 / THE-644) · rot = vorher gebrochen, grün = repariert</text>
+<rect x="430" y="150" width="800" height="165" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="189" font-size="19" fill="#1e1e1e" text-anchor="start">1 · FLÄCHE — RemediateGateway.tsx</text>
+<rect x="454" y="222" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="574.6666666666666" y="248.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">remediation-scope → Zähler</text>
+<rect x="709.3333333333334" y="222" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="830" y="248.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Klick: generate(…)</text>
+<rect x="964.6666666666667" y="222" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="248.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">error aus dem Store</text>
+<text x="454" y="288.5" font-size="12.5" fill="#868e96" text-anchor="start">Schickt `standardId` so, wie die Norm heißt: `corpus:dsgvo` oder eine rohe Standard-ObjectId.</text>
+<rect x="430" y="360" width="800" height="235" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="399" font-size="19" fill="#1e1e1e" text-anchor="start">2 · ROUTE — remediation.routes.ts (SSE)</text>
+<rect x="454" y="432" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="574.6666666666666" y="458.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Zod: Form prüfen</text>
+<rect x="709.3333333333334" y="432" width="241.33333333333334" height="44" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="3"/>
+<text x="830" y="458.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">getPipelineNorm → 404</text>
+<rect x="964.6666666666667" y="432" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="458.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">flushHeaders()</text>
+<text x="454" y="504.5" font-size="12.5" fill="#868e96" text-anchor="start">Alles ÜBER `flushHeaders()` kann noch einen Statuscode setzen. Alles darunter nicht mehr —</text>
+<text x="454" y="520.125" font-size="12.5" fill="#868e96" text-anchor="start">dort bleibt nur `data: {"type":"error"}` im offenen Strom. Das ist SSE, kein Mangel.</text>
+<text x="454" y="562.5" font-size="12.5" fill="#2f9e44" text-anchor="start">NEU: die Norm-Auflösung wandert über die Grenze — unbekannte Norm = 404 statt 200.</text>
+<rect x="430" y="640" width="800" height="195" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="679" font-size="19" fill="#1e1e1e" text-anchor="start">3 · SERVICE — remediation.service.ts</text>
+<rect x="454" y="712" width="241.33333333333334" height="44" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="3"/>
+<text x="574.6666666666667" y="738.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">buildSourceRef(context)</text>
+<rect x="709.3333333333334" y="712" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="830" y="738.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Kontext + LLM</text>
+<rect x="964.6666666666667" y="712" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="738.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Vorschlag füllen</text>
+<text x="454" y="784.5" font-size="12.5" fill="#868e96" text-anchor="start">normId := toNormWorkId(standardId)   — immer, in beiden Welten</text>
+<text x="454" y="800.125" font-size="12.5" fill="#868e96" text-anchor="start">standardId := nur wenn isValidObjectId — sonst gar nicht</text>
+<rect x="430" y="880" width="800" height="200" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="919" font-size="19" fill="#1e1e1e" text-anchor="start">4 · PERSISTENZ — RemediationProposal (MongoDB)</text>
+<rect x="454" y="952" width="241.33333333333334" height="44" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="3"/>
+<text x="574.6666666666666" y="978.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">normId: String</text>
+<rect x="709.3333333333334" y="952" width="241.33333333333334" height="44" rx="10" fill="#ffe3e3" stroke="#1e1e1e" stroke-width="3"/>
+<text x="830" y="978.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">standardId: ObjectId</text>
+<rect x="964.6666666666667" y="952" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="978.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">sectionIds: [String]</text>
+<text x="454" y="1024.5" font-size="12.5" fill="#868e96" text-anchor="start">BRUCH 1: `corpus:dsgvo` ist ein String — Mongoose lehnte am ObjectId-Cast ab,</text>
+<text x="454" y="1040.125" font-size="12.5" fill="#868e96" text-anchor="start">bevor irgendetwas entstand. `standardId` bleibt nur noch für Bestandsdaten stehen.</text>
+<rect x="430" y="1125" width="800" height="140" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="1164" font-size="19" fill="#1e1e1e" text-anchor="start">5 · APPLY — remediation-apply.service.ts</text>
+<rect x="454" y="1194" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="574.6666666666666" y="1220.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Elemente in Neo4j</text>
+<rect x="709.3333333333334" y="1194" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="830" y="1220.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">appliedElementIds</text>
+<rect x="964.6666666666667" y="1194" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="1220.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">sourceRef durchreichen</text>
+<rect x="430" y="1310" width="800" height="205" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="454" y="1349" font-size="19" fill="#1e1e1e" text-anchor="start">6 · RÜCKSCHLUSS — remediationBacklink.service.ts</text>
+<rect x="454" y="1382" width="241.33333333333334" height="44" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="3"/>
+<text x="574.6666666666666" y="1408.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Join über normId</text>
+<rect x="709.3333333333334" y="1382" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="830" y="1408.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">$addToSet linkedElementIds</text>
+<rect x="964.6666666666667" y="1382" width="241.33333333333334" height="44" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1085.3333333333335" y="1408.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">gates.covered neu</text>
+<text x="454" y="1454.5" font-size="12.5" fill="#868e96" text-anchor="start">BRUCH 2: der Join baute `upload:${standardId}` von Hand → `upload:corpus:dsgvo`,</text>
+<text x="454" y="1470.125" font-size="12.5" fill="#868e96" text-anchor="start">ein Schlüssel ohne Gegenstück. Selbst mit gespeichertem Vorschlag: kein Treffer.</text>
+<polyline points="830,315 830,360" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="852" y="336" font-size="13" fill="#868e96" text-anchor="start">POST /remediation/generate</text>
+<polyline points="830,595 830,640" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="830,835 830,880" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="852" y="856" font-size="13" fill="#868e96" text-anchor="start">create()</text>
+<polyline points="830,1080 830,1125" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="852" y="1101" font-size="13" fill="#868e96" text-anchor="start">Nutzer bestätigt</text>
+<polyline points="830,1265 830,1310" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="60" y="167" font-size="17" fill="#e03131" text-anchor="start">BRUCH 3 — die Stille</text>
+<rect x="60" y="184" width="330" height="145" rx="10" fill="#ffe3e3" stroke="#1e1e1e" stroke-width="2"/>
+<text x="225" y="231" font-size="12" fill="#1e1e1e" text-anchor="middle">Der Store setzte `error` die ganze Zeit</text>
+<text x="225" y="246" font-size="12" fill="#1e1e1e" text-anchor="middle">(remediationStore:121). RemediateGateway</text>
+<text x="225" y="261" font-size="12" fill="#1e1e1e" text-anchor="middle">las ihn nie aus — kein einziges</text>
+<text x="225" y="276" font-size="12" fill="#1e1e1e" text-anchor="middle">Vorkommen. Der Copilot-Panel rendert ihn</text>
+<text x="225" y="291" font-size="12" fill="#1e1e1e" text-anchor="middle">seit jeher.</text>
+<rect x="60" y="339" width="330" height="95" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="225" y="376" font-size="12" fill="#1e1e1e" text-anchor="middle">NEU: die Fläche zeigt die Server-Meldung</text>
+<text x="225" y="391" font-size="12" fill="#1e1e1e" text-anchor="middle">im Klartext — nicht „Something went</text>
+<text x="225" y="406" font-size="12" fill="#1e1e1e" text-anchor="middle">wrong".</text>
+<polyline points="390,256 425,240" fill="none" stroke="#e03131" stroke-width="2" stroke-linejoin="round" marker-end="url(#ahe03131)"/>
+<text x="60" y="507" font-size="17" fill="#1971c2" text-anchor="start">Die SSE-Grenze</text>
+<rect x="60" y="524" width="330" height="105" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="225" y="566" font-size="12" fill="#1e1e1e" text-anchor="middle">ÜBER flushHeaders(): echter Statuscode</text>
+<text x="225" y="581" font-size="12" fill="#1e1e1e" text-anchor="middle">möglich. Hierhin gehört alles, was ohne</text>
+<text x="225" y="596" font-size="12" fill="#1e1e1e" text-anchor="middle">den Strom entscheidbar ist.</text>
+<rect x="60" y="639" width="330" height="105" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="225" y="681" font-size="12" fill="#1e1e1e" text-anchor="middle">DARUNTER: nur noch error-Events. Der</text>
+<text x="225" y="696" font-size="12" fill="#1e1e1e" text-anchor="middle">Cast-Fehler fiel hierhin — deshalb HTTP</text>
+<text x="225" y="711" font-size="12" fill="#1e1e1e" text-anchor="middle">200 auf einen Abbruch.</text>
+<polyline points="390,576 425,500" fill="none" stroke="#1971c2" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1300" y="150" width="600" height="1365" rx="10" fill="#f8f9fa" stroke="#1971c2" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="1324" y="190" font-size="18" fill="#1971c2" text-anchor="start">Die Schlüssel-Spur — zwei Welten, ein Name</text>
+<text x="1324" y="220.5" font-size="12.5" fill="#868e96" text-anchor="start">Upload: eine echte Standard-ObjectId in MongoDB.</text>
+<text x="1324" y="236.125" font-size="12.5" fill="#868e96" text-anchor="start">Korpus: ein Gesetz auf Server B, angesprochen als `corpus:&lt;source&gt;`.</text>
+<rect x="1324" y="272" width="552" height="124" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="323.0625" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Die Fläche kennt nur den Namen der Norm:</text>
+<text x="1600" y="338.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">`corpus:dsgvo` ODER `507f…`. Sie unterscheidet</text>
+<text x="1600" y="354.3125" font-size="12.5" fill="#1e1e1e" text-anchor="middle">nicht — und muss es nicht.</text>
+<polyline points="1300,334 1235,232.5" fill="none" stroke="#1971c2" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1324" y="675.5" width="552" height="124" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="726.5625" font-size="12.5" fill="#1e1e1e" text-anchor="middle">toNormWorkId(ref) (neu, in shared): trägt der</text>
+<text x="1600" y="742.1875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Wert schon ein Präfix, bleibt er; sonst wird</text>
+<text x="1600" y="757.8125" font-size="12.5" fill="#1e1e1e" text-anchor="middle">`upload:` davorgesetzt. Idempotent.</text>
+<polyline points="1300,737.5 1235,737.5" fill="none" stroke="#1971c2" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1324" y="918" width="552" height="124" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="969.0625" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Beide Felder nebeneinander — mit Ablaufdatum.</text>
+<text x="1600" y="984.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">`standardId` stirbt mit dem Index-Flip in</text>
+<text x="1600" y="1000.3125" font-size="12.5" fill="#1e1e1e" text-anchor="middle">THE-390 P4 (ADR-0004 E4).</text>
+<polyline points="1300,980 1235,980" fill="none" stroke="#1971c2" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="1324" y="1350.5" width="552" height="124" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="1393.75" font-size="12.5" fill="#1e1e1e" text-anchor="middle">ComplianceRequirement.normId trägt dieselbe</text>
+<text x="1600" y="1409.375" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Konvention. Fehlt normId am Vorschlag</text>
+<text x="1600" y="1425" font-size="12.5" fill="#1e1e1e" text-anchor="middle">(Bestand), greift der alte Weg weiter —</text>
+<text x="1600" y="1440.625" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Schutzraum THE-568.</text>
+<polyline points="1300,1412.5 1235,1412.5" fill="none" stroke="#1971c2" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah1971c2)"/>
+<rect x="60" y="1590" width="1840" height="165" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="84" y="1629" font-size="17" fill="#1e1e1e" text-anchor="start">Was das Bild sagt</text>
+<text x="84" y="1658.5" font-size="14.5" fill="#1e1e1e" text-anchor="start">Die Kette war an DREI Stellen offen, und keine davon lag dort, wo der Fehlertext hinzeigte. Zwei im Datenpfad — das Schema nahm den Korpus-Schlüssel nicht an, und der Join baute</text>
+<text x="84" y="1676.625" font-size="14.5" fill="#1e1e1e" text-anchor="start">ihn falsch nach —, eine in der Wahrnehmung: die Fläche kannte den Fehler und schwieg. Der Fix ist additiv und trägt sein eigenes Ende: der kanonische Schlüssel wird überall</text>
+<text x="84" y="1694.75" font-size="14.5" fill="#1e1e1e" text-anchor="start">geschrieben, das alte Feld bleibt nur für Bestandsdaten stehen, und beide verschwinden mit dem Index-Flip in P4. Was bis dahin gilt, steht als Kommentar am Feld, nicht nur im Ticket.</text>
+</svg>
