@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2010" height="2030" viewBox="0 0 2010 2030" font-family="Segoe UI, Helvetica, sans-serif">
+<rect width="2010" height="2030" fill="#ffffff"/>
+<defs>
+<marker id="ah868e96" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#868e96"/></marker>
+<marker id="ah1e1e1e" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#1e1e1e"/></marker>
+</defs>
+<text x="60" y="70" font-size="30" fill="#1e1e1e" text-anchor="start">Was ist „die Kette" — und warum ist sie nicht das Menü?</text>
+<text x="60" y="103" font-size="15" fill="#868e96" text-anchor="start">Stand 2026-08-10 · Die Kette ist ein DATENFLUSS über sieben Stationen. Das Menü sortiert WERKZEUGE nach drei Toren. Beide Achsen kreuzen sich — sie decken sich nicht.</text>
+<text x="60" y="155" font-size="15" fill="#868e96" text-anchor="start">WAS DAS DATENMODELL TRÄGT</text>
+<text x="560" y="155" font-size="15" fill="#1971c2" text-anchor="start">DIE KETTE — sieben Stationen</text>
+<text x="1250" y="155" font-size="15" fill="#868e96" text-anchor="start">WO IM PRODUKT (Fläche · Menüpunkt)</text>
+<rect x="560" y="175" width="620" height="130" rx="10" fill="#a5d8ff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="208" font-size="17" fill="#1e1e1e" text-anchor="start">1 · GESETZ</text>
+<text x="580" y="233.5" font-size="12.5" fill="#2f9e44" text-anchor="start">✓ am Klick belegt (10.08.)</text>
+<rect x="60" y="183" width="430" height="114" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="237" font-size="12" fill="#1e1e1e" text-anchor="middle">Korpus auf Server B — `corpus:&lt;source&gt;` ·</text>
+<text x="275" y="252" font-size="12" fill="#1e1e1e" text-anchor="middle">Sektion = Paragraph, Anker `dsgvo:art-32`</text>
+<rect x="1250" y="183" width="700" height="114" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="236.875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Conformance → Standards → „Add to pipeline"</text>
+<text x="1600" y="252.5" font-size="12.5" fill="#1e1e1e" text-anchor="middle">(RegulationsPanel)</text>
+<polyline points="490,240 555,240" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,240 1185,240" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="335" width="620" height="130" rx="10" fill="#b2f2bb" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="368" font-size="17" fill="#1e1e1e" text-anchor="start">2 · ANFORDERUNG</text>
+<text x="580" y="393.5" font-size="12.5" fill="#2f9e44" text-anchor="start">✓ am Klick belegt (10.08.)</text>
+<rect x="60" y="343" width="430" height="114" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="397" font-size="12" fill="#1e1e1e" text-anchor="middle">ComplianceRequirement · { normId, sectionEId,</text>
+<text x="275" y="412" font-size="12" fill="#1e1e1e" text-anchor="middle">chain }</text>
+<rect x="1250" y="343" width="700" height="114" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="396.875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Generator-Modal in der PROJEKT-Werkzeugleiste</text>
+<text x="1600" y="412.5" font-size="12.5" fill="#1e1e1e" text-anchor="middle">— nicht in der Conformance-Navigation</text>
+<polyline points="490,400 555,400" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,400 1185,400" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="495" width="620" height="130" rx="10" fill="#ffec99" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="528" font-size="17" fill="#1e1e1e" text-anchor="start">3 · LÜCKE</text>
+<text x="580" y="553.5" font-size="12.5" fill="#2f9e44" text-anchor="start">✓ am Klick belegt (10.08.)</text>
+<rect x="60" y="503" width="430" height="114" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="557" font-size="12" fill="#1e1e1e" text-anchor="middle">status: open | in_progress · summary.unlinked</text>
+<text x="275" y="572" font-size="12" fill="#1e1e1e" text-anchor="middle">= offen OHNE Element</text>
+<rect x="1250" y="503" width="700" height="114" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="564.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Conformance → Gap Analysis</text>
+<polyline points="490,560 555,560" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,560 1185,560" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="655" width="620" height="130" rx="10" fill="#99e9f2" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="688" font-size="17" fill="#1e1e1e" text-anchor="start">4 · MASSNAHME</text>
+<text x="580" y="713.5" font-size="12.5" fill="#2f9e44" text-anchor="start">✓ am Klick belegt (10.08.)</text>
+<rect x="60" y="663" width="430" height="114" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="717" font-size="12" fill="#1e1e1e" text-anchor="middle">RemediationProposal → Elemente in Neo4j ·</text>
+<text x="275" y="732" font-size="12" fill="#1e1e1e" text-anchor="middle">sourceRef { normId, sectionIds }</text>
+<rect x="1250" y="663" width="700" height="114" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="724.6875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Conformance → Remediate</text>
+<polyline points="490,720 555,720" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,720 1185,720" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="815" width="620" height="140" rx="10" fill="#d0bfff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="848" font-size="17" fill="#1e1e1e" text-anchor="start">5 · DECKUNG  (covered)</text>
+<text x="580" y="873.5" font-size="12.5" fill="#2f9e44" text-anchor="start">✓ am Klick belegt (10.08.)</text>
+<rect x="60" y="823" width="430" height="124" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="882" font-size="12" fill="#1e1e1e" text-anchor="middle">gates.covered — MASCHINELL abgeleitet · setBy:</text>
+<text x="275" y="897" font-size="12" fill="#1e1e1e" text-anchor="middle">"system", aus linkedElementIds</text>
+<rect x="1250" y="823" width="700" height="124" rx="10" fill="#ebfbee" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="881.875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">kein eigener Menüpunkt — entsteht beim Apply</text>
+<text x="1600" y="897.5" font-size="12.5" fill="#1e1e1e" text-anchor="middle">(remediationBacklink.service)</text>
+<polyline points="490,885 555,885" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,885 1185,885" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="985" width="620" height="140" rx="10" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="1018" font-size="17" fill="#1e1e1e" text-anchor="start">6 · NACHWEIS  (evidence)</text>
+<text x="580" y="1043.5" font-size="12.5" fill="#e03131" text-anchor="start">○ gebaut, nie am Klick geprüft</text>
+<rect x="60" y="993" width="430" height="124" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="1052" font-size="12" fill="#1e1e1e" text-anchor="middle">Evidence { requirementId, stale } · attested</text>
+<text x="275" y="1067" font-size="12" fill="#1e1e1e" text-anchor="middle">verlangt ≥1 NICHT-stale Nachweis</text>
+<rect x="1250" y="993" width="700" height="124" rx="10" fill="#fff9db" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="1051.875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Architektur-Ansicht → Element anklicken →</text>
+<text x="1600" y="1067.5" font-size="12.5" fill="#1e1e1e" text-anchor="middle">PropertyPanel → EvidencePanel</text>
+<polyline points="490,1055 555,1055" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,1055 1185,1055" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<rect x="560" y="1155" width="620" height="150" rx="10" fill="#ffc9c9" stroke="#1e1e1e" stroke-width="2"/>
+<text x="580" y="1188" font-size="17" fill="#1e1e1e" text-anchor="start">7 · TORE  (enforced · attested)</text>
+<text x="580" y="1213.5" font-size="12.5" fill="#e03131" text-anchor="start">○ gebaut, nie am Klick geprüft</text>
+<rect x="60" y="1163" width="430" height="134" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="275" y="1219.5" font-size="12" fill="#1e1e1e" text-anchor="middle">gates.enforced / .attested — NUR ein Mensch ·</text>
+<text x="275" y="1234.5" font-size="12" fill="#1e1e1e" text-anchor="middle">POST /requirements/:id/gates, setBy aus der</text>
+<text x="275" y="1249.5" font-size="12" fill="#1e1e1e" text-anchor="middle">Session</text>
+<rect x="1250" y="1163" width="700" height="134" rx="10" fill="#fff9db" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1600" y="1226.875" font-size="12.5" fill="#1e1e1e" text-anchor="middle">Architektur-Ansicht → Element → PropertyPanel</text>
+<text x="1600" y="1242.5" font-size="12.5" fill="#1e1e1e" text-anchor="middle">→ RequirementGatesBadge</text>
+<polyline points="490,1230 555,1230" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="1250,1230 1185,1230" fill="none" stroke="#868e96" stroke-width="2" stroke-linejoin="round" marker-end="url(#ah868e96)"/>
+<polyline points="870,305 870,335" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="870,465 870,495" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="870,625 870,655" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="870,785 870,815" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="870,955 870,985" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<polyline points="870,1125 870,1155" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linejoin="round" marker-end="url(#ah1e1e1e)"/>
+<text x="1250" y="975" font-size="13" fill="#e03131" text-anchor="start">▲ ab hier verlässt die Kette die Conformance-Fläche</text>
+<rect x="60" y="1360" width="1890" height="340" rx="10" fill="#f8f9fa" stroke="#1971c2" stroke-width="2" stroke-dasharray="10 6"/>
+<text x="84" y="1399" font-size="19" fill="#1971c2" text-anchor="start">Das Menü im Screenshot — eine ANDERE Achse</text>
+<text x="84" y="1425" font-size="13" fill="#868e96" text-anchor="start">Es sortiert nach den drei Konformitäts-Toren, nicht nach Stationen. Die Verben stehen als Badge; die Namen sprechen (ComplianceSidebar.tsx:13).</text>
+<rect x="84" y="1452" width="600" height="220" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="100" y="1481.5" font-size="13.5" fill="#1e1e1e" text-anchor="start">Subjekt: YOUR MODEL   ·   Cover</text>
+<text x="100" y="1514" font-size="12" fill="#868e96" text-anchor="start">Pipeline · Portfolio · Standards · Matrix · Remediate · Gen. Policies · Roadmap ·</text>
+<text x="100" y="1529" font-size="12" fill="#868e96" text-anchor="start">Elements · Progress · Gap Analysis · Audit</text>
+<text x="100" y="1608.5" font-size="12.5" fill="#868e96" text-anchor="start">Bedient Station 1, 3 und 4.</text>
+<rect x="714" y="1452" width="480" height="220" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="730" y="1481.5" font-size="13.5" fill="#1e1e1e" text-anchor="start">Subjekt: YOUR MODEL   ·   Enforce</text>
+<text x="730" y="1514" font-size="12" fill="#868e96" text-anchor="start">Dashboard · Approvals · Policy Manager · Audit Trail</text>
+<text x="730" y="1608.5" font-size="12.5" fill="#868e96" text-anchor="start">Policies gegen das Modell — keine Station der Kette.</text>
+<rect x="1224" y="1452" width="725" height="220" rx="10" fill="#ffffff" stroke="#1e1e1e" stroke-width="2"/>
+<text x="1240" y="1481.5" font-size="13.5" fill="#1e1e1e" text-anchor="start">Subjekt: IMPORTED WORKFLOWS   ·   Attest</text>
+<text x="1240" y="1514" font-size="12" fill="#868e96" text-anchor="start">Assess Workflow · Certify</text>
+<text x="1240" y="1608.5" font-size="12.5" fill="#e03131" text-anchor="start">ANDERES SUBJEKT. Attestiert Workflows, nicht die Anforderungen deines Modells — das Attest aus</text>
+<text x="1240" y="1624.125" font-size="12.5" fill="#e03131" text-anchor="start">Station 7 sitzt woanders.</text>
+<rect x="60" y="1740" width="1890" height="230" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+<text x="84" y="1780" font-size="18" fill="#1e1e1e" text-anchor="start">Die Antwort auf die Frage</text>
+<text x="84" y="1812.5" font-size="14.5" fill="#1e1e1e" text-anchor="start">Nein — die Kette ist nicht das Menü. Sie ist der Weg, den EINE PFLICHT durch das System nimmt: vom Gesetzestext bis zu dem Satz „dafür stehe ich gerade".</text>
+<text x="84" y="1830.625" font-size="14.5" fill="#1e1e1e" text-anchor="start">Das Menü ist ein Werkzeugkasten, sortiert nach Toren. Beide sind für sich richtig; sie sind nur nicht dieselbe Sache — und an drei Stellen fällt das auf:</text>
+<text x="84" y="1848.75" font-size="14.5" fill="#1e1e1e" text-anchor="start"></text>
+<text x="84" y="1866.875" font-size="14.5" fill="#1e1e1e" text-anchor="start">   ·  Station 2 (Anforderungen erzeugen) sitzt in der PROJEKT-Werkzeugleiste, nicht in der Conformance-Navigation — dort, wo die Kette lebt.</text>
+<text x="84" y="1885" font-size="14.5" fill="#1e1e1e" text-anchor="start">   ·  Station 5 (Deckung) hat gar keinen Menüpunkt. Sie entsteht als Nebenwirkung des Apply — sichtbar erst, wenn man weiß, wo man hinsieht.</text>
+<text x="84" y="1903.125" font-size="14.5" fill="#1e1e1e" text-anchor="start">   ·  Station 6 und 7 liegen in der ARCHITEKTUR-Ansicht am Element (PropertyPanel), nicht unter „Attestation" — das attestiert importierte Workflows.</text>
+</svg>
