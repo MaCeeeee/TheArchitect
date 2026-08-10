@@ -143,20 +143,54 @@ test.describe('Kette — Remediation', () => {
 
     await login(page, readCredentials());
 
-    // ── 0. Ausgangslage: wie viele Lücken sind offen? ───────────────────
-    const gapCount = async (): Promise<number> => {
-      await goToSection(page, 'Gap Analysis');
+    // ── 0. Ausgangslage: wie viele Anforderungen sind UNGEDECKT? ────────
+    //
+    // Gemessen wird `summary.unlinked`, nicht die Zahl der Einträge.
+    //
+    // Der Unterschied ist der Gegenstand dieser Station: Eine „Lücke" ist laut
+    // `compliance-gaps.service.ts:15` eine Anforderung mit Status `open` oder
+    // `in_progress` — und diesen Status rührt der Rückschluss NICHT an, mit
+    // Absicht. Er verlinkt das Element und leitet `covered` ab; ob eine
+    // Anforderung erledigt ist, entscheidet ein Mensch (HUMAN_ONLY_GATES).
+    //
+    // Am 10.08. hat mich genau das eine Falschmeldung gekostet: Der
+    // Rückschluss griff (14 von 14 Anforderungen trugen die erzeugten
+    // Elemente, `covered: yes, setBy: system`), aber `open` blieb 14 — und die
+    // alte Zusicherung meldete „greift nicht". Sie mass die menschliche
+    // Entscheidung statt der maschinellen Deckung.
+    const uncovered = async (): Promise<number> => {
+      const [res] = await Promise.all([
+        page.waitForResponse((r) => /\/compliance\/gaps/.test(new URL(r.url()).pathname), {
+          timeout: 30_000,
+        }),
+        goToSection(page, 'Gap Analysis'),
+      ]);
       await expect(page.getByTestId('gap-kpis')).toBeVisible({ timeout: 20_000 });
-      await page.waitForTimeout(1_500);
-      return page.getByTestId('gap-title').count();
+      const body = await res.json().catch(() => null);
+      const s = body?.data?.summary;
+      if (!s || typeof s.unlinked !== 'number') {
+        throw new Error(
+          'Die Lücken-Antwort trägt kein `summary.unlinked` — die Form hat sich geändert.\n' +
+            `  Gelesen: ${JSON.stringify(body?.data ? Object.keys(body.data) : body)}`,
+        );
+      }
+      line(`  (offen ${s.open} · davon ohne Element ${s.unlinked} · MUST offen ${s.openMust})`);
+      return s.unlinked;
     };
 
     // EINMAL per Adresse einsteigen, danach nur noch klicken.
     await page.goto(`/project/${PROJECT_ID}/compliance`);
     await page.waitForTimeout(4_000);
-    const before = await gapCount();
-    line(`\n  Lücken vorher: ${before}`);
-    expect(before, 'Das Projekt hat keine Lücken — nichts zu remediieren').toBeGreaterThan(0);
+    const before = await uncovered();
+    line(`\n  Ungedeckte Anforderungen vorher: ${before}`);
+    expect(
+      before,
+      'Alle Anforderungen tragen bereits ihre Maßnahme — dieser Durchstich braucht\n' +
+        '  einen UNGEDECKTEN Ausgangszustand. Nach einem erfolgreichen Lauf ist das\n' +
+        '  Projekt „verbraucht": ein neuer Nachweis braucht ein frisches Projekt\n' +
+        '  (chain-walkthrough.spec.ts erzeugt eines). Das ist keine Panne, sondern\n' +
+        '  die Natur eines Durchstichs — er ist kein Regressionstest.',
+    ).toBeGreaterThan(0);
 
     // ── 1. Die Vorstufe: Norm über STANDARDS in die Pipeline ────────────
     line(`\n════ Standards → Add to pipeline ════`);
@@ -286,16 +320,38 @@ test.describe('Kette — Remediation', () => {
     // eine unsichtbare Schaltflaeche sucht, misst die Anzeige statt der
     // Wirkung.
     //
-    // Der Anker ist bewusst die Zeile „N elements, M connections": sie kommt
-    // aus dem Code (ProposalCard:117), waehrend der Titel daneben vom Modell
-    // stammt und von Lauf zu Lauf anders lautet.
+    // ── WORAUF HIER GEWARTET WIRD, UND WARUM GENAU DARAUF ──
+    //
+    // NICHT auf die HTTP-Antwort von `generate`. Das ist ein SSE-Endpunkt: die
+    // Antwort feuert, sobald `flushHeaders()` laeuft — also am ANFANG. Der Lauf
+    // vom 10.08. meldete „Generate: 200 nach 0 s" und prueft dann sofort die
+    // Flaeche, auf der die Generierung noch gar nicht angekommen war.
+    //
+    // Und der Filter trennt ALT von NEU. „N elements, M connections" allein
+    // passt auf jede Karte, auch auf eine laengst angewandte — deshalb griff
+    // `.first()` die alte `Applied`-Karte, die per `canApply` gar keinen
+    // Apply-Knopf traegt. Erst BEIDE Fehler zusammen erzeugten das Bild; mit
+    // nur einem waere der Lauf in einen ehrlichen Timeout gelaufen.
+    //
+    // Der Status im Kartenkopf ist der Unterschied: `STATUS_STYLES` schreibt
+    // „Validated" | „Draft" fuer anwendbar, „Applied" fuer erledigt
+    // (ProposalCard:9-14). Vorbild ist `chain-walkthrough.spec.ts:137` — dort
+    // wird auf ein Element gewartet, das es vor dem Klick NICHT gab.
+    // Der Status wird als KIND-KNOTEN gesucht, nicht als Zeichenkette:
+    // `textContent` klebt die Spans ohne Trenner aneinander
+    // („…Data ProtectionValidated86% confidence…"), weshalb ein `\bValidated\b`
+    // nie trifft — die Wortgrenze fehlt. Gemessen am 10.08.; visuell sind die
+    // Felder durch `gap-2` getrennt, im Text nicht.
     const cardHead = page
       .getByRole('button')
       .filter({ hasText: /\d+ elements?, \d+ connections?/i })
+      .filter({ has: page.getByText(/^(Validated|Draft)$/) })
       .first();
     await expect(
       cardHead,
-      'Der Vorschlag lieferte nichts Anwendbares — die Server-Antworten oben sagen, warum',
+      'Kein ANWENDBARER Vorschlag erschienen (Validated oder Draft).\n' +
+        '  Eine bereits angewandte Karte zaehlt hier nicht — sie traegt keinen\n' +
+        '  Apply-Knopf. Die Server-Antworten oben sagen, was der Lauf geliefert hat.',
     ).toBeVisible({ timeout: 300_000 });
     line(`  Vorschlag nach ${Math.round((Date.now() - started) / 1000)} s: ` +
       `„${((await cardHead.innerText()) || '').replace(/\s+/g, ' ').trim().slice(0, 90)}"`);
@@ -326,9 +382,9 @@ test.describe('Kette — Remediation', () => {
     await page.waitForTimeout(5_000);
 
     // ── 3. DER KERN: trägt die Anforderung jetzt ein Element? ────────────
-    const after = await gapCount();
+    const after = await uncovered();
     line(`\n════ Wirkung ════`);
-    line(`  Lücken vorher: ${before}   ·   nachher: ${after}`);
+    line(`  Ungedeckt vorher: ${before}   ·   nachher: ${after}`);
 
     if (failures.length > 0) {
       line(`\n  ⚠ Server-Fehler:`);
@@ -340,12 +396,13 @@ test.describe('Kette — Remediation', () => {
     // und genau der ist der Gegenstand dieser Station.
     expect(
       after,
-      `Die Lücken-Zahl ist nicht gesunken (${before} → ${after}).\n` +
-        '  Ein Element mag entstanden sein, aber es haengt nicht an der ausloesenden\n' +
-        '  Anforderung — der Rueckschluss aus THE-568 greift am Klick nicht.',
+      `Die Zahl der UNGEDECKTEN Anforderungen ist nicht gesunken (${before} → ${after}).\n` +
+        '  Ein Element ist entstanden, aber es haengt nicht an der ausloesenden\n' +
+        '  Anforderung — der Rueckschluss aus THE-568 greift am Klick nicht.\n' +
+        '  (Der STATUS bleibt absichtlich offen; gemessen wird `summary.unlinked`.)',
     ).toBeLessThan(before);
 
-    line(`  ⇒ ${before - after} Lücke(n) geschlossen — die Anforderung trägt ein Element.\n`);
+    line(`  ⇒ ${before - after} Anforderung(en) tragen jetzt ihre Maßnahme.\n`);
     expect(failures, `Server-Fehler:\n${failures.join('\n')}`).toHaveLength(0);
   });
 });
