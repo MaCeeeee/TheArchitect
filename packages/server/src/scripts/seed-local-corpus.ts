@@ -14,6 +14,7 @@ dotenv.config();
 
 import { upsertCorpusRegulation, isCorpusConfigured, getCorpusConnection } from '../services/corpusClient.service';
 import { computeVersionHash } from '../utils/regulationVersion';
+import { buildRegulationKey } from '@thearchitect/shared';
 
 interface SeedPara {
   source: string;
@@ -69,7 +70,10 @@ async function main() {
   await getCorpusConnection().asPromise();
   let inserted = 0;
   for (const p of SEED) {
-    const regulationKey = `${p.source}:${p.paragraphNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+    // Kanonisch statt inline nachgebaut (THE-653): dieselbe Funktion wie der
+    // Crawler — sonst weicht der lokale Seed vom echten Korpus ab, sobald sich
+    // die Normalisierung ändert.
+    const regulationKey = buildRegulationKey(p.source, p.paragraphNumber);
     const res = await upsertCorpusRegulation({
       regulationKey,
       versionHash: computeVersionHash(p.fullText),

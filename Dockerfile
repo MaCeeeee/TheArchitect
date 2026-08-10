@@ -14,6 +14,12 @@ RUN npm ci
 COPY packages/shared/ packages/shared/
 COPY packages/server/ packages/server/
 COPY packages/client/ packages/client/
+# Nur fuer das Tor `emptyMeasurement` (THE-653): es prueft, dass jede E2E-Spec
+# mit Null-Zusicherung einen positiven Nenner traegt — dafuer muss es die
+# Specs SEHEN. Ohne diese Zeile faende es null Dateien, und ein leerer Scan
+# ist nach seiner eigenen Regel kein Bestehen, sondern ein Abbruch. Die Specs
+# werden nicht gebaut und landen nicht im Production-Image.
+COPY e2e/ e2e/
 
 # Build shared (force to ignore any stale tsbuildinfo), copy to node_modules, then server + client
 ARG VITE_GOOGLE_CLIENT_ID

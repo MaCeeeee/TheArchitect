@@ -70,6 +70,10 @@ test.describe('Kette — die menschlichen Tore', () => {
       _id: string; title: string; linkedElementIds?: string[];
       gates?: { covered?: { state: string; setBy: string } };
     }> = reqs?.data?.items ?? [];
+    // Der NENNER vor jeder Null-Zusicherung (Tor `emptyMeasurement`, THE-653):
+    // dieser Lauf behauptet spaeter „covered ist kein Button" ueber einen
+    // Zaehler — das gilt nur, wenn ueberhaupt etwas gelesen wurde.
+    expect(items.length, 'Keine Anforderungen gelesen — die Abfrage stimmt nicht').toBeGreaterThan(0);
 
     const target = items.find(
       (r) => r.gates?.covered?.state === 'yes' && (r.linkedElementIds ?? []).length > 0,

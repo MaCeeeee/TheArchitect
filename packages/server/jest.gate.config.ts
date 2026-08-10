@@ -42,6 +42,14 @@ const GATE_SUITES = [
   // Bricht die Invariante, findet der Rückschluss die Anforderung nicht mehr,
   // und zwar STILL: der Vorschlag entsteht, das Element auch, die Lücke bleibt.
   'normSectionAnchor',
+  // Kein Produktcode baut Norm-/Sektions-Schlüssel von Hand — dreimal in einer
+  // Woche entstand genau so ein stiller Bug (THE-600/643/645). Statischer
+  // Quelltext-Scan mit Umkehrprobe (THE-653).
+  'canonicalKey',
+  // Wer „nichts gefunden" behauptet, muss belegen, dass er etwas angesehen
+  // hat: jede E2E-Spec mit Null-Zusicherung braucht einen positiven Nenner
+  // (THE-653). Braucht e2e/ im Build-Kontext — das Dockerfile kopiert es.
+  'emptyMeasurement',
   // Mensch-Übereinstimmung des Paar-Richters (THE-382)
   'pairAgreement',
 ];
