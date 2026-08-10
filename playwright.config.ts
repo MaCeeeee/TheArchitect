@@ -35,7 +35,9 @@ export default defineConfig({
   // Wiederholen ohnehin ein zweites Projekt erzeugt.
   retries: 0,
   // Die Kette ruft Modelle auf; einzelne Schritte dauern echte Minuten.
-  timeout: 300_000,
+  // Der Remediations-Lauf ruft das Modell fuer jede Luecke — 5 min reichten
+  // nicht, und ein erschoepftes Zeitbudget sieht aus wie ein Produktfehler.
+  timeout: 600_000,
   expect: { timeout: 30_000 },
   reporter: [['list'], ['html', { outputFolder: 'e2e-report', open: 'never' }]],
   use: {

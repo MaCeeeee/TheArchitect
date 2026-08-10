@@ -65,6 +65,14 @@ test.describe('Kette — Remediation', () => {
         line(`  ⚠ ${f}`);
       }
     });
+    // Jede Remediations-Antwort zeigen. Der erste Lauf nach dem Fix lief 5 min
+    // ins Leere, ohne dass sichtbar war, ob der Aufruf ueberhaupt stattfand.
+    page.on('response', async (r) => {
+      const u = new URL(r.url()).pathname;
+      if (/remediation/.test(u)) {
+        line(`  → ${r.request().method()} ${u}: ${r.status()} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+      }
+    });
     // Und die Antwort der Pipeline-Aufnahme immer zeigen — sie ist der Schritt,
     // an dem der erste Lauf scheiterte.
     page.on('response', async (r) => {
@@ -185,7 +193,22 @@ test.describe('Kette — Remediation', () => {
 
     line(`\n  ⚠ Ab hier laufen echte Modellaufrufe.`);
     const started = Date.now();
-    await generate.click();
+    const [genRes] = await Promise.all([
+      page
+        .waitForResponse((r) => /remediation/.test(new URL(r.url()).pathname) && r.request().method() === 'POST', {
+          timeout: 420_000,
+        })
+        .catch(() => null),
+      generate.click(),
+    ]);
+    if (!genRes) {
+      throw new Error(
+        'Der Klick auf „Generate AI Fix" hat KEINEN Serveraufruf ausgeloest.\n' +
+          '  Der Knopf ist da und zaehlt richtig — aber er tut nichts. Das ist ein\n' +
+          '  eigener Befund, kein Zeitproblem.',
+      );
+    }
+    line(`  Generate: ${genRes.status()} nach ${Math.round((Date.now() - started) / 1000)} s`);
 
     // Der Vorschlag braucht das Modell — grosszuegig warten, aber auf ein
     // ERGEBNIS, nicht auf eine Zeitspanne.
