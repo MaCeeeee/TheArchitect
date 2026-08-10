@@ -12,6 +12,7 @@
 import mongoose from 'mongoose';
 import { createHash } from 'crypto';
 import {
+  buildRegulationKey,
   deriveNormWorkId,
   lawSourceFromRegulationKey,
   NORM_ONTOLOGY,
@@ -96,7 +97,21 @@ export function regulationsToNormView(
   const seen = new Set<string>();
   const sections: NormSectionView[] = [];
   for (const r of regs) {
-    const eId = r.regulationKey ?? `${source}:${r.paragraphNumber}`;
+    // ── EIN PARAGRAPH, EIN SCHLÜSSEL (THE-645) ──
+    //
+    // Der Fallback baute den Schlüssel früher von Hand: `${source}:${para}`.
+    // Damit hiess derselbe Artikel `dsgvo:art-32`, wenn er aus dem Korpus kam
+    // (dort schreibt der Crawler den `regulationKey` über genau diese
+    // Funktion), und `dsgvo:Art. 32`, wenn er aus einer Projekt-Kopie kam.
+    //
+    // Die Folge war kein Fehler, sondern Stille: Der Remediations-Rückschluss
+    // suchte den einen Schlüssel und fand den anderen nicht — die Lücke blieb
+    // offen, obwohl die Maßnahme existierte. `regulation-key.ts` nennt diese
+    // Invariante selbst verbindlich (ADR-0001).
+    //
+    // Ein vorhandener `regulationKey` gewinnt weiterhin: der Crawler ist die
+    // Wahrheit, unsere Ableitung nur der Ersatz, wenn er fehlt.
+    const eId = r.regulationKey ?? buildRegulationKey(source, r.paragraphNumber);
     if (seen.has(eId)) continue;
     seen.add(eId);
     sections.push({
