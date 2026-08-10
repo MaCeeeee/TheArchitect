@@ -38,6 +38,10 @@ const GATE_SUITES = [
   'canaries',
   // Kohärenz-Tor des Handlungs-Katalogs (THE-438)
   'actionMetrics',
+  // Ein Paragraph, ein Schlüssel — quer über Korpus und Projekt-Kopie (THE-645).
+  // Bricht die Invariante, findet der Rückschluss die Anforderung nicht mehr,
+  // und zwar STILL: der Vorschlag entsteht, das Element auch, die Lücke bleibt.
+  'normSectionAnchor',
   // Mensch-Übereinstimmung des Paar-Richters (THE-382)
   'pairAgreement',
 ];
