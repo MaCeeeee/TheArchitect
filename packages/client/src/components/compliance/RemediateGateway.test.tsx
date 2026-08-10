@@ -40,7 +40,8 @@ const remState = {
   generate,
   isGenerating: false,
   isApplying: false,
-  generationProgress: null,
+  generationProgress: null as string | null,
+  error: null as string | null,
   applyProposal: vi.fn(),
   rollbackProposal: vi.fn(),
   editProposal: vi.fn(),
@@ -83,6 +84,8 @@ const scope = (over: Partial<Record<string, unknown>> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  remState.error = null;
+  remState.isGenerating = false;
 });
 
 describe('RemediateGateway — eine Zählquelle (THE-638)', () => {
@@ -131,5 +134,50 @@ describe('RemediateGateway — eine Zählquelle (THE-638)', () => {
     render(<RemediateGateway />);
     await waitFor(() => expect(scopeMock).toHaveBeenCalledWith('p1', 'corpus:dsgvo'));
     expect(standardsAPI.getMappings).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * THE-644 — ein Fehlschlag ist zu SEHEN.
+ *
+ * Der Server meldete den Cast-Fehler als `data: {"type":"error"}` in einem
+ * SSE-Strom (HTTP 200, weil `flushHeaders()` vorher lief). Der Store setzte
+ * `error` korrekt — nur diese Flaeche las ihn nie aus. Fuer den Nutzer
+ * passierte fuenf Minuten lang schlicht nichts.
+ *
+ * Die Suite pinnt beide Richtungen: der Fehler erscheint, wenn einer da ist,
+ * UND die Flaeche bleibt still, wenn keiner da ist — sonst wuerde ein
+ * dauerhaft sichtbarer Kasten den Test auch bestehen.
+ */
+describe('RemediateGateway — ein Fehlschlag ist sichtbar (THE-644)', () => {
+  test('die Server-Meldung erscheint im Klartext auf der Fläche', async () => {
+    scopeMock.mockResolvedValue(scope() as never);
+    remState.error =
+      'RemediationProposal validation failed: sourceRef.standardId: ' +
+      'Cast to ObjectId failed for value "corpus:dsgvo" (type string)';
+    render(<RemediateGateway />);
+
+    // Im Klartext, nicht als generisches „Something went wrong": die Meldung
+    // ist das Einzige, was den Nutzer zur Ursache fuehrt.
+    expect(await screen.findByText(/cast to objectid failed/i)).toBeInTheDocument();
+  });
+
+  test('der Fehler-Kasten steht NICHT da, wenn nichts schiefging', async () => {
+    scopeMock.mockResolvedValue(scope() as never);
+    render(<RemediateGateway />);
+
+    await screen.findByRole('button', { name: /generate ai fix/i });
+    expect(screen.queryByTestId('remediate-error')).not.toBeInTheDocument();
+  });
+
+  test('der Fehler bleibt sichtbar, waehrend der Knopf wieder bereit steht', async () => {
+    // `isGenerating` faellt beim Fehler zurueck (remediationStore:122) — genau
+    // dann darf der Knopf nicht so aussehen, als waere nie etwas passiert.
+    scopeMock.mockResolvedValue(scope() as never);
+    remState.error = 'norm not found';
+    render(<RemediateGateway />);
+
+    expect(await screen.findByTestId('remediate-error')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /generate ai fix/i })).toBeInTheDocument();
   });
 });

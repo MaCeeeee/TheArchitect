@@ -29,6 +29,12 @@ import { login, readCredentials } from './support/login';
  * geteilte Massnahme.
  *
  * Braucht ein Projekt mit Ketten-Anforderungen: `E2E_PROJECT_ID`.
+ *
+ * ── ZWEI TESTS, ZWEI PREISE ──
+ *
+ * Der erste (THE-644) ist billig: ein einzelner Aufruf, kein Modell, kein
+ * Schreibzugriff. Er prueft die Grenze zwischen „vorab entscheidbar" und „erst
+ * im Strom". Der zweite ist der teure Durchstich mit echten Modellaufrufen.
  */
 
 const line = (s: string) => console.log(s);
@@ -52,6 +58,60 @@ const LAW = process.env.E2E_LAW ?? 'DSGVO';
 
 test.describe('Kette — Remediation', () => {
   test.skip(!PROJECT_ID, 'E2E_PROJECT_ID fehlt — erst chain-walkthrough.spec.ts laufen lassen');
+
+  /**
+   * THE-644 — die Umkehrprobe zum fuenf Minuten langen Schweigen.
+   *
+   * Am 10.08. antwortete `generate` auf einen Cast-Fehler mit HTTP 200 und
+   * `{"type":"error"}` im SSE-Rumpf. Das ist bei SSE unvermeidlich, SOBALD der
+   * Strom offen ist — der Statuscode ist dann raus. Vermeidbar ist es davor.
+   *
+   * Dieser Test prueft genau diese Grenze und kostet weder Modellaufruf noch
+   * Schreibzugriff: eine Norm, die es nicht gibt, ist ohne den Strom
+   * entscheidbar und MUSS mit 404 abgewiesen werden. Bleibt hier eine 200
+   * stehen, ist die Vorab-Pruefung weg — und jeder kuenftige Fehlschlag
+   * derselben Klasse wieder unsichtbar.
+   *
+   * Steht VOR dem teuren Lauf, damit er auch dann faellt, wenn jener abbricht.
+   */
+  test('ein vorab entscheidbarer Fehler kommt als 404 — nicht als 200 mit Fehlertext', async ({ page }) => {
+    await login(page, readCredentials());
+
+    // Der Token aus dem persistierten Auth-Store — dieselbe Quelle, aus der
+    // der Axios-Interceptor ihn nimmt (api.ts:15).
+    const token = await page.evaluate(() => {
+      const raw = localStorage.getItem('thearchitect-auth');
+      return raw ? (JSON.parse(raw)?.state?.token ?? '') : '';
+    });
+    expect(token, 'Nach der Anmeldung liegt kein Token im Auth-Store').not.toBe('');
+
+    const res = await page.request.post(
+      `/api/projects/${PROJECT_ID}/remediation/generate`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        data: {
+          context: {
+            source: 'compliance',
+            // Ein Schluessel im gueltigen FORMAT, den es aber nicht gibt: so
+            // faellt er in die Norm-Aufloesung und nicht schon in die
+            // Zod-Pruefung, die ohnehin 400 liefern wuerde.
+            standardId: 'corpus:dieses-gesetz-gibt-es-nicht',
+            gapSectionIds: ['art-1'],
+          },
+        },
+      },
+    );
+
+    const body = (await res.text()).slice(0, 200);
+    line(`\n  Unbekannte Norm → ${res.status()} ${body}`);
+    expect(
+      res.status(),
+      `Der Server antwortete ${res.status()} statt 404. Ist es eine 200, steht der\n` +
+        '  Fehler wieder nur im Rumpf — und ein Lauscher auf 4xx/5xx schweigt dazu,\n' +
+        '  genau wie beim Cast-Fehler am 10.08. (THE-644).',
+    ).toBe(404);
+    expect(body, 'Die 404 nennt nicht, WELCHE Norm fehlt').toContain('norm not found');
+  });
 
   test('nimmt die Norm in die Pipeline, erzeugt ein Element und verlinkt es zurück', async ({ page }) => {
     // Server-Fehler SOFORT ausgeben, nicht erst am Ende sammeln: Bricht der
