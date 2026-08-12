@@ -1,7 +1,14 @@
 import { Policy } from '../models/Policy';
 import { PolicyViolation } from '../models/PolicyViolation';
 import { runCypher } from '../config/neo4j';
-import { evaluateRule, elementMatchesScope, getFieldValue } from './compliance.service';
+import {
+  evaluateRule,
+  elementMatchesScope,
+  getFieldValue,
+  coerceNeo4jNumber,
+  checkCompliance,
+  ComplianceReport,
+} from './compliance.service';
 import { syncViolationToNeo4j, removeViolationFromNeo4j } from './policy-graph.service';
 import { getIO } from '../websocket/socketServer';
 
@@ -40,7 +47,7 @@ async function loadElement(elementId: string): Promise<Neo4jElement | null> {
     type: r.get('type'),
     layer: r.get('layer'),
     domain: r.get('domain'),
-    maturity: r.get('maturity')?.toNumber?.() || 1,
+    maturity: coerceNeo4jNumber(r.get('maturity'), 1),
     riskLevel: r.get('riskLevel') || 'low',
     status: r.get('status') || 'current',
     description: r.get('description') || '',
@@ -96,7 +103,7 @@ async function loadProjectElements(projectId: string): Promise<Neo4jElement[]> {
     type: r.get('type'),
     layer: r.get('layer'),
     domain: r.get('domain'),
-    maturity: r.get('maturity')?.toNumber?.() || 1,
+    maturity: coerceNeo4jNumber(r.get('maturity'), 1),
     riskLevel: r.get('riskLevel') || 'low',
     status: r.get('status') || 'current',
     description: r.get('description') || '',
@@ -345,6 +352,109 @@ export async function evaluateAllForPolicy(
   }
 
   emitViolationUpdate(projectId);
+}
+
+/**
+ * Run Compliance Check (Compliance Dashboard) — führt checkCompliance aus
+ * UND persistiert das Ergebnis als PolicyViolations. Vorher war der Check
+ * eine reine In-Memory-Rechnung: das Dashboard zeigte N Violations, aber
+ * GET /:projectId/violations (liest die PolicyViolation-Collection) lieferte
+ * 0, weil nur Element-CRUD und Policy-Save persistieren.
+ *
+ * Sync-Semantik: fehlschlagende Rules werden geupsertet (Identität
+ * policyId+elementId+ruleId, THE-442); offene Violations evaluierter
+ * Policies, die der Check nicht mehr meldet, werden resolved.
+ */
+export async function runAndPersistComplianceCheck(projectId: string): Promise<ComplianceReport> {
+  const report = await checkCompliance(projectId);
+
+  const policies = await Policy.find({
+    projectId,
+    enabled: true,
+    status: { $in: ['active', undefined, null] },
+  });
+  const policyById = new Map(policies.map((p) => [p._id.toString(), p]));
+  const now = new Date();
+  const failing = new Set<string>();
+
+  for (const v of report.violations) {
+    const policy = policyById.get(v.policyId);
+    // Built-in-Checks (policyId 'builtin-*') haben keine ruleId und kein
+    // Policy-Dokument — die bleiben Report-only.
+    if (!policy || !v.ruleId) continue;
+    failing.add(`${v.policyId}|${v.elementId}|${v.ruleId}`);
+
+    const docLink = deriveDocLink(policy);
+    await PolicyViolation.findOneAndUpdate(
+      { policyId: policy._id, elementId: v.elementId, ruleId: v.ruleId },
+      {
+        $set: {
+          projectId,
+          ruleId: v.ruleId,
+          violationType: 'violation',
+          severity: policy.severity,
+          enforcementLevel: policy.enforcementLevel,
+          message: v.message,
+          field: v.field,
+          resourcePath: `/elements/${v.elementId}/${v.field}`,
+          ...(docLink ? { docLink } : {}),
+          currentValue: v.currentValue,
+          expectedValue: v.expectedValue,
+          operator: v.operator,
+          status: 'open',
+          detectedAt: now,
+          resolvedAt: null,
+          resolvedBy: null,
+          details: `Rule: ${v.field} ${v.operator} ${JSON.stringify(v.expectedValue)}`,
+        },
+      },
+      { upsert: true },
+    );
+
+    try {
+      await syncViolationToNeo4j(v.policyId, v.elementId, policy.severity);
+    } catch (err) {
+      console.error('[PolicyEval] Failed to sync violation to Neo4j:', err);
+    }
+  }
+
+  // Offene Violations evaluierter Policies, die der Check nicht mehr als
+  // fehlschlagend meldet (Element gefixt, Rule geändert/entfernt) → resolven.
+  const open = await PolicyViolation.find({
+    projectId,
+    status: 'open',
+    policyId: { $in: policies.map((p) => p._id) },
+  }).select('policyId elementId ruleId');
+
+  for (const v of open) {
+    const key = `${v.policyId.toString()}|${v.elementId}|${v.ruleId}`;
+    if (failing.has(key)) continue;
+
+    await PolicyViolation.updateOne(
+      { _id: v._id },
+      {
+        $set: {
+          status: 'resolved',
+          resolvedAt: now,
+          details: 'Auto-resolved: compliance check no longer reports this rule as failing',
+        },
+      },
+    );
+
+    const remaining = await PolicyViolation.countDocuments({
+      policyId: v.policyId, elementId: v.elementId, status: 'open',
+    });
+    if (remaining === 0) {
+      try {
+        await removeViolationFromNeo4j(v.policyId.toString(), v.elementId);
+      } catch (err) {
+        console.error('[PolicyEval] Failed to remove violation from Neo4j:', err);
+      }
+    }
+  }
+
+  emitViolationUpdate(projectId);
+  return report;
 }
 
 /**
