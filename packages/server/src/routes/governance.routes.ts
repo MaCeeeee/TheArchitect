@@ -8,9 +8,8 @@ import { ApprovalRequest } from '../models/ApprovalRequest';
 import { Policy, ensureRuleIds } from '../models/Policy';
 import { PolicyViolation } from '../models/PolicyViolation';
 import { AuditLog } from '../models/AuditLog';
-import { checkCompliance } from '../services/compliance.service';
+import { evaluateAllForPolicy, cleanupCompliancePolicySelfViolations, runAndPersistComplianceCheck } from '../services/policy-evaluation.service';
 import { syncPolicyToNeo4j, syncPolicyInfluenceRelationships, removePolicyFromNeo4j } from '../services/policy-graph.service';
-import { evaluateAllForPolicy, cleanupCompliancePolicySelfViolations } from '../services/policy-evaluation.service';
 import { SEED_POLICIES } from '../data/seed-policies';
 
 const router = Router();
@@ -309,7 +308,8 @@ router.delete(
 
 // ─── Compliance ───
 
-// Run compliance check
+// Run compliance check — persistiert das Ergebnis als PolicyViolations,
+// damit Dashboard-Zahl und GET /:projectId/violations dieselbe Wahrheit zeigen.
 router.get(
   '/:projectId/compliance',
   requireProjectAccess('viewer'),
@@ -317,7 +317,7 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const projectId = String(req.params.projectId);
-      const report = await checkCompliance(projectId);
+      const report = await runAndPersistComplianceCheck(projectId);
       res.json({ success: true, data: report });
     } catch (err) {
       console.error('Compliance check error:', err);

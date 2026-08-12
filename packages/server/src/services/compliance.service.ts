@@ -12,6 +12,7 @@ export interface ComplianceViolation {
   category: string;
   message: string;
   field: string;
+  ruleId?: string; // Persistenz-Identität (THE-442); fehlt bei getBuiltInChecks
   currentValue: unknown;
   expectedValue: unknown;
   operator?: string; // THE-499: optional, damit getBuiltInChecks (setzt kein operator) unangetastet bleibt
@@ -59,16 +60,47 @@ export function computeComplianceScore(counts: SeverityCounts, maxPossible: numb
   return Math.max(0, Math.min(100, Math.round(((max - penalty) / max) * 100)));
 }
 
+/**
+ * Coerce a Neo4j numeric property to a JS number. The driver returns three
+ * shapes depending on how the value was stored: a Neo4j Integer object
+ * (has toNumber()), a plain JS number (FLOAT properties — e.g.
+ * maturityLevel=3.0 written by the CSV import, since plain JS numbers are
+ * stored as floats), or null. The old `?.toNumber?.() || fallback` chain
+ * silently discarded floats, so every float-stored maturity collapsed to 1
+ * and maturity rules (gte 2) failed across the board.
+ */
+export function coerceNeo4jNumber(raw: unknown, fallback: number): number {
+  if (raw == null) return fallback;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : fallback;
+  const maybe = raw as { toNumber?: () => number };
+  if (typeof maybe.toNumber === 'function') return maybe.toNumber();
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 // Run compliance check against all enabled policies
 export async function checkCompliance(projectId: string): Promise<ComplianceReport> {
-  const policies = await Policy.find({ projectId, enabled: true });
+  const policies = await Policy.find({
+    projectId,
+    enabled: true,
+    status: { $in: ['active', undefined, null] },
+  });
 
+  // Same scope exclusions as loadProjectElements (policy-evaluation.service):
+  // policy nodes, compliance-policy projections and motivation-layer elements
+  // are never evaluated by the persistence paths — the report must count the
+  // same population, otherwise the dashboard score and the violations list
+  // diverge.
   const records = await runCypher(
     `MATCH (e:ArchitectureElement {projectId: $projectId})
+     WHERE NOT (e.metadataJson CONTAINS '"isPolicyNode":true' OR e.metadataJson CONTAINS '"isPolicyNode": true')
+       AND NOT (e.metadataJson CONTAINS '"source":"compliance-policy"' OR e.metadataJson CONTAINS '"source": "compliance-policy"')
+       AND e.sourcePolicyId IS NULL
+       AND e.layer <> 'motivation'
      RETURN e.id as id, e.name as name, e.type as type, e.layer as layer,
             e.togafDomain as domain, e.maturityLevel as maturity,
             e.riskLevel as riskLevel, e.status as status,
-            e.description as description, e.metadata as metadata`,
+            e.description as description, e.metadataJson as metadataJson`,
     { projectId }
   );
 
@@ -78,16 +110,25 @@ export async function checkCompliance(projectId: string): Promise<ComplianceRepo
     type: r.get('type'),
     layer: r.get('layer'),
     domain: r.get('domain'),
-    maturity: r.get('maturity')?.toNumber?.() || 1,
+    maturity: coerceNeo4jNumber(r.get('maturity'), 1),
     riskLevel: r.get('riskLevel') || 'low',
     status: r.get('status') || 'current',
     description: r.get('description') || '',
-    metadata: r.get('metadata') || {},
+    metadata: (() => {
+      const raw = r.get('metadataJson');
+      if (!raw) return {};
+      if (typeof raw === 'string') try { return JSON.parse(raw); } catch { return {}; }
+      return raw;
+    })(),
   }));
 
   const violations: ComplianceViolation[] = [];
+  const now = new Date();
 
   for (const policy of policies) {
+    if (policy.effectiveFrom && policy.effectiveFrom > now) continue;
+    if (policy.effectiveUntil && policy.effectiveUntil < now) continue;
+
     const matchingElements = elements.filter((el) => elementMatchesScope(el, policy));
 
     for (const el of matchingElements) {
@@ -104,6 +145,7 @@ export async function checkCompliance(projectId: string): Promise<ComplianceRepo
             category: policy.category,
             message: rule.message,
             field: rule.field,
+            ruleId: rule.ruleId,
             currentValue: fieldValue,
             expectedValue: rule.value,
             operator: rule.operator,
