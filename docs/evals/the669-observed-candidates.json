@@ -1,0 +1,800 @@
+{
+  "generatedAt": "2026-08-12",
+  "promptVersion": "tp-4",
+  "ontologyVersion": "1.10.0",
+  "totals": {
+    "docs": 1746,
+    "tp4": 1746,
+    "ohneRolle": 422,
+    "beobachtet": 67
+  },
+  "candidates": [
+    {
+      "candidate": "the commission",
+      "beleg": 6,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 2,
+        "data-act": 1,
+        "mdr": 3
+      },
+      "rawVariants": [
+        "the Commission",
+        "The Commission"
+      ],
+      "regulationKeys": [
+        "ai-act-en:art-107",
+        "ai-act-en:art-108",
+        "data-act-en:art-41",
+        "mdr-en:art-106",
+        "mdr-en:art-116",
+        "mdr-de:art-79"
+      ]
+    },
+    {
+      "candidate": "commission",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1,
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Commission"
+      ],
+      "regulationKeys": [
+        "ai-act-en:art-84",
+        "mdr-en:art-79"
+      ]
+    },
+    {
+      "candidate": "kommission (commission)",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "data-act": 1,
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Kommission (Commission)"
+      ],
+      "regulationKeys": [
+        "data-act-de:art-35",
+        "mdr-de:art-26"
+      ]
+    },
+    {
+      "candidate": "investigator",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 2
+      },
+      "rawVariants": [
+        "investigator"
+      ],
+      "regulationKeys": [
+        "mdr-en:art-64",
+        "mdr-en:art-68"
+      ]
+    },
+    {
+      "candidate": "sponsor",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 2
+      },
+      "rawVariants": [
+        "Sponsor"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-74",
+        "mdr-de:art-80"
+      ]
+    },
+    {
+      "candidate": "europäische normungsorganisationen und nationale normungsorganisationen",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 2
+      },
+      "rawVariants": [
+        "europäische Normungsorganisationen und nationale Normungsorganisationen"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-3",
+        "standardisation-de:art-4"
+      ]
+    },
+    {
+      "candidate": "european standardisation organisations and national standardisation bodies",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 2
+      },
+      "rawVariants": [
+        "European standardisation organisations and national standardisation bodies"
+      ],
+      "regulationKeys": [
+        "standardisation-en:art-3",
+        "standardisation-en:art-4"
+      ]
+    },
+    {
+      "candidate": "european standardisation organisations",
+      "beleg": 2,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 2
+      },
+      "rawVariants": [
+        "European standardisation organisations"
+      ],
+      "regulationKeys": [
+        "standardisation-en:art-5",
+        "standardisation-en:art-24"
+      ]
+    },
+    {
+      "candidate": "providers and deployers of ai systems (through 'placing on the market', 'putting into service', 'use')",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "providers and deployers of AI systems (through 'placing on the market', 'putting into service', 'use')"
+      ],
+      "regulationKeys": [
+        "ai-act-en:art-5"
+      ]
+    },
+    {
+      "candidate": "a general-purpose ai model",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "A general-purpose AI model"
+      ],
+      "regulationKeys": [
+        "ai-act-en:art-51"
+      ]
+    },
+    {
+      "candidate": "microenterprises",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "Microenterprises"
+      ],
+      "regulationKeys": [
+        "ai-act-en:art-63"
+      ]
+    },
+    {
+      "candidate": "providers and operators of ai systems (manufacturers, deployers, law enforcement authorities)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "providers and operators of AI systems (manufacturers, deployers, law enforcement authorities)"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-5"
+      ]
+    },
+    {
+      "candidate": "die kommission (commission)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "die Kommission (Commission)"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-35"
+      ]
+    },
+    {
+      "candidate": "das büro für künstliche intelligenz (ai office)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "Das Büro für Künstliche Intelligenz (AI Office)"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-56"
+      ]
+    },
+    {
+      "candidate": "kleinstunternehmen (micro-enterprises)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "Kleinstunternehmen (micro-enterprises)"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-63"
+      ]
+    },
+    {
+      "candidate": "das wissenschaftliche gremium (scientific advisory board)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "das wissenschaftliche Gremium (scientific advisory board)"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-90"
+      ]
+    },
+    {
+      "candidate": "commission / komission",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "ai-act": 1
+      },
+      "rawVariants": [
+        "Commission / Komission"
+      ],
+      "regulationKeys": [
+        "ai-act-de:art-108"
+      ]
+    },
+    {
+      "candidate": "all parties involved, including destination providers of data processing services",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "data-act": 1
+      },
+      "rawVariants": [
+        "all parties involved, including destination providers of data processing services"
+      ],
+      "regulationKeys": [
+        "data-act-en:art-27"
+      ]
+    },
+    {
+      "candidate": "open interoperability specifications and harmonised standards (as technical objects subject to substantive design requirements)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "data-act": 1
+      },
+      "rawVariants": [
+        "open interoperability specifications and harmonised standards (as technical objects subject to substantive design requirements)"
+      ],
+      "regulationKeys": [
+        "data-act-en:art-35"
+      ]
+    },
+    {
+      "candidate": "ics_third_party_provider",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "data-act": 1
+      },
+      "rawVariants": [
+        "ics_third_party_provider"
+      ],
+      "regulationKeys": [
+        "data-act-de:art-29"
+      ]
+    },
+    {
+      "candidate": "open-source software stewards",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "cra": 1
+      },
+      "rawVariants": [
+        "open-source software stewards"
+      ],
+      "regulationKeys": [
+        "cra-en:art-24"
+      ]
+    },
+    {
+      "candidate": "notifying authority",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "cra": 1
+      },
+      "rawVariants": [
+        "notifying authority"
+      ],
+      "regulationKeys": [
+        "cra-en:art-37"
+      ]
+    },
+    {
+      "candidate": "datenschutzbeauftragter (data protection officer)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "dsgvo": 1
+      },
+      "rawVariants": [
+        "Datenschutzbeauftragter (Data Protection Officer)"
+      ],
+      "regulationKeys": [
+        "dsgvo:art-39"
+      ]
+    },
+    {
+      "candidate": "the committee (ausschuss)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "dsgvo": 1
+      },
+      "rawVariants": [
+        "the committee (Ausschuss)"
+      ],
+      "regulationKeys": [
+        "dsgvo:art-76"
+      ]
+    },
+    {
+      "candidate": "kirchen und religiöse vereinigungen oder gemeinschaften",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "dsgvo": 1
+      },
+      "rawVariants": [
+        "Kirchen und religiöse Vereinigungen oder Gemeinschaften"
+      ],
+      "regulationKeys": [
+        "dsgvo:art-91"
+      ]
+    },
+    {
+      "candidate": "data protection officer",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "dsgvo": 1
+      },
+      "rawVariants": [
+        "data protection officer"
+      ],
+      "regulationKeys": [
+        "dsgvo-en:art-39"
+      ]
+    },
+    {
+      "candidate": "csirt benannt als koordinator, enisa",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "cra": 1
+      },
+      "rawVariants": [
+        "CSIRT benannt als Koordinator, ENISA"
+      ],
+      "regulationKeys": [
+        "cra-de:art-15"
+      ]
+    },
+    {
+      "candidate": "alle an der anwendung dieser verordnung beteiligten parteien; marktüberwachungsbehörden; kommission; mitgliedstaaten; notifizierte stellen; betroffene personen",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "cra": 1
+      },
+      "rawVariants": [
+        "Alle an der Anwendung dieser Verordnung beteiligten Parteien; Marktüberwachungsbehörden; Kommission; Mitgliedstaaten; notifizierte Stellen; betroffene Personen"
+      ],
+      "regulationKeys": [
+        "cra-de:art-63"
+      ]
+    },
+    {
+      "candidate": "person performing the interview / member of the investigating team",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "person performing the interview / member of the investigating team"
+      ],
+      "regulationKeys": [
+        "mdr-en:art-63"
+      ]
+    },
+    {
+      "candidate": "clinical investigator / sponsor",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "clinical investigator / sponsor"
+      ],
+      "regulationKeys": [
+        "mdr-en:art-66"
+      ]
+    },
+    {
+      "candidate": "members of the mdcg, its sub-groups, members of expert panels and expert laboratories, and experts and other third parties invited by the mdcg",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Members of the MDCG, its sub-groups, members of expert panels and expert laboratories, and experts and other third parties invited by the MDCG"
+      ],
+      "regulationKeys": [
+        "mdr-en:art-107"
+      ]
+    },
+    {
+      "candidate": "prüfungsteam (clinical trial team member conducting the informed consent discussion)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Prüfungsteam (clinical trial team member conducting the informed consent discussion)"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-63"
+      ]
+    },
+    {
+      "candidate": "legal representative of the incapacitated trial participant; investigator/trial conductor",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "legal representative of the incapacitated trial participant; investigator/trial conductor"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-64"
+      ]
+    },
+    {
+      "candidate": "prüfer (investigator/clinical trial investigator)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Prüfer (investigator/clinical trial investigator)"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-65"
+      ]
+    },
+    {
+      "candidate": "sponsor or person conducting the clinical trial",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "sponsor or person conducting the clinical trial"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-66"
+      ]
+    },
+    {
+      "candidate": "koordinierungsgruppe medizinprodukte",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Koordinierungsgruppe Medizinprodukte"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-105"
+      ]
+    },
+    {
+      "candidate": "members of the medical devices coordination group and its subgroups, members of expert bodies and specialist laboratories, experts and other third parties invited by the coordination group",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "mdr": 1
+      },
+      "rawVariants": [
+        "Members of the Medical Devices Coordination Group and its subgroups, members of expert bodies and specialist laboratories, experts and other third parties invited by the Coordination Group"
+      ],
+      "regulationKeys": [
+        "mdr-de:art-107"
+      ]
+    },
+    {
+      "candidate": "payment institution",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "psd2": 1
+      },
+      "rawVariants": [
+        "payment institution"
+      ],
+      "regulationKeys": [
+        "psd2-en:art-10"
+      ]
+    },
+    {
+      "candidate": "payment systems",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "psd2": 1
+      },
+      "rawVariants": [
+        "payment systems"
+      ],
+      "regulationKeys": [
+        "psd2-en:art-35"
+      ]
+    },
+    {
+      "candidate": "ics_provider",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "psd2": 1
+      },
+      "rawVariants": [
+        "ics_provider"
+      ],
+      "regulationKeys": [
+        "psd2-en:art-47"
+      ]
+    },
+    {
+      "candidate": "account information service provider",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "psd2": 1
+      },
+      "rawVariants": [
+        "account information service provider"
+      ],
+      "regulationKeys": [
+        "psd2-en:art-67"
+      ]
+    },
+    {
+      "candidate": "kontoinformationsdienstleister (account information service provider)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "psd2": 1
+      },
+      "rawVariants": [
+        "Kontoinformationsdienstleister (Account Information Service Provider)"
+      ],
+      "regulationKeys": [
+        "psd2-de:art-67"
+      ]
+    },
+    {
+      "candidate": "signatory",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "eidas": 1
+      },
+      "rawVariants": [
+        "signatory"
+      ],
+      "regulationKeys": [
+        "eidas-en:art-26"
+      ]
+    },
+    {
+      "candidate": "creator of the seal",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "eidas": 1
+      },
+      "rawVariants": [
+        "creator of the seal"
+      ],
+      "regulationKeys": [
+        "eidas-en:art-36"
+      ]
+    },
+    {
+      "candidate": "member states / authorities that would otherwise prohibit pseudonym use",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "eidas": 1
+      },
+      "rawVariants": [
+        "Member States / authorities that would otherwise prohibit pseudonym use"
+      ],
+      "regulationKeys": [
+        "eidas-de:art-5"
+      ]
+    },
+    {
+      "candidate": "europäische normungsorganisationen",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "europäische Normungsorganisationen"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-5"
+      ]
+    },
+    {
+      "candidate": "nationale normungsorganisationen",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "nationale Normungsorganisationen"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-6"
+      ]
+    },
+    {
+      "candidate": "the committee referred to in article 22(1)",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "the committee referred to in Article 22(1)"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-23"
+      ]
+    },
+    {
+      "candidate": "europäische normungsorganisationen, europäische organisationen von interessenträgern, kommission",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "europäische Normungsorganisationen, europäische Organisationen von Interessenträgern, Kommission"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-24"
+      ]
+    },
+    {
+      "candidate": "die kommission",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "Die Kommission"
+      ],
+      "regulationKeys": [
+        "standardisation-de:art-25"
+      ]
+    },
+    {
+      "candidate": "national standardisation bodies",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "National standardisation bodies"
+      ],
+      "regulationKeys": [
+        "standardisation-en:art-6"
+      ]
+    },
+    {
+      "candidate": "the commission's research facilities",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "standardisation": 1
+      },
+      "rawVariants": [
+        "The Commission's research facilities"
+      ],
+      "regulationKeys": [
+        "standardisation-en:art-9"
+      ]
+    },
+    {
+      "candidate": "electronic money institution",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "emoney": 1
+      },
+      "rawVariants": [
+        "electronic money institution"
+      ],
+      "regulationKeys": [
+        "emoney-en:art-7"
+      ]
+    },
+    {
+      "candidate": "esma, die kommission und die behörden der mitgliedstaaten",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "esg-rating": 1
+      },
+      "rawVariants": [
+        "ESMA, die Kommission und die Behörden der Mitgliedstaaten"
+      ],
+      "regulationKeys": [
+        "esg-rating-de:art-28"
+      ]
+    },
+    {
+      "candidate": "legal person that wishes to operate as an esg rating provider",
+      "beleg": 1,
+      "dubletteVon": null,
+      "laws": {
+        "esg-rating": 1
+      },
+      "rawVariants": [
+        "legal person that wishes to operate as an ESG rating provider"
+      ],
+      "regulationKeys": [
+        "esg-rating-en:art-4"
+      ]
+    }
+  ]
+}
