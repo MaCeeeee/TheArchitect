@@ -35,6 +35,8 @@ const MAX_TOKENS = 400;
 export interface Classification {
   labels: TypingLabels;
   confidence?: Partial<Record<TypingAxis, number>>;
+  /** THE-668: Beobachtung aus dem Freitext-Kanal — keine Achse, nur gezählt. */
+  partyRoleObserved?: string;
 }
 export type Classify = (c: TypingGoldenSet['cases'][number]) => Promise<Classification>;
 
@@ -47,7 +49,7 @@ export async function evaluateTyping(args: {
 }): Promise<TypingReport> {
   const evalCases: TypingEvalCase[] = [];
   for (const c of args.golden.cases) {
-    const { labels, confidence } = await args.classify(c);
+    const { labels, confidence, partyRoleObserved } = await args.classify(c);
     evalCases.push({
       caseId: c.caseId,
       source: c.source,
@@ -56,6 +58,7 @@ export async function evaluateTyping(args: {
       gold: c.labels,
       predicted: labels,
       confidence,
+      partyRoleObserved,
     });
   }
   return buildTypingReport(evalCases);
@@ -77,6 +80,15 @@ export function renderTypingReportMarkdown(report: TypingReport, meta: { golden:
   lines.push('');
   lines.push(`- Golden: \`${meta.golden}\` · Cases: **${report.total}**${meta.model ? ` · Modell: \`${meta.model}\`` : ''}`);
   lines.push(`- ⚠ Leakage-Caveat: wurde das Golden LLM-vorgelabelt, labelt dieselbe Modell-Klasse, die hier getestet wird.`);
+  lines.push('');
+  // THE-668: die AC-5-Messung des Beobachtungskanals — immer ausgewiesen,
+  // damit 0 als „gemessen still" lesbar ist und nicht als „nicht erhoben".
+  const o = report.observed;
+  lines.push(`## Beobachtungskanal (partyRoleObserved)`);
+  lines.push('');
+  lines.push(`- Beobachtungen gesamt: **${o.total}** von ${report.total} Fällen`);
+  lines.push(`- davon wo das Gold KEINE Rolle kennt (gewollt): **${o.whereGoldNa}**`);
+  lines.push(`- davon wo das Gold eine Rolle kennt (Rauschen): **${o.whereGoldHasRole}**`);
   lines.push('');
   for (const axis of TYPING_AXES) {
     const a = report.axes[axis];
@@ -144,7 +156,8 @@ function anthropicClassify(client: Anthropic, model: string): Classify {
     });
     const block = res.content.find((b) => b.type === 'text');
     const text = block && block.type === 'text' ? block.text : '';
-    return { labels: parsePrelabelLabels(text).labels };
+    const parsed = parsePrelabelLabels(text);
+    return { labels: parsed.labels, partyRoleObserved: parsed.partyRoleObserved };
   };
 }
 
