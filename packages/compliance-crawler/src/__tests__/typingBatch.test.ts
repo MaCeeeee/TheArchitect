@@ -500,6 +500,44 @@ describe('Regulation.typing Subdokument (THE-432 Schema-Erweiterung)', () => {
     expect(obj.typing?.droppedAxes).toBeUndefined(); // kein Auto-[] — Telemetrie nur wenn real
   });
 
+  it('partyRoleObserved überlebt den Dokument-Roundtrip — die Falle vom 12.08.', () => {
+    // Genau hier schnappte sie zu: Interface kannte das Feld, das Schema nicht,
+    // und mongoose strict strippte es bei 1746 Batch-Writes kommentarlos.
+    const doc = new Regulation({
+      ...base,
+      typing: { ...typing, partyRole: null, partyRoleObserved: 'Normungsorganisation' },
+    });
+    expect(doc.validateSync()).toBeUndefined();
+    expect(doc.toObject().typing?.partyRoleObserved).toBe('Normungsorganisation');
+  });
+
+  it('TOR: jedes Feld, das der Batch baut, kennt das Schema — die zwei Listen im Gleichstand', () => {
+    // Interface und Schema sind zwei Listen für dieselbe Frage. Am 12.08.
+    // lief eine Erweiterung nur über das Interface, und mongoose strippte
+    // das Feld bei 1746 Batch-Writes kommentarlos (5,78 $ Ernte weg).
+    // Dieser Test vergleicht die Listen MECHANISCH: eine maximal befüllte
+    // Suggestion aus dem echten Bauer gegen die Schema-Pfade. Läuft die
+    // nächste Erweiterung wieder nur über eine Liste, wird er rot.
+    const voll = assembleTypingSuggestion(
+      {
+        labels: {
+          normKind: 'eu-regulation', bindingness: 'binding',
+          obligationKind: 'obligation', partyRole: null, provisionKind: 'obligation',
+        },
+        dropped: ['partyRole'],
+        partyRoleObserved: 'Normungsorganisation',
+      },
+      { modelId: 'm', now: new Date('2026-08-12T00:00:00Z'), versionHash: HASH }
+    );
+    const typingPaths = Object.keys(
+      (Regulation.schema.path('typing') as unknown as { schema: { paths: Record<string, unknown> } })
+        .schema.paths
+    );
+    for (const key of Object.keys(voll)) {
+      expect(typingPaths).toContain(key);
+    }
+  });
+
   it('lehnt einen unbekannten status ab (enum)', () => {
     const doc = new Regulation({ ...base, typing: { ...typing, status: 'maybe' } });
     expect(doc.validateSync()?.errors?.['typing.status']).toBeDefined();
