@@ -40,6 +40,14 @@ export interface TypingSuggestion {
   obligationKind?: string | null;
   partyRole?: string | null;
   provisionKind?: string | null;
+  /**
+   * Beobachtungskanal (THE-668): wen das Modell verpflichtet sah, als keine
+   * partyRole-Klasse passte. Freitext, unvalidiert — fließt NIE in
+   * `partyRole` ein und wird von keiner Anwendbarkeits-Logik gelesen; die
+   * Auswertung ist eine reine Zählung (REQ-ONTO-002.2). Wer diesen Wert in
+   * `partyRole` zieht, gibt den geschlossenen Typraum auf.
+   */
+  partyRoleObserved?: string;
   /** Provenance (AC-1): wer hat wann mit welchem Prompt-/Ontologie-Stand vorgeschlagen. */
   modelId: string;
   promptVersion: string;
@@ -152,6 +160,8 @@ export function assembleTypingSuggestion(
   }
   // AC-2: nur wenn real etwas verworfen wurde — kein Auto-[] als Rauschen.
   if (parsed.dropped.length > 0) suggestion.droppedAxes = [...parsed.dropped];
+  // THE-668: die Beobachtung nur, wenn eine da ist — kein Leerstring-Rauschen.
+  if (parsed.partyRoleObserved) suggestion.partyRoleObserved = parsed.partyRoleObserved;
   return suggestion;
 }
 

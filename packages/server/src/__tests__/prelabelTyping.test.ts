@@ -3,7 +3,7 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/prelabelTyping.test.ts
  */
-import { buildPrelabelUserPrompt, parsePrelabelLabels } from '../scripts/prelabel-typing';
+import { buildPrelabelUserPrompt, parsePrelabelLabels, PRELABEL_SYSTEM } from '../scripts/prelabel-typing';
 import { TYPING_PROMPT_VERSION } from '@thearchitect/shared';
 import { TYPING_AXES } from '../evals/typingGolden';
 
@@ -226,9 +226,11 @@ describe('buildPrelabelUserPrompt — Rollenraum 1.7.0 (tp-3)', () => {
 // tp-2 → tp-3 trägt genau diese Last: Ontologie 1.7.0 + die drei umgekehrten
 // B3a-Präzedenzen ändern die Klassifizierung, also MUSS der Korpus-Re-Batch
 // (`--force`) sie neu sehen statt sie als „schon getypt" zu überspringen.
+// tp-3 → tp-4 (THE-668): der Beobachtungskanal steht im Prompt — die Antworten
+// können ein Zusatzfeld tragen, also ist es ein anderer Prompt-Stand.
 describe('TYPING_PROMPT_VERSION', () => {
-  it('is tp-3 after the 1.7.0 role-space sync', () => {
-    expect(TYPING_PROMPT_VERSION).toBe('tp-3');
+  it('is tp-4 after the observation channel (THE-668)', () => {
+    expect(TYPING_PROMPT_VERSION).toBe('tp-4');
   });
 });
 
@@ -372,5 +374,81 @@ describe('parsePrelabelLabels — OpenAI-typische Antwortformen', () => {
   it('parses a fenced block with prose around it', () => {
     const wrapped = 'Here is my answer:\n\n```json\n{"normKind":"legislation"}\n```\n\nHope that helps.';
     expect(parsePrelabelLabels(wrapped).labels.normKind).toBe('legislation');
+  });
+});
+
+/**
+ * THE-668 — der Beobachtungskanal.
+ *
+ * `partyRoleObserved` ist KEINE Achse: nicht validiert, nicht in TYPING_AXES,
+ * ohne Wirkung auf die Labels. Es transportiert nur, WEN das Modell im Text
+ * verpflichtet sah, als keine Klasse passte — die Information, die bisher bei
+ * jeder Typisierung entstand und weggeworfen wurde (THE-515 musste sie
+ * nachträglich von Hand am Korpus rekonstruieren).
+ */
+describe('parsePrelabelLabels — Beobachtungskanal (THE-668)', () => {
+  it('die Achsenliste bleibt bei fünf — der Kanal ist keine Achse', () => {
+    expect(TYPING_AXES).toHaveLength(5);
+    expect(TYPING_AXES).not.toContain('partyRoleObserved');
+  });
+
+  it('partyRole "na" + Beobachtung → Beobachtung kommt durch, Labels unberührt', () => {
+    const r = parsePrelabelLabels(
+      '{"normKind":"legislation","partyRole":"na","partyRoleObserved":"Normungsorganisation"}'
+    );
+    expect(r.partyRoleObserved).toBe('Normungsorganisation');
+    expect(r.labels.partyRole).toBeNull();
+    expect(r.labels).not.toHaveProperty('partyRoleObserved');
+  });
+
+  it('gültige partyRole → Beobachtung wird VERWORFEN (der Kanal schweigt, wo eine Rolle passt)', () => {
+    // AC-5 mechanisch: eine Beobachtung neben einer passenden Rolle ist per
+    // Definition keine Typraum-Lücke — sie wäre nur Rauschen in der Auswertung.
+    const r = parsePrelabelLabels(
+      '{"partyRole":"controller","partyRoleObserved":"Verantwortlicher"}'
+    );
+    expect(r.labels.partyRole).toBe('controller');
+    expect(r.partyRoleObserved).toBeUndefined();
+  });
+
+  it('OOV-partyRole wird weiter gedroppt — und ihr Rohwert wird zur Beobachtung gerettet', () => {
+    // Genau die Ausweichwerte, die THE-515 als Evidenz brauchte: das Modell
+    // wollte eine Klasse sagen, die es nicht gibt. Bisher fiel der Wert weg.
+    const r = parsePrelabelLabels('{"partyRole":"standardisation_body"}');
+    expect(r.dropped).toContain('partyRole');
+    expect(r.labels).not.toHaveProperty('partyRole');
+    expect(r.partyRoleObserved).toBe('standardisation_body');
+  });
+
+  it('ein explizites observed schlägt den geretteten OOV-Wert', () => {
+    const r = parsePrelabelLabels(
+      '{"partyRole":"standardisation_body","partyRoleObserved":"europäische Normungsorganisation"}'
+    );
+    expect(r.dropped).toContain('partyRole');
+    expect(r.partyRoleObserved).toBe('europäische Normungsorganisation');
+  });
+
+  it('leer, "na" oder nur Whitespace → keine Beobachtung', () => {
+    for (const v of ['""', '"na"', '"  "']) {
+      const r = parsePrelabelLabels(`{"partyRole":"na","partyRoleObserved":${v}}`);
+      expect(r.partyRoleObserved).toBeUndefined();
+    }
+  });
+
+  it('Whitespace wird getrimmt', () => {
+    const r = parsePrelabelLabels('{"partyRole":"na","partyRoleObserved":"  AI Office  "}');
+    expect(r.partyRoleObserved).toBe('AI Office');
+  });
+
+  it('das System-Prompt behält "Never invent ids" — der geschlossene Raum bleibt zu', () => {
+    expect(PRELABEL_SYSTEM).toContain('Never invent ids');
+  });
+
+  it('der User-Prompt erklärt den Kanal als optional und an "na" gebunden', () => {
+    const p = buildPrelabelUserPrompt({
+      source: 'standardisation', paragraphNumber: 'art-10',
+      fullText: 'Die Kommission kann europäische Normungsorganisationen beauftragen.', language: 'de',
+    });
+    expect(p).toContain('partyRoleObserved');
   });
 });

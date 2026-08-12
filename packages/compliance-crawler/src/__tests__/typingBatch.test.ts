@@ -185,6 +185,24 @@ describe('assembleTypingSuggestion', () => {
 
 // ─── completeWithRetry (leere Antwort = fehlgeschlagene Messung) ─
 
+describe('assembleTypingSuggestion — Beobachtungskanal (THE-668)', () => {
+  const META = { modelId: 'm', now: new Date('2026-08-12T00:00:00Z'), versionHash: 'vh' };
+
+  it('trägt partyRoleObserved durch — als Beobachtung, nicht als Achse', () => {
+    const s = assembleTypingSuggestion(
+      { labels: { partyRole: null }, dropped: [], partyRoleObserved: 'Normungsorganisation' },
+      META
+    );
+    expect(s.partyRoleObserved).toBe('Normungsorganisation');
+    expect(s.partyRole).toBeNull();
+  });
+
+  it('ohne Beobachtung bleibt das Feld abwesend — kein Auto-Leerstring als Rauschen', () => {
+    const s = assembleTypingSuggestion({ labels: { partyRole: 'controller' }, dropped: [] }, META);
+    expect(s).not.toHaveProperty('partyRoleObserved');
+  });
+});
+
 describe('completeWithRetry', () => {
   const noSleep = async (): Promise<void> => {}; // fake clock: kein echtes Warten im Test
 

@@ -153,3 +153,33 @@ describe('buildTypingReport', () => {
     expect(r.axes.provisionKind.accuracy.labeled).toBe(2);
   });
 });
+
+/**
+ * THE-668 — die Beobachtungs-Zählung im Report.
+ *
+ * AC-5 verlangt, dass der Kanal schweigt, wo eine Rolle passt. Ohne diese
+ * Zählung wäre das Kriterium nur behauptet: Der Report muss trennen, ob eine
+ * Beobachtung dort fiel, wo das GOLD eine Rolle kennt (Rauschen), oder dort,
+ * wo es keine kennt (der gewollte Fall).
+ */
+describe('buildTypingReport — Beobachtungskanal (THE-668)', () => {
+  it('zählt Beobachtungen getrennt nach Gold-Lage', () => {
+    const cases = [
+      // gewollt: Gold sagt na, Modell beobachtet einen Akteur
+      mk({ gold: { partyRole: null }, predicted: { partyRole: null }, partyRoleObserved: 'Normungsorganisation' }),
+      // Rauschen: Gold kennt eine Rolle, Modell beobachtet trotzdem
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: null }, partyRoleObserved: 'Verantwortlicher' }),
+      // still: keine Beobachtung
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } }),
+      // Gold-Achse ungelabelt + Beobachtung → zählt als na-Seite (kein Gold-Widerspruch)
+      mk({ gold: {}, predicted: {}, partyRoleObserved: 'AI Office' }),
+    ];
+    const r = buildTypingReport(cases);
+    expect(r.observed).toEqual({ total: 3, whereGoldNa: 2, whereGoldHasRole: 1 });
+  });
+
+  it('ohne jede Beobachtung ist der Block null-frei vorhanden — 0 heißt gemessen, nicht vergessen', () => {
+    const r = buildTypingReport([mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } })]);
+    expect(r.observed).toEqual({ total: 0, whereGoldNa: 0, whereGoldHasRole: 0 });
+  });
+});

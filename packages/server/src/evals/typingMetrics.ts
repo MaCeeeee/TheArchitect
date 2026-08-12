@@ -36,6 +36,12 @@ export interface TypingEvalCase {
   predicted: TypingLabels;
   /** Optionale Modell-Confidence je Achse (für Kalibrierung). */
   confidence?: Partial<Record<TypingAxis, number>>;
+  /**
+   * Beobachtungskanal (THE-668): Freitext-Akteur, den das Modell nannte, als
+   * keine partyRole passte. KEINE Achse — geht nie in Accuracy/F1 ein; der
+   * Report zählt nur, WO die Beobachtungen fallen (AC-5-Messung).
+   */
+  partyRoleObserved?: string;
 }
 
 /** Interne Normalisierung eines Achsen-Werts auf einen Confusion-Key. */
@@ -167,6 +173,12 @@ export interface TypingReport {
       calibration: CalibrationReport | null;
     }
   >;
+  /**
+   * Beobachtungs-Zählung (THE-668). `whereGoldHasRole` ist das Rauschen —
+   * der Kanal sprach, obwohl das Gold eine Rolle kennt. Immer vorhanden:
+   * 0 heißt gemessen, nicht vergessen (leere Messung ≠ Bestehen).
+   */
+  observed: { total: number; whereGoldNa: number; whereGoldHasRole: number };
 }
 
 export function buildTypingReport(cases: TypingEvalCase[]): TypingReport {
@@ -181,5 +193,14 @@ export function buildTypingReport(cases: TypingEvalCase[]): TypingReport {
       calibration: axisCalibration(cases, axis),
     };
   }
-  return { total: cases.length, axes };
+  const observed = { total: 0, whereGoldNa: 0, whereGoldHasRole: 0 };
+  for (const c of cases) {
+    if (!c.partyRoleObserved) continue;
+    observed.total += 1;
+    // Ungelabeltes Gold zählt zur na-Seite: ohne Gold-Rolle gibt es keinen
+    // Widerspruch, den man dem Kanal anlasten könnte.
+    if (typeof c.gold.partyRole === 'string') observed.whereGoldHasRole += 1;
+    else observed.whereGoldNa += 1;
+  }
+  return { total: cases.length, axes, observed };
 }

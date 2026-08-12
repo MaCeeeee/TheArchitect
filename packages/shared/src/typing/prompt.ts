@@ -27,7 +27,7 @@ import {
 } from '../ontology';
 
 /** Bump bei JEDER inhaltlichen Änderung an System/Rules/Template — Teil der Provenance (AC-1) und der Batch-Idempotenz (THE-432). */
-export const TYPING_PROMPT_VERSION = 'tp-3';
+export const TYPING_PROMPT_VERSION = 'tp-4';
 
 // ─── Achsen (Kontrakt-Oberfläche, siehe axisFacetOf) ────────────
 export const TYPING_AXES = [
@@ -65,7 +65,11 @@ export const PRELABEL_SYSTEM =
   'You are a legal-informatics classifier. You type a single legal provision against a CLOSED ' +
   'ontology. You MUST choose ids only from the provided lists, or "na" if an axis genuinely does ' +
   'not apply to this provision (e.g. a definitions or scope clause has no deontic force). Never ' +
-  'invent ids. Respond with STRICT JSON only, no prose.';
+  'invent ids. One OBSERVATION channel exists outside the classification: if partyRole is "na" ' +
+  'because the provision clearly obligates an actor that has NO fitting id, name that actor ' +
+  'verbatim in the optional free-text field "partyRoleObserved". It is a note, not a label — ' +
+  'omit it whenever a partyRole id fits or no actor is obligated. ' +
+  'Respond with STRICT JSON only, no prose.';
 
 function axisList(entries: ReadonlyArray<{ id: string; label: string }>): string {
   return entries.map((e) => `${e.id} (${e.label})`).join(', ');
@@ -222,6 +226,8 @@ export function buildPrelabelUserPrompt(
     provision.fullText,
     '',
     `Respond with exactly: {${TYPING_AXES.map((axis) => `"${axis}": "..."`).join(', ')}}`,
+    'If (and only if) partyRole is "na" but the text plainly obligates a specific actor, add',
+    '"partyRoleObserved": "<the actor as the text names it>" to the same JSON. Otherwise omit it.',
   ].join('\n');
 }
 
@@ -229,6 +235,23 @@ export interface ParsedPrelabel {
   labels: TypingLabels;
   /** Achsen, deren Modell-Wert nicht in E6 stand → verworfen (offen gelassen). */
   dropped: TypingAxis[];
+  /**
+   * ── DER BEOBACHTUNGSKANAL (THE-668) — eine Notiz, KEINE Achse ──
+   *
+   * Wen das Modell im Text verpflichtet sah, als keine partyRole-Klasse
+   * passte. Freitext, unvalidiert, und er fließt NIE in `labels` ein: Sobald
+   * dieser Wert in `partyRole` gezogen wird, ist der geschlossene Raum
+   * aufgegeben — und mit ihm der Genauigkeitshebel, auf dem die Typisierung
+   * ruht (isConsumableTyping, aggregateTypedRoles und jede Anwendbarkeits-
+   * Entscheidung lesen ausschließlich `partyRole`).
+   *
+   * Zweck: Die Ontologie meldet ihren eigenen Erweiterungsbedarf beim
+   * Einspielen, statt dass ein Eval ihn Monate später findet (THE-515 musste
+   * die Belegdichte fehlender Rollen nachträglich von Hand am Korpus
+   * rekonstruieren). Ausgewertet wird per Zählung (REQ-ONTO-002.2); über die
+   * Aufnahme einer Klasse entscheidet ein Mensch per Ontologie-PR.
+   */
+  partyRoleObserved?: string;
 }
 
 /**
@@ -248,6 +271,12 @@ export function parsePrelabelLabels(text: string): ParsedPrelabel {
       obj = {};
     }
   }
+  // Der rohe partyRole-Wert, BEVOR die Validierung ihn ggf. verwirft — ein
+  // OOV-Wert ist selbst eine Beobachtung (das Modell wollte eine Klasse
+  // sagen, die es nicht gibt). Genau diese Ausweichwerte waren die Evidenz,
+  // die THE-515 nachträglich von Hand rekonstruieren musste.
+  const rawPartyRole = obj['partyRole'];
+
   for (const axis of TYPING_AXES) {
     const raw = obj[axis];
     if (raw == null || raw === 'na' || raw === '') {
@@ -259,5 +288,20 @@ export function parsePrelabelLabels(text: string): ParsedPrelabel {
     if (AXIS_VALIDATOR[axis](v)) labels[axis] = v;
     else dropped.push(axis); // OOV → offen lassen, nicht raten
   }
-  return { labels, dropped };
+
+  // ── Beobachtungskanal (THE-668) ──
+  // Nur wenn KEINE gültige Rolle steht: Eine Beobachtung neben einer
+  // passenden Klasse ist per Definition keine Typraum-Lücke, sondern Rauschen
+  // — der Wert des Kanals hängt daran, dass er selten spricht (AC-5).
+  // Explizites Feld schlägt den geretteten OOV-Rohwert.
+  const out: ParsedPrelabel = { labels, dropped };
+  if (labels.partyRole == null) {
+    const explicit = obj['partyRoleObserved'];
+    const explicitTrimmed = typeof explicit === 'string' ? explicit.trim() : '';
+    const oovRescue =
+      dropped.includes('partyRole') && typeof rawPartyRole === 'string' ? rawPartyRole.trim() : '';
+    const observed = explicitTrimmed || oovRescue;
+    if (observed && observed.toLowerCase() !== 'na') out.partyRoleObserved = observed;
+  }
+  return out;
 }

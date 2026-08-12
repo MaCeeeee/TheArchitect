@@ -154,3 +154,35 @@ typing:build → typing:prelabel → typing:worksheet → (Kappa) → frozen
              → typing:eval --golden <frozen.json>
              → Report gegen diese Tabelle prüfen → THE-432 default-on JA/NEIN
 ```
+
+## tp-4 — der Beobachtungskanal (THE-668, 2026-08-12)
+
+`partyRoleObserved` steht im Prompt: ein optionales Freitextfeld für den Fall, dass
+partyRole „na" ist, die Bestimmung aber erkennbar jemanden verpflichtet. **Keine Achse** —
+unvalidiert, fließt nie in `partyRole` ein, wird nur gezählt.
+
+**Die Kontrolle (AC-3): verschlechtert der Kanal die geschlossene Typisierung?**
+Vier Läufe gegen `typing.gv3.json` (70 Fälle, frozen), gleiches Modell:
+
+| Lauf | partyRole Accuracy | macro-F1 | Beobachtungen (gewollt / Rauschen) |
+| --- | --- | --- | --- |
+| tp-3 Baseline | 71,4 % (50/70) | 0,784 | — |
+| tp-4 Lauf 1 | 70,0 % (49/70) | 0,753 | 1 / 0 |
+| tp-4 Lauf 2 | 71,4 % (50/70) | 0,783 | 0 / 0 |
+| tp-4 Lauf 3 | 72,9 % (51/70) | 0,766 | 2 / 0 |
+
+**Urteil:** tp-4 im Mittel 50/70 — exakt die Baseline; die Streuung (±1 Fall) liegt in beiden
+Richtungen. Der erste Lauf allein hätte einen Malus suggeriert — erst die Varianzmessung
+trennte Rauschen von Effekt. **AC-5 hält über alle Läufe: jede Beobachtung fiel dort, wo das
+Gold keine Rolle kennt.**
+
+**Offener Vorbehalt, vorbestehend:** Die absolute Accuracy-Schwelle 0,75 wird von KEINEM der
+vier Läufe erreicht — auch nicht von der tp-3-Baseline. Das ist kein Kanal-Effekt, sondern der
+Stand der Achse auf gv3 seit dem Rollenraum 1.7.0. Wer die 0,75 als Freigabe für ein
+Suggest-Feature braucht, muss sie an der Achse selbst holen, nicht am Kanal.
+
+**Erwartung an die Ausbeute:** 0–2 Beobachtungen auf gv3 sind wenig, und das ist erwartbar —
+das Golden stammt aus den Kern-Gesetzen, deren Rollen der Typraum abdeckt; seine na-Fälle sind
+überwiegend echte Rahmenbestimmungen. Der Jagdgrund des Kanals sind die **389 rollenlosen
+Korpus-Bestimmungen** — deren Kandidatenliste ist REQ-ONTO-002.2 (Batch-Lauf mit `--force`
+nach dem tp-4-Ausroll).
