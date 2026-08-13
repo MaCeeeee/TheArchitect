@@ -113,7 +113,7 @@ function excerpt(t?: string): string {
 //
 // Die Markierung ist rein mechanisch: eine Wortliste, kein Modell. Sie sagt
 // nicht, WER der Adressat ist — sie zeigt nur, WELCHE Akteure der Artikel
-// überhaupt nennt, und ob der Typraum sie kennt.
+// überhaupt nennt, und ob der Katalog sie führt.
 //
 // Damit bleibt der Bogen blind gegenüber der Modell-Vermutung (die würde das
 // Urteil ankern), gibt aber die Information, die A von B trennt:
@@ -250,7 +250,7 @@ function htmlBlock(d: Doc, i: number, isControl: boolean): string {
   const id = `f${i}`;
   const hinweis =
     m.fehlend.size > 0
-      ? `<span class="hint hint-b">nennt Akteure außerhalb des Typraums: ${[...m.fehlend].map(esc).join(' · ')}</span>`
+      ? `<span class="hint hint-b">nennt Akteure nicht im Rollenkatalog: ${[...m.fehlend].map(esc).join(' · ')}</span>`
       : m.bekannt.size > 0
         ? `<span class="hint hint-a">nennt nur bekannte Akteure: ${[...m.bekannt].map(esc).join(' · ')}</span>`
         : `<span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>`;
@@ -269,8 +269,8 @@ function htmlBlock(d: Doc, i: number, isControl: boolean): string {
     <div class="radios">
       ${(
         [
-          ['A', 'Adressat im Typraum — übersehen'],
-          ['B', 'Adressat fehlt im Typraum'],
+          ['A', 'Rolle steht im Katalog — übersehen'],
+          ['B', 'Rolle fehlt im Katalog'],
           ['C', 'kein Adressat'],
           ['D', 'unklar'],
         ] as Array<[string, string]>
@@ -396,7 +396,7 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
   <p style="margin:.6rem 0 0; color:var(--muted)">Dass es so gemeint ist, steht in den Daten:
   <strong>46 %</strong> der 1324 getypten Bestimmungen tragen heute <code>member_state</code>,
   <code>supervisory_authority</code> oder <code>data_subject</code> — Rollen, die kein Unternehmen je über
-  sich selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.</p>
+  sich selbst erklärt. Wäre die Kundensicht gemeint, dürften diese Rollen gar nicht im Katalog stehen.</p>
   <p style="margin:.6rem 0 0; padding-top:.6rem; border-top:1px dashed var(--line)">
   <strong>Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:</strong> „Dieser Artikel bindet die
   Kommission" ist eine <em>Antwort</em> — „wir wissen es nicht" ist keine. Nur die erste darf zu
@@ -409,7 +409,7 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
   <span style="color:var(--muted)">Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die
   Normungsorganisation, auch wenn das Wort „Pflicht" nicht vorkommt.</span></p>
   <p style="margin:.6rem 0 0; color:var(--muted)">Deshalb ist ein Artikel, der <em>nur</em> EU-Organe
-  verpflichtet, <strong style="color:var(--b)">B</strong> — Adressat vorhanden, fehlt im Typraum — und nicht
+  verpflichtet, <strong style="color:var(--b)">B</strong> — Adressat vorhanden, seine Rolle fehlt im Katalog — und nicht
   <strong style="color:var(--c)">C</strong>. <strong style="color:var(--c)">C</strong> ist ausschließlich für
   Sätze, die <em>niemanden</em> verpflichten.</p>
 </div>
@@ -417,9 +417,9 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
 <div class="box">
   <h4>Die vier Urteile</h4>
   <table class="urteile">
-    <tr><td class="kk kk-a">A</td><td>Adressat vorhanden — <strong>und er steht im Typraum</strong></td>
+    <tr><td class="kk kk-a">A</td><td>Adressat vorhanden — <strong>und seine Rolle steht im Katalog</strong></td>
         <td style="color:var(--muted)">Die Typisierung hat ihn übersehen. Extraktions-Problem.</td></tr>
-    <tr><td class="kk kk-b">B</td><td>Adressat vorhanden — <strong>aber er fehlt im Typraum</strong></td>
+    <tr><td class="kk kk-b">B</td><td>Adressat vorhanden — <strong>aber seine Rolle fehlt im Katalog</strong></td>
         <td style="color:var(--muted)"><strong>Der gesuchte Fall.</strong> Bitte benennen, wie die Klasse heißen müsste.</td></tr>
     <tr><td class="kk kk-c">C</td><td><strong>Kein</strong> Normadressat</td>
         <td style="color:var(--muted)">Verfahren, Definition, Schlussbestimmung. Korrekt leer.</td></tr>
@@ -430,7 +430,7 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
     <strong>Dazu, unabhängig vom Urteil: „verpflichtet mehr als einen Akteur".</strong>
     Das ist <em>kein fünftes Urteil</em>, sondern eine zweite Frage — sie kann bei jedem Buchstaben zutreffen.
     Die Typisierung darf heute nur <strong>eine</strong> Rolle je Bestimmung eintragen. Ein Artikel, der
-    Mitgliedstaaten <em>und</em> Anbieter verpflichtet, hat beide im Typraum und landet damit auf
+    Mitgliedstaaten <em>und</em> Anbieter verpflichtet, hat beide Rollen im Katalog und landet damit auf
     <strong style="color:var(--a)">A</strong> — „übersehen". Übersehen wurde aber nichts; es war
     kein Platz. Ohne dieses Kästchen verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem.
     Bei mehreren Adressaten bitte <strong>alle</strong> ins Feld darunter, durch Komma getrennt.</p>
@@ -440,10 +440,10 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
   <h4>Die Farben im Gesetzestext</h4>
   <p style="margin:.2rem 0 .5rem; color:var(--muted); font-size:.92rem">
     Rein mechanisch markiert — eine <strong>Wortliste, kein Modell</strong>. Die Farbe sagt nicht, wer der
-    Adressat <em>ist</em>; sie zeigt, welche Akteure der Artikel <em>nennt</em> und ob der Typraum sie kennt.
+    Adressat <em>ist</em>; sie zeigt, welche Akteure der Artikel <em>nennt</em> und ob der Katalog sie führt.
     Was das Modell vermutet hat, steht bewusst nirgends: es würde das Urteil ankern.</p>
   <div class="legende">
-    <span><mark class="akteur-ok">Mitgliedstaaten</mark> &nbsp;im Typraum → spricht für <strong style="color:var(--a)">A</strong></span>
+    <span><mark class="akteur-ok">Mitgliedstaaten</mark> &nbsp;im Katalog → spricht für <strong style="color:var(--a)">A</strong></span>
     <span><mark class="akteur-fehlt">Normungsorganisation</mark> &nbsp;fehlt dort → spricht für <strong style="color:var(--b)">B</strong></span>
   </div>
   <p style="margin:.7rem 0 0; color:var(--muted); font-size:.85rem">
@@ -452,7 +452,11 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
 </div>
 
 <div class="box">
-  <h4>Der Typraum heute — 19 Klassen</h4>
+  <h4>Der Rollenkatalog heute — 19 Einträge</h4>
+  <p style="margin:.2rem 0 .6rem">Eine <strong>geschlossene Liste</strong>, wie ein Actor/Role-Katalog in
+  TOGAF Phase B. Beim Typisieren darf jede Bestimmung nur einen dieser 19 Werte bekommen — oder gar keinen.
+  Erfinden ist verboten, und genau deshalb prüfen wir hier, ob die Liste zu kurz ist.
+  <em>Diese Liste ist gemeint, wenn im Bogen vom „Katalog" die Rede ist</em> — nicht das Sachgebiet des Artikels.</p>
   <p style="margin:.2rem 0; font-family:ui-monospace,monospace; font-size:.82rem; line-height:1.8; color:var(--muted)">
   member_state · supervisory_authority · financial_entity · provider · manufacturer · controller ·
   conformity_assessment_body · trust_service_provider · obligated_enterprise · data_holder ·
@@ -472,7 +476,7 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
 <h2>Schwelle</h2>
 <div class="box">
   <p style="margin:.2rem 0">Mindestens <strong>ein</strong> fehlender Klassenkandidat mit <strong>≥ 5</strong>
-  Bestimmungen belegt → Richtung „Typraum erweitern". Bleibt <strong style="color:var(--b)">B</strong> darunter,
+  Bestimmungen belegt → Richtung „Katalog erweitern". Bleibt <strong style="color:var(--b)">B</strong> darunter,
   ist ein explizites <code>noAddressee</code> die ehrliche Antwort und der Rest eine Anzeigefrage.</p>
   <p style="margin:.6rem 0 0; color:var(--muted)">Hochrechnung: Anteil B × ${verdacht} ≈ betroffene Bestimmungen im Korpus.</p>
 </div>
@@ -630,7 +634,7 @@ async function main(): Promise<void> {
     '',
     'Dass es so gemeint ist, steht in den Daten: **46 %** der 1324 getypten Bestimmungen tragen heute',
     '`member_state`, `supervisory_authority` oder `data_subject` — Rollen, die kein Unternehmen je über sich',
-    'selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.',
+    'selbst erklärt. Wäre die Kundensicht gemeint, dürften diese Rollen gar nicht im Katalog stehen.',
     '',
     '**Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:** „Dieser Artikel bindet die Kommission" ist',
     'eine *Antwort* — „wir wissen es nicht" ist keine. Nur die erste darf zu „betrifft dich nicht" werden;',
@@ -640,14 +644,14 @@ async function main(): Promise<void> {
     '',
     '| | Bedeutung | Was daraus folgt |',
     '|---|---|---|',
-    '| **A** | Adressat vorhanden — **und er steht im Typraum unten** | Die Typisierung hat ihn übersehen. Extraktions-Problem, kein Typraum-Problem. |',
-    '| **B** | Adressat vorhanden — **aber er fehlt im Typraum** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |',
+    '| **A** | Adressat vorhanden — **und seine Rolle steht im Katalog unten** | Die Typisierung hat ihn übersehen. Extraktions-Problem, kein Katalog-Problem. |',
+    '| **B** | Adressat vorhanden — **aber seine Rolle fehlt im Katalog** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |',
     '| **C** | **Kein** Normadressat — die Bestimmung richtet sich an niemanden (Verfahren, Definition, Schlussbestimmung) | Korrekt leer. |',
     '| **D** | unklar / mehrdeutig | Zählt als eigene Klasse, nicht als Nein. |',
     '',
     '**Dazu, unabhängig vom Urteil: „mehr als ein Adressat?"** Das ist *kein fünftes Urteil*, sondern eine',
     'zweite Frage — sie kann bei jedem Buchstaben zutreffen. Die Typisierung darf heute nur **eine** Rolle je',
-    'Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide im Typraum',
+    'Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide Rollen im Katalog',
     'und landet damit auf **A** — „übersehen". Übersehen wurde aber nichts; es war kein Platz. Ohne diese Zeile',
     'verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem. Bei mehreren bitte **alle** Adressaten',
     'nennen, durch Komma getrennt.',
@@ -656,10 +660,15 @@ async function main(): Promise<void> {
     'Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,',
     'auch wenn das Wort „Pflicht" nicht vorkommt.',
     '',
-    'Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, fehlt im Typraum —',
+    'Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, seine Rolle fehlt im Katalog —',
     'und nicht **C**. **C** ist ausschließlich für Sätze, die *niemanden* verpflichten.',
     '',
-    '## Der Typraum heute (19 Klassen)',
+    '## Der Rollenkatalog heute (19 Einträge)',
+    '',
+    'Eine **geschlossene Liste**, wie ein Actor/Role-Katalog in TOGAF Phase B. Beim Typisieren darf jede',
+    'Bestimmung nur einen dieser 19 Werte bekommen — oder gar keinen. Erfinden ist verboten, und genau',
+    'deshalb prüfen wir hier, ob die Liste zu kurz ist. *Diese Liste ist gemeint, wenn im Bogen vom „Katalog"',
+    'die Rede ist* — nicht das Sachgebiet des Artikels.',
     '',
     '```',
     'member_state · supervisory_authority · financial_entity · provider · manufacturer',
@@ -687,8 +696,8 @@ async function main(): Promise<void> {
     '',
     '| Urteil | Anzahl | |',
     '|---|---|---|',
-    '| A — Adressat im Typraum, übersehen | | Extraktions-Qualität, gehört zu THE-421/432 |',
-    '| B — Adressat fehlt im Typraum | | **die gesuchte Zahl** |',
+    '| A — Rolle im Katalog, übersehen | | Extraktions-Qualität, gehört zu THE-421/432 |',
+    '| B — Rolle fehlt im Katalog | | **die gesuchte Zahl** |',
     '| C — kein Adressat | | korrekt leer |',
     '| D — unklar | | |',
     '',
@@ -715,7 +724,7 @@ async function main(): Promise<void> {
   console.log(`  Stichprobe        : ${sample.length} über ${laws.size} Gesetze — ${[...laws].sort().join(', ')}`);
   console.log(`  Gegenproben       : ${control.length}`);
   const markiert = sample.filter((d) => markiere(excerpt(d.fullText)).fehlend.size > 0).length;
-  console.log(`  davon mit Akteur außerhalb des Typraums: ${markiert} von ${sample.length}`);
+  console.log(`  davon mit Akteur nicht im Rollenkatalog: ${markiert} von ${sample.length}`);
   console.log(`\n  → ${out}`);
   console.log(`  → ${outHtml}\n`);
   await conn.close();

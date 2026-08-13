@@ -18,7 +18,7 @@ Auftragsverarbeiter") wird gegen die hier bestimmte Norm-Rolle gehalten; erst di
 
 Dass es so gemeint ist, steht in den Daten: **46 %** der 1324 getypten Bestimmungen tragen heute
 `member_state`, `supervisory_authority` oder `data_subject` — Rollen, die kein Unternehmen je über sich
-selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.
+selbst erklärt. Wäre die Kundensicht gemeint, dürften diese Rollen gar nicht im Katalog stehen.
 
 **Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:** „Dieser Artikel bindet die Kommission" ist
 eine *Antwort* — „wir wissen es nicht" ist keine. Nur die erste darf zu „betrifft dich nicht" werden;
@@ -28,14 +28,14 @@ Nichtwissen als Entwarnung auszugeben ist die gefährliche Fehlerrichtung.
 
 | | Bedeutung | Was daraus folgt |
 |---|---|---|
-| **A** | Adressat vorhanden — **und er steht im Typraum unten** | Die Typisierung hat ihn übersehen. Extraktions-Problem, kein Typraum-Problem. |
-| **B** | Adressat vorhanden — **aber er fehlt im Typraum** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |
+| **A** | Adressat vorhanden — **und seine Rolle steht im Katalog unten** | Die Typisierung hat ihn übersehen. Extraktions-Problem, kein Katalog-Problem. |
+| **B** | Adressat vorhanden — **aber seine Rolle fehlt im Katalog** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |
 | **C** | **Kein** Normadressat — die Bestimmung richtet sich an niemanden (Verfahren, Definition, Schlussbestimmung) | Korrekt leer. |
 | **D** | unklar / mehrdeutig | Zählt als eigene Klasse, nicht als Nein. |
 
 **Dazu, unabhängig vom Urteil: „mehr als ein Adressat?"** Das ist *kein fünftes Urteil*, sondern eine
 zweite Frage — sie kann bei jedem Buchstaben zutreffen. Die Typisierung darf heute nur **eine** Rolle je
-Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide im Typraum
+Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide Rollen im Katalog
 und landet damit auf **A** — „übersehen". Übersehen wurde aber nichts; es war kein Platz. Ohne diese Zeile
 verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem. Bei mehreren bitte **alle** Adressaten
 nennen, durch Komma getrennt.
@@ -44,10 +44,15 @@ nennen, durch Komma getrennt.
 Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,
 auch wenn das Wort „Pflicht" nicht vorkommt.
 
-Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, fehlt im Typraum —
+Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, seine Rolle fehlt im Katalog —
 und nicht **C**. **C** ist ausschließlich für Sätze, die *niemanden* verpflichten.
 
-## Der Typraum heute (19 Klassen)
+## Der Rollenkatalog heute (19 Einträge)
+
+Eine **geschlossene Liste**, wie ein Actor/Role-Katalog in TOGAF Phase B. Beim Typisieren darf jede
+Bestimmung nur einen dieser 19 Werte bekommen — oder gar keinen. Erfinden ist verboten, und genau
+deshalb prüfen wir hier, ob die Liste zu kurz ist. *Diese Liste ist gemeint, wenn im Bogen vom „Katalog"
+die Rede ist* — nicht das Sachgebiet des Artikels.
 
 ```
 member_state · supervisory_authority · financial_entity · provider · manufacturer
@@ -668,8 +673,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 
 | Urteil | Anzahl | |
 |---|---|---|
-| A — Adressat im Typraum, übersehen | | Extraktions-Qualität, gehört zu THE-421/432 |
-| B — Adressat fehlt im Typraum | | **die gesuchte Zahl** |
+| A — Rolle im Katalog, übersehen | | Extraktions-Qualität, gehört zu THE-421/432 |
+| B — Rolle fehlt im Katalog | | **die gesuchte Zahl** |
 | C — kein Adressat | | korrekt leer |
 | D — unklar | | |
 
