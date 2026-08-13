@@ -59,6 +59,12 @@
     border:1.5px dashed var(--line); border-radius:7px; font-size:.86rem; background:#fff; }
   .mehrfach:hover { background:#faf8f5; }
   .mehrfach:has(input:checked) { border-style:solid; border-color:var(--d); background:#fdf6e8; }
+  /* Defekter Datensatz — sichtbar stillgelegt, Position bleibt erhalten. */
+  article.defekt { opacity:.72; background:#faf8f5; }
+  .badge-defekt { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+    padding:.15rem .5rem; border-radius:99px; background:var(--fehlt-bg); color:var(--fehlt); }
+  .defekt-grund { margin:.5rem 0; padding:.6rem .75rem; border-left:3px solid var(--fehlt);
+    background:#fff; font-size:.86rem; border-radius:0 6px 6px 0; }
   article footer { margin-top:.6rem; font-size:.75rem; color:var(--muted); }
   code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(255,255,255,.97);
@@ -197,43 +203,17 @@ Stichprobe <strong>30</strong> über <strong>14</strong> Gesetze, plus 5 Gegenpr
   </div>
   <footer><code>ai-act-de:art-56</code></footer>
 </article>
-<article class="fall" id="f2">
+<article class="fall defekt" id="f2">
   <header>
     <span class="nr">02</span>
     <span class="quelle">cra-de · Art. 14</span>
-    
+    <span class="badge-defekt">nicht bewertbar</span>
   </header>
   <h3>Diese Verordnung ist in allen ihren Teilen verbindlich und gilt unmittelbar in jedem Mitgliedstaat.</h3>
-  <span class="hint hint-b">nennt Akteure nicht im Rollenkatalog: Parlament</span>
+  <p class="defekt-grund"><strong>Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.</strong><br>
+  Trägt statt Artikel 14 den Dokument-Schwanz (Schlussformel, Unterschriften, Fußnoten). Der echte Art. 14 „Meldepflichten der Hersteller&quot; fehlt in der deutschen Fassung ganz; cra-en führt ihn korrekt mit 8882 Zeichen. Ein Urteil hierüber wäre ein Urteil über einen Nicht-Artikel. Die Position bleibt frei, damit bereits gefällte Urteile nicht verrutschen — Ersatz ist Fall 36.</p>
   <blockquote>Geschehen zu Straßburg am 23. Oktober 2024. Im Namen des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s Die Präsidentin R. METSOLA Im Namen des Rates Der Präsident ZSIGMOND B. P. * * * [(1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc1-L_202402847DE.000101-E0001) [ABl. C 100 vom 16.3.2023, S. 101](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:C:2023:100:TOC). [(2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc2-L_202402847DE.000101-E0002) Standpunkt des <mark class="akteur-fehlt" title="Parlament">Europäischen Parlament</mark>s vom 12. März 2024 (noch nicht im Amtsblatt veröffentlicht) und Beschluss des Rates vom 10. Oktober 2024. [(3)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?u…</blockquote>
-  <div class="urteil">
-    <div class="radios">
-      
-      <label class="opt opt-a">
-        <input type="radio" name="f2" value="A" data-key="f2">
-        <span class="k">A</span><span class="l">Rolle steht im Katalog — übersehen</span>
-      </label>
-      <label class="opt opt-b">
-        <input type="radio" name="f2" value="B" data-key="f2">
-        <span class="k">B</span><span class="l">Rolle fehlt im Katalog</span>
-      </label>
-      <label class="opt opt-c">
-        <input type="radio" name="f2" value="C" data-key="f2">
-        <span class="k">C</span><span class="l">kein Adressat</span>
-      </label>
-      <label class="opt opt-d">
-        <input type="radio" name="f2" value="D" data-key="f2">
-        <span class="k">D</span><span class="l">unklar</span>
-      </label>
-    </div>
-    <label class="mehrfach">
-      <input type="checkbox" class="mehr" data-key="f2-mehrfach">
-      <span>verpflichtet <strong>mehr als einen</strong> Akteur</span>
-    </label>
-    <input class="feld" type="text" data-key="f2-adressat" placeholder="Adressat(en) bei A oder B — bei mehreren durch Komma trennen">
-    <input class="feld" type="text" data-key="f2-notiz" placeholder="Notiz (optional)">
-  </div>
-  <footer><code>cra-de:art-14</code></footer>
+  <footer><code>cra-de:art-14</code> · zählt nicht zu den ​Urteilen</footer>
 </article>
 <article class="fall" id="f3">
   <header>
@@ -1496,6 +1476,50 @@ ergeben — tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trenn
   <footer><code>dsgvo:art-1</code></footer>
 </article>
 
+<h2>Nachrücker — 1 Fälle</h2>
+<p class="sub">Ersatz für die oben stillgelegten Fälle. Sie stehen hier hinten und nicht an der Lücke,
+weil die Urteile an der <em>Position</em> hängen — ein Einschub in der Mitte würde jedes danach gefällte
+Urteil still an einen anderen Artikel hängen.</p>
+
+<article class="fall" id="f36">
+  <header>
+    <span class="nr">36</span>
+    <span class="quelle">cra-de · Art. 11</span>
+    
+  </header>
+  <h3>Allgemeine Produktsicherheit</h3>
+  <span class="hint hint-c">nennt keinen der erfassten Akteursbegriffe</span>
+  <blockquote>Abweichend von Artikel 2 Absatz 1 Unterabsatz 3 Buchstabe b der Verordnung (EU) 2023/988 finden Kapitel III Abschnitt 1, Kapitel V und VII sowie die Kapitel IX bis XI der genannten Verordnung Anwendung auf Produkte mit digitalen Elementen in Bezug auf Aspekte und Risiken oder Risikokategorien, die nicht unter die vorliegende Verordnung fallen, sofern diese Produkte keinen besonderen Sicherheitsanforderungen unterliegen, die in anderen „Harmonisierungsrechtsvorschriften der Union“ im Sinne von Artikel 3 Nummer 27 der Verordnung (EU) 2023/988 festgelegt sind.</blockquote>
+  <div class="urteil">
+    <div class="radios">
+      
+      <label class="opt opt-a">
+        <input type="radio" name="f36" value="A" data-key="f36">
+        <span class="k">A</span><span class="l">Rolle steht im Katalog — übersehen</span>
+      </label>
+      <label class="opt opt-b">
+        <input type="radio" name="f36" value="B" data-key="f36">
+        <span class="k">B</span><span class="l">Rolle fehlt im Katalog</span>
+      </label>
+      <label class="opt opt-c">
+        <input type="radio" name="f36" value="C" data-key="f36">
+        <span class="k">C</span><span class="l">kein Adressat</span>
+      </label>
+      <label class="opt opt-d">
+        <input type="radio" name="f36" value="D" data-key="f36">
+        <span class="k">D</span><span class="l">unklar</span>
+      </label>
+    </div>
+    <label class="mehrfach">
+      <input type="checkbox" class="mehr" data-key="f36-mehrfach">
+      <span>verpflichtet <strong>mehr als einen</strong> Akteur</span>
+    </label>
+    <input class="feld" type="text" data-key="f36-adressat" placeholder="Adressat(en) bei A oder B — bei mehreren durch Komma trennen">
+    <input class="feld" type="text" data-key="f36-notiz" placeholder="Notiz (optional)">
+  </div>
+  <footer><code>cra-de:art-11</code></footer>
+</article>
+
 <h2>Schwelle</h2>
 <div class="box">
   <p style="margin:.2rem 0">Mindestens <strong>ein</strong> fehlender Klassenkandidat mit <strong>≥ 5</strong>
@@ -1520,7 +1544,7 @@ ergeben — tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trenn
   function save() { localStorage.setItem(KEY, JSON.stringify(store)); render(); }
 
   function render() {
-    var total = 35, done = 0, mehr = 0;
+    var total = 36, done = 0, mehr = 0;
     var t = { A: 0, B: 0, C: 0, D: 0 };
     for (var i = 1; i <= total; i++) {
       var v = store['f' + i];

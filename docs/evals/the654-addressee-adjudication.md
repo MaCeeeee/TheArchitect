@@ -89,20 +89,15 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 
 ---
 
-### 02 · cra-de · Art. 14
+### 02 · cra-de · Art. 14   **— nicht bewertbar**
 
 **Diese Verordnung ist in allen ihren Teilen verbindlich und gilt unmittelbar in jedem Mitgliedstaat.**
 
+> **Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.** Trägt statt Artikel 14 den Dokument-Schwanz (Schlussformel, Unterschriften, Fußnoten). Der echte Art. 14 „Meldepflichten der Hersteller" fehlt in der deutschen Fassung ganz; cra-en führt ihn korrekt mit 8882 Zeichen. Ein Urteil hierüber wäre ein Urteil über einen Nicht-Artikel. Die Position bleibt frei, damit bereits gefällte Urteile nicht verrutschen — Ersatz ist Fall 36.
+
 > Geschehen zu Straßburg am 23. Oktober 2024. Im Namen des Europäischen Parlaments Die Präsidentin R. METSOLA Im Namen des Rates Der Präsident ZSIGMOND B. P. * * * [(1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc1-L_202402847DE.000101-E0001) [ABl. C 100 vom 16.3.2023, S. 101](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:C:2023:100:TOC). [(2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc2-L_202402847DE.000101-E0002) Standpunkt des Europäischen Parlaments vom 12. März 2024 (noch nicht im Amtsblatt veröffentlicht) und Beschluss des Rates vom 10. Oktober 2024. [(3)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?u…
 
-| | |
-|---|---|
-| **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **mehr als ein Adressat?** | `ja` / `nein` →                      |
-| **Adressat(en) bei A oder B** |                                          |
-| **Notiz** |                                          |
-
-<sub>`cra-de:art-14`</sub>
+<sub>`cra-de:art-14` · zählt nicht zu den Urteilen</sub>
 
 ---
 
@@ -666,6 +661,29 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | **Notiz** |                                          |
 
 <sub>`dsgvo:art-1`</sub>
+
+---
+
+## Nachrücker
+
+Ersatz für die oben stillgelegten Fälle. Sie stehen hinten und nicht an der Lücke, weil die Urteile
+an der *Position* hängen — ein Einschub in der Mitte würde jedes danach gefällte Urteil still an
+einen anderen Artikel hängen.
+
+### 36 · cra-de · Art. 11
+
+**Allgemeine Produktsicherheit**
+
+> Abweichend von Artikel 2 Absatz 1 Unterabsatz 3 Buchstabe b der Verordnung (EU) 2023/988 finden Kapitel III Abschnitt 1, Kapitel V und VII sowie die Kapitel IX bis XI der genannten Verordnung Anwendung auf Produkte mit digitalen Elementen in Bezug auf Aspekte und Risiken oder Risikokategorien, die nicht unter die vorliegende Verordnung fallen, sofern diese Produkte keinen besonderen Sicherheitsanforderungen unterliegen, die in anderen „Harmonisierungsrechtsvorschriften der Union“ im Sinne von Artikel 3 Nummer 27 der Verordnung (EU) 2023/988 festgelegt sind.
+
+| | |
+|---|---|
+| **Urteil** | `A` / `B` / `C` / `D` →                      |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
+| **Notiz** |                                          |
+
+<sub>`cra-de:art-11`</sub>
 
 ---
 

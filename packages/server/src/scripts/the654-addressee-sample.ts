@@ -223,7 +223,23 @@ function markiere(text: string): Markiert {
   return { html, bekannt, fehlend };
 }
 
-function block(d: Doc, i: number, isControl: boolean): string {
+function block(d: Doc, i: number, isControl: boolean, defektGrund?: string): string {
+  if (defektGrund) {
+    return [
+      `### ${String(i).padStart(2, '0')} · ${d.source} · ${d.paragraphNumber ?? '?'}   **— nicht bewertbar**`,
+      '',
+      `**${d.title ?? '(ohne Titel)'}**`,
+      '',
+      `> **Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.** ${defektGrund}`,
+      '',
+      `> ${excerpt(d.fullText)}`,
+      '',
+      `<sub>\`${d.regulationKey}\` · zählt nicht zu den Urteilen</sub>`,
+      '',
+      '---',
+      '',
+    ].join('\n');
+  }
   return [
     `### ${String(i).padStart(2, '0')} · ${d.source} · ${d.paragraphNumber ?? '?'}${isControl ? '   *(Gegenprobe)*' : ''}`,
     '',
@@ -245,9 +261,29 @@ function block(d: Doc, i: number, isControl: boolean): string {
   ].join('\n');
 }
 
-function htmlBlock(d: Doc, i: number, isControl: boolean): string {
+function htmlBlock(d: Doc, i: number, isControl: boolean, defektGrund?: string): string {
   const m = markiere(excerpt(d.fullText));
   const id = `f${i}`;
+
+  // Defekter Datensatz: Position bleibt stehen (sonst verrutschen gefällte
+  // Urteile — der Speicher hängt an f1..fN), aber es gibt nichts anzukreuzen.
+  // Der Text bleibt sichtbar: er IST der Beleg für den Defekt.
+  if (defektGrund) {
+    return `
+<article class="fall defekt" id="${id}">
+  <header>
+    <span class="nr">${String(i).padStart(2, '0')}</span>
+    <span class="quelle">${esc(d.source)} · ${esc(d.paragraphNumber ?? '?')}</span>
+    <span class="badge-defekt">nicht bewertbar</span>
+  </header>
+  <h3>${esc(d.title ?? '(ohne Titel)')}</h3>
+  <p class="defekt-grund"><strong>Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.</strong><br>
+  ${esc(defektGrund)}</p>
+  <blockquote>${m.html}</blockquote>
+  <footer><code>${esc(d.regulationKey)}</code> · zählt nicht zu den ${'​'}Urteilen</footer>
+</article>`;
+  }
+
   const hinweis =
     m.fehlend.size > 0
       ? `<span class="hint hint-b">nennt Akteure nicht im Rollenkatalog: ${[...m.fehlend].map(esc).join(' · ')}</span>`
@@ -302,9 +338,12 @@ function renderHtml(args: {
   rahmen: number;
   sample: Doc[];
   control: Doc[];
+  nachruecker: Doc[];
+  defekt: Record<string, string>;
+  bewertbar: number;
   laws: Set<string>;
 }): string {
-  const { all, ohne, verdacht, rahmen, sample, control, laws } = args;
+  const { all, ohne, verdacht, rahmen, sample, control, nachruecker, defekt, bewertbar, laws } = args;
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -366,6 +405,12 @@ function renderHtml(args: {
     border:1.5px dashed var(--line); border-radius:7px; font-size:.86rem; background:#fff; }
   .mehrfach:hover { background:#faf8f5; }
   .mehrfach:has(input:checked) { border-style:solid; border-color:var(--d); background:#fdf6e8; }
+  /* Defekter Datensatz — sichtbar stillgelegt, Position bleibt erhalten. */
+  article.defekt { opacity:.72; background:#faf8f5; }
+  .badge-defekt { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.02em;
+    padding:.15rem .5rem; border-radius:99px; background:var(--fehlt-bg); color:var(--fehlt); }
+  .defekt-grund { margin:.5rem 0; padding:.6rem .75rem; border-left:3px solid var(--fehlt);
+    background:#fff; font-size:.86rem; border-radius:0 6px 6px 0; }
   article footer { margin-top:.6rem; font-size:.75rem; color:var(--muted); }
   code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(255,255,255,.97);
@@ -465,13 +510,23 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
 </div>
 
 <h2>Stichprobe — ${sample.length} Fälle</h2>
-${sample.map((d, i) => htmlBlock(d, i + 1, false)).join('')}
+${sample.map((d, i) => htmlBlock(d, i + 1, false, defekt[d.regulationKey])).join('')}
 
 <h2>Gegenproben — ${control.length} Fälle</h2>
 <p class="sub">Aus den ${rahmen} Rahmenbestimmungen gezogen. Sie <em>sollten</em> <strong style="color:var(--c)">C</strong>
 ergeben — tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trennen vorgibt, und die Zahl
 „${verdacht} Verdachtsfälle" ist selbst fragwürdig. Ihre Antwort ist trotzdem offen.</p>
-${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
+${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true, defekt[d.regulationKey])).join('')}
+${
+  nachruecker.length === 0
+    ? ''
+    : `
+<h2>Nachrücker — ${nachruecker.length} Fälle</h2>
+<p class="sub">Ersatz für die oben stillgelegten Fälle. Sie stehen hier hinten und nicht an der Lücke,
+weil die Urteile an der <em>Position</em> hängen — ein Einschub in der Mitte würde jedes danach gefällte
+Urteil still an einen anderen Artikel hängen.</p>
+${nachruecker.map((d, i) => htmlBlock(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey])).join('')}`
+}
 
 <h2>Schwelle</h2>
 <div class="box">
@@ -483,7 +538,7 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
 
 </div>
 <div class="bar">
-  <span class="stand"><strong id="done">0</strong> / ${sample.length + control.length} beurteilt</span>
+  <span class="stand"><strong id="done">0</strong> / ${bewertbar} beurteilt</span>
   <span class="tally" id="tally"></span>
   <button id="copy" class="primary">Ergebnis kopieren</button>
   <button id="reset">Zurücksetzen</button>
@@ -497,7 +552,7 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
   function save() { localStorage.setItem(KEY, JSON.stringify(store)); render(); }
 
   function render() {
-    var total = ${sample.length + control.length}, done = 0, mehr = 0;
+    var total = ${sample.length + control.length + nachruecker.length}, done = 0, mehr = 0;
     var t = { A: 0, B: 0, C: 0, D: 0 };
     for (var i = 1; i <= total; i++) {
       var v = store['f' + i];
@@ -598,10 +653,19 @@ async function main(): Promise<void> {
 
   let sample: Doc[];
   let control: Doc[];
+  let nachruecker: Doc[] = [];
+  let defekt: Record<string, string> = {};
   if (existsSync(pinPath)) {
-    const pin = JSON.parse(readFileSync(pinPath, 'utf8')) as { sample: string[]; control: string[] };
+    const pin = JSON.parse(readFileSync(pinPath, 'utf8')) as {
+      sample: string[];
+      control: string[];
+      nachruecker?: string[];
+      defekt?: Record<string, string>;
+    };
     sample = pick(pin.sample, 'Stichproben');
     control = pick(pin.control, 'Gegenproben');
+    nachruecker = pick(pin.nachruecker ?? [], 'Nachrücker');
+    defekt = pin.defekt ?? {};
     console.log(`  Stichprobe        : EINGEFROREN aus ${pinPath.split('/').pop()}`);
   } else {
     sample = stratify(verdacht, SAMPLE_SIZE);
@@ -612,6 +676,34 @@ async function main(): Promise<void> {
   }
   const laws = new Set(sample.map((d) => d.source.replace(/-(de|en)$/, '')));
   if (laws.size < 4) throw new Error(`Stichprobe deckt nur ${laws.size} Gesetze ab, mindestens 4 verlangt.`);
+
+  /*
+   * TOR gegen die Fehlerklasse „Datensatz trägt den Dokument-Schwanz".
+   *
+   * Gefunden am 13.08. beim Ausfüllen: `cra-de:art-14` enthielt statt Artikel 14
+   * die Schlussformel samt Unterschriften und Fußnoten — der echte Artikel
+   * („Meldepflichten der Hersteller") fehlt in der deutschen Fassung ganz.
+   * Ein Urteil darüber wäre ein Urteil über einen Nicht-Artikel gewesen.
+   *
+   * Die Prüfung ist MECHANISCH (Wortliste, kein Modell) und läuft über JEDEN
+   * Fall im Bogen. Ein neuer Treffer, der nicht im Pin als defekt vermerkt ist,
+   * bricht den Lauf — lieber kein Bogen als ein Bogen mit stiller Attrappe.
+   */
+  const SCHLUSSFORMEL =
+    /in allen ihren Teilen verbindlich|binding in its entirety|^Geschehen zu |^Done at |Im Namen des Europäischen Parlaments|On behalf of the European Parliament/i;
+  const unentdeckt = [...sample, ...control, ...nachruecker].filter(
+    (d) =>
+      !defekt[d.regulationKey] &&
+      (SCHLUSSFORMEL.test(String(d.title ?? '').trim()) ||
+        SCHLUSSFORMEL.test(String(d.fullText ?? '').trim().slice(0, 120)))
+  );
+  if (unentdeckt.length > 0) {
+    throw new Error(
+      `Dokument-Schwanz statt Artikeltext in: ${unentdeckt.map((d) => d.regulationKey).join(', ')} — ` +
+        `entweder im Korpus reparieren oder im Pin unter "defekt" mit Begründung eintragen.`
+    );
+  }
+  const bewertbar = sample.length + control.length + nachruecker.length - Object.keys(defekt).length;
 
   const md = [
     '# THE-654 — Adjudikation: hat diese Bestimmung einen Adressaten?',
@@ -688,10 +780,23 @@ async function main(): Promise<void> {
     '',
     '## Stichprobe',
     '',
-    ...sample.map((d, i) => block(d, i + 1, false)),
+    ...sample.map((d, i) => block(d, i + 1, false, defekt[d.regulationKey])),
     '## Gegenproben',
     '',
-    ...control.map((d, i) => block(d, sample.length + i + 1, true)),
+    ...control.map((d, i) => block(d, sample.length + i + 1, true, defekt[d.regulationKey])),
+    ...(nachruecker.length === 0
+      ? []
+      : [
+          '## Nachrücker',
+          '',
+          'Ersatz für die oben stillgelegten Fälle. Sie stehen hinten und nicht an der Lücke, weil die Urteile',
+          'an der *Position* hängen — ein Einschub in der Mitte würde jedes danach gefällte Urteil still an',
+          'einen anderen Artikel hängen.',
+          '',
+          ...nachruecker.map((d, i) =>
+            block(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey])
+          ),
+        ]),
     '## Auswertung (nach der Adjudikation ausfüllen)',
     '',
     '| Urteil | Anzahl | |',
@@ -715,7 +820,7 @@ async function main(): Promise<void> {
   const outHtml = resolve(__dirname, '../../../../docs/evals/the654-addressee-adjudication.html');
   writeFileSync(
     outHtml,
-    renderHtml({ all: all.length, ohne: ohneRolle.length, verdacht: verdacht.length, rahmen: rahmen.length, sample, control, laws }),
+    renderHtml({ all: all.length, ohne: ohneRolle.length, verdacht: verdacht.length, rahmen: rahmen.length, sample, control, nachruecker, defekt, bewertbar, laws }),
   );
   console.log(`\n  Korpus            : ${all.length} Bestimmungen`);
   console.log(`  ohne Adressat     : ${ohneRolle.length}`);
@@ -723,6 +828,10 @@ async function main(): Promise<void> {
   console.log(`  davon Rahmen      : ${rahmen.length}`);
   console.log(`  Stichprobe        : ${sample.length} über ${laws.size} Gesetze — ${[...laws].sort().join(', ')}`);
   console.log(`  Gegenproben       : ${control.length}`);
+  if (nachruecker.length > 0) console.log(`  Nachrücker        : ${nachruecker.length}`);
+  if (Object.keys(defekt).length > 0)
+    console.log(`  STILLGELEGT       : ${Object.keys(defekt).join(', ')} — nicht bewertbar`);
+  console.log(`  bewertbare Fälle  : ${bewertbar}`);
   const markiert = sample.filter((d) => markiere(excerpt(d.fullText)).fehlend.size > 0).length;
   console.log(`  davon mit Akteur nicht im Rollenkatalog: ${markiert} von ${sample.length}`);
   console.log(`\n  → ${out}`);
