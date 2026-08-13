@@ -1,7 +1,7 @@
 # THE-654 — Adjudikation: hat diese Bestimmung einen Adressaten?
 
-**Erzeugt am 2026-08-10** aus 1746 Korpus-Bestimmungen · 389 ohne Adressatenklasse
-· davon 102 mit Sachtitel (Verdacht) und 128 Rahmenbestimmungen.
+**Erzeugt am 2026-08-10** aus 1746 Korpus-Bestimmungen · 422 ohne Adressatenklasse
+· davon 124 mit Sachtitel (Verdacht) und 133 Rahmenbestimmungen.
 Stichprobe: **30** über **14** Gesetze, plus **5** Gegenproben.
 
 > Erzeugt von `packages/server/src/scripts/the654-addressee-sample.ts` — derselbe Lauf ergibt denselben Bogen.
@@ -14,6 +14,13 @@ Stichprobe: **30** über **14** Gesetze, plus **5** Gegenproben.
 | **B** | Adressat vorhanden — **aber er fehlt im Typraum** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |
 | **C** | **Kein** Normadressat — die Bestimmung richtet sich an niemanden (Verfahren, Definition, Schlussbestimmung) | Korrekt leer. |
 | **D** | unklar / mehrdeutig | Zählt als eigene Klasse, nicht als Nein. |
+
+**Dazu, unabhängig vom Urteil: „mehr als ein Adressat?"** Das ist *kein fünftes Urteil*, sondern eine
+zweite Frage — sie kann bei jedem Buchstaben zutreffen. Die Typisierung darf heute nur **eine** Rolle je
+Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide im Typraum
+und landet damit auf **A** — „übersehen". Übersehen wurde aber nichts; es war kein Platz. Ohne diese Zeile
+verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem. Bei mehreren bitte **alle** Adressaten
+nennen, durch Komma getrennt.
 
 **Die Leitfrage:** *Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?*
 Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,
@@ -30,9 +37,9 @@ data_subject · ecs_provider · importer · distributor · authorized_representa
 
 ## Warum die Gegenproben mitlaufen
 
-Die 5 Fälle am Ende stammen aus den 128 Rahmenbestimmungen — sie sollten **C** ergeben.
+Die 5 Fälle am Ende stammen aus den 133 Rahmenbestimmungen — sie sollten **C** ergeben.
 Tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trennen vorgibt, und die Zahl
-„102 Verdachtsfälle" ist selbst fragwürdig. Sie sind als *(Gegenprobe)* markiert, damit
+„124 Verdachtsfälle" ist selbst fragwürdig. Sie sind als *(Gegenprobe)* markiert, damit
 beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem offen.
 
 ---
@@ -48,7 +55,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`ai-act-de:art-56`</sub>
@@ -64,7 +72,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`cra-de:art-14`</sub>
@@ -80,7 +89,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`data-act-de:art-12`</sub>
@@ -96,7 +106,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dora-de:art-41`</sub>
@@ -112,7 +123,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dsgvo-en:art-48`</sub>
@@ -128,7 +140,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`eidas-de:art-26`</sub>
@@ -144,7 +157,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`emoney-de:art-13`</sub>
@@ -160,7 +174,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`eprivacy-en:art-3`</sub>
@@ -176,7 +191,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`esg-rating-de:art-5`</sub>
@@ -192,7 +208,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`lksg:11`</sub>
@@ -208,7 +225,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`mdr-de:art-112`</sub>
@@ -224,7 +242,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`nis2:art-4`</sub>
@@ -240,7 +259,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`psd2-de:art-4`</sub>
@@ -256,7 +276,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`standardisation-de:art-10`</sub>
@@ -272,7 +293,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`ai-act-de:art-58`</sub>
@@ -288,7 +310,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`cra-de:art-15`</sub>
@@ -304,7 +327,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`data-act-de:art-24`</sub>
@@ -320,7 +344,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dora:art-23`</sub>
@@ -336,7 +361,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dsgvo-en:art-68`</sub>
@@ -352,7 +378,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`eidas-en:art-25`</sub>
@@ -368,7 +395,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`emoney-de:art-14`</sub>
@@ -384,7 +412,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`lksg:24`</sub>
@@ -400,7 +429,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`mdr-de:art-121`</sub>
@@ -416,7 +446,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`psd2-de:art-98`</sub>
@@ -432,7 +463,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`standardisation-de:art-13`</sub>
@@ -448,7 +480,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`ai-act-de:art-66`</sub>
@@ -464,7 +497,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`cra-de:art-7`</sub>
@@ -480,7 +514,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`data-act-de:art-32`</sub>
@@ -496,7 +531,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dora:art-32`</sub>
@@ -512,7 +548,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dsgvo:art-40`</sub>
@@ -530,7 +567,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`ai-act-de:art-108`</sub>
@@ -546,7 +584,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`cra-de:art-69`</sub>
@@ -562,7 +601,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`data-act-en:art-1`</sub>
@@ -578,7 +618,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dora:art-1`</sub>
@@ -594,7 +635,8 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 | | |
 |---|---|
 | **Urteil** | `A` / `B` / `C` / `D` →                      |
-| **Adressat (bei A oder B)** |                                          |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
 | **Notiz** |                                          |
 
 <sub>`dsgvo:art-1`</sub>
@@ -614,4 +656,4 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 → Richtung A/C des Optionenblocks. Bleibt B unter der Schwelle, ist Option B (explizites
 `noAddressee`) die ehrliche Antwort und der Rest eine Anzeigefrage.
 
-**Hochrechnung:** Anteil B in der Stichprobe × 102 ≈ betroffene Bestimmungen im Korpus.
+**Hochrechnung:** Anteil B in der Stichprobe × 124 ≈ betroffene Bestimmungen im Korpus.

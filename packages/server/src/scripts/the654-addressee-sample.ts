@@ -28,7 +28,7 @@
  *   packages/server$ npx ts-node --transpile-only src/scripts/the654-addressee-sample.ts
  */
 import 'dotenv/config';
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { getCorpusConnection, isCorpusConfigured } from '../services/corpusClient.service';
 
@@ -234,7 +234,8 @@ function block(d: Doc, i: number, isControl: boolean): string {
     '| | |',
     '|---|---|',
     '| **Urteil** | `A` / `B` / `C` / `D` → ' + ' '.repeat(20) + ' |',
-    '| **Adressat (bei A oder B)** | ' + ' '.repeat(40) + ' |',
+    '| **mehr als ein Adressat?** | `ja` / `nein` → ' + ' '.repeat(20) + ' |',
+    '| **Adressat(en) bei A oder B** | ' + ' '.repeat(40) + ' |',
     '| **Notiz** | ' + ' '.repeat(40) + ' |',
     '',
     `<sub>\`${d.regulationKey}\`</sub>`,
@@ -283,7 +284,11 @@ function htmlBlock(d: Doc, i: number, isControl: boolean): string {
         )
         .join('')}
     </div>
-    <input class="feld" type="text" data-key="${id}-adressat" placeholder="Adressat (bei A oder B) — wie müsste die Klasse heißen?">
+    <label class="mehrfach">
+      <input type="checkbox" class="mehr" data-key="${id}-mehrfach">
+      <span>verpflichtet <strong>mehr als einen</strong> Akteur</span>
+    </label>
+    <input class="feld" type="text" data-key="${id}-adressat" placeholder="Adressat(en) bei A oder B — bei mehreren durch Komma trennen">
     <input class="feld" type="text" data-key="${id}-notiz" placeholder="Notiz (optional)">
   </div>
   <footer><code>${esc(d.regulationKey)}</code></footer>
@@ -355,6 +360,12 @@ function renderHtml(args: {
   .opt-d:has(input:checked){border-color:var(--d);background:#fdf6dd}
   .feld { width:100%; padding:.45rem .6rem; border:1px solid var(--line); border-radius:7px;
     font:inherit; font-size:.86rem; margin-top:.35rem; background:#fff; }
+  /* Zweite Achse, kein fünftes Urteil — gestrichelt, damit es sich sichtbar
+     von den A–D-Kacheln unterscheidet und niemand es als Alternative liest. */
+  .mehrfach { display:flex; align-items:center; gap:.5rem; padding:.45rem .6rem; cursor:pointer;
+    border:1.5px dashed var(--line); border-radius:7px; font-size:.86rem; background:#fff; }
+  .mehrfach:hover { background:#faf8f5; }
+  .mehrfach:has(input:checked) { border-style:solid; border-color:var(--d); background:#fdf6e8; }
   article footer { margin-top:.6rem; font-size:.75rem; color:var(--muted); }
   code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
   .bar { position:fixed; bottom:0; left:0; right:0; background:rgba(255,255,255,.97);
@@ -364,7 +375,7 @@ function renderHtml(args: {
   .bar button { font:inherit; font-size:.86rem; padding:.45rem .9rem; border-radius:7px;
     border:1px solid var(--line); background:#fff; cursor:pointer; }
   .bar button.primary { background:var(--fg); color:#fff; border-color:var(--fg); }
-  .tally { font-family:ui-monospace,monospace; font-size:.85rem; }
+  .tally { font-family:ui-monospace,monospace; font-size:.85rem; white-space:nowrap; }
   @media print { .bar{display:none} article{break-inside:avoid} }
 </style></head><body><div class="wrap">
 
@@ -392,6 +403,14 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
     <tr><td class="kk kk-d">D</td><td>unklar / mehrdeutig</td>
         <td style="color:var(--muted)">Eigene Klasse, nicht „Nein".</td></tr>
   </table>
+  <p style="margin:.9rem 0 0; padding-top:.8rem; border-top:1px dashed var(--line)">
+    <strong>Dazu, unabhängig vom Urteil: „verpflichtet mehr als einen Akteur".</strong>
+    Das ist <em>kein fünftes Urteil</em>, sondern eine zweite Frage — sie kann bei jedem Buchstaben zutreffen.
+    Die Typisierung darf heute nur <strong>eine</strong> Rolle je Bestimmung eintragen. Ein Artikel, der
+    Mitgliedstaaten <em>und</em> Anbieter verpflichtet, hat beide im Typraum und landet damit auf
+    <strong style="color:var(--a)">A</strong> — „übersehen". Übersehen wurde aber nichts; es war
+    kein Platz. Ohne dieses Kästchen verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem.
+    Bei mehreren Adressaten bitte <strong>alle</strong> ins Feld darunter, durch Komma getrennt.</p>
 </div>
 
 <div class="box">
@@ -451,15 +470,16 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
   function save() { localStorage.setItem(KEY, JSON.stringify(store)); render(); }
 
   function render() {
-    var total = ${sample.length + control.length}, done = 0;
+    var total = ${sample.length + control.length}, done = 0, mehr = 0;
     var t = { A: 0, B: 0, C: 0, D: 0 };
     for (var i = 1; i <= total; i++) {
       var v = store['f' + i];
       if (v) { done++; t[v] = (t[v] || 0) + 1; }
+      if (store['f' + i + '-mehrfach']) mehr++;
     }
     document.getElementById('done').textContent = done;
     document.getElementById('tally').textContent =
-      'A ' + t.A + ' · B ' + t.B + ' · C ' + t.C + ' · D ' + t.D;
+      'A ' + t.A + ' · B ' + t.B + ' · C ' + t.C + ' · D ' + t.D + ' · mehrfach ' + mehr;
   }
 
   // Gespeicherten Stand wiederherstellen — ein halb ausgefüllter Bogen darf
@@ -473,13 +493,25 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
     el.addEventListener('input', function () { store[el.dataset.key] = el.value; save(); });
   });
 
+  // Zweite Achse (THE-675). Eigener Schlüssel je Fall — ein bereits
+  // ausgefüllter Bogen behält seine Urteile, weil der Speicher flach nach
+  // data-key abgelegt ist und hier nur neue Schlüssel dazukommen.
+  document.querySelectorAll('input.mehr').forEach(function (el) {
+    el.checked = Boolean(store[el.dataset.key]);
+    el.addEventListener('change', function () {
+      if (el.checked) store[el.dataset.key] = '1'; else delete store[el.dataset.key];
+      save();
+    });
+  });
+
   document.getElementById('copy').addEventListener('click', function () {
-    var rows = ['| # | Quelle | Urteil | Adressat | Notiz |', '|---|---|---|---|---|'];
+    var rows = ['| # | Quelle | Urteil | mehrfach | Adressat(en) | Notiz |', '|---|---|---|---|---|---|'];
     document.querySelectorAll('article.fall').forEach(function (a) {
       var id = a.id;
       var nr = a.querySelector('.nr').textContent;
       var q = a.querySelector('.quelle').textContent;
       rows.push('| ' + nr + ' | ' + q + ' | ' + (store[id] || '—') + ' | ' +
+        (store[id + '-mehrfach'] ? 'ja' : '') + ' | ' +
         (store[id + '-adressat'] || '') + ' | ' + (store[id + '-notiz'] || '') + ' |');
     });
     navigator.clipboard.writeText(rows.join('\\n')).then(function () {
@@ -493,6 +525,7 @@ ${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true)).join('')}
     if (!confirm('Alle Urteile verwerfen?')) return;
     store = {}; localStorage.removeItem(KEY);
     document.querySelectorAll('input[type=radio]').forEach(function (e) { e.checked = false; });
+    document.querySelectorAll('input.mehr').forEach(function (e) { e.checked = false; });
     document.querySelectorAll('input.feld').forEach(function (e) { e.value = ''; });
     render();
   });
@@ -518,8 +551,35 @@ async function main(): Promise<void> {
   const verdacht = dedupeByLaw(ohneRolle.filter((d) => !RAHMEN.test(d.title ?? '')));
   const rahmen = dedupeByLaw(ohneRolle.filter((d) => RAHMEN.test(d.title ?? '')));
 
-  const sample = stratify(verdacht, SAMPLE_SIZE);
-  const control = stratify(rahmen, CONTROL_SIZE);
+  // Eingefrorene Stichprobe (13.08.). WARUM: Die Ziehung ist zwar
+  // deterministisch, aber sie hängt am KORPUS-ZUSTAND — sie zieht aus den
+  // Bestimmungen ohne partyRole. Das tp-4-Re-Typing (THE-668) verschob diese
+  // Menge von 389 auf 422, und ein Neulauf tauschte prompt 21 von 35 Fällen
+  // aus. Die Urteile im HTML hängen aber an der POSITION (f1..f35): ein
+  // getauschter Fall hängt ein bereits gefälltes Urteil an einen anderen
+  // Artikel — still. Deshalb liegen die Schlüssel in einer Pin-Datei, und die
+  // Auflösung geht gegen den GESAMTEN Korpus, nicht gegen die Verdachtsmenge
+  // (ein gepinnter Fall darf inzwischen eine Rolle bekommen haben).
+  const pinPath = resolve(__dirname, '../../../../docs/evals/the654-sample-pin.json');
+  const byKey = new Map(all.map((d) => [d.regulationKey, d]));
+  const pick = (keys: string[], label: string): Doc[] =>
+    keys.map((k) => {
+      const doc = byKey.get(k);
+      if (!doc) throw new Error(`Gepinnter ${label}-Fall ${k} ist nicht mehr im Korpus — Pin und Korpus driften.`);
+      return doc;
+    });
+
+  let sample: Doc[];
+  let control: Doc[];
+  if (existsSync(pinPath)) {
+    const pin = JSON.parse(readFileSync(pinPath, 'utf8')) as { sample: string[]; control: string[] };
+    sample = pick(pin.sample, 'Stichproben');
+    control = pick(pin.control, 'Gegenproben');
+    console.log(`  Stichprobe        : EINGEFROREN aus ${pinPath.split('/').pop()}`);
+  } else {
+    sample = stratify(verdacht, SAMPLE_SIZE);
+    control = stratify(rahmen, CONTROL_SIZE);
+  }
   if (sample.length < SAMPLE_SIZE) {
     throw new Error(`Nur ${sample.length} Verdachtsfälle gezogen, ${SAMPLE_SIZE} verlangt.`);
   }
@@ -543,6 +603,13 @@ async function main(): Promise<void> {
     '| **B** | Adressat vorhanden — **aber er fehlt im Typraum** | Der gesuchte Fall. Bitte im Feld darunter benennen, wie er heißen müsste. |',
     '| **C** | **Kein** Normadressat — die Bestimmung richtet sich an niemanden (Verfahren, Definition, Schlussbestimmung) | Korrekt leer. |',
     '| **D** | unklar / mehrdeutig | Zählt als eigene Klasse, nicht als Nein. |',
+    '',
+    '**Dazu, unabhängig vom Urteil: „mehr als ein Adressat?"** Das ist *kein fünftes Urteil*, sondern eine',
+    'zweite Frage — sie kann bei jedem Buchstaben zutreffen. Die Typisierung darf heute nur **eine** Rolle je',
+    'Bestimmung eintragen. Ein Artikel, der Mitgliedstaaten **und** Anbieter verpflichtet, hat beide im Typraum',
+    'und landet damit auf **A** — „übersehen". Übersehen wurde aber nichts; es war kein Platz. Ohne diese Zeile',
+    'verschwindet ein Schema-Problem unbemerkt als Extraktions-Problem. Bei mehreren bitte **alle** Adressaten',
+    'nennen, durch Komma getrennt.',
     '',
     '**Die Leitfrage:** *Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?*',
     'Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,',
