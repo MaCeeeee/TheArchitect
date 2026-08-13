@@ -384,11 +384,34 @@ function renderHtml(args: {
 ${ohne} ohne Adressatenklasse, davon ${verdacht} mit Sachtitel und ${rahmen} Rahmenbestimmungen ·
 Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong> Gesetze, plus ${control.length} Gegenproben</p>
 
+<div class="box" style="border-color:var(--a)">
+  <h4>Aus welcher Blickrichtung?</h4>
+  <p style="margin:.2rem 0"><strong>Aus der Sicht der Norm — nicht aus der Sicht unseres Kunden.</strong>
+  Gefragt ist, wen der Satz verpflichtet, <em>wer immer das ist</em>: auch die Kommission, ein
+  Mitgliedstaat, eine Aufsichtsbehörde oder eine Normungsorganisation.</p>
+  <p style="margin:.6rem 0 0; color:var(--muted)">Der Kunde kommt erst eine Stufe später ins Spiel. Seine
+  Selbstauskunft („wir sind Verantwortlicher und Auftragsverarbeiter") wird gegen die hier bestimmte
+  Norm-Rolle gehalten; erst dieser Abgleich entscheidet über Anwendbarkeit. Der Bogen liefert die eine
+  Seite, das Unternehmensprofil die andere.</p>
+  <p style="margin:.6rem 0 0; color:var(--muted)">Dass es so gemeint ist, steht in den Daten:
+  <strong>46 %</strong> der 1324 getypten Bestimmungen tragen heute <code>member_state</code>,
+  <code>supervisory_authority</code> oder <code>data_subject</code> — Rollen, die kein Unternehmen je über
+  sich selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.</p>
+  <p style="margin:.6rem 0 0; padding-top:.6rem; border-top:1px dashed var(--line)">
+  <strong>Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:</strong> „Dieser Artikel bindet die
+  Kommission" ist eine <em>Antwort</em> — „wir wissen es nicht" ist keine. Nur die erste darf zu
+  „betrifft dich nicht" werden; Nichtwissen als Entwarnung auszugeben ist die gefährliche Fehlerrichtung.</p>
+</div>
+
 <div class="box">
   <h4>Die Leitfrage</h4>
   <p style="margin:.2rem 0"><strong>Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?</strong><br>
   <span style="color:var(--muted)">Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die
   Normungsorganisation, auch wenn das Wort „Pflicht" nicht vorkommt.</span></p>
+  <p style="margin:.6rem 0 0; color:var(--muted)">Deshalb ist ein Artikel, der <em>nur</em> EU-Organe
+  verpflichtet, <strong style="color:var(--b)">B</strong> — Adressat vorhanden, fehlt im Typraum — und nicht
+  <strong style="color:var(--c)">C</strong>. <strong style="color:var(--c)">C</strong> ist ausschließlich für
+  Sätze, die <em>niemanden</em> verpflichten.</p>
 </div>
 
 <div class="box">
@@ -595,6 +618,24 @@ async function main(): Promise<void> {
     '',
     '> Erzeugt von `packages/server/src/scripts/the654-addressee-sample.ts` — derselbe Lauf ergibt denselben Bogen.',
     '',
+    '## Aus welcher Blickrichtung?',
+    '',
+    '**Aus der Sicht der Norm — nicht aus der Sicht unseres Kunden.** Gefragt ist, wen der Satz verpflichtet,',
+    '*wer immer das ist*: auch die Kommission, ein Mitgliedstaat, eine Aufsichtsbehörde oder eine',
+    'Normungsorganisation.',
+    '',
+    'Der Kunde kommt erst eine Stufe später ins Spiel. Seine Selbstauskunft („wir sind Verantwortlicher und',
+    'Auftragsverarbeiter") wird gegen die hier bestimmte Norm-Rolle gehalten; erst dieser Abgleich entscheidet',
+    'über Anwendbarkeit. Der Bogen liefert die eine Seite, das Unternehmensprofil die andere.',
+    '',
+    'Dass es so gemeint ist, steht in den Daten: **46 %** der 1324 getypten Bestimmungen tragen heute',
+    '`member_state`, `supervisory_authority` oder `data_subject` — Rollen, die kein Unternehmen je über sich',
+    'selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.',
+    '',
+    '**Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:** „Dieser Artikel bindet die Kommission" ist',
+    'eine *Antwort* — „wir wissen es nicht" ist keine. Nur die erste darf zu „betrifft dich nicht" werden;',
+    'Nichtwissen als Entwarnung auszugeben ist die gefährliche Fehlerrichtung.',
+    '',
     '## Die vier Urteile',
     '',
     '| | Bedeutung | Was daraus folgt |',
@@ -614,6 +655,9 @@ async function main(): Promise<void> {
     '**Die Leitfrage:** *Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?*',
     'Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,',
     'auch wenn das Wort „Pflicht" nicht vorkommt.',
+    '',
+    'Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, fehlt im Typraum —',
+    'und nicht **C**. **C** ist ausschließlich für Sätze, die *niemanden* verpflichten.',
     '',
     '## Der Typraum heute (19 Klassen)',
     '',

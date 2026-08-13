@@ -6,6 +6,24 @@ Stichprobe: **30** über **14** Gesetze, plus **5** Gegenproben.
 
 > Erzeugt von `packages/server/src/scripts/the654-addressee-sample.ts` — derselbe Lauf ergibt denselben Bogen.
 
+## Aus welcher Blickrichtung?
+
+**Aus der Sicht der Norm — nicht aus der Sicht unseres Kunden.** Gefragt ist, wen der Satz verpflichtet,
+*wer immer das ist*: auch die Kommission, ein Mitgliedstaat, eine Aufsichtsbehörde oder eine
+Normungsorganisation.
+
+Der Kunde kommt erst eine Stufe später ins Spiel. Seine Selbstauskunft („wir sind Verantwortlicher und
+Auftragsverarbeiter") wird gegen die hier bestimmte Norm-Rolle gehalten; erst dieser Abgleich entscheidet
+über Anwendbarkeit. Der Bogen liefert die eine Seite, das Unternehmensprofil die andere.
+
+Dass es so gemeint ist, steht in den Daten: **46 %** der 1324 getypten Bestimmungen tragen heute
+`member_state`, `supervisory_authority` oder `data_subject` — Rollen, die kein Unternehmen je über sich
+selbst erklärt. Wäre die Kundensicht gemeint, dürfte es sie im Typraum gar nicht geben.
+
+**Warum das auch dann zählt, wenn nie ein Kunde gemeint ist:** „Dieser Artikel bindet die Kommission" ist
+eine *Antwort* — „wir wissen es nicht" ist keine. Nur die erste darf zu „betrifft dich nicht" werden;
+Nichtwissen als Entwarnung auszugeben ist die gefährliche Fehlerrichtung.
+
 ## Die vier Urteile
 
 | | Bedeutung | Was daraus folgt |
@@ -25,6 +43,9 @@ nennen, durch Komma getrennt.
 **Die Leitfrage:** *Wen verpflichtet dieser Artikel — wer muss danach etwas tun oder lassen?*
 Nicht: wovon handelt er. Ein Artikel über Normungsaufträge verpflichtet die Normungsorganisation,
 auch wenn das Wort „Pflicht" nicht vorkommt.
+
+Deshalb ist ein Artikel, der *nur* EU-Organe verpflichtet, **B** — Adressat vorhanden, fehlt im Typraum —
+und nicht **C**. **C** ist ausschließlich für Sätze, die *niemanden* verpflichten.
 
 ## Der Typraum heute (19 Klassen)
 
