@@ -15,8 +15,9 @@
  * geschrieben wird nur, was neu ist oder dessen Text sich geändert hat.
  * Zweiter Lauf ohne Quellen-Änderung = 0 Writes.
  */
-import axios from 'axios';
 import { connectMongo, disconnectMongo } from '../db/mongo';
+import { config } from '../config';
+import { fetchLegalHtml, LegalHtmlFetchError } from '../lib/legalHtmlFetch';
 import { Recital } from '../db/recital.model';
 import { Regulation } from '../db/regulation.model';
 import { SOURCE_CRAWL_CONFIG, deriveEurLexUrl, type CrawlConfig } from '../sources/crawl-config';
@@ -60,6 +61,7 @@ async function main(): Promise<void> {
   let updated = 0;
   let unchanged = 0;
   const fehler: string[] = [];
+  const viaFirecrawl: string[] = [];
 
   console.log(
     `[recitals-crawl] ${rows.length} Fassung(en) · regulations vorher: ${regulationsVorher}` +
@@ -69,38 +71,27 @@ async function main(): Promise<void> {
   for (const [source, cfg] of rows) {
     const url = deriveEurLexUrl(cfg.celex!, cfg.language!);
 
-    // Fetch mit Drossel-Erkennung: EUR-Lex antwortet unter Last mit HTTP 202
-    // und LEEREM Body (beobachtet 14.08. nach ~55 Requests in einer Stunde).
-    // Ein leerer Body ist ein Quellen-Problem, NIE "0 Erwägungsgründe" —
-    // die Unterscheidung hat der erste Dry-Run nicht getroffen und meldete
-    // 24 falsche Fehler. Backoff: 20s, dann 75s.
+    // Direktweg zuerst, Firecrawl als Rückfall (fetchLegalHtml). EUR-Lex
+    // drosselt die IP mit HTTP 202 und LEEREM Body — am 14.08. auch für
+    // Quellen, die Stunden zuvor liefen. Ein leerer Body ist nie Inhalt.
     let html = '';
-    let fetchFehler = '';
-    for (const wartezeit of [0, 20_000, 75_000]) {
-      if (wartezeit > 0) {
-        console.log(`  ${source.padEnd(20)} gedrosselt — warte ${wartezeit / 1000}s …`);
-        await new Promise((r) => setTimeout(r, wartezeit));
+    let via: 'direct' | 'firecrawl' = 'direct';
+    try {
+      const res = await fetchLegalHtml(url, {
+        firecrawlKey: config.FIRECRAWL_API_KEY,
+        firecrawlUrl: config.FIRECRAWL_API_URL || undefined,
+      });
+      html = res.html;
+      via = res.via;
+      if (res.via === 'firecrawl') {
+        console.log(`  ${source.padEnd(20)} Direktweg gedrosselt → über Firecrawl geholt`);
       }
-      try {
-        const res = await axios.get(url, {
-          timeout: 60_000,
-          headers: { 'User-Agent': 'TheArchitect-Compliance-Crawler/1.0' },
-          validateStatus: () => true,
-        });
-        if (res.status === 200 && String(res.data ?? '').length > 10_000) {
-          html = String(res.data);
-          fetchFehler = '';
-          break;
-        }
-        fetchFehler = `HTTP ${res.status}, Body ${String(res.data ?? '').length} Zeichen (gedrosselt?)`;
-      } catch (err) {
-        fetchFehler = (err as Error).message.slice(0, 60);
-      }
-    }
-    if (!html) {
-      fehler.push(`${source}: fetch — ${fetchFehler}`);
+    } catch (err) {
+      const e = err as LegalHtmlFetchError;
+      fehler.push(`${source}: fetch — ${e.detail ?? e.message}`);
       continue;
     }
+    if (via === 'firecrawl') viaFirecrawl.push(source);
 
     const ex = extractRecitals(html);
 
@@ -155,7 +146,7 @@ async function main(): Promise<void> {
       `  ${source.padEnd(20)} ${String(ex.recitals.length).padStart(4)} Erw. · ` +
         `neu ${String(ins).padStart(4)} · geändert ${String(upd).padStart(3)} · unverändert ${String(same).padStart(4)} · ${ex.selector}`
     );
-    await new Promise((r) => setTimeout(r, 3_000)); // höflich gegenüber EUR-Lex — 900ms reichten nicht
+    await new Promise((r) => setTimeout(r, 3_000)); // höflich gegenüber EUR-Lex; die Drossel fängt fetchLegalHtml
   }
 
   const regulationsNachher = await Regulation.countDocuments({});
@@ -165,6 +156,7 @@ async function main(): Promise<void> {
   console.log(`  neu geschrieben  : ${inserted}${args.dryRun ? ' (DRY-RUN — nichts geschrieben)' : ''}`);
   console.log(`  geändert         : ${updated}`);
   console.log(`  unverändert      : ${unchanged}`);
+  console.log(`  über Firecrawl   : ${viaFirecrawl.join(', ') || '— (alles direkt)'}`);
   console.log(`  recitals gesamt  : ${recitalsGesamt}`);
   console.log(
     `  regulations      : ${regulationsVorher} → ${regulationsNachher} ` +
