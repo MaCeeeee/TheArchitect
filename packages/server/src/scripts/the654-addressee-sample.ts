@@ -223,7 +223,29 @@ function markiere(text: string): Markiert {
   return { html, bekannt, fehlend };
 }
 
-function block(d: Doc, i: number, isControl: boolean, defektGrund?: string): string {
+/**
+ * THE-682: Der Zweck neben dem Artikel — Erwägungsgründe, die den Artikel
+ * WÖRTLICH zitieren (mechanischer Join über citedArticles aus THE-681).
+ *
+ * Zwei ehrlich getrennte Leerzustände:
+ *   quelleVorhanden=true,  0 Treffer → "kein Erwägungsgrund verweist ausdrücklich…"
+ *   quelleVorhanden=false            → "Erwägungsgründe dieser Fassung liegen noch nicht vor"
+ * Der thematisch nächstliegende wird NIE gezeigt — ein geratener Zweck würde
+ * das Urteil ankern, und die Blindheit des Bogens ist seine wichtigste Eigenschaft.
+ */
+interface Zweck {
+  quelleVorhanden: boolean;
+  treffer: Array<{ nummer: number; text: string }>;
+}
+
+const RECITAL_EXCERPT = 1200;
+
+function kuerze(t: string): string {
+  const clean = t.replace(/\s+/g, ' ').trim();
+  return clean.length > RECITAL_EXCERPT ? `${clean.slice(0, RECITAL_EXCERPT)}…` : clean;
+}
+
+function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zweck?: Zweck): string {
   if (defektGrund) {
     return [
       `### ${String(i).padStart(2, '0')} · ${d.source} · ${d.paragraphNumber ?? '?'}   **— nicht bewertbar**`,
@@ -247,6 +269,21 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string): str
     '',
     `> ${excerpt(d.fullText)}`,
     '',
+    ...(zweck === undefined
+      ? []
+      : zweck.treffer.length > 0
+        ? [
+            `**Wozu es diesen Artikel gibt** *(Erwägungsgrund${zweck.treffer.length > 1 ? 'e' : ''} ${zweck.treffer.map((t) => `(${t.nummer})`).join(', ')} — erklärt den Zweck, ist kein Normtext)*`,
+            '',
+            ...zweck.treffer.slice(0, 4).flatMap((t) => [`> *(${t.nummer})* ${kuerze(t.text)}`, '>']),
+            ...(zweck.treffer.length > 4
+              ? [`> …und ${zweck.treffer.length - 4} weitere: ${zweck.treffer.slice(4).map((t) => `(${t.nummer})`).join(', ')}`, '>']
+              : []),
+            '',
+          ]
+        : zweck.quelleVorhanden
+          ? ['*Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel.*', '']
+          : ['*Erwägungsgründe dieser Sprachfassung liegen noch nicht im Korpus vor.*', '']),
     '| | |',
     '|---|---|',
     '| **Urteil** | `A` / `B` / `C` / `D` → ' + ' '.repeat(20) + ' |',
@@ -261,7 +298,36 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string): str
   ].join('\n');
 }
 
-function htmlBlock(d: Doc, i: number, isControl: boolean, defektGrund?: string): string {
+function zweckHtml(zweck?: Zweck): string {
+  if (zweck === undefined) return '';
+  if (zweck.treffer.length === 0) {
+    return `
+  <p class="zweck-leer">${
+    zweck.quelleVorhanden
+      ? 'Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel.'
+      : 'Erwägungsgründe dieser Sprachfassung liegen noch nicht im Korpus vor.'
+  }</p>`;
+  }
+  const sichtbar = zweck.treffer.slice(0, 4);
+  const rest = zweck.treffer.slice(4);
+  return `
+  <div class="zweck">
+    <p class="zweck-titel">Wozu es diesen Artikel gibt
+      <span class="zweck-hinweis">erklärt den Zweck — kein Normtext, zählt nie gegen den Wortlaut</span></p>
+    ${sichtbar
+      .map(
+        (t, idx) => `
+    <details class="zweck-eintrag"${idx === 0 ? ' open' : ''}>
+      <summary>Erwägungsgrund (${t.nummer})</summary>
+      <p>${esc(kuerze(t.text))}</p>
+    </details>`
+      )
+      .join('')}
+    ${rest.length > 0 ? `<p class="zweck-mehr">…außerdem genannt in ${rest.map((t) => `(${t.nummer})`).join(', ')}</p>` : ''}
+  </div>`;
+}
+
+function htmlBlock(d: Doc, i: number, isControl: boolean, defektGrund?: string, zweck?: Zweck): string {
   const m = markiere(excerpt(d.fullText));
   const id = `f${i}`;
 
@@ -301,6 +367,7 @@ function htmlBlock(d: Doc, i: number, isControl: boolean, defektGrund?: string):
   <h3>${esc(d.title ?? '(ohne Titel)')}</h3>
   ${hinweis}
   <blockquote>${m.html}</blockquote>
+  ${zweckHtml(zweck)}
   <div class="urteil">
     <div class="radios">
       ${(
@@ -342,8 +409,9 @@ function renderHtml(args: {
   defekt: Record<string, string>;
   bewertbar: number;
   laws: Set<string>;
+  zweckJeFall: Map<string, Zweck>;
 }): string {
-  const { all, ohne, verdacht, rahmen, sample, control, nachruecker, defekt, bewertbar, laws } = args;
+  const { all, ohne, verdacht, rahmen, sample, control, nachruecker, defekt, bewertbar, laws, zweckJeFall } = args;
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -405,6 +473,17 @@ function renderHtml(args: {
     border:1.5px dashed var(--line); border-radius:7px; font-size:.86rem; background:#fff; }
   .mehrfach:hover { background:#faf8f5; }
   .mehrfach:has(input:checked) { border-style:solid; border-color:var(--d); background:#fdf6e8; }
+  /* Zweck-Block (THE-682) — sichtbar ANDERS als der Normtext: eigene Fläche,
+     Lesestimme, damit niemand Erwägungsgrund und Artikel verwechselt. */
+  .zweck { margin:.6rem 0 .2rem; padding:.55rem .7rem; background:#f4f1ec; border-radius:8px;
+    border:1px solid var(--line); }
+  .zweck-titel { margin:0 0 .3rem; font-size:.86rem; font-weight:700; }
+  .zweck-hinweis { font-weight:400; color:var(--muted); font-size:.78rem; margin-left:.4rem; }
+  .zweck-eintrag { margin:.25rem 0; }
+  .zweck-eintrag summary { cursor:pointer; font-size:.84rem; color:var(--muted); font-weight:600; }
+  .zweck-eintrag p { margin:.3rem 0 .2rem; font-size:.86rem; line-height:1.55; }
+  .zweck-mehr { margin:.3rem 0 0; font-size:.8rem; color:var(--muted); }
+  .zweck-leer { margin:.5rem 0 .2rem; font-size:.8rem; color:var(--muted); font-style:italic; }
   /* Defekter Datensatz — sichtbar stillgelegt, Position bleibt erhalten. */
   article.defekt { opacity:.72; background:#faf8f5; }
   .badge-defekt { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.02em;
@@ -510,13 +589,13 @@ Stichprobe <strong>${sample.length}</strong> über <strong>${laws.size}</strong>
 </div>
 
 <h2>Stichprobe — ${sample.length} Fälle</h2>
-${sample.map((d, i) => htmlBlock(d, i + 1, false, defekt[d.regulationKey])).join('')}
+${sample.map((d, i) => htmlBlock(d, i + 1, false, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))).join('')}
 
 <h2>Gegenproben — ${control.length} Fälle</h2>
 <p class="sub">Aus den ${rahmen} Rahmenbestimmungen gezogen. Sie <em>sollten</em> <strong style="color:var(--c)">C</strong>
 ergeben — tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trennen vorgibt, und die Zahl
 „${verdacht} Verdachtsfälle" ist selbst fragwürdig. Ihre Antwort ist trotzdem offen.</p>
-${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true, defekt[d.regulationKey])).join('')}
+${control.map((d, i) => htmlBlock(d, sample.length + i + 1, true, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))).join('')}
 ${
   nachruecker.length === 0
     ? ''
@@ -525,7 +604,7 @@ ${
 <p class="sub">Ersatz für die oben stillgelegten Fälle. Sie stehen hier hinten und nicht an der Lücke,
 weil die Urteile an der <em>Position</em> hängen — ein Einschub in der Mitte würde jedes danach gefällte
 Urteil still an einen anderen Artikel hängen.</p>
-${nachruecker.map((d, i) => htmlBlock(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey])).join('')}`
+${nachruecker.map((d, i) => htmlBlock(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))).join('')}`
 }
 
 <h2>Schwelle</h2>
@@ -705,6 +784,47 @@ async function main(): Promise<void> {
   }
   const bewertbar = sample.length + control.length + nachruecker.length - Object.keys(defekt).length;
 
+  /*
+   * THE-682: Zweck-Kontext laden. Mechanischer Join: Erwägungsgründe derselben
+   * Sprachfassung, deren citedArticles den Artikel-Anker des Falls WÖRTLICH
+   * nennen. Kein thematisches Raten (AC-2) — der Bogen bleibt blind.
+   * Fehlt die Collection ganz, entfällt das Feature ohne Bruch (AC-5).
+   */
+  const alleFaelle = [...sample, ...control, ...nachruecker];
+  const zweckJeFall = new Map<string, Zweck>();
+  const recitalsGesamt = await conn.collection('recitals').countDocuments({}).catch(() => 0);
+  if (recitalsGesamt > 0) {
+    const sources = [...new Set(alleFaelle.map((d) => d.source))];
+    const recs = (await conn
+      .collection('recitals')
+      .find(
+        { source: { $in: sources } },
+        { projection: { source: 1, recitalNumber: 1, fullText: 1, citedArticles: 1 } }
+      )
+      .toArray()) as unknown as Array<{
+      source: string;
+      recitalNumber: number;
+      fullText: string;
+      citedArticles: string[];
+    }>;
+    const quellenMitBestand = new Set(recs.map((r) => r.source));
+    const proAnker = new Map<string, Array<{ nummer: number; text: string }>>();
+    for (const r of recs) {
+      for (const art of r.citedArticles ?? []) {
+        const k = `${r.source}|${art}`;
+        proAnker.set(k, [...(proAnker.get(k) ?? []), { nummer: r.recitalNumber, text: r.fullText }]);
+      }
+    }
+    for (const d of alleFaelle) {
+      const artAnker = d.regulationKey.split(':')[1];
+      const treffer = (proAnker.get(`${d.source}|${artAnker}`) ?? []).sort((a, b) => a.nummer - b.nummer);
+      zweckJeFall.set(d.regulationKey, {
+        quelleVorhanden: quellenMitBestand.has(d.source),
+        treffer,
+      });
+    }
+  }
+
   const md = [
     '# THE-654 — Adjudikation: hat diese Bestimmung einen Adressaten?',
     '',
@@ -780,10 +900,10 @@ async function main(): Promise<void> {
     '',
     '## Stichprobe',
     '',
-    ...sample.map((d, i) => block(d, i + 1, false, defekt[d.regulationKey])),
+    ...sample.map((d, i) => block(d, i + 1, false, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))),
     '## Gegenproben',
     '',
-    ...control.map((d, i) => block(d, sample.length + i + 1, true, defekt[d.regulationKey])),
+    ...control.map((d, i) => block(d, sample.length + i + 1, true, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))),
     ...(nachruecker.length === 0
       ? []
       : [
@@ -794,7 +914,7 @@ async function main(): Promise<void> {
           'einen anderen Artikel hängen.',
           '',
           ...nachruecker.map((d, i) =>
-            block(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey])
+            block(d, sample.length + control.length + i + 1, false, defekt[d.regulationKey], zweckJeFall.get(d.regulationKey))
           ),
         ]),
     '## Auswertung (nach der Adjudikation ausfüllen)',
@@ -820,7 +940,7 @@ async function main(): Promise<void> {
   const outHtml = resolve(__dirname, '../../../../docs/evals/the654-addressee-adjudication.html');
   writeFileSync(
     outHtml,
-    renderHtml({ all: all.length, ohne: ohneRolle.length, verdacht: verdacht.length, rahmen: rahmen.length, sample, control, nachruecker, defekt, bewertbar, laws }),
+    renderHtml({ all: all.length, ohne: ohneRolle.length, verdacht: verdacht.length, rahmen: rahmen.length, sample, control, nachruecker, defekt, bewertbar, laws, zweckJeFall }),
   );
   console.log(`\n  Korpus            : ${all.length} Bestimmungen`);
   console.log(`  ohne Adressat     : ${ohneRolle.length}`);
@@ -832,6 +952,10 @@ async function main(): Promise<void> {
   if (Object.keys(defekt).length > 0)
     console.log(`  STILLGELEGT       : ${Object.keys(defekt).join(', ')} — nicht bewertbar`);
   console.log(`  bewertbare Fälle  : ${bewertbar}`);
+  const mitZweck = [...zweckJeFall.values()].filter((z) => z.treffer.length > 0).length;
+  console.log(
+    `  Zweck-Kontext     : ${recitalsGesamt > 0 ? `${mitZweck} von ${alleFaelle.length} Fällen mit zitierendem Erwägungsgrund` : 'Collection recitals leer — Feature entfällt (AC-5)'}`
+  );
   const markiert = sample.filter((d) => markiere(excerpt(d.fullText)).fehlend.size > 0).length;
   console.log(`  davon mit Akteur nicht im Rollenkatalog: ${markiert} von ${sample.length}`);
   console.log(`\n  → ${out}`);

@@ -118,11 +118,13 @@ async function main(): Promise<void> {
       continue;
     }
 
-    // Bestand einmal lesen: regulationKey → versionHash (Idempotenz, AC-6).
+    // Bestand einmal lesen (Idempotenz, AC-6). Die Signatur umfasst AUCH die
+    // abgeleiteten citedArticles: Ein Extraktions-Fix ändert sie bei
+    // unverändertem Text — der Hash allein hätte den Write still übersprungen.
     const bestand = new Map<string, string>(
       (
-        await Recital.find({ source }, { regulationKey: 1, versionHash: 1 }).lean()
-      ).map((d) => [d.regulationKey, d.versionHash])
+        await Recital.find({ source }, { regulationKey: 1, versionHash: 1, citedArticles: 1 }).lean()
+      ).map((d) => [d.regulationKey, `${d.versionHash}|${(d.citedArticles ?? []).join(',')}`])
     );
 
     let ins = 0;
@@ -132,7 +134,7 @@ async function main(): Promise<void> {
     for (const recital of ex.recitals) {
       const doc = buildRecitalDoc({ source, language: cfg.language!, celex: cfg.celex!, recital, crawledAt });
       const vorhanden = bestand.get(doc.regulationKey);
-      if (vorhanden === doc.versionHash) {
+      if (vorhanden === `${doc.versionHash}|${doc.citedArticles.join(',')}`) {
         same++;
         continue;
       }

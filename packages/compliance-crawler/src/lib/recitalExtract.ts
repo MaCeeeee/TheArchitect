@@ -109,11 +109,16 @@ export function extractRecitals(html: string): RecitalExtraction {
 // ─── citedArticles (AC-4): mechanisch, nie geraten ───────────────────────────
 
 /**
- * Verweis auf einen FREMDEN Rechtsakt direkt hinter der Artikelgruppe —
+ * Verweis auf einen FREMDEN Rechtsakt hinter der Artikelgruppe —
  * „Artikel 5 der Verordnung (EU) 2016/679" zitiert nicht diesen Rechtsakt.
+ *
+ * Gefunden am Bestand (14.08.): dsgvo:rec-1 lieferte fälschlich art-8/art-16 —
+ * das sind Artikel 8 der CHARTA und Artikel 16 AEUV. Zwei Löcher: (1) Charta/
+ * AEUV/Vertrag fehlten in der Liste, (2) zwischen Nummer und Fremdakt-Marker
+ * stehen oft „Absatz 1" (DE) oder „(1)" (EN) — der Blick muss darüber hinweg.
  */
 const FOREIGN_ACT =
-  /^\s*(?:der|des|of)\s+(?:Verordnung|Richtlinie|Beschluss(?:es)?|Regulation|Directive|Decision)/i;
+  /^\s*(?:\(\d+[a-z]?\)\s*)*(?:Absatz\s+\d+[a-z]?\s*)?(?:Unterabsatz\s+\d+\s*)?(?:(?:der|des|of(?:\s+the)?)\s+(?:Verordnung|Richtlinie|Beschluss(?:es)?|Charta|Vertrags?|Regulation|Directive|Decision|Charter|Treaty)|AEUV\b|TFEU\b|EUV\b|TEU\b)/i;
 
 const ARTICLE_GROUP =
   /\bArti(?:kels?n?|cles?)\s+(\d{1,3}[a-z]?(?:\s*(?:,|und|and|bis|to|sowie|or|oder)\s*\d{1,3}[a-z]?)*)/gi;

@@ -98,6 +98,25 @@ describe('extractCitedArticles', () => {
     expect(extractCitedArticles('gemäß Artikel 22 der Richtlinie 95/46/EG')).toEqual([]);
   });
 
+  it('Charta, AEUV und Vertrag sind Fremdakte — der dsgvo:rec-1-Fall vom 14.08.', () => {
+    // Am echten Bestand gefunden: Recital 1 der DSGVO lieferte fälschlich
+    // art-8/art-16 — Artikel 8 der Charta, Artikel 16 AEUV. Zwei Löcher:
+    // fehlende Akt-Namen und das „Absatz 1"-Zwischenstück.
+    const dsgvoRec1 =
+      'Der Schutz natürlicher Personen bei der Verarbeitung personenbezogener Daten ist ' +
+      'in Artikel 8 Absatz 1 der Charta der Grundrechte der Europäischen Union und ' +
+      'Artikel 16 Absatz 1 des Vertrags über die Arbeitsweise der Europäischen Union (AEUV) verankert.';
+    expect(extractCitedArticles(dsgvoRec1)).toEqual([]);
+    expect(extractCitedArticles('as enshrined in Article 8(1) of the Charter')).toEqual([]);
+    expect(extractCitedArticles('pursuant to Article 16(1) TFEU')).toEqual([]);
+    expect(extractCitedArticles('nach Artikel 288 AEUV')).toEqual([]);
+  });
+
+  it('„Absatz"-Zusatz beim EIGENEN Artikel bleibt ein Treffer', () => {
+    expect(extractCitedArticles('nach Artikel 14 Absatz 1 dieser Verordnung')).toEqual(['art-14']);
+    expect(extractCitedArticles('as referred to in Article 14(1) of this Regulation')).toEqual(['art-14']);
+  });
+
   it('gemischter Fall: eigener Verweis bleibt, fremder fällt', () => {
     const t = 'Nach Artikel 13 gilt ergänzend Artikel 5 der Verordnung (EU) 2016/679.';
     expect(extractCitedArticles(t)).toEqual(['art-13']);
