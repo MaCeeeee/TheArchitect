@@ -235,7 +235,16 @@ function markiere(text: string): Markiert {
  */
 interface Zweck {
   quelleVorhanden: boolean;
+  /** Erwägungsgründe, die den Artikel WÖRTLICH zitieren — der beste Kontext. */
   treffer: Array<{ nummer: number; text: string }>;
+  /**
+   * Option b (Entscheidung 14.08.): Zitiert kein Erwägungsgrund den Artikel
+   * (bei 4 % Zitat-Quote der Normalfall), zeigen wir die ERSTEN DREI des
+   * Gesetzes — mechanisch die niedrigsten Nummern, dort steht der Gesamtzweck.
+   * Klar gekennzeichnet als Gesetzes-, nicht Artikel-Zweck: schwächerer, aber
+   * ehrlicher Kontext, der nichts über den konkreten Adressaten ankert.
+   */
+  gesetzesweit: Array<{ nummer: number; text: string }>;
 }
 
 const RECITAL_EXCERPT = 1200;
@@ -281,9 +290,17 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zwec
               : []),
             '',
           ]
-        : zweck.quelleVorhanden
-          ? ['*Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel.*', '']
-          : ['*Erwägungsgründe dieser Sprachfassung liegen noch nicht im Korpus vor.*', '']),
+        : zweck.gesetzesweit.length > 0
+          ? [
+              `**Wozu es dieses Gesetz gibt** *(Erwägungsgründe ${zweck.gesetzesweit.map((t) => `(${t.nummer})`).join(', ')} — Zweck des Gesetzes, nicht speziell dieses Artikels; kein Normtext)*`,
+              '',
+              ...zweck.gesetzesweit.flatMap((t) => [`> *(${t.nummer})* ${kuerze(t.text)}`, '>']),
+              '*Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel — gezeigt wird der Gesamtzweck.*',
+              '',
+            ]
+          : zweck.quelleVorhanden
+            ? ['*Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel.*', '']
+            : ['*Erwägungsgründe dieser Sprachfassung liegen noch nicht im Korpus vor.*', '']),
     '| | |',
     '|---|---|',
     '| **Urteil** | `A` / `B` / `C` / `D` → ' + ' '.repeat(20) + ' |',
@@ -300,6 +317,23 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zwec
 
 function zweckHtml(zweck?: Zweck): string {
   if (zweck === undefined) return '';
+  if (zweck.treffer.length === 0 && zweck.gesetzesweit.length > 0) {
+    return `
+  <div class="zweck zweck-gesetz">
+    <p class="zweck-titel">Wozu es dieses Gesetz gibt
+      <span class="zweck-hinweis">Zweck des Gesetzes, nicht speziell dieses Artikels — kein Normtext, zählt nie gegen den Wortlaut</span></p>
+    ${zweck.gesetzesweit
+      .map(
+        (t, idx) => `
+    <details class="zweck-eintrag"${idx === 0 ? ' open' : ''}>
+      <summary>Erwägungsgrund (${t.nummer})</summary>
+      <p>${esc(kuerze(t.text))}</p>
+    </details>`
+      )
+      .join('')}
+    <p class="zweck-mehr">Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel — gezeigt wird der Gesamtzweck.</p>
+  </div>`;
+  }
   if (zweck.treffer.length === 0) {
     return `
   <p class="zweck-leer">${
@@ -484,6 +518,7 @@ function renderHtml(args: {
   .zweck-eintrag p { margin:.3rem 0 .2rem; font-size:.86rem; line-height:1.55; }
   .zweck-mehr { margin:.3rem 0 0; font-size:.8rem; color:var(--muted); }
   .zweck-leer { margin:.5rem 0 .2rem; font-size:.8rem; color:var(--muted); font-style:italic; }
+  .zweck-gesetz { border-style:dashed; }
   /* Defekter Datensatz — sichtbar stillgelegt, Position bleibt erhalten. */
   article.defekt { opacity:.72; background:#faf8f5; }
   .badge-defekt { margin-left:auto; font-size:.72rem; font-weight:700; letter-spacing:.02em;
@@ -809,11 +844,18 @@ async function main(): Promise<void> {
     }>;
     const quellenMitBestand = new Set(recs.map((r) => r.source));
     const proAnker = new Map<string, Array<{ nummer: number; text: string }>>();
+    const proQuelle = new Map<string, Array<{ nummer: number; text: string }>>();
     for (const r of recs) {
+      proQuelle.set(r.source, [...(proQuelle.get(r.source) ?? []), { nummer: r.recitalNumber, text: r.fullText }]);
       for (const art of r.citedArticles ?? []) {
         const k = `${r.source}|${art}`;
         proAnker.set(k, [...(proAnker.get(k) ?? []), { nummer: r.recitalNumber, text: r.fullText }]);
       }
+    }
+    // Option b: die drei NIEDRIGSTEN Nummern je Fassung tragen den Gesamtzweck.
+    const gesetzesZweck = new Map<string, Array<{ nummer: number; text: string }>>();
+    for (const [src, liste] of proQuelle) {
+      gesetzesZweck.set(src, [...liste].sort((a, b) => a.nummer - b.nummer).slice(0, 3));
     }
     for (const d of alleFaelle) {
       const artAnker = d.regulationKey.split(':')[1];
@@ -821,6 +863,7 @@ async function main(): Promise<void> {
       zweckJeFall.set(d.regulationKey, {
         quelleVorhanden: quellenMitBestand.has(d.source),
         treffer,
+        gesetzesweit: treffer.length === 0 ? (gesetzesZweck.get(d.source) ?? []) : [],
       });
     }
   }
@@ -952,9 +995,15 @@ async function main(): Promise<void> {
   if (Object.keys(defekt).length > 0)
     console.log(`  STILLGELEGT       : ${Object.keys(defekt).join(', ')} — nicht bewertbar`);
   console.log(`  bewertbare Fälle  : ${bewertbar}`);
-  const mitZweck = [...zweckJeFall.values()].filter((z) => z.treffer.length > 0).length;
+  const mitZitat = [...zweckJeFall.values()].filter((z) => z.treffer.length > 0).length;
+  const mitGesetz = [...zweckJeFall.values()].filter((z) => z.treffer.length === 0 && z.gesetzesweit.length > 0).length;
+  const ohneFassung = [...zweckJeFall.values()].filter((z) => !z.quelleVorhanden).length;
   console.log(
-    `  Zweck-Kontext     : ${recitalsGesamt > 0 ? `${mitZweck} von ${alleFaelle.length} Fällen mit zitierendem Erwägungsgrund` : 'Collection recitals leer — Feature entfällt (AC-5)'}`
+    `  Zweck-Kontext     : ${
+      recitalsGesamt > 0
+        ? `${mitZitat} Artikel-Zitat · ${mitGesetz} gesetzesweit · ${ohneFassung} ohne Fassung`
+        : 'Collection recitals leer — Feature entfällt (AC-5)'
+    }`
   );
   const markiert = sample.filter((d) => markiere(excerpt(d.fullText)).fehlend.size > 0).length;
   console.log(`  davon mit Akteur nicht im Rollenkatalog: ${markiert} von ${sample.length}`);
