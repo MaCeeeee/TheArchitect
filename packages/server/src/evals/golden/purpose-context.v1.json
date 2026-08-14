@@ -1,0 +1,344 @@
+{
+  "version": "purpose-context.v1",
+  "note": "THE-683: die drei niedrigsten Erwägungsgründe je Sprachfassung — eingefrorener Experiment-Kontext (Option b). Neu erzeugen nur bei Korpus-Änderung, dann Version bumpen.",
+  "generatedAt": "2026-08-14",
+  "recitalsInCorpus": 2554,
+  "perSource": {
+    "ai-act-de": [
+      {
+        "number": 1,
+        "text": "Zweck dieser Verordnung ist es, das Funktionieren des Binnenmarkts zu verbessern, indem ein einheitlicher Rechtsrahmen insbesondere für die Entwicklung, das Inverkehrbringen, die Inbetriebnahme und die Verwendung von Systemen künstlicher Intelligenz (KI-Systeme) in der Union im Einklang mit den Werten der Union festgelegt wird, um die Einführung von menschenzentrierter und vertrauenswürdiger künstlicher Intelligenz (KI) zu fördern und gleichzeitig ein hohes Schutzniveau in Bezug auf Gesundheit, Sicherheit und der in der Charta der Grundrechte der Europäischen Union („Charta“) verankerten Grundrechte, einschließlich Demokratie, Rechtsstaatlichkeit und Umweltschutz, sicherzustellen, den Schutz vor schädlichen Auswirkungen von KI-Systemen in der Union zu gewährleisten und gleichzeitig die Innovation zu unterstützen. Diese Verordnung gewährleistet den grenzüberschreitenden freien Verkehr KI-gestützter Waren und Dienstleistungen, wodurch verhindert wird, dass die Mitgliedstaaten die Entwicklung, Vermarktung und Verwendung von KI-Systemen beschränken, sofern dies nicht ausdrücklich durch diese Verordnung erlaubt wird."
+      },
+      {
+        "number": 2,
+        "text": "Diese Verordnung sollte im Einklang mit den in der Charta verankerten Werten der Union angewandt werden, den Schutz von natürlichen Personen, Unternehmen, Demokratie und Rechtsstaatlichkeit sowie der Umwelt erleichtern und gleichzeitig Innovation und Beschäftigung fördern und der Union eine Führungsrolle bei der Einführung vertrauenswürdiger KI verschaffen."
+      },
+      {
+        "number": 3,
+        "text": "KI-Systeme können problemlos in verschiedenen Bereichen der Wirtschaft und Gesellschaft, auch grenzüberschreitend, eingesetzt werden und in der gesamten Union verkehren. Einige Mitgliedstaaten haben bereits die Verabschiedung nationaler Vorschriften in Erwägung gezogen, damit KI vertrauenswürdig und sicher ist und im Einklang mit den Grundrechten entwickelt und verwendet wird. Unterschiedliche nationale Vorschriften können zu einer Fragmentierung des Binnenmarkts führen und können die Rechtssicherheit für Akteure, die KI-Systeme entwickeln, einführen oder verwenden, beeinträchtigen. Daher sollte in der gesamten Union ein einheitlich hohes Schutzniveau sichergestellt werden, um eine vertrauenswürdige KI zu erreichen, wobei Unterschiede, die den freien Verkehr, Innovationen, den Einsatz und die Verbreitung von KI-Systemen und damit zusammenhängenden Produkten und Dienstleistungen im Binnenmarkt behindern, vermieden werden sollten, indem den Akteuren einheitliche Pflichten auferlegt werden und der gleiche Schutz der zwingenden Gründe des Allgemeininteresses und der Rechte von Personen im gesamten Binnenmarkt auf der Grundlage des Artikels 114 des Vertrags über die Arbeitsweise der Europäischen Union (AEUV) gewährleistet wird. Soweit diese Verordnung konkrete Vorschriften zum Schutz von Einzelpersonen im Hinblick auf die Verarbeitung personenbezogener Daten enthält, mit denen die Verwendung von KI-Systemen zur biometrischen Fernidentifizierung zu Strafverfolgungszwecken, die Verwendung von KI-Systemen für die Risikobewertung natürlicher Personen zu Strafverfolgungszwecken und die Verwendung von KI-Systemen zur biometrischen Kategorisierung zu Strafverfolgungszwecken eingeschränkt wird, ist es angezeigt, diese Verordnung in Bezug auf diese konkreten Vorschriften auf Artikel 16 AEUV zu stützen. Angesichts dieser konkreten Vorschriften und des Rückgriffs auf Artikel 16 AEUV ist es angezeigt, den Europäischen Datenschutzausschuss zu konsultieren."
+      }
+    ],
+    "ai-act-en": [
+      {
+        "number": 1,
+        "text": "The purpose of this Regulation is to improve the functioning of the internal market by laying down a uniform legal framework in particular for the development, the placing on the market, the putting into service and the use of artificial intelligence systems (AI systems) in the Union, in accordance with Union values, to promote the uptake of human centric and trustworthy artificial intelligence (AI) while ensuring a high level of protection of health, safety, fundamental rights as enshrined in the Charter of Fundamental Rights of the European Union (the ‘Charter’), including democracy, the rule of law and environmental protection, to protect against the harmful effects of AI systems in the Union, and to support innovation. This Regulation ensures the free movement, cross-border, of AI-based goods and services, thus preventing Member States from imposing restrictions on the development, marketing and use of AI systems, unless explicitly authorised by this Regulation."
+      },
+      {
+        "number": 2,
+        "text": "This Regulation should be applied in accordance with the values of the Union enshrined as in the Charter, facilitating the protection of natural persons, undertakings, democracy, the rule of law and environmental protection, while boosting innovation and employment and making the Union a leader in the uptake of trustworthy AI."
+      },
+      {
+        "number": 3,
+        "text": "AI systems can be easily deployed in a large variety of sectors of the economy and many parts of society, including across borders, and can easily circulate throughout the Union. Certain Member States have already explored the adoption of national rules to ensure that AI is trustworthy and safe and is developed and used in accordance with fundamental rights obligations. Diverging national rules may lead to the fragmentation of the internal market and may decrease legal certainty for operators that develop, import or use AI systems. A consistent and high level of protection throughout the Union should therefore be ensured in order to achieve trustworthy AI, while divergences hampering the free circulation, innovation, deployment and the uptake of AI systems and related products and services within the internal market should be prevented by laying down uniform obligations for operators and guaranteeing the uniform protection of overriding reasons of public interest and of rights of persons throughout the internal market on the basis of Article 114 of the Treaty on the Functioning of the European Union (TFEU). To the extent that this Regulation contains specific rules on the protection of individuals with regard to the processing of personal data concerning restrictions of the use of AI systems for remote biometric identification for the purpose of law enforcement, of the use of AI systems for risk assessments of natural persons for the purpose of law enforcement and of the use of AI systems of biometric categorisation for the purpose of law enforcement, it is appropriate to base this Regulation, in so far as those specific rules are concerned, on Article 16 TFEU. In light of those specific rules and the recourse to Article 16 TFEU, it is appropriate to consult the European Data Protection Board."
+      }
+    ],
+    "cra-de": [
+      {
+        "number": 1,
+        "text": "Die Cybersicherheit bedeutet eine der größten Herausforderungen für die Union. Die Zahl und Vielfalt der vernetzten Geräte wird in den kommenden Jahren exponentiell zunehmen. Cyberangriffe sind ein Thema von öffentlichem Interesse, da sie sich nicht nur auf die Wirtschaft der Union, sondern auch auf die Demokratie sowie die Sicherheit und Gesundheit der Verbraucher kritisch auswirken. Es ist deshalb nötig, das Cybersicherheitskonzept der Union zu stärken, sich mit Cyberresilienz auf Unionsebene zu befassen und das Funktionieren des Binnenmarkts zu verbessern und dazu einen einheitlichen Rechtsrahmen für grundlegende Cybersicherheitsanforderungen für das Inverkehrbringen von Produkten mit digitalen Elementen auf dem Unionsmarkt festzulegen. Dabei sollten zwei große Probleme angegangen werden, die hohe Kosten für die Nutzer und die Gesellschaft verursachen: ein geringes Maß an Cybersicherheit von Produkten mit digitalen Elementen, das sich in weitverbreiteten Schwachstellen und der unzureichenden und inkohärenten Bereitstellung von Sicherheitsaktualisierungen zu deren Behebung zeigt, sowie ein unzureichendes Verständnis und ein mangelnder Informationszugang der Nutzer, wodurch sie daran gehindert werden, Produkte mit angemessenen Cybersicherheitsmerkmalen auszuwählen oder sicher zu verwenden."
+      },
+      {
+        "number": 2,
+        "text": "Mit dieser Verordnung sollen die Rahmenbedingungen für die Entwicklung sicherer Produkte mit digitalen Elementen geschaffen werden, damit Hardware- und Softwareprodukte mit weniger Schwachstellen in den Verkehr gebracht werden und damit sich die Hersteller während des gesamten Lebenszyklus eines Produkts konsequent um die Sicherheit kümmern. Außerdem sollen Bedingungen geschaffen werden, die es den Nutzern ermöglichen, bei der Auswahl und Verwendung von Produkten mit digitalen Elementen die Cybersicherheit zu berücksichtigen, beispielsweise durch mehr Transparenz in Bezug auf den Unterstützungszeitraum für auf dem Markt bereitgestellte Produkte mit digitalen Elementen."
+      },
+      {
+        "number": 3,
+        "text": "Das geltende einschlägige Unionsrecht umfasst mehrere horizontale Vorschriften, die bestimmte Aspekte der Cybersicherheit aus unterschiedlichen Blickwinkeln regeln, darunter auch Maßnahmen zur Erhöhung der Sicherheit der digitalen Lieferkette. Das bestehende Unionsrecht in Bezug auf die Cybersicherheit, wozu die Verordnung (EU) 2019/881 des Europäischen Parlaments und des Rates (3) und die Richtlinie (EU) 2022/2555 des Europäischen Parlaments und des Rates (4) gehören, enthält jedoch keine unmittelbar verbindlichen Anforderungen an die Sicherheit von Produkten mit digitalen Elementen."
+      }
+    ],
+    "cra-en": [
+      {
+        "number": 1,
+        "text": "Cybersecurity is one of the key challenges for the Union. The number and variety of connected devices will rise exponentially in the coming years. Cyberattacks represent a matter of public interest as they have a critical impact not only on the Union’s economy, but also on democracy as well as consumer safety and health. It is therefore necessary to strengthen the Union’s approach to cybersecurity, address cyber resilience at Union level and improve the functioning of the internal market by laying down a uniform legal framework for essential cybersecurity requirements for placing products with digital elements on the Union market. Two major problems adding costs for users and society should be addressed: a low level of cybersecurity of products with digital elements, reflected by widespread vulnerabilities and the insufficient and inconsistent provision of security updates to address them, and an insufficient understanding and access to information by users, preventing them from choosing products with adequate cybersecurity properties or using them in a secure manner."
+      },
+      {
+        "number": 2,
+        "text": "This Regulation aims to set the boundary conditions for the development of secure products with digital elements by ensuring that hardware and software products are placed on the market with fewer vulnerabilities and that manufacturers take security seriously throughout a product’s lifecycle. It also aims to create conditions allowing users to take cybersecurity into account when selecting and using products with digital elements, for example by improving transparency with regard to the support period for products with digital elements made available on the market."
+      },
+      {
+        "number": 3,
+        "text": "Relevant Union law in force comprises several sets of horizontal rules that address certain aspects linked to cybersecurity from different angles, including measures to improve the security of the digital supply chain. However, existing Union law related to cybersecurity, including Regulation (EU) 2019/881 of the European Parliament and of the Council (3) and Directive (EU) 2022/2555 of the European Parliament and of the Council (4), does not directly cover mandatory requirements for the security of products with digital elements."
+      }
+    ],
+    "data-act-de": [
+      {
+        "number": 1,
+        "text": "In den letzten Jahren haben datengetriebene Technologien transformative Wirkung auf alle Wirtschaftssektoren gehabt. Insbesondere die rasche Verbreitung von Produkten, die mit dem Internet vernetzt sind, hat den Umfang und den potenziellen Wert von Daten für Verbraucher, Unternehmen und Gesellschaft erhöht. Hochwertige und interoperable Daten aus verschiedenen Bereichen steigern die Wettbewerbsfähigkeit und Innovation und sorgen für ein nachhaltiges Wirtschaftswachstum. Dieselben Daten können unbegrenzt für verschiedene Zwecke verwendet und weiterverwendet werden, ohne dass dadurch Qualität oder Quantität beeinträchtigt wird."
+      },
+      {
+        "number": 2,
+        "text": "Hindernisse bei der Datenweitergabe verhindern jedoch eine optimale Verteilung der Daten zum Nutzen der Gesellschaft. Zu diesen Hindernissen gehören der Mangel an Anreizen für Dateninhaber, freiwillig Vereinbarungen über die Datenweitergabe einzugehen, Unsicherheiten in Bezug auf Rechte und Pflichten in Verbindung mit Daten, die Kosten der Auftragsvergabe in Bezug auf technische Schnittstellen und für deren Einrichtung, die starke Fragmentierung von Informationen in Datensilos, die schlechte Verwaltung von Metadaten, fehlende Normen für die semantische und technische Interoperabilität, Engpässe beim Datenzugang, das Fehlen einheitlicher Verfahren für die Datenweitergabe und der Missbrauch vertraglicher Ungleichgewichte hinsichtlich Datenzugang und Datennutzung."
+      },
+      {
+        "number": 3,
+        "text": "In Sektoren mit zahlreichen Kleinstunternehmen sowie Kleinunternehmen und mittleren Unternehmen im Sinne von Artikel 2 des Anhangs der Empfehlung 2003/361/EG der Kommission (5) (KMU) mangelt es häufig an digitalen Kapazitäten und Kompetenzen für die Erhebung, Analyse und Nutzung von Daten; zudem ist der Zugang oftmals eingeschränkt, weil ein einziger Akteur im System die Daten hält oder weil Daten oder Datendienste an sich bzw. über Grenzen hinweg nicht interoperabel sind."
+      }
+    ],
+    "data-act-en": [
+      {
+        "number": 1,
+        "text": "In recent years, data-driven technologies have had transformative effects on all sectors of the economy. The proliferation of products connected to the internet in particular has increased the volume and potential value of data for consumers, businesses and society. High-quality and interoperable data from different domains increase competitiveness and innovation and ensure sustainable economic growth. The same data may be used and reused for a variety of purposes and to an unlimited degree, without any loss of quality or quantity."
+      },
+      {
+        "number": 2,
+        "text": "Barriers to data sharing prevent an optimal allocation of data for the benefit of society. Those barriers include a lack of incentives for data holders to enter voluntarily into data sharing agreements, uncertainty about rights and obligations in relation to data, the costs of contracting and implementing technical interfaces, the high level of fragmentation of information in data silos, poor metadata management, the absence of standards for semantic and technical interoperability, bottlenecks impeding data access, a lack of common data sharing practices and the abuse of contractual imbalances with regard to data access and use."
+      },
+      {
+        "number": 3,
+        "text": "In sectors characterised by the presence of microenterprises, small enterprises and medium-sized enterprises as defined in Article 2 of the Annex to Commission Recommendation 2003/361/EC (5) (SMEs), there is often a lack of digital capacities and skills to collect, analyse and use data, and access is frequently restricted where one actor holds them in the system or due to a lack of interoperability between data, between data services or across borders."
+      }
+    ],
+    "dora": [
+      {
+        "number": 1,
+        "text": "In the digital age, information and communication technology (ICT) supports complex systems used for everyday activities. It keeps our economies running in key sectors, including the financial sector, and enhances the functioning of the internal market. Increased digitalisation and interconnectedness also amplify ICT risk, making society as a whole, and the financial system in particular, more vulnerable to cyber threats or ICT disruptions. While the ubiquitous use of ICT systems and high digitalisation and connectivity are today core features of the activities of Union financial entities, their digital resilience has yet to be better addressed and integrated into their broader operational frameworks."
+      },
+      {
+        "number": 2,
+        "text": "The use of ICT has in the past decades gained a pivotal role in the provision of financial services, to the point where it has now acquired a critical importance in the operation of typical daily functions of all financial entities. Digitalisation now covers, for instance, payments, which have increasingly moved from cash and paper-based methods to the use of digital solutions, as well as securities clearing and settlement, electronic and algorithmic trading, lending and funding operations, peer-to-peer finance, credit rating, claim management and back-office operations. The insurance sector has also been transformed by the use of ICT, from the emergence of insurance intermediaries offering their services online operating with InsurTech, to digital insurance underwriting. Finance has not only become largely digital throughout the whole sector, but digitalisation has also deepened interconnections and dependencies within the financial sector and with third-party infrastructure and service providers."
+      },
+      {
+        "number": 3,
+        "text": "The European Systemic Risk Board (ESRB) reaffirmed in a 2020 report addressing systemic cyber risk how the existing high level of interconnectedness across financial entities, financial markets and financial market infrastructures, and particularly the interdependencies of their ICT systems, could constitute a systemic vulnerability because localised cyber incidents could quickly spread from any of the approximately 22 000 Union financial entities to the entire financial system, unhindered by geographical boundaries. Serious ICT breaches that occur in the financial sector do not merely affect financial entities taken in isolation. They also smooth the way for the propagation of localised vulnerabilities across the financial transmission channels and potentially trigger adverse consequences for the stability of the Union’s financial system, such as generating liquidity runs and an overall loss of confidence and trust in financial markets."
+      }
+    ],
+    "dora-de": [
+      {
+        "number": 1,
+        "text": "Informations- und Kommunikationstechnologien (IKT) unterstützen im digitalen Zeitalter komplexe Systeme, die für alltägliche Aktivitäten eingesetzt werden. Sie sorgen dafür, dass Schlüsselsektoren unserer Volkswirtschaften, einschließlich des Finanzsektors, am Laufen gehalten werden, und verbessern das Funktionieren des Binnenmarkts. Die zunehmende Digitalisierung und Vernetzung verstärken auch das IKT-Risiko, das die Gesellschaft insgesamt — und insbesondere das Finanzsystem — anfälliger für Cyberbedrohungen oder IKT-Störungen macht. Während die allgegenwärtige Nutzung von IKT-Systemen und die hohe Digitalisierung und Konnektivität heute grundlegende Merkmale der Tätigkeiten von Finanzunternehmen der Union sind, muss ihre digitale Resilienz erst noch besser angegangen und in ihre allgemeinen operativen Rahmen integriert werden."
+      },
+      {
+        "number": 2,
+        "text": "Die Nutzung von IKT hat in den letzten Jahrzehnten einen derart zentralen Stellenwert bei der Erbringung von Finanzdienstleistungen erlangt, dass sie heute entscheidend zur Ausführung typischer alltäglicher Aufgaben aller Finanzunternehmen beiträgt. Auf Digitalisierung beruhen heute beispielsweise Zahlungen, die von bargeld- und papiergestützten Methoden zunehmend auf die Nutzung digitaler Lösungen verlagert wurden, sowie Wertpapierclearing und -abrechnungssysteme, elektronischer und algorithmischer Handel, Darlehens- und Finanzierungsgeschäfte, Peer-to-Peer-Finanzierung, Bonitätseinstufung, Schadensmanagement und Back-Office-Transaktionen. Auch der Versicherungssektor hat sich durch den Einsatz von IKT verändert — vom Aufkommen digitaler Versicherungsvermittler, die ihre Dienste online anbieten und mit InsurTech arbeiten, bis hin zu digitalen Versicherungsgeschäften. Das Finanzwesen ist nicht nur sektorweit weitgehend digital geworden, sondern die Digitalisierung hat auch die Verflechtungen und Abhängigkeiten innerhalb des Finanzsektors sowie von Infrastrukturen Dritter und Drittdienstleistern verstärkt."
+      },
+      {
+        "number": 3,
+        "text": "Der Europäische Ausschuss für Systemrisiken (ESRB) bekräftigte in einem Bericht aus dem Jahr 2020 über systemische Cyberrisiken, wie das bestehende hohe Maß an Verflechtungen zwischen Finanzunternehmen, Finanzmärkten und Finanzmarktinfrastrukturen und insbesondere die gegenseitigen Abhängigkeiten ihrer IKT-Systeme eine Systemanfälligkeit herbeiführen könnten, da lokalisierte Cybervorfälle in einem der rund 22 000 Finanzunternehmen der Union über geografische Grenzen hinweg rasch auf das gesamte Finanzsystem übergreifen könnten. Schwerwiegende IKT-Sicherheitsverletzungen, die im Finanzsektor auftreten können, betreffen nicht nur Finanzunternehmen, die isoliert betrachtet werden. Ebenso können sich hierdurch ermittelte Schwachstellen über die Übertragungskanäle des Finanzsystems verbreiten und die Stabilität des Finanzsystems der Union beeinträchtigen, etwa durch Liquiditätsengpässe und einen allgemeinen Verlust des Vertrauens in die Finanzmärkte."
+      }
+    ],
+    "dsgvo": [
+      {
+        "number": 1,
+        "text": "Der Schutz natürlicher Personen bei der Verarbeitung personenbezogener Daten ist ein Grundrecht. Gemäß Artikel 8 Absatz 1 der Charta der Grundrechte der Europäischen Union (im Folgenden „Charta“) sowie Artikel 16 Absatz 1 des Vertrags über die Arbeitsweise der Europäischen Union (AEUV) hat jede Person das Recht auf Schutz der sie betreffenden personenbezogenen Daten."
+      },
+      {
+        "number": 2,
+        "text": "Die Grundsätze und Vorschriften zum Schutz natürlicher Personen bei der Verarbeitung ihrer personenbezogenen Daten sollten gewährleisten, dass ihre Grundrechte und Grundfreiheiten und insbesondere ihr Recht auf Schutz personenbezogener Daten ungeachtet ihrer Staatsangehörigkeit oder ihres Aufenthaltsorts gewahrt bleiben. Diese Verordnung soll zur Vollendung eines Raums der Freiheit, der Sicherheit und des Rechts und einer Wirtschaftsunion, zum wirtschaftlichen und sozialen Fortschritt, zur Stärkung und zum Zusammenwachsen der Volkswirtschaften innerhalb des Binnenmarkts sowie zum Wohlergehen natürlicher Personen beitragen."
+      },
+      {
+        "number": 3,
+        "text": "Zweck der Richtlinie 95/46/EG des Europäischen Parlaments und des Rates (4) ist die Harmonisierung der Vorschriften zum Schutz der Grundrechte und Grundfreiheiten natürlicher Personen bei der Datenverarbeitung sowie die Gewährleistung des freien Verkehrs personenbezogener Daten zwischen den Mitgliedstaaten."
+      }
+    ],
+    "dsgvo-en": [
+      {
+        "number": 1,
+        "text": "The protection of natural persons in relation to the processing of personal data is a fundamental right. Article 8(1) of the Charter of Fundamental Rights of the European Union (the ‘Charter’) and Article 16(1) of the Treaty on the Functioning of the European Union (TFEU) provide that everyone has the right to the protection of personal data concerning him or her."
+      },
+      {
+        "number": 2,
+        "text": "The principles of, and rules on the protection of natural persons with regard to the processing of their personal data should, whatever their nationality or residence, respect their fundamental rights and freedoms, in particular their right to the protection of personal data. This Regulation is intended to contribute to the accomplishment of an area of freedom, security and justice and of an economic union, to economic and social progress, to the strengthening and the convergence of the economies within the internal market, and to the well-being of natural persons."
+      },
+      {
+        "number": 3,
+        "text": "Directive 95/46/EC of the European Parliament and of the Council (4) seeks to harmonise the protection of fundamental rights and freedoms of natural persons in respect of processing activities and to ensure the free flow of personal data between Member States."
+      }
+    ],
+    "eidas-de": [
+      {
+        "number": 1,
+        "text": "Die wirtschaftliche und soziale Entwicklung setzt Vertrauen in das Online-Umfeld voraus. Mangelndes Vertrauen führt dazu, dass Verbraucher, Unternehmen und öffentliche Verwaltungen nur zögerlich elektronische Transaktionen durchführen oder neue Dienste einführen bzw. nutzen, vor allem, wenn sie die Befürchtung hegen, dass es an Rechtssicherheit mangelt."
+      },
+      {
+        "number": 2,
+        "text": "Diese Verordnung dient der Stärkung des Vertrauens in elektronische Transaktionen im Binnenmarkt, indem eine gemeinsame Grundlage für eine sichere elektronische Interaktion zwischen Bürgern, Unternehmen und öffentlichen Verwaltungen geschaffen wird, wodurch die Effektivität öffentlicher und privater Online-Dienstleistungen, des elektronischen Geschäftsverkehrs und des elektronischen Handels in der Union erhöht wird."
+      },
+      {
+        "number": 3,
+        "text": "Die Richtlinie 1999/93/EG des Europäischen Parlaments und des Rates (3) hat Regelungen zu elektronischen Signaturen festgelegt, ohne einen umfassenden grenz- und sektorenübergreifenden Rahmen für sichere, vertrauenswürdige und einfach zu nutzende elektronische Transaktionen zu schaffen. Die vorliegende Verordnung stärkt und erweitert die Rechtsvorschriften jener Richtlinie."
+      }
+    ],
+    "eidas-en": [
+      {
+        "number": 1,
+        "text": "Building trust in the online environment is key to economic and social development. Lack of trust, in particular because of a perceived lack of legal certainty, makes consumers, businesses and public authorities hesitate to carry out transactions electronically and to adopt new services."
+      },
+      {
+        "number": 2,
+        "text": "This Regulation seeks to enhance trust in electronic transactions in the internal market by providing a common foundation for secure electronic interaction between citizens, businesses and public authorities, thereby increasing the effectiveness of public and private online services, electronic business and electronic commerce in the Union."
+      },
+      {
+        "number": 3,
+        "text": "Directive 1999/93/EC of the European Parliament and of the Council (3), dealt with electronic signatures without delivering a comprehensive cross-border and cross-sector framework for secure, trustworthy and easy-to-use electronic transactions. This Regulation enhances and expands the acquis of that Directive."
+      }
+    ],
+    "emoney-de": [
+      {
+        "number": 1,
+        "text": "Die Richtlinie 2000/46/EG des Europäischen Parlaments und des Rates vom 18. September 2000 über die Aufnahme, Ausübung und Beaufsichtigung der Tätigkeit von E-Geld-Instituten (4) wurde in Reaktion auf die Entstehung neuer Arten von vorausbezahlten elektronischen Zahlungsmitteln erlassen und sollte einen klaren Rechtsrahmen abstecken, um den Binnenmarkt zu stärken und gleichzeitig eine angemessene Finanzaufsicht zu gewährleisten."
+      },
+      {
+        "number": 2,
+        "text": "Die Kommission hob in ihrer Überprüfung der Richtlinie 2000/46/EG hervor, dass die Richtlinie geändert werden muss, da einige ihrer Bestimmungen die Entstehung eines echten Binnenmarkts für E-Geld-Dienstleistungen und die Entwicklung dieser benutzerfreundlichen Dienstleistungen offenbar verhindert haben."
+      },
+      {
+        "number": 3,
+        "text": "Mit der Richtlinie 2007/64/EG des Europäischen Parlaments und des Rates vom 13. November 2007 über Zahlungsdienste im Binnenmarkt (5) wurde ein moderner und kohärenter Rechtsrahmen für Zahlungsdienste eingeführt, der auch die Abstimmung der nationalen Vorschriften für die aufsichtsrechtlichen Anforderungen an eine neue Kategorie von Zahlungsdienstleistern, die Zahlungsinstitute, vorsieht."
+      }
+    ],
+    "emoney-en": [
+      {
+        "number": 1,
+        "text": "Directive 2000/46/EC of the European Parliament and of the Council of 18 September 2000 on the taking up, pursuit of and prudential supervision of the business of electronic money institutions (4) was adopted in response to the emergence of new pre-paid electronic payment products and was intended to create a clear legal framework designed to strengthen the internal market while ensuring an adequate level of prudential supervision."
+      },
+      {
+        "number": 2,
+        "text": "In its review of Directive 2000/46/EC the Commission highlighted the need to revise that Directive since some of its provisions were considered to have hindered the emergence of a true single market for electronic money services and the development of such user-friendly services."
+      },
+      {
+        "number": 3,
+        "text": "Directive 2007/64/EC of the European Parliament and of the Council of 13 November 2007 on payment services in the internal market (5) has established a modern and coherent legal framework for payment services, including the coordination of national provisions on prudential requirements for a new category of payment service providers, namely payment institutions."
+      }
+    ],
+    "esg-rating-de": [
+      {
+        "number": 1,
+        "text": "Am 25. September 2015 verabschiedete die Generalversammlung der Vereinten Nationen einen neuen globalen Rahmen zur nachhaltigen Entwicklung: die Agenda 2030 für nachhaltige Entwicklung (im Folgenden „Agenda 2030“), deren Kernstück die Ziele für nachhaltige Entwicklung sind. Die Mitteilung der Kommission vom 22. November 2016 mit dem Titel „Auf dem Weg in eine nachhaltige Zukunft: Europäische Nachhaltigkeitspolitik“ bindet die Nachhaltigkeitsziele in den politischen Rahmen der Union ein, um sicherzustellen, dass alle innen- und außenpolitischen Maßnahmen und Initiativen der Union diese Ziele von Beginn an mitberücksichtigen. In den Schlussfolgerungen des Europäischen Rates vom 22. und 23. Juni 2017 wurde die Entschlossenheit der Union und der Mitgliedstaaten bekräftigt, die Agenda 2030 vollständig, kohärent, umfassend, integrativ und wirksam und in enger Zusammenarbeit mit den Partnern und anderen Akteuren umzusetzen. Darüber hinaus haben zum Zeitpunkt des Erlasses dieser Verordnung über 5 300 Personen die von den Vereinten Nationen unterstützten Grundsätze für verantwortungsbewusstes Investment unterzeichnet, die ein verwaltetes Vermögen von über 120 Billionen EUR repräsentieren. Die Kommission hat am 11. Dezember 2019 ihre Mitteilung mit dem Titel „Der europäische Grüne Deal“ (im Folgenden „europäischer Grüner Deal“) veröffentlicht. Am 30. Juni 2021 wurde das Europäische Klimagesetz als Verordnung (EU) 2021/1119 des Europäischen Parlaments und des Rates (3) erlassen, mit der das im europäischen Grünen Deal festgelegte Ziel, Wirtschaft und Gesellschaft der Union bis 2050 klimaneutral zu gestalten, im Unionsrecht verankert wird."
+      },
+      {
+        "number": 2,
+        "text": "Der Übergang zu einer nachhaltigen Wirtschaft ist von entscheidender Bedeutung, um die langfristige Wettbewerbsfähigkeit und Nachhaltigkeit der Wirtschaft der Union und die Lebensqualität der Bürgerinnen und Bürger in der Union sicherzustellen und die Erderwärmung deutlich unter der 1,5-Grad-Grenze zu halten. Die nachhaltige Entwicklung steht seit vielen Jahren im Mittelpunkt der Unionspolitik, und ihre soziale und umweltpolitische Dimension wird im Vertrag über die Europäische Union und im Vertrag über die Arbeitsweise der Europäischen Union anerkannt."
+      },
+      {
+        "number": 3,
+        "text": "Um die Ziele der Ziele für eine nachhaltige Entwicklung in der Union zu erreichen, müssen die Kapitalflüsse in nachhaltige Investitionen gelenkt werden. Zur Erreichung dieser Ziele ist es notwendig, das Potenzial des Binnenmarkts in vollem Umfang auszuschöpfen. In diesem Zusammenhang ist es entscheidend, Hindernisse für die effiziente Lenkung von Kapital hin zu nachhaltigen Investitionen im Binnenmarkt zu beseitigen, die Entstehung solcher Hindernisse zu verhindern und Regeln und Standards festzulegen, um einerseits nachhaltige Finanzierungen zu fördern und andererseits Investitionen zu bremsen, die sich nachteilig auf die Verwirklichung der Ziele für eine nachhaltige Entwicklung auswirken können."
+      }
+    ],
+    "esg-rating-en": [
+      {
+        "number": 1,
+        "text": "On 25 September 2015, the UN General Assembly adopted a new global sustainable development framework, the 2030 Agenda for Sustainable Development (the ‘2030 Agenda’), having at its core the Sustainable Development Goals (SDGs). The Commission’s Communication of 22 November 2016 entitled ‘Next steps for a sustainable European future: European action for sustainability’ links the SDGs to the Union policy framework to ensure that all Union actions and policy initiatives, both within the Union and globally, take the SDGs on board at the outset. The European Council conclusions of 22 and 23 June 2017 confirmed the commitment of the Union and the Member States to the implementation of the 2030 Agenda in a full, coherent, comprehensive, integrated and effective manner and in close cooperation with partners and other stakeholders. In addition, the UN-supported Principles for Responsible Investment has, at the time of adoption of this Regulation, more than 5 300 signatories representing over EUR 120 trillion of assets under management. On 11 December 2019, the Commission published its communication entitled ‘The European Green Deal’ (the ‘European Green Deal’). On 30 June 2021, the European Climate Law was adopted as Regulation (EU) 2021/1119 of the European Parliament and of the Council (3), which enshrines in Union law the goal set out in the European Green Deal of Union economy and society becoming climate-neutral by 2050."
+      },
+      {
+        "number": 2,
+        "text": "The transition to a sustainable economy is key to ensuring the long-term competitiveness and sustainability of the Union economy and the quality of life of citizens in the Union, and to keeping global warming well below the 1,5 degree Celsius threshold. Sustainability has long been at the heart of Union policies and both the Treaty on European Union and the Treaty on the Functioning of the European Union (TFEU) recognise its social and environmental dimensions."
+      },
+      {
+        "number": 3,
+        "text": "Achieving the objectives of the SDGs in the Union requires the channelling of capital flows towards sustainable investments. It is necessary to fully exploit the potential of the internal market for the achievement of those objectives. In that context, it is crucial to remove obstacles to the efficient movement of capital towards sustainable investments in the internal market, to prevent such obstacles from emerging, and to set rules and standards to, on the one hand, promote sustainable finance and, on the other, disincentivise investments that can adversely impact the achievement of the objectives of the SDGs."
+      }
+    ],
+    "mdr-de": [
+      {
+        "number": 1,
+        "text": "Der EU-Rechtsrahmen für Medizinprodukte — mit Ausnahme von In-vitro-Diagnostika — besteht aus der Richtlinie 90/385/EWG des Rates (3) und der Richtlinie 93/42/EWG des Rates (4). Um einen soliden, transparenten, berechenbaren und nachhaltigen Rechtsrahmen für Medizinprodukte zu schaffen, der ein hohes Niveau an Sicherheit und Gesundheitsschutz gewährleistet, gleichzeitig aber innovationsfördernd wirkt, ist jedoch eine grundlegende Überarbeitung dieser Richtlinien erforderlich."
+      },
+      {
+        "number": 2,
+        "text": "Ausgehend von einem hohen Gesundheitsschutzniveau für Patienten und Anwender soll mit der vorliegenden Verordnung ein reibungslos funktionierender Binnenmarkt für Medizinprodukte unter Berücksichtigung der in diesem Sektor tätigen kleinen und mittleren Unternehmen sichergestellt werden. Außerdem sind in dieser Verordnung hohe Standards für die Qualität und Sicherheit von Medizinprodukten festgelegt, durch die allgemeine Sicherheitsbedenken hinsichtlich dieser Produkte ausgeräumt werden sollen. Die beiden Ziele werden parallel verfolgt; sie sind untrennbar miteinander verbunden und absolut gleichrangig. Gestützt auf Artikel 114 des Vertrags über die Arbeitsweise der Europäischen Union (AEUV) wird mit dieser Verordnung eine Harmonisierung der Rechtsvorschriften für das Inverkehrbringen und die Inbetriebnahme von Medizinprodukten und ihrem Zubehör auf dem Unionsmarkt vorgenommen, denen dadurch der Grundsatz des freien Warenverkehrs zugute kommen kann. Im Sinne von Artikel 168 Absatz 4 Buchstabe c AEUV werden mit dieser Verordnung hohe Standards für Qualität und Sicherheit der Medizinprodukte festgelegt, indem unter anderem dafür gesorgt wird, dass die im Rahmen klinischer Prüfungen gewonnenen Daten zuverlässig und solide sind und dass die Sicherheit der an klinischen Prüfungen teilnehmenden Prüfungsteilnehmer geschützt wird."
+      },
+      {
+        "number": 3,
+        "text": "Mit dieser Verordnung sollen nicht die Vorschriften harmonisiert werden, die die weitere Bereitstellung auf dem Markt von bereits in Betrieb genommenen Medizinprodukten, etwa im Zusammenhang mit dem Verkauf gebrauchter Produkte, betreffen."
+      }
+    ],
+    "mdr-en": [
+      {
+        "number": 1,
+        "text": "Council Directive 90/385/EEC (3) and Council Directive 93/42/EEC (4) constitute the Union regulatory framework for medical devices, other than in vitro diagnostic medical devices. However, a fundamental revision of those Directives is needed to establish a robust, transparent, predictable and sustainable regulatory framework for medical devices which ensures a high level of safety and health whilst supporting innovation."
+      },
+      {
+        "number": 2,
+        "text": "This Regulation aims to ensure the smooth functioning of the internal market as regards medical devices, taking as a base a high level of protection of health for patients and users, and taking into account the small- and medium-sized enterprises that are active in this sector. At the same time, this Regulation sets high standards of quality and safety for medical devices in order to meet common safety concerns as regards such products. Both objectives are being pursued simultaneously and are inseparably linked whilst one not being secondary to the other. As regards Article 114 of the Treaty on the Functioning of the European Union (TFEU), this Regulation harmonises the rules for the placing on the market and putting into service of medical devices and their accessories on the Union market thus allowing them to benefit from the principle of free movement of goods. As regards Article 168(4)(c) TFEU, this Regulation sets high standards of quality and safety for medical devices by ensuring, among other things, that data generated in clinical investigations are reliable and robust and that the safety of the subjects participating in a clinical investigation is protected."
+      },
+      {
+        "number": 3,
+        "text": "This Regulation does not seek to harmonise rules relating to the further making available on the market of medical devices after they have already been put into service such as in the context of second-hand sales."
+      }
+    ],
+    "nis2": [
+      {
+        "number": 1,
+        "text": "Directive (EU) 2016/1148 of the European Parliament and the Council (4) aimed to build cybersecurity capabilities across the Union, mitigate threats to network and information systems used to provide essential services in key sectors and ensure the continuity of such services when facing incidents, thus contributing to the Union’s security and to the effective functioning of its economy and society."
+      },
+      {
+        "number": 2,
+        "text": "Since the entry into force of Directive (EU) 2016/1148, significant progress has been made in increasing the Union’s level of cyber resilience. The review of that Directive has shown that it has served as a catalyst for the institutional and regulatory approach to cybersecurity in the Union, paving the way for a significant change in mind-set. That Directive has ensured the completion of national frameworks on the security of network and information systems by establishing national strategies on security of network and information systems and establishing national capabilities and by implementing regulatory measures covering essential infrastructures and entities identified by each Member State. Directive (EU) 2016/1148 has also contributed to cooperation at Union level through the establishment of the Cooperation Group and the network of national computer security incident response teams. Notwithstanding those achievements, the review of Directive (EU) 2016/1148 has revealed inherent shortcomings that prevent it from addressing effectively current and emerging cybersecurity challenges."
+      },
+      {
+        "number": 3,
+        "text": "Network and information systems have developed into a central feature of everyday life with the speedy digital transformation and interconnectedness of society, including in cross-border exchanges. That development has led to an expansion of the cyber threat landscape, bringing about new challenges, which require adapted, coordinated and innovative responses in all Member States. The number, magnitude, sophistication, frequency and impact of incidents are increasing, and present a major threat to the functioning of network and information systems. As a result, incidents can impede the pursuit of economic activities in the internal market, generate financial loss, undermine user confidence and cause major damage to the Union’s economy and society. Cybersecurity preparedness and effectiveness are therefore now more essential than ever to the proper functioning of the internal market. Moreover, cybersecurity is a key enabler for many critical sectors to successfully embrace the digital transformation and to fully grasp the economic, social and sustainable benefits of digitalisation."
+      }
+    ],
+    "nis2-de": [
+      {
+        "number": 1,
+        "text": "Ziel der Richtlinie (EU) 2016/1148 des Europäischen Parlaments und des Rates (4) war der unionsweite Aufbau von Cybersicherheitskapazitäten, die Eindämmung von Bedrohungen für Netz- und Informationssysteme, die zur Erbringung wesentlicher Dienste in Schlüsselsektoren verwendet werden, und die Sicherstellung der Kontinuität solcher Dienste bei Vorfällen, um so zur Sicherheit der Union und zum reibungslosen Funktionieren ihrer Wirtschaft und Gesellschaft beizutragen."
+      },
+      {
+        "number": 2,
+        "text": "Seit Inkrafttreten der Richtlinie (EU) 2016/1148 sind erhebliche Fortschritte bei der Stärkung der Cyberresilienz der Union erzielt worden. Die Überprüfung jener Richtlinie hat gezeigt, dass sie als Katalysator für das institutionelle und regulatorische Cybersicherheitskonzept in der Union gedient und ein erhebliches Umdenken bewirkt hat. Durch die Einrichtung nationaler Strategien für die Sicherheit von Netz- und Informationssystemen, die Schaffung nationaler Kapazitäten und die Umsetzung von Regulierungsmaßnahmen für Infrastrukturen und Akteure, die von den einzelnen Mitgliedstaaten als wesentlich eingestuft wurden, wurde mit jener Richtlinie die Vervollständigung der nationalen Rechtsrahmen über die Sicherheit von Netz- und Informationssystemen sichergestellt. Darüber hinaus hat die Richtlinie (EU) 2016/1148 durch die Einrichtung der Kooperationsgruppe und des Netzwerks nationaler Computer-Notfallteams zur Zusammenarbeit auf Unionsebene beigetragen. Ungeachtet dieser Erfolge hat die Überprüfung der Richtlinie (EU) 2016/1148 inhärente Mängel ergeben, die ein wirksames Vorgehen gegen aktuelle und neue Herausforderungen im Bereich Cybersicherheit verhindern."
+      },
+      {
+        "number": 3,
+        "text": "Netz- und Informationssysteme sind durch den schnellen digitalen Wandel und die Vernetzung der Gesellschaft zu einem zentralen Bestandteil des Alltags und für den grenzüberschreitenden Austausch geworden. Diese Entwicklung hat zu einer Ausweitung der Cyberbedrohungslage geführt und neue Herausforderungen mit sich gebracht, die in allen Mitgliedstaaten entsprechende koordinierte und innovative Reaktionen erfordern. Die Anzahl, Tragweite, Komplexität, Häufigkeit und Auswirkungen von Vorfällen nehmen zu und stellen eine erhebliche Bedrohung für den störungsfreien Betrieb von Netz- und Informationssystemen dar. Im Ergebnis können Vorfälle die Ausübung wirtschaftlicher Tätigkeiten im Binnenmarkt beeinträchtigen, finanziellen Verlust verursachen, das Vertrauen der Nutzer untergraben und der Wirtschaft und Gesellschaft der Union großen Schaden zufügen. Heute sind daher im Bereich Cybersicherheit Vorsorge und Wirksamkeit wichtiger denn je für das reibungslose Funktionieren des Binnenmarkts. Darüber hinaus ist die Cybersicherheit für viele kritische Sektoren eine entscheidende Voraussetzung, um den digitalen Wandel erfolgreich zu bewältigen und die wirtschaftlichen, sozialen und dauerhaften Vorteile der Digitalisierung voll zu nutzen."
+      }
+    ],
+    "psd2-de": [
+      {
+        "number": 1,
+        "text": "In den letzten Jahren sind bei der Integration von Massenzahlungen in der Union erhebliche Fortschritte erzielt worden, insbesondere im Zusammenhang mit den Rechtsakten der Union zum Zahlungsverkehr, und hier vor allem durch die Richtlinie 2007/64/EG des Europäischen Parlaments und des Rates (4), die Verordnung (EG) Nr. 924/2009 des Europäischen Parlaments und des Rates (5), die Richtlinie 2009/110/EG des Europäischen Parlaments und des Rates (6) sowie die Verordnung (EU) Nr. 260/2012 des Europäischen Parlaments und des Rates (7). Mit der Richtlinie 2011/83/EU des Europäischen Parlaments und des Rates (8) wurde der Rechtsrahmen für Zahlungsdienste weiter ergänzt, indem durch die Festlegung einer bestimmten Obergrenze die Fähigkeit der Einzelhändler, ihren Kunden für die Nutzung eines bestimmten Zahlungsmittels einen Aufschlag zu berechnen, eingeschränkt wurde."
+      },
+      {
+        "number": 2,
+        "text": "Der überarbeitete Rechtsrahmen der Union für Zahlungsdienste wird durch die Verordnung (EU) 2015/751 des Europäischen Parlaments und des Rates (9) ergänzt. Mit jener Verordnung werden insbesondere Vorschriften über das Erheben von Interbankenentgelten für kartengebundene Zahlungsvorgänge eingeführt und es wird bezweckt, die Vollendung eines tatsächlich integrierten Marktes für kartengebundene Zahlungen weiter zu beschleunigen."
+      },
+      {
+        "number": 3,
+        "text": "Die Richtlinie 2007/64/EG wurde im Dezember 2007 auf der Grundlage eines Kommissionsvorschlags vom Dezember 2005 angenommen. Seitdem hat der Markt für Massenzahlungsverkehr bedeutende technische Innovationen erfahren, die mit einem raschen zahlenmäßigen Wachstum der elektronischen und mobilen Zahlungen und mit dem Aufkommen neuer Arten von Zahlungsdiensten am Markt einhergingen, die eine Herausforderung für den derzeit geltenden Rahmen darstellen."
+      }
+    ],
+    "psd2-en": [
+      {
+        "number": 1,
+        "text": "In recent years, significant progress has been achieved in integrating retail payments in the Union, in particular in the context of the Union acts on payments, in particular through Directive 2007/64/EC of the European Parliament and of the Council (4), Regulation (EC) No 924/2009 of the European Parliament and of the Council (5), Directive 2009/110/EC of the European Parliament and of the Council (6), and Regulation (EU) No 260/2012 of the European Parliament and of the Council (7). Directive 2011/83/EU of the European Parliament and of the Council (8) has further complemented the legal framework for payment services by setting a specific limit on the ability of retailers to surcharge their customers for the use of a given means of payment."
+      },
+      {
+        "number": 2,
+        "text": "The revised Union legal framework on payment services is complemented by Regulation (EU) 2015/751 of the European Parliament and of the Council (9). That Regulation introduces, in particular, rules on the charging of interchange fees for card-based transactions and aims to further accelerate the achievement of an effective integrated market for card-based payments."
+      },
+      {
+        "number": 3,
+        "text": "Directive 2007/64/EC was adopted in December 2007 on the basis of a Commission proposal of December 2005. Since then, the retail payments market has experienced significant technical innovation, with rapid growth in the number of electronic and mobile payments and the emergence of new types of payment services in the market place, which challenges the current framework."
+      }
+    ],
+    "standardisation-de": [
+      {
+        "number": 1,
+        "text": "Das Hauptziel von Normung ist die Festlegung freiwilliger technischer oder die Qualität betreffender Spezifikationen, denen bereits bestehende oder künftige Produkte, Produktionsverfahren oder Dienstleistungen entsprechen können. Normung erstreckt sich über unterschiedliche Bereiche, beispielsweise die Normung unterschiedlicher Ausführungen oder Größen eines Produkts oder technische Spezifikationen in Produkt- oder Dienstleistungsmärkten, bei denen die Kompatibilität und Interoperabilität mit anderen Produkten oder Systemen unerlässlich sind."
+      },
+      {
+        "number": 2,
+        "text": "Die europäische Normung wird durch und für die einschlägigen Interessenträger organisiert, und zwar auf der Grundlage nationaler Vertretung (Europäisches Komitee für Normung (CEN) und das Europäisches Komitee für Elektrotechnische Normung (Cenelec)) und direkter Beteiligung (Europäisches Institut für Telekommunikationsnormen (ETSI)), und sie stützt sich auf die von der Welthandelsorganisation (WTO) anerkannten Grundsätze auf dem Gebiet der Normung, nämlich Kohärenz, Transparenz, Offenheit, Konsens, Freiwilligkeit der Anwendung, Unabhängigkeit von Einzelinteressen und Effizienz (im Folgenden „Grundprinzipien“). Nach den Grundprinzipien ist es wichtig, dass alle interessierten Kreise, einschließlich der Behörden und der kleineren und mittleren Unternehmen (KMU), angemessen in den nationalen und europäischen Normungsprozess einbezogen werden. Die nationalen Normungsorganisationen sollten außerdem die Mitwirkung von Interessenträgern fördern und erleichtern."
+      },
+      {
+        "number": 3,
+        "text": "Die europäische Normung trägt ferner dazu bei, die Wettbewerbsfähigkeit der Unternehmen zu verbessern, indem sie insbesondere den freien Verkehr von Waren und Dienstleistungen, die Interoperabilität von Netzwerken, Kommunikationsmittel sowie die technologische Entwicklung und die Innovation vereinfacht. Durch die europäische Normung wird die weltweite Wettbewerbsfähigkeit der europäischen Industrie besonders dann gestärkt, wenn sie in Koordination mit den internationalen Normungsorganisationen, d. h. der Internationalen Organisation für Normung (ISO), der Internationalen Elektrotechnischen Kommission (IEC) und der Internationalen Fernmeldeunion (ITU), erfolgt. Normen haben eindeutig positive Auswirkungen auf die Wirtschaft, indem sie unter anderem die wirtschaftliche Durchdringung im Binnenmarkt fördern und zur Entwicklung neuer und verbesserter Produkte und Märkte sowie besserer Lieferbedingungen beitragen. Normen führen daher in der Regel zu einem stärkeren Wettbewerb und niedrigeren Output- und Verkaufskosten, was den Volkswirtschaften insgesamt und besonders den Verbrauchern zugute kommt. Normen leisten einen Beitrag zur Aufrechterhaltung und Verbesserung von Qualität, sind eine Informationsquelle und gewährleisten Interoperabilität und Kompatibilität, wodurch sie mehr Sicherheit und Wert für die Verbraucher schaffen."
+      }
+    ],
+    "standardisation-en": [
+      {
+        "number": 1,
+        "text": "The primary objective of standardisation is the definition of voluntary technical or quality specifications with which current or future products, production processes or services may comply. Standardisation can cover various issues, such as standardisation of different grades or sizes of a particular product or technical specifications in product or services markets where compatibility and interoperability with other products or systems are essential."
+      },
+      {
+        "number": 2,
+        "text": "European standardisation is organised by and for the stakeholders concerned based on national representation (the European Committee for Standardisation (CEN) and the European Committee for Electrotechnical Standardisation (Cenelec)) and direct participation (the European Telecommunications Standards Institute (ETSI)), and is founded on the principles recognised by the World Trade Organisation (WTO) in the field of standardisation, namely coherence, transparency, openness, consensus, voluntary application, independence from special interests and efficiency (‘the founding principles’). In accordance with the founding principles, it is important that all relevant interested parties, including public authorities and small and medium-sized enterprises (SMEs), are appropriately involved in the national and European standardisation process. National standardisation bodies should also encourage and facilitate the participation of stakeholders."
+      },
+      {
+        "number": 3,
+        "text": "European standardisation also helps to boost the competitiveness of enterprises by facilitating in particular the free movement of goods and services, network interoperability, means of communication, technological development and innovation. European standardisation reinforces the global competitiveness of European industry especially when established in coordination with the international standardisation bodies, namely the International Organisation for Standardisation (ISO), the International Electrotechnical Commission (IEC) and the International Telecommunication Union (ITU). Standards produce significant positive economic effects, for example by promoting economic interpenetration on the internal market and encouraging the development of new and improved products or markets and improved supply conditions. Standards thus normally increase competition and lower output and sales costs, benefiting economies as a whole and consumers in particular. Standards may maintain and enhance quality, provide information and ensure interoperability and compatibility, thereby increasing safety and value for consumers."
+      }
+    ]
+  }
+}

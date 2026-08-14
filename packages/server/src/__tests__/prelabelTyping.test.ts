@@ -3,7 +3,7 @@
  *
  * Run: cd packages/server && npx jest src/__tests__/prelabelTyping.test.ts
  */
-import { buildPrelabelUserPrompt, parsePrelabelLabels, PRELABEL_SYSTEM } from '../scripts/prelabel-typing';
+import { buildPrelabelUserPrompt, parsePrelabelLabels, PRELABEL_SYSTEM, TYPING_PURPOSE_CONTEXT_VERSION } from '../scripts/prelabel-typing';
 import { TYPING_PROMPT_VERSION } from '@thearchitect/shared';
 import { TYPING_AXES } from '../evals/typingGolden';
 
@@ -450,5 +450,52 @@ describe('parsePrelabelLabels — Beobachtungskanal (THE-668)', () => {
       fullText: 'Die Kommission kann europäische Normungsorganisationen beauftragen.', language: 'de',
     });
     expect(p).toContain('partyRoleObserved');
+  });
+});
+
+
+// ─── THE-683: Zweck-Kontext ist optional und additiv ─────────────────────────
+
+describe('Zweck-Kontext (THE-683, Experiment-Arm)', () => {
+  const provision = {
+    source: 'cra-de',
+    paragraphNumber: 'Art. 14',
+    title: 'Meldepflichten',
+    language: 'de',
+    fullText: 'Der Hersteller meldet aktiv ausgenutzte Schwachstellen.',
+  } as never;
+
+  it('OHNE purpose ist der Prompt frei von jedem Kontext-Block — tp-4 bleibt tp-4', () => {
+    const prompt = buildPrelabelUserPrompt(provision);
+    expect(prompt).not.toContain('PURPOSE');
+    expect(prompt).not.toContain('recital');
+  });
+
+  it('MIT purpose steht genau EIN gekennzeichneter Block VOR der Provision', () => {
+    const prompt = buildPrelabelUserPrompt(provision, undefined, {
+      recitals: [{ number: 1, text: 'Zweck dieser Verordnung ist der Schutz digitaler Produkte.' }],
+    });
+    expect(prompt.match(/stated PURPOSE/g)).toHaveLength(1);
+    expect(prompt).toContain('NOT normative text');
+    expect(prompt.indexOf('stated PURPOSE')).toBeLessThan(prompt.indexOf('Provision [cra-de'));
+    expect(prompt).toContain('(1) Zweck dieser Verordnung');
+  });
+
+  it('deckelt lange Erwägungsgründe auf 900 Zeichen', () => {
+    const prompt = buildPrelabelUserPrompt(provision, undefined, {
+      recitals: [{ number: 2, text: 'x'.repeat(2000) }],
+    });
+    const zeile = prompt.split('\n').find((l) => l.startsWith('(2) '))!;
+    expect(zeile.length).toBeLessThanOrEqual(4 + 900 + 1);
+    expect(zeile.endsWith('…')).toBe(true);
+  });
+
+  it('leere Recital-Liste erzeugt keinen Block', () => {
+    const prompt = buildPrelabelUserPrompt(provision, undefined, { recitals: [] });
+    expect(prompt).not.toContain('stated PURPOSE');
+  });
+
+  it('die Experiment-Kennung existiert und ist versioniert', () => {
+    expect(TYPING_PURPOSE_CONTEXT_VERSION).toBe('purpose.v1');
   });
 });

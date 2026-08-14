@@ -210,9 +210,46 @@ export interface TypingPromptProvision {
 }
 
 /** Baut den User-Prompt mit den geschlossenen E6-Listen + der Provision. Rein. */
+/**
+ * THE-683 (Experiment, AC-7): Zweck-Kontext als OPTIONALER Zusatz.
+ *
+ * Ohne `purpose` ist der Prompt BYTE-IDENTISCH zu tp-4 — der Produktionspfad
+ * ruft ohne das Argument und bleibt unberührt; erst der Eval-Runner mit
+ * --purpose reicht Erwägungsgründe herein. Kennung des Experiment-Arms:
+ * `tp-4+${TYPING_PURPOSE_CONTEXT_VERSION}` im Report.
+ *
+ * Der Block steht VOR der Provision und trägt seine Grenze im Text: Er ist
+ * kein Normtext, er übersteuert nie den Wortlaut, klassifiziert wird die
+ * PROVISION. Je Erwägungsgrund gedeckelt auf 900 Zeichen — die
+ * OntoLearner-Warnung (mehr Kontext kann die Ausgabe-Disziplin stören) wird
+ * im Experiment gemessen, nicht durch ungebremste Länge provoziert.
+ */
+export const TYPING_PURPOSE_CONTEXT_VERSION = 'purpose.v1';
+
+export interface TypingPromptPurpose {
+  recitals: Array<{ number: number; text: string }>;
+}
+
+const PURPOSE_RECITAL_MAX = 900;
+
+function purposeBlock(purpose: TypingPromptPurpose): string[] {
+  if (purpose.recitals.length === 0) return [];
+  return [
+    "Context — the law's stated PURPOSE (from its opening recitals). This is NOT normative text:",
+    'it explains why the law exists and may hint at who it addresses, but it never overrides the',
+    "provision's wording. Classify the PROVISION below, not this context.",
+    ...purpose.recitals.map((r) => {
+      const t = r.text.replace(/\s+/g, ' ').trim();
+      return `(${r.number}) ${t.length > PURPOSE_RECITAL_MAX ? t.slice(0, PURPOSE_RECITAL_MAX) + '…' : t}`;
+    }),
+    '',
+  ];
+}
+
 export function buildPrelabelUserPrompt(
   provision: TypingPromptProvision,
-  ontology = NORM_ONTOLOGY
+  ontology = NORM_ONTOLOGY,
+  purpose?: TypingPromptPurpose
 ): string {
   const facet = axisFacetOf(ontology);
   return [
@@ -222,6 +259,7 @@ export function buildPrelabelUserPrompt(
     '',
     TYPING_RUBRIC_RULES,
     '',
+    ...(purpose ? purposeBlock(purpose) : []),
     `Provision [${provision.source} ${provision.paragraphNumber}${provision.title ? ' — ' + provision.title : ''}] (${provision.language}):`,
     provision.fullText,
     '',

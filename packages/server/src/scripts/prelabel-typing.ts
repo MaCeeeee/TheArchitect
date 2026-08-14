@@ -43,7 +43,7 @@ import {
   EMPTY_RESPONSE_MAX_ATTEMPTS,
   type RaterClient,
 } from '../evals/raterClient';
-import { PRELABEL_SYSTEM, buildPrelabelUserPrompt, parsePrelabelLabels } from '@thearchitect/shared';
+import { PRELABEL_SYSTEM, TYPING_PURPOSE_CONTEXT_VERSION, buildPrelabelUserPrompt, parsePrelabelLabels } from '@thearchitect/shared';
 import { TypingGoldenSetSchema, type TypingGoldenCase } from '../evals/typingGolden';
 
 // Prompt, Parser und Achsen-Kontrakt leben seit THE-432 (Slice T) in
@@ -55,6 +55,7 @@ export {
   PRELABEL_SYSTEM,
   TYPING_RUBRIC_RULES,
   buildPrelabelUserPrompt,
+  TYPING_PURPOSE_CONTEXT_VERSION,
   parsePrelabelLabels,
   type ParsedPrelabel,
 } from '@thearchitect/shared';

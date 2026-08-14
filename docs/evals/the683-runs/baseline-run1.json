@@ -1,0 +1,1066 @@
+{
+  "variante": "tp-4",
+  "report": {
+    "total": 70,
+    "axes": {
+      "normKind": {
+        "accuracy": {
+          "axis": "normKind",
+          "labeled": 70,
+          "correct": 70,
+          "accuracy": 1
+        },
+        "confusion": {
+          "axis": "normKind",
+          "classes": [
+            {
+              "cls": "legislation",
+              "tp": 70,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 70
+            }
+          ],
+          "macroF1": 1
+        },
+        "byLanguage": {
+          "en": {
+            "axis": "normKind",
+            "labeled": 32,
+            "correct": 32,
+            "accuracy": 1
+          },
+          "de": {
+            "axis": "normKind",
+            "labeled": 38,
+            "correct": 38,
+            "accuracy": 1
+          }
+        },
+        "bySource": {
+          "ai-act-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "normKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "eprivacy-en": {
+            "axis": "normKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "normKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "normKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dora": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dora-de": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "normKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": null
+      },
+      "bindingness": {
+        "accuracy": {
+          "axis": "bindingness",
+          "labeled": 70,
+          "correct": 70,
+          "accuracy": 1
+        },
+        "confusion": {
+          "axis": "bindingness",
+          "classes": [
+            {
+              "cls": "binding",
+              "tp": 70,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 70
+            }
+          ],
+          "macroF1": 1
+        },
+        "byLanguage": {
+          "en": {
+            "axis": "bindingness",
+            "labeled": 32,
+            "correct": 32,
+            "accuracy": 1
+          },
+          "de": {
+            "axis": "bindingness",
+            "labeled": 38,
+            "correct": 38,
+            "accuracy": 1
+          }
+        },
+        "bySource": {
+          "ai-act-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "bindingness",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "eprivacy-en": {
+            "axis": "bindingness",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "bindingness",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "bindingness",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dora": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dora-de": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "bindingness",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": null
+      },
+      "obligationKind": {
+        "accuracy": {
+          "axis": "obligationKind",
+          "labeled": 70,
+          "correct": 53,
+          "accuracy": 0.7571428571428571
+        },
+        "confusion": {
+          "axis": "obligationKind",
+          "classes": [
+            {
+              "cls": "__na__",
+              "tp": 6,
+              "fp": 0,
+              "fn": 10,
+              "precision": 1,
+              "recall": 0.375,
+              "f1": 0.5454545454545454,
+              "support": 16
+            },
+            {
+              "cls": "obligation",
+              "tp": 43,
+              "fp": 10,
+              "fn": 0,
+              "precision": 0.8113207547169812,
+              "recall": 1,
+              "f1": 0.8958333333333334,
+              "support": 43
+            },
+            {
+              "cls": "permission",
+              "tp": 3,
+              "fp": 6,
+              "fn": 5,
+              "precision": 0.3333333333333333,
+              "recall": 0.375,
+              "f1": 0.35294117647058826,
+              "support": 8
+            },
+            {
+              "cls": "prohibition",
+              "tp": 1,
+              "fp": 1,
+              "fn": 2,
+              "precision": 0.5,
+              "recall": 0.3333333333333333,
+              "f1": 0.4,
+              "support": 3
+            }
+          ],
+          "macroF1": 0.5485572638146168
+        },
+        "byLanguage": {
+          "en": {
+            "axis": "obligationKind",
+            "labeled": 32,
+            "correct": 22,
+            "accuracy": 0.6875
+          },
+          "de": {
+            "axis": "obligationKind",
+            "labeled": 38,
+            "correct": 31,
+            "accuracy": 0.8157894736842105
+          }
+        },
+        "bySource": {
+          "ai-act-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "data-act-en": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "data-act-de": {
+            "axis": "obligationKind",
+            "labeled": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "cra-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "mdr-en": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "mdr-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "eprivacy-en": {
+            "axis": "obligationKind",
+            "labeled": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "eprivacy-de": {
+            "axis": "obligationKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "obligationKind",
+            "labeled": 5,
+            "correct": 2,
+            "accuracy": 0.4
+          },
+          "eidas-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "dora": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "dsgvo": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 0,
+            "accuracy": 0
+          },
+          "dsgvo-en": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dora-de": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "obligationKind",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": null
+      },
+      "partyRole": {
+        "accuracy": {
+          "axis": "partyRole",
+          "labeled": 70,
+          "correct": 53,
+          "accuracy": 0.7571428571428571
+        },
+        "confusion": {
+          "axis": "partyRole",
+          "classes": [
+            {
+              "cls": "__na__",
+              "tp": 12,
+              "fp": 0,
+              "fn": 3,
+              "precision": 1,
+              "recall": 0.8,
+              "f1": 0.888888888888889,
+              "support": 15
+            },
+            {
+              "cls": "conformity_assessment_body",
+              "tp": 4,
+              "fp": 4,
+              "fn": 0,
+              "precision": 0.5,
+              "recall": 1,
+              "f1": 0.6666666666666666,
+              "support": 4
+            },
+            {
+              "cls": "controller",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "data_holder",
+              "tp": 4,
+              "fp": 1,
+              "fn": 0,
+              "precision": 0.8,
+              "recall": 1,
+              "f1": 0.888888888888889,
+              "support": 4
+            },
+            {
+              "cls": "ecs_provider",
+              "tp": 4,
+              "fp": 1,
+              "fn": 3,
+              "precision": 0.8,
+              "recall": 0.5714285714285714,
+              "f1": 0.6666666666666666,
+              "support": 7
+            },
+            {
+              "cls": "financial_entity",
+              "tp": 4,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 4
+            },
+            {
+              "cls": "manufacturer",
+              "tp": 3,
+              "fp": 1,
+              "fn": 0,
+              "precision": 0.75,
+              "recall": 1,
+              "f1": 0.8571428571428571,
+              "support": 3
+            },
+            {
+              "cls": "member_state",
+              "tp": 5,
+              "fp": 7,
+              "fn": 1,
+              "precision": 0.4166666666666667,
+              "recall": 0.8333333333333334,
+              "f1": 0.5555555555555556,
+              "support": 6
+            },
+            {
+              "cls": "obligated_enterprise",
+              "tp": 1,
+              "fp": 0,
+              "fn": 1,
+              "precision": 1,
+              "recall": 0.5,
+              "f1": 0.6666666666666666,
+              "support": 2
+            },
+            {
+              "cls": "provider",
+              "tp": 6,
+              "fp": 1,
+              "fn": 0,
+              "precision": 0.8571428571428571,
+              "recall": 1,
+              "f1": 0.923076923076923,
+              "support": 6
+            },
+            {
+              "cls": "supervisory_authority",
+              "tp": 5,
+              "fp": 1,
+              "fn": 9,
+              "precision": 0.8333333333333334,
+              "recall": 0.35714285714285715,
+              "f1": 0.5,
+              "support": 14
+            },
+            {
+              "cls": "trust_service_provider",
+              "tp": 4,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 4
+            }
+          ],
+          "macroF1": 0.8011294261294261
+        },
+        "byLanguage": {
+          "en": {
+            "axis": "partyRole",
+            "labeled": 32,
+            "correct": 23,
+            "accuracy": 0.71875
+          },
+          "de": {
+            "axis": "partyRole",
+            "labeled": 38,
+            "correct": 30,
+            "accuracy": 0.7894736842105263
+          }
+        },
+        "bySource": {
+          "ai-act-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "ai-act-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "data-act-en": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "data-act-de": {
+            "axis": "partyRole",
+            "labeled": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "cra-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "mdr-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "eprivacy-en": {
+            "axis": "partyRole",
+            "labeled": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "eprivacy-de": {
+            "axis": "partyRole",
+            "labeled": 5,
+            "correct": 3,
+            "accuracy": 0.6
+          },
+          "eidas-en": {
+            "axis": "partyRole",
+            "labeled": 5,
+            "correct": 4,
+            "accuracy": 0.8
+          },
+          "eidas-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dora": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          },
+          "dsgvo-en": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          },
+          "dora-de": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          },
+          "cra-en": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "partyRole",
+            "labeled": 2,
+            "correct": 0,
+            "accuracy": 0
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": null
+      },
+      "provisionKind": {
+        "accuracy": {
+          "axis": "provisionKind",
+          "labeled": 70,
+          "correct": 54,
+          "accuracy": 0.7714285714285715
+        },
+        "confusion": {
+          "axis": "provisionKind",
+          "classes": [
+            {
+              "cls": "definition",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "enforcement-supervision",
+              "tp": 8,
+              "fp": 2,
+              "fn": 2,
+              "precision": 0.8,
+              "recall": 0.8,
+              "f1": 0.8000000000000002,
+              "support": 10
+            },
+            {
+              "cls": "obligation",
+              "tp": 32,
+              "fp": 11,
+              "fn": 1,
+              "precision": 0.7441860465116279,
+              "recall": 0.9696969696969697,
+              "f1": 0.8421052631578948,
+              "support": 33
+            },
+            {
+              "cls": "other",
+              "tp": 2,
+              "fp": 0,
+              "fn": 3,
+              "precision": 1,
+              "recall": 0.4,
+              "f1": 0.5714285714285715,
+              "support": 5
+            },
+            {
+              "cls": "procedural",
+              "tp": 4,
+              "fp": 1,
+              "fn": 10,
+              "precision": 0.8,
+              "recall": 0.2857142857142857,
+              "f1": 0.4210526315789473,
+              "support": 14
+            },
+            {
+              "cls": "scope-applicability",
+              "tp": 7,
+              "fp": 2,
+              "fn": 0,
+              "precision": 0.7777777777777778,
+              "recall": 1,
+              "f1": 0.8750000000000001,
+              "support": 7
+            }
+          ],
+          "macroF1": 0.7515977443609024
+        },
+        "byLanguage": {
+          "en": {
+            "axis": "provisionKind",
+            "labeled": 32,
+            "correct": 20,
+            "accuracy": 0.625
+          },
+          "de": {
+            "axis": "provisionKind",
+            "labeled": 38,
+            "correct": 34,
+            "accuracy": 0.8947368421052632
+          }
+        },
+        "bySource": {
+          "ai-act-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 1,
+            "accuracy": 0.3333333333333333
+          },
+          "ai-act-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "data-act-de": {
+            "axis": "provisionKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "mdr-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "eprivacy-en": {
+            "axis": "provisionKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "provisionKind",
+            "labeled": 5,
+            "correct": 5,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "provisionKind",
+            "labeled": 5,
+            "correct": 3,
+            "accuracy": 0.6
+          },
+          "eidas-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "dora": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "dsgvo": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "psd2-de": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 0,
+            "accuracy": 0
+          },
+          "psd2-en": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          },
+          "dora-de": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 2,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          },
+          "nis2": {
+            "axis": "provisionKind",
+            "labeled": 2,
+            "correct": 1,
+            "accuracy": 0.5
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": null
+      }
+    },
+    "observed": {
+      "total": 2,
+      "whereGoldNa": 2,
+      "whereGoldHasRole": 0
+    }
+  },
+  "oovDrops": {},
+  "majority": {
+    "normKind": {
+      "klass": "legislation",
+      "accuracy": 1
+    },
+    "bindingness": {
+      "klass": "binding",
+      "accuracy": 1
+    },
+    "obligationKind": {
+      "klass": "obligation",
+      "accuracy": 0.6142857142857143
+    },
+    "partyRole": {
+      "klass": "na",
+      "accuracy": 0.21428571428571427
+    },
+    "provisionKind": {
+      "klass": "obligation",
+      "accuracy": 0.4714285714285714
+    }
+  }
+}
