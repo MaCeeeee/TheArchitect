@@ -46,11 +46,13 @@ export async function evaluateTyping(args: {
   golden: TypingGoldenSet;
   classify: Classify;
   bandOf?: (c: TypingGoldenSet['cases'][number]) => ComplexityBand | undefined;
+  /** THE-683: additiver Beobachter je Fall — für Subset-Auswertungen (mit/ohne Zweck). */
+  collect?: (ec: TypingEvalCase) => void;
 }): Promise<TypingReport> {
   const evalCases: TypingEvalCase[] = [];
   for (const c of args.golden.cases) {
     const { labels, confidence, partyRoleObserved } = await args.classify(c);
-    evalCases.push({
+    const ec: TypingEvalCase = {
       caseId: c.caseId,
       source: c.source,
       language: c.language,
@@ -59,7 +61,9 @@ export async function evaluateTyping(args: {
       predicted: labels,
       confidence,
       partyRoleObserved,
-    });
+    };
+    args.collect?.(ec);
+    evalCases.push(ec);
   }
   return buildTypingReport(evalCases);
 }
@@ -145,20 +149,53 @@ async function bandBySource(projectId: string | undefined): Promise<(c: TypingGo
   return (c) => map.get(c.source);
 }
 
-/** Echter Classifier: derselbe Instruct-Prompt wie der Prelabel-Schritt. */
-function anthropicClassify(client: Anthropic, model: string): Classify {
+/**
+ * Echter Classifier: derselbe Instruct-Prompt wie der Prelabel-Schritt.
+ * THE-683: optionaler Zweck-Kontext je Quelle (Experiment-Arm) + OOV-Zähler
+ * (AC-4 — die OntoLearner-Warnung wird gemessen, nicht gehofft).
+ */
+function anthropicClassify(
+  client: Anthropic,
+  model: string,
+  opts?: {
+    purposeBySource?: Map<string, { recitals: Array<{ number: number; text: string }> }>;
+    oovDrops?: Map<string, number>;
+  }
+): Classify {
   return async (c) => {
+    const purpose = opts?.purposeBySource?.get(c.source);
     const res = await client.messages.create({
       model,
       system: PRELABEL_SYSTEM,
-      messages: [{ role: 'user', content: buildPrelabelUserPrompt(c) }],
+      messages: [{ role: 'user', content: buildPrelabelUserPrompt(c, undefined, purpose) }],
       max_tokens: MAX_TOKENS,
     });
     const block = res.content.find((b) => b.type === 'text');
     const text = block && block.type === 'text' ? block.text : '';
     const parsed = parsePrelabelLabels(text);
+    if (opts?.oovDrops) {
+      for (const axis of parsed.dropped) {
+        opts.oovDrops.set(axis, (opts.oovDrops.get(axis) ?? 0) + 1);
+      }
+    }
     return { labels: parsed.labels, partyRoleObserved: parsed.partyRoleObserved };
   };
+}
+
+/** AC-5 (THE-683): Was erreicht ein sturer „immer häufigste Klasse"-Rater? */
+function majorityBaseline(cases: TypingEvalCase[]): Record<string, { klass: string; accuracy: number }> {
+  const axes = ['normKind', 'bindingness', 'obligationKind', 'partyRole', 'provisionKind'] as const;
+  const out: Record<string, { klass: string; accuracy: number }> = {};
+  for (const axis of axes) {
+    const counts = new Map<string, number>();
+    for (const c of cases) {
+      const g = (c.gold as Record<string, string | null | undefined>)[axis] ?? 'na';
+      counts.set(String(g), (counts.get(String(g)) ?? 0) + 1);
+    }
+    const [klass, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? ['na', 0];
+    out[axis] = { klass, accuracy: cases.length ? n / cases.length : 0 };
+  }
+  return out;
 }
 
 async function main(): Promise<void> {
@@ -166,7 +203,7 @@ async function main(): Promise<void> {
   const gi = argv.indexOf('--golden');
   const goldenPath = gi !== -1 ? argv[gi + 1] : undefined;
   if (!goldenPath) {
-    console.error('Usage: typing:eval --golden <typing-golden.json>');
+    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>]');
     process.exitCode = 2;
     return;
   }
@@ -174,17 +211,66 @@ async function main(): Promise<void> {
   if (!golden.frozen) {
     console.error('[typing-eval] WARN: Golden ist NICHT frozen — kein verbindlicher Baseline-Report (THE-430 AC-1).');
   }
+
+  // THE-683: --purpose lädt den EINGEFRORENEN Zweck-Kontext (Option b) je Quelle.
+  const pi = argv.indexOf('--purpose');
+  const purposePath = pi !== -1 ? argv[pi + 1] : undefined;
+  let purposeBySource: Map<string, { recitals: Array<{ number: number; text: string }> }> | undefined;
+  if (purposePath) {
+    const raw = JSON.parse(fs.readFileSync(path.resolve(purposePath), 'utf8')) as {
+      perSource: Record<string, Array<{ number: number; text: string }>>;
+    };
+    purposeBySource = new Map(
+      Object.entries(raw.perSource).map(([src, recitals]) => [src, { recitals }])
+    );
+  }
+
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
   const bandOf = await bandBySource(process.env.TA_PROJECT);
-  const report = await evaluateTyping({ golden, classify: anthropicClassify(getClient(), model), bandOf });
+  const oovDrops = new Map<string, number>();
+  const collected: TypingEvalCase[] = [];
+  const report = await evaluateTyping({
+    golden,
+    classify: anthropicClassify(getClient(), model, { purposeBySource, oovDrops }),
+    bandOf,
+    collect: (ec) => collected.push(ec),
+  });
 
-  const md = renderTypingReportMarkdown(report, { golden: path.basename(goldenPath), model });
+  const variante = purposeBySource ? 'tp-4+purpose.v1' : 'tp-4';
+  let md = renderTypingReportMarkdown(report, { golden: path.basename(goldenPath), model });
+  md += `\n\n## THE-683 — Experiment-Anhang (${variante})\n\n`;
+  md += `OOV-Drops je Achse (AC-4): ${
+    oovDrops.size === 0 ? 'keine' : [...oovDrops.entries()].map(([a, n]) => `${a}=${n}`).join(' · ')
+  }\n\n`;
+  const maj = majorityBaseline(collected);
+  md += `Trivial-Messlatte (AC-5 — „immer häufigste Klasse"):\n\n| Achse | Klasse | Accuracy |\n|---|---|---|\n`;
+  for (const [axis, m] of Object.entries(maj)) {
+    md += `| ${axis} | ${m.klass} | ${(m.accuracy * 100).toFixed(1)}% |\n`;
+  }
+  if (purposeBySource) {
+    const mit = collected.filter((c) => (purposeBySource!.get(c.source)?.recitals.length ?? 0) > 0);
+    const ohne = collected.filter((c) => (purposeBySource!.get(c.source)?.recitals.length ?? 0) === 0);
+    md += `\nSubsets (AC-6): mit Zweck-Kontext ${mit.length} Fälle · ohne ${ohne.length} (${[...new Set(ohne.map((c) => c.source))].join(', ') || '—'})\n\n`;
+    for (const [name, subset] of [
+      ['mit Zweck', mit],
+      ['ohne Zweck', ohne],
+    ] as const) {
+      if (subset.length === 0) continue;
+      const sub = buildTypingReport(subset);
+      md += `### Subset ${name} (${subset.length} Fälle)\n\n| Achse | Accuracy | macro-F1 |\n|---|---|---|\n`;
+      for (const [axis, ax] of Object.entries(sub.axes)) {
+        md += `| ${axis} | ${pct(ax.accuracy.accuracy)} | ${ax.confusion.macroF1.toFixed(3)} |\n`;
+      }
+      md += '\n';
+    }
+  }
+
   const outDir = path.join(__dirname, 'reports');
   fs.mkdirSync(outDir, { recursive: true });
-  const base = path.join(outDir, `typing-${golden.version}`);
-  fs.writeFileSync(`${base}.json`, JSON.stringify(report, null, 2) + '\n');
+  const base = path.join(outDir, `typing-${golden.version}${purposeBySource ? '-purpose' : ''}`);
+  fs.writeFileSync(`${base}.json`, JSON.stringify({ variante, report, oovDrops: Object.fromEntries(oovDrops), majority: maj }, null, 2) + '\n');
   fs.writeFileSync(`${base}.md`, md);
-  console.log(`[typing-eval] Report → ${base}.md / .json`);
+  console.log(`[typing-eval] Report (${variante}) → ${base}.md / .json`);
 }
 
 if (require.main === module) {
