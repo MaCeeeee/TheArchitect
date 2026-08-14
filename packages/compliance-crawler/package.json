@@ -16,7 +16,8 @@
     "typing:batch:prod": "node dist/cli/typing-batch.js",
     "relations:batch": "ts-node-dev --transpile-only src/cli/relations-batch.ts",
     "relations:batch:prod": "node dist/cli/relations-batch.js",
-    "recitals:crawl": "ts-node-dev --transpile-only src/cli/recitals-crawl.ts"
+    "recitals:crawl": "ts-node-dev --transpile-only src/cli/recitals-crawl.ts",
+    "recitals:crawl:prod": "node dist/cli/recitals-crawl.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
