@@ -45,6 +45,11 @@ export interface IRegulationTyping {
   status: 'suggested' | 'confirmed' | 'rejected';
   /** Telemetrie (AC-2): Achsen mit OOV-verworfenem Modell-Wert — nur wenn nicht leer. */
   droppedAxes?: string[];
+  /**
+   * Beobachtungskanal (THE-668): Freitext-Akteur, wenn keine partyRole passte.
+   * Fließt nie in partyRole ein; Auswertung ist eine Zählung (THE-669).
+   */
+  partyRoleObserved?: string;
 }
 
 /**
@@ -157,8 +162,15 @@ const typingSchema = new Schema<IRegulationTyping>(
     typedAt: { type: Date, required: true },
     status: { type: String, required: true, enum: ['suggested', 'confirmed', 'rejected'] },
     droppedAxes: { type: [String], default: undefined },
+    partyRoleObserved: { type: String, default: undefined },
   },
-  { _id: false }
+  // strict: 'throw' — die Falle aus dem Kommentar oben ist am 12.08. real
+  // zugeschnappt: partyRoleObserved stand im Interface, fehlte hier, und
+  // mongoose strippte es bei 1746 Batch-Writes KOMMENTARLOS (5,78 $ Ernte
+  // weg, THE-669). Ab jetzt bricht ein unbekanntes typing-Feld den Write
+  // laut, statt still zu verschwinden — Interface und Schema sind zwei
+  // Listen für dieselbe Frage, und dieses Tor erzwingt ihren Gleichstand.
+  { _id: false, strict: 'throw' }
 );
 
 /**

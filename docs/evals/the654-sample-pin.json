@@ -1,0 +1,49 @@
+{
+  "note": "THE-654: eingefrorene Adjudikations-Stichprobe. Die Urteile hängen an der POSITION (f1..fN) — wer die Liste ändert, hängt gefällte Urteile an andere Artikel. Defekte Fälle bleiben deshalb an ihrer Position stehen und werden als unbewertbar gekennzeichnet; Ersatz kommt als Nachrücker ans ENDE, nie in die Mitte.",
+  "frozenAt": "2026-08-11",
+  "sample": [
+    "ai-act-de:art-56",
+    "cra-de:art-14",
+    "data-act-de:art-12",
+    "dora-de:art-41",
+    "dsgvo-en:art-48",
+    "eidas-de:art-26",
+    "emoney-de:art-13",
+    "eprivacy-en:art-3",
+    "esg-rating-de:art-5",
+    "lksg:11",
+    "mdr-de:art-112",
+    "nis2:art-4",
+    "psd2-de:art-4",
+    "standardisation-de:art-10",
+    "ai-act-de:art-58",
+    "cra-de:art-15",
+    "data-act-de:art-24",
+    "dora:art-23",
+    "dsgvo-en:art-68",
+    "eidas-en:art-25",
+    "emoney-de:art-14",
+    "lksg:24",
+    "mdr-de:art-121",
+    "psd2-de:art-98",
+    "standardisation-de:art-13",
+    "ai-act-de:art-66",
+    "cra-de:art-7",
+    "data-act-de:art-32",
+    "dora:art-32",
+    "dsgvo:art-40"
+  ],
+  "control": [
+    "ai-act-de:art-108",
+    "cra-de:art-69",
+    "data-act-en:art-1",
+    "dora:art-1",
+    "dsgvo:art-1"
+  ],
+  "defekt": {
+    "cra-de:art-14": "Trägt statt Artikel 14 den Dokument-Schwanz (Schlussformel, Unterschriften, Fußnoten). Der echte Art. 14 „Meldepflichten der Hersteller\" fehlt in der deutschen Fassung ganz; cra-en führt ihn korrekt mit 8882 Zeichen. Ein Urteil hierüber wäre ein Urteil über einen Nicht-Artikel. Die Position bleibt frei, damit bereits gefällte Urteile nicht verrutschen — Ersatz ist Fall 36."
+  },
+  "nachruecker": [
+    "cra-de:art-11"
+  ]
+}
