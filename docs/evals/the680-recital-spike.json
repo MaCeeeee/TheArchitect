@@ -1,0 +1,280 @@
+{
+  "befunde": [
+    {
+      "source": "nis2",
+      "celex": "32022L2555",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022L2555",
+      "gefunden": 144,
+      "hoechste": 144,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "dsgvo",
+      "celex": "32016R0679",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32016R0679",
+      "gefunden": 173,
+      "hoechste": 173,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "ai-act-en",
+      "celex": "32024R1689",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R1689",
+      "gefunden": 180,
+      "hoechste": 180,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "ai-act-de",
+      "celex": "32024R1689",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R1689",
+      "gefunden": 180,
+      "hoechste": 180,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "data-act-en",
+      "celex": "32023R2854",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32023R2854",
+      "gefunden": 119,
+      "hoechste": 119,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "data-act-de",
+      "celex": "32023R2854",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32023R2854",
+      "gefunden": 119,
+      "hoechste": 119,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "dora",
+      "celex": "32022R2554",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554",
+      "gefunden": 106,
+      "hoechste": 106,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "dsgvo-en",
+      "celex": "32016R0679",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679",
+      "gefunden": 173,
+      "hoechste": 173,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "nis2-de",
+      "celex": "32022L2555",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022L2555",
+      "gefunden": 144,
+      "hoechste": 144,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "dora-de",
+      "celex": "32022R2554",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32022R2554",
+      "gefunden": 106,
+      "hoechste": 106,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "cra-en",
+      "celex": "32024R2847",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2847",
+      "gefunden": 130,
+      "hoechste": 130,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "cra-de",
+      "celex": "32024R2847",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847",
+      "gefunden": 130,
+      "hoechste": 130,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "mdr-en",
+      "celex": "32017R0745",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32017R0745",
+      "gefunden": 101,
+      "hoechste": 101,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "mdr-de",
+      "celex": "32017R0745",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32017R0745",
+      "gefunden": 101,
+      "hoechste": 101,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "psd2-en",
+      "celex": "32015L2366",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32015L2366",
+      "gefunden": 113,
+      "hoechste": 113,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "psd2-de",
+      "celex": "32015L2366",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366",
+      "gefunden": 113,
+      "hoechste": 113,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "eprivacy-en",
+      "celex": "32002L0058",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32002L0058",
+      "gefunden": 0,
+      "hoechste": 0,
+      "luecken": [],
+      "endeMarker": false,
+      "merkmal": "—",
+      "fehler": "kein div.eli-subdivision — anderes Markup"
+    },
+    {
+      "source": "eprivacy-de",
+      "celex": "32002L0058",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32002L0058",
+      "gefunden": 0,
+      "hoechste": 0,
+      "luecken": [],
+      "endeMarker": false,
+      "merkmal": "—",
+      "fehler": "kein div.eli-subdivision — anderes Markup"
+    },
+    {
+      "source": "eidas-en",
+      "celex": "32014R0910",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32014R0910",
+      "gefunden": 77,
+      "hoechste": 77,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "eidas-de",
+      "celex": "32014R0910",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32014R0910",
+      "gefunden": 77,
+      "hoechste": 77,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "standardisation-en",
+      "celex": "32012R1025",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32012R1025",
+      "gefunden": 54,
+      "hoechste": 54,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "standardisation-de",
+      "celex": "32012R1025",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32012R1025",
+      "gefunden": 54,
+      "hoechste": 54,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "emoney-en",
+      "celex": "32009L0110",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32009L0110",
+      "gefunden": 28,
+      "hoechste": 28,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "emoney-de",
+      "celex": "32009L0110",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32009L0110",
+      "gefunden": 28,
+      "hoechste": 28,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "esg-rating-en",
+      "celex": "32024R3005",
+      "url": "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R3005",
+      "gefunden": 52,
+      "hoechste": 52,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    },
+    {
+      "source": "esg-rating-de",
+      "celex": "32024R3005",
+      "url": "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R3005",
+      "gefunden": 52,
+      "hoechste": 52,
+      "luecken": [],
+      "endeMarker": true,
+      "merkmal": "eli-subdivision"
+    }
+  ],
+  "familien": [
+    "nis2",
+    "dsgvo",
+    "ai-act",
+    "data-act",
+    "dora",
+    "cra",
+    "mdr",
+    "psd2",
+    "eidas",
+    "standardisation",
+    "emoney",
+    "esg-rating"
+  ]
+}
