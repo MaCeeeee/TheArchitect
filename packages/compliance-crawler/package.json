@@ -2,7 +2,7 @@
   "name": "@thearchitect/compliance-crawler",
   "version": "0.1.0",
   "private": true,
-  "description": "Industrial Compliance Mapping Crawler \u2014 fetches regulations from EUR-Lex and gesetze-im-internet, writes to MongoDB, syncs embeddings to Qdrant. Deployed on Server B (Coolify).",
+  "description": "Industrial Compliance Mapping Crawler — fetches regulations from EUR-Lex and gesetze-im-internet, writes to MongoDB, syncs embeddings to Qdrant. Deployed on Server B (Coolify).",
   "main": "./dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
@@ -17,13 +17,16 @@
     "relations:batch": "ts-node-dev --transpile-only src/cli/relations-batch.ts",
     "relations:batch:prod": "node dist/cli/relations-batch.js",
     "recitals:crawl": "ts-node-dev --transpile-only src/cli/recitals-crawl.ts",
-    "recitals:crawl:prod": "node dist/cli/recitals-crawl.js"
+    "recitals:crawl:prod": "node dist/cli/recitals-crawl.js",
+    "formex:probe": "ts-node-dev --transpile-only src/cli/formex-probe.ts",
+    "formex:probe:prod": "node dist/cli/formex-probe.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@fastify/sensible": "^6.0.1",
     "@qdrant/js-client-rest": "^1.18.0",
     "@thearchitect/shared": "*",
+    "adm-zip": "^0.5.16",
     "axios": "^1.13.6",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.0",
@@ -33,6 +36,7 @@
   },
   "devDependencies": {
     "@thearchitect/shared": "*",
+    "@types/adm-zip": "^0.5.7",
     "@types/jest": "^29.5.0",
     "@types/node": "^22.0.0",
     "jest": "^29.7.0",
