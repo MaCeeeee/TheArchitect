@@ -8,56 +8,38 @@
 
 | Fassung | CELEX | Formex | Weg | Ausdruck | Artikel amtl. | Artikel Bestand | Erw. amtl. | Erw. Bestand | Abweichung |
 |---|---|---|---|---|---|---|---|---|---|
-| `nis2` | 32022L2555 | ✓ 76 kB | sparql | base-act | 46 | 46 | 144 | 144 | — |
-| `dsgvo` | 32016R0679 | ✓ 104 kB | sparql | base-act | 99 | 99 | 173 | 173 | — |
-| `ai-act-en` | 32024R1689 | ✓ 167 kB | sparql | base-act | 113 | 112 | 180 | 180 | fehlt: 94 |
-| `ai-act-de` | 32024R1689 | ✓ 191 kB | sparql | base-act | 113 | 113 | 180 | 180 | — |
-| `data-act-en` | 32023R2854 | ✓ 78 kB | sparql | base-act | 50 | 50 | 119 | 119 | — |
-| `data-act-de` | 32023R2854 | ✓ 92 kB | sparql | base-act | 50 | 50 | 119 | 119 | — |
-| `dora` | 32022R2554 | ✓ 81 kB | sparql | base-act | 64 | 63 | 106 | 106 | fehlt: 61 |
-| `dsgvo-en` | 32016R0679 | ✓ 88 kB | sparql | base-act | 99 | 99 | 173 | 173 | — |
-| `nis2-de` | 32022L2555 | ✓ 89 kB | sparql | base-act | 46 | 46 | 144 | 144 | — |
-| `dora-de` | 32022R2554 | ✓ 93 kB | sparql | base-act | 64 | 63 | 106 | 106 | fehlt: 61 |
-| `cra-en` | 32024R2847 | ✓ 95 kB | sparql | base-act | 71 | 71 | 130 | 130 | — |
-| `cra-de` | 32024R2847 | ✓ 109 kB | sparql | base-act | 71 | 71 | 130 | 130 | — |
-| `mdr-en` | 32017R0745 | ✓ 200 kB | sparql | base-act | 123 | 123 | 101 | 101 | — |
-| `mdr-de` | 32017R0745 | ✓ 227 kB | sparql | base-act | 123 | 123 | 101 | 101 | — |
-| `psd2-en` | 32015L2366 | ✓ 82 kB | sparql | base-act | 117 | 117 | 113 | 113 | — |
-| `psd2-de` | 32015L2366 | ✓ 94 kB | sparql | base-act | 117 | 116 | 113 | 113 | fehlt: 110 |
-| `eprivacy-en` | 32002L0058 | ✗ | — | — | — | — | — | — | Kein Formex für 32002L0058.en (1 Weg versucht) — CELLAR antwortete HTTP 404 (htt |
-| `eprivacy-de` | 32002L0058 | ✗ | — | — | — | — | — | — | Kein Formex für 32002L0058.de (1 Weg versucht) — CELLAR antwortete HTTP 404 (htt |
-| `eidas-en` | 32014R0910 | ✓ 36 kB | sparql | base-act | 52 | 52 | 77 | 77 | — |
-| `eidas-de` | 32014R0910 | ✓ 42 kB | sparql | base-act | 52 | 52 | 77 | 77 | — |
-| `standardisation-en` | 32012R1025 | ✓ 29 kB | sparql | base-act | 30 | 30 | 54 | 54 | — |
-| `standardisation-de` | 32012R1025 | ✓ 33 kB | sparql | base-act | 30 | 30 | 54 | 54 | — |
-| `emoney-en` | 32009L0110 | ✓ 16 kB | sparql | base-act | 24 | 24 | 28 | 28 | — |
-| `emoney-de` | 32009L0110 | ✓ 18 kB | sparql | base-act | 24 | 24 | 28 | 28 | — |
-| `esg-rating-en` | 32024R3005 | ✓ 54 kB | sparql | base-act | 53 | 53 | 52 | 52 | — |
-| `esg-rating-de` | 32024R3005 | ✓ 61 kB | sparql | base-act | 53 | 53 | 52 | 52 | — |
+| `nis2` | 32022L2555 | ✓ 76 kB | cache | base-act | 46 | 46 | 144 | 144 | — |
+| `dsgvo` | 32016R0679 | ✓ 104 kB | cache | base-act | 99 | 99 | 173 | 173 | — |
+| `ai-act-en` | 32024R1689 | ✓ 167 kB | cache | base-act | 113 | 113 | 180 | 180 | — |
+| `ai-act-de` | 32024R1689 | ✓ 191 kB | cache | base-act | 113 | 113 | 180 | 180 | — |
+| `data-act-en` | 32023R2854 | ✓ 78 kB | cache | base-act | 50 | 50 | 119 | 119 | — |
+| `data-act-de` | 32023R2854 | ✓ 92 kB | cache | base-act | 50 | 50 | 119 | 119 | — |
+| `dora` | 32022R2554 | ✓ 81 kB | cache | base-act | 64 | 64 | 106 | 106 | — |
+| `dsgvo-en` | 32016R0679 | ✓ 88 kB | cache | base-act | 99 | 99 | 173 | 173 | — |
+| `nis2-de` | 32022L2555 | ✓ 89 kB | cache | base-act | 46 | 46 | 144 | 144 | — |
+| `dora-de` | 32022R2554 | ✓ 93 kB | cache | base-act | 64 | 64 | 106 | 106 | — |
+| `cra-en` | 32024R2847 | ✓ 95 kB | cache | base-act | 71 | 71 | 130 | 130 | — |
+| `cra-de` | 32024R2847 | ✓ 109 kB | cache | base-act | 71 | 71 | 130 | 130 | — |
+| `mdr-en` | 32017R0745 | ✓ 200 kB | cache | base-act | 123 | 123 | 101 | 101 | — |
+| `mdr-de` | 32017R0745 | ✓ 227 kB | cache | base-act | 123 | 123 | 101 | 101 | — |
+| `psd2-en` | 32015L2366 | ✓ 82 kB | cache | base-act | 117 | 117 | 113 | 113 | — |
+| `psd2-de` | 32015L2366 | ✓ 94 kB | cache | base-act | 117 | 117 | 113 | 113 | — |
+| `eprivacy-en` | 32002L0058 | ✗ | — | — | — | — | — | — | Nicht in der Ablage und Netz gesperrt: 32002L0058.ENG.fmx4.zip — /Users/mac_mace |
+| `eprivacy-de` | 32002L0058 | ✗ | — | — | — | — | — | — | Nicht in der Ablage und Netz gesperrt: 32002L0058.DEU.fmx4.zip — /Users/mac_mace |
+| `eidas-en` | 32014R0910 | ✓ 36 kB | cache | base-act | 52 | 52 | 77 | 77 | — |
+| `eidas-de` | 32014R0910 | ✓ 42 kB | cache | base-act | 52 | 52 | 77 | 77 | — |
+| `standardisation-en` | 32012R1025 | ✓ 29 kB | cache | base-act | 30 | 30 | 54 | 54 | — |
+| `standardisation-de` | 32012R1025 | ✓ 33 kB | cache | base-act | 30 | 30 | 54 | 54 | — |
+| `emoney-en` | 32009L0110 | ✓ 16 kB | cache | base-act | 24 | 24 | 28 | 28 | — |
+| `emoney-de` | 32009L0110 | ✓ 18 kB | cache | base-act | 24 | 24 | 28 | 28 | — |
+| `esg-rating-en` | 32024R3005 | ✓ 54 kB | cache | base-act | 53 | 53 | 52 | 52 | — |
+| `esg-rating-de` | 32024R3005 | ✓ 61 kB | cache | base-act | 53 | 53 | 52 | 52 | — |
 
 ## Abweichungen im Einzelnen
 
 Jede Abweichung mit Nummer — eine Summe hätte den fehlenden DORA-Artikel 61 nie gezeigt.
 
-### `ai-act-en` (32024R1689)
-
-- **Artikel amtlich vorhanden, im Bestand FEHLEND:** 94
-  - Artikel 94 (amtliche Id `094`): „Procedural rights of economic operators of the general-purpose AI model"
-
-### `dora` (32022R2554)
-
-- **Artikel amtlich vorhanden, im Bestand FEHLEND:** 61
-  - Artikel 61 (amtliche Id `061`): „Amendments to Regulation (EU) No 909/2014"
-
-### `dora-de` (32022R2554)
-
-- **Artikel amtlich vorhanden, im Bestand FEHLEND:** 61
-  - Artikel 61 (amtliche Id `061`): „Änderungen der Verordnung (EU) Nr. 909/2014"
-
-### `psd2-de` (32015L2366)
-
-- **Artikel amtlich vorhanden, im Bestand FEHLEND:** 110
-  - Artikel 110 (amtliche Id `110`): „Änderungen der Richtlinie 2002/65/EG"
+_Keine — amtliche Menge und Bestand decken sich in allen geprüften Fassungen._
 
 ## Struktur je Fassung
 
