@@ -40,10 +40,12 @@
     "dora:art-1",
     "dsgvo:art-1"
   ],
-  "defekt": {
-    "cra-de:art-14": "Trägt statt Artikel 14 den Dokument-Schwanz (Schlussformel, Unterschriften, Fußnoten). Der echte Art. 14 „Meldepflichten der Hersteller\" fehlt in der deutschen Fassung ganz; cra-en führt ihn korrekt mit 8882 Zeichen. Ein Urteil hierüber wäre ein Urteil über einen Nicht-Artikel. Die Position bleibt frei, damit bereits gefällte Urteile nicht verrutschen — Ersatz ist Fall 36."
+  "defekt": {},
+  "behobenAm": {
+    "cra-de:art-14": "War bis 16.08.2026 stillgelegt: der Datensatz trug den Dokument-Schwanz statt des Artikels. Ursache war der Markdown-Segmentierer (THE-684) — er las jede Zeile als neue Artikel-Überschrift, die mit „Artikel N\" beginnt, und ein Scheintreffer überschrieb den echten Artikel. Repariert und gegen die amtliche Formex-Struktur geprüft: Art. 14 trägt wieder „Meldepflichten der Hersteller\", 9633 Zeichen. Fall 02 ist damit ganz normal bewertbar."
   },
   "nachruecker": [
     "cra-de:art-11"
-  ]
+  ],
+  "nachrueckerNote": "Kam als Ersatz für den damals stillgelegten Fall 02. Bleibt im Bogen, obwohl Fall 02 wieder bewertbar ist — er steht am ENDE, verschiebt also keine Position, und ein zusätzliches Urteil ist zusätzliche Evidenz."
 }
