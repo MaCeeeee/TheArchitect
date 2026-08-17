@@ -267,3 +267,115 @@ describe('FirecrawlSource — config defaults', () => {
     );
   });
 });
+
+// ─── THE-684: Änderungsartikel ──────────────────────────────────────────────
+
+/**
+ * Der Fehler, der vier Artikel verlor und zwei überschrieb.
+ *
+ * Ein Änderungsartikel beginnt mit dem Satz „Artikel 45 der Verordnung … wird
+ * wie folgt geändert:". Die alte Regel — Zeile BEGINNT mit „Artikel N" — las
+ * das als neue Überschrift. Folge: der laufende Artikel brach vor seinem Text
+ * ab (Rumpf leer → still verworfen), und sein Inhalt landete unter der
+ * ZITIERTEN Nummer, wo er den echten Artikel überschrieb.
+ *
+ * Die Textbeispiele sind wörtlich aus der amtlichen Formex-Fassung.
+ */
+describe('FirecrawlSource.parseMarkdown() — Änderungsartikel (THE-684)', () => {
+  function quelle(language: 'de' | 'en'): FirecrawlSource {
+    return new FirecrawlSource({
+      source: (language === 'de' ? 'dora-de' : 'dora') as never,
+      jurisdiction: 'EU',
+      language,
+      effectiveFrom: new Date('2025-01-17'),
+      url: 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32022R2554',
+      apiKey: 'test',
+    });
+  }
+
+  const DORA_EN = [
+    'Article 60',
+    'Amendments to Regulation (EU) No 648/2012',
+    'Regulation (EU) No 648/2012 is amended as follows: in Article 26, paragraph 3 is replaced by the following text which sets out the operational resilience duties.',
+    '',
+    'Article 61',
+    'Amendments to Regulation (EU) No 909/2014',
+    'Article 45 of Regulation (EU) No 909/2014 is amended as follows:',
+    '(1) paragraph 1 is replaced by the following: a central securities depository shall identify sources of operational risk and minimise them through appropriate systems and controls.',
+    '',
+    'Article 62',
+    'Amendments to Regulation (EU) No 600/2014',
+    'Regulation (EU) No 600/2014 is amended as follows, with the operational requirements applying from the date of entry into force.',
+  ].join('\n');
+
+  it('Artikel 61 überlebt seinen eigenen Änderungssatz', () => {
+    const r = quelle('en').parseMarkdown(DORA_EN);
+    const a61 = r.find((x) => x.paragraphNumber === 'Art. 61');
+    expect(a61).toBeDefined();
+    expect(a61!.title).toBe('Amendments to Regulation (EU) No 909/2014');
+    expect(a61!.fullText).toContain('central securities depository');
+  });
+
+  it('der ZITIERTE Artikel 45 wird kein eigener Datensatz — sonst überschreibt er den echten', () => {
+    // Der psd2-de-Schaden: Artikel 4 der Zahlungsdiensterichtlinie trug am
+    // 16.08. den Titel „Article 4" statt „Begriffsbestimmungen", weil ein
+    // Zitat aus Artikel 110 ihn überschrieben hatte.
+    const r = quelle('en').parseMarkdown(DORA_EN);
+    expect(r.map((x) => x.paragraphNumber)).toEqual(['Art. 60', 'Art. 61', 'Art. 62']);
+  });
+
+  it('deutsche Fassung: derselbe Satzbau, dasselbe Ergebnis', () => {
+    const md = [
+      'Artikel 61',
+      'Änderungen der Verordnung (EU) Nr. 909/2014',
+      'Artikel 45 der Verordnung (EU) Nr. 909/2014 wird wie folgt geändert:',
+      '1. Absatz 1 erhält folgende Fassung: Ein Zentralverwahrer ermittelt Quellen operationeller Risiken und minimiert sie durch geeignete Systeme und Kontrollen.',
+      '',
+      'Artikel 62',
+      'Änderungen der Verordnung (EU) Nr. 600/2014',
+      'Die Verordnung (EU) Nr. 600/2014 wird wie folgt geändert, wobei die Anforderungen ab dem Tag des Inkrafttretens gelten.',
+    ].join('\n');
+    const r = quelle('de').parseMarkdown(md);
+    expect(r.map((x) => x.paragraphNumber)).toEqual(['Art. 61', 'Art. 62']);
+    expect(r[0].fullText).toContain('Zentralverwahrer');
+  });
+
+  it('der Verweisungsartikel der KI-VO überlebt — und seine deutsche Fassung tat es schon vorher', () => {
+    // Die Asymmetrie, die den Mechanismus bewies: EN beginnt mit „Article 18
+    // of Regulation …" und ging verloren, DE beginnt mit „Unbeschadet …" und
+    // überlebte. Nach dem Fix überleben beide.
+    const en = new FirecrawlSource({
+      source: 'ai-act-en' as never, jurisdiction: 'EU', language: 'en',
+      effectiveFrom: new Date('2024-08-01'), url: 'https://example.invalid', apiKey: 'test',
+    });
+    const md = [
+      'Article 94',
+      'Procedural rights of economic operators of the general-purpose AI model',
+      'Article 18 of Regulation (EU) 2019/1020 shall apply mutatis mutandis to the providers of the general-purpose AI model, without prejudice to more specific procedural rights.',
+      '',
+      'Article 95',
+      'Codes of conduct',
+      'The AI Office and the Member States shall encourage and facilitate the drawing up of codes of conduct intended to foster voluntary application.',
+    ].join('\n');
+    const r = en.parseMarkdown(md);
+    expect(r.map((x) => x.paragraphNumber)).toEqual(['Art. 94', 'Art. 95']);
+    expect(r[0].fullText).toContain('mutatis mutandis');
+  });
+
+  it('geschmückte Überschriften bleiben Überschriften', () => {
+    const md = ['## **Article 7**', 'Scope', 'This Article applies to all financial entities established in the Union and their critical service providers.'].join('\n');
+    expect(quelle('en').parseMarkdown(md).map((x) => x.paragraphNumber)).toEqual(['Art. 7']);
+  });
+
+  it('WÄCHTER: findet die strenge Regel nichts, bricht der Lauf laut ab', () => {
+    // Sollte Firecrawl je Überschrift und Untertitel in EINER Zeile liefern,
+    // darf daraus kein leeres Gesetz werden, sondern ein Fehler.
+    const md = [
+      'Article 1 Subject matter and scope of this Regulation as applied',
+      'This Regulation lays down uniform requirements for the security of network and information systems.',
+      'Article 2 Definitions used throughout this Regulation for its purposes',
+      'For the purposes of this Regulation the following definitions apply to all entities concerned.',
+    ].join('\n');
+    expect(() => quelle('en').parseMarkdown(md)).toThrow(/Markdown-Form hat sich geändert/);
+  });
+});

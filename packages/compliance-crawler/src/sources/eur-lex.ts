@@ -84,6 +84,7 @@ export class EurLexSource implements SourceParser {
   parseHtml(html: string): ParsedRegulation[] {
     const $ = cheerio.load(html);
     const results: ParsedRegulation[] = [];
+    const verworfen: string[] = [];
 
     // Article header selector — EUR-Lex Formex HTML
     const titleSelector = 'p.oj-ti-art, p.ti-art';
@@ -105,12 +106,21 @@ export class EurLexSource implements SourceParser {
         return;
       }
 
-      // Subtitle on next sibling with oj-sti-art
+      // Untertitel im nächsten Geschwister.
+      //
+      // THE-684: EUR-Lex verpackt ihn heute in `div.eli-title` — das `p` mit
+      // der Klasse liegt DARIN. Die alte Prüfung sah nur das Geschwister
+      // selbst, fand nie eine Klasse, brach am ersten Text ab und ließ den
+      // Untertitel leer. Folge: JEDER Artikel hieß „Article N", und die
+      // Überschrift rutschte stattdessen in den Rumpf. Deshalb wird jetzt auch
+      // im Geschwister gesucht, nicht nur an ihm.
+      const subtitleSelector = 'p.oj-sti-art, p.sti-art, .oj-sti-art, .sti-art';
       let subtitle = '';
       let currentEl: cheerio.Cheerio<any> = titleEl.next();
       while (currentEl.length > 0 && !currentEl.is(titleSelector)) {
-        if (currentEl.hasClass('oj-sti-art') || currentEl.hasClass('sti-art')) {
-          subtitle = currentEl.text().trim();
+        const treffer = currentEl.is(subtitleSelector) ? currentEl : currentEl.find(subtitleSelector).first();
+        if (treffer.length > 0) {
+          subtitle = treffer.text().trim();
           currentEl = currentEl.next();
           break;
         }
@@ -128,7 +138,12 @@ export class EurLexSource implements SourceParser {
       }
 
       const fullText = cleanRegulationText(bodyParts.join('\n\n'));
-      if (fullText.length < 50) return; // skip parse-misses
+      // THE-684: nicht mehr still. Derselbe Wegwerf-Zweig hat im Markdown-Parser
+      // vier Artikel gedeckt; hier wird er wenigstens benannt.
+      if (fullText.length < 50) {
+        verworfen.push(`${articleNum} (${fullText.length} Z.)`);
+        return;
+      }
 
       results.push({
         source: this.config.source,
@@ -143,6 +158,11 @@ export class EurLexSource implements SourceParser {
       });
     });
 
+    if (verworfen.length > 0) {
+      console.warn(
+        `[${this.source}] ${verworfen.length} Artikel wegen zu kurzem Rumpf verworfen: ${verworfen.join(', ')}`
+      );
+    }
     return results;
   }
 }

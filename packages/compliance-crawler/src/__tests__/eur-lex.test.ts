@@ -149,3 +149,58 @@ describe('EurLexSource — DSGVO (German) (REQ-ICM-001.2)', () => {
     expect(results.map(r => r.paragraphNumber).sort()).toEqual(['Art. 32', 'Art. 5']);
   });
 });
+
+// ─── THE-684: verschachtelter Untertitel ────────────────────────────────────
+
+/**
+ * EUR-Lex verpackt den Artikel-Untertitel heute in `div.eli-title`; das `p`
+ * mit der Klasse `oj-sti-art` liegt DARIN. Die alte Prüfung sah nur das
+ * Geschwister selbst — Folge: jeder Artikel hieß „Article N", und die
+ * Überschrift rutschte in den Rumpf. Aufgefallen erst, als die Reparatur von
+ * THE-684 ihre eigenen Schreibwerte gegen die amtlichen Titel hielt.
+ */
+describe('EurLexSource.parseHtml() — verschachtelter Untertitel (THE-684)', () => {
+  const HTML = `<html><body>
+    <div class="eli-subdivision">
+      <p class="oj-ti-art">Article 61</p>
+      <div class="eli-title"><p class="oj-sti-art">Amendments to Regulation (EU) No 909/2014</p></div>
+      <p class="oj-normal">Article 45 of Regulation (EU) No 909/2014 is amended as follows: a central securities depository shall identify sources of operational risk and minimise them.</p>
+    </div>
+    <div class="eli-subdivision">
+      <p class="oj-ti-art">Article 62</p>
+      <div class="eli-title"><p class="oj-sti-art">Amendments to Regulation (EU) No 600/2014</p></div>
+      <p class="oj-normal">Regulation (EU) No 600/2014 is amended as follows, with the requirements applying from the date of entry into force.</p>
+    </div>
+  </body></html>`;
+
+  function quelle() {
+    return new EurLexSource({
+      source: 'dora' as never, jurisdiction: 'EU', language: 'en',
+      effectiveFrom: new Date('2025-01-17'), celex: '32022R2554',
+    });
+  }
+
+  it('findet den Untertitel im verschachtelten div.eli-title', () => {
+    const r = quelle().parseHtml(HTML);
+    expect(r.map((x) => x.title)).toEqual([
+      'Amendments to Regulation (EU) No 909/2014',
+      'Amendments to Regulation (EU) No 600/2014',
+    ]);
+  });
+
+  it('der Untertitel steht im Titel — und NICHT mehr zusätzlich im Rumpf', () => {
+    const r = quelle().parseHtml(HTML);
+    expect(r[0].fullText).not.toContain('Amendments to Regulation (EU) No 909/2014');
+    expect(r[0].fullText).toContain('central securities depository');
+  });
+
+  it('die flache Form ohne Verschachtelung funktioniert weiter', () => {
+    const flach = `<html><body>
+      <p class="oj-ti-art">Article 7</p>
+      <p class="oj-sti-art">Scope</p>
+      <p class="oj-normal">This Article applies to all financial entities established in the Union and to their critical service providers.</p>
+    </body></html>`;
+    const r = quelle().parseHtml(flach);
+    expect(r[0].title).toBe('Scope');
+  });
+});

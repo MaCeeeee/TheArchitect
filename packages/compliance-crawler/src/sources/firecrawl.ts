@@ -111,19 +111,39 @@ export class FirecrawlSource implements SourceParser {
    */
   parseMarkdown(markdown: string): ParsedRegulation[] {
     const lines = markdown.split('\n');
-    const articleRegex =
-      this.config.language === 'de'
-        ? /^[\s#*_]*Artikel\s+(\d+[a-z]?)\b/i
-        : /^[\s#*_]*Article\s+(\d+[a-z]?)\b/i;
+    const wort = this.config.language === 'de' ? 'Artikel' : 'Article';
 
-    // Find indices of all article header lines
+    // THE-684: Eine echte Überschrift IST die ganze Zeile. Eine Zeile, die nur
+    // damit BEGINNT, ist ein Zitat im Fließtext — und genau so fängt jeder
+    // Änderungsartikel an: „Artikel 45 der Verordnung (EU) Nr. 909/2014 wird
+    // wie folgt geändert:". Die alte Regel las das als neue Überschrift, brach
+    // den laufenden Artikel davor ab (Rumpf leer → still verworfen) und legte
+    // den Inhalt unter der ZITIERTEN Nummer ab, wo er den echten Artikel
+    // überschrieb. Vier verlorene und zwei überschriebene Artikel im Korpus.
+    const ueberschrift = new RegExp(`^[\\s#*_]*${wort}\\s+(\\d+[a-z]?)[\\s#*_]*$`, 'i');
+    const nurZeilenanfang = new RegExp(`^[\\s#*_]*${wort}\\s+(\\d+[a-z]?)\\b`, 'i');
+
     const starts: Array<{ idx: number; num: string }> = [];
+    let zitateImFliesstext = 0;
     for (let i = 0; i < lines.length; i++) {
-      const m = lines[i].match(articleRegex);
+      const m = lines[i].match(ueberschrift);
       if (m) starts.push({ idx: i, num: m[1] });
+      else if (nurZeilenanfang.test(lines[i])) zitateImFliesstext++;
+    }
+
+    // Wächter gegen die eigene Annahme: Sollte die Markdown-Form je Überschrift
+    // und Untertitel in EINER Zeile liefern, findet die strenge Regel nichts —
+    // dann bricht der Lauf laut ab, statt still ein leeres Gesetz zu schreiben.
+    if (starts.length === 0 && zitateImFliesstext > 0) {
+      throw new SourceParseError(
+        this.source,
+        `Keine eigenständige Artikel-Überschrift gefunden, aber ${zitateImFliesstext} Zeilen beginnen mit „${wort} N". ` +
+          `Die Markdown-Form hat sich geändert — Parser prüfen, nicht überschreiben.`
+      );
     }
 
     const results: ParsedRegulation[] = [];
+    const verworfen: string[] = [];
     for (let i = 0; i < starts.length; i++) {
       const start = starts[i];
       const end = starts[i + 1]?.idx ?? lines.length;
@@ -159,13 +179,19 @@ export class FirecrawlSource implements SourceParser {
           .join(' ')
       );
 
-      if (fullText.length < 50) continue;
+      // THE-684: Das stille `continue` hat die vier verlorenen Artikel gedeckt.
+      // Ein verworfener Artikel wird ab jetzt benannt — eine leere Messung ist
+      // kein Bestehen, und ein Verlust darf nicht als Erfolg durchgehen.
+      if (fullText.length < 50) {
+        verworfen.push(`${start.num} (${fullText.length} Z.)`);
+        continue;
+      }
 
       results.push({
         source: this.config.source,
         jurisdiction: this.config.jurisdiction,
         paragraphNumber: `Art. ${start.num}`,
-        title: title || `Article ${start.num}`,
+        title: title || `${wort} ${start.num}`,
         fullText: fullText.substring(0, 19_990),
         sourceUrl: this.config.url,
         effectiveFrom: this.config.effectiveFrom,
@@ -174,6 +200,11 @@ export class FirecrawlSource implements SourceParser {
       });
     }
 
+    if (verworfen.length > 0) {
+      console.warn(
+        `[${this.source}] ${verworfen.length} Artikel wegen zu kurzem Rumpf verworfen: ${verworfen.join(', ')}`
+      );
+    }
     return results;
   }
 }
