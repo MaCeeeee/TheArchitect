@@ -28,6 +28,13 @@ import { complexityForNorm } from '../norms/normComplexity.reader';
 import { listNorms } from '../services/norm.service';
 import { lawSourceFromRegulationKey } from '@thearchitect/shared';
 import { buildPrelabelUserPrompt, parsePrelabelLabels, PRELABEL_SYSTEM } from '../scripts/prelabel-typing';
+/**
+ * THE-691: Achsen, die den RECHTSAKT beschreiben, nicht die Bestimmung.
+ * Sie bleiben im Report sichtbar, sind aber als ererbt markiert und gehören
+ * in keine Genauigkeits-Aggregation über Achsen.
+ */
+const AKT_METADATEN_ACHSEN = new Set<string>(['bindingness', 'normKind']);
+
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 400;
@@ -98,6 +105,14 @@ export function renderTypingReportMarkdown(report: TypingReport, meta: { golden:
     const a = report.axes[axis];
     lines.push(`## ${axis}`);
     lines.push('');
+    // THE-691 (entschieden 19.08.2026): bindingness/normKind sind Akt-Metadaten
+    // — am EU-Korpus praktisch konstant (0,014/0,224 Bit). Ihre "Accuracy" misst
+    // die Mehrheitsrate, keine Klassifikator-Leistung, und darf in keiner
+    // Gesamtbewertung mitzählen.
+    if (AKT_METADATEN_ACHSEN.has(axis)) {
+      lines.push('> ⚠️ **Akt-Metadatum (THE-691)** — ererbt vom Rechtsakt, zählt nicht als Klassifikator-Leistung.');
+      lines.push('');
+    }
     lines.push(`Accuracy: **${a.accuracy.labeled ? pct(a.accuracy.accuracy) : '—'}** (${a.accuracy.correct}/${a.accuracy.labeled}) · macro-F1: **${a.accuracy.labeled ? a.confusion.macroF1.toFixed(3) : '—'}**${a.calibration ? ` · ECE: ${a.calibration.ece.toFixed(3)}` : ''}`);
     lines.push('');
     if (!a.accuracy.labeled) {
@@ -259,7 +274,8 @@ async function main(): Promise<void> {
       const sub = buildTypingReport(subset);
       md += `### Subset ${name} (${subset.length} Fälle)\n\n| Achse | Accuracy | macro-F1 |\n|---|---|---|\n`;
       for (const [axis, ax] of Object.entries(sub.axes)) {
-        md += `| ${axis} | ${pct(ax.accuracy.accuracy)} | ${ax.confusion.macroF1.toFixed(3)} |\n`;
+        const mark = AKT_METADATEN_ACHSEN.has(axis) ? ' ⚠️ Akt-Metadatum' : '';
+        md += `| ${axis}${mark} | ${pct(ax.accuracy.accuracy)} | ${ax.confusion.macroF1.toFixed(3)} |\n`;
       }
       md += '\n';
     }
