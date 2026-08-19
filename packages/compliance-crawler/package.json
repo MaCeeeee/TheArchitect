@@ -21,7 +21,8 @@
     "formex:probe": "ts-node-dev --transpile-only src/cli/formex-probe.ts",
     "formex:probe:prod": "node dist/cli/formex-probe.js",
     "the684:repair": "ts-node-dev --transpile-only src/cli/the684-repair.ts",
-    "the684:repair:prod": "node dist/cli/the684-repair.js"
+    "the684:repair:prod": "node dist/cli/the684-repair.js",
+    "typing:implications": "ts-node-dev --transpile-only src/scripts/typing-implications.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
