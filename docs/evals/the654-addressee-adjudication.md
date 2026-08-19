@@ -1,7 +1,7 @@
 # THE-654 — Adjudikation: hat diese Bestimmung einen Adressaten?
 
-**Erzeugt am 2026-08-10** aus 1746 Korpus-Bestimmungen · 422 ohne Adressatenklasse
-· davon 124 mit Sachtitel (Verdacht) und 133 Rahmenbestimmungen.
+**Erzeugt am 2026-08-10** aus 1750 Korpus-Bestimmungen · 423 ohne Adressatenklasse
+· davon 123 mit Sachtitel (Verdacht) und 133 Rahmenbestimmungen.
 Stichprobe: **30** über **14** Gesetze, plus **5** Gegenproben.
 
 > Erzeugt von `packages/server/src/scripts/the654-addressee-sample.ts` — derselbe Lauf ergibt denselben Bogen.
@@ -65,7 +65,7 @@ data_subject · ecs_provider · importer · distributor · authorized_representa
 
 Die 5 Fälle am Ende stammen aus den 133 Rahmenbestimmungen — sie sollten **C** ergeben.
 Tun sie es nicht, trennt die Titel-Heuristik nicht, was sie zu trennen vorgibt, und die Zahl
-„124 Verdachtsfälle" ist selbst fragwürdig. Sie sind als *(Gegenprobe)* markiert, damit
+„123 Verdachtsfälle" ist selbst fragwürdig. Sie sind als *(Gegenprobe)* markiert, damit
 beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem offen.
 
 ---
@@ -99,15 +99,30 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 
 ---
 
-### 02 · cra-de · Art. 14   **— nicht bewertbar**
+### 02 · cra-de · Art. 14
 
-**Diese Verordnung ist in allen ihren Teilen verbindlich und gilt unmittelbar in jedem Mitgliedstaat.**
+**Meldepflichten der Hersteller**
 
-> **Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.** Trägt statt Artikel 14 den Dokument-Schwanz (Schlussformel, Unterschriften, Fußnoten). Der echte Art. 14 „Meldepflichten der Hersteller" fehlt in der deutschen Fassung ganz; cra-en führt ihn korrekt mit 8882 Zeichen. Ein Urteil hierüber wäre ein Urteil über einen Nicht-Artikel. Die Position bleibt frei, damit bereits gefällte Urteile nicht verrutschen — Ersatz ist Fall 36.
+> (1) Ein Hersteller meldet jede aktiv ausgenutzte Schwachstelle, die in dem Produkt mit digitalen Elementen enthalten ist und von der er Kenntnis erlangt, gleichzeitig dem gemäß Absatz 7 als Koordinator benannten CSIRT und der ENISA. Der Hersteller meldet diese aktiv ausgenutzte Schwachstelle über die gemäß Artikel 16 eingerichtete einheitliche Meldeplattform. (2) Für die Zwecke der Mitteilung gemäß Absatz 1 legt der Hersteller Folgendes vor: a) unverzüglich, in jedem Fall aber innerhalb von 24 Stunden, nachdem der Hersteller davon Kenntnis erlangt hat, eine Frühwarnung über eine aktiv ausgenutzte Schwachstelle unter Angabe der Mitgliedstaaten, in deren Hoheitsgebiet das Produkt mit digitalen…
 
-> Geschehen zu Straßburg am 23. Oktober 2024. Im Namen des Europäischen Parlaments Die Präsidentin R. METSOLA Im Namen des Rates Der Präsident ZSIGMOND B. P. * * * [(1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc1-L_202402847DE.000101-E0001) [ABl. C 100 vom 16.3.2023, S. 101](https://eur-lex.europa.eu/legal-content/DE/AUTO/?uri=OJ:C:2023:100:TOC). [(2)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32024R2847#ntc2-L_202402847DE.000101-E0002) Standpunkt des Europäischen Parlaments vom 12. März 2024 (noch nicht im Amtsblatt veröffentlicht) und Beschluss des Rates vom 10. Oktober 2024. [(3)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?u…
+**Wozu es dieses Gesetz gibt** *(Erwägungsgründe (1), (2), (3) — Zweck des Gesetzes, nicht speziell dieses Artikels; kein Normtext)*
 
-<sub>`cra-de:art-14` · zählt nicht zu den Urteilen</sub>
+> *(1)* Die Cybersicherheit bedeutet eine der größten Herausforderungen für die Union. Die Zahl und Vielfalt der vernetzten Geräte wird in den kommenden Jahren exponentiell zunehmen. Cyberangriffe sind ein Thema von öffentlichem Interesse, da sie sich nicht nur auf die Wirtschaft der Union, sondern auch auf die Demokratie sowie die Sicherheit und Gesundheit der Verbraucher kritisch auswirken. Es ist deshalb nötig, das Cybersicherheitskonzept der Union zu stärken, sich mit Cyberresilienz auf Unionsebene zu befassen und das Funktionieren des Binnenmarkts zu verbessern und dazu einen einheitlichen Rechtsrahmen für grundlegende Cybersicherheitsanforderungen für das Inverkehrbringen von Produkten mit digitalen Elementen auf dem Unionsmarkt festzulegen. Dabei sollten zwei große Probleme angegangen werden, die hohe Kosten für die Nutzer und die Gesellschaft verursachen: ein geringes Maß an Cybersicherheit von Produkten mit digitalen Elementen, das sich in weitverbreiteten Schwachstellen und der unzureichenden und inkohärenten Bereitstellung von Sicherheitsaktualisierungen zu deren Behebung zeigt, sowie ein unzureichendes Verständnis und ein mangelnder Informationszugang der Nutzer, wodurch sie da…
+>
+> *(2)* Mit dieser Verordnung sollen die Rahmenbedingungen für die Entwicklung sicherer Produkte mit digitalen Elementen geschaffen werden, damit Hardware- und Softwareprodukte mit weniger Schwachstellen in den Verkehr gebracht werden und damit sich die Hersteller während des gesamten Lebenszyklus eines Produkts konsequent um die Sicherheit kümmern. Außerdem sollen Bedingungen geschaffen werden, die es den Nutzern ermöglichen, bei der Auswahl und Verwendung von Produkten mit digitalen Elementen die Cybersicherheit zu berücksichtigen, beispielsweise durch mehr Transparenz in Bezug auf den Unterstützungszeitraum für auf dem Markt bereitgestellte Produkte mit digitalen Elementen.
+>
+> *(3)* Das geltende einschlägige Unionsrecht umfasst mehrere horizontale Vorschriften, die bestimmte Aspekte der Cybersicherheit aus unterschiedlichen Blickwinkeln regeln, darunter auch Maßnahmen zur Erhöhung der Sicherheit der digitalen Lieferkette. Das bestehende Unionsrecht in Bezug auf die Cybersicherheit, wozu die Verordnung (EU) 2019/881 des Europäischen Parlaments und des Rates (3) und die Richtlinie (EU) 2022/2555 des Europäischen Parlaments und des Rates (4) gehören, enthält jedoch keine unmittelbar verbindlichen Anforderungen an die Sicherheit von Produkten mit digitalen Elementen.
+>
+*Kein Erwägungsgrund verweist ausdrücklich auf diesen Artikel — gezeigt wird der Gesamtzweck.*
+
+| | |
+|---|---|
+| **Urteil** | `A` / `B` / `C` / `D` →                      |
+| **mehr als ein Adressat?** | `ja` / `nein` →                      |
+| **Adressat(en) bei A oder B** |                                          |
+| **Notiz** |                                          |
+
+<sub>`cra-de:art-14`</sub>
 
 ---
 
@@ -367,9 +382,9 @@ beim Auswerten klar ist, welche Rolle sie spielen — ihre Antwort ist trotzdem 
 
 ### 13 · psd2-de · Art. 4
 
-**Article 4**
+**Begriffsbestimmungen**
 
-> „(5) In den Fällen, in denen auch die Richtlinie (EU) 2015/2366 des Europäischen Parlaments und des Rates [(\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntr*1-L_2015337DE.01003501-E0036) Anwendung findet, werden die Bestimmungen des Artikels 3 Absatz 1 der vorliegenden Richtlinie über die Unterrichtung mit Ausnahme von Absatz 2 Buchstaben c bis g, Absatz 3 Buchstaben a, d und e sowie Absatz 4 Buchstabe b durch die Artikel 44, 45, 51 und 52 der Richtlinie (EU) 2015/2366 ersetzt. [(\*1)](https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32015L2366#ntc*1-L_2015337DE.01003501-E0036) Richtlinie (EU) 2015/2366 des Europäischen Parlaments und des Rate…
+> Für die Zwecke dieser Richtlinie bezeichnet der Ausdruck: 1. „Herkunftsmitgliedstaat“ a) den Mitgliedstaat, in dem sich der Sitz des Zahlungsdienstleisters befindet, oder b) wenn der Zahlungsdienstleister nach dem für ihn geltenden nationalen Recht keinen Sitz hat, den Mitgliedstaat, in dem sich seine Hauptverwaltung befindet; 2. „Aufnahmemitgliedstaat“ den Mitgliedstaat, in dem ein Zahlungsdienstleister einen Agenten oder eine Zweigniederlassung hat oder Zahlungsdienste erbringt und der nicht der Herkunftsmitgliedstaat dieses Zahlungsdienstleisters ist; 3. „Zahlungsdienst“ eine oder mehrere der in Anhang I aufgeführten gewerblichen Tätigkeiten; 4. „Zahlungsinstitut“ eine juristische Person,…
 
 **Wozu es dieses Gesetz gibt** *(Erwägungsgründe (1), (2), (3) — Zweck des Gesetzes, nicht speziell dieses Artikels; kein Normtext)*
 
@@ -1026,4 +1041,4 @@ einen anderen Artikel hängen.
 → Richtung A/C des Optionenblocks. Bleibt B unter der Schwelle, ist Option B (explizites
 `noAddressee`) die ehrliche Antwort und der Rest eine Anzeigefrage.
 
-**Hochrechnung:** Anteil B in der Stichprobe × 124 ≈ betroffene Bestimmungen im Korpus.
+**Hochrechnung:** Anteil B in der Stichprobe × 123 ≈ betroffene Bestimmungen im Korpus.
