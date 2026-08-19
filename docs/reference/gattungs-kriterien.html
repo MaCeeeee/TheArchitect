@@ -1,0 +1,307 @@
+<title>Fünf Gattungen</title>
+<style>
+  :root {
+    --ground:#EEF1F4; --surface:#FFFFFF; --sunk:#E2E7EC;
+    --line:#C8D0D8; --line-soft:#DCE2E8;
+    --text:#151A20; --dim:#59636E; --faint:#828D99;
+
+    --g1:#8C5A2B; --g1-bg:#F6EDE4;   /* Wirtschaftsakteur */
+    --g2:#33478F; --g2-bg:#E8EBF6;   /* Mitgliedstaat */
+    --g3:#14706A; --g3-bg:#E2F0EE;   /* Nationale Behörde */
+    --g4:#8E2F5A; --g4-bg:#F7E7EE;   /* Unionsorgan */
+    --g5:#4A7A3C; --g5-bg:#E9F2E5;   /* Begünstigter */
+
+    --ja:#2F7A4E;  --ja-bg:#E6F2EA;
+    --nein:#64707D; --nein-bg:#E9EDF1;
+    --frage:#B0871B; --frage-bg:#FAF0D9;
+
+    --shadow:0 1px 2px rgba(21,26,32,.06), 0 10px 26px -14px rgba(21,26,32,.22);
+    --disp: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0F1318; --surface:#161B22; --sunk:#0B0E12;
+      --line:#2B333D; --line-soft:#212932;
+      --text:#E7ECF1; --dim:#A0ABB6; --faint:#727E8A;
+      --g1:#D69C5C; --g1-bg:#2A1D12; --g2:#8FA3E8; --g2-bg:#161C33;
+      --g3:#5DB8B0; --g3-bg:#0F2523; --g4:#DE86AE; --g4-bg:#2B1420;
+      --g5:#94C481; --g5-bg:#172612;
+      --ja:#6FBF8E; --ja-bg:#132419; --nein:#9AA6B2; --nein-bg:#1A1F25;
+      --frage:#E0B84D; --frage-bg:#2A2213;
+      --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.75);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0F1318; --surface:#161B22; --sunk:#0B0E12;
+    --line:#2B333D; --line-soft:#212932;
+    --text:#E7ECF1; --dim:#A0ABB6; --faint:#727E8A;
+    --g1:#D69C5C; --g1-bg:#2A1D12; --g2:#8FA3E8; --g2-bg:#161C33;
+    --g3:#5DB8B0; --g3-bg:#0F2523; --g4:#DE86AE; --g4-bg:#2B1420;
+    --g5:#94C481; --g5-bg:#172612;
+    --ja:#6FBF8E; --ja-bg:#132419; --nein:#9AA6B2; --nein-bg:#1A1F25;
+    --frage:#E0B84D; --frage-bg:#2A2213;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 12px 30px -16px rgba(0,0,0,.75);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:64rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+  .eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--faint);margin:0 0 .7rem}
+  h1{font-family:var(--disp);font-size:clamp(2rem,5vw,2.8rem);font-weight:600;line-height:1.12;letter-spacing:-.015em;margin:0 0 1rem;text-wrap:balance}
+  .lede{font-family:var(--disp);font-size:clamp(1.02rem,2.1vw,1.22rem);color:var(--dim);max-width:48ch;margin:0 0 2rem;text-wrap:pretty}
+  .lede strong{color:var(--text);font-weight:600}
+  h2{font-family:var(--disp);font-size:1.35rem;font-weight:600;margin:3rem 0 .5rem;letter-spacing:-.01em}
+  p{max-width:64ch}
+
+  /* Regel-Kasten */
+  .regel{background:var(--sunk);border:1px solid var(--line-soft);border-radius:6px;padding:1.1rem 1.25rem;margin:0 0 2.5rem}
+  .regel p{margin:.35rem 0;font-size:.94rem}
+  .regel b{font-weight:650}
+
+  /* Farb-Legende */
+  .legende{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 2rem}
+  .chip{display:inline-flex;align-items:center;gap:.42rem;font-size:.8rem;font-weight:550;padding:.3rem .7rem;border-radius:999px;border:1px solid}
+  .dot{width:.62rem;height:.62rem;border-radius:50%;flex:none}
+
+  /* Gattungs-Karte */
+  .karte{background:var(--surface);border:1px solid var(--line-soft);border-radius:8px;box-shadow:var(--shadow);margin:0 0 1.75rem;overflow:hidden}
+  .kopf{display:flex;align-items:baseline;gap:.75rem;padding:1rem 1.35rem;color:#fff}
+  .kopf .nr{font-family:var(--mono);font-size:.8rem;opacity:.85}
+  .kopf h3{margin:0;font-family:var(--disp);font-size:1.3rem;font-weight:600;letter-spacing:-.01em}
+  .kopf .id{margin-left:auto;font-family:var(--mono);font-size:.72rem;opacity:.85;letter-spacing:.04em}
+  .def{padding:1rem 1.35rem;font-size:.98rem;border-bottom:1px solid var(--line-soft)}
+  .body{padding:.25rem 1.35rem 1.35rem}
+
+  .block{margin:1.1rem 0 0;padding-left:.9rem;border-left:3px solid var(--line)}
+  .block.ja{border-left-color:var(--ja)}
+  .block.nein{border-left-color:var(--nein)}
+  .block.frage{border-left-color:var(--frage);background:var(--frage-bg);padding:.75rem .9rem;border-radius:0 5px 5px 0}
+  .block h4{margin:0 0 .45rem;font-size:.78rem;letter-spacing:.09em;text-transform:uppercase;font-family:var(--mono);font-weight:600}
+  .block.ja h4{color:var(--ja)} .block.nein h4{color:var(--nein)} .block.frage h4{color:var(--frage)}
+  .block ul{margin:.3rem 0;padding-left:1.1rem}
+  .block li{margin:.28rem 0;font-size:.93rem}
+  .block li::marker{color:var(--faint)}
+
+  .fall{margin:.85rem 0;padding:.7rem .85rem;background:var(--surface);border:1px solid var(--line-soft);border-radius:5px}
+  .fall .q{font-weight:600;font-size:.94rem;display:block;margin-bottom:.3rem}
+  .fall .v{font-size:.9rem;color:var(--dim);margin:.3rem 0}
+  .fall .v b{color:var(--text)}
+  .marke{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:.14rem .45rem;border-radius:3px;background:var(--frage);color:#fff;margin-left:.4rem;vertical-align:.1em}
+  code{font-family:var(--mono);font-size:.83em;background:var(--sunk);padding:.1rem .34rem;border-radius:3px}
+  .beleg{font-family:var(--mono);font-size:.78rem;color:var(--faint)}
+  .ok{color:var(--ja);font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.75rem}
+  th,td{text-align:left;padding:.5rem .7rem;border-bottom:1px solid var(--line-soft)}
+  th{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:500;border-bottom-color:var(--line)}
+  .scroller{overflow-x:auto}
+  .gp{display:inline-block;width:.7rem;height:.7rem;border-radius:2px;margin-right:.45rem;vertical-align:-.05em}
+  .foot{font-size:.82rem;color:var(--faint);margin-top:1rem;border-top:1px solid var(--line-soft);padding-top:1.1rem}
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Artefakt B · Semantik-Arbeit · 19. August 2026</p>
+  <h1>Fünf Gattungen</h1>
+  <p class="lede">
+    Kriterienblätter für die Adressaten-Gattungen — in der Form der LLT-Lab-Protokolle:
+    Definition, <strong>Einschluss</strong>, <strong>Ausschluss</strong>, Grenzfälle mit Vorschlag,
+    Belege aus unserem Korpus. Die Grenzfälle sind <strong>vor</strong> der Erhebung zu entscheiden,
+    sonst besteht der Test durch Dehnung.
+  </p>
+
+  <div class="regel">
+    <p><b>Die Frage, immer dieselbe:</b> Wen verpflichtet oder berechtigt <em>diese</em> Bestimmung unmittelbar?</p>
+    <p><b>Blickrichtung:</b> aus dem Gesetz heraus, nicht aus dem Kundenprofil hinein.</p>
+    <p><b>Zweistufig:</b> erst die <em>Rolle</em> wörtlich aus dem Text (mit Fundstelle), dann die <em>Gattung</em> aus dieser Liste. Die Rolle ist offen, die Gattung geschlossen.</p>
+    <p><b>Der „unklar“-Eimer ist erlaubt und wird gezählt.</b> Über 10 % unklar heißt: die Gattungsliste ist durchgefallen — nicht der Leser.</p>
+  </div>
+
+  <div class="legende">
+    <span class="chip" style="color:var(--g1);border-color:var(--g1);background:var(--g1-bg)"><span class="dot" style="background:var(--g1)"></span>1 Wirtschaftsakteur</span>
+    <span class="chip" style="color:var(--g2);border-color:var(--g2);background:var(--g2-bg)"><span class="dot" style="background:var(--g2)"></span>2 Mitgliedstaat</span>
+    <span class="chip" style="color:var(--g3);border-color:var(--g3);background:var(--g3-bg)"><span class="dot" style="background:var(--g3)"></span>3 Nationale Behörde</span>
+    <span class="chip" style="color:var(--g4);border-color:var(--g4);background:var(--g4-bg)"><span class="dot" style="background:var(--g4)"></span>4 Unionsorgan</span>
+    <span class="chip" style="color:var(--g5);border-color:var(--g5);background:var(--g5-bg)"><span class="dot" style="background:var(--g5)"></span>5 Begünstigter</span>
+    <span class="chip" style="color:var(--frage);border-color:var(--frage);background:var(--frage-bg)"><span class="dot" style="background:var(--frage)"></span>Grenzfall — deine Entscheidung</span>
+  </div>
+
+  <!-- ══ 1 ══ -->
+  <div class="karte">
+    <div class="kopf" style="background:var(--g1)"><span class="nr">1</span><h3>Wirtschaftsakteur</h3><span class="id">wirtschaftsakteur</span></div>
+    <div class="def" style="background:var(--g1-bg)">Wer am Markt handelt und dabei aus eigenem Interesse Produkte, Dienste oder Daten bereitstellt, betreibt oder verarbeitet — <b>unabhängig von Rechtsform und Eigentümerschaft</b>.</div>
+    <div class="body">
+      <div class="block ja"><h4>Einschluss</h4><ul>
+        <li>Hersteller · Anbieter · Betreiber · Einführer · Händler · Bevollmächtigte</li>
+        <li>Verantwortlicher · Auftragsverarbeiter · Dateninhaber</li>
+        <li>Finanzunternehmen · Zahlungsdienstleister · E-Geld-Institut · IKT-Drittdienstleister · Vertrauensdiensteanbieter</li>
+        <li>wesentliche und wichtige Einrichtungen (NIS2)</li>
+        <li><b>Auch eine Behörde</b>, wenn die Bestimmung sie in ihrer <em>Marktrolle</em> anspricht — etwa als Verantwortlicher nach DSGVO</li>
+      </ul></div>
+      <div class="block nein"><h4>Ausschluss</h4><ul>
+        <li>wer nur <em>beaufsichtigt</em> oder genehmigt → Gattung 3 oder 4</li>
+        <li>wer nur <em>geschützt</em> wird → Gattung 5</li>
+        <li>wer die Regel <em>setzt</em> → Gattung 2 oder 4</li>
+      </ul></div>
+      <div class="block frage"><h4>Grenzfälle</h4>
+        <div class="fall">
+          <span class="q">Notifizierte / benannte Stelle<span class="marke">entscheiden</span></span>
+          <p class="v">Privatrechtlich organisiert, aber hoheitlich beliehen. <b>Vorschlag:</b> Wirtschaftsakteur, solange die Bestimmung ihre <em>eigene Tätigkeit</em> regelt (Akkreditierung, Personal, Unabhängigkeit, Mitwirkung an Normung); nationale Behörde nur dort, wo sie hoheitlich entscheidet.</p>
+          <p class="beleg">64 Bestimmungen im Korpus · <code>ai-act-de:art-31</code> heute <code>conformity_assessment_body</code> · Definition: <code>ai-act-de:art-3 Nr. 22</code></p>
+        </div>
+        <div class="fall">
+          <span class="q">Europäische Normungsorganisation (CEN · CENELEC · ETSI)<span class="marke">entscheiden</span></span>
+          <p class="v">Privater Verein mit öffentlichem Normungsauftrag — passt in keine der fünf sauber. <b>Vorschlag:</b> Wirtschaftsakteur, mit ausdrücklichem Vermerk. <b>Dies ist der wahrscheinlichste Kandidat für eine sechste Gattung</b> und damit der eigentliche Härtetest der Liste.</p>
+          <p class="beleg">28 Bestimmungen · <code>ai-act-de:art-40</code>, <code>ai-act-de:art-41</code> — beide heute <b>ohne</b> Adressat</p>
+        </div>
+        <div class="fall">
+          <span class="q">Öffentliches Unternehmen, öffentlicher Auftraggeber<span class="marke">entscheiden</span></span>
+          <p class="v"><b>Vorschlag:</b> Wirtschaftsakteur, wenn er als Marktteilnehmer verpflichtet wird. Trägt der Test an der Vergaberichtlinie — dem harten Fremdgesetz aus THE-692.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 2 ══ -->
+  <div class="karte">
+    <div class="kopf" style="background:var(--g2)"><span class="nr">2</span><h3>Mitgliedstaat</h3><span class="id">mitgliedstaat</span></div>
+    <div class="def" style="background:var(--g2-bg)">Der Staat als Adressat des Unionsrechts — verpflichtet, in seiner Rechtsordnung etwas <b>sicherzustellen, zu benennen, zu regeln oder umzusetzen</b>.</div>
+    <div class="body">
+      <div class="block ja"><h4>Einschluss</h4><ul>
+        <li>„Die Mitgliedstaaten stellen sicher / benennen / erlassen / teilen mit / sorgen dafür“</li>
+        <li>Umsetzungs-, Sanktions- und Mitteilungspflichten</li>
+      </ul></div>
+      <div class="block nein"><h4>Ausschluss</h4><ul>
+        <li>die Behörde, die er benennt → Gattung 3</li>
+        <li>der Staat als Marktteilnehmer → Gattung 1</li>
+      </ul></div>
+      <div class="block frage"><h4>Der eine Grenzfall, der alles entscheidet</h4>
+        <div class="fall">
+          <span class="q">„Die Mitgliedstaaten stellen sicher, dass die zuständige Behörde …“<span class="marke">entscheiden</span></span>
+          <p class="v"><b>Vorschlag:</b> <b>Mitgliedstaat</b> — er schuldet das Ergebnis, die Behörde ist Gegenstand der Pflicht, nicht ihr Adressat. Wer hier auf das nächstgelegene Substantiv zeigt, baut den Anker-Fehler deterministisch nach.</p>
+          <p class="beleg">20 Bestimmungen · <code>ai-act-de:art-70</code> heute <code>member_state</code> <span class="ok">✓ richtig</span> · <code>ai-act-de:art-57</code> <span class="ok">✓</span></p>
+          <p class="v">Dieser Fall ist zugleich das <b>Pflicht-Stratum</b> für jede spätere Vererbungsregel: Er muss im Gold vorkommen, sonst misst niemand ihn.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 3 ══ -->
+  <div class="karte">
+    <div class="kopf" style="background:var(--g3)"><span class="nr">3</span><h3>Nationale Behörde</h3><span class="id">nationale_behoerde</span></div>
+    <div class="def" style="background:var(--g3-bg)">Eine von einem Mitgliedstaat eingerichtete oder benannte Stelle, die nach diesem Rechtsakt <b>hoheitliche Aufgaben</b> wahrnimmt.</div>
+    <div class="body">
+      <div class="block ja"><h4>Einschluss</h4><ul>
+        <li>Aufsichtsbehörde · zuständige Behörde · Marktüberwachungsbehörde · notifizierende Behörde</li>
+        <li>Datenschutzbehörde · CSIRT · zentrale Anlaufstelle</li>
+        <li><b>Das Gesetz sagt es oft selbst:</b> „Marktüberwachungsbehörde“ = <em>die nationale Behörde, die …</em></li>
+      </ul>
+      <p class="beleg">58 Bestimmungen · Definition wörtlich: <code>ai-act-de:art-3 Nr. 26</code></p>
+      </div>
+      <div class="block nein"><h4>Ausschluss</h4><ul>
+        <li>der Mitgliedstaat selbst → Gattung 2</li>
+        <li>EU-Agenturen, auch wenn sie dasselbe Feld beaufsichtigen → Gattung 4</li>
+        <li>private Prüfstellen ohne Hoheitsakt → Gattung 1</li>
+      </ul></div>
+      <div class="block frage"><h4>Grenzfälle</h4>
+        <div class="fall">
+          <span class="q">Akkreditierungsstelle nach VO 765/2008<span class="marke">entscheiden</span></span>
+          <p class="v">Hoheitliche Aufgabe, oft privatrechtliche Organisation. <b>Vorschlag:</b> nationale Behörde — die Aufgabe entscheidet, nicht die Rechtsform.</p>
+        </div>
+        <div class="fall">
+          <span class="q">Gericht, Strafverfolgungsbehörde<span class="marke">entscheiden</span></span>
+          <p class="v"><b>Vorschlag:</b> nationale Behörde, solange die Bestimmung ihr etwas auferlegt.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 4 ══ -->
+  <div class="karte">
+    <div class="kopf" style="background:var(--g4)"><span class="nr">4</span><h3>Unionsorgan</h3><span class="id">unionsorgan</span></div>
+    <div class="def" style="background:var(--g4-bg)">Ein Organ, eine Einrichtung oder sonstige Stelle <b>der Union</b>, die nach diesem Rechtsakt handelt. <b>Die Gattung, die im alten Katalog ganz fehlte.</b></div>
+    <div class="body">
+      <div class="block ja"><h4>Einschluss</h4><ul>
+        <li>Kommission · Parlament · Rat</li>
+        <li>ENISA · ESMA · EBA · EIOPA · EDSA · EDSB</li>
+        <li>Büro für Künstliche Intelligenz · KI-Gremium · Beratungsforum</li>
+        <li>Oversight Forum · Gemeinsamer Ausschuss (DORA)</li>
+      </ul>
+      <p class="beleg">Aus deiner Adjudikation: 8× Kommission über 5 Gesetze · 108 Bestimmungen nennen ENISA/ESMA/EBA</p>
+      </div>
+      <div class="block nein"><h4>Ausschluss</h4><ul>
+        <li>nationale Behörden, auch als Netzwerk-Mitglieder → Gattung 3</li>
+        <li>Normungsorganisationen (privatrechtlich, kein Unionsorgan) → siehe Gattung 1</li>
+      </ul></div>
+      <div class="block frage"><h4>Grenzfälle</h4>
+        <div class="fall">
+          <span class="q">Gremien aus nationalen Behörden — EDSA, CSIRTs-Netzwerk<span class="marke">entscheiden</span></span>
+          <p class="v">Besteht aus nationalen Stellen, handelt aber als Unionsstelle. <b>Vorschlag:</b> Unionsorgan, wenn die Bestimmung dem <em>Gremium</em> etwas auferlegt; Gattung 3, wenn sie die Mitglieder anspricht.</p>
+        </div>
+        <div class="fall">
+          <span class="q">Die Kommission als Verordnungsgeberin<span class="marke">entscheiden</span></span>
+          <p class="v">„Die Kommission erlässt delegierte Rechtsakte“ — sie handelt hier normsetzend, nicht als Verpflichtete. <b>Vorschlag:</b> trotzdem Unionsorgan; die Ermächtigung ist eine Zuweisung an sie. Alternative wäre „kein Adressat“ — das ist die Entscheidung.</p>
+          <p class="beleg"><code>mdr-de:art-116</code> heute <code>member_state</code> — <b>falsch</b>, ein Beleg für die Katalog-Lücke</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 5 ══ -->
+  <div class="karte">
+    <div class="kopf" style="background:var(--g5)"><span class="nr">5</span><h3>Begünstigter</h3><span class="id">beguenstigter</span></div>
+    <div class="def" style="background:var(--g5-bg)">Wer durch die Bestimmung <b>geschützt oder berechtigt</b> wird, ohne selbst verpflichtet zu sein.</div>
+    <div class="body">
+      <div class="block ja"><h4>Einschluss</h4><ul>
+        <li>betroffene Person · Nutzer · Verbraucher · Zahlungsdienstnutzer · Patient</li>
+        <li>Beschäftigte, soweit die Norm sie schützt (LkSG)</li>
+      </ul></div>
+      <div class="block nein"><h4>Ausschluss</h4><ul>
+        <li>wer Rechte <em>und</em> Pflichten trägt → nach der <b>Pflicht</b> einordnen</li>
+        <li>wer im Text nur als Bezugspunkt vorkommt → gar kein Adressat</li>
+      </ul></div>
+      <div class="block frage"><h4>Grenzfälle</h4>
+        <div class="fall">
+          <span class="q">„Die betroffene Person hat ihre Einwilligung erteilt …“<span class="marke">entscheiden</span></span>
+          <p class="v"><b>Vorschlag: kein Adressat.</b> Die Einwilligung ist Tatbestandsmerkmal, verpflichtet ist der Verantwortliche. Die Person <em>handelt</em>, aber die Norm richtet sich nicht an sie.</p>
+          <p class="beleg">17 Bestimmungen · <code>dsgvo:art-6</code> heute <code>controller</code> <span class="ok">✓ richtig</span> · <code>dsgvo:art-9</code> <span class="ok">✓</span></p>
+        </div>
+        <div class="fall">
+          <span class="q">Der Nutzer mit Anzeigepflicht (PSD2)<span class="marke">entscheiden</span></span>
+          <p class="v"><b>Vorschlag:</b> Wirtschaftsakteur ist falsch, Begünstigter zu schwach. Trägt die Bestimmung ihm eine echte Obliegenheit auf, gehört er <b>als Adressat</b> geführt — die Gattung dafür fehlt möglicherweise.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Der sechste Ausgang: kein Adressat</h2>
+  <p>Eine Bestimmung, die eine Rechtsfolge setzt, ohne jemandem etwas aufzugeben, hat <b>korrekt keinen</b> Adressaten — bei Waltl der Typ <em>Consequence</em>, 19 % im deutschen Zivilrecht. Das ist ein <b>positiver Befund</b>.</p>
+  <p><b>Er muss von „nicht erfasst“ unterscheidbar bleiben.</b> Ein leeres Feld darf nicht beides bedeuten — heute tut es das, und genau daran ist die alte Deckungsmessung gescheitert.</p>
+
+  <h2>Der alte Katalog, auf die Gattungen abgebildet</h2>
+  <p>Alle 19 bisherigen Werte fallen in drei der fünf Gattungen. Die vierte war nie besetzt — das ist die gemessene Lücke.</p>
+  <div class="scroller">
+    <table>
+      <thead><tr><th>Gattung</th><th>bisherige Werte</th><th>Anzahl</th></tr></thead>
+      <tbody>
+        <tr><td><span class="gp" style="background:var(--g1)"></span><b>Wirtschaftsakteur</b></td>
+            <td><code>controller</code> <code>processor</code> <code>provider</code> <code>deployer</code> <code>importer</code> <code>distributor</code> <code>authorized_representative</code> <code>essential_important_entity</code> <code>financial_entity</code> <code>ict_third_party_provider</code> <code>manufacturer</code> <code>obligated_enterprise</code> <code>trust_service_provider</code> <code>data_holder</code> <code>ecs_provider</code></td><td>15</td></tr>
+        <tr><td><span class="gp" style="background:var(--g2)"></span><b>Mitgliedstaat</b></td><td><code>member_state</code></td><td>1</td></tr>
+        <tr><td><span class="gp" style="background:var(--g3)"></span><b>Nationale Behörde</b></td><td><code>supervisory_authority</code> · <code>conformity_assessment_body</code> <span style="color:var(--frage)">(Grenzfall)</span></td><td>2</td></tr>
+        <tr><td><span class="gp" style="background:var(--g4)"></span><b>Unionsorgan</b></td><td style="color:var(--g4)"><b>— keiner —</b></td><td>0</td></tr>
+        <tr><td><span class="gp" style="background:var(--g5)"></span><b>Begünstigter</b></td><td><code>data_subject</code></td><td>1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Was diese Blätter noch nicht sind</h2>
+  <p>Vorschläge, keine Entscheidungen. Jeder gelb markierte Fall braucht dein Urteil, <b>bevor</b> die nächste Erhebung läuft — sonst entscheidet die Erhebung sie stillschweigend mit, und niemand kann später sagen, wie.</p>
+  <p>Belastbar werden sie erst durch <b>Artefakt E</b>: zwei Leser, dieselben Fälle, κ ≥ 0,6. Bis dahin sind sie sorgfältig formuliert und unbelegt.</p>
+
+  <p class="foot">
+    Quellen: Legaldefinitions-Register (947 Definitionen, 70 echte Begriffskonflikte) · Blind-Adjudikation vom 19.08. (36 Fälle) ·
+    Waltl et al., <i>Semantic types of legal norms in German laws</i>, AI &amp; Law 2018 · LLT-Lab-Annotationsprotokolle (Hofstra) ·
+    Korpus-Belege gemessen an 1750 Bestimmungen.
+  </p>
+</div>
