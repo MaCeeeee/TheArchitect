@@ -88,7 +88,9 @@
   .fall .q{font-weight:600;font-size:.94rem;display:block;margin-bottom:.3rem}
   .fall .v{font-size:.9rem;color:var(--dim);margin:.3rem 0}
   .fall .v b{color:var(--text)}
-  .marke{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:.14rem .45rem;border-radius:3px;background:var(--frage);color:#fff;margin-left:.4rem;vertical-align:.1em}
+  .marke{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;padding:.14rem .45rem;border-radius:3px;background:var(--ja);color:#fff;margin-left:.4rem;vertical-align:.1em}
+  .block.frage{border-left-color:var(--ja)}
+  .block.frage h4{color:var(--ja)}
   code{font-family:var(--mono);font-size:.83em;background:var(--sunk);padding:.1rem .34rem;border-radius:3px}
   .beleg{font-family:var(--mono);font-size:.78rem;color:var(--faint)}
   .ok{color:var(--ja);font-weight:600}
@@ -102,14 +104,23 @@
 </style>
 
 <div class="wrap">
-  <p class="eyebrow">Artefakt B · Semantik-Arbeit · 19. August 2026</p>
+  <p class="eyebrow">Artefakt B · Semantik-Arbeit · entschieden am 20. August 2026</p>
   <h1>Fünf Gattungen</h1>
   <p class="lede">
-    Kriterienblätter für die Adressaten-Gattungen — in der Form der LLT-Lab-Protokolle:
-    Definition, <strong>Einschluss</strong>, <strong>Ausschluss</strong>, Grenzfälle mit Vorschlag,
-    Belege aus unserem Korpus. Die Grenzfälle sind <strong>vor</strong> der Erhebung zu entscheiden,
-    sonst besteht der Test durch Dehnung.
+    Kriterienblätter für die Adressaten-Gattungen — Definition, <strong>Einschluss</strong>,
+    <strong>Ausschluss</strong>, Belege aus unserem Korpus. Alle zehn Grenzfälle sind
+    <strong>entschieden</strong>, bevor die nächste Erhebung läuft.
   </p>
+
+  <div class="regel" style="border-left:4px solid var(--ja);background:var(--ja-bg)">
+    <p style="font-size:1.02rem"><b>Die Liste ist bei fünf geblieben.</b> Zehn Grenzfälle, darunter die
+    beiden härtesten (Normungsorganisation, beliehene Stelle) — <b>keiner hat eine sechste Gattung erzwungen.</b>
+    Das ist ein erstes Indiz für Tragfähigkeit, aber noch kein Beweis: Die eigentliche Probe sind zwei
+    korpusfremde Gesetze aus fremden Gewerken.</p>
+    <p><b>Und eine Einschränkung, die dazugehört:</b> Alle zehn Entscheidungen folgten dem jeweiligen Vorschlag.
+    Das macht sie <em>verbindlich und dokumentiert</em> — nicht <em>unabhängig bestätigt</em>. Ob die Kriterien
+    tragen, zeigt erst die κ-Messung mit einem zweiten Leser.</p>
+  </div>
 
   <div class="regel">
     <p><b>Die Frage, immer dieselbe:</b> Wen verpflichtet oder berechtigt <em>diese</em> Bestimmung unmittelbar?</p>
@@ -124,7 +135,7 @@
     <span class="chip" style="color:var(--g3);border-color:var(--g3);background:var(--g3-bg)"><span class="dot" style="background:var(--g3)"></span>3 Nationale Behörde</span>
     <span class="chip" style="color:var(--g4);border-color:var(--g4);background:var(--g4-bg)"><span class="dot" style="background:var(--g4)"></span>4 Unionsorgan</span>
     <span class="chip" style="color:var(--g5);border-color:var(--g5);background:var(--g5-bg)"><span class="dot" style="background:var(--g5)"></span>5 Begünstigter</span>
-    <span class="chip" style="color:var(--frage);border-color:var(--frage);background:var(--frage-bg)"><span class="dot" style="background:var(--frage)"></span>Grenzfall — deine Entscheidung</span>
+    <span class="chip" style="color:var(--ja);border-color:var(--ja);background:var(--ja-bg)"><span class="dot" style="background:var(--ja)"></span>Grenzfall — entschieden 20.08.</span>
   </div>
 
   <!-- ══ 1 ══ -->
@@ -144,20 +155,20 @@
         <li>wer nur <em>geschützt</em> wird → Gattung 5</li>
         <li>wer die Regel <em>setzt</em> → Gattung 2 oder 4</li>
       </ul></div>
-      <div class="block frage"><h4>Grenzfälle</h4>
+      <div class="block frage"><h4>Grenzfälle — entschieden</h4>
         <div class="fall">
-          <span class="q">Notifizierte / benannte Stelle<span class="marke">entscheiden</span></span>
-          <p class="v">Privatrechtlich organisiert, aber hoheitlich beliehen. <b>Vorschlag:</b> Wirtschaftsakteur, solange die Bestimmung ihre <em>eigene Tätigkeit</em> regelt (Akkreditierung, Personal, Unabhängigkeit, Mitwirkung an Normung); nationale Behörde nur dort, wo sie hoheitlich entscheidet.</p>
+          <span class="q">Notifizierte / benannte Stelle<span class="marke">entschieden 20.08.</span></span>
+          <p class="v">Privatrechtlich organisiert, aber hoheitlich beliehen. <b>Entschieden 20.08.:</b> Wirtschaftsakteur, solange die Bestimmung ihre <em>eigene Tätigkeit</em> regelt (Akkreditierung, Personal, Unabhängigkeit, Mitwirkung an Normung); nationale Behörde nur dort, wo sie hoheitlich entscheidet.</p>
           <p class="beleg">64 Bestimmungen im Korpus · <code>ai-act-de:art-31</code> heute <code>conformity_assessment_body</code> · Definition: <code>ai-act-de:art-3 Nr. 22</code></p>
         </div>
         <div class="fall">
-          <span class="q">Europäische Normungsorganisation (CEN · CENELEC · ETSI)<span class="marke">entscheiden</span></span>
-          <p class="v">Privater Verein mit öffentlichem Normungsauftrag — passt in keine der fünf sauber. <b>Vorschlag:</b> Wirtschaftsakteur, mit ausdrücklichem Vermerk. <b>Dies ist der wahrscheinlichste Kandidat für eine sechste Gattung</b> und damit der eigentliche Härtetest der Liste.</p>
+          <span class="q">Europäische Normungsorganisation (CEN · CENELEC · ETSI)<span class="marke">entschieden 20.08.</span></span>
+          <p class="v">Privater Verein mit öffentlichem Normungsauftrag — passt in keine der fünf sauber. <b>Entschieden 20.08.:</b> Wirtschaftsakteur, mit ausdrücklichem Vermerk. <b>Dies ist der wahrscheinlichste Kandidat für eine sechste Gattung</b> und damit der eigentliche Härtetest der Liste.</p>
           <p class="beleg">28 Bestimmungen · <code>ai-act-de:art-40</code>, <code>ai-act-de:art-41</code> — beide heute <b>ohne</b> Adressat</p>
         </div>
         <div class="fall">
-          <span class="q">Öffentliches Unternehmen, öffentlicher Auftraggeber<span class="marke">entscheiden</span></span>
-          <p class="v"><b>Vorschlag:</b> Wirtschaftsakteur, wenn er als Marktteilnehmer verpflichtet wird. Trägt der Test an der Vergaberichtlinie — dem harten Fremdgesetz aus THE-692.</p>
+          <span class="q">Öffentliches Unternehmen, öffentlicher Auftraggeber<span class="marke">entschieden 20.08.</span></span>
+          <p class="v"><b>Entschieden 20.08.:</b> Wirtschaftsakteur, wenn er als Marktteilnehmer verpflichtet wird. Trägt der Test an der Vergaberichtlinie — dem harten Fremdgesetz aus THE-692.</p>
         </div>
       </div>
     </div>
@@ -176,10 +187,10 @@
         <li>die Behörde, die er benennt → Gattung 3</li>
         <li>der Staat als Marktteilnehmer → Gattung 1</li>
       </ul></div>
-      <div class="block frage"><h4>Der eine Grenzfall, der alles entscheidet</h4>
+      <div class="block frage"><h4>Der eine Grenzfall, der alles entscheidet — entschieden</h4>
         <div class="fall">
-          <span class="q">„Die Mitgliedstaaten stellen sicher, dass die zuständige Behörde …“<span class="marke">entscheiden</span></span>
-          <p class="v"><b>Vorschlag:</b> <b>Mitgliedstaat</b> — er schuldet das Ergebnis, die Behörde ist Gegenstand der Pflicht, nicht ihr Adressat. Wer hier auf das nächstgelegene Substantiv zeigt, baut den Anker-Fehler deterministisch nach.</p>
+          <span class="q">„Die Mitgliedstaaten stellen sicher, dass die zuständige Behörde …“<span class="marke">entschieden 20.08.</span></span>
+          <p class="v"><b>Entschieden 20.08.:</b> <b>Mitgliedstaat</b> — er schuldet das Ergebnis, die Behörde ist Gegenstand der Pflicht, nicht ihr Adressat. Wer hier auf das nächstgelegene Substantiv zeigt, baut den Anker-Fehler deterministisch nach.</p>
           <p class="beleg">20 Bestimmungen · <code>ai-act-de:art-70</code> heute <code>member_state</code> <span class="ok">✓ richtig</span> · <code>ai-act-de:art-57</code> <span class="ok">✓</span></p>
           <p class="v">Dieser Fall ist zugleich das <b>Pflicht-Stratum</b> für jede spätere Vererbungsregel: Er muss im Gold vorkommen, sonst misst niemand ihn.</p>
         </div>
@@ -204,14 +215,14 @@
         <li>EU-Agenturen, auch wenn sie dasselbe Feld beaufsichtigen → Gattung 4</li>
         <li>private Prüfstellen ohne Hoheitsakt → Gattung 1</li>
       </ul></div>
-      <div class="block frage"><h4>Grenzfälle</h4>
+      <div class="block frage"><h4>Grenzfälle — entschieden</h4>
         <div class="fall">
-          <span class="q">Akkreditierungsstelle nach VO 765/2008<span class="marke">entscheiden</span></span>
-          <p class="v">Hoheitliche Aufgabe, oft privatrechtliche Organisation. <b>Vorschlag:</b> nationale Behörde — die Aufgabe entscheidet, nicht die Rechtsform.</p>
+          <span class="q">Akkreditierungsstelle nach VO 765/2008<span class="marke">entschieden 20.08.</span></span>
+          <p class="v">Hoheitliche Aufgabe, oft privatrechtliche Organisation. <b>Entschieden 20.08.:</b> nationale Behörde — die Aufgabe entscheidet, nicht die Rechtsform.</p>
         </div>
         <div class="fall">
-          <span class="q">Gericht, Strafverfolgungsbehörde<span class="marke">entscheiden</span></span>
-          <p class="v"><b>Vorschlag:</b> nationale Behörde, solange die Bestimmung ihr etwas auferlegt.</p>
+          <span class="q">Gericht, Strafverfolgungsbehörde<span class="marke">entschieden 20.08.</span></span>
+          <p class="v"><b>Entschieden 20.08.:</b> nationale Behörde, solange die Bestimmung ihr etwas auferlegt.</p>
         </div>
       </div>
     </div>
@@ -234,14 +245,14 @@
         <li>nationale Behörden, auch als Netzwerk-Mitglieder → Gattung 3</li>
         <li>Normungsorganisationen (privatrechtlich, kein Unionsorgan) → siehe Gattung 1</li>
       </ul></div>
-      <div class="block frage"><h4>Grenzfälle</h4>
+      <div class="block frage"><h4>Grenzfälle — entschieden</h4>
         <div class="fall">
-          <span class="q">Gremien aus nationalen Behörden — EDSA, CSIRTs-Netzwerk<span class="marke">entscheiden</span></span>
-          <p class="v">Besteht aus nationalen Stellen, handelt aber als Unionsstelle. <b>Vorschlag:</b> Unionsorgan, wenn die Bestimmung dem <em>Gremium</em> etwas auferlegt; Gattung 3, wenn sie die Mitglieder anspricht.</p>
+          <span class="q">Gremien aus nationalen Behörden — EDSA, CSIRTs-Netzwerk<span class="marke">entschieden 20.08.</span></span>
+          <p class="v">Besteht aus nationalen Stellen, handelt aber als Unionsstelle. <b>Entschieden 20.08.:</b> Unionsorgan, wenn die Bestimmung dem <em>Gremium</em> etwas auferlegt; Gattung 3, wenn sie die Mitglieder anspricht.</p>
         </div>
         <div class="fall">
-          <span class="q">Die Kommission als Verordnungsgeberin<span class="marke">entscheiden</span></span>
-          <p class="v">„Die Kommission erlässt delegierte Rechtsakte“ — sie handelt hier normsetzend, nicht als Verpflichtete. <b>Vorschlag:</b> trotzdem Unionsorgan; die Ermächtigung ist eine Zuweisung an sie. Alternative wäre „kein Adressat“ — das ist die Entscheidung.</p>
+          <span class="q">Die Kommission als Verordnungsgeberin<span class="marke">entschieden 20.08.</span></span>
+          <p class="v">„Die Kommission erlässt delegierte Rechtsakte“ — sie handelt hier normsetzend, nicht als Verpflichtete. <b>Entschieden 20.08.:</b> trotzdem Unionsorgan; die Ermächtigung ist eine Zuweisung an sie. Alternative wäre „kein Adressat“ — das ist die Entscheidung.</p>
           <p class="beleg"><code>mdr-de:art-116</code> heute <code>member_state</code> — <b>falsch</b>, ein Beleg für die Katalog-Lücke</p>
         </div>
       </div>
@@ -261,15 +272,15 @@
         <li>wer Rechte <em>und</em> Pflichten trägt → nach der <b>Pflicht</b> einordnen</li>
         <li>wer im Text nur als Bezugspunkt vorkommt → gar kein Adressat</li>
       </ul></div>
-      <div class="block frage"><h4>Grenzfälle</h4>
+      <div class="block frage"><h4>Grenzfälle — entschieden</h4>
         <div class="fall">
-          <span class="q">„Die betroffene Person hat ihre Einwilligung erteilt …“<span class="marke">entscheiden</span></span>
-          <p class="v"><b>Vorschlag: kein Adressat.</b> Die Einwilligung ist Tatbestandsmerkmal, verpflichtet ist der Verantwortliche. Die Person <em>handelt</em>, aber die Norm richtet sich nicht an sie.</p>
+          <span class="q">„Die betroffene Person hat ihre Einwilligung erteilt …“<span class="marke">entschieden 20.08.</span></span>
+          <p class="v"><b>Entschieden 20.08.: kein Adressat.</b> Die Einwilligung ist Tatbestandsmerkmal, verpflichtet ist der Verantwortliche. Die Person <em>handelt</em>, aber die Norm richtet sich nicht an sie.</p>
           <p class="beleg">17 Bestimmungen · <code>dsgvo:art-6</code> heute <code>controller</code> <span class="ok">✓ richtig</span> · <code>dsgvo:art-9</code> <span class="ok">✓</span></p>
         </div>
         <div class="fall">
-          <span class="q">Der Nutzer mit Anzeigepflicht (PSD2)<span class="marke">entscheiden</span></span>
-          <p class="v"><b>Vorschlag:</b> Wirtschaftsakteur ist falsch, Begünstigter zu schwach. Trägt die Bestimmung ihm eine echte Obliegenheit auf, gehört er <b>als Adressat</b> geführt — die Gattung dafür fehlt möglicherweise.</p>
+          <span class="q">Der Nutzer mit Anzeigepflicht (PSD2)<span class="marke">entschieden 20.08.</span></span>
+          <p class="v"><b>Entschieden 20.08.:</b> <b>Begünstigter</b>, auch wenn er eine Obliegenheit trägt. Die Gattung sagt, WER er im Regelungsgefüge ist; dass ihn ausnahmsweise eine Pflicht trifft, steht in der Deontik-Achse — nicht in der Gattung. <span style="color:var(--dim)">Verworfen: Wirtschaftsakteur (er handelt nicht am Markt, und der Kunden-Join vermengte ihn mit Unternehmen) und eine sechste Gattung „verpflichteter Privater" (zu selten für ihren Preis).</span></p>
         </div>
       </div>
     </div>
@@ -295,9 +306,16 @@
     </table>
   </div>
 
-  <h2>Was diese Blätter noch nicht sind</h2>
-  <p>Vorschläge, keine Entscheidungen. Jeder gelb markierte Fall braucht dein Urteil, <b>bevor</b> die nächste Erhebung läuft — sonst entscheidet die Erhebung sie stillschweigend mit, und niemand kann später sagen, wie.</p>
-  <p>Belastbar werden sie erst durch <b>Artefakt E</b>: zwei Leser, dieselben Fälle, κ ≥ 0,6. Bis dahin sind sie sorgfältig formuliert und unbelegt.</p>
+  <h2>Was jetzt gilt — und was noch fehlt</h2>
+  <p><b>Gilt:</b> Die zehn Grenzfälle sind entschieden und binden jede kommende Erhebung. Ein Leser, der auf einen
+  dieser Fälle trifft, schlägt nach statt zu wägen — genau dafür existiert ein Protokoll.</p>
+  <p><b>Fehlt:</b> <b>Artefakt E</b> — zwei Leser, dieselben Fälle, κ ≥ 0,6. Bis dahin sind diese Blätter
+  sorgfältig formuliert, entschieden und <em>unbelegt</em>. Der Unterschied zwischen „entschieden“ und „belegt“
+  ist der ganze Punkt der Sprosse darüber.</p>
+  <p><b>Der eigentliche Härtetest steht aus:</b> zwei korpusfremde Gesetze aus fremden Gewerken —
+  Spielzeugrichtlinie (Produktrecht-Mechanik) und Vergaberichtlinie (kein Produktrecht). Bestanden heißt:
+  null neue Gattungen. Braucht eines von beiden eine sechste, war auch diese Liste nur Empirie über
+  EU-Produktrecht.</p>
 
   <p class="foot">
     Quellen: Legaldefinitions-Register (947 Definitionen, 70 echte Begriffskonflikte) · Blind-Adjudikation vom 19.08. (36 Fälle) ·
