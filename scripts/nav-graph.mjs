@@ -484,6 +484,94 @@ function missionAlignment(mission, pairs, nodeIds, fullPairs) {
   return { rows, direct, detour, noPlace, unreachable, menuOnly, transitions: steps.length - 1 };
 }
 
+
+// ─── HTML-Bericht (selbstständig, Artifact-tauglich: keine Skripte, keine externen Assets außer Google Fonts) ──
+function esc(x) { return String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const STATION_COLOR = { vision: '#8B5CF6', model: '#2348C8', explore: '#0E9F8A', plan: '#D4A017', govern: '#D2561E', track: '#6B7680' };
+function renderHtml() {
+  const today = new Date().toISOString().slice(0, 10);
+  const tag = (t, cls, inner) => `<${t}${cls ? ` class="${cls}"` : ''}>${inner}</${t}>`;
+  const stat = (v, l, cls = '') => `<div class="stat ${cls}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
+  const layers = `
+  <div class="layers">
+    <div class="layer primary"><h3>Inhaltsgraph <small>Messgröße</small></h3><p class="q">Führt der Inhalt per Call-to-Action weiter?</p>
+      <div class="stats">${stat(m.nodes, 'Knoten')}${stat(m.edgesSimple, 'Kanten')}${stat(m.oddDegree, 'ungerader Grad', m.oddDegree > 2 ? 'bad' : 'good')}${stat(m.sinks, 'Sackgassen', 'bad')}${stat(m.cyclomatic, 'zyklomatisch')}${stat(`${m.worldLeaving}/${m.v2Edges}`, 'v2 verlässt Welt')}</div>
+      <p class="verdict">${esc(m.eulerVerdict)}${m.oddDegree > 2 ? ` — mindestens ${m.minDoubledEdges} Kanten müssen doppelt gegangen werden` : ''}</p></div>
+    <div class="layer"><h3>Vollgraph <small>Menüwand</small></h3><p class="q">Was ist per Sidebar, Toolbar, ⌘K und Rail erreichbar?</p>
+      <div class="stats">${stat(mFull.nodes, 'Knoten')}${stat(mFull.edgesSimple, 'Kanten')}${stat(mFull.oddDegree, 'ungerader Grad')}${stat(mFull.sinks, 'Sackgassen')}${stat(mFull.cyclomatic, 'zyklomatisch')}${stat(`${mFull.worldLeaving}/${mFull.v2Edges}`, 'v2 verlässt Welt')}</div>
+      <p class="verdict muted">Fast alles ist von überall erreichbar — das ist die Menüwand, nicht der Weg.</p></div>
+  </div>`;
+  const bet = m.betweennessTop.map((x) => { const mm = /^(.*) \(([\d.]+)\)$/.exec(x); return mm ? [mm[1], +mm[2]] : [x, 0]; });
+  const betMax = Math.max(...bet.map((b) => b[1]), 0.0001);
+  const betRows = bet.map(([n, c]) => `<tr><td><code>${esc(n)}</code></td><td class="bar"><i style="width:${Math.round((c / betMax) * 100)}%"></i></td><td class="num">${c.toFixed(3)}</td></tr>`).join('');
+  const commRows = m.communityDetail.map((c) => {
+    const counts = {}; for (const mbr of c.members) { const st = stationOf(mbr); counts[st || 'none'] = (counts[st || 'none'] || 0) + 1; }
+    const segs = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([st, n]) => `<i title="${esc(st)} ${n}" style="flex:${n};background:${STATION_COLOR[st] || 'var(--grid)'}"></i>`).join('');
+    return `<tr><td class="num">${c.size}</td><td><div class="comp">${segs}</div></td><td>${c.dominant === '—' ? '<span class="muted">außerhalb der Stationen</span>' : `<b>${esc(c.dominant)}</b> ${c.domN}/${c.withStation}`}</td><td class="members"><code>${c.members.slice(0, 5).map(esc).join('</code> <code>')}</code>${c.members.length > 5 ? ` <span class="muted">+${c.members.length - 5}</span>` : ''}</td></tr>`;
+  }).join('');
+  const legend = Object.entries(STATION_COLOR).map(([st, col]) => `<span class="lg"><i style="background:${col}"></i>${st}</span>`).join('');
+  const missions = missionReport.map(({ mission, r }) => `
+    <div class="mission">
+      <h3>${esc(mission.name)}</h3>
+      <p class="meta">${esc(mission.source)}</p>
+      <div class="stats small">${stat(`${r.direct}/${r.transitions}`, 'Inhalt führt weiter', r.direct === r.transitions ? 'good' : '')}${stat(r.menuOnly, 'nur über Menü', r.menuOnly ? 'bad' : '')}${stat(r.detour, 'Umwegsumme', r.detour ? 'bad' : '')}${stat(r.noPlace, 'ohne Ort', r.noPlace ? 'bad' : '')}${stat(r.unreachable, 'unerreichbar', r.unreachable ? 'bad' : '')}</div>
+      <table class="steps">${r.rows.map((row) => { const ok = row.status.startsWith('direkt') || row.status === 'gleiche Fläche'; const cls = ok ? 'ok' : row.status === 'kein Ort' ? 'none' : row.status === 'unerreichbar' ? 'bad' : 'warn';
+        return `<tr class="${cls}"><td><b>${esc(row.from)}</b> → <b>${esc(row.to)}</b></td><td>${esc(row.status)}${row.via.length ? `: <code>${row.via.map(esc).join('</code> → <code>')}</code>` : ''}${row.missing.length ? ` <span class="muted">fehlt: ${row.missing.map(esc).join(', ')}</span>` : ''}</td></tr>`; }).join('')}</table>
+      ${mission.steps.filter((st) => st.note).map((st) => `<p class="note"><b>${esc(st.id)}:</b> ${esc(st.note)}</p>`).join('')}
+    </div>`).join('');
+  const sinks = m.sinkNodes.map((n) => `<code>${esc(n)}</code>`).join(' ');
+  const byReason = {}; for (const u of graph.unresolved) (byReason[u.reason] ||= []).push(u);
+  const unresolved = Object.entries(byReason).map(([r, list]) => `<details><summary>${esc(r)} <span class="muted">(${list.length})</span></summary><ul>${list.map((u) => `<li><code>${esc(u.target ?? u.node)}</code> <span class="muted">${esc(u.evidence || '')}</span></li>`).join('')}</ul></details>`).join('');
+  return `<meta charset="utf-8">
+<title>Der Graph zählt sich selbst</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{--paper:#F2F4F1;--card:#fff;--ink:#1A2230;--ink-soft:#5E6974;--grid:#D8DED7;--line:#CFD6CF;--path:#2348C8;--path-soft:#DCE3FA;--odd:#D2561E;--odd-soft:#FBE4D8;--ok:#1F8A5B;--ok-soft:#DDF2E6;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0F1419;--card:#171D24;--ink:#E8ECEA;--ink-soft:#9AA5AE;--grid:#222B33;--line:#2B3640;--path:#7D9BFF;--path-soft:#1B2748;--odd:#FF8A5B;--odd-soft:#3A2117;--ok:#46D39A;--ok-soft:#12362A}}
+:root[data-theme="dark"]{--paper:#0F1419;--card:#171D24;--ink:#E8ECEA;--ink-soft:#9AA5AE;--grid:#222B33;--line:#2B3640;--path:#7D9BFF;--path-soft:#1B2748;--odd:#FF8A5B;--odd-soft:#3A2117;--ok:#46D39A;--ok-soft:#12362A}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-size:15.5px;line-height:1.5;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+main{max-width:66rem;margin:0 auto;padding:2.5rem 1.25rem 5rem}h1,h2,h3{font-family:"Fraunces",Georgia,serif;line-height:1.15;margin:0;text-wrap:balance}h1{font-size:2.4rem;font-weight:600}h2{font-size:1.45rem;margin:2.8rem 0 .7rem}h3{font-size:1.1rem}h3 small{font-family:"Atkinson Hyperlegible",sans-serif;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-left:.5rem}
+.eyebrow{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--path);font-weight:700}.lede{font-size:1.08rem;color:var(--ink-soft);max-width:46rem;margin:.6rem 0 0}.meta,.muted{color:var(--ink-soft);font-size:.86rem}code{font-family:var(--mono);font-size:.82em}p{max-width:46rem}
+.layers{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.4rem}@media(max-width:780px){.layers{grid-template-columns:1fr}}.layer{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem}.layer.primary{border-color:var(--path);box-shadow:0 0 0 1px var(--path)}.layer .q{margin:.2rem 0 .8rem;color:var(--ink-soft);font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}.stats.small{grid-template-columns:repeat(5,1fr)}@media(max-width:600px){.stats.small{grid-template-columns:repeat(2,1fr)}}.stat{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem}.stat b{display:block;font-family:var(--mono);font-size:1.3rem;line-height:1.1;font-variant-numeric:tabular-nums}.stat span{font-size:.7rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}.stat.bad b{color:var(--odd)}.stat.good b{color:var(--ok)}
+.verdict{margin:.8rem 0 0;font-weight:700}.verdict.muted{font-weight:400}
+table{border-collapse:collapse;width:100%;font-size:.9rem}.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--card);margin-top:.8rem}td,th{padding:.5rem .7rem;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}th{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft)}tr:last-child td{border-bottom:none}td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td.bar{width:40%}td.bar i{display:block;height:.7rem;background:var(--path);border-radius:3px;min-width:2px}
+.comp{display:flex;height:.9rem;border-radius:4px;overflow:hidden;min-width:8rem}.comp i{display:block}.lg{display:inline-flex;align-items:center;gap:.3rem;margin-right:.9rem;font-size:.8rem}.lg i{width:.8rem;height:.8rem;border-radius:3px;display:inline-block}td.members code{margin-right:.2rem}
+.mission{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.2rem;margin-top:1rem}.mission .steps{margin-top:.7rem}.mission .steps tr.ok td:first-child{border-left:4px solid var(--ok)}.mission .steps tr.warn td:first-child{border-left:4px solid var(--odd)}.mission .steps tr.none td:first-child{border-left:4px solid var(--ink-soft)}.mission .steps tr.bad td:first-child{border-left:4px solid var(--odd);background:var(--odd-soft)}.note{font-size:.86rem;color:var(--ink-soft);margin:.5rem 0 0}
+details{margin:.4rem 0;font-size:.9rem}summary{cursor:pointer}details ul{margin:.3rem 0 0;padding-left:1.2rem}details li{margin:.15rem 0}
+.callout{border:1px solid var(--line);border-radius:10px;background:var(--path-soft);padding:.9rem 1.2rem;margin:1rem 0;font-size:.94rem}
+</style>
+<main>
+<p class="eyebrow">nav-graph.mjs · Inhaltsgraph als Messgröße · Stand ${today}</p>
+<h1>Der Graph zählt sich selbst</h1>
+<p class="lede">Diese Seite ist generiert — aus demselben Lauf wie die Baseline, mit der <code>npm run nav:check</code> rechnet. Sie kann nicht veralten, nur neu erzeugt werden: <code>npm run nav:graph -- --html</code>.</p>
+${layers}
+<div class="callout"><b>Warum zwei Schichten:</b> Sobald jede Fläche die Sidebar ihrer Seite erbt, verbindet das Menü alles mit allem — 2 Sackgassen, zyklomatisch ${mFull.cyclomatic}. Das ist wahr, aber es ist die Frage „kann ich irgendwie hin?", nicht „führt mich der Inhalt weiter?". Sackgasse im Inhaltsgraph heißt: kein Weiterweg außer Menü oder Zurück.</div>
+
+<h2>Nadelöhre</h2>
+<p>Betweenness-Zentralität (Brandes): Anteil der kürzesten Wege, die durch einen Knoten laufen. Ein Wert weit über allen anderen ist kein Hub, sondern ein Flaschenhals.</p>
+<div class="tablewrap"><table><tr><th>Fläche</th><th>Anteil</th><th class="num">Wert</th></tr>${betRows}</table></div>
+
+<h2>Communities gegen Stationen</h2>
+<p>Louvain findet die Gruppen, die der Graph tatsächlich bildet. Daneben steht, zu welcher der sechs Stationen aus ADR-0005 die Flächen <em>gehören sollten</em>. Schnitt-Treue <b>${m.stationFidelity == null ? '—' : Math.round(m.stationFidelity * 100) + ' %'}</b> bei ${m.communities} Communities für 6 Stationen.</p>
+<p class="meta">${legend}</p>
+<div class="tablewrap"><table><tr><th class="num">Flächen</th><th>Zusammensetzung</th><th>dominante Station</th><th>Mitglieder</th></tr>${commRows}</table></div>
+
+<h2>Mission gegen Space</h2>
+<p>Der Mission-Graph ist die Aufgabenkette im Kopf des Nutzers (<code>docs/strategy/mission-graph.json</code>, von Hand gepflegt). Je Übergang: Bietet der Inhalt ihn an, geht er nur über das Menü, braucht er einen Umweg — oder hat ein Schritt gar keinen Ort?</p>
+${missions}
+
+<h2>Sackgassen im Inhaltsgraph (${m.sinks})</h2>
+<p class="members" style="line-height:2">${sinks}</p>
+
+<h2>Was der Extraktor nicht sieht (${m.unresolved})</h2>
+<p>Deckungslücke, nicht Abwesenheit. Dazu ${m.inferredEdges} abgeleitete Fan-out-Kanten (Sidebar/Rail über Listen) und ${m.authEdges} Auth-Umleitungen, die als Systemreaktion nicht mitzählen.</p>
+${unresolved}
+<p class="meta" style="margin-top:2.5rem">Grenze: Sheet-Inhalte der v2-Welt lassen sich statisch keiner Station zuordnen — jede Station erhält alle Sheet-Kanten; die v2-Zahlen sind eine Obergrenze. Modals und 3D-Zustände haben keine Route und sind keine Knoten. Referenz THE-696 / THE-663.</p>
+</main>
+`;
+}
+
 // ─── Ausgabe ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
@@ -520,6 +608,7 @@ const WATCH = [
   ['stationFidelity', 'Schnitt-Treue',       'higher'],
 ];
 
+if (!has('--html')) {
 console.log(`\nNavigationsgraph — packages/client/src\n${'─'.repeat(60)}`);
 console.log(`INHALTSGRAPH — führt der Inhalt weiter? (ohne Sidebar/Toolbar/⌘K)`);
 console.log(`Knoten                       ${m.nodes}`);
@@ -553,15 +642,23 @@ if (m.unresolved) {
   }
 }
 
+}
 const missionPath = val('--mission') || (existsSync(join(ROOT, 'docs/strategy/mission-graph.json')) ? join(ROOT, 'docs/strategy/mission-graph.json') : null);
 const missionResults = {};
+const missionReport = [];   // [{mission, r}] — Terminal und HTML lesen dieselbe Rechnung
 if (missionPath) {
   const nodeIds = new Set(graph.nodes.map((n) => n.id));
   const mg = JSON.parse(readFileSync(missionPath, 'utf8'));
-  console.log(`\nMission-Graph gegen Space-Graph (${relative(ROOT, resolve(missionPath))})\n${'─'.repeat(60)}`);
   for (const mission of mg.missions) {
     const r = missionAlignment(mission, m._pairs, nodeIds, mFull._pairs);
     missionResults[mission.id] = { direct: r.direct, detour: r.detour, noPlace: r.noPlace, menuOnly: r.menuOnly, unreachable: r.unreachable, transitions: r.transitions };
+    missionReport.push({ mission, r });
+  }
+}
+if (has('--html')) { const out = val('--html') && !val('--html').startsWith('--') ? resolve(val('--html')) : join(ROOT, 'docs/strategy/nav-graph-report.html'); writeFileSync(out, renderHtml()); console.log(`HTML-Bericht geschrieben: ${relative(ROOT, out)}`); process.exit(0); }
+if (missionPath) {
+  console.log(`\nMission-Graph gegen Space-Graph (${relative(ROOT, resolve(missionPath))})\n${'─'.repeat(60)}`);
+  for (const { mission, r } of missionReport) {
     console.log(`\n${mission.name}  —  ${r.direct}/${r.transitions} Übergänge, die der Inhalt selbst anbietet · ${r.menuOnly} nur über Menü · Umwegsumme ${r.detour} · ${r.noPlace} ohne Ort · ${r.unreachable} unerreichbar`);
     for (const row of r.rows) {
       const mark = row.status.startsWith('direkt') || row.status === 'gleiche Fläche' ? '✓' : row.status === 'kein Ort' ? '∅' : row.status === 'unerreichbar' ? '✗' : row.status.startsWith('nur über Menü') ? '≡' : '↪';

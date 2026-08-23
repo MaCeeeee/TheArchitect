@@ -18,7 +18,8 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "nav:graph": "node scripts/nav-graph.mjs",
-    "nav:check": "node scripts/nav-graph.mjs --baseline docs/strategy/nav-graph-baseline.json"
+    "nav:check": "node scripts/nav-graph.mjs --baseline docs/strategy/nav-graph-baseline.json",
+    "nav:html": "node scripts/nav-graph.mjs --html"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
