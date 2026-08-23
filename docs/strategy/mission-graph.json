@@ -1,0 +1,32 @@
+{
+  "_doc": "Mission-Graph (Dormans 2010): die Aufgabenkette, die ein Nutzer in Gedanken geht — getrennt vom Space-Graph (den Flächen, die scripts/nav-graph.mjs aus dem Code zählt). Jeder Schritt nennt die Flächen, auf denen er heute beantwortet wird; 'modal:*' heißt: kein Ort im Space-Graph. Gepflegt von Hand — das ist Absicht: WAS der Nutzer will, steht nicht im Code.",
+  "missions": [
+    {
+      "id": "kette",
+      "name": "Die sieben Fragen — vom Gesetz zum Attest",
+      "source": "Daily Notes August 2026; THE-628/THE-639 Zielweg",
+      "steps": [
+        { "id": "gesetz",      "frage": "Bindet uns dieses Gesetz — und welcher Teil?",     "surfaces": ["/project/:id/compliance/standards"] },
+        { "id": "anforderung", "frage": "Was fordert es konkret von uns?",                  "surfaces": ["modal:requirements-generator"], "note": "RequirementsGeneratorModal wird aus der Projekt-Werkzeugleiste geöffnet (Toolbar.tsx:423), nicht von der Compliance-Fläche" },
+        { "id": "luecke",      "frage": "Was davon erfüllen wir nicht — und wo?",           "surfaces": ["/project/:id/compliance/gaps", "/project/:id/compliance/matrix"] },
+        { "id": "massnahme",   "frage": "Was tun wir dagegen?",                             "surfaces": ["/project/:id/compliance/remediate"] },
+        { "id": "deckung",     "frage": "Ist die Lücke damit geschlossen?",                 "surfaces": ["/project/:id/compliance/progress", "/project/:id/compliance/matrix"] },
+        { "id": "nachweis",    "frage": "Womit belegen wir das?",                           "surfaces": ["/project/:id"], "note": "EvidencePanel lebt im PropertyPanel der 3D-Welt (PropertyPanel.tsx:500) — nur über ein Element erreichbar" },
+        { "id": "attest",      "frage": "Wer bestätigt es — und steht das im Bericht?",     "surfaces": ["/project/:id", "/project/:id/compliance/audit"], "note": "RequirementGatesBadge ebenfalls im PropertyPanel; das Bündel unter /compliance/audit" }
+      ]
+    },
+    {
+      "id": "stationen",
+      "name": "Die ADM-Runde — sechs Stationen",
+      "source": "ADR-0005, stations.ts classicRoute, THE-664 Fragen",
+      "steps": [
+        { "id": "vision",  "frage": "Was wollen wir erreichen — und wen betrifft es?", "surfaces": ["/project/:id", "/v2/project/:id/vision"] },
+        { "id": "model",   "frage": "Was haben wir eigentlich?",                        "surfaces": ["/project/:id", "/v2/project/:id/model"] },
+        { "id": "explore", "frage": "Wo stehen wir — und was fehlt?",                   "surfaces": ["/project/:id/compliance/standards", "/v2/project/:id/explore"] },
+        { "id": "plan",    "frage": "Was tun wir zuerst — und was kostet es?",          "surfaces": ["/project/:id/compliance/roadmap", "/v2/project/:id/plan"] },
+        { "id": "govern",  "frage": "Welche Regeln gelten — und wer hält sie?",         "surfaces": ["/project/:id/compliance/policies", "/v2/project/:id/govern"] },
+        { "id": "track",   "frage": "Können wir belegen, dass es stimmt?",              "surfaces": ["/project/:id/compliance/audit", "/v2/project/:id/track"] }
+      ]
+    }
+  ]
+}

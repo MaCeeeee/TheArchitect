@@ -1,0 +1,50 @@
+{
+  "note": "THE-692 Gattungs-Bogen. Urteile hängen an der POSITION — wer die Liste ändert, hängt gefällte Urteile an andere Artikel. Neu ziehen nur mit neuer Datei.",
+  "frozenAt": "2026-08-20",
+  "schichtung": [
+    "aktiv",
+    "passiv",
+    "unpersoenlich",
+    "anaphorisch"
+  ],
+  "sample": [
+    "ai-act-de:art-10",
+    "cra-de:art-18",
+    "data-act-de:art-13",
+    "dora-de:art-11",
+    "dsgvo:art-15",
+    "emoney-de:art-16",
+    "eprivacy-de:art-1",
+    "esg-rating-de:art-15",
+    "ai-act-de:art-100",
+    "cra-de:art-14",
+    "data-act-de:art-10",
+    "dora-de:art-10",
+    "dsgvo:art-12",
+    "eidas-de:art-12",
+    "emoney-de:art-11",
+    "eprivacy-de:art-13",
+    "ai-act-de:art-42",
+    "cra-de:art-13",
+    "data-act-de:art-6",
+    "dora-de:art-35",
+    "dsgvo:art-47",
+    "esg-rating-de:art-38",
+    "mdr-de:art-17",
+    "nis2-de:art-32",
+    "ai-act-de:art-24",
+    "cra-de:art-39",
+    "data-act-de:art-34",
+    "dsgvo:art-20",
+    "esg-rating-de:art-11",
+    "lksg:7",
+    "mdr-de:art-15",
+    "nis2-de:art-11"
+  ],
+  "gegenproben": [
+    "ai-act-de:art-3",
+    "cra-de:art-3",
+    "data-act-de:art-2",
+    "dora-de:art-3"
+  ]
+}

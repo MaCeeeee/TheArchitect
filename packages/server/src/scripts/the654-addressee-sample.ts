@@ -48,7 +48,17 @@ const RAHMEN =
 
 const SAMPLE_SIZE = 30;
 const CONTROL_SIZE = 5;
-const EXCERPT = 700;
+/**
+ * FALTKANTE, keine Kürzung. Bis hierhin ist der Artikel offen sichtbar; der
+ * Rest steht EINGEKLAPPT im Bogen (details/summary) und weist seine Länge aus.
+ *
+ * Vorher wurde hier still bei 700 Zeichen abgeschnitten — am 19.08. urteilte
+ * ein Mensch dadurch auf Ausschnitten (22 von 36 Fällen; Fall 02 hatte 9633
+ * Zeichen, gezeigt wurden 701), und der Bogen hat es nicht gesagt. Der volle
+ * Text muss im Bogen stehen; was zusammengefaltet ist, muss sich als solches
+ * zu erkennen geben.
+ */
+const SICHTBAR = 700;
 
 interface Doc {
   source: string;
@@ -103,9 +113,34 @@ function stratify(docs: Doc[], n: number): Doc[] {
   return out;
 }
 
-function excerpt(t?: string): string {
-  const clean = (t ?? '').replace(/\s+/g, ' ').trim();
-  return clean.length > EXCERPT ? `${clean.slice(0, EXCERPT)}…` : clean || '(kein Text im Korpus)';
+const sauber = (t?: string): string => (t ?? '').replace(/\s+/g, ' ').trim();
+
+/** Faltkante hinter SICHTBAR: an der nächsten Wortgrenze, nie mitten im Wort. */
+function faltkante(clean: string): number {
+  if (clean.length <= SICHTBAR) return clean.length;
+  const cut = clean.indexOf(' ', SICHTBAR);
+  return cut === -1 ? clean.length : cut;
+}
+
+/**
+ * Artikeltext für den Markdown-Bogen — IMMER vollständig. Lange Artikel
+ * falten hinter der Kante in ein details-Element (GitHub rendert das), mit
+ * ausgewiesener Restlänge; nichts wird still verworfen.
+ */
+function mdText(t?: string): string[] {
+  const clean = sauber(t);
+  if (!clean) return ['> (kein Text im Korpus)'];
+  const cut = faltkante(clean);
+  if (cut >= clean.length) return [`> ${clean}`];
+  return [
+    `> ${clean.slice(0, cut)}`,
+    '>',
+    `> <details><summary>… gesamten Artikel ausklappen — noch ${(clean.length - cut).toLocaleString('de-DE')} von ${clean.length.toLocaleString('de-DE')} Zeichen</summary>`,
+    '>',
+    `> ${clean.slice(cut).trim()}`,
+    '>',
+    '> </details>',
+  ];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -170,22 +205,21 @@ const NICHT_IM_TYPRAUM: Array<[RegExp, string]> = [
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-interface Markiert {
-  html: string;
-  bekannt: Set<string>;
-  fehlend: Set<string>;
+interface TrefferPos {
+  start: number;
+  end: number;
+  klasse: string;
+  art: 'ok' | 'fehlt';
 }
 
 /**
- * Markiert Akteursbegriffe im Text.
- *
- * Erst werden alle Treffer gesammelt und nach Position sortiert; überlappende
- * werden verworfen (der längere gewinnt). Das verhindert, dass „nationale
- * Normungsorganisation" zweimal markiert wird, und dass ein Ersetzen im bereits
- * ersetzten HTML weiterläuft.
+ * Sammelt Akteurs-Treffer im GESAMTEN Text und sortiert sie nach Position;
+ * überlappende werden verworfen (der längere gewinnt). Das verhindert, dass
+ * „nationale Normungsorganisation" zweimal markiert wird, und dass ein
+ * Ersetzen im bereits ersetzten HTML weiterläuft.
  */
-function markiere(text: string): Markiert {
-  const treffer: Array<{ start: number; end: number; klasse: string; art: 'ok' | 'fehlt' }> = [];
+function sammleTreffer(text: string): { behalten: TrefferPos[]; bekannt: Set<string>; fehlend: Set<string> } {
+  const treffer: TrefferPos[] = [];
   for (const [re, klasse] of IM_TYPRAUM) {
     for (const m of text.matchAll(re)) {
       if (m.index === undefined) continue;
@@ -200,27 +234,66 @@ function markiere(text: string): Markiert {
   }
   treffer.sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
 
-  const behalten: typeof treffer = [];
+  const behalten: TrefferPos[] = [];
   let bisher = -1;
+  const bekannt = new Set<string>();
+  const fehlend = new Set<string>();
   for (const t of treffer) {
     if (t.start < bisher) continue;
     behalten.push(t);
     bisher = t.end;
+    (t.art === 'ok' ? bekannt : fehlend).add(t.klasse);
   }
+  return { behalten, bekannt, fehlend };
+}
 
-  const bekannt = new Set<string>();
-  const fehlend = new Set<string>();
+/** Rendert text[von..bis) als HTML, Treffer innerhalb des Bereichs markiert. */
+function markupBereich(text: string, treffer: TrefferPos[], von: number, bis: number): string {
   let html = '';
-  let pos = 0;
-  for (const t of behalten) {
+  let pos = von;
+  for (const t of treffer) {
+    if (t.start < von || t.end > bis) continue;
     html += esc(text.slice(pos, t.start));
     const cls = t.art === 'ok' ? 'akteur-ok' : 'akteur-fehlt';
     html += `<mark class="${cls}" title="${esc(t.klasse)}">${esc(text.slice(t.start, t.end))}</mark>`;
-    (t.art === 'ok' ? bekannt : fehlend).add(t.klasse);
     pos = t.end;
   }
-  html += esc(text.slice(pos));
-  return { html, bekannt, fehlend };
+  html += esc(text.slice(pos, bis));
+  return html;
+}
+
+interface TextAnzeige {
+  html: string;
+  bekannt: Set<string>;
+  fehlend: Set<string>;
+  /** true = Langtext hinter der Faltkante eingeklappt — aber VOLLSTÄNDIG im Bogen. */
+  eingeklappt: boolean;
+}
+
+/**
+ * Artikeltext für den HTML-Bogen — IMMER vollständig, Akteure im ganzen Text
+ * markiert. Lange Artikel falten hinter SICHTBAR: Kopf offen, Rest in einem
+ * details-Element, dessen summary die Restlänge ausweist. Die Kante rückt
+ * nötigenfalls hinter eine Markierung, damit kein Akteursbegriff zerschnitten
+ * wird.
+ */
+function textHtml(t?: string): TextAnzeige {
+  const clean = sauber(t);
+  if (!clean) return { html: esc('(kein Text im Korpus)'), bekannt: new Set(), fehlend: new Set(), eingeklappt: false };
+  const { behalten, bekannt, fehlend } = sammleTreffer(clean);
+  let cut = faltkante(clean);
+  for (const tr of behalten) if (tr.start < cut && tr.end > cut) cut = tr.end;
+  if (cut >= clean.length) {
+    return { html: markupBereich(clean, behalten, 0, clean.length), bekannt, fehlend, eingeklappt: false };
+  }
+  const kopf = markupBereich(clean, behalten, 0, cut);
+  const rest = markupBereich(clean, behalten, cut, clean.length);
+  const html =
+    `${kopf}<details class="langtext">` +
+    `<summary><span class="zu">… gesamten Artikel ausklappen — noch ${(clean.length - cut).toLocaleString('de-DE')} von ${clean.length.toLocaleString('de-DE')} Zeichen</span>` +
+    `<span class="auf">Langtext einklappen — vollständig angezeigt (${clean.length.toLocaleString('de-DE')} Zeichen)</span></summary>` +
+    `<span class="rest">${rest}</span></details>`;
+  return { html, bekannt, fehlend, eingeklappt: true };
 }
 
 /**
@@ -249,9 +322,24 @@ interface Zweck {
 
 const RECITAL_EXCERPT = 1200;
 
+/**
+ * Erwägungsgründe sind Kontext, nicht Urteilsgegenstand — hier bleibt eine
+ * Kürzung bewusst bestehen. Aber sie weist sich aus: „[gekürzt — N von M
+ * Zeichen]" statt eines stummen „…". Der Bogen zählt diese Kürzungen im
+ * Fußbereich; der Artikeltext selbst wird NIE gekürzt (siehe textHtml/mdText).
+ */
 function kuerze(t: string): string {
   const clean = t.replace(/\s+/g, ' ').trim();
-  return clean.length > RECITAL_EXCERPT ? `${clean.slice(0, RECITAL_EXCERPT)}…` : clean;
+  return clean.length > RECITAL_EXCERPT
+    ? `${clean.slice(0, RECITAL_EXCERPT)}… [gekürzt — ${RECITAL_EXCERPT.toLocaleString('de-DE')} von ${clean.length.toLocaleString('de-DE')} Zeichen]`
+    : clean;
+}
+
+/** Zählt die im Bogen ANGEZEIGTEN Erwägungsgrund-Auszüge, die gekürzt sind. */
+function gekuerzteRecitals(zweck?: Zweck): number {
+  if (zweck === undefined) return 0;
+  const gezeigt = zweck.treffer.length > 0 ? zweck.treffer.slice(0, 4) : zweck.gesetzesweit;
+  return gezeigt.filter((t) => sauber(t.text).length > RECITAL_EXCERPT).length;
 }
 
 function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zweck?: Zweck): string {
@@ -263,7 +351,7 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zwec
       '',
       `> **Bitte überspringen — der Datensatz ist kaputt, nicht der Artikel.** ${defektGrund}`,
       '',
-      `> ${excerpt(d.fullText)}`,
+      ...mdText(d.fullText),
       '',
       `<sub>\`${d.regulationKey}\` · zählt nicht zu den Urteilen</sub>`,
       '',
@@ -276,7 +364,7 @@ function block(d: Doc, i: number, isControl: boolean, defektGrund?: string, zwec
     '',
     `**${d.title ?? '(ohne Titel)'}**`,
     '',
-    `> ${excerpt(d.fullText)}`,
+    ...mdText(d.fullText),
     '',
     ...(zweck === undefined
       ? []
@@ -362,7 +450,7 @@ function zweckHtml(zweck?: Zweck): string {
 }
 
 function htmlBlock(d: Doc, i: number, isControl: boolean, defektGrund?: string, zweck?: Zweck): string {
-  const m = markiere(excerpt(d.fullText));
+  const m = textHtml(d.fullText);
   const id = `f${i}`;
 
   // Defekter Datensatz: Position bleibt stehen (sonst verrutschen gefällte
@@ -446,6 +534,9 @@ function renderHtml(args: {
   zweckJeFall: Map<string, Zweck>;
 }): string {
   const { all, ohne, verdacht, rahmen, sample, control, nachruecker, defekt, bewertbar, laws, zweckJeFall } = args;
+  const alleFaelle = [...sample, ...control, ...nachruecker];
+  const eingeklappt = alleFaelle.filter((d) => textHtml(d.fullText).eingeklappt).length;
+  const recGekuerzt = alleFaelle.reduce((n, d) => n + gekuerzteRecitals(zweckJeFall.get(d.regulationKey)), 0);
   return `<!doctype html>
 <html lang="de"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -484,6 +575,15 @@ function renderHtml(args: {
   .badge-gegen { margin-left:auto; background:#eee; color:var(--muted); border-radius:99px; padding:.1rem .6rem; font-size:.75rem; }
   blockquote { margin:.7rem 0 1rem; padding:.8rem 1rem; background:#fdfcfa; border-left:3px solid var(--line);
     border-radius:0 6px 6px 0; font-size:.93rem; }
+  /* Langtext-Faltung: der Artikel ist VOLLSTÄNDIG im Bogen, nur zusammengefaltet.
+     Die summary weist die Restlänge aus — eine stumme Kürzung gibt es nicht mehr. */
+  blockquote details.langtext { margin:.45rem 0 0; }
+  blockquote details.langtext summary { cursor:pointer; color:var(--muted); font-size:.82rem; font-weight:600; }
+  blockquote details.langtext summary:hover { color:var(--fg); }
+  blockquote details.langtext .auf { display:none; }
+  blockquote details.langtext[open] .zu { display:none; }
+  blockquote details.langtext[open] .auf { display:inline; }
+  blockquote details.langtext .rest { display:block; margin-top:.4rem; }
   .hint { display:inline-block; font-size:.82rem; padding:.15rem .55rem; border-radius:99px; margin-bottom:.2rem; }
   .hint-b { background:var(--fehlt-bg); color:var(--fehlt); font-weight:600; }
   .hint-a { background:var(--ok-bg); color:var(--ok); }
@@ -648,6 +748,20 @@ ${nachruecker.map((d, i) => htmlBlock(d, sample.length + control.length + i + 1,
   Bestimmungen belegt → Richtung „Katalog erweitern". Bleibt <strong style="color:var(--b)">B</strong> darunter,
   ist ein explizites <code>noAddressee</code> die ehrliche Antwort und der Rest eine Anzeigefrage.</p>
   <p style="margin:.6rem 0 0; color:var(--muted)">Hochrechnung: Anteil B × ${verdacht} ≈ betroffene Bestimmungen im Korpus.</p>
+</div>
+
+<h2>Textanzeige</h2>
+<div class="box">
+  <p style="margin:.2rem 0">Jeder Artikel steht <strong>vollständig</strong> im Bogen — nichts ist still gekürzt.
+  <strong>${eingeklappt}</strong> von ${alleFaelle.length} Fällen sind länger als ${SICHTBAR} Zeichen; dort ist der
+  Rest hinter „… gesamten Artikel ausklappen" gefaltet, die Restlänge steht jeweils dabei.</p>
+  ${
+    recGekuerzt > 0
+      ? `<p style="margin:.6rem 0 0; color:var(--muted)"><strong>${recGekuerzt}</strong> angezeigte Erwägungsgrund-Auszüge
+  sind auf ${RECITAL_EXCERPT.toLocaleString('de-DE')} Zeichen gekürzt und im Text als „[gekürzt — N von M Zeichen]"
+  ausgewiesen. Erwägungsgründe sind Kontext, nicht Urteilsgegenstand.</p>`
+      : ''
+  }
 </div>
 
 </div>
@@ -868,6 +982,11 @@ async function main(): Promise<void> {
     }
   }
 
+  // Zählung für den Fußbereich (THE-654-Nachtrag 19.08.): Was gefaltet oder
+  // gekürzt ist, wird gezählt und ausgewiesen — der Bogen meldet es selbst.
+  const eingeklappt = alleFaelle.filter((d) => textHtml(d.fullText).eingeklappt).length;
+  const recGekuerzt = alleFaelle.reduce((n, d) => n + gekuerzteRecitals(zweckJeFall.get(d.regulationKey)), 0);
+
   const md = [
     '# THE-654 — Adjudikation: hat diese Bestimmung einen Adressaten?',
     '',
@@ -975,6 +1094,22 @@ async function main(): Promise<void> {
     '',
     '**Hochrechnung:** Anteil B in der Stichprobe × ' + String(verdacht.length) + ' ≈ betroffene Bestimmungen im Korpus.',
     '',
+    '---',
+    '',
+    '## Textanzeige',
+    '',
+    `Jeder Artikel steht **vollständig** im Bogen — nichts ist still gekürzt. **${eingeklappt}** von`,
+    `${alleFaelle.length} Fällen sind länger als ${SICHTBAR} Zeichen; dort ist der Rest hinter`,
+    '„… gesamten Artikel ausklappen" gefaltet, die Restlänge steht jeweils dabei.',
+    '',
+    ...(recGekuerzt > 0
+      ? [
+          `**${recGekuerzt}** angezeigte Erwägungsgrund-Auszüge sind auf ${RECITAL_EXCERPT.toLocaleString('de-DE')} Zeichen`,
+          'gekürzt und im Text als „[gekürzt — N von M Zeichen]" ausgewiesen. Erwägungsgründe sind Kontext,',
+          'nicht Urteilsgegenstand.',
+          '',
+        ]
+      : []),
   ].join('\n');
 
   const out = resolve(__dirname, '../../../../docs/evals/the654-addressee-adjudication.md');
@@ -1005,8 +1140,13 @@ async function main(): Promise<void> {
         : 'Collection recitals leer — Feature entfällt (AC-5)'
     }`
   );
-  const markiert = sample.filter((d) => markiere(excerpt(d.fullText)).fehlend.size > 0).length;
+  const markiert = sample.filter((d) => sammleTreffer(sauber(d.fullText)).fehlend.size > 0).length;
   console.log(`  davon mit Akteur nicht im Rollenkatalog: ${markiert} von ${sample.length}`);
+  console.log(
+    `  Textanzeige       : ${eingeklappt} von ${alleFaelle.length} Fällen mit eingeklapptem Langtext (vollständig im Bogen, nichts still gekürzt)`
+  );
+  if (recGekuerzt > 0)
+    console.log(`  Erwägungsgründe   : ${recGekuerzt} angezeigte Auszüge auf ${RECITAL_EXCERPT} Zeichen gekürzt — im Text ausgewiesen`);
   console.log(`\n  → ${out}`);
   console.log(`  → ${outHtml}\n`);
   await conn.close();

@@ -1,10 +1,10 @@
-# UX-Audit-Checkliste — TheArchitect gegen die 5 Komplexitäts-Hebel
+# UX-Audit-Checkliste — TheArchitect gegen die 5 Komplexitäts-Hebel + Herkunfts-Konventionen
 
 > **Status:** Audit-Companion zu [`2026-06-21-complexity-comprehension-ux.md`](./2026-06-21-complexity-comprehension-ux.md). Konkret, screen-bezogen, abhakbar.
-> **Methode:** Jeder der 5 UI-Hebel → Checkliste gegen reale Components (Pfade relativ zu `packages/client/src`) → Status-Ampel → konkreter Fix.
+> **Methode:** Jeder der 5 UI-Hebel → Checkliste gegen reale Components (Pfade relativ zu `packages/client/src`) → Status-Ampel → konkreter Fix. §6 ergänzt sie quer: nicht „ist es verständlich?", sondern „verhält es sich erwartbar?"
 > **Ampel:** ✅ vorhanden & gut · ⚠️ teilweise / inkonsistent · ❌ fehlt · 🔵 Quick-Win
 
-**Lese-Reihenfolge:** Wenn du wenig Zeit hast, spring zu §6 (Priorisierte Top-10). Die §1–5 sind die Belege.
+**Lese-Reihenfolge:** Wenn du wenig Zeit hast, spring zu §7 (Priorisierte Top-10). Die §1–6 sind die Belege.
 
 ---
 
@@ -95,7 +95,37 @@
 
 ---
 
-## 6. Priorisierte Top-10 (Wert × Aufwand)
+## 6. 🆕 Querschnitt — Herkunfts-Konventionen (Jakobs Gesetz)
+
+> **Prüffrage:** Bringt der Nutzer diese Erwartung von **außen** mit — und beantworten wir sie? Oder haben **wir** ihm den Umweg antrainiert?
+>
+> *Ergänzt am 12.08.2026. Kein sechster Hebel des Strategy-Docs, sondern ein quer liegendes Kriterium: Die 5 Hebel fragen, ob die Oberfläche verständlich ist; dieses fragt, ob sie sich **erwartbar** verhält.*
+
+**Die Unterscheidung, die alles trägt:**
+
+| Art | Beispiel | Brechen? |
+|---|---|---|
+| **Mitgebracht** (Betriebssystem, Browser, Office, EA-Tools, 3D-Werkzeuge) | ⌘Z, Escape schließt, ⌘S speichert | **Fast nie.** Bruch bringt nichts ein und kostet Vertrauen |
+| **Antrainiert** (durch unsere eigene App) | „erst X klicken, dann drei Ebenen tiefer" | **Ja — aber es kostet.** Und der Preis steigt mit jedem Monat |
+
+Der zweite Fall ist der Grund, Vereinfachung **früh** zu machen: Umständliche Muster werden ebenso gelernt wie gute, und irgendwann verteidigen Nutzer den Umweg, den wir ihnen beigebracht haben.
+
+| # | Check | Status | Screen / Component | Befund & Fix |
+|---|---|---|---|---|
+| 6.1 | Betriebssystem-Grundkonventionen bedient (Escape schließt, Enter bestätigt, ⌘Z, Delete) | ✅ | client-weit (15× Escape, 23× Enter, ⌘Z) | Konventionskonform. Nicht anfassen. |
+| 6.2 | **Speichern-Reflex aus der Office-Welt beantwortet (⌘S)** | ❌ | — (nirgends abgefangen) | Browser öffnet „Seite speichern"; App reagiert nicht. Nutzer aus Excel/Visio drücken es reflexhaft. → **THE-695**. 🔵 |
+| 6.3 | Befehls-Palette folgt der ⌘K-Konvention (Slack/Notion/Linear/VS Code) | ⚠️ | `journey/JourneyShell.tsx:84` | Existiert **nur in /v2** — im klassischen UI passiert nichts. Dieselbe Taste, die in einer Hälfte wirkt und in der anderen nicht, ist unangenehmer als gar keine. → mitziehen in THE-663. |
+| 6.4 | 3D-Navigation folgt Werkzeug-Konventionen (Blender/Maya/CAD) | ✅ | `3d/ViewModeCamera.tsx:406` | `F` = Ansicht einpassen, korrekt inkl. Modifier-Ausschluss. Vorbildlich. |
+| 6.5 | **Herkunftswelten der Nutzer sind schriftlich festgehalten** | ❌ | — | Nirgends dokumentiert, aus welchen Werkzeugen unsere Nutzer kommen (vermutlich Excel, Visio, Confluence; bei EA-Profis LeanIX/Bizzdesign). Ohne diese Liste ist jede Konventions-Prüfung Raten. → **Fix:** Liste anlegen, dann 6.6 dagegen prüfen. |
+| 6.6 | EA-Werkzeug-Konventionen geprüft (LeanIX, Visio, ArchiMate-Notation) | ❓ | — | Ungeprüft. Wer von LeanIX migriert, bewertet uns in den ersten zehn Minuten an dem, was sich *anders* anfühlt — das ist verkaufsrelevant, nicht nur bequem. |
+| 6.7 | Streichungen unterscheiden mitgebracht vs. antrainiert | ⚠️ | THE-664-Klassifikation | Die fünf Streichungen betreffen **antrainierte** Muster (vertretbar), brauchen aber eine Übergangsphase mit sichtbarem Grund statt stiller Entfernung: „Diese Ansicht ist entfallen — was du gesucht hast, findest du hier." |
+| 6.8 | Sprache wechselt nicht mitten in der Sitzung | ❌ | Landing → Health-Score → App | Drei Sprachwechsel im Erstkontakt (Deutsch → gemischt → Englisch). Auch das ist eine gebrochene Erwartung. → UC-SAY-001 / THE-666, AK 5. |
+
+**Querschnitts-Verdikt:** Die **Basis stimmt** — Betriebssystem- und 3D-Konventionen sind sauber bedient, und `F` zeigt, dass hier jemand mitgedacht hat. Die Lücken liegen an der **Nahtstelle zur Herkunftswelt** der Nutzer: Der Office-Reflex (6.2) bleibt unbeantwortet, die Palette ist gespalten (6.3), und niemand hat je aufgeschrieben, woher unsere Nutzer eigentlich kommen (6.5) — was 6.6 unprüfbar macht. Alle drei sind billig; 6.5 ist eine halbe Stunde Nachdenken und die Voraussetzung für den Rest.
+
+---
+
+## 7. Priorisierte Top-10 (Wert × Aufwand)
 
 Sortiert nach Wert-pro-Aufwand. 🔵 = Quick-Win.
 
@@ -114,7 +144,7 @@ Sortiert nach Wert-pro-Aufwand. 🔵 = Quick-Win.
 
 ---
 
-## 7. Was schon vorbildlich ist (nicht anfassen)
+## 8. Was schon vorbildlich ist (nicht anfassen)
 
 Damit das Audit nicht nur Lücken zeigt — diese Surfaces sind Best-Practice und sollten als interner Standard gelten:
 
@@ -126,10 +156,10 @@ Damit das Audit nicht nur Lücken zeigt — diese Surfaces sind Best-Practice un
 
 ---
 
-## 8. Anwendung
+## 9. Anwendung
 
 - **Als Gate für neue UX-UCs:** Jeder neue Screen muss die §-Prüffrage seines Hebels bestehen. Die Lakmustest-Frage aus dem Strategy-Doc (§5): *"Welchen der 5 Hebel bedient dieses Feature — und macht es einen kaputt?"*
-- **Reihenfolge:** Top-10 (§6) Rang 1–2 als nächste UX-Pause (Quick-Wins, kein Backend). Rang 3–4 nach 8-Kriterien-Scoring (`feedback_requirement_scoring`) + Pre-Flight-Check als eigenständige UCs.
+- **Reihenfolge:** Top-10 (§7) Rang 1–2 als nächste UX-Pause (Quick-Wins, kein Backend). Rang 3–4 nach 8-Kriterien-Scoring (`feedback_requirement_scoring`) + Pre-Flight-Check als eigenständige UCs.
 - **Re-Audit:** Diese Checkliste nach jedem UX-Sprint durchgehen, Ampeln aktualisieren.
 
 > **Single biggest finding:** Der wichtigste Screen — `ProjectView` — verletzt Overview-First (1.2) und Single-Altitude (2.2) gleichzeitig. Ein Nutzer landet im Maximal-Detail auf allen Flughöhen zugleich. Das ist die strukturelle Wurzel des "überfordert"-Feedbacks. Quick-Wins (Hebel 3) lindern die *Wahrnehmung*, aber die *strukturelle* Heilung ist Rang 3 + 4.
