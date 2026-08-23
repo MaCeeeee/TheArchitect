@@ -598,14 +598,22 @@ if (has('--write-baseline')) {
   process.exit(0);
 }
 
+// QUALITÄT wird bewacht (Exit 1), GRÖSSE nur angezeigt.
+// Der Unterschied ist entscheidend für ein Tor, das man nicht wegdrückt: Knoten,
+// Kanten und zyklomatische Komplexität wachsen mit jedem Feature — sie hart zu
+// bewachen hieße, jede neue Fläche zu bestrafen. Ungerader Grad und Sackgassen
+// wachsen NICHT mit der Größe: eine sauber eingebundene Fläche (rein und weiter)
+// lässt beide unverändert. Nur eine schlecht eingebundene hebt sie.
 const WATCH = [
-  ['oddDegree',   'Knoten ungeraden Grades', 'lower'],
-  ['sinks',       'Sackgassen',              'lower'],
-  ['worldLeaving','v2-Kanten, die die Welt verlassen', 'lower'],
-  ['nodes',       'Knoten',                  'lower'],
-  ['edgesSimple', 'Kanten (einfach)',        'any'],
-  ['cyclomatic',  'Zyklomatische Komplexität','lower'],
-  ['stationFidelity', 'Schnitt-Treue',       'higher'],
+  ['oddDegree',       'Knoten ungeraden Grades',           'lower'],
+  ['sinks',           'Sackgassen',                        'lower'],
+  ['worldLeaving',    'v2-Kanten, die die Welt verlassen', 'lower'],
+  ['stationFidelity', 'Schnitt-Treue',                     'higher'],
+];
+const INFO = [
+  ['nodes',       'Knoten'],
+  ['edgesSimple', 'Kanten (einfach)'],
+  ['cyclomatic',  'Zyklomatische Komplexität'],
 ];
 
 if (!has('--html')) {
@@ -681,6 +689,12 @@ if (basePath) {
     const sign = d === 0 ? '=' : d > 0 ? `+${d}` : `${d}`;
     console.log(`${bad ? '✗' : d === 0 ? ' ' : '✓'} ${label.padEnd(36)} ${String(was).padStart(4)} → ${String(now).padStart(4)}  ${sign}`);
   }
+  for (const [key, label] of INFO) {
+    const was = base.metrics?.[key], now = m[key];
+    if (was == null) continue;
+    const d = now - was;
+    console.log(`· ${label.padEnd(36)} ${String(was).padStart(4)} → ${String(now).padStart(4)}  ${d === 0 ? '=' : d > 0 ? `+${d}` : d}   ${d === 0 ? '' : 'wächst mit dem Produkt — kein Tor'}`);
+  }
   for (const id in (base.mission || {})) {
     const was = base.mission[id], now = missionResults[id]; if (!now) continue;
     for (const [k, label, dir] of [['direct', `Mission „${id}": Inhalt führt weiter`, 'higher'], ['menuOnly', `Mission „${id}": nur über Menü`, 'lower'], ['detour', `Mission „${id}": Umwegsumme`, 'lower'], ['noPlace', `Mission „${id}": Schritte ohne Ort`, 'lower']]) {
@@ -688,7 +702,19 @@ if (basePath) {
       console.log(`${bad ? '✗' : d === 0 ? ' ' : '✓'} ${label.padEnd(36)} ${String(was[k]).padStart(4)} → ${String(now[k]).padStart(4)}  ${d === 0 ? '=' : d > 0 ? `+${d}` : d}`);
     }
   }
-  if (worse) { console.log(`\n${worse} Kennzahl(en) verschlechtert — Wächter-Zeile aus THE-663 verletzt.`); process.exit(1); }
-  console.log(`\nKeine Kennzahl verschlechtert.`);
+  if (worse) {
+    console.log(`\n${worse} Qualitäts-Kennzahl(en) verschlechtert — Wächter-Zeile aus THE-663 verletzt.\n`);
+    console.log(`Was jetzt zu tun ist:`);
+    console.log(`  • Unbeabsichtigt? Dann ist eine Fläche ohne Weiterweg entstanden oder ein Inhalt`);
+    console.log(`    springt aus der Welt. \`npm run nav:graph\` zeigt, welche — die Sackgassen-Liste`);
+    console.log(`    und die Mission-Übersicht benennen die Stelle.`);
+    console.log(`  • Beabsichtigt und begründet? Dann die Baseline bewusst nachziehen:`);
+    console.log(`      npm run nav:graph -- --write-baseline`);
+    console.log(`      git add docs/strategy/nav-graph-baseline.json`);
+    console.log(`    Die Begründung gehört in die Commit-Nachricht — eine stillschweigend`);
+    console.log(`    angehobene Baseline ist dasselbe wie ein weggedrücktes rotes Tor.`);
+    process.exit(1);
+  }
+  console.log(`\nKeine Qualitäts-Kennzahl verschlechtert.`);
 }
 console.log('');

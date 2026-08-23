@@ -47,3 +47,10 @@ jobs:
       # man routinemäßig wegdrückt, ist keins.
       - name: Tore fahren
         run: npm run gate
+
+      # Billigstes Tor (~0,2 s), deshalb zuletzt: es misst nicht Code, sondern
+      # Bedienung — Sackgassen, Weltwechsel, den Mission-gegen-Space-Abgleich.
+      # Waechst der Graph nur (neue Route), bleibt es gruen; verschlechtert sich
+      # die Qualitaet, wird es rot und sagt, was zu tun ist. THE-696 / THE-663.
+      - name: Navigationsgraph gegen die Baseline
+        run: npm run nav:check

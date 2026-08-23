@@ -21,6 +21,15 @@ COPY packages/client/ packages/client/
 # werden nicht gebaut und landen nicht im Production-Image.
 COPY e2e/ e2e/
 
+# Fuer das Navigationsgraph-Tor (THE-696): das Skript liest `packages/client/src`
+# (oben schon da) und vergleicht gegen zwei mitgelieferte Daten — die Baseline und
+# den Mission-Graph. Fehlt der Mission-Graph, ueberspringt das Skript den Mission-
+# Teil stillschweigend: dann waeren genau die Kennzahlen unbewacht, wegen derer das
+# Tor existiert. Bewusst einzelne Dateien statt `scripts/` und `docs/` — der Rest
+# gehoert nicht in den Build-Kontext. Landet nicht im Production-Image.
+COPY scripts/nav-graph.mjs scripts/
+COPY docs/strategy/nav-graph-baseline.json docs/strategy/mission-graph.json docs/strategy/
+
 # Build shared (force to ignore any stale tsbuildinfo), copy to node_modules, then server + client
 ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
@@ -49,6 +58,23 @@ RUN npm run --workspace=packages/shared build \
 # Eigene Schicht, damit der Fehlschlag im Build-Log fuer sich steht.
 # Was die Tore pruefen: docs/evals/reqtrace-release-gates.md
 RUN cd /app/packages/server && npm run gate
+
+# ── TOR: NAVIGATIONSGRAPH (THE-696, Waechter-Zeile aus THE-663) ──────────────
+#
+# Zuletzt, weil es das billigste Tor ist (~0,2 s, kein Compile, kein Netz) und
+# ein Fehlschlag hier eine Aussage ueber die BEDIENUNG macht, nicht ueber Code:
+# eine Flaeche ohne Weiterweg ist entstanden, ein Inhalt springt aus der Welt,
+# oder ein Schritt der Nutzer-Aufgabenkette hat seinen Ort verloren.
+#
+# Bewacht werden nur QUALITAETS-Kennzahlen (ungerader Grad, Sackgassen,
+# Weltwechsel, Schnitt-Treue, Mission-Abgleich). Groesse — Knoten, Kanten,
+# zyklomatische Komplexitaet — waechst mit jedem Feature und wird nur angezeigt.
+# Ein Tor, das jede neue Flaeche bestraft, wird weggedrueckt und ist dann keins.
+#
+# Rot und die Aenderung war gewollt? `npm run nav:graph -- --write-baseline`,
+# Baseline committen, Begruendung in die Commit-Nachricht. Das Skript sagt es
+# im Fehlerfall selbst.
+RUN node scripts/nav-graph.mjs --baseline docs/strategy/nav-graph-baseline.json
 
 # Stage 2: Production
 FROM node:22-alpine AS production
