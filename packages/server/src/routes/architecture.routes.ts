@@ -1269,7 +1269,11 @@ router.post(
             name: el.name,
             description: el.description || '',
             layer: el.layer,
-            togafDomain: el.togafDomain,
+            // Ohne Fallback bleibt der Parameter bei fehlendem Feld undefined; der
+            // Neo4j-Treiber laesst ihn dann weg und die Query bricht mit
+            // ParameterMissing ab -> 500 mitten im Import, halber Bestand bleibt.
+            // Jedes andere optionale Feld hier hat aus demselben Grund einen.
+            togafDomain: el.togafDomain || '',
             maturityLevel: el.maturityLevel || 3,
             riskLevel: el.riskLevel || 'low',
             status: el.status || 'current',
@@ -1344,7 +1348,11 @@ router.post(
             name: el.name,
             description: el.description || '',
             layer: el.layer,
-            togafDomain: el.togafDomain,
+            // Ohne Fallback bleibt der Parameter bei fehlendem Feld undefined; der
+            // Neo4j-Treiber laesst ihn dann weg und die Query bricht mit
+            // ParameterMissing ab -> 500 mitten im Import, halber Bestand bleibt.
+            // Jedes andere optionale Feld hier hat aus demselben Grund einen.
+            togafDomain: el.togafDomain || '',
             maturityLevel: el.maturityLevel || 3,
             riskLevel: el.riskLevel || 'low',
             status: el.status || 'current',
@@ -1365,6 +1373,10 @@ router.post(
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
+            // Wie beim CSV-Import: die Query bindet $projectId zweimal. Der
+            // BPMN-Import daneben hat den Wert, dieser hier hatte ihn nie —
+            // jede n8n-Einspielung mit Verbindungen endete als 500.
+            projectId,
             connectionId,
             type: conn.type || 'data_flow',
             label: conn.label || '',
@@ -1450,7 +1462,11 @@ router.post(
             name: el.name,
             description: el.description || '',
             layer: el.layer,
-            togafDomain: el.togafDomain,
+            // Ohne Fallback bleibt der Parameter bei fehlendem Feld undefined; der
+            // Neo4j-Treiber laesst ihn dann weg und die Query bricht mit
+            // ParameterMissing ab -> 500 mitten im Import, halber Bestand bleibt.
+            // Jedes andere optionale Feld hier hat aus demselben Grund einen.
+            togafDomain: el.togafDomain || '',
             maturityLevel: el.maturityLevel || 3,
             riskLevel: el.riskLevel || 'low',
             status: el.status || 'current',
@@ -1471,6 +1487,10 @@ router.post(
           {
             sourceId: conn.sourceId,
             targetId: conn.targetId,
+            // Die Query oben bindet $projectId zweimal — ohne diesen Wert wirft Neo4j
+            // ParameterMissing, der Import endet als 500, und die Elemente aus der
+            // Schleife davor bleiben als halber Bestand zurueck (B-020, auf Prod belegt).
+            projectId,
             connectionId,
             type: conn.type || 'association',
             label: conn.label || '',
