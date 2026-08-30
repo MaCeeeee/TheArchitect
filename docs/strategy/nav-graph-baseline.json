@@ -381,6 +381,14 @@
       "menuOnly": 0,
       "unreachable": 0,
       "transitions": 5
+    },
+    "bewertung": {
+      "direct": 0,
+      "detour": 0,
+      "noPlace": 0,
+      "menuOnly": 6,
+      "unreachable": 0,
+      "transitions": 6
     }
   }
 }
