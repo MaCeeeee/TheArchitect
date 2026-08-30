@@ -183,7 +183,7 @@
       "id": "capability",
       "name": "Die Fähigkeit — was müssen wir können, und wo investieren wir?",
       "source": "TOGAF Series Guide G233 Business Capability Planning (April 2023); ArchiMate-Strategy-Domain. ACHTUNG Herkunft: Die oft zitierte Frage „Welche Capabilities brauche ich um das Gesetz zu erfüllen und welche Prozesse?“ steht in docs/pitch-sprint-tag6-progress.md:118 ausdrücklich als „vom Nutzer antizipiert“ — sie ist KEINE Kundenaussage. Echter Kundenbeleg ist allein die BSH-Anfrage vom 05.08.2026, beantwortet mit einem von Hand gebauten Fähigkeitsmodell außerhalb des Produkts: docs/customer/bsh-betroffenheit-capability.model.json",
-      "note": "Das Vokabular ist vollständig da (capability, value_stream, resource, course_of_action, outcome im Typraum). Was fehlt, ist die PLANUNGSSCHICHT darüber — G233 §6/§7: Katalog, Instanzen, Bewertung, Inkremente.",
+      "note": "Das Vokabular ist vollständig da (capability, value_stream, resource, course_of_action, outcome im Typraum). Was fehlt, ist die PLANUNGSSCHICHT darüber — G233 §6/§7: Katalog, Instanzen, Bewertung, Inkremente. ENTSCHIEDEN 30.08.2026 (THE-711): Die volle G233-Schicht wird NICHT gebaut — ihre tragende Prämisse war eine antizipierte, keine gestellte Kundenfrage. Gebaut wird Option B, die schmale Norm→Fähigkeit-Landkarte, nach THE-471. Die vier „ohne Ort“-Schritte bleiben bewusst offen und sind der Re-Trigger.",
       "steps": [
         {
           "id": "wertstrom",
