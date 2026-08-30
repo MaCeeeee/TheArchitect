@@ -74,11 +74,35 @@ Ein Entscheidungs-Ticket braucht **Positiv- und Negativ-Kontrolle** in der Defin
 - **Rückholbarkeit ist die wichtigste Spalte.** Was sich billig revidieren lässt, darf schnell entschieden werden; was sich nicht zurückholen lässt, verdient die lange Prüfung. Ohne diese Spalte bekommt jede Frage dieselbe Gründlichkeit — die teuren zu wenig, die billigen zu viel.
 - Bei einer reinen **Messfrage** sind die Optionen die möglichen Ausgänge: was geschieht, wenn die Prämisse hält — und was, wenn sie fällt. Auch das steht **vor** der Messung im Ticket, sonst wird das Ergebnis hinterher passend gedeutet.
 
+**Pflichtblock „Folgen je Option".** Die Tabelle sagt, *wie eine Option beschaffen ist* — nicht, *was am Montag danach zu tun wäre*. Beides ist nicht dasselbe, und entschieden wird auf dem Zweiten: Optionen werden nicht nach ihrer Beschreibung verglichen, sondern nach ihrer Folgelast. Deshalb bekommt **jede** Option — auch „nichts tun" — drei Zeilen:
+
+```
+**Wenn <Option> gewinnt:**
+- Sofort: welche Tickets entstehen, welche Dateien/ADRs sich ändern, was zuerst läuft
+- Entblockt / entfällt: was danach laufen kann — und was damit gestrichen ist
+- Neue Pflicht: was wir uns dauerhaft ans Bein binden (Pflege, Migration, Betrieb, Nachweis)
+```
+
+- **Für alle Optionen, nicht nur die favorisierte.** Die Folgen nur für den Favoriten auszuschreiben, macht das Ticket zu einer Empfehlung im Kostüm einer Entscheidung: Der Leser kann nicht vergleichen, weil er nur eine Seite der Rechnung sieht. *Präzedenz: THE-706 hatte drei Optionen und nur „Konsequenzen bei B" — der Entscheid fiel am Ende gegen B, und die Folgen der gewählten Option standen nirgends.*
+- Die Folgen der verworfenen Optionen bleiben beim Schließen **stehen**. Sie sind der Preis, den man nicht bezahlt hat — und beim Re-Trigger genau die Liste, die man wieder braucht.
+- Widerspricht sich die Folgelast zweier Tickets (Option X hier verbaut Option Y dort), gehört das in **beide** — das sind die Kopplungen, die man sonst erst beim Bauen findet.
+
+**Pflichtzeile „Zielwirkung".** Eine Entscheidung ist immer *für* ein Ziel. Jede Option benennt, auf welche der obersten Ziele (`docs/strategy/ziele.md`, G1–G6) sie einzahlt und welche sie kostet — **nur die Nicht-Neutralen**, je ein halber Satz:
+
+```
+Zielwirkung: ↑G1 (…) · ↓G4 (…)
+```
+
+- **Keine gewichtete Summe** — die Zeile benennt den Trade-off („welches Ziel gewinnt über welches"), sie rechnet keinen Sieger aus. Entschieden wird von Menschen.
+- Opfern Entscheidungen wiederholt dasselbe Ziel, gehört der Befund auf die Betting Table: Ziel streichen oder Kurs korrigieren — nur stilles Weiteropfern ist keine Option.
+- *Präzedenz: THE-706 war real ein Ziel-Trade-off (Identität über Dichte, Preis: Solo-Betreibbarkeit via THE-503) — stand aber nirgends in dieser Sprache.*
+
 **So schließt es** — als Blockzitat oben im Ticket, damit es beim Öffnen sofort sichtbar ist:
 
 > **ENTSCHIEDEN am TT.MM.JJJJ: Option B.** Beleg: Link auf Messung, Eval oder Doku.
 > **Verworfen:** A, weil … — *kommt zurück, wenn <Bedingung>*. C, weil … — endgültig.
 > **Preis:** was wir uns mit B einhandeln, offen benannt.
+> **Zielwirkung:** stärkt G_, kostet G_ — bewusst. (`docs/strategy/ziele.md`)
 
 Eine verworfene Option ist selten tot — sie hat meist eine Bedingung, unter der sie zurückkommt. Diese Bedingung **ist** das Re-Trigger des Loop-Kontrakts (Stufe 6): wird sie am Bau-Ticket gebraucht, wandert sie dorthin. *Präzedenz: THE-403 verwarf Self-Host auf Kostenbasis, THE-402 trägt seither den Re-Trigger bei ≥ 3.000 Seiten/Monat.*
 
@@ -146,6 +170,8 @@ Erst danach `writing-plans` (Plan + RVTM), erst danach `subagent-driven-developm
 - **Nie** Stufe 1/2 überspringen, weil „das kenne ich doch" — genau dort sitzen die Dubletten und die schon gebauten Teile.
 - **Nie** einen Alt-Score ungeprüft übernehmen.
 - **Nie** eine Entscheidung schließen, ohne zu benennen, was damit verworfen ist, was es kostet und ob es sich zurückholen lässt.
+- **Nie** die Folgen nur für die favorisierte Option ausschreiben — ohne die Folgelast *jeder* Option ist das Ticket eine Empfehlung im Kostüm einer Entscheidung.
+- **Nie** eine Entscheidung schließen, ohne ihre **Zielwirkung** zu benennen — welches oberste Ziel sie stärkt und welches sie bewusst kostet (`docs/strategy/ziele.md`).
 - **Nie** mit der Implementierung beginnen, bevor der Nutzer den Plan freigegeben hat.
 - **Nie** ein Done melden, das nur Aktivität benennt („deployed", „gemerged") — Done nennt die gemessene Wirkung oder die E2E-Evidenz.
 - **Nie** das Loop-Budget stillschweigend überziehen — Eskalation mit Befund ist der vorgesehene Ausgang, kein Versagen.

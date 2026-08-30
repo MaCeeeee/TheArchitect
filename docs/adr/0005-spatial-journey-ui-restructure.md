@@ -1,6 +1,6 @@
 # ADR-0005: Frontend als eine persistente 3D-Welt mit ADM-Rückgrat
 
-- **Status:** Accepted
+- **Status:** Accepted — **reaffirmed 2026-08-29** (THE-706: 2D-Arbeitsflächen-Alternative explizit geprüft und verworfen; 3D bleibt die primäre Arbeitsfläche. Konsequenz: THE-503 (Perf-Pass) und Lock 7 (semantisches LOD) sind Voraussetzungen, keine Kür.)
 - **Datum:** 2026-07-15
 - **Entscheider:** Matthias Ganzmann (Enterprise Architect)
 - **Baut auf:** ADR-0003 (Conformance-IA) · [[strategy_complexity_comprehension_ux]] · [[strategy_trust_spine]] · [[feedback_ux_simplicity]] · Storyboard-Artifact „Journey — Eine Welt, sechs Akte"
