@@ -101,8 +101,12 @@ async function vorbedingungen(pid) {
   }
 
   // Korpus mit Volltext: ohne ihn haben die Fragen 2, 3 und 5 keinen Gegenstand.
-  const norms = await call('GET', `/api/projects/${pid}/norms`, null, { quiet: true });
-  const list = norms.data?.data ?? norms.data ?? [];
+  // Gefragt wird die Bindungsprüfung, nicht `/norms` — letztere führt nur die dem
+  // PROJEKT zugeordneten Normen, und ein frisches Projekt hat keine. Der Korpus
+  // ist global; ihn am Projekt zu messen wäre die falsche Frage.
+  const la = await call('GET', `/api/projects/${pid}/norms/legal-applicability`, null, { quiet: true });
+  const laData = la.data?.data ?? la.data ?? {};
+  const list = laData.laws ?? (Array.isArray(laData) ? laData : []);
   if (!Array.isArray(list) || list.length === 0) {
     fehlt.push({
       was: 'Gesetzes-Korpus mit Volltext',
@@ -148,8 +152,17 @@ async function ruesten() {
 }
 
 /** Ein Modell, das eine Anwendbarkeitsprüfung überhaupt beurteilen kann:
- *  personenbezogene Daten + ein kundenbezogener Prozess. */
+ *  personenbezogene Daten + ein kundenbezogener Prozess. Dazu das Rechtsprofil —
+ *  ohne es kann die Bindungsprüfung nichts sagen, und ein Lauf ohne Profil misst
+ *  nur, dass er kein Profil gesetzt hat. */
 async function modellAnlegen(projectId) {
+  await call('PUT', `/api/projects/${projectId}`, {
+    legalProfile: {
+      addresseeClasses: ['controller', 'financial_entity'],
+      jurisdictions: ['EU', 'DE'],
+      sectors: ['banking'],
+    },
+  }, { quiet: true });
   await call('POST', `/api/projects/${projectId}/import/csv`, {
     elements: [
       { id: 'd-crm', name: 'CRM System', type: 'application_component', layer: 'application', description: 'Verwaltet personenbezogene Kundendaten' },
@@ -174,38 +187,49 @@ async function frage1(pid) {
     rule.ok ? `${(rule.data?.data?.length ?? rule.data?.length ?? 0)} Urteile` : `HTTP ${rule.status}`);
 
   const legal = await call('GET', `/api/projects/${pid}/norms/legal-applicability`);
-  const rows = legal.data?.data ?? legal.data ?? [];
+  const ld = legal.data?.data ?? legal.data ?? {};
+  const rows = ld.laws ?? (Array.isArray(ld) ? ld : []);
   const states = Array.isArray(rows)
     ? rows.reduce((a, r) => ((a[r.state] = (a[r.state] || 0) + 1), a), {})
     : {};
   f.schritt('Bindung je Gesetz (vier Zustände)',
     legal.ok ? ART.MASCHINE : ART.BRUCH,
-    legal.ok ? Object.entries(states).map(([k, v]) => `${k}:${v}`).join(' · ') || 'keine Zeilen' : `HTTP ${legal.status}`);
+    legal.ok ? `${rows.length} Gesetze · ` + (Object.entries(states).map(([k, v]) => `${k}:${v}`).join(' · ') || 'keine Zeilen') : `HTTP ${legal.status}`);
 
   f.schritt('Rechtsprofil setzen (Rollen, Sektor, Jurisdiktion)', ART.HAND,
-    'nur der Mensch weiß, wer das Unternehmen ist — einmalig, nicht je Gesetz');
+    ld.profilePresent
+      ? 'gesetzt — nur der Mensch weiß, wer das Unternehmen ist; einmalig, nicht je Gesetz'
+      : 'FEHLT — ohne Profil ist jedes Urteil „undetermined", und das ist die ehrliche Antwort');
 
   f.zaehle(before);
-  return rows;
+  return Array.isArray(rows) ? rows.filter((r) => r.state === 'applicable') : [];
 }
 
-async function frage2(pid) {
+async function frage2(pid, bindend) {
   const f = frage(2, 'Was steht drin?');
   const before = log.length;
 
-  const norms = await call('GET', `/api/projects/${pid}/norms`);
-  const list = norms.data?.data ?? norms.data ?? [];
-  f.schritt('Korpus-Gesetze auflisten', norms.ok ? ART.MASCHINE : ART.BRUCH,
-    norms.ok ? `${Array.isArray(list) ? list.length : '?'} Gesetze verfügbar` : `HTTP ${norms.status}`);
+  f.schritt('Bindende Gesetze aus Frage 1 übernehmen', ART.MASCHINE,
+    `${bindend.length} Gesetze binden uns`);
 
-  f.schritt('Gesetz wählen', ART.HAND, `hier gesetzt: ${LAW}`);
+  // Welches Gesetz — das ist die Entscheidung. Hier: das erste bindende, damit
+  // der Lauf ohne Zutun weiterläuft; im Produkt wählt der Mensch.
+  const ziel = bindend[0];
+  const workId = ziel ? `corpus:${ziel.law}` : LAW;
+  const eId = ziel?.bindingProvisionEIds?.[0];
+  f.schritt('Gesetz wählen', ART.HAND, `gewählt: ${workId}${eId ? ` · Artikel ${eId}` : ''}`);
 
-  const sec = await call('GET', `/api/projects/${pid}/norms/${encodeURIComponent(LAW)}/sections/${encodeURIComponent('dsgvo:Art. 32')}`);
+  if (!eId) {
+    f.schritt('Artikel-Volltext holen', ART.FOLGE, 'kein bindender Artikel aus Frage 1');
+    f.zaehle(before);
+    return null;
+  }
+  const sec = await call('GET', `/api/projects/${pid}/norms/${encodeURIComponent(workId)}/sections/${encodeURIComponent(eId)}`);
   f.schritt('Artikel-Volltext holen', sec.ok ? ART.MASCHINE : ART.BRUCH,
-    sec.ok ? `${(sec.data?.data?.text || '').length} Zeichen` : `HTTP ${sec.status}`);
+    sec.ok ? `${(sec.data?.data?.text || '').length} Zeichen aus ${eId}` : `HTTP ${sec.status}`);
 
   f.zaehle(before);
-  return sec.data?.data;
+  return sec.ok ? { ...sec.data?.data, workId, eId } : null;
 }
 
 async function frage3(pid, section) {
@@ -214,8 +238,15 @@ async function frage3(pid, section) {
 
   f.schritt('Artikel wählen', ART.HAND, 'welcher Artikel gilt uns — Art. 1 wäre Gegenstand und Ziele');
 
+  if (!section?.text) {
+    f.schritt('Anforderungen erzeugen (Vorschau, kein Schreiben)', ART.FOLGE, 'kein Artikeltext aus Frage 2');
+    f.schritt('Vorschläge prüfen und übernehmen', ART.HAND, 'Asilomar #16: die Maschine schlägt vor, der Mensch entscheidet');
+    f.schritt('Übernommene Anforderungen schreiben', ART.FOLGE, 'nichts zu übernehmen');
+    f.zaehle(before);
+    return [];
+  }
   const gen = await call('POST', `/api/projects/${pid}/requirements/generate`, {
-    source: LAW.replace('corpus:', ''),
+    source: (section.workId || LAW).replace('corpus:', ''),
     paragraphNumber: section?.number || 'Art. 32',
     text: section?.text || '',
     language: 'de',
@@ -234,10 +265,20 @@ async function frage3(pid, section) {
   if (!gen.ok) {
     f.schritt('Übernommene Anforderungen schreiben', ART.FOLGE, 'Erzeugen hat nichts geliefert');
   } else if (items.length) {
+    // Schema (ConfirmBodySchema): normId + sourceParagraph (≥20 Zeichen) + die
+    // vier Pflichtfelder je Anforderung. Nur diese durchreichen — der Preview
+    // trägt mehr Felder, und ein unbekanntes Feld wäre ein stiller 400.
     const conf = await call('POST', `/api/projects/${pid}/requirements`, {
-      source: LAW.replace('corpus:', ''),
-      paragraphNumber: section?.number || 'Art. 32',
-      requirements: items.map((r) => ({ ...r })),
+      normId: section.workId,
+      sectionEId: section.eId,
+      sourceParagraph: String(section.text).slice(0, 5000),
+      requirements: items.map((r) => ({
+        title: String(r.title || '').slice(0, 200),
+        description: String(r.description || '').slice(0, 2000),
+        priority: ['must', 'should', 'may'].includes(r.priority) ? r.priority : 'should',
+        linkedElementIds: Array.isArray(r.linkedElementIds) ? r.linkedElementIds : [],
+        ...(r.chain ? { chain: r.chain } : {}),
+      })),
     });
     saved = conf.data?.data ?? [];
     f.schritt('Übernommene Anforderungen schreiben',
@@ -278,18 +319,22 @@ async function frage5(pid, saved) {
     f.schritt('Nachweis anhängen', ART.FOLGE, 'keine gespeicherte Anforderung aus Frage 3');
     f.schritt('Tor setzen (Attest)', ART.FOLGE, 'dito');
   } else {
+    // EvidenceBodySchema: kind, ref, sha256 (64 hex). Nur der Fingerabdruck
+    // reist — die Datei bleibt beim Kunden (THE-585).
     const ev = await call('POST', `/api/projects/${pid}/requirements/${reqId}/evidence`, {
-      kind: 'document', label: 'Durchstich-Nachweis',
-      sha256: 'a'.repeat(64), note: 'Nur Fingerabdruck — die Datei bleibt beim Kunden',
+      kind: 'document',
+      ref: 'Durchstich-Nachweis (Testlauf, keine echte Datei)',
+      sha256: 'a'.repeat(64),
     });
     f.schritt('Nachweis anhängen (nur Hash)', ev.ok ? ART.MASCHINE : ART.BRUCH,
       ev.ok ? 'angehängt' : `HTTP ${ev.status} — ${JSON.stringify(ev.data).slice(0, 120)}`);
 
+    // GateBodySchema: gate, state, reason — ein Tor ohne Begründung gibt es nicht.
     const gate = await call('POST', `/api/projects/${pid}/requirements/${reqId}/gates`, {
-      gate: 'attested', value: true, rationale: 'Durchstich — nicht fachlich geprüft',
+      gate: 'attested', state: 'yes', reason: 'Durchstich-Testlauf — fachlich NICHT geprüft',
     });
     f.schritt('Tor setzen (Attest)', ART.HAND,
-      gate.ok ? 'gesetzt — und das MUSS ein Mensch tun' : `HTTP ${gate.status}`);
+      gate.ok ? 'gesetzt — und das MUSS ein Mensch tun, mit Begründung' : `HTTP ${gate.status} — ${JSON.stringify(gate.data).slice(0, 100)}`);
   }
 
   const bundle = await call('GET', `/api/projects/${pid}/requirements/audit-bundle?format=json`);
@@ -362,8 +407,8 @@ function bericht() {
       console.log('  --trotzdem gesetzt: der Lauf geht weiter.\n');
     }
 
-    const applicable = await frage1(pid);
-    const section = await frage2(pid);
+    const bindend = await frage1(pid);
+    const section = await frage2(pid, bindend);
     const saved = await frage3(pid, section);
     await frage4(pid);
     await frage5(pid, saved);
@@ -374,7 +419,7 @@ function bericht() {
       bericht();
       console.log(`  Testprojekt: ${pid}${has('--keep') ? ' (behalten)' : ' (wird gelöscht)'}\n`);
     }
-    void applicable;
+    void bindend;
   } catch (err) {
     console.error(`\n  ABBRUCH: ${err.message}`);
     console.error(`  Bis hierhin protokolliert: ${log.length} Aufrufe.\n`);
