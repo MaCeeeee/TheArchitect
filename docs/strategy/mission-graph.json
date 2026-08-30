@@ -182,7 +182,7 @@
     {
       "id": "capability",
       "name": "Die Fähigkeit — was müssen wir können, und wo investieren wir?",
-      "source": "TOGAF Series Guide G233 Business Capability Planning (April 2023); BSH-Frage 16.04.2026 „Welche Capabilities brauche ich um das Gesetz zu erfüllen und welche Prozesse?“; ArchiMate-Strategy-Domain",
+      "source": "TOGAF Series Guide G233 Business Capability Planning (April 2023); ArchiMate-Strategy-Domain. ACHTUNG Herkunft: Die oft zitierte Frage „Welche Capabilities brauche ich um das Gesetz zu erfüllen und welche Prozesse?“ steht in docs/pitch-sprint-tag6-progress.md:118 ausdrücklich als „vom Nutzer antizipiert“ — sie ist KEINE Kundenaussage. Echter Kundenbeleg ist allein die BSH-Anfrage vom 05.08.2026, beantwortet mit einem von Hand gebauten Fähigkeitsmodell außerhalb des Produkts: docs/customer/bsh-betroffenheit-capability.model.json",
       "note": "Das Vokabular ist vollständig da (capability, value_stream, resource, course_of_action, outcome im Typraum). Was fehlt, ist die PLANUNGSSCHICHT darüber — G233 §6/§7: Katalog, Instanzen, Bewertung, Inkremente.",
       "steps": [
         {
@@ -207,7 +207,7 @@
           "surfaces": [
             "modal:capability-katalog"
           ],
-          "note": "G233 §6.2 verlangt einen Business Capability Catalog mit Definitionen. Kein Ort — Capabilities existieren nur verstreut als Elemente"
+          "note": "G233 §6.2 verlangt einen Business Capability Catalog mit Definitionen. Kein Ort — Capabilities existieren nur verstreut als Elemente. Vorhanden ist die Vorlage `capability-map` in shared/constants/pattern-templates.ts:102-112 (legt Wertstrom + 3-stufige Hierarchie an) — eine Anlege-Hilfe, kein Katalog."
         },
         {
           "id": "instanz",
@@ -215,7 +215,7 @@
           "surfaces": [
             "/project/:id"
           ],
-          "note": "G233 §6.4: Capability Instance = Capability + Rollen + Anwendungen + Objekte + Prozesse. Im Modell abbildbar, aber ohne Fläche, die sie als Einheit zeigt"
+          "note": "G233 §6.4: Capability Instance = Capability + Rollen + Anwendungen + Objekte + Prozesse. Im Modell abbildbar, aber ohne Fläche, die sie als Einheit zeigt. Die Ist/Soll-Achse dafür existiert bereits im Typraum: ElementStatus = current|target|transitional|retired (shared/types/architecture.types.ts:14), ebenso maturityLevel (:149)."
         },
         {
           "id": "bewertung",
@@ -223,7 +223,7 @@
           "surfaces": [
             "modal:capability-bewertung"
           ],
-          "note": "G233 §7.1 — die vier Handlungsoptionen je Instanz. Kein Ort. Die Redundanz-Erkennung liefert das Rohmaterial für „consolidate“, verbindet es aber nicht mit Capabilities"
+          "note": "G233 §7.1 — die vier Handlungsoptionen je Instanz (optimieren, zusammenlegen, neu schaffen, abschaffen). Kein Ort für DIESE Frage. Teil-Vorhandenes, das nicht verwechselt werden darf: die Capability-Maturity-Heatmap in components/togaf/BusinessArchitecture.tsx:45-70 (Sidebar → Architect → Framework → Business) zeigt Reifegrade, nicht Handlungsoptionen; die Redundanz-Erkennung liefert Rohmaterial für „zusammenlegen“, verbindet es aber nicht mit Capabilities."
         },
         {
           "id": "inkrement",
