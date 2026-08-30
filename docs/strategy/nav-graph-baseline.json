@@ -389,6 +389,14 @@
       "menuOnly": 6,
       "unreachable": 0,
       "transitions": 6
+    },
+    "capability": {
+      "direct": 1,
+      "detour": 0,
+      "noPlace": 4,
+      "menuOnly": 0,
+      "unreachable": 0,
+      "transitions": 5
     }
   }
 }

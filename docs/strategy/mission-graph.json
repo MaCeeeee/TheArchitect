@@ -178,6 +178,63 @@
           "note": "CIO/CFO-View; die Entscheidung selbst hat keine eigene Fläche"
         }
       ]
+    },
+    {
+      "id": "capability",
+      "name": "Die Fähigkeit — was müssen wir können, und wo investieren wir?",
+      "source": "TOGAF Series Guide G233 Business Capability Planning (April 2023); BSH-Frage 16.04.2026 „Welche Capabilities brauche ich um das Gesetz zu erfüllen und welche Prozesse?“; ArchiMate-Strategy-Domain",
+      "note": "Das Vokabular ist vollständig da (capability, value_stream, resource, course_of_action, outcome im Typraum). Was fehlt, ist die PLANUNGSSCHICHT darüber — G233 §6/§7: Katalog, Instanzen, Bewertung, Inkremente.",
+      "steps": [
+        {
+          "id": "wertstrom",
+          "frage": "Wie entsteht Wert für den Kunden — in welchen Stufen?",
+          "surfaces": [
+            "/project/:id"
+          ],
+          "note": "value_stream ist ein Elementtyp in der Welt; einen Wertstrom-Editor mit Stufen, Ein-/Ausgangskriterien (G233 §5.1.2) gibt es nicht"
+        },
+        {
+          "id": "zuordnung",
+          "frage": "Welche Fähigkeit trägt welche Stufe?",
+          "surfaces": [
+            "/project/:id"
+          ],
+          "note": "als Beziehung in der 3D-Welt modellierbar; die Kreuztabelle Stufe × Capability (G233 §6.3) fehlt"
+        },
+        {
+          "id": "katalog",
+          "frage": "Welche Fähigkeiten haben wir überhaupt — mit Definition?",
+          "surfaces": [
+            "modal:capability-katalog"
+          ],
+          "note": "G233 §6.2 verlangt einen Business Capability Catalog mit Definitionen. Kein Ort — Capabilities existieren nur verstreut als Elemente"
+        },
+        {
+          "id": "instanz",
+          "frage": "Womit ist die Fähigkeit besetzt (Menschen, Prozesse, Anwendungen)?",
+          "surfaces": [
+            "/project/:id"
+          ],
+          "note": "G233 §6.4: Capability Instance = Capability + Rollen + Anwendungen + Objekte + Prozesse. Im Modell abbildbar, aber ohne Fläche, die sie als Einheit zeigt"
+        },
+        {
+          "id": "bewertung",
+          "frage": "Optimieren, zusammenlegen, neu schaffen oder abschaffen?",
+          "surfaces": [
+            "modal:capability-bewertung"
+          ],
+          "note": "G233 §7.1 — die vier Handlungsoptionen je Instanz. Kein Ort. Die Redundanz-Erkennung liefert das Rohmaterial für „consolidate“, verbindet es aber nicht mit Capabilities"
+        },
+        {
+          "id": "inkrement",
+          "frage": "In welchen Schritten bauen wir die Fähigkeit aus?",
+          "surfaces": [
+            "/project/:id/analyze/roadmap",
+            "/project/:id/compliance/roadmap"
+          ],
+          "note": "G233 §7.2 plant Capability-INKREMENTE; unsere Roadmap plant Element-Wellen. Der CFO fragt nach Fähigkeiten, die Roadmap antwortet mit Anwendungen"
+        }
+      ]
     }
   ]
 }
