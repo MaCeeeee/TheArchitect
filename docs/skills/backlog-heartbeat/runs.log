@@ -1,0 +1,8 @@
+2026-06-29T19:25:00Z	BACKFILL	scheduled run left no digest (silent failure); recovered manually — 3 Typ-A findings (THE-286/228/217 -> In Review), digest posted on THE-371
+2026-07-06T15:55:31Z	START
+2026-07-13T06:21:46Z	START
+2026-07-13T19:08:52Z	DONE	backlog=155	new_findings=5	posted=yes
+2026-07-20T11:28:38Z	START
+2026-07-27T16:07:37Z	START
+2026-07-27T16:12:27Z	DONE	backlog=175	new_findings=15	posted=yes
+2026-08-10T13:24:26Z	START
