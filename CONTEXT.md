@@ -152,3 +152,69 @@ one Hub, reachable from any compliance Phase, pre-scoped to the current Phase bu
 over. Division of labour: the **Hub** handles entry/scoping, the **World** shows results (where
 the gaps are), a **Matrix** Sheet holds the dense detail behind a finding.
 _Avoid_: Compliance landing, Assess page
+
+**Auftragsverarbeiter-Knoten**:
+Ein Dienstleister, der einen Dienst *trägt*, als eigenes Element statt als Merkmal —
+`business_actor` «Auftragsverarbeiter», mit Kante auf die Elemente, die er bedient. Macht die
+Lieferkette **traversierbar**, wo sie heute nur *auswertbar* ist: `ops.op` beantwortet „wird
+dieses Element fremdbetrieben?", der Knoten beantwortet „was hängt alles an *diesem* Anbieter?"
+(ADR-0011 E3). Umfasst nur ICT-Dienstleister; Materiallieferanten sind kein Subjekt (Typ/Instanz-Grenze).
+_Avoid_: Lieferant (zu weit — schließt Materiallieferanten ein), Vendor
+
+## Information Architecture (BSH-Scharnier, 2026-08-07)
+
+Die drei Ebenen stammen aus dem BSH-EAM-Wiki und decken sich mit unseren Typdefinitionen.
+Sie sind das Scharnier, an dem eine fremde Produktarchitektur andockt, ohne dass wir sie
+selbst führen.
+
+**Business Object**:
+Ein Artefakt, das Eingabe oder Ausgabe eines Geschäftsprozesses ist. Trägt Prozess-Kontext,
+keinen Eigentümer. Unser Typ: `business_object`.
+
+**Informationsobjekt**:
+Die *implementierungsfreie* Abstraktion eines oder mehrerer Business Objects, mit
+dokumentierten fachlichen Attributen aus der Nutzungssicht — ausdrücklich ohne Aussage über
+Anwendung, Programmiersprache oder Datenbank. Es hat **zwingend einen Data Owner**, der für
+seine Spezifikation einsteht, und es muss durch mindestens ein Data Object realisierbar sein.
+Beziehung zu Business Object ist **M:N**. Bei uns: `business_object` mit Profil
+**«Information Object»** (Spezialisierung, ADR-0010).
+_Nicht zu verwechseln mit_: Business Object (hat keinen Eigentümer), Data Object (ist
+system-spezifisch).
+_Avoid_: `data_entity` — abgelöst (ADR-0010).
+
+**Data Owner**:
+Die Rolle, die für die Spezifikation eines Informationsobjekts einsteht — nicht für seine
+Speicherung. Modelliert als `business_role —assignment→ business_object «Information Object»`.
+
+**Data Object**:
+Die Realisierung eines Informationsobjekts in *einer bestimmten* Anwendung (z. B. `SAP
+Material`, `Teamcenter Part Item`). Ein Informationsobjekt kann mehrere haben. Unser Typ:
+`data_object` (Application-Layer).
+
+**Reifizierte Beziehung**:
+Ein Informationsobjekt, das selbst eine Beziehung darstellt — weil die Beziehung Information
+trägt, die verwaltet werden muss. Der Ort für alles, was weder dem einen noch dem anderen
+Ende gehört: bei einer Tag-Zuordnung etwa, ob sie **direkt oder abgeleitet** ist und woraus
+sie abgeleitet wurde.
+
+**Scharnier**:
+Das Informationsobjekt als einzige Berührungsfläche zwischen Unternehmens- und
+Produktarchitektur. Begriffe und Eigentümerschaft liegen hier; die Instanzen (Stücklisten,
+Teilesätze) liegen im PLM und werden nicht übernommen.
+
+**Spezialisierung**:
+Der ArchiMate-eigene Erweiterungsmechanismus (§4.5): ein Element trägt ein Profil in
+Guillemet-Notation («Information Object») und **ist** weiterhin sein Grundtyp — jede
+Beziehungsregel und jede Auswertung des Grundtyps gilt mit. Unser einziger Weg, den Typraum zu
+erweitern; eigene und kundeneigene Grundtypen gibt es nicht (ADR-0010).
+
+**Typ/Instanz-Grenze**:
+Wir führen Informationsobjekte auf der **Typ-Ebene** — „Component" als *ein* Begriff mit
+Attributen, Eigentümer und Beziehungen. Die **Instanz-Ebene** (Teilestämme, Stücklisten — die
+400 Teile eines Kühlschranks) liegt im PLM; ihre Auswertung gegen ein Geltungsbereichs-Prädikat
+ist Zuständigkeit des Instanz-Halters, nicht TheArchitects. „Keine Stückliste" ist damit
+prüfbar: kein Element unterhalb der Typ-Ebene — außer als Probe.
+
+**Probe**:
+Eine markierte Stichprobe echter Instanzen (drei, vier Bauteile), importiert allein für eine
+Verprobung — nie synchronisiert, nie als Bestand behauptet, als Probe gekennzeichnet.

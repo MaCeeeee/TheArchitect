@@ -70,3 +70,9 @@ docs/superpowers/bsh-mirofish-demo-scenarios.pdf
 .env.e2e
 e2e-report/
 test-results/
+
+# Kundenmaterial — NIE in dieses Repo einchecken (dieses Repo ist ÖFFENTLICH).
+# Vertrauliche Geschäftskommunikation Dritter: Transkripte, Gesprächsleitfäden,
+# kundenspezifische Modelle. Versionierung erfolgt in einem separaten privaten
+# Repo (docs/customer/ ist dort ein eigenes git-Verzeichnis). Siehe THE-712.
+docs/customer/

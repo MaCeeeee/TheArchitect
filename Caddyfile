@@ -16,3 +16,10 @@ thearchitect.site, www.thearchitect.site {
 analytics.thearchitect.site {
 	reverse_proxy umami:3000
 }
+
+# Waitlist + Vertriebslog (NocoDB). DNS: waitlist.thearchitect.site -> 76.13.150.49
+# Voraussetzung: Container caddy haengt im Netz waitlist-backend_frontend
+# (runtime: docker network connect; persistent: networks-Eintrag im Compose).
+waitlist.thearchitect.site {
+	reverse_proxy waitlist-nocodb:8080
+}

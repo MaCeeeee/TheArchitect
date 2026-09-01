@@ -24,6 +24,11 @@ services:
       - caddy_config:/config
     depends_on:
       - app
+    # waitlist.thearchitect.site wird auf waitlist-nocodb:8080 geproxyt -
+    # dafuer muss caddy zusaetzlich im externen Waitlist-Netz haengen.
+    networks:
+      - default
+      - waitlist-frontend
 
   app:
     build:
@@ -199,3 +204,9 @@ services:
       umami-db:
         condition: service_healthy
     # Caddy reverse-proxies analytics.thearchitect.site -> umami:3000
+
+networks:
+  default:
+  waitlist-frontend:
+    external: true
+    name: waitlist-backend_frontend
