@@ -88,10 +88,10 @@ Expected: `Tests: N passed` (N notieren).
 - Create: `docs/evals/the597-input-typing-gv3.md` (Kopie)
 - Create: `docs/evals/the597-fehlerfall-register.md`
 
-- [ ] **Step 0: Den zitierten gv3-Lauf ins Repo kopieren** (er liegt nur lokal, gitignored):
+- [ ] **Step 0: Den zitierten gv3-Lauf ins Repo kopieren** (er liegt nur im Hauptrepo, gitignored — im frischen Worktree existiert er nicht):
 
 ```bash
-cd /Users/mac_macee/javis-the597 && cp packages/server/src/evals/reports/typing-gv3.md docs/evals/the597-input-typing-gv3.md && grep -c '^## ' docs/evals/the597-input-typing-gv3.md
+cd /Users/mac_macee/javis-the597 && cp /Users/mac_macee/javis/packages/server/src/evals/reports/typing-gv3.md docs/evals/the597-input-typing-gv3.md && grep -c '^## ' docs/evals/the597-input-typing-gv3.md
 ```
 
 Expected: eine Zahl ≥ 6 (Beobachtungskanal + fünf Achsen-Abschnitte).
