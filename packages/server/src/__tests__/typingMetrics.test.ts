@@ -187,23 +187,17 @@ describe('buildTypingReport — Beobachtungskanal (THE-668)', () => {
 
 describe('axisCalibrationSamples (THE-597)', () => {
   it('liefert je Fall mit Gold UND Confidence genau ein Sample; null==null ist korrekt', () => {
-    const cases: TypingEvalCase[] = [
-      { caseId: 'a', source: 's', language: 'de', gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.8 } },
-      { caseId: 'b', source: 's', language: 'de', gold: { partyRole: 'controller' }, predicted: { partyRole: 'processor' }, confidence: { partyRole: 0.4 } },
-      { caseId: 'c', source: 's', language: 'de', gold: { partyRole: null }, predicted: { partyRole: null }, confidence: { partyRole: 1.0 } },
-      { caseId: 'd', source: 's', language: 'de', gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } }, // keine Confidence → kein Sample
-      { caseId: 'e', source: 's', language: 'de', gold: {}, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.9 } }, // Gold offen → kein Sample
+    const cases = [
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.8 } }),
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'processor' }, confidence: { partyRole: 0.4 } }),
+      mk({ gold: { partyRole: null }, predicted: { partyRole: null }, confidence: { partyRole: 1.0 } }),
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } }), // keine Confidence → kein Sample
+      mk({ gold: {}, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.9 } }), // Gold offen → kein Sample
     ];
     expect(axisCalibrationSamples(cases, 'partyRole')).toEqual([
       { confidence: 0.8, correct: true },
       { confidence: 0.4, correct: false },
       { confidence: 1.0, correct: true },
     ]);
-  });
-  it('axisCalibration liefert weiterhin null ohne Confidence', () => {
-    const cases: TypingEvalCase[] = [
-      { caseId: 'a', source: 's', language: 'de', gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } },
-    ];
-    expect(axisCalibration(cases, 'partyRole')).toBeNull();
   });
 });

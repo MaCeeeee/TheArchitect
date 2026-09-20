@@ -54,8 +54,8 @@ describe('thresholdRoutingStats', () => {
   });
   it('Schwellen sind exklusiv: 1.0 fängt nichts, 1.01 fängt alles', () => {
     const [atOne, overOne] = thresholdRoutingStats([S(1.0, false), S(1.0, true)], [1.0, 1.01]);
-    expect(atOne).toMatchObject({ caught: 0, falseAlarms: 0 });
-    expect(overOne).toMatchObject({ caught: 1, falseAlarms: 1 });
+    expect(atOne).toMatchObject({ threshold: 1.0, caught: 0, falseAlarms: 0 });
+    expect(overOne).toMatchObject({ threshold: 1.01, caught: 1, falseAlarms: 1 });
   });
   it('Default-Schwellen sind 0.6, 0.8, 1.0', () => {
     expect(thresholdRoutingStats(samples).map((s) => s.threshold)).toEqual([0.6, 0.8, 1.0]);

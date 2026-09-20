@@ -471,6 +471,10 @@ export function leakageAwareSplit<T>(
 // benutzen (Kill-Schwelle laut Kontrakt an THE-604: ≥ 50 % Recall bei
 // ≤ 10 % Fehlalarm).
 
+/**
+ * 0 bei leerem Nenner ist eine Konvention (THE-597 R-003), keine Aussage —
+ * Aufrufer rendern bei `wrong === 0` bzw. `correct === 0` „—" statt 0 %.
+ */
 export interface RoutingStat {
   threshold: number;
   wrong: number;
@@ -479,24 +483,15 @@ export interface RoutingStat {
   caught: number;
   /** richtige Vorhersagen mit confidence < threshold (geroutet = Fehlalarm) */
   falseAlarms: number;
-  /**
-   * caught / wrong; 0 wenn wrong = 0.
-   * 0 bei leerem Nenner ist eine Konvention (spec R-003), keine Aussage —
-   * Aufrufer rendern bei `wrong === 0` bzw. `correct === 0` „—" statt 0 %.
-   */
+  /** caught / wrong; 0 wenn wrong = 0. */
   recall: number;
-  /**
-   * falseAlarms / correct; 0 wenn correct = 0.
-   * 0 bei leerem Nenner ist eine Konvention (spec R-003), keine Aussage —
-   * Aufrufer rendern bei `wrong === 0` bzw. `correct === 0` „—" statt 0 %.
-   */
+  /** falseAlarms / correct; 0 wenn correct = 0. */
   falseAlarmRate: number;
 }
 
 /**
- * Eingabe-Kontrakt: `confidence` endlich und in [0,1]; nicht-endliche Werte
- * werden nicht gefiltert (wie in expectedCalibrationError) und würden still
- * zählen ohne je geroutet zu werden.
+ * Eingabe-Kontrakt: `confidence` endlich und in [0,1]. NaN und +∞ zählen im
+ * Nenner, werden aber nie geroutet; −∞ wird immer geroutet.
  *
  * @param thresholds Schwellen sind exklusiv (`confidence < t`): 1.0 routet
  *   alles UNTER voller Konfidenz; ein „alles routen"-Punkt braucht > 1
@@ -531,9 +526,9 @@ export function thresholdRoutingStats(
  * (dann ist die Frage nicht gestellt, nicht „bestanden"). O(n·m) — für
  * Eval-Größen (≤ 10⁴ Paare) bewusst simpel statt sortiert.
  *
- * Eingabe-Kontrakt: `confidence` endlich und in [0,1]; nicht-endliche Werte
- * werden nicht gefiltert (wie in expectedCalibrationError) und würden still
- * zählen ohne je geroutet zu werden.
+ * Eingabe-Kontrakt: `confidence` endlich und in [0,1]. Ein NaN verliert
+ * jeden Vergleich (weder > noch ===), ein NaN auf der richtigen Seite
+ * drückt den AUROC also still nach unten.
  */
 export function aurocFromSamples(samples: CalibrationSample[]): number | null {
   const pos = samples.filter(s => s.correct).map(s => s.confidence);
