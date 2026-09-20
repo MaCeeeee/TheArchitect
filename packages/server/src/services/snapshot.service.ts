@@ -150,13 +150,13 @@ export const DEFAULT_ORIGIN_CHECKS: OriginChecks = {
 
 /**
  * Liest ohne zu zählen: null bei unbekannt, abgelaufen oder Zugriffs-Limit erreicht.
- * räumt einen abgelaufenen Eintrag dabei weg (einzige Nebenwirkung).
+ * Räumt einen abgelaufenen Eintrag dabei weg (einzige Nebenwirkung).
  */
 export function peekSnapshot(token: string): Snapshot | null {
   const snapshot = snapshotStore.get(token);
   if (!snapshot) return null;
   if (new Date() > snapshot.expiresAt) {
-    snapshotStore.delete(token);
+    revokeSnapshot(token);
     return null;
   }
   if (snapshot.maxAccesses > 0 && snapshot.accessCount >= snapshot.maxAccesses) return null;

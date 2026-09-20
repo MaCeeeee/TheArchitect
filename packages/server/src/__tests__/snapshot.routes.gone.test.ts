@@ -80,6 +80,7 @@ describe('GET /api/snapshots/:token (THE-655)', () => {
     const res = await request(makeApp()).get(`/api/snapshots/${token}`);
     expect(res.status).toBe(410);
     expect(res.body.error).toMatch(/account/i);
+    expect(res.body.error).toMatch(/project/i);
     expect(peekSnapshot(token)).toBeNull();
   });
 
@@ -129,6 +130,22 @@ describe('GET /api/snapshots/:token (THE-655)', () => {
     const token = await share({ maxAccesses: 1 });
     expect((await request(makeApp()).get(`/api/snapshots/${token}`)).status).toBe(200);
     expect((await request(makeApp()).get(`/api/snapshots/${token}`)).status).toBe(404);
+  });
+
+  it('410-Text ist für beide Ursachen identisch — der Link-Inhaber erfährt nicht, welcher Ursprung gelöscht wurde', async () => {
+    const token1 = await share();
+    const token2 = await share();
+
+    projectExists.mockResolvedValue(null);
+    const first = await request(makeApp()).get(`/api/snapshots/${token1}`);
+    expect(first.status).toBe(410);
+
+    projectExists.mockResolvedValue({ _id: PROJECT });
+    userExists.mockResolvedValue(null);
+    const second = await request(makeApp()).get(`/api/snapshots/${token2}`);
+    expect(second.status).toBe(410);
+
+    expect(first.body).toEqual(second.body);
   });
 });
 
