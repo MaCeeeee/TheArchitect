@@ -145,7 +145,13 @@ export function breakdownByKey(
 
 // ─── Kalibrierung je Achse (nur wenn Confidence vorhanden) ──────
 
-export function axisCalibration(cases: TypingEvalCase[], axis: TypingAxis): CalibrationReport | null {
+/**
+ * (confidence, correct)-Paare je Achse — ein Sample je Fall, der Gold UND
+ * Confidence trägt. Gold `null` und Vorhersage `null` zählen als korrekt.
+ * THE-597 benutzt dieselben Paare für Routing (Recall/Fehlalarm) und AUROC,
+ * deshalb herausgezogen statt in axisCalibration versteckt.
+ */
+export function axisCalibrationSamples(cases: TypingEvalCase[], axis: TypingAxis): CalibrationSample[] {
   const samples: CalibrationSample[] = [];
   for (const c of cases) {
     const conf = c.confidence?.[axis];
@@ -155,6 +161,11 @@ export function axisCalibration(cases: TypingEvalCase[], axis: TypingAxis): Cali
     const correct = (g === null && p === null) || (g !== null && g === p);
     samples.push({ confidence: conf, correct });
   }
+  return samples;
+}
+
+export function axisCalibration(cases: TypingEvalCase[], axis: TypingAxis): CalibrationReport | null {
+  const samples = axisCalibrationSamples(cases, axis);
   return samples.length ? expectedCalibrationError(samples) : null;
 }
 
