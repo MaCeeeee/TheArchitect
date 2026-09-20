@@ -41,6 +41,12 @@
       "sourceType": "github",
       "computedHash": "3316239df2bdcb41e992857b8142e0239e6964564dd5d7224e470c2ab350a03c"
     },
+    "archify": {
+      "source": "tt-a1i/archify",
+      "sourceType": "github",
+      "skillPath": "archify/SKILL.md",
+      "computedHash": "f52b30468fcccabb55357ae19d531059ca460fbbca77727946287413cc5cc027"
+    },
     "architecture-decision-records": {
       "source": "wshobson/agents",
       "sourceType": "github",

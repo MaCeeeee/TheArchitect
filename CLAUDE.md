@@ -80,6 +80,7 @@ See `.env.example` for all required variables. Key ones:
 
 Skills are in `.agents/skills/` and include:
 - **Document generation:** pdf, pptx, docx, xlsx (for TOGAF reports)
+- **Diagrams:** archify (architecture/workflow/sequence/dataflow/lifecycle as standalone HTML + inline SVG; CLI: `node .agents/skills/archify/bin/archify.mjs`)
 - **UI polish:** audit, critique, polish, animate, optimize, harden (Impeccable)
 - **React patterns:** vercel-react-best-practices, web-design-guidelines, composition patterns
 - **Architecture:** architecture-patterns, api-design-principles, cqrs-implementation
