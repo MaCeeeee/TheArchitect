@@ -8,6 +8,7 @@ import {
   axisConfusion,
   breakdownByKey,
   axisCalibration,
+  axisCalibrationSamples,
   buildTypingReport,
   type TypingEvalCase,
 } from '../evals/typingMetrics';
@@ -181,5 +182,22 @@ describe('buildTypingReport — Beobachtungskanal (THE-668)', () => {
   it('ohne jede Beobachtung ist der Block null-frei vorhanden — 0 heißt gemessen, nicht vergessen', () => {
     const r = buildTypingReport([mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } })]);
     expect(r.observed).toEqual({ total: 0, whereGoldNa: 0, whereGoldHasRole: 0 });
+  });
+});
+
+describe('axisCalibrationSamples (THE-597)', () => {
+  it('liefert je Fall mit Gold UND Confidence genau ein Sample; null==null ist korrekt', () => {
+    const cases = [
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.8 } }),
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'processor' }, confidence: { partyRole: 0.4 } }),
+      mk({ gold: { partyRole: null }, predicted: { partyRole: null }, confidence: { partyRole: 1.0 } }),
+      mk({ gold: { partyRole: 'controller' }, predicted: { partyRole: 'controller' } }), // keine Confidence → kein Sample
+      mk({ gold: {}, predicted: { partyRole: 'controller' }, confidence: { partyRole: 0.9 } }), // Gold offen → kein Sample
+    ];
+    expect(axisCalibrationSamples(cases, 'partyRole')).toEqual([
+      { confidence: 0.8, correct: true },
+      { confidence: 0.4, correct: false },
+      { confidence: 1.0, correct: true },
+    ]);
   });
 });
