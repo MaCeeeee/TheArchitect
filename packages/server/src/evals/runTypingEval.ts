@@ -344,13 +344,13 @@ function majorityBaseline(cases: TypingEvalCase[]): Record<string, { klass: stri
 }
 
 async function main(): Promise<void> {
-  // Kein 'dotenv/config'-Import: sonst lädt jeder Test, der dieses Modul importiert, den echten Key. Geladen in main(), nach allen Modul-Seiteneffekten; Modul-Scope-Leser (logger: NODE_ENV) sehen die Shell-Umgebung, nicht .env — für die Eval-Ergebnisse irrelevant, alle relevanten Variablen werden lazy gelesen.
+  // .env erst hier laden — Begründung am Import oben.
   loadEnv();
   const argv = process.argv.slice(2);
   const gi = argv.indexOf('--golden');
   const goldenPath = gi !== -1 ? argv[gi + 1] : undefined;
   if (!goldenPath) {
-    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>] [--samples <k> (ungerade empfohlen)]');
+    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>] [--samples <k> (odd k recommended)]');
     process.exitCode = 2;
     return;
   }
