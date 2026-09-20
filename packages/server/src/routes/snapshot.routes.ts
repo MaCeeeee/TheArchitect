@@ -1,20 +1,39 @@
 import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
-import { createSnapshot, getSnapshot, listSnapshots, revokeSnapshot } from '../services/snapshot.service';
+import { createSnapshot, listSnapshots, resolveSharedSnapshot, revokeSnapshot } from '../services/snapshot.service';
 import { createAuditEntry } from '../middleware/audit.middleware';
 
 const router = Router();
 
 // ─── Public: Access a shared snapshot (NO auth required) ───
 // GET /api/snapshots/:token
+// THE-655: 410 Gone, sobald Projekt oder Ersteller gelöscht sind — ein
+// geteilter Link überlebt seinen Ursprung nicht (DSGVO Art. 17 Abs. 2).
+// Eine einzige Formulierung für beide Gründe: der anonyme Linkinhaber
+// erfährt nicht, welcher Ursprung gelöscht wurde (Art. 17 — keine Aussage
+// über eine gelöschte Person gegenüber einem anonymen Linkinhaber); der
+// Grund landet nur im Server-Log.
+// Einmal-Signal: der Token wird beim 410 entfernt, jeder spätere Aufruf
+// bekommt das generische 404. Bewusst ohne Tombstone-Speicher (Grund:
+// Einfachheit — kein zweiter Store neben der In-Memory-Map, die ohnehin
+// nach Mongo wandern soll); Preis: ein Reload zeigt 404 statt des
+// Klartexts.
 router.get('/snapshots/:token', async (req: Request, res: Response) => {
   try {
     const token = String(req.params.token);
-    const snapshot = getSnapshot(token);
-    if (!snapshot) {
+    const resolution = await resolveSharedSnapshot(token);
+    if (resolution.kind === 'not_found') {
       return res.status(404).json({ success: false, error: 'Snapshot not found or expired' });
     }
+    if (resolution.kind === 'gone') {
+      console.warn(`[Snapshot] gone (${resolution.reason}) for token ${token.slice(0, 8)}…`);
+      return res.status(410).json({
+        success: false,
+        error: 'This shared link is no longer available: the project or account it belonged to has been deleted.',
+      });
+    }
+    const { snapshot } = resolution;
     res.json({
       success: true,
       data: {
