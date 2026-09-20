@@ -12,7 +12,7 @@
  *                                  prelabel-typing) + C_score-Band (norm.service).
  *
  *   export ANTHROPIC_API_KEY=sk-...
- *   npm run typing:eval -- --golden src/evals/golden/typing.dsgvo.json
+ *   npm run typing:eval -- --golden src/evals/golden/typing.dsgvo.json [--samples <k>]
  *
  * Freigabe-Schwellen je Suggest-Feature: docs/evals/typing-release-gates.md (AC-5).
  *
@@ -20,9 +20,12 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
+import { config as loadEnv } from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
 import { loadTypingGolden, TYPING_AXES, type TypingGoldenSet, type TypingLabels, type TypingAxis } from './typingGolden';
-import { buildTypingReport, type TypingEvalCase, type TypingReport } from './typingMetrics';
+import { buildTypingReport, type TypingEvalCase, type TypingReport, axisCalibrationSamples } from './typingMetrics';
+import { aurocFromSamples, thresholdRoutingStats, type RoutingStat } from './metrics';
 import type { ComplexityBand } from '../norms/complexityScore';
 import { complexityForNorm } from '../norms/normComplexity.reader';
 import { listNorms } from '../services/norm.service';
@@ -262,12 +265,64 @@ function majorityBaseline(cases: TypingEvalCase[]): Record<string, { klass: stri
   return out;
 }
 
+// ─── THE-597: Report-Abschnitt (rein) ───────────────────────────
+
+export interface The597AxisResult {
+  samples: number;
+  wrong: number;
+  auroc: number | null;
+  routing: RoutingStat[];
+  aktMetadatum: boolean;
+}
+export interface The597Json {
+  k: number;
+  goldenSha256: string;
+  thresholds: number[];
+  axes: Record<TypingAxis, The597AxisResult>;
+}
+
+export function renderThe597Section(
+  cases: TypingEvalCase[],
+  k: number,
+  goldenSha256: string,
+  thresholds: number[] = [0.6, 0.8, 1.0]
+): { markdown: string; json: The597Json } {
+  const axes = {} as The597Json['axes'];
+  const lines: string[] = [];
+  lines.push(`## THE-597 — Schicht 1 retrospektiv (Self-Consistency k=${k})`);
+  lines.push('');
+  lines.push('Konfidenz = Stimmenanteil der Mehrheit über k Läufe. Routing: confidence < Schwelle ⇒ Mensch.');
+  lines.push('Recall = geroutete falsche / alle falschen · Fehlalarm = geroutete richtige / alle richtigen.');
+  lines.push('Instrument-Kontrolle: AUROC > 0,6 auf mindestens einer Inhalts-Achse, sonst „nicht messbar".');
+  lines.push(`Golden-Hash: \`${goldenSha256}\``);
+  lines.push('');
+  lines.push('| Achse | Samples | falsche | AUROC | ' + thresholds.map((t) => `Recall <${t.toFixed(1)}`).join(' | ') + ' | ' + thresholds.map((t) => `Fehlalarm <${t.toFixed(1)}`).join(' | ') + ' |');
+  lines.push('|' + '---|'.repeat(4 + thresholds.length * 2));
+  for (const axis of TYPING_AXES) {
+    const samples = axisCalibrationSamples(cases, axis);
+    const routing = thresholdRoutingStats(samples, thresholds);
+    const auroc = aurocFromSamples(samples);
+    const aktMetadatum = AKT_METADATEN_ACHSEN.has(axis);
+    axes[axis] = { samples: samples.length, wrong: samples.filter((s) => !s.correct).length, auroc, routing, aktMetadatum };
+    const name = aktMetadatum ? `${axis} ⚠️` : axis;
+    lines.push(
+      `| ${name} | ${samples.length} | ${axes[axis].wrong} | ${auroc === null ? '—' : auroc.toFixed(3)} | ` +
+        routing.map((r) => (r.wrong ? pct(r.recall) : '—')).join(' | ') + ' | ' + routing.map((r) => (r.correct ? pct(r.falseAlarmRate) : '—')).join(' | ') + ' |'
+    );
+  }
+  lines.push('');
+  lines.push('_⚠️ = Akt-Metadatum (THE-691), zählt nicht als Klassifikator-Leistung._');
+  lines.push('');
+  return { markdown: lines.join('\n'), json: { k, goldenSha256, thresholds, axes } };
+}
+
 async function main(): Promise<void> {
+  loadEnv();
   const argv = process.argv.slice(2);
   const gi = argv.indexOf('--golden');
   const goldenPath = gi !== -1 ? argv[gi + 1] : undefined;
   if (!goldenPath) {
-    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>]');
+    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>] [--samples <k>]');
     process.exitCode = 2;
     return;
   }
@@ -289,13 +344,18 @@ async function main(): Promise<void> {
     );
   }
 
+  // THE-597: k Läufe je Fall → Self-Consistency-Konfidenz (Default 1 = unverändert).
+  // Ganzzahl erzwingen: k = 2,5 liefe 3× und teilte durch 2,5.
+  const si = argv.indexOf('--samples');
+  const samples = si !== -1 ? Math.max(1, parseInt(argv[si + 1] ?? '1', 10) || 1) : 1;
+
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
   const bandOf = await bandBySource(process.env.TA_PROJECT);
   const oovDrops = new Map<string, number>();
   const collected: TypingEvalCase[] = [];
   const report = await evaluateTyping({
     golden,
-    classify: anthropicClassify(getClient(), model, { purposeBySource, oovDrops }),
+    classify: withSelfConsistency(anthropicClassify(getClient(), model, { purposeBySource, oovDrops }), samples),
     bandOf,
     collect: (ec) => collected.push(ec),
   });
@@ -303,7 +363,7 @@ async function main(): Promise<void> {
   const variante = purposeBySource ? 'tp-4+purpose.v1' : 'tp-4';
   let md = renderTypingReportMarkdown(report, { golden: path.basename(goldenPath), model });
   md += `\n\n## THE-683 — Experiment-Anhang (${variante})\n\n`;
-  md += `OOV-Drops je Achse (AC-4): ${
+  md += `OOV-Drops je Achse (AC-4${samples > 1 ? `, je Lauf, k=${samples}` : ''}): ${
     oovDrops.size === 0 ? 'keine' : [...oovDrops.entries()].map(([a, n]) => `${a}=${n}`).join(' · ')
   }\n\n`;
   const maj = majorityBaseline(collected);
@@ -330,10 +390,19 @@ async function main(): Promise<void> {
     }
   }
 
+  let the597: The597Json | undefined;
+  if (samples > 1) {
+    const goldenSha256 = crypto.createHash('sha256').update(fs.readFileSync(path.resolve(goldenPath))).digest('hex');
+    const sec = renderThe597Section(collected, samples, goldenSha256);
+    md += `\n${sec.markdown}`;
+    the597 = sec.json;
+  }
+
   const outDir = path.join(__dirname, 'reports');
   fs.mkdirSync(outDir, { recursive: true });
-  const base = path.join(outDir, `typing-${golden.version}${purposeBySource ? '-purpose' : ''}`);
-  fs.writeFileSync(`${base}.json`, JSON.stringify({ variante, report, oovDrops: Object.fromEntries(oovDrops), majority: maj }, null, 2) + '\n');
+  const base = path.join(outDir, `typing-${golden.version}${purposeBySource ? '-purpose' : ''}${samples > 1 ? `-sc${samples}` : ''}`);
+  const cases = collected.map(({ caseId, source, gold, predicted, confidence }) => ({ caseId, source, gold, predicted, confidence }));
+  fs.writeFileSync(`${base}.json`, JSON.stringify({ variante, model, samples, report, oovDrops: Object.fromEntries(oovDrops), majority: maj, the597, cases }, null, 2) + '\n');
   fs.writeFileSync(`${base}.md`, md);
   console.log(`[typing-eval] Report (${variante}) → ${base}.md / .json`);
 }

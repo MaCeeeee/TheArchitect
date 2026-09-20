@@ -5,8 +5,9 @@
  * Run: cd packages/server && npx jest src/__tests__/runTypingEval.test.ts
  */
 import path from 'node:path';
-import { evaluateTyping, renderTypingReportMarkdown, type Classify, aggregateVotes, withSelfConsistency, type Classification } from '../evals/runTypingEval';
+import { evaluateTyping, renderTypingReportMarkdown, type Classify, aggregateVotes, withSelfConsistency, type Classification, renderThe597Section } from '../evals/runTypingEval';
 import { loadTypingGolden } from '../evals/typingGolden';
+import type { TypingEvalCase } from '../evals/typingMetrics';
 
 const FIXTURE = path.join(__dirname, '..', 'evals', 'golden', 'typing.fixture.json');
 
@@ -144,5 +145,26 @@ describe('withSelfConsistency (THE-597)', () => {
     const flaky: Classify = async (c) => ({ labels: i++ % 2 === 0 ? c.labels : { ...c.labels, normKind: 'guideline' } });
     const report = await evaluateTyping({ golden, classify: withSelfConsistency(flaky, 4) });
     expect(report.axes.normKind.calibration).not.toBeNull();
+  });
+});
+
+describe('renderThe597Section (rein)', () => {
+  it('schreibt je Inhalts-Achse AUROC und Routing bei 0.6/0.8/1.0; Akt-Metadaten markiert', () => {
+    const c = (id: string, gold: string | null, pred: string | null, conf: number): TypingEvalCase => ({
+      caseId: id, source: 's', language: 'de', gold: { partyRole: gold }, predicted: { partyRole: pred }, confidence: { partyRole: conf },
+    });
+    const cases = [c('a', 'controller', 'controller', 1.0), c('b', 'controller', 'processor', 0.4), c('c', 'processor', 'processor', 0.8)];
+    const { markdown, json } = renderThe597Section(cases, 5, 'deadbeef');
+    expect(markdown).toContain('## THE-597 — Schicht 1 retrospektiv (Self-Consistency k=5)');
+    expect(markdown).toContain('| partyRole |');
+    expect(json.k).toBe(5);
+    expect(json.goldenSha256).toBe('deadbeef');
+    expect(json.axes.partyRole.samples).toBe(3);
+    expect(json.axes.partyRole.auroc).toBe(1);
+    expect(json.axes.partyRole.routing.map((r) => r.threshold)).toEqual([0.6, 0.8, 1.0]);
+    expect(json.axes.partyRole.routing[0]).toMatchObject({ caught: 1, wrong: 1, falseAlarms: 0 });
+    expect(json.axes.normKind.samples).toBe(0);
+    expect(json.axes.normKind.auroc).toBeNull();
+    expect(json.axes.normKind.aktMetadatum).toBe(true);
   });
 });
