@@ -59,7 +59,7 @@ Golden-Hash: `af57f9f52f7fcae330562b271a957cc585a0071d8aadced9d83aa68f33091b11` 
 | partyRole | 70 | 21 | 0.733 | trägt |
 | provisionKind | 70 | 16 | 0.637 | trägt |
 
-**Instrument-Verdikt:** MESSBAR — Self-Consistency trennt richtig von falsch auf obligationKind, partyRole, provisionKind (AUROC > 0,6). Die übrigen Inhalts-Achsen liegen darunter; für sie ist das Signal schwach, nicht abwesend.
+**Instrument-Verdikt:** MESSBAR — Self-Consistency trennt richtig von falsch auf obligationKind, partyRole, provisionKind (AUROC > 0,6). Alle drei Inhalts-Achsen liegen über 0,6; die Streuung zwischen zwei Läufen (siehe unten) zeigt, wie viel davon Rauschen ist.
 
 ### Routing-Zahlen für die Kill-Schwelle (≥ 50 % Recall bei ≤ 10 % Fehlalarm; entschieden wird in Slice 3)
 
@@ -69,7 +69,7 @@ Golden-Hash: `af57f9f52f7fcae330562b271a957cc585a0071d8aadced9d83aa68f33091b11` 
 | partyRole | < 0.6 / < 0.8 / < 1.0 | 0.0 % / 23.8 % / 52.4 % | 0.0 % / 2.0 % / 6.1 % |
 | provisionKind | < 0.6 / < 0.8 / < 1.0 | 0.0 % / 12.5 % / 37.5 % | 0.0 % / 5.6 % / 9.3 % |
 
-Lesart: Bei ≤ 10 % Fehlalarm erreicht keine Inhalts-Achse 50 % Recall — die Zahl steht hier als Input für Slice 3, nicht als Entscheid.
+Lesart: Bei ≤ 10 % Fehlalarm erreicht in Lauf 2 partyRole die Kill-Schwelle (52.4 % Recall bei 6.1 % Fehlalarm (Schwelle < 1.0)); obligationKind bleibt darunter (35.3 % Recall bei 3.8 % Fehlalarm (Schwelle < 1.0)), provisionKind bleibt darunter (37.5 % Recall bei 9.3 % Fehlalarm (Schwelle < 1.0)). In Lauf 1 erreichte keine Achse die Schwelle (obligationKind 35.3 % Recall bei 1.9 % Fehlalarm (Schwelle < 1.0); partyRole 0.0 % Recall bei 3.8 % Fehlalarm (Schwelle < 0.6); provisionKind 40.0 % Recall bei 7.3 % Fehlalarm (Schwelle < 1.0)). Das Ergebnis kippt also zwischen zwei Läufen — die Zahlen stehen hier als Input für Slice 3, nicht als Entscheid; ein Go/No-Go braucht mehr als einen Lauf je Schwelle.
 
 ### Bezug zu den Fehlerfällen (aus `cases[]`, Achse offen = kein Sample, wie in `axisCalibrationSamples`)
 
