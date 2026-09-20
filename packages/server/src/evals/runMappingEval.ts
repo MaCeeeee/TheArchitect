@@ -44,6 +44,9 @@ import {
   precisionByConfidenceBand,
   bootstrapCI,
   concisenessMetrics,
+  calibrationSamplesFromOutcomes,
+  expectedCalibrationError,
+  thresholdRoutingStats,
   type CaseOutcome,
 } from './metrics';
 
@@ -257,6 +260,22 @@ function buildMarkdownReport(args: {
     lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} |`);
   }
   lines.push('');
+  // THE-597: dieselbe Rechnung wie das retrospektive Gate — ECE plus
+  // Schwellen-Routing (confidence < t ⇒ Mensch). Unter 30 Samples ist das
+  // eine Beobachtung, keine Kalibrierung (THE-606: Mindest-N je Facette).
+  // Recall/Fehlalarm bei leerem Nenner: „—" statt 0 % (Konvention aus metrics.ts).
+  const calSamples = calibrationSamplesFromOutcomes(outcomes);
+  const cal = expectedCalibrationError(calSamples);
+  lines.push('## ECE + Schwellen-Routing (THE-597)');
+  lines.push('');
+  lines.push(`ECE: **${cal.ece.toFixed(3)}** über ${cal.samples} Vorhersagen${cal.samples < 30 ? ' — ⚠️ unter Mindest-N, `uncalibrated`' : ''}`);
+  lines.push('');
+  lines.push('| Schwelle | falsche | gefangen | Recall | richtige | Fehlalarme | Fehlalarmquote |');
+  lines.push('|---|---|---|---|---|---|---|');
+  for (const r of thresholdRoutingStats(calSamples)) {
+    lines.push(`| < ${r.threshold.toFixed(1)} | ${r.wrong} | ${r.caught} | ${r.wrong ? pct(r.recall) : '—'} | ${r.correct} | ${r.falseAlarms} | ${r.correct ? pct(r.falseAlarmRate) : '—'} |`);
+  }
+  lines.push('');
   lines.push('## Fehler-Detail (FP/FN je Case)');
   lines.push('');
   for (const o of outcomes) {
@@ -369,6 +388,7 @@ async function main(): Promise<void> {
     const modelSlug = model.replace(/[^a-zA-Z0-9._-]/g, '_');
     const base = path.join(opts.outDir, `mapping-eval-${set.version}-${modelSlug}-${stamp}`);
     fs.writeFileSync(`${base}.md`, markdown);
+    const runCalSamples = calibrationSamplesFromOutcomes(run.outcomes);
     fs.writeFileSync(
       `${base}.json`,
       JSON.stringify(
@@ -385,6 +405,8 @@ async function main(): Promise<void> {
           conciseness: concisenessMetrics(run.outcomes, cap),
           bySource: breakdownBySource(run.outcomes),
           confidenceBands: precisionByConfidenceBand(run.outcomes),
+          calibration: expectedCalibrationError(runCalSamples),
+          routing: thresholdRoutingStats(runCalSamples),
           f2CI: bootstrapCI(run.outcomes, o => aggregateMetrics(o).f2),
           recallCI: bootstrapCI(run.outcomes, o => aggregateMetrics(o).recall),
           outcomes: run.outcomes,

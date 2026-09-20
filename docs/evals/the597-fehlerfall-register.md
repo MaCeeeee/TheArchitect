@@ -37,7 +37,7 @@ ohne Messinstrument dahinter (vgl. ADR-0012).
 
 | Pfad | Feld | Stelle | Gold-Pairing vorhanden | Offline messbar |
 |---|---|---|---|---|
-| Norm→Element-Mapping | `confidence` (Schwelle 0,5) | `src/services/complianceMapping.service.ts:79,502` | ja (`mapping.v1/v2`, 15 Fälle, **nicht frozen**) | nur bei gültigem Cache (`--offline`) |
+| Norm→Element-Mapping | `confidence` (Schwelle 0,5) | `src/services/complianceMapping.service.ts:79,502` | ja (`mapping.v1/v2`, 15 Fälle, **nicht frozen**) | nein (kein Cache-Bucket für Golden-Version v1-draft — der committete Cache liegt unter v1-seed; Fehler reproduziert in Task 4) — Live-Lauf n = 15, nicht frozen: Beobachtung, keine Kalibrierung |
 | REQGEN | `extractionConfidence` | `src/services/requirementGenerator.service.ts:43,278` | nein | nein |
 | Discovery-Judge | `confidence` | `src/services/lawDiscovery.service.ts:433` | ja, aber nur mit `--judge` live | nein |
 | Relations-Vorschlag | `confidence` (optional) | `packages/shared/src/relations/suggestion.ts:59` | Gold ja (relations.v5), Confidence im Baseline-Lauf nicht erhoben | nein |
