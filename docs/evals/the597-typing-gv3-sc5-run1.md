@@ -1,3 +1,5 @@
+> **Provenance:** Lauf 1 (k = 5, Haiku 4.5) vom 2026-09-20 mit Code-Stand 08dbb47 — vor den Review-Nachzügen am Renderer; nur die JSON-Zahlen (`the597-typing-gv3-sc5-run1.json`) werden im Register verwendet (Streuungsprobe). Evidenz ist Lauf 2: `the597-typing-gv3-sc5.md`.
+
 # Typing-Eval Report
 
 - Golden: `typing.gv3.json` · Cases: **70** · Modell: `claude-haiku-4-5-20251001`

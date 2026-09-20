@@ -1,3 +1,5 @@
+> **Provenance:** Kopie von `packages/server/src/evals/reports/typing-gv3.md` aus dem Hauptrepo (gitignored, k = 1, Modell claude-haiku-4-5, Lauf vom 2026-08-19), kopiert am 2026-09-20 für THE-597 Slice 0 — der Input, den das Fehlerfall-Register (F-04…F-08) zitiert. Nicht neu erzeugt, nicht verändert.
+
 # Typing-Eval Report
 
 - Golden: `typing.gv3.json` · Cases: **70** · Modell: `claude-haiku-4-5-20251001`
