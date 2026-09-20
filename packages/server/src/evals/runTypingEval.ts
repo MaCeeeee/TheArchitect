@@ -375,6 +375,13 @@ async function main(): Promise<void> {
   // THE-597: k Läufe je Fall → Self-Consistency-Konfidenz (Default 1 = unverändert).
   // Streng prüfen: ein stilles k=1 nach `--samples abc` hätte den vollen Lauf bezahlt
   // und keinen THE-597-Abschnitt geliefert.
+  // `--samples=5` wäre ein einzelnes argv-Token: nicht erkannt, stiller k=1-Lauf zum vollen Preis.
+  const eqForm = argv.find((a) => a.startsWith('--samples='));
+  if (eqForm) {
+    console.error(`[typing-eval] --samples erwartet Leerzeichen-Syntax: --samples <k> (bekam "${eqForm}").`);
+    process.exitCode = 2;
+    return;
+  }
   const si = argv.indexOf('--samples');
   const rawSamples = si !== -1 ? argv[si + 1] : undefined;
   if (si !== -1 && !/^[1-9]\d*$/.test(rawSamples ?? '')) {
