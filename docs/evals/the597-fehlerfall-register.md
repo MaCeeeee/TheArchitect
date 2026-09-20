@@ -47,6 +47,44 @@ Konsequenz: Schicht 1 wird in Slice 1 auf der Typisierung gemessen, mit einer re
 Self-Consistency-Konfidenz. Positivkontrolle des Instruments: AUROC > 0,6 auf mindestens einer
 Inhalts-Achse. Fällt sie, lautet der Befund „nicht messbar", nicht „No-Go".
 
-## D. Slice-1-Ergebnis
+## D. Slice-1-Ergebnis (Self-Consistency k=5 auf gv3, Lauf vom 2026-09-20, Modell claude-haiku-4-5-20251001)
 
-_(wird in Task 8 ausgefüllt)_
+Golden-Hash: `af57f9f52f7fcae330562b271a957cc585a0071d8aadced9d83aa68f33091b11` · Report: `docs/evals/the597-typing-gv3-sc5.md` · Fälle: 70 · LLM-Aufrufe: 350
+
+### Instrument-Kontrolle (Positivkontrolle: AUROC > 0,6 auf ≥ 1 Inhalts-Achse)
+
+| Achse | Samples | falsche | AUROC | Verdikt |
+|---|---|---|---|---|
+| obligationKind | 70 | 17 | 0.656 | trägt |
+| partyRole | 70 | 21 | 0.733 | trägt |
+| provisionKind | 70 | 16 | 0.637 | trägt |
+
+**Instrument-Verdikt:** MESSBAR — Self-Consistency trennt richtig von falsch auf obligationKind, partyRole, provisionKind (AUROC > 0,6). Die übrigen Inhalts-Achsen liegen darunter; für sie ist das Signal schwach, nicht abwesend.
+
+### Routing-Zahlen für die Kill-Schwelle (≥ 50 % Recall bei ≤ 10 % Fehlalarm; entschieden wird in Slice 3)
+
+| Achse | Schwelle | Recall (falsche gefangen) | Fehlalarm (richtige geroutet) |
+|---|---|---|---|
+| obligationKind | < 0.6 / < 0.8 / < 1.0 | 0.0 % / 11.8 % / 35.3 % | 0.0 % / 1.9 % / 3.8 % |
+| partyRole | < 0.6 / < 0.8 / < 1.0 | 0.0 % / 23.8 % / 52.4 % | 0.0 % / 2.0 % / 6.1 % |
+| provisionKind | < 0.6 / < 0.8 / < 1.0 | 0.0 % / 12.5 % / 37.5 % | 0.0 % / 5.6 % / 9.3 % |
+
+Lesart: Bei ≤ 10 % Fehlalarm erreicht keine Inhalts-Achse 50 % Recall — die Zahl steht hier als Input für Slice 3, nicht als Entscheid.
+
+### Bezug zu den Fehlerfällen (aus `cases[]`, Achse offen = kein Sample, wie in `axisCalibrationSamples`)
+
+- F-04 (prohibition): von 3 Gold-Fällen der Klasse `prohibition` wurden 2 falsch klassifiziert, davon 0 mit Konfidenz < 0,8 (also bei Schwelle 0,8 geroutet).
+- F-05 (supervisory_authority): von 14 Gold-Fällen der Klasse `supervisory_authority` wurden 9 falsch klassifiziert, davon 1 mit Konfidenz < 0,8 (also bei Schwelle 0,8 geroutet).
+- F-06 (procedural): von 14 Gold-Fällen der Klasse `procedural` wurden 9 falsch klassifiziert, davon 1 mit Konfidenz < 0,8 (also bei Schwelle 0,8 geroutet).
+- F-07 (member_state): von 6 Gold-Fällen der Klasse `member_state` wurden 1 falsch klassifiziert, davon 0 mit Konfidenz < 0,8 (also bei Schwelle 0,8 geroutet).
+
+### Robustheit: zwei unabhängige Läufe (stochastisch, je k=5)
+
+| Achse | AUROC Lauf 1 (`the597-typing-gv3-sc5-run1.json`) | AUROC Lauf 2 (Evidenz) |
+|---|---|---|
+| obligationKind | 0.667 | 0.656 |
+| partyRole | 0.591 | 0.733 |
+| provisionKind | 0.668 | 0.637 |
+
+Lauf 1 entstand vor den Review-Nachzügen am Renderer (Code-Stand 08dbb47; Zahlenlogik identisch); nur seine JSON-Zahlen werden hier verwendet. Die Streuung zwischen den Läufen ist die Unsicherheit dieses Instruments und gehört in jede Schwellen-Entscheidung in Slice 3.
+
