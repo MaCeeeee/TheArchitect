@@ -175,5 +175,12 @@ describe('renderThe597Section (rein)', () => {
     expect(json.axes.normKind.samples).toBe(0);
     expect(json.axes.normKind.auroc).toBeNull();
     expect(json.axes.normKind.aktMetadatum).toBe(true);
+
+    const lines = markdown.split('\n');
+    const head = lines.find((l) => l.startsWith('| Achse'))!;
+    const sep = lines.find((l) => l.startsWith('|---'))!;
+    expect(sep.split('|').length).toBe(head.split('|').length); // Kopf und Trennzeile gleich breit
+    expect(markdown).toContain('| normKind ⚠️ |'); // Akt-Metadatum markiert
+    expect(markdown).toContain('| normKind ⚠️ | 0 | 0 | — | — | — | — | — | — | — |'); // leerer Nenner ⇒ „—", nicht 0,0 %
   });
 });

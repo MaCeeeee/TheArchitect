@@ -22,6 +22,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+// Kein 'dotenv/config'-Import: sonst lädt jeder Test, der dieses Modul importiert, den echten Key. Geladen in main(), nach allen Modul-Seiteneffekten; Modul-Scope-Leser (logger: NODE_ENV) sehen die Shell-Umgebung, nicht .env — für die Eval-Ergebnisse irrelevant, alle relevanten Variablen werden lazy gelesen.
 import { config as loadEnv } from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
 import { loadTypingGolden, TYPING_AXES, type TypingGoldenSet, type TypingLabels, type TypingAxis } from './typingGolden';
@@ -161,7 +162,7 @@ function accRow(label: string, a: { labeled: number; correct: number; accuracy: 
   return `| ${label} | ${a.correct}/${a.labeled} | ${a.labeled ? pct(a.accuracy) : '—'} |`;
 }
 
-export function renderTypingReportMarkdown(report: TypingReport, meta: { golden: string; model?: string } = { golden: '' }): string {
+export function renderTypingReportMarkdown(report: TypingReport, meta: { golden: string; model?: string; samples?: number } = { golden: '' }): string {
   const lines: string[] = [];
   lines.push(`# Typing-Eval Report`);
   lines.push('');
@@ -176,6 +177,9 @@ export function renderTypingReportMarkdown(report: TypingReport, meta: { golden:
   lines.push(`- Beobachtungen gesamt: **${o.total}** von ${report.total} Fällen`);
   lines.push(`- davon wo das Gold KEINE Rolle kennt (gewollt): **${o.whereGoldNa}**`);
   lines.push(`- davon wo das Gold eine Rolle kennt (Rauschen): **${o.whereGoldHasRole}**`);
+  if (meta.samples && meta.samples > 1) {
+    lines.push(`- ⚠️ k=${meta.samples}: Beobachtung nur gezählt, wenn sie in der strikten Mehrheit der Läufe fiel — nicht vergleichbar mit einem k=1-Report.`);
+  }
   lines.push('');
   for (const axis of TYPING_AXES) {
     const a = report.axes[axis];
@@ -210,6 +214,56 @@ export function renderTypingReportMarkdown(report: TypingReport, meta: { golden:
     lines.push('');
   }
   return lines.join('\n');
+}
+
+// ─── THE-597: Report-Abschnitt (rein) ───────────────────────────
+
+export interface The597AxisResult {
+  samples: number;
+  wrong: number;
+  auroc: number | null;
+  routing: RoutingStat[];
+  aktMetadatum: boolean;
+}
+export interface The597Json {
+  k: number;
+  goldenSha256: string;
+  thresholds: number[];
+  axes: Record<TypingAxis, The597AxisResult>;
+}
+
+export function renderThe597Section(
+  cases: TypingEvalCase[],
+  k: number,
+  goldenSha256: string,
+  thresholds: number[] = [0.6, 0.8, 1.0]
+): { markdown: string; json: The597Json } {
+  const axes = {} as The597Json['axes'];
+  const lines: string[] = [];
+  lines.push(`## THE-597 — Schicht 1 retrospektiv (Self-Consistency k=${k})`);
+  lines.push('');
+  lines.push('Konfidenz = Stimmenanteil der Mehrheit über k Läufe. Routing: confidence < Schwelle ⇒ Mensch.');
+  lines.push('Recall = geroutete falsche / alle falschen · Fehlalarm = geroutete richtige / alle richtigen.');
+  lines.push('Instrument-Kontrolle: AUROC > 0,6 auf mindestens einer Inhalts-Achse, sonst „nicht messbar".');
+  lines.push(`Golden-Hash: \`${goldenSha256}\``);
+  lines.push('');
+  const row = (cells: Array<string | number>): string => `| ${cells.join(' | ')} |`;
+  const head = ['Achse', 'Samples', 'falsche', 'AUROC', ...thresholds.map((t) => `Recall <${t.toFixed(1)}`), ...thresholds.map((t) => `Fehlalarm <${t.toFixed(1)}`)];
+  lines.push(row(head));
+  lines.push('|' + '---|'.repeat(head.length));
+  for (const axis of TYPING_AXES) {
+    const samples = axisCalibrationSamples(cases, axis);
+    const routing = thresholdRoutingStats(samples, thresholds);
+    const auroc = aurocFromSamples(samples);
+    const aktMetadatum = AKT_METADATEN_ACHSEN.has(axis);
+    axes[axis] = { samples: samples.length, wrong: samples.filter((s) => !s.correct).length, auroc, routing, aktMetadatum };
+    const name = aktMetadatum ? `${axis} ⚠️` : axis;
+    lines.push(row([name, samples.length, axes[axis].wrong, auroc === null ? '—' : auroc.toFixed(3), ...routing.map((r) => (r.wrong ? pct(r.recall) : '—')), ...routing.map((r) => (r.correct ? pct(r.falseAlarmRate) : '—'))]));
+  }
+  lines.push('');
+  lines.push('_⚠️ = Akt-Metadatum (THE-691), zählt nicht als Klassifikator-Leistung._');
+  lines.push('');
+  return { markdown: lines.join('\n'), json: { k, goldenSha256, thresholds, axes } };
 }
 
 // ─── Glue ───────────────────────────────────────────────────────
@@ -289,58 +343,8 @@ function majorityBaseline(cases: TypingEvalCase[]): Record<string, { klass: stri
   return out;
 }
 
-// ─── THE-597: Report-Abschnitt (rein) ───────────────────────────
-
-export interface The597AxisResult {
-  samples: number;
-  wrong: number;
-  auroc: number | null;
-  routing: RoutingStat[];
-  aktMetadatum: boolean;
-}
-export interface The597Json {
-  k: number;
-  goldenSha256: string;
-  thresholds: number[];
-  axes: Record<TypingAxis, The597AxisResult>;
-}
-
-export function renderThe597Section(
-  cases: TypingEvalCase[],
-  k: number,
-  goldenSha256: string,
-  thresholds: number[] = [0.6, 0.8, 1.0]
-): { markdown: string; json: The597Json } {
-  const axes = {} as The597Json['axes'];
-  const lines: string[] = [];
-  lines.push(`## THE-597 — Schicht 1 retrospektiv (Self-Consistency k=${k})`);
-  lines.push('');
-  lines.push('Konfidenz = Stimmenanteil der Mehrheit über k Läufe. Routing: confidence < Schwelle ⇒ Mensch.');
-  lines.push('Recall = geroutete falsche / alle falschen · Fehlalarm = geroutete richtige / alle richtigen.');
-  lines.push('Instrument-Kontrolle: AUROC > 0,6 auf mindestens einer Inhalts-Achse, sonst „nicht messbar".');
-  lines.push(`Golden-Hash: \`${goldenSha256}\``);
-  lines.push('');
-  lines.push('| Achse | Samples | falsche | AUROC | ' + thresholds.map((t) => `Recall <${t.toFixed(1)}`).join(' | ') + ' | ' + thresholds.map((t) => `Fehlalarm <${t.toFixed(1)}`).join(' | ') + ' |');
-  lines.push('|' + '---|'.repeat(4 + thresholds.length * 2));
-  for (const axis of TYPING_AXES) {
-    const samples = axisCalibrationSamples(cases, axis);
-    const routing = thresholdRoutingStats(samples, thresholds);
-    const auroc = aurocFromSamples(samples);
-    const aktMetadatum = AKT_METADATEN_ACHSEN.has(axis);
-    axes[axis] = { samples: samples.length, wrong: samples.filter((s) => !s.correct).length, auroc, routing, aktMetadatum };
-    const name = aktMetadatum ? `${axis} ⚠️` : axis;
-    lines.push(
-      `| ${name} | ${samples.length} | ${axes[axis].wrong} | ${auroc === null ? '—' : auroc.toFixed(3)} | ` +
-        routing.map((r) => (r.wrong ? pct(r.recall) : '—')).join(' | ') + ' | ' + routing.map((r) => (r.correct ? pct(r.falseAlarmRate) : '—')).join(' | ') + ' |'
-    );
-  }
-  lines.push('');
-  lines.push('_⚠️ = Akt-Metadatum (THE-691), zählt nicht als Klassifikator-Leistung._');
-  lines.push('');
-  return { markdown: lines.join('\n'), json: { k, goldenSha256, thresholds, axes } };
-}
-
 async function main(): Promise<void> {
+  // Kein 'dotenv/config'-Import: sonst lädt jeder Test, der dieses Modul importiert, den echten Key. Geladen in main(), nach allen Modul-Seiteneffekten; Modul-Scope-Leser (logger: NODE_ENV) sehen die Shell-Umgebung, nicht .env — für die Eval-Ergebnisse irrelevant, alle relevanten Variablen werden lazy gelesen.
   loadEnv();
   const argv = process.argv.slice(2);
   const gi = argv.indexOf('--golden');
@@ -369,14 +373,22 @@ async function main(): Promise<void> {
   }
 
   // THE-597: k Läufe je Fall → Self-Consistency-Konfidenz (Default 1 = unverändert).
-  // Ganzzahl erzwingen: k = 2,5 liefe 3× und teilte durch 2,5.
+  // Streng prüfen: ein stilles k=1 nach `--samples abc` hätte den vollen Lauf bezahlt
+  // und keinen THE-597-Abschnitt geliefert.
   const si = argv.indexOf('--samples');
-  const samples = si !== -1 ? Math.max(1, parseInt(argv[si + 1] ?? '1', 10) || 1) : 1;
+  const rawSamples = si !== -1 ? argv[si + 1] : undefined;
+  if (si !== -1 && !/^[1-9]\d*$/.test(rawSamples ?? '')) {
+    console.error(`[typing-eval] --samples erwartet eine positive ganze Zahl, bekam "${rawSamples ?? ''}".`);
+    process.exitCode = 2;
+    return;
+  }
+  const samples = rawSamples ? parseInt(rawSamples, 10) : 1;
 
   const model = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL;
   const bandOf = await bandBySource(process.env.TA_PROJECT);
   const oovDrops = new Map<string, number>();
   const collected: TypingEvalCase[] = [];
+  console.log(`[typing-eval] k=${samples} · ${golden.cases.length} Fälle → ${samples * golden.cases.length} LLM-Aufrufe`);
   const report = await evaluateTyping({
     golden,
     classify: withSelfConsistency(anthropicClassify(getClient(), model, { purposeBySource, oovDrops }), samples),
@@ -385,7 +397,7 @@ async function main(): Promise<void> {
   });
 
   const variante = purposeBySource ? 'tp-4+purpose.v1' : 'tp-4';
-  let md = renderTypingReportMarkdown(report, { golden: path.basename(goldenPath), model });
+  let md = renderTypingReportMarkdown(report, { golden: path.basename(goldenPath), model, samples });
   md += `\n\n## THE-683 — Experiment-Anhang (${variante})\n\n`;
   md += `OOV-Drops je Achse (AC-4${samples > 1 ? `, je Lauf, k=${samples}` : ''}): ${
     oovDrops.size === 0 ? 'keine' : [...oovDrops.entries()].map(([a, n]) => `${a}=${n}`).join(' · ')
