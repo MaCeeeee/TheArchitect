@@ -5,7 +5,7 @@
  * Run: cd packages/server && npx jest src/__tests__/runTypingEval.test.ts
  */
 import path from 'node:path';
-import { evaluateTyping, renderTypingReportMarkdown, type Classify } from '../evals/runTypingEval';
+import { evaluateTyping, renderTypingReportMarkdown, type Classify, aggregateVotes, withSelfConsistency, type Classification } from '../evals/runTypingEval';
 import { loadTypingGolden } from '../evals/typingGolden';
 
 const FIXTURE = path.join(__dirname, '..', 'evals', 'golden', 'typing.fixture.json');
@@ -60,5 +60,89 @@ describe('renderTypingReportMarkdown', () => {
     expect(md).toContain('Leakage-Caveat');
     expect(md).toContain('source: dsgvo');
     expect(md).toContain('| Klasse | P | R | F1 | support |');
+  });
+});
+
+describe('aggregateVotes (THE-597 Self-Consistency)', () => {
+  const run = (labels: Classification['labels'], partyRoleObserved?: string): Classification => ({ labels, partyRoleObserved });
+
+  it('Mehrheit je Achse, Konfidenz = Stimmen/k', () => {
+    const out = aggregateVotes([
+      run({ partyRole: 'controller', provisionKind: 'obligation' }),
+      run({ partyRole: 'controller', provisionKind: 'obligation' }),
+      run({ partyRole: 'processor', provisionKind: 'obligation' }),
+      run({ partyRole: 'controller', provisionKind: 'procedural' }),
+      run({ partyRole: 'controller', provisionKind: 'obligation' }),
+    ]);
+    expect(out.labels.partyRole).toBe('controller');
+    expect(out.confidence?.partyRole).toBeCloseTo(0.8);
+    expect(out.labels.provisionKind).toBe('obligation');
+    expect(out.confidence?.provisionKind).toBeCloseTo(0.8);
+  });
+
+  it('null ist eine Stimme („nicht anwendbar"); offene Läufe drücken die Konfidenz', () => {
+    const out = aggregateVotes([run({ partyRole: null }), run({ partyRole: null }), run({}), run({ partyRole: 'controller' })]);
+    expect(out.labels.partyRole).toBeNull();
+    expect(out.confidence?.partyRole).toBeCloseTo(0.5); // 2 von 4 Läufen
+  });
+
+  it('in allen Läufen offen → Achse bleibt offen, keine Konfidenz', () => {
+    const out = aggregateVotes([run({}), run({})]);
+    expect(out.labels.partyRole).toBeUndefined();
+    expect(out.confidence?.partyRole).toBeUndefined();
+  });
+
+  it('Tie ist deterministisch (Label-String aufsteigend)', () => {
+    const a = aggregateVotes([run({ partyRole: 'processor' }), run({ partyRole: 'controller' })]);
+    const b = aggregateVotes([run({ partyRole: 'controller' }), run({ partyRole: 'processor' })]);
+    expect(a.labels.partyRole).toBe('controller');
+    expect(b.labels.partyRole).toBe('controller');
+    expect(a.confidence?.partyRole).toBeCloseTo(0.5);
+  });
+
+  it('Tie zwischen null und einer id → null gewinnt (Enthaltung), Konfidenz 0.5', () => {
+    const a = aggregateVotes([run({ partyRole: 'controller' }), run({ partyRole: null })]);
+    const b = aggregateVotes([run({ partyRole: null }), run({ partyRole: 'supervisory_authority' })]);
+    expect(a.labels.partyRole).toBeNull();
+    expect(b.labels.partyRole).toBeNull();
+    expect(a.confidence?.partyRole).toBeCloseTo(0.5);
+  });
+
+  it('leere Eingabe → nur leere Labels', () => {
+    expect(aggregateVotes([])).toEqual({ labels: {} });
+  });
+
+  it('partyRoleObserved: häufigste nicht-leere Beobachtung', () => {
+    const out = aggregateVotes([run({}, 'Betreiber'), run({}, 'Anbieter'), run({}, 'Betreiber')]);
+    expect(out.partyRoleObserved).toBe('Betreiber');
+  });
+});
+
+describe('withSelfConsistency (THE-597)', () => {
+  const golden = loadTypingGolden(FIXTURE);
+
+  it('ruft den inneren Classifier genau k-mal je Fall und aggregiert', async () => {
+    let calls = 0;
+    const inner: Classify = async () => {
+      calls++;
+      return { labels: { partyRole: calls % 3 === 0 ? 'processor' : 'controller' } };
+    };
+    const wrapped = withSelfConsistency(inner, 3);
+    const out = await wrapped(golden.cases[0]);
+    expect(calls).toBe(3);
+    expect(out.labels.partyRole).toBe('controller');
+    expect(out.confidence?.partyRole).toBeCloseTo(2 / 3);
+  });
+
+  it('k < 2 → der innere Classifier selbst', () => {
+    const inner: Classify = async (c) => ({ labels: c.labels });
+    expect(withSelfConsistency(inner, 1)).toBe(inner);
+  });
+
+  it('Konfidenz landet über evaluateTyping in der Achsen-Kalibrierung', async () => {
+    let i = 0;
+    const flaky: Classify = async (c) => ({ labels: i++ % 2 === 0 ? c.labels : { ...c.labels, normKind: 'guideline' } });
+    const report = await evaluateTyping({ golden, classify: withSelfConsistency(flaky, 4) });
+    expect(report.axes.normKind.calibration).not.toBeNull();
   });
 });

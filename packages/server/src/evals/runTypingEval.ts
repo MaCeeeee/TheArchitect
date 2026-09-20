@@ -75,6 +75,55 @@ export async function evaluateTyping(args: {
   return buildTypingReport(evalCases);
 }
 
+// ─── THE-597: Self-Consistency als retrospektive Konfidenz ──────
+//
+// Die Typisierung trägt heute keine Confidence (tp-4 fragt nur nach ids).
+// Für das retrospektive Gate wird sie erzeugt, ohne den Prompt zu ändern:
+// k Läufe je Fall, Mehrheit je Achse, Konfidenz = Stimmenanteil. Das ist
+// dasselbe Signal wie `selfConsistency` in escalation.service.ts, nur je
+// Achse statt je Element. Rein und ohne LLM testbar.
+
+/** `null` (nicht anwendbar) braucht einen Schlüssel, der mit keiner E6-id kollidiert; „na" ist der Prompt-Marker. */
+const NA_VOTE = 'na';
+/** Tie-Break: `na` (Enthaltung) vor jeder id, dann String aufsteigend — '' sortiert vor allem. */
+const tieRank = (key: string): string => (key === NA_VOTE ? '' : key);
+/** Byte-Reihenfolge statt localeCompare: ids tragen `_` und `-`, ICU-Kollation ist maschinenabhängig. */
+const byteCompare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+export function aggregateVotes(runs: Classification[]): Classification {
+  const labels: TypingLabels = {};
+  const confidence: Partial<Record<TypingAxis, number>> = {};
+  const k = runs.length;
+  if (k === 0) return { labels };
+  for (const axis of TYPING_AXES) {
+    const counts = new Map<string, number>();
+    for (const r of runs) {
+      const v = r.labels[axis];
+      if (v === undefined) continue; // offen = keine Stimme
+      const key = v === null ? NA_VOTE : v;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    if (counts.size === 0) continue; // in allen Läufen offen → bleibt offen
+    const [winner, votes] = [...counts.entries()].sort((a, b) => b[1] - a[1] || byteCompare(tieRank(a[0]), tieRank(b[0])))[0];
+    labels[axis] = winner === NA_VOTE ? null : winner;
+    confidence[axis] = votes / k;
+  }
+  const observed = new Map<string, number>();
+  for (const r of runs) if (r.partyRoleObserved) observed.set(r.partyRoleObserved, (observed.get(r.partyRoleObserved) ?? 0) + 1);
+  const topObserved = [...observed.entries()].sort((a, b) => b[1] - a[1] || byteCompare(a[0], b[0]))[0]?.[0];
+  return { labels, confidence, ...(topObserved ? { partyRoleObserved: topObserved } : {}) };
+}
+
+/** k Läufe des inneren Classifiers je Fall, sequenziell (Rate-Limits), aggregiert. k < 2 = unverändert. */
+export function withSelfConsistency(inner: Classify, k: number): Classify {
+  if (k < 2) return inner;
+  return async (c) => {
+    const runs: Classification[] = [];
+    for (let i = 0; i < k; i++) runs.push(await inner(c));
+    return aggregateVotes(runs);
+  };
+}
+
 // ─── Markdown-Report (rein) ─────────────────────────────────────
 
 function pct(x: number): string {
