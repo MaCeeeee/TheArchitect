@@ -479,21 +479,40 @@ export interface RoutingStat {
   caught: number;
   /** richtige Vorhersagen mit confidence < threshold (geroutet = Fehlalarm) */
   falseAlarms: number;
-  /** caught / wrong; 0 wenn wrong = 0 */
+  /**
+   * caught / wrong; 0 wenn wrong = 0.
+   * 0 bei leerem Nenner ist eine Konvention (spec R-003), keine Aussage —
+   * Aufrufer rendern bei `wrong === 0` bzw. `correct === 0` „—" statt 0 %.
+   */
   recall: number;
-  /** falseAlarms / correct; 0 wenn correct = 0 */
+  /**
+   * falseAlarms / correct; 0 wenn correct = 0.
+   * 0 bei leerem Nenner ist eine Konvention (spec R-003), keine Aussage —
+   * Aufrufer rendern bei `wrong === 0` bzw. `correct === 0` „—" statt 0 %.
+   */
   falseAlarmRate: number;
 }
 
+/**
+ * Eingabe-Kontrakt: `confidence` endlich und in [0,1]; nicht-endliche Werte
+ * werden nicht gefiltert (wie in expectedCalibrationError) und würden still
+ * zählen ohne je geroutet zu werden.
+ *
+ * @param thresholds Schwellen sind exklusiv (`confidence < t`): 1.0 routet
+ *   alles UNTER voller Konfidenz; ein „alles routen"-Punkt braucht > 1
+ *   (z. B. 1.01). Bewusst anders als die inklusive letzte Bandkante in
+ *   expectedCalibrationError, weil Routing ein kumulativer Sweep ist, kein
+ *   Binning.
+ */
 export function thresholdRoutingStats(
   samples: CalibrationSample[],
   thresholds: number[] = [0.6, 0.8, 1.0]
 ): RoutingStat[] {
-  const wrong = samples.filter((s) => !s.correct);
-  const correct = samples.filter((s) => s.correct);
-  return thresholds.map((threshold) => {
-    const caught = wrong.filter((s) => s.confidence < threshold).length;
-    const falseAlarms = correct.filter((s) => s.confidence < threshold).length;
+  const wrong = samples.filter(s => !s.correct);
+  const correct = samples.filter(s => s.correct);
+  return thresholds.map(threshold => {
+    const caught = wrong.filter(s => s.confidence < threshold).length;
+    const falseAlarms = correct.filter(s => s.confidence < threshold).length;
     return {
       threshold,
       wrong: wrong.length,
@@ -511,10 +530,14 @@ export function thresholdRoutingStats(
  * Ties zählen 0,5. 0,5 = keine Information; null, wenn eine Klasse fehlt
  * (dann ist die Frage nicht gestellt, nicht „bestanden"). O(n·m) — für
  * Eval-Größen (≤ 10⁴ Paare) bewusst simpel statt sortiert.
+ *
+ * Eingabe-Kontrakt: `confidence` endlich und in [0,1]; nicht-endliche Werte
+ * werden nicht gefiltert (wie in expectedCalibrationError) und würden still
+ * zählen ohne je geroutet zu werden.
  */
 export function aurocFromSamples(samples: CalibrationSample[]): number | null {
-  const pos = samples.filter((s) => s.correct).map((s) => s.confidence);
-  const neg = samples.filter((s) => !s.correct).map((s) => s.confidence);
+  const pos = samples.filter(s => s.correct).map(s => s.confidence);
+  const neg = samples.filter(s => !s.correct).map(s => s.confidence);
   if (pos.length === 0 || neg.length === 0) return null;
   let sum = 0;
   for (const p of pos) for (const n of neg) sum += p > n ? 1 : p === n ? 0.5 : 0;
