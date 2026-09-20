@@ -113,9 +113,12 @@ describe('aggregateVotes (THE-597 Self-Consistency)', () => {
     expect(aggregateVotes([])).toEqual({ labels: {} });
   });
 
-  it('partyRoleObserved: häufigste nicht-leere Beobachtung', () => {
-    const out = aggregateVotes([run({}, 'Betreiber'), run({}, 'Anbieter'), run({}, 'Betreiber')]);
-    expect(out.partyRoleObserved).toBe('Betreiber');
+  it('partyRoleObserved: nur bei Mehrheit über alle Läufe', () => {
+    const majority = aggregateVotes([run({}, 'Betreiber'), run({}, 'Anbieter'), run({}, 'Betreiber')]);
+    expect(majority.partyRoleObserved).toBe('Betreiber');
+
+    const noMajority = aggregateVotes([run({}, 'Betreiber'), run({}), run({}), run({})]);
+    expect(noMajority.partyRoleObserved).toBeUndefined();
   });
 });
 
@@ -124,10 +127,8 @@ describe('withSelfConsistency (THE-597)', () => {
 
   it('ruft den inneren Classifier genau k-mal je Fall und aggregiert', async () => {
     let calls = 0;
-    const inner: Classify = async () => {
-      calls++;
-      return { labels: { partyRole: calls % 3 === 0 ? 'processor' : 'controller' } };
-    };
+    const seq = ['controller', 'controller', 'processor'];
+    const inner: Classify = async () => ({ labels: { partyRole: seq[calls++] } });
     const wrapped = withSelfConsistency(inner, 3);
     const out = await wrapped(golden.cases[0]);
     expect(calls).toBe(3);
@@ -135,16 +136,24 @@ describe('withSelfConsistency (THE-597)', () => {
     expect(out.confidence?.partyRole).toBeCloseTo(2 / 3);
   });
 
-  it('k < 2 → der innere Classifier selbst', () => {
+  it('k < 2 → der innere Classifier selbst', async () => {
     const inner: Classify = async (c) => ({ labels: c.labels });
     expect(withSelfConsistency(inner, 1)).toBe(inner);
+
+    const innerWithConfidence: Classify = async () => ({
+      labels: { partyRole: 'controller' },
+      confidence: { partyRole: 0.42 },
+    });
+    const out = await withSelfConsistency(innerWithConfidence, 1)(golden.cases[0]);
+    expect(out.confidence?.partyRole).toBe(0.42);
   });
 
-  it('Konfidenz landet über evaluateTyping in der Achsen-Kalibrierung', async () => {
+  it('Mehrheit über k=3 Läufe: Gold gewinnt, Konfidenz 2/3 landet in der Kalibrierung', async () => {
     let i = 0;
-    const flaky: Classify = async (c) => ({ labels: i++ % 2 === 0 ? c.labels : { ...c.labels, normKind: 'guideline' } });
-    const report = await evaluateTyping({ golden, classify: withSelfConsistency(flaky, 4) });
-    expect(report.axes.normKind.calibration).not.toBeNull();
+    const flaky: Classify = async (c) => ({ labels: i++ % 3 === 2 ? { ...c.labels, normKind: 'guideline' } : c.labels });
+    const report = await evaluateTyping({ golden, classify: withSelfConsistency(flaky, 3) });
+    expect(report.axes.normKind.accuracy.accuracy).toBe(1);
+    expect(report.axes.normKind.calibration?.samples).toBe(4);
   });
 });
 

@@ -4,15 +4,16 @@
  * Instruct-Prompt wie der Prelabel-Schritt und vergleicht gegen die menschlich
  * adjudizierten Gold-Labels.
  *
- * Aufbau bewusst dreigeteilt:
+ * Aufbau bewusst viergeteilt:
  *   - renderTypingReportMarkdown : rein (kein I/O) → testbar.
  *   - evaluateTyping             : Kern, `classify` INJIZIERT → mit Stub testbar,
  *                                  kein Live-LLM nötig.
  *   - main                       : Glue — echter Anthropic-Classifier (Reuse aus
  *                                  prelabel-typing) + C_score-Band (norm.service).
+ *   - aggregateVotes/withSelfConsistency + renderThe597Section : rein, THE-597.
  *
  *   export ANTHROPIC_API_KEY=sk-...
- *   npm run typing:eval -- --golden src/evals/golden/typing.dsgvo.json [--samples <k>]
+ *   npm run typing:eval -- --golden src/evals/golden/typing.dsgvo.json [--samples <k> (ungerade empfohlen)]
  *
  * Freigabe-Schwellen je Suggest-Feature: docs/evals/typing-release-gates.md (AC-5).
  *
@@ -83,38 +84,61 @@ export async function evaluateTyping(args: {
 // Die Typisierung trägt heute keine Confidence (tp-4 fragt nur nach ids).
 // Für das retrospektive Gate wird sie erzeugt, ohne den Prompt zu ändern:
 // k Läufe je Fall, Mehrheit je Achse, Konfidenz = Stimmenanteil. Das ist
-// dasselbe Signal wie `selfConsistency` in escalation.service.ts, nur je
-// Achse statt je Element. Rein und ohne LLM testbar.
+// verwandt mit `selfConsistency` in escalation.service.ts (Anteil
+// übereinstimmender Läufe) — dort Präsenz je Element, hier Mehrheitsanteil
+// je Achse; anders als dort gibt es keine getrennte Generator-Confidence,
+// der Stimmenanteil IST die Konfidenz. Rein und ohne LLM testbar.
 
-/** `null` (nicht anwendbar) braucht einen Schlüssel, der mit keiner E6-id kollidiert; „na" ist der Prompt-Marker. */
-const NA_VOTE = 'na';
-/** Tie-Break: `na` (Enthaltung) vor jeder id, dann String aufsteigend — '' sortiert vor allem. */
-const tieRank = (key: string): string => (key === NA_VOTE ? '' : key);
+/**
+ * Tie-Break: `null` (Enthaltung) vor jeder id, dann String aufsteigend — ''
+ * sortiert vor allem. Bei Gleichstand lieber keine Aussage als eine
+ * halbsichere Rolle.
+ */
+const tieRank = (key: string | null): string => (key === null ? '' : key);
 /** Byte-Reihenfolge statt localeCompare: ids tragen `_` und `-`, ICU-Kollation ist maschinenabhängig. */
 const byteCompare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
+/**
+ * Mehrheit je Achse.
+ *
+ * `undefined` = keine Stimme; `null` = Stimme „nicht anwendbar". Bleibt eine
+ * Achse in allen Läufen offen, bleibt sie offen (kein Label, keine Konfidenz).
+ *
+ * Konfidenz = Stimmen des Gewinners / k über ALLE Läufe — offene Läufe
+ * drücken sie: Schweigen ist Unsicherheit. Deshalb sind `[a,a,b,b]` und
+ * `[a,a,offen,offen]` beide 0,5 — gewollt, weil beides ein Routing-Fall ist.
+ *
+ * Tie-Break: Enthaltung (`null`) vor jeder id, sonst Byte-Reihenfolge (siehe
+ * `tieRank`).
+ *
+ * Eine vom inneren Classifier gesetzte `confidence` wird verworfen.
+ *
+ * k sollte ungerade gewählt werden, damit auf einer Achse kein 2:2-Tie
+ * entsteht.
+ */
 export function aggregateVotes(runs: Classification[]): Classification {
   const labels: TypingLabels = {};
   const confidence: Partial<Record<TypingAxis, number>> = {};
   const k = runs.length;
   if (k === 0) return { labels };
   for (const axis of TYPING_AXES) {
-    const counts = new Map<string, number>();
+    const counts = new Map<string | null, number>();
     for (const r of runs) {
       const v = r.labels[axis];
       if (v === undefined) continue; // offen = keine Stimme
-      const key = v === null ? NA_VOTE : v;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
+      counts.set(v, (counts.get(v) ?? 0) + 1);
     }
     if (counts.size === 0) continue; // in allen Läufen offen → bleibt offen
-    const [winner, votes] = [...counts.entries()].sort((a, b) => b[1] - a[1] || byteCompare(tieRank(a[0]), tieRank(b[0])))[0];
-    labels[axis] = winner === NA_VOTE ? null : winner;
+    const [winner, votes] = [...counts.entries()].sort(([ka, na], [kb, nb]) => nb - na || byteCompare(tieRank(ka), tieRank(kb)))[0];
+    labels[axis] = winner;
     confidence[axis] = votes / k;
   }
   const observed = new Map<string, number>();
   for (const r of runs) if (r.partyRoleObserved) observed.set(r.partyRoleObserved, (observed.get(r.partyRoleObserved) ?? 0) + 1);
-  const topObserved = [...observed.entries()].sort((a, b) => b[1] - a[1] || byteCompare(a[0], b[0]))[0]?.[0];
-  return { labels, confidence, ...(topObserved ? { partyRoleObserved: topObserved } : {}) };
+  const topEntry = [...observed.entries()].sort(([ka, na], [kb, nb]) => nb - na || byteCompare(ka, kb))[0];
+  const topObserved = topEntry?.[0];
+  const topCount = topEntry?.[1] ?? 0;
+  return { labels, confidence, ...(topCount > k / 2 ? { partyRoleObserved: topObserved } : {}) };
 }
 
 /** k Läufe des inneren Classifiers je Fall, sequenziell (Rate-Limits), aggregiert. k < 2 = unverändert. */
@@ -322,7 +346,7 @@ async function main(): Promise<void> {
   const gi = argv.indexOf('--golden');
   const goldenPath = gi !== -1 ? argv[gi + 1] : undefined;
   if (!goldenPath) {
-    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>] [--samples <k>]');
+    console.error('Usage: typing:eval --golden <typing-golden.json> [--purpose <purpose-context.json>] [--samples <k> (ungerade empfohlen)]');
     process.exitCode = 2;
     return;
   }
