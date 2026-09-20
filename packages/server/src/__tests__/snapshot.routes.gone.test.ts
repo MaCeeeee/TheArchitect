@@ -83,11 +83,31 @@ describe('GET /api/snapshots/:token (THE-655)', () => {
     expect(peekSnapshot(token)).toBeNull();
   });
 
-  it('410 auch bei leerem createdBy — fail closed, ohne Datenbankfrage', async () => {
+  it('wirft die Existenzprüfung, antwortet die Route 500 und der Token bleibt bestehen', async () => {
+    const token = await share();
+    projectExists.mockRejectedValue(new Error('mongo down'));
+    const res = await request(makeApp()).get(`/api/snapshots/${token}`);
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({ success: false, error: 'Failed to load snapshot' });
+    expect(peekSnapshot(token)).not.toBeNull();
+    projectExists.mockResolvedValue({ _id: PROJECT });
+    const again = await request(makeApp()).get(`/api/snapshots/${token}`);
+    expect(again.status).toBe(200);
+  });
+
+  it('410 auch bei leerem createdBy — fail closed, ohne Abfrage des Kontos', async () => {
     const token = await share({ createdBy: '' });
     const res = await request(makeApp()).get(`/api/snapshots/${token}`);
     expect(res.status).toBe(410);
+    expect(res.body.error).toMatch(/deleted/i);
     expect(userExists).not.toHaveBeenCalled();
+  });
+
+  it('410 bei ungültiger projectId — fail closed, ohne Abfrage des Projekts', async () => {
+    const token = await share({ projectId: 'not-an-objectid' });
+    const res = await request(makeApp()).get(`/api/snapshots/${token}`);
+    expect(res.status).toBe(410);
+    expect(projectExists).not.toHaveBeenCalled();
   });
 
   it('404 für unbekannten Token — ohne Datenbankfrage', async () => {

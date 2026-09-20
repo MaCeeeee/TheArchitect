@@ -130,16 +130,28 @@ export interface OriginChecks {
 }
 
 /**
- * Standard-Prüfer gegen MongoDB. Ein Wert, der keine ObjectId ist (z. B. ein
- * leeres createdBy), gilt als nicht existent — fail closed: lieber ein
- * Link zu viel gesperrt als ein Link ohne Eigentümer öffentlich.
+ * Standard-Prüfer gegen MongoDB. Zwei Ausgänge, bewusst unterschieden:
+ * "existiert nicht" (Projekt/Owner fehlt in der DB) → gone, der Token wird
+ * gelöscht. "nicht feststellbar" (Datenbank nicht erreichbar, die Abfrage
+ * wirft) → der Fehler wird propagiert, nie als `false` interpretiert; der
+ * Token bleibt bestehen, die Route antwortet 500. Kein `.catch(() => false)`
+ * hier — ein Mongo-Aussetzer würde sonst jeden in dieser Zeit besuchten
+ * Link dauerhaft löschen.
+ *
+ * `mongoose.isValidObjectId` (bson ≥ 6) akzeptiert für Strings nur die
+ * 24-Hex-Form; ein leeres oder 12-Zeichen-createdBy gilt als nicht
+ * existent, ohne DB-Abfrage — fail closed: lieber ein Link zu viel
+ * gesperrt als ein Link ohne Eigentümer öffentlich.
  */
 export const DEFAULT_ORIGIN_CHECKS: OriginChecks = {
   projectExists: async (id) => mongoose.isValidObjectId(id) && !!(await Project.exists({ _id: id })),
   ownerExists: async (id) => mongoose.isValidObjectId(id) && !!(await User.exists({ _id: id })),
 };
 
-/** Liest ohne zu zählen: null bei unbekannt, abgelaufen oder Zugriffs-Limit erreicht. */
+/**
+ * Liest ohne zu zählen: null bei unbekannt, abgelaufen oder Zugriffs-Limit erreicht.
+ * räumt einen abgelaufenen Eintrag dabei weg (einzige Nebenwirkung).
+ */
 export function peekSnapshot(token: string): Snapshot | null {
   const snapshot = snapshotStore.get(token);
   if (!snapshot) return null;
@@ -163,11 +175,11 @@ export async function resolveSharedSnapshot(
   const peeked = peekSnapshot(token);
   if (!peeked) return { kind: 'not_found' };
   if (!(await checks.projectExists(peeked.projectId))) {
-    snapshotStore.delete(token);
+    revokeSnapshot(token);
     return { kind: 'gone', reason: 'project' };
   }
   if (!(await checks.ownerExists(peeked.createdBy))) {
-    snapshotStore.delete(token);
+    revokeSnapshot(token);
     return { kind: 'gone', reason: 'owner' };
   }
   const snapshot = getSnapshot(token);
@@ -175,20 +187,8 @@ export async function resolveSharedSnapshot(
 }
 
 export function getSnapshot(token: string): Snapshot | null {
-  const snapshot = snapshotStore.get(token);
+  const snapshot = peekSnapshot(token);
   if (!snapshot) return null;
-
-  // Check expiry
-  if (new Date() > snapshot.expiresAt) {
-    snapshotStore.delete(token);
-    return null;
-  }
-
-  // Check max accesses
-  if (snapshot.maxAccesses > 0 && snapshot.accessCount >= snapshot.maxAccesses) {
-    return null;
-  }
-
   snapshot.accessCount++;
   return snapshot;
 }

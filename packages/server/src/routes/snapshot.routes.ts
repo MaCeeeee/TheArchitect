@@ -10,9 +10,15 @@ const router = Router();
 // GET /api/snapshots/:token
 // THE-655: 410 Gone, sobald Projekt oder Ersteller gelöscht sind — ein
 // geteilter Link überlebt seinen Ursprung nicht (DSGVO Art. 17 Abs. 2).
-// Der Klartext-410 ist ein Einmal-Signal: der Token wird dabei entfernt,
-// jeder spätere Aufruf bekommt das generische 404 (keine Metadaten
-// gelöschter Projekte vorhalten).
+// Eine einzige Formulierung für beide Gründe: der anonyme Linkinhaber
+// erfährt nicht, welcher Ursprung gelöscht wurde (Art. 17 — keine Aussage
+// über eine gelöschte Person gegenüber einem anonymen Linkinhaber); der
+// Grund landet nur im Server-Log.
+// Einmal-Signal: der Token wird beim 410 entfernt, jeder spätere Aufruf
+// bekommt das generische 404. Bewusst ohne Tombstone-Speicher (Grund:
+// Einfachheit — kein zweiter Store neben der In-Memory-Map, die ohnehin
+// nach Mongo wandern soll); Preis: ein Reload zeigt 404 statt des
+// Klartexts.
 router.get('/snapshots/:token', async (req: Request, res: Response) => {
   try {
     const token = String(req.params.token);
@@ -21,12 +27,10 @@ router.get('/snapshots/:token', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'Snapshot not found or expired' });
     }
     if (resolution.kind === 'gone') {
+      console.warn(`[Snapshot] gone (${resolution.reason}) for token ${token.slice(0, 8)}…`);
       return res.status(410).json({
         success: false,
-        error:
-          resolution.reason === 'project'
-            ? 'This shared link is no longer available: the project it belonged to has been deleted.'
-            : 'This shared link is no longer available: the account that created it has been deleted.',
+        error: 'This shared link is no longer available: the project or account it belonged to has been deleted.',
       });
     }
     const { snapshot } = resolution;
