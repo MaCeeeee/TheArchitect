@@ -48,8 +48,12 @@ coverage/
 # Agent skills (installed locally)
 .agents/
 
-# Claude Code local settings, plans, skills
-.claude/
+# Claude Code local settings, plans, skills — bis auf die geteilte Harness:
+# settings.json + hooks/ sind Projekt-Pruefer (Stop-Gate, Schutz der Tore)
+# und gelten fuer jede Session, lokal wie in der Cloud.
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 
 # Local working files (not for Git)
 docs/AUTO_SE_Transformation_CostEnrichment.csv

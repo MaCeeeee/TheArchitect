@@ -1,0 +1,39 @@
+{
+  "_hinweis": "Baseline des Architektur-Fitness-Tors (architectureFitness.test.ts). Bestand eingefroren am 2026-10-19. Neue Einträge nur nach menschlicher Entscheidung — die Datei ist durch .claude/hooks/protect-verifiers.sh geschützt. Behobene Stellen hier löschen (das Tor meldet sie als veraltet).",
+  "publicEndpoints": [
+    "auth.routes.ts POST /register",
+    "auth.routes.ts GET /verify-email",
+    "auth.routes.ts POST /resend-verification",
+    "auth.routes.ts POST /login",
+    "auth.routes.ts POST /mfa/verify",
+    "auth.routes.ts POST /refresh",
+    "auth.routes.ts POST /forgot-password",
+    "auth.routes.ts POST /reset-password",
+    "auth.routes.ts GET /oauth/google",
+    "auth.routes.ts GET /oauth/google/callback",
+    "auth.routes.ts POST /oauth/google/token",
+    "auth.routes.ts GET /oauth/github",
+    "auth.routes.ts GET /oauth/github/callback",
+    "auth.routes.ts GET /oauth/microsoft",
+    "auth.routes.ts GET /oauth/microsoft/callback",
+    "auth.routes.ts GET /oauth/providers",
+    "healthcheck.routes.ts POST /upload",
+    "healthcheck.routes.ts POST /scan",
+    "healthcheck.routes.ts GET /status/:token",
+    "healthcheck.routes.ts GET /report/:reportId",
+    "invitation.routes.ts GET /invitations/by-token/:token",
+    "marketplace.routes.ts GET /",
+    "marketplace.routes.ts GET /:templateId",
+    "regulations.routes.ts GET /regulations/corpus/health",
+    "snapshot.routes.ts GET /snapshots/:token",
+    "waitlist.routes.ts POST /"
+  ],
+  "unauditedSensitive": [
+    "auth.routes.ts POST /resend-verification",
+    "auth.routes.ts POST /mfa/setup",
+    "auth.routes.ts POST /refresh",
+    "settings.routes.ts PUT /preferences",
+    "settings.routes.ts PUT /connections/:connectionId",
+    "settings.routes.ts POST /connections/:connectionId/test"
+  ]
+}

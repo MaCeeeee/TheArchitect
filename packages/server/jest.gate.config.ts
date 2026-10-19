@@ -52,6 +52,11 @@ const GATE_SUITES = [
   'emptyMeasurement',
   // Mensch-Übereinstimmung des Paar-Richters (THE-382)
   'pairAgreement',
+  // Architektur-Regeln aus CLAUDE.md als Ratsche: Auth auf jedem Endpunkt,
+  // Abhängigkeitsrichtung, Audit bei sicherheitsrelevanten Schreibzugriffen.
+  // Grüne Funktions-Tests beweisen keine eingehaltene Architektur
+  // (Terminal-RSI, arXiv 2610.22192, §3.5).
+  'architectureFitness',
 ];
 
 const config: Config = {
