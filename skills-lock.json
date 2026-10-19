@@ -76,6 +76,12 @@
       "sourceType": "github",
       "computedHash": "d6a1704ca435018bd441ef4472e843bf6a2e9dbf3e8b75a0aae9c95e66efe7bd"
     },
+    "baoyu-youtube-transcript": {
+      "source": "jimliu/baoyu-skills",
+      "sourceType": "github",
+      "skillPath": "skills/baoyu-youtube-transcript/SKILL.md",
+      "computedHash": "27582028cbdd9c81232fba1aafbfa609e4dc1167bff4f2e89ca48a3ecd07049b"
+    },
     "bash-defensive-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",
