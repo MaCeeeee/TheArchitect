@@ -621,20 +621,60 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response) 
 const OAUTH_STATE_TTL = 600; // 10 minutes
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-async function createOAuthState(): Promise<string> {
+// Security-Audit H9: `state` war ein globaler Nonce ohne Bindung an den
+// Browser — ein Angreifer konnte dem Opfer die Callback-URL seines eigenen
+// Logins unterschieben (Login-CSRF). Jetzt gehört zu jedem state ein
+// HttpOnly-Cookie des Browsers, der den Login gestartet hat.
+const OAUTH_BROWSER_COOKIE = 'ta_oauth_binding';
+const OAUTH_COOKIE_PATH = '/api/auth/oauth';
+
+const sha256 = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+
+function readCookie(req: Request, name: string): string | undefined {
+  for (const part of (req.headers.cookie ?? '').split(';')) {
+    const eq = part.indexOf('=');
+    if (eq > 0 && part.slice(0, eq).trim() === name) return decodeURIComponent(part.slice(eq + 1).trim());
+  }
+  return undefined;
+}
+
+async function createOAuthState(res: Response): Promise<string> {
   const state = crypto.randomBytes(32).toString('hex');
+  const binding = crypto.randomBytes(32).toString('hex');
   const redis = getRedis();
-  await redis.set(`oauth:state:${state}`, '1', 'EX', OAUTH_STATE_TTL);
+  await redis.set(`oauth:state:${state}`, sha256(binding), 'EX', OAUTH_STATE_TTL);
+  res.cookie(OAUTH_BROWSER_COOKIE, binding, {
+    httpOnly: true,
+    sameSite: 'lax', // wird beim Top-Level-Redirect vom Provider zurück mitgeschickt
+    secure: process.env.NODE_ENV === 'production',
+    path: OAUTH_COOKIE_PATH,
+    maxAge: OAUTH_STATE_TTL * 1000,
+  });
   return state;
 }
 
-async function consumeOAuthState(state: string): Promise<boolean> {
+async function consumeOAuthState(req: Request, res: Response, state: string): Promise<boolean> {
   const redis = getRedis();
   const key = `oauth:state:${state}`;
-  const val = await redis.get(key);
-  if (!val) return false;
+  const expected = await redis.get(key);
+  if (!expected) return false;
   await redis.del(key);
-  return true;
+  res.clearCookie(OAUTH_BROWSER_COOKIE, { path: OAUTH_COOKIE_PATH });
+  const binding = readCookie(req, OAUTH_BROWSER_COOKIE);
+  if (!binding) return false;
+  const actual = Buffer.from(sha256(binding));
+  const wanted = Buffer.from(expected);
+  return actual.length === wanted.length && crypto.timingSafeEqual(actual, wanted);
+}
+
+// Security-Audit H8: eine OAuth-Identität wird nur dann an ein bestehendes
+// Konto gehängt, wenn BEIDE Seiten die E-Mail bestätigt haben. Sonst konnte
+// ein Angreifer `victim@corp` mit eigenem Passwort vorregistrieren und das
+// Opfer landete bei dessen erstem SSO-Login im Konto des Angreifers.
+class OAuthLinkRefusedError extends Error {
+  constructor() {
+    super('An account with this email already exists. Please sign in with your password.');
+  }
 }
 
 async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
@@ -648,6 +688,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   // 2) Existing user with same email — link the OAuth provider
   user = await User.findOne({ email: profile.email.toLowerCase() });
   if (user) {
+    if (!profile.emailVerified || !user.emailVerified) throw new OAuthLinkRefusedError();
     user.oauthProviders.push({
       provider: profile.provider,
       providerId: profile.providerId,
@@ -669,6 +710,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
     email: profile.email.toLowerCase(),
     name: profile.name,
     role,
+    emailVerified: profile.emailVerified,
     oauthProviders: [
       {
         provider: profile.provider,
@@ -713,7 +755,7 @@ function redirectWithError(res: Response, message: string) {
 
 router.get('/oauth/google', async (_req: Request, res: Response) => {
   try {
-    const state = await createOAuthState();
+    const state = await createOAuthState(res);
     const params = new URLSearchParams({
       client_id: process.env.GOOGLE_CLIENT_ID!,
       redirect_uri: process.env.GOOGLE_CALLBACK_URL!,
@@ -735,7 +777,7 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'Google login was cancelled');
   }
 
-  if (!(await consumeOAuthState(state))) {
+  if (!(await consumeOAuthState(req, res, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
@@ -745,6 +787,7 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
     return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] Google callback error:', err);
+    if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);
     return redirectWithError(res, 'Google authentication failed');
   }
 });
@@ -774,7 +817,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
   }
 
   try {
-    let profile: { provider: 'google'; providerId: string; email: string; name: string };
+    let profile: OAuthProfile;
 
     if (flow === 'auth-code') {
       // Auth-code flow: exchange code for tokens, then verify ID token
@@ -812,6 +855,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
         providerId: payload.sub!,
         email: payload.email,
         name: payload.name || payload.email.split('@')[0],
+        emailVerified: payload.email_verified === true,
       };
     } else {
       // ID Token flow (One-Tap): credential is a JWT → verify with Google
@@ -828,6 +872,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
         providerId: payload.sub!,
         email: payload.email,
         name: payload.name || payload.email.split('@')[0],
+        emailVerified: payload.email_verified === true,
       };
     }
 
@@ -844,6 +889,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
 
     return res.json({ accessToken, refreshToken, user: { id: user._id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified ?? true } });
   } catch (err) {
+    if (err instanceof OAuthLinkRefusedError) return res.status(409).json({ error: err.message });
     console.error('[OAuth] Google token verification error:', err);
     return res.status(401).json({ error: 'Google authentication failed' });
   }
@@ -853,7 +899,7 @@ router.post('/oauth/google/token', authLimiter, async (req: Request, res: Respon
 
 router.get('/oauth/github', async (_req: Request, res: Response) => {
   try {
-    const state = await createOAuthState();
+    const state = await createOAuthState(res);
     const params = new URLSearchParams({
       client_id: process.env.GITHUB_CLIENT_ID!,
       redirect_uri: process.env.GITHUB_CALLBACK_URL!,
@@ -873,7 +919,7 @@ router.get('/oauth/github/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'GitHub login was cancelled');
   }
 
-  if (!(await consumeOAuthState(state))) {
+  if (!(await consumeOAuthState(req, res, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
@@ -883,6 +929,7 @@ router.get('/oauth/github/callback', async (req: Request, res: Response) => {
     return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] GitHub callback error:', err);
+    if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);
     return redirectWithError(res, 'GitHub authentication failed');
   }
 });
@@ -891,7 +938,7 @@ router.get('/oauth/github/callback', async (req: Request, res: Response) => {
 
 router.get('/oauth/microsoft', async (_req: Request, res: Response) => {
   try {
-    const state = await createOAuthState();
+    const state = await createOAuthState(res);
     const tenantId = process.env.ENTRA_TENANT_ID || 'common';
     const params = new URLSearchParams({
       client_id: process.env.ENTRA_CLIENT_ID!,
@@ -913,7 +960,7 @@ router.get('/oauth/microsoft/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'Microsoft login was cancelled');
   }
 
-  if (!(await consumeOAuthState(state))) {
+  if (!(await consumeOAuthState(req, res, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
@@ -923,6 +970,7 @@ router.get('/oauth/microsoft/callback', async (req: Request, res: Response) => {
     return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
   } catch (err) {
     console.error('[OAuth] Microsoft callback error:', err);
+    if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);
     return redirectWithError(res, 'Microsoft authentication failed');
   }
 });
