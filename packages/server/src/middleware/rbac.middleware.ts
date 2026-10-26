@@ -56,9 +56,10 @@ export function requirePermission(...permissions: Permission[]) {
 }
 
 /**
- * Fuer Aktionen, die Zugangsdaten verwalten: nur aus einer interaktiven
+ * Fuer Aktionen, die Konto oder Zugangsdaten verwalten (Keys, Passwort,
+ * MFA, Sessions, OAuth-Links, Konto loeschen): nur aus einer interaktiven
  * Sitzung, nie per API-Key — sonst praegt sich ein Scope-Key einen
- * unbeschraenkten Nachfolger (Security-Audit H12).
+ * unbeschraenkten Nachfolger oder sperrt den Besitzer aus (Security-Audit H12).
  */
 export function requireInteractiveAuth(req: Request, res: Response, next: NextFunction) {
   if (req.authMethod === 'api_key') {

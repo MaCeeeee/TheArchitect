@@ -59,7 +59,7 @@ router.put('/profile', async (req: Request, res: Response) => {
 });
 
 // PUT /password
-router.put('/password', async (req: Request, res: Response) => {
+router.put('/password', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
@@ -98,7 +98,7 @@ router.put('/password', async (req: Request, res: Response) => {
 });
 
 // DELETE /account
-router.delete('/account', async (req: Request, res: Response) => {
+router.delete('/account', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { password } = req.body;
 
   const user = await User.findById(req.user!._id);
@@ -175,7 +175,7 @@ router.get('/oauth-providers', async (req: Request, res: Response) => {
 });
 
 // DELETE /oauth-providers/:provider
-router.delete('/oauth-providers/:provider', async (req: Request, res: Response) => {
+router.delete('/oauth-providers/:provider', requireInteractiveAuth, async (req: Request, res: Response) => {
   const user = req.user!;
   const provider = req.params.provider;
 
@@ -215,7 +215,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 // DELETE /sessions — alle ANDEREN Sitzungen abmelden (Geraeteverlust-Fall).
 // Die eigene bleibt: wer "ueberall abmelden" klickt, will nicht selbst
 // mitten in der Aktion ausgesperrt werden.
-router.delete('/sessions', async (req: Request, res: Response) => {
+router.delete('/sessions', requireInteractiveAuth, async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
   const revoked = await revokeAllSessions(getRedis(), userId, req.jwtPayload?.sid);
   await createAuditEntry({
@@ -229,7 +229,7 @@ router.delete('/sessions', async (req: Request, res: Response) => {
 });
 
 // DELETE /sessions/:sessionId
-router.delete('/sessions/:sessionId', async (req: Request, res: Response) => {
+router.delete('/sessions/:sessionId', requireInteractiveAuth, async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
   const deleted = await revokeSession(getRedis(), userId, String(req.params.sessionId));
   if (!deleted) return res.status(404).json({ error: 'Session not found' });
@@ -315,7 +315,7 @@ router.post('/api-keys', requireInteractiveAuth, async (req: Request, res: Respo
 });
 
 // DELETE /api-keys/:keyId
-router.delete('/api-keys/:keyId', async (req: Request, res: Response) => {
+router.delete('/api-keys/:keyId', requireInteractiveAuth, async (req: Request, res: Response) => {
   const key = await ApiKey.findOneAndDelete({
     _id: req.params.keyId,
     userId: req.user!._id,

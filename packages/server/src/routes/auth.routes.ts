@@ -13,6 +13,9 @@ import {
   verifyRefreshToken,
 } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
+// Security-Audit H12 (Review): MFA verwalten nur aus einer interaktiven
+// Sitzung — ein API-Key darf das zweite Faktor-Geheimnis nie ersetzen.
+import { requireInteractiveAuth } from '../middleware/rbac.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
 import { TOTP, generateSecret, generateURI } from 'otplib';
 import { isTotpCodeValid } from '../utils/totp';
@@ -358,7 +361,7 @@ router.post('/mfa/verify', authLimiter, async (req: Request, res: Response) => {
 });
 
 // MFA setup - generate secret and QR code
-router.post('/mfa/setup', authenticate, async (req: Request, res: Response) => {
+router.post('/mfa/setup', authenticate, requireInteractiveAuth, async (req: Request, res: Response) => {
   try {
     const user = await User.findById(req.user!._id);
     if (!user) {
@@ -381,7 +384,7 @@ router.post('/mfa/setup', authenticate, async (req: Request, res: Response) => {
 });
 
 // MFA confirm - verify a code to enable MFA
-router.post('/mfa/confirm', authenticate, async (req: Request, res: Response) => {
+router.post('/mfa/confirm', authenticate, requireInteractiveAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.body;
     const user = await User.findById(req.user!._id);
@@ -413,7 +416,7 @@ router.post('/mfa/confirm', authenticate, async (req: Request, res: Response) =>
 });
 
 // MFA disable
-router.post('/mfa/disable', authenticate, async (req: Request, res: Response) => {
+router.post('/mfa/disable', authenticate, requireInteractiveAuth, async (req: Request, res: Response) => {
   try {
     const { password } = req.body;
     const user = await User.findById(req.user!._id);

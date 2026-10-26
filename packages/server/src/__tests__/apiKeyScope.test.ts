@@ -47,10 +47,17 @@ jest.mock('../middleware/audit.middleware', () => ({ createAuditEntry: jest.fn(a
 jest.mock('../models/Connection', () => ({ Connection: {}, encryptCredentials: jest.fn(), decryptCredentials: jest.fn() }));
 jest.mock('../models/Project', () => ({ Project: {} }));
 jest.mock('../services/connectors', () => ({ getAllConnectorTypes: jest.fn(() => []), getConnector: jest.fn() }));
+jest.mock('../services/email.service', () => ({}));
+jest.mock('../services/upload.service', () => ({}));
+jest.mock('../services/oauth.service', () => ({}));
+jest.mock('../models/HealthReport', () => ({}));
+jest.mock('otplib', () => ({ generateSecret: () => 'S', generateURI: () => 'otpauth://x' }));
+jest.mock('qrcode', () => ({ toDataURL: async () => 'data:' }));
 
 import { authenticate, generateAccessToken } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import settingsRoutes from '../routes/settings.routes';
+import authRoutes from '../routes/auth.routes';
 
 function makeApp() {
   const app = express();
@@ -59,6 +66,7 @@ function makeApp() {
   app.delete('/probe/element', authenticate, requirePermission(PERMISSIONS.ELEMENT_DELETE), (_q, r) => r.json({ ok: true }));
   app.post('/probe/unguarded', authenticate, (_q, r) => r.json({ ok: true }));
   app.use('/api/settings', settingsRoutes);
+  app.use('/api/auth', authRoutes);
   return app;
 }
 
@@ -122,5 +130,25 @@ describe('API-Key-Scope (Security-Audit H12)', () => {
       .send({ name: 'reader', permissions: [PERMISSIONS.PROJECT_READ] });
     expect(res.status).toBe(201);
     expect(res.body.permissions).toEqual([PERMISSIONS.PROJECT_READ]);
+  });
+
+  // Review-Fund: ein Key (auch einer mit Schreib-Scope) konnte das Konto
+  // löschen, das MFA-Geheimnis ersetzen oder Sessions/Keys/OAuth-Links des
+  // Besitzers entfernen. Konto- und Zugangsverwaltung nur interaktiv.
+  it.each([
+    ['put', '/api/settings/password'],
+    ['delete', '/api/settings/account'],
+    ['delete', '/api/settings/oauth-providers/google'],
+    ['delete', '/api/settings/sessions'],
+    ['delete', '/api/settings/sessions/sid-1'],
+    ['delete', '/api/settings/api-keys/k-1'],
+    ['post', '/api/auth/mfa/setup'],
+    ['post', '/api/auth/mfa/confirm'],
+    ['post', '/api/auth/mfa/disable'],
+  ] as const)('refuses %s %s for any API key, scoped or not', async (method, url) => {
+    for (const key of [mintKey([PERMISSIONS.ELEMENT_CREATE]), mintKey([])]) {
+      const res = await request(makeApp())[method](url).set('X-API-Key', key).send({});
+      expect(res.status).toBe(403);
+    }
   });
 });
