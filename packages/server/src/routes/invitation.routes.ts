@@ -8,6 +8,7 @@ import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit, createAuditEntry } from '../middleware/audit.middleware';
 import { sendProjectInvitationEmail } from '../services/email.service';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { PERMISSIONS } from '@thearchitect/shared';
 
 const router = Router();
@@ -43,9 +44,14 @@ router.get(
   }
 );
 
+// Security-Audit H10: jede Einladung verschickt eine Mail an eine frei
+// gewählte Adresse — pro IP begrenzt, gegen Mailbombing über noreply@.
+const invitationEmailLimiter = rateLimit({ windowMs: 60 * 60_000, max: 30, name: 'invitation-email' });
+
 // Create invitation (send email)
 router.post(
   '/:id/invitations',
+  invitationEmailLimiter,
   authenticate,
   requirePermission(PERMISSIONS.PROJECT_MANAGE_COLLABORATORS),
   requireProjectAccess('editor'),
@@ -128,6 +134,7 @@ router.post(
 // Resend invitation email
 router.post(
   '/:id/invitations/:invitationId/resend',
+  invitationEmailLimiter,
   authenticate,
   requirePermission(PERMISSIONS.PROJECT_MANAGE_COLLABORATORS),
   requireProjectAccess('editor'),
