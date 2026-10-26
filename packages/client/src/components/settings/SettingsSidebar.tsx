@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { PLATFORM_ADMIN_ROLES } from '@thearchitect/shared';
 import { useAuthStore } from '../../stores/authStore';
 import {
   User, Lock, Palette, Bell, ShieldCheck, Key, Accessibility, CreditCard, Users, FileText, Shield, Plug, ShieldAlert,
@@ -20,7 +21,8 @@ const SECTIONS = [
   { id: 'ops-register', label: 'Ops Register', icon: ShieldAlert },
 ] as const;
 
-const ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
+// Nutzerverzeichnis, Audit-Log und Ops-Register sind plattformweit — nur Plattform-Admins
+const ADMIN_ROLES: readonly string[] = PLATFORM_ADMIN_ROLES;
 const BILLING_ROLES = ['chief_architect', 'enterprise_architect'];
 
 export default function SettingsSidebar() {

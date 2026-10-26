@@ -37,10 +37,27 @@ export const PERMISSIONS = {
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
+/**
+ * Plattform-Admins: implizit Zugriff auf JEDES Projekt und auf
+ * plattformweite Admin-Flächen (Nutzerverzeichnis, Audit-Log, Ops-Register).
+ *
+ * Nur chief_architect. Jede Selbstregistrierung wird enterprise_architect —
+ * stünde diese Rolle hier, könnte jeder aus dem Internet alle Mandanten lesen
+ * und löschen (Security-Audit C1). Projektzugriff kommt sonst ausschließlich
+ * über Eigentum oder Mitgliedschaft.
+ */
+export const PLATFORM_ADMIN_ROLES: readonly UserRole[] = ['chief_architect'];
+
+export function isPlatformAdmin(role: string | undefined | null): boolean {
+  return !!role && (PLATFORM_ADMIN_ROLES as readonly string[]).includes(role);
+}
+
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   chief_architect: Object.values(PERMISSIONS),
 
-  // ALL except ADMIN_SYSTEM_CONFIG (17 permissions)
+  // Alles innerhalb eigener Projekte inkl. Policy-Verwaltung — aber KEINE
+  // plattformweiten Admin-Rechte: das ist die Rolle jeder Selbstregistrierung
+  // (Security-Audit C1). (18 permissions)
   enterprise_architect: [
     PERMISSIONS.PROJECT_CREATE,
     PERMISSIONS.PROJECT_READ,
@@ -60,8 +77,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     PERMISSIONS.GOVERNANCE_VIEW,
     PERMISSIONS.GOVERNANCE_APPROVE,
     PERMISSIONS.GOVERNANCE_MANAGE_POLICIES,
-    PERMISSIONS.ADMIN_MANAGE_USERS,
-    PERMISSIONS.ADMIN_VIEW_AUDIT,
   ],
 
   // Peer architect roles: full CRUD + analytics + governance approve (15 permissions)

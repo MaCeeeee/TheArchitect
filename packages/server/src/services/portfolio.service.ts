@@ -254,6 +254,25 @@ export async function getLifecycleTimeline(projectId: string): Promise<Lifecycle
 
 // ─── Update lifecycle fields for a single element ───
 
+/**
+ * Die einzigen Felder, die der Lifecycle-Endpunkt schreiben darf.
+ * Cypher kann Property-KEYS nicht parametrisieren — jeder Key landet als Text
+ * in der Query. Ohne diese Allowlist wird ein JSON-Key aus dem Request-Body
+ * zur Cypher-Injection über Projektgrenzen hinweg (Security-Audit C2).
+ */
+export const LIFECYCLE_FIELDS = [
+  'lifecyclePhase',
+  'goLiveDate',
+  'endOfLifeDate',
+  'replacedBy',
+  'timeClassification',
+  'businessOwner',
+  'technicalOwner',
+  'businessCriticality',
+  'annualCost',
+  'userCount',
+] as const;
+
 export async function updateElementLifecycle(
   projectId: string,
   elementId: string,
@@ -273,7 +292,9 @@ export async function updateElementLifecycle(
   const sets: string[] = ['e.updatedAt = datetime().epochMillis'];
   const params: Record<string, unknown> = { projectId, elementId };
 
-  for (const [key, value] of Object.entries(fields)) {
+  // Über die Allowlist iterieren, nie über die Keys des Bodys.
+  for (const key of LIFECYCLE_FIELDS) {
+    const value = (fields as Record<string, unknown>)[key];
     if (value !== undefined) {
       sets.push(`e.${key} = $${key}`);
       params[key] = value;

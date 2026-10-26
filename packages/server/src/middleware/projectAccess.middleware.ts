@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { isPlatformAdmin } from '@thearchitect/shared';
 import { Project } from '../models/Project';
 
 const PROJECT_ROLE_HIERARCHY: Record<string, number> = {
@@ -7,9 +8,6 @@ const PROJECT_ROLE_HIERARCHY: Record<string, number> = {
   reviewer: 2,
   viewer: 1,
 };
-
-// System roles that get implicit full access to all projects
-const SYSTEM_ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
 
 /**
  * Middleware that checks if the authenticated user has access to the project.
@@ -31,8 +29,8 @@ export function requireProjectAccess(minProjectRole?: string) {
       return res.status(400).json({ error: 'Project ID required' });
     }
 
-    // System admins get implicit access
-    if (SYSTEM_ADMIN_ROLES.includes(user.role)) {
+    // Nur Plattform-Admins haben impliziten Zugriff (Security-Audit C1)
+    if (isPlatformAdmin(user.role)) {
       return next();
     }
 
