@@ -17,7 +17,7 @@ jest.mock('xlsx', () => {
 import { parseArchitectureFile } from '../services/upload.service';
 import { parseLeanIXExcel } from '../parsers/leanix.adapter';
 import { extractText } from '../services/document-parser.service';
-import { assertZipWithinBudget } from '../utils/zipBudget';
+import { sanitizeSpreadsheet, sanitizeZip } from '../utils/zipBudget';
 
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
@@ -38,6 +38,24 @@ function realXlsx(): Buffer {
 }
 
 const readSpy = XLSX.read as unknown as jest.Mock;
+
+/** Kompressionsmethoden aller LOKALEN Header — die liest SheetJS, nicht das Verzeichnis. */
+function localMethods(buf: Buffer): number[] {
+  const out: number[] = [];
+  for (let i = 0; i + 30 <= buf.length; i++) {
+    if (buf.readUInt32LE(i) === 0x04034b50) out.push(buf.readUInt16LE(i + 8));
+  }
+  return out;
+}
+
+/** Bombe, deren Zentralverzeichnis "stored" behauptet, deren lokaler Header aber deflate sagt. */
+function methodMismatchBomb(): Buffer {
+  const file = bomb('xl/worksheets/sheet1.xml');
+  for (let i = 0; i < file.length - 4; i++) {
+    if (file.readUInt32LE(i) === 0x02014b50) file.writeUInt16LE(0, i + 10);
+  }
+  return file;
+}
 
 describe('Dekompressionsbombe (Security-Audit H11)', () => {
   beforeEach(() => readSpy.mockClear());
@@ -71,13 +89,13 @@ describe('Dekompressionsbombe (Security-Audit H11)', () => {
     for (let i = 0; i < file.length - 4; i++) {
       if (file.readUInt32LE(i) === 0x02014b50) file.writeUInt32LE(1, i + 24);
     }
-    expect(() => assertZipWithinBudget(file)).toThrow(/Archive rejected/);
+    expect(() => sanitizeZip(file)).toThrow(/Archive rejected/);
   });
 
-  it('rejects data hidden outside the central directory', () => {
+  it('data hidden outside the central directory never reaches the parser', () => {
     // Ein gültiges, harmloses Archiv — davor ein lokaler Bomben-Eintrag, den
-    // das Zentralverzeichnis nicht nennt. Offsets werden korrekt verschoben,
-    // damit allein die Abdeckungsprüfung anschlägt.
+    // das Zentralverzeichnis nicht nennt (Offsets korrekt verschoben). Der
+    // Parser bekommt nur das neu gebaute Archiv — ohne den versteckten Eintrag.
     const hidden = bomb('hidden.xml');
     const hiddenLocal = hidden.subarray(0, hidden.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02])));
     const visible = new AdmZip();
@@ -89,12 +107,44 @@ describe('Dekompressionsbombe (Security-Audit H11)', () => {
       if (sig === 0x02014b50) file.writeUInt32LE(file.readUInt32LE(i + 42) + shift, i + 42);
       if (sig === 0x06054b50) file.writeUInt32LE(file.readUInt32LE(i + 16) + shift, i + 16);
     }
-    expect(() => assertZipWithinBudget(file)).toThrow(/outside its central directory/);
-    // Gegenprobe: das harmlose Archiv allein passiert.
-    expect(() => assertZipWithinBudget(visible.toBuffer())).not.toThrow();
+    const rebuilt = sanitizeZip(file);
+    expect(rebuilt.includes(Buffer.from('hidden.xml'))).toBe(false);
+    expect(rebuilt.length).toBeLessThan(1024);
   });
 
   it('lets non-zip input through untouched', () => {
-    expect(() => assertZipWithinBudget(Buffer.from('name,type\nCRM,application_component'))).not.toThrow();
+    const csv = Buffer.from('name,type\nCRM,application_component');
+    expect(sanitizeSpreadsheet(csv)).toBe(csv);
+  });
+
+  // Review-Funde: der Prüfer las das Archiv anders als die Parser.
+  it('rejects a bomb whose magic bytes are PK\\0\\0 — SheetJS erkennt ZIP schon an "PK" + zwei kleinen Bytes', () => {
+    const file = bomb('xl/worksheets/sheet1.xml');
+    file.writeUInt16LE(0, 2);
+    expect(() => parseArchitectureFile(file, 'landscape.xlsx')).toThrow(/Archive rejected/);
+    expect(readSpy).not.toHaveBeenCalled();
+  });
+
+  it('the parser only ever sees stored entries — kein Widerspruch Verzeichnis/lokaler Header nutzbar', () => {
+    try {
+      parseArchitectureFile(methodMismatchBomb(), 'landscape.xlsx');
+    } catch {
+      // Inhalt ist Unsinn — entscheidend ist, was XLSX.read bekommen hat.
+    }
+    for (const [buf] of readSpy.mock.calls as Array<[Buffer]>) {
+      expect(localMethods(buf).every((m) => m === 0)).toBe(true);
+    }
+  });
+
+  it('rejects a pptx bomb with bytes prepended (self-extracting style)', async () => {
+    const file = Buffer.concat([Buffer.from('MZ-prefix'), bomb('ppt/slides/slide1.xml')]);
+    await expect(extractText(file, PPTX_MIME, 'deck.pptx')).rejects.toThrow(/Archive rejected/);
+  });
+
+  it('sanitizeZip rebuilds a real xlsx that SheetJS still reads', () => {
+    const rebuilt = sanitizeZip(realXlsx());
+    expect(localMethods(rebuilt).every((m) => m === 0)).toBe(true);
+    const wb = (jest.requireActual('xlsx') as typeof XLSX).read(rebuilt, { type: 'buffer' });
+    expect(wb.SheetNames).toEqual(['Elements']);
   });
 });

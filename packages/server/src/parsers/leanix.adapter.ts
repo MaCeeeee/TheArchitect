@@ -10,7 +10,7 @@
  */
 import { v4 as uuid } from 'uuid';
 import * as XLSX from 'xlsx';
-import { assertZipWithinBudget } from '../utils/zipBudget';
+import { sanitizeSpreadsheet } from '../utils/zipBudget';
 import type { ParseResult, ParsedElement, ParsedConnection } from '../services/upload.service';
 import { ELEMENT_TYPES, LEGACY_TYPE_MAP } from '@thearchitect/shared';
 
@@ -108,8 +108,8 @@ function mapRisk(leanixRisk: string): string {
 // ─── Parser: LeanIX Excel/CSV Inventory Export ───
 
 export function parseLeanIXExcel(buffer: Buffer): ParseResult {
-  assertZipWithinBudget(buffer); // Security-Audit H11: vor dem Entpacken
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  // Security-Audit H11: SheetJS bekommt nur das budgetgeprüfte, neu gebaute Archiv.
+  const workbook = XLSX.read(sanitizeSpreadsheet(buffer), { type: 'buffer' });
   const elements: ParsedElement[] = [];
   const connections: ParsedConnection[] = [];
   const warnings: string[] = [];
@@ -372,8 +372,8 @@ export function isLeanIXFormat(buffer: Buffer, filename: string): boolean {
   // Excel: check for LeanIX-typical sheet names
   if (ext === 'xlsx' || ext === 'xls') {
     try {
-      assertZipWithinBudget(buffer); // Security-Audit H11: auch die Format-Erkennung entpackt
-      const wb = XLSX.read(buffer, { type: 'buffer', sheetRows: 0 });
+      // Security-Audit H11: auch die Format-Erkennung entpackt.
+      const wb = XLSX.read(sanitizeSpreadsheet(buffer), { type: 'buffer', sheetRows: 0 });
       const names = wb.SheetNames.map(s => s.toLowerCase());
       return names.some(n =>
         n.includes('application') && (
