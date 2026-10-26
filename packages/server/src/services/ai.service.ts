@@ -591,7 +591,7 @@ export async function generateMappingSuggestions(
     return;
   }
 
-  const standard = await Standard.findById(standardId);
+  const standard = await Standard.findOne({ _id: standardId, projectId });
   if (!standard) {
     onError(new Error('Standard not found'));
     return;

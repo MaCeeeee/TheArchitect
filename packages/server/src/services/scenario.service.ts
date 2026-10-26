@@ -552,7 +552,7 @@ export async function computeComplianceCostScore(
 
   // Fetch scenario deltas
   const scenario = scenarioId !== 'baseline'
-    ? await Scenario.findById(scenarioId).lean()
+    ? await Scenario.findOne({ _id: scenarioId, projectId }).lean()
     : null;
   const deltas = scenario?.deltas || [];
 
