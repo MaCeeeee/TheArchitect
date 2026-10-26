@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
-import axios from 'axios';
+import { safeFetch } from '../utils/safeFetch';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
@@ -1421,17 +1421,19 @@ router.post(
         return;
       }
 
-      const baseUrl = n8nUrl.replace(/\/+$/, '');
+      const baseUrl = String(n8nUrl).replace(/\/+$/, '');
       const url = workflowId
-        ? `${baseUrl}/api/v1/workflows/${workflowId}`
+        ? `${baseUrl}/api/v1/workflows/${encodeURIComponent(String(workflowId))}`
         : `${baseUrl}/api/v1/workflows?limit=100`;
 
-      const response = await axios.get(url, {
-        headers: { 'X-N8N-API-KEY': apiKey },
-        timeout: 15_000,
+      // Security-Audit H7: nutzergewählte Adresse — nur öffentliche Ziele.
+      const response = await safeFetch(url, {
+        headers: { 'X-N8N-API-KEY': String(apiKey) },
+        timeoutMs: 15_000,
       });
+      if (!response.ok) throw new Error(`n8n API ${response.status}`);
 
-      res.json({ success: true, data: response.data });
+      res.json({ success: true, data: await response.json() });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch from n8n';
       console.error('n8n fetch error:', msg);

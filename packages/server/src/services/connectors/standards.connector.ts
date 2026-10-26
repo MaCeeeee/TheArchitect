@@ -15,6 +15,7 @@
 import { v4 as uuid } from 'uuid';
 import type { ConnectorConfig, IConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Built-in Standards Templates ───
 
@@ -126,7 +127,7 @@ export class StandardsConnector implements IConnector {
     // NIST OSCAL API check
     if (source === 'nist' || source === 'nist_csf' || source === 'nist_800_53') {
       try {
-        const resp = await fetch('https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json', {
+        const resp = await safeFetch('https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json', {
           method: 'HEAD',
           signal: AbortSignal.timeout(10000),
         });
@@ -256,7 +257,7 @@ export class StandardsConnector implements IConnector {
     const warnings: string[] = [];
 
     try {
-      const resp = await fetch(
+      const resp = await safeFetch(
         'https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json',
         { signal: AbortSignal.timeout(30000) },
       );
