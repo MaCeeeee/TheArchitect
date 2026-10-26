@@ -9,14 +9,20 @@ import { isBlockedAddress, safeFetch, SsrfBlockedError } from '../utils/safeFetc
 
 let server: http.Server;
 let port = 0;
-const seen: Array<{ url: string; auth?: string; contentType?: string; body: string }> = [];
+const seen: Array<{ url: string; auth?: string; apiKey?: string; contentType?: string; body: string }> = [];
 
 beforeAll(async () => {
   server = http.createServer((req, res) => {
     let body = '';
     req.on('data', (c) => (body += c));
     req.on('end', () => {
-      seen.push({ url: req.url ?? '', auth: req.headers.authorization, contentType: req.headers['content-type'], body });
+      seen.push({
+        url: req.url ?? '',
+        auth: req.headers.authorization,
+        apiKey: req.headers['x-n8n-api-key'] as string | undefined,
+        contentType: req.headers['content-type'],
+        body,
+      });
       if (req.url === '/json') {
         res.setHeader('content-type', 'application/json');
         res.setHeader('x-probe', 'yes');
@@ -51,7 +57,8 @@ beforeEach(() => {
 
 describe('isBlockedAddress', () => {
   it.each(['127.0.0.1', '10.1.2.3', '172.20.0.4', '192.168.1.1', '169.254.169.254', '100.106.223.83', '0.0.0.0',
-    '::1', '::', '::ffff:127.0.0.1', '::ffff:7f00:1', 'fd00::1', 'fe80::1'])('blocks %s', (ip) => {
+    '::1', '::', '::ffff:127.0.0.1', '::ffff:7f00:1', 'fd00::1', 'fe80::1',
+    '::127.0.0.1', '::a00:1', 'fec0::1', '64:ff9b:1::a00:1'])('blocks %s', (ip) => {
     expect(isBlockedAddress(ip)).toBe(true);
   });
 
@@ -84,10 +91,14 @@ describe('safeFetch (Security-Audit H7)', () => {
 
   it('drops credentials when a redirect changes origin', async () => {
     process.env.CONNECTOR_PRIVATE_HOST_ALLOWLIST = 'localhost,127.0.0.1';
-    const res = await safeFetch(`http://localhost:${port}/to-ip`, { headers: { Authorization: 'Bearer s3cret' } });
+    const res = await safeFetch(`http://localhost:${port}/to-ip`, {
+      headers: { Authorization: 'Bearer s3cret', 'X-N8N-API-KEY': 'k3y' },
+    });
     expect(res.status).toBe(200);
     expect(seen[0].auth).toBe('Bearer s3cret');
+    expect(seen[0].apiKey).toBe('k3y');
     expect(seen[1].auth).toBeUndefined();
+    expect(seen[1].apiKey).toBeUndefined();
   });
 
   it('behaves like fetch for an allowlisted host: status, headers, json, gzip, form bodies', async () => {

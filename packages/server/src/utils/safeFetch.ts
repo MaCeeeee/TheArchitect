@@ -40,8 +40,8 @@ for (const [addr, prefix] of [
   // Kein ::ffff:0:0/96 hier: BlockList vergleicht IPv4 intern als
   // IPv4-mapped — die Regel sperrte sonst JEDE IPv4. Mapped-Adressen
   // behandelt isBlockedAddress selbst.
-  ['::', 127], ['64:ff9b::', 96], ['100::', 64], ['2001::', 32], ['2001:db8::', 32],
-  ['fc00::', 7], ['fe80::', 10], ['ff00::', 8],
+  ['::', 96], ['64:ff9b::', 96], ['64:ff9b:1::', 48], ['100::', 64], ['2001::', 32], ['2001:db8::', 32],
+  ['fc00::', 7], ['fe80::', 10], ['fec0::', 10], ['ff00::', 8],
 ] as const) {
   BLOCKED.addSubnet(addr, prefix, 'ipv6');
 }
@@ -187,7 +187,10 @@ function send(url: URL, method: string, headers: Record<string, string>, body: B
   });
 }
 
-const CREDENTIAL_HEADERS = ['authorization', 'cookie', 'proxy-authorization'];
+// Bei einem Redirect auf einen anderen Origin gehen nur unkritische Header
+// mit — Connectors tragen Zugangsdaten auch in eigenen Headern
+// (PRIVATE-TOKEN, X-N8N-API-KEY, xc-token …).
+const CROSS_ORIGIN_SAFE_HEADERS = new Set(['accept', 'accept-encoding', 'accept-language', 'user-agent', 'content-type']);
 
 /** `fetch`-Ersatz für nutzergewählte Ziele — siehe Kopfkommentar. */
 export async function safeFetch(input: string | URL, init: SafeFetchInit = {}): Promise<Response> {
@@ -220,7 +223,9 @@ export async function safeFetch(input: string | URL, init: SafeFetchInit = {}): 
     const location = raw.headers.location;
     if ([301, 302, 303, 307, 308].includes(raw.status) && location) {
       const next = new URL(location, url);
-      if (next.origin !== url.origin) for (const h of CREDENTIAL_HEADERS) delete headers[h];
+      if (next.origin !== url.origin) {
+        for (const h of Object.keys(headers)) if (!CROSS_ORIGIN_SAFE_HEADERS.has(h)) delete headers[h];
+      }
       if (raw.status === 303 || ((raw.status === 301 || raw.status === 302) && method === 'POST')) {
         method = 'GET';
         body = undefined;
