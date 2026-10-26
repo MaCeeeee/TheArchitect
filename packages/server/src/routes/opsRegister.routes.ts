@@ -18,6 +18,7 @@
  */
 import { Router, Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import { isPlatformAdmin } from '@thearchitect/shared';
 import { authenticate } from '../middleware/auth.middleware';
 import { RegisterEntry } from '../models/RegisterEntry';
 import {
@@ -48,15 +49,13 @@ import { log } from '../config/logger';
  */
 export const OPS_PROJECT_ID = '000000000000000000000000';
 
-const SYSTEM_ADMIN_ROLES = ['chief_architect', 'enterprise_architect'];
-
 /** Gate the ops register to system-admin roles (AC-2). authenticate runs first. */
 function requireSystemAdmin(req: Request, res: Response, next: NextFunction) {
   const user = req.user;
   if (!user) {
     return res.status(401).json({ success: false, error: 'Authentication required' });
   }
-  if (!SYSTEM_ADMIN_ROLES.includes(user.role)) {
+  if (!isPlatformAdmin(user.role)) {
     return res
       .status(403)
       .json({ success: false, error: 'System-admin role required for the ops register' });

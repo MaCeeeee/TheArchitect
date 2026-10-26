@@ -54,9 +54,13 @@ describe('1. ROLE_PERMISSIONS Hierarchy', () => {
     expect(chiefPerms.size).toBe(allPerms.length);
   });
 
-  test('1.3 enterprise_architect has ALL except ADMIN_SYSTEM_CONFIG', () => {
+  test('1.3 enterprise_architect has ALL except the three platform-admin permissions (Security-Audit C1)', () => {
     const entPerms = new Set(ROLE_PERMISSIONS.enterprise_architect);
-    const expectedMissing: Permission[] = [PERMISSIONS.ADMIN_SYSTEM_CONFIG];
+    const expectedMissing: Permission[] = [
+      PERMISSIONS.ADMIN_SYSTEM_CONFIG,
+      PERMISSIONS.ADMIN_MANAGE_USERS,
+      PERMISSIONS.ADMIN_VIEW_AUDIT,
+    ];
 
     for (const perm of allPerms) {
       if (expectedMissing.includes(perm as Permission)) {
@@ -217,14 +221,12 @@ describe('1. ROLE_PERMISSIONS Hierarchy', () => {
     }
   });
 
-  test('1.13 Only chief + enterprise have ADMIN_MANAGE_USERS', () => {
+  test('1.13 Only chief_architect has ADMIN_MANAGE_USERS and ADMIN_VIEW_AUDIT — Selbstregistrierte sehen kein Nutzerverzeichnis (Security-Audit C1)', () => {
     for (const role of ALL_ROLES) {
       const perms = new Set(ROLE_PERMISSIONS[role]);
-      if (role === 'chief_architect' || role === 'enterprise_architect') {
-        expect(perms.has(PERMISSIONS.ADMIN_MANAGE_USERS)).toBe(true);
-      } else {
-        expect(perms.has(PERMISSIONS.ADMIN_MANAGE_USERS)).toBe(false);
-      }
+      const isChief = role === 'chief_architect';
+      expect(perms.has(PERMISSIONS.ADMIN_MANAGE_USERS)).toBe(isChief);
+      expect(perms.has(PERMISSIONS.ADMIN_VIEW_AUDIT)).toBe(isChief);
     }
   });
 
@@ -500,7 +502,7 @@ describe('3. Permission Count Sanity', () => {
   test('3.2 Permission counts per role', () => {
     const expected: Record<UserRole, number> = {
       chief_architect: 21,
-      enterprise_architect: 20,
+      enterprise_architect: 18,
       solution_architect: 17,
       data_architect: 17,
       business_architect: 17,

@@ -9,7 +9,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
-import { PERMISSIONS } from '@thearchitect/shared';
+import { PERMISSIONS, isPlatformAdmin } from '@thearchitect/shared';
 
 const router = Router();
 
@@ -318,11 +318,10 @@ router.post(
         return res.status(400).json({ error: 'Invalid project role.' });
       }
 
-      // Only current owner or chief_architect/enterprise_architect can transfer ownership
-      const adminRoles = ['chief_architect', 'enterprise_architect'];
+      // Only the current owner or a platform admin can transfer ownership
       if (role === 'owner') {
         const isOwner = req.user!._id.toString() === (await Project.findById(req.params.id))?.ownerId.toString();
-        if (!isOwner && !adminRoles.includes(req.user!.role)) {
+        if (!isOwner && !isPlatformAdmin(req.user!.role)) {
           return res.status(403).json({ error: 'Only the project owner or an admin can transfer ownership' });
         }
       }
@@ -457,9 +456,8 @@ router.put(
 
       // Ownership transfer
       if (role === 'owner') {
-        const adminRoles = ['chief_architect', 'enterprise_architect'];
         const isOwner = req.user!._id.toString() === project.ownerId.toString();
-        if (!isOwner && !adminRoles.includes(req.user!.role)) {
+        if (!isOwner && !isPlatformAdmin(req.user!.role)) {
           return res.status(403).json({ error: 'Only the project owner or an admin can transfer ownership' });
         }
 

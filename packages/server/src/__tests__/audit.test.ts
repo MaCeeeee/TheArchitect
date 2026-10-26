@@ -19,7 +19,7 @@ config({ path: resolve(__dirname, '../../../../.env') });
 const API = 'http://localhost:4000/api';
 const http = axios.create({ baseURL: API, timeout: 10_000 });
 
-// Test credentials — must be a chief_architect or enterprise_architect user
+// Test credentials — must be a chief_architect user (admin audit endpoints are platform-admin only since Security-Audit C1)
 const TEST_ID = Date.now().toString(36);
 const ADMIN_EMAIL = `audit-admin-${TEST_ID}@thearchitect-test.local`;
 const ADMIN_PASSWORD = 'AuditTest1!';

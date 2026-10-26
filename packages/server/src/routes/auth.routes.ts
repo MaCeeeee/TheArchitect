@@ -13,7 +13,8 @@ import {
 } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
-import { TOTP, generateSecret, generateURI, verifySync } from 'otplib';
+import { TOTP, generateSecret, generateURI } from 'otplib';
+import { isTotpCodeValid } from '../utils/totp';
 import QRCode from 'qrcode';
 import { getRedis } from '../config/redis';
 import { createSession, revokeSession } from '../services/session.service';
@@ -323,7 +324,7 @@ router.post('/mfa/verify', authLimiter, async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
-    const isValid = verifySync({ token: code, secret: user.mfaSecret });
+    const isValid = isTotpCodeValid(code, user.mfaSecret);
     if (!isValid) {
       await createAuditEntry({
         userId: user._id.toString(),
@@ -395,7 +396,7 @@ router.post('/mfa/confirm', authenticate, async (req: Request, res: Response) =>
       return res.status(400).json({ error: 'MFA setup not initiated' });
     }
 
-    const isValid = verifySync({ token: code, secret: user.mfaSecret });
+    const isValid = isTotpCodeValid(code, user.mfaSecret);
     if (!isValid) {
       return res.status(400).json({ error: 'Invalid verification code' });
     }
@@ -666,7 +667,8 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
 
   // 3) New user — create without password
   // First user on the platform becomes chief_architect automatically;
-  // all subsequent self-registrations get enterprise_architect (full permissions minus ADMIN_SYSTEM_CONFIG).
+  // all subsequent self-registrations get enterprise_architect — full rights inside their OWN
+  // projects, no platform admin rights and no implicit access to others' projects (Security-Audit C1).
   // Invited collaborators receive their role via the invitation/project-collaborator flow.
   const userCount = await User.countDocuments();
   const role = userCount === 0 ? 'chief_architect' : 'enterprise_architect';
