@@ -53,6 +53,9 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (decoded.type === 'refresh') {
       return res.status(401).json({ error: 'Access token required, refresh token provided' });
     }
+    if (!isAccessClaims(decoded)) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
 
     req.jwtPayload = {
       userId: decoded.userId,
@@ -143,10 +146,42 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
     });
 }
 
+// Security-Audit H1: der MFA-Zwischen-Token war ein normaler Zugangs-Token
+// (`type: 'access'`) mit der Pseudo-Rolle `__mfa_pending__` — `authenticate`
+// liess ihn durch und las die Rechte aus der DB-Rolle. Jetzt hat er eine
+// eigene Token-Art und taugt nur fuer `/mfa/verify`. Die Rollen-Pruefung
+// faengt Zwischen-Tokens ab, die noch vor dem Fix ausgestellt wurden.
+const MFA_PENDING_TYPE = 'mfa_pending';
+const LEGACY_MFA_PENDING_ROLE = '__mfa_pending__';
+
+export function isAccessClaims(claims: { type?: unknown; role?: unknown }): boolean {
+  return claims.type === 'access' && claims.role !== LEGACY_MFA_PENDING_ROLE;
+}
+
+export function generateMfaPendingToken(userId: string): string {
+  return jwt.sign({ userId, type: MFA_PENDING_TYPE }, JWT_SECRET, { expiresIn: '5m' });
+}
+
+/** Liefert die userId eines gueltigen MFA-Zwischen-Tokens, sonst null. */
+export function verifyMfaPendingToken(token: string): string | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId?: unknown; type?: unknown };
+    return decoded.type === MFA_PENDING_TYPE && typeof decoded.userId === 'string' ? decoded.userId : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Prueft Signatur und Token-Art; wirft bei allem, was kein Zugangs-Token ist. */
+export function verifyAccessToken(token: string): { userId: string; role: string } {
+  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string; type?: unknown };
+  if (!isAccessClaims(decoded)) throw new Error('Access token required');
+  return decoded;
+}
+
 // THE-535: Tokens tragen die Session-Id (`sid`), damit Widerruf sofort wirkt
-// und die Sessions-Ansicht die aktuelle Sitzung erkennt. Optional, weil der
-// MFA-Zwischen-Token bewusst KEINE Sitzung hat (sie entsteht erst nach
-// vollstaendiger Anmeldung) und Alt-Tokens von vor dem Deploy keine kennen.
+// und die Sessions-Ansicht die aktuelle Sitzung erkennt. Optional, weil
+// Alt-Tokens von vor dem Deploy keine kennen.
 export function generateAccessToken(userId: string, role: string, sessionId?: string): string {
   return jwt.sign({ userId, role, type: 'access', ...(sessionId ? { sid: sessionId } : {}) }, JWT_SECRET, { expiresIn: '15m' });
 }

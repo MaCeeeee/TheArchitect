@@ -1,14 +1,15 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
 import type { IUser } from '../models/User';
 import {
   authenticate,
   generateAccessToken,
+  generateMfaPendingToken,
   generateRefreshToken,
+  verifyMfaPendingToken,
   verifyRefreshToken,
 } from '../middleware/auth.middleware';
 import { rateLimit } from '../middleware/rateLimit.middleware';
@@ -262,7 +263,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 
     // If MFA is enabled, return a partial response requiring TOTP
     if (user.mfaEnabled && user.mfaSecret) {
-      const mfaToken = generateAccessToken(user._id.toString(), '__mfa_pending__');
+      const mfaToken = generateMfaPendingToken(user._id.toString());
       return res.json({
         mfaRequired: true,
         mfaToken,
@@ -306,20 +307,12 @@ router.post('/mfa/verify', authLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'MFA token and code are required' });
     }
 
-    // Decode the pending MFA token (signed with access token secret)
-    let decoded: { userId: string; role: string };
-    try {
-      const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
-      decoded = jwt.verify(mfaToken, JWT_SECRET) as { userId: string; role: string };
-    } catch {
+    const pendingUserId = verifyMfaPendingToken(String(mfaToken));
+    if (!pendingUserId) {
       return res.status(401).json({ error: 'Invalid or expired MFA token' });
     }
 
-    if (decoded.role !== '__mfa_pending__') {
-      return res.status(400).json({ error: 'Invalid MFA flow' });
-    }
-
-    const user = await User.findById(decoded.userId);
+    const user = await User.findById(pendingUserId);
     if (!user || !user.mfaSecret) {
       return res.status(401).json({ error: 'User not found' });
     }
