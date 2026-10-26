@@ -5,6 +5,9 @@ import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
 import { getRedis } from '../config/redis';
 import { isSessionActive, touchSession } from '../services/session.service';
+import { isReadOnlyScope } from './rbac.middleware';
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // Types are extended via src/types/express.d.ts
 
@@ -88,7 +91,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
           return res.status(401).json({ error: 'User not found' });
         }
         req.user = user;
-        (req as any).authMethod = 'jwt';
+        req.authMethod = 'jwt';
         next();
       })
       .catch(() => {
@@ -124,9 +127,18 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
         return res.status(401).json({ error: 'API key owner not found' });
       }
 
+      // Security-Audit H12: der gespeicherte Scope gilt. Leere Liste = Rechte
+      // des Besitzers (so legt die UI Keys an); sonst Schnittmenge in
+      // requirePermission, und ein reiner Lese-Scope schreibt nie.
+      const scope = apiKeyDoc.permissions?.length ? [...apiKeyDoc.permissions] : undefined;
+      if (scope && isReadOnlyScope(scope) && !SAFE_METHODS.has(req.method)) {
+        return res.status(403).json({ error: 'API key is read-only' });
+      }
+
       // Set request context (compatible with JWT flow)
       req.user = user;
-      (req as any).authMethod = 'api_key';
+      req.authMethod = 'api_key';
+      req.apiKeyScope = scope;
       (req as any).apiKeyPrefix = keyHash.slice(0, 8);
       req.jwtPayload = {
         userId: user._id.toString(),

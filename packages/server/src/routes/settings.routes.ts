@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { authenticate } from '../middleware/auth.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
+import { isKnownPermission, requireInteractiveAuth } from '../middleware/rbac.middleware';
 import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
 import { Connection, encryptCredentials, decryptCredentials } from '../models/Connection';
@@ -264,10 +265,13 @@ router.get('/api-keys', async (req: Request, res: Response) => {
 });
 
 // POST /api-keys
-router.post('/api-keys', async (req: Request, res: Response) => {
+router.post('/api-keys', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { name, permissions, expiresInDays } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Name is required' });
+  if (permissions !== undefined && !(Array.isArray(permissions) && permissions.every(isKnownPermission))) {
+    return res.status(400).json({ error: 'permissions must be a list of known permissions' });
+  }
 
   // Generate a random API key
   const rawKey = `ta_${crypto.randomBytes(32).toString('hex')}`;
