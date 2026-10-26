@@ -4,6 +4,7 @@
  */
 import { v4 as uuid } from 'uuid';
 import * as XLSX from 'xlsx';
+import { assertZipWithinBudget } from '../utils/zipBudget';
 import { XMLParser } from 'fast-xml-parser';
 import { runCypher, runCypherTransaction } from '../config/neo4j';
 import { ELEMENT_TYPES, ARCHIMATE_STANDARD_TYPES, LEGACY_TYPE_MAP, type OriginFields } from '@thearchitect/shared';
@@ -223,6 +224,7 @@ export function parseCSV(text: string): ParseResult {
 // ─── Excel Parser ───
 
 export function parseExcel(buffer: Buffer): ParseResult {
+  assertZipWithinBudget(buffer); // Security-Audit H11: vor dem Entpacken
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const elements: ParsedElement[] = [];
   const connections: ParsedConnection[] = [];

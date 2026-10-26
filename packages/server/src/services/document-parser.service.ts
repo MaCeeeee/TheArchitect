@@ -5,6 +5,7 @@
 import * as XLSX from 'xlsx';
 import { XMLParser } from 'fast-xml-parser';
 import AdmZip from 'adm-zip';
+import { assertZipWithinBudget } from '../utils/zipBudget';
 
 // pdf-parse compatibility — supports both v1 (function) and v2 (class)
 const pdfParseModule = require('pdf-parse');
@@ -42,6 +43,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
 // ─── Excel ───
 
 function extractExcelText(buffer: Buffer): string {
+  assertZipWithinBudget(buffer); // Security-Audit H11: vor dem Entpacken
   const workbook = XLSX.read(buffer, { type: 'buffer' });
   const lines: string[] = [];
 
@@ -64,6 +66,7 @@ function extractExcelText(buffer: Buffer): string {
 // We extract text from slide XML files.
 
 async function extractPptxText(buffer: Buffer): Promise<string> {
+  assertZipWithinBudget(buffer); // Security-Audit H11: vor dem Entpacken
   const zip = new AdmZip(buffer);
   const entries = zip.getEntries();
   // ignoreAttributes: true strips XML metadata, only keeping element content

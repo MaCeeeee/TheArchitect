@@ -10,6 +10,7 @@ import multer from 'multer';
 import Redis from 'ioredis';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { v4 as uuid } from 'uuid';
+import { ArchiveTooLargeError } from '../utils/zipBudget';
 import {
   parseArchitectureFile,
   createTemporaryGraph,
@@ -169,6 +170,9 @@ router.post('/upload', uploadRateLimit, async (req: Request, res: Response) => {
       },
     });
   } catch (err: any) {
+    if (err instanceof ArchiveTooLargeError) {
+      return res.status(413).json({ success: false, error: 'ARCHIVE_TOO_LARGE', message: err.message });
+    }
     if (err.message?.includes('Unsupported file format')) {
       return res.status(422).json({
         success: false,
