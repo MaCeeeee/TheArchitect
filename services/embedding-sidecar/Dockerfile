@@ -23,6 +23,7 @@ COPY requirements.txt .
 
 # Install python deps. CPU-only torch (no CUDA) keeps the image at ~2GB
 # instead of ~6GB. We're not training anything, inference on CPU is fine.
+# The torch version here must match the torch pin in requirements.txt.
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu \
  && pip install --no-cache-dir -r requirements.txt
