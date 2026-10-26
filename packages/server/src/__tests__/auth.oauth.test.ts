@@ -222,6 +222,13 @@ describe('OAuth-Verknüpfung nur bei bestätigter E-Mail (Security-Audit H8)', (
     expect(mockExisting.oauthProviders).toHaveLength(1);
   });
 
+  it('still links into an account created via Google before the fix (emailVerified default false)', async () => {
+    mockExisting = { ...existingUser(false), oauthProviders: [{ provider: 'google', providerId: 'g-old' }] };
+    mockProfile = { ...mockProfile, provider: 'github', providerId: 'gh-1' };
+    expect(await loginSucceeds(makeApp())).toBe(true);
+    expect(mockExisting.oauthProviders).toHaveLength(2);
+  });
+
   it('the Google ID-token flow honours email_verified as well', async () => {
     mockExisting = existingUser(true);
     mockIdPayload = { sub: 'g-victim', email: 'victim@corp.example', email_verified: false, name: 'V' };

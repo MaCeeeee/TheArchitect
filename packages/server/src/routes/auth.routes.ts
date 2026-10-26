@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
+import { ApiKey } from '../models/ApiKey';
 import type { IUser } from '../models/User';
 import {
   authenticate,
@@ -21,7 +22,7 @@ import { TOTP, generateSecret, generateURI } from 'otplib';
 import { isTotpCodeValid } from '../utils/totp';
 import QRCode from 'qrcode';
 import { getRedis } from '../config/redis';
-import { createSession, revokeSession } from '../services/session.service';
+import { createSession, revokeAllSessions, revokeSession } from '../services/session.service';
 import {
   exchangeGoogleCode,
   exchangeGithubCode,
@@ -600,7 +601,21 @@ router.post('/reset-password', authLimiter, async (req: Request, res: Response) 
     // through (or was delivered out-of-band).
     const wasUnverified = !user.emailVerified;
     user.emailVerified = true;
+    // Security-Audit H8 (Review): war die E-Mail nie bestätigt, ist dieser
+    // Reset der ERSTE Besitznachweis. Alles, was vorher eingerichtet wurde
+    // (API-Keys, MFA), kann von einem Angreifer stammen, der das Konto unter
+    // fremder Adresse vorregistriert hat — weg damit.
+    if (wasUnverified) {
+      user.mfaEnabled = false;
+      user.mfaSecret = undefined;
+      await ApiKey.deleteMany({ userId: user._id });
+    }
     await user.save();
+    // Ein Reset ist Kontowiederherstellung: alte Sitzungen (auch gestohlene
+    // Refresh-Tokens) enden hier.
+    await revokeAllSessions(getRedis(), user._id.toString()).catch((err) =>
+      console.error('[Auth] revokeAllSessions after reset failed:', err),
+    );
 
     await createAuditEntry({
       userId: user._id.toString(),
@@ -682,8 +697,15 @@ async function consumeOAuthState(req: Request, state: string): Promise<boolean> 
 // Opfer landete bei dessen erstem SSO-Login im Konto des Angreifers.
 class OAuthLinkRefusedError extends Error {
   constructor() {
-    super('An account with this email already exists. Please sign in with your password.');
+    super('An account with this email already exists. Please sign in the way you signed up (password or your original provider).');
   }
+}
+
+// Konten, die vor dem Fix per Google/GitHub angelegt wurden, tragen den
+// Schema-Default emailVerified:false — ihre E-Mail hat der Provider aber
+// bestätigt. Entra zählt nicht (mail ist frei setzbar, nOAuth).
+function emailOwnershipProven(user: IUser): boolean {
+  return !!user.emailVerified || (user.oauthProviders ?? []).some((p) => p.provider === 'google' || p.provider === 'github');
 }
 
 async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
@@ -697,7 +719,7 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   // 2) Existing user with same email — link the OAuth provider
   user = await User.findOne({ email: profile.email.toLowerCase() });
   if (user) {
-    if (!profile.emailVerified || !user.emailVerified) throw new OAuthLinkRefusedError();
+    if (!profile.emailVerified || !emailOwnershipProven(user)) throw new OAuthLinkRefusedError();
     user.oauthProviders.push({
       provider: profile.provider,
       providerId: profile.providerId,
