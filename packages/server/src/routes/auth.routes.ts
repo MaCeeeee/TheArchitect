@@ -624,9 +624,15 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 // Security-Audit H9: `state` war ein globaler Nonce ohne Bindung an den
 // Browser — ein Angreifer konnte dem Opfer die Callback-URL seines eigenen
 // Logins unterschieben (Login-CSRF). Jetzt gehört zu jedem state ein
-// HttpOnly-Cookie des Browsers, der den Login gestartet hat.
-const OAUTH_BROWSER_COOKIE = 'ta_oauth_binding';
-const OAUTH_COOKIE_PATH = '/api/auth/oauth';
+// HttpOnly-Cookie des Browsers, der den Login gestartet hat. Die Tokens
+// stehen auch nie mehr in einer URL: der Callback liefert einen Einmal-Code,
+// den nur derselbe Browser (Cookie) per POST einlösen kann — sonst wäre ein
+// Link mit fremden Tokens selbst der Login-CSRF.
+// In Produktion mit `__Host-`-Präfix: keine Subdomain kann das Cookie setzen.
+const IS_PROD = process.env.NODE_ENV === 'production';
+const OAUTH_BROWSER_COOKIE = IS_PROD ? '__Host-ta_oauth' : 'ta_oauth_binding';
+const OAUTH_COOKIE_OPTIONS = { httpOnly: true, sameSite: 'lax' as const, secure: IS_PROD, path: '/' };
+const OAUTH_CODE_TTL = 60;
 
 const sha256 = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
 
@@ -638,33 +644,33 @@ function readCookie(req: Request, name: string): string | undefined {
   return undefined;
 }
 
-async function createOAuthState(res: Response): Promise<string> {
-  const state = crypto.randomBytes(32).toString('hex');
-  const binding = crypto.randomBytes(32).toString('hex');
-  const redis = getRedis();
-  await redis.set(`oauth:state:${state}`, sha256(binding), 'EX', OAUTH_STATE_TTL);
-  res.cookie(OAUTH_BROWSER_COOKIE, binding, {
-    httpOnly: true,
-    sameSite: 'lax', // wird beim Top-Level-Redirect vom Provider zurück mitgeschickt
-    secure: process.env.NODE_ENV === 'production',
-    path: OAUTH_COOKIE_PATH,
-    maxAge: OAUTH_STATE_TTL * 1000,
-  });
-  return state;
+/** Liest und löscht einen Redis-Schlüssel atomar — Einmal-Werte bleiben einmalig. */
+async function takeOnce(key: string): Promise<string | null> {
+  const result = await getRedis().multi().get(key).del(key).exec();
+  const value = result?.[0]?.[1];
+  return typeof value === 'string' ? value : null;
 }
 
-async function consumeOAuthState(req: Request, res: Response, state: string): Promise<boolean> {
-  const redis = getRedis();
-  const key = `oauth:state:${state}`;
-  const expected = await redis.get(key);
-  if (!expected) return false;
-  await redis.del(key);
-  res.clearCookie(OAUTH_BROWSER_COOKIE, { path: OAUTH_COOKIE_PATH });
+function browserBindingMatches(req: Request, expectedHash: string): boolean {
   const binding = readCookie(req, OAUTH_BROWSER_COOKIE);
   if (!binding) return false;
   const actual = Buffer.from(sha256(binding));
-  const wanted = Buffer.from(expected);
+  const wanted = Buffer.from(expectedHash);
   return actual.length === wanted.length && crypto.timingSafeEqual(actual, wanted);
+}
+
+async function createOAuthState(res: Response): Promise<string> {
+  const state = crypto.randomBytes(32).toString('hex');
+  const binding = crypto.randomBytes(32).toString('hex');
+  await getRedis().set(`oauth:state:${state}`, sha256(binding), 'EX', OAUTH_STATE_TTL);
+  // SameSite=Lax: wird beim Top-Level-Redirect vom Provider zurück mitgeschickt.
+  res.cookie(OAUTH_BROWSER_COOKIE, binding, { ...OAUTH_COOKIE_OPTIONS, maxAge: OAUTH_STATE_TTL * 1000 });
+  return state;
+}
+
+async function consumeOAuthState(req: Request, state: string): Promise<boolean> {
+  const expected = await takeOnce(`oauth:state:${state}`);
+  return !!expected && browserBindingMatches(req, expected);
 }
 
 // Security-Audit H8: eine OAuth-Identität wird nur dann an ein bestehendes
@@ -723,33 +729,59 @@ async function findOrCreateOAuthUser(profile: OAuthProfile): Promise<IUser> {
   return user;
 }
 
-async function redirectWithTokens(res: Response, user: IUser, ip: string, userAgent: string) {
-  // THE-535: auch OAuth-Anmeldungen sind Sitzungen — sonst waere die
-  // Sessions-Ansicht fuer OAuth-Nutzer wieder strukturell leer.
-  const userId = user._id.toString();
-  const sid = await createSession(getRedis(), userId, { device: userAgent || 'Unknown', ip });
-  const accessToken = generateAccessToken(userId, user.role, sid);
-  const refreshToken = generateRefreshToken(userId, user.role, sid);
-
-  createAuditEntry({
-    userId: user._id.toString(),
-    action: 'oauth_login_success',
-    entityType: 'auth',
-    ip,
-    userAgent,
-  });
-
-  const params = new URLSearchParams({
-    accessToken,
-    refreshToken,
-  });
-  return res.redirect(`${CLIENT_URL}/auth/callback?${params.toString()}`);
+async function redirectWithLoginCode(req: Request, res: Response, user: IUser) {
+  // consumeOAuthState hat das Cookie eben geprüft; der Code erbt die Bindung.
+  const binding = readCookie(req, OAUTH_BROWSER_COOKIE) ?? '';
+  const code = crypto.randomBytes(32).toString('hex');
+  await getRedis().set(
+    `oauth:code:${code}`,
+    JSON.stringify({ userId: user._id.toString(), binding: sha256(binding) }),
+    'EX',
+    OAUTH_CODE_TTL,
+  );
+  return res.redirect(`${CLIENT_URL}/auth/callback?${new URLSearchParams({ code }).toString()}`);
 }
 
 function redirectWithError(res: Response, message: string) {
   const params = new URLSearchParams({ error: message });
   return res.redirect(`${CLIENT_URL}/login?${params.toString()}`);
 }
+
+// Security-Audit H9: der Einmal-Code aus dem Callback wird gegen Tokens
+// getauscht — nur von dem Browser, der den Login gestartet hat.
+router.post('/oauth/exchange', authLimiter, async (req: Request, res: Response) => {
+  const code = typeof req.body?.code === 'string' ? req.body.code : '';
+  if (!code) return res.status(400).json({ error: 'Login code required' });
+  try {
+    const raw = await takeOnce(`oauth:code:${code}`);
+    res.clearCookie(OAUTH_BROWSER_COOKIE, OAUTH_COOKIE_OPTIONS);
+    if (!raw) return res.status(401).json({ error: 'Invalid or expired login code' });
+    const { userId, binding } = JSON.parse(raw) as { userId: string; binding: string };
+    if (!browserBindingMatches(req, binding)) {
+      return res.status(401).json({ error: 'Invalid or expired login code' });
+    }
+    const user = await User.findById(userId);
+    if (!user) return res.status(401).json({ error: 'Invalid or expired login code' });
+
+    // THE-535: auch OAuth-Anmeldungen sind Sitzungen.
+    const { accessToken, refreshToken } = await issueSessionTokens(user, req);
+    createAuditEntry({
+      userId: user._id.toString(),
+      action: 'oauth_login_success',
+      entityType: 'auth',
+      ip: req.ip || '',
+      userAgent: req.get('user-agent') || '',
+    });
+    return res.json({
+      accessToken,
+      refreshToken,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, emailVerified: user.emailVerified ?? true },
+    });
+  } catch (err) {
+    console.error('[OAuth] Login code exchange error:', err);
+    return res.status(500).json({ error: 'Login failed' });
+  }
+});
 
 // ── Google ────────────────────────────────────────────
 
@@ -777,14 +809,14 @@ router.get('/oauth/google/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'Google login was cancelled');
   }
 
-  if (!(await consumeOAuthState(req, res, state))) {
+  if (!(await consumeOAuthState(req, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
   try {
     const profile = await exchangeGoogleCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithLoginCode(req, res, user);
   } catch (err) {
     console.error('[OAuth] Google callback error:', err);
     if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);
@@ -919,14 +951,14 @@ router.get('/oauth/github/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'GitHub login was cancelled');
   }
 
-  if (!(await consumeOAuthState(req, res, state))) {
+  if (!(await consumeOAuthState(req, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
   try {
     const profile = await exchangeGithubCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithLoginCode(req, res, user);
   } catch (err) {
     console.error('[OAuth] GitHub callback error:', err);
     if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);
@@ -960,14 +992,14 @@ router.get('/oauth/microsoft/callback', async (req: Request, res: Response) => {
     return redirectWithError(res, 'Microsoft login was cancelled');
   }
 
-  if (!(await consumeOAuthState(req, res, state))) {
+  if (!(await consumeOAuthState(req, state))) {
     return redirectWithError(res, 'Invalid or expired login session');
   }
 
   try {
     const profile = await exchangeMicrosoftCode(code);
     const user = await findOrCreateOAuthUser(profile);
-    return await redirectWithTokens(res, user, req.ip || '', req.get('user-agent') || '');
+    return await redirectWithLoginCode(req, res, user);
   } catch (err) {
     console.error('[OAuth] Microsoft callback error:', err);
     if (err instanceof OAuthLinkRefusedError) return redirectWithError(res, err.message);

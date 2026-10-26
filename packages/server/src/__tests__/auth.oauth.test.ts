@@ -27,6 +27,15 @@ jest.mock('../config/redis', () => ({
       return 'OK';
     },
     del: async (k: string) => (mockStore.delete(k) ? 1 : 0),
+    multi: () => {
+      const ops: Array<() => unknown> = [];
+      const chain = {
+        get: (k: string) => (ops.push(() => mockStore.get(k) ?? null), chain),
+        del: (k: string) => (ops.push(() => (mockStore.delete(k) ? 1 : 0)), chain),
+        exec: async () => ops.map((op) => [null, op()]),
+      };
+      return chain;
+    },
   }),
 }));
 
@@ -43,6 +52,7 @@ let mockExisting: FakeUser | null = null;
 const mockCreate = jest.fn(async (doc: Record<string, unknown>) => ({ _id: { toString: () => 'u-new' }, ...doc }));
 jest.mock('../models/User', () => ({
   User: {
+    findById: jest.fn(async (id: string) => (id === 'u-existing' ? mockExisting : { _id: { toString: () => id }, role: 'enterprise_architect', email: 'x', name: 'x' })),
     findOne: jest.fn(async (q: Record<string, unknown>) => ('email' in q ? mockExisting : null)),
     countDocuments: jest.fn(async () => 5),
     create: (doc: Record<string, unknown>) => mockCreate(doc),
@@ -94,8 +104,28 @@ async function startLogin(app: express.Express): Promise<{ state: string; cookie
   return { state, cookie };
 }
 
-function landedWithTokens(location: string): boolean {
-  return location.includes('/auth/callback') && location.includes('accessToken=');
+/** Callback in einem Browser; liefert den Redirect und ggf. den Login-Code. */
+async function callbackIn(app: express.Express, state: string, cookie?: string) {
+  const req = request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`);
+  const res = cookie ? await req.set('Cookie', cookie) : await req;
+  const location = String(res.headers.location ?? '');
+  const code = location.includes('/auth/callback') ? new URL(location).searchParams.get('code') : null;
+  return { location, code };
+}
+
+/** Löst den Login-Code ein — so, wie es die SPA nach dem Redirect tut. */
+async function redeem(app: express.Express, code: string | null, cookie?: string) {
+  const req = request(app).post('/api/auth/oauth/exchange').send({ code });
+  return cookie ? req.set('Cookie', cookie) : req;
+}
+
+/** Kompletter Login in EINEM Browser; true, wenn am Ende Tokens ausgegeben wurden. */
+async function loginSucceeds(app: express.Express): Promise<boolean> {
+  const { state, cookie } = await startLogin(app);
+  const { code } = await callbackIn(app, state, cookie);
+  if (!code) return false;
+  const res = await redeem(app, code, cookie);
+  return res.status === 200 && typeof res.body.accessToken === 'string';
 }
 
 function existingUser(emailVerified: boolean): FakeUser {
@@ -121,47 +151,60 @@ describe('OAuth state ist an den Browser gebunden (Security-Audit H9)', () => {
   it('REJECTS a valid state presented without the initiating browser’s cookie — der ganze Zweck', async () => {
     const app = makeApp();
     const { state } = await startLogin(app); // Angreifer-Browser
-    const res = await request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`); // Opfer, ohne Cookie
-    expect(res.status).toBe(302);
-    expect(landedWithTokens(res.headers.location)).toBe(false);
+    const { code } = await callbackIn(app, state); // Opfer, ohne Cookie
+    expect(code).toBeNull();
   });
 
   it('rejects a state from one browser combined with the cookie of another', async () => {
     const app = makeApp();
     const attacker = await startLogin(app);
     const victim = await startLogin(app);
-    const res = await request(app)
-      .get(`/api/auth/oauth/google/callback?code=c&state=${attacker.state}`)
-      .set('Cookie', victim.cookie);
-    expect(landedWithTokens(res.headers.location)).toBe(false);
+    const { code } = await callbackIn(app, attacker.state, victim.cookie);
+    expect(code).toBeNull();
   });
 
   it('completes the login in the browser that started it', async () => {
-    const app = makeApp();
-    const { state, cookie } = await startLogin(app);
-    const res = await request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`).set('Cookie', cookie);
-    expect(landedWithTokens(res.headers.location)).toBe(true);
+    expect(await loginSucceeds(makeApp())).toBe(true);
   });
 
   it('the state is single-use', async () => {
     const app = makeApp();
     const { state, cookie } = await startLogin(app);
-    await request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`).set('Cookie', cookie);
-    const again = await request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`).set('Cookie', cookie);
-    expect(landedWithTokens(again.headers.location)).toBe(false);
+    await callbackIn(app, state, cookie);
+    const again = await callbackIn(app, state, cookie);
+    expect(again.code).toBeNull();
+  });
+
+  it('never puts tokens into the redirect URL — sonst ist der Callback-Link selbst der Login-CSRF', async () => {
+    const app = makeApp();
+    const { state, cookie } = await startLogin(app);
+    const { location } = await callbackIn(app, state, cookie);
+    expect(location).not.toMatch(/accessToken|refreshToken/);
+  });
+
+  it('a login code cannot be redeemed in another browser', async () => {
+    const app = makeApp();
+    const attacker = await startLogin(app);
+    const { code } = await callbackIn(app, attacker.state, attacker.cookie);
+    expect(code).toEqual(expect.any(String));
+    const victim = await startLogin(app); // das Opfer hat ein eigenes, anderes Cookie
+    expect((await redeem(app, code, victim.cookie)).status).toBe(401);
+    expect((await redeem(app, code)).status).toBe(401);
+  });
+
+  it('a login code is single-use', async () => {
+    const app = makeApp();
+    const { state, cookie } = await startLogin(app);
+    const { code } = await callbackIn(app, state, cookie);
+    expect((await redeem(app, code, cookie)).status).toBe(200);
+    expect((await redeem(app, code, cookie)).status).toBe(401);
   });
 });
 
 describe('OAuth-Verknüpfung nur bei bestätigter E-Mail (Security-Audit H8)', () => {
-  async function callback(app: express.Express) {
-    const { state, cookie } = await startLogin(app);
-    return request(app).get(`/api/auth/oauth/google/callback?code=c&state=${state}`).set('Cookie', cookie);
-  }
-
   it('does NOT link into a local account whose email was never verified — Pre-Hijacking', async () => {
     mockExisting = existingUser(false); // vom Angreifer vorregistriert
-    const res = await callback(makeApp());
-    expect(landedWithTokens(res.headers.location)).toBe(false);
+    expect(await loginSucceeds(makeApp())).toBe(false);
     expect(mockExisting.oauthProviders).toEqual([]);
     expect(mockExisting.save).not.toHaveBeenCalled();
   });
@@ -169,15 +212,13 @@ describe('OAuth-Verknüpfung nur bei bestätigter E-Mail (Security-Audit H8)', (
   it('does NOT link when the provider does not vouch for the email', async () => {
     mockExisting = existingUser(true);
     mockProfile = { ...mockProfile, emailVerified: false };
-    const res = await callback(makeApp());
-    expect(landedWithTokens(res.headers.location)).toBe(false);
+    expect(await loginSucceeds(makeApp())).toBe(false);
     expect(mockExisting.oauthProviders).toEqual([]);
   });
 
   it('still links when both sides have verified the email', async () => {
     mockExisting = existingUser(true);
-    const res = await callback(makeApp());
-    expect(landedWithTokens(res.headers.location)).toBe(true);
+    expect(await loginSucceeds(makeApp())).toBe(true);
     expect(mockExisting.oauthProviders).toHaveLength(1);
   });
 
@@ -191,7 +232,7 @@ describe('OAuth-Verknüpfung nur bei bestätigter E-Mail (Security-Audit H8)', (
 
   it('a brand-new OAuth account carries the provider’s verification state', async () => {
     mockProfile = { ...mockProfile, email: 'new@corp.example', emailVerified: true };
-    await callback(makeApp());
+    await loginSucceeds(makeApp());
     expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ email: 'new@corp.example', emailVerified: true }));
   });
 });
