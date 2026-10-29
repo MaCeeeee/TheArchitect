@@ -84,8 +84,15 @@ diff -q Caddyfile Caddyfile.SAFE >/dev/null \
 # ── 5. Build + recreate ONLY the app ─────────────────────────────────────────
 # DBs stay up → no Neo4j boot-race, no stale-network EAI_AGAIN. -f is hardcoded
 # so the toxic compose file can never be selected.
-log "Building + recreating app only (DBs stay up)"
-docker compose -f "$COMPOSE" up -d --build app
+# Build and recreate are split on purpose: `up -d --build app` also builds every
+# depends_on service — on 2026-10-26 an unpinned transformers release broke the
+# embedding-sidecar build and stalled an app-only deploy. `build app` builds just
+# the app image; `--no-deps` recreates just the app container. The sidecar is
+# rebuilt only on purpose: `docker compose -f "$COMPOSE" up -d --build embedding-sidecar`.
+log "Building app image only (sidecar + DBs untouched)"
+docker compose -f "$COMPOSE" build app
+log "Recreating app container only (--no-deps)"
+docker compose -f "$COMPOSE" up -d --no-deps app
 
 # ── 6. Smoke test with real exit codes ───────────────────────────────────────
 log "Smoke testing $HEALTH_URL (up to ~60s for the app to settle)"
