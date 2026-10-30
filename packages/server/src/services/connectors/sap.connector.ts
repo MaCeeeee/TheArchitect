@@ -20,6 +20,7 @@ import type { ConnectorConfig, IConnector, ICostEnrichmentConnector, AuthMethod,
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
 import { ELEMENT_TYPES } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Type Mappings: SAP Object Types → ArchiMate ───
 
@@ -524,7 +525,7 @@ export class SAPConnector implements IConnector, ICostEnrichmentConnector {
     // SAP CSRF token handling (needed for write ops, but we only read)
     headers['X-CSRF-Token'] = 'Fetch';
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

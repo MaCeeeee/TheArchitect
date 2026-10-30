@@ -13,6 +13,7 @@
 import { v4 as uuid } from 'uuid';
 import type { ConnectorConfig, IConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Node Type → ArchiMate Mapping (from client n8nParser.ts) ───
 
@@ -239,7 +240,7 @@ export class N8nConnector implements IConnector {
       headers['X-N8N-API-KEY'] = apiKey;
     }
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

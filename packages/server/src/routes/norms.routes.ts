@@ -36,6 +36,11 @@ import { log } from '../config/logger';
 
 const router = Router();
 router.use(authenticate);
+// Security-Audit H3: JEDER `:projectId`-Endpunkt hier braucht Projektzugriff —
+// `authenticate` allein liess jeden angemeldeten Nutzer in fremde Projekte.
+// Pfadgebunden, damit der Guard nicht in andere unter /api/projects
+// gemountete Router greift; Schreib-Routen setzen zusaetzlich 'editor'.
+router.use('/:projectId/norms', requireProjectAccess('viewer'));
 
 router.get('/:projectId/norms', async (req, res) => {
   try {
@@ -238,8 +243,8 @@ router.post('/:projectId/norms/discover/reject', requireProjectAccess('editor'),
 
 // UC-LAW-002 Slice-2b (THE-464 AC-3) — read-only Liste ALLER Korpus-Funde
 // (inkl. rejected) fürs „show rejected"-Toggle im Panel. VOR :workId
-// registriert (statische Segmente zuerst); `authenticate` genügt, kein
-// editor-Gate — reiner Read.
+// registriert (statische Segmente zuerst); Projektzugriff 'viewer' über den
+// Guard oben, kein editor-Gate — reiner Read.
 router.get('/:projectId/norms/discover/findings', async (req, res) => {
   if (process.env.LAW_DISCOVERY_ENABLED !== 'true') {
     return res.status(404).json({ success: false, error: 'not found' });
@@ -295,8 +300,9 @@ router.get('/:projectId/norms/:workId/remediation-scope', async (req, res) => {
   }
 });
 
-router.post('/:projectId/norms/:workId/pipeline', async (req, res) => {
-  const { projectId, workId } = req.params;
+router.post('/:projectId/norms/:workId/pipeline', requireProjectAccess('editor'), async (req, res) => {
+  const projectId = String(req.params.projectId);
+  const workId = String(req.params.workId);
   try {
     const norm = await getNorm(projectId, workId);
     if (!norm) {

@@ -5,6 +5,11 @@ export interface OAuthProfile {
   providerId: string;
   email: string;
   name: string;
+  /**
+   * Security-Audit H8: bestätigt der Provider, dass die E-Mail dem Konto
+   * gehört? Nur dann darf eine OAuth-Identität an ein bestehendes Konto.
+   */
+  emailVerified: boolean;
 }
 
 // ── Google ──────────────────────────────────────────────
@@ -27,6 +32,7 @@ export async function exchangeGoogleCode(code: string): Promise<OAuthProfile> {
     providerId: profileRes.data.sub,
     email: profileRes.data.email,
     name: profileRes.data.name,
+    emailVerified: profileRes.data.email_verified === true,
   };
 }
 
@@ -50,17 +56,15 @@ export async function exchangeGithubCode(code: string): Promise<OAuthProfile> {
     headers: { Authorization: `token ${accessToken}` },
   });
 
-  // GitHub may hide the primary email if set to private
-  let email = profileRes.data.email;
-  if (!email) {
-    const emailsRes = await axios.get('https://api.github.com/user/emails', {
-      headers: { Authorization: `token ${accessToken}` },
-    });
-    const primary = emailsRes.data.find(
-      (e: { primary: boolean; verified: boolean; email: string }) => e.primary && e.verified
-    );
-    email = primary?.email;
-  }
+  // Security-Audit H8: immer die primäre, VERIFIZIERTE Adresse aus
+  // /user/emails — das Profilfeld `email` sagt nichts über die Verifizierung.
+  const emailsRes = await axios.get('https://api.github.com/user/emails', {
+    headers: { Authorization: `token ${accessToken}` },
+  });
+  const primary = emailsRes.data.find(
+    (e: { primary: boolean; verified: boolean; email: string }) => e.primary && e.verified
+  );
+  const email: string | undefined = primary?.email;
 
   if (!email) {
     throw new Error('GitHub account has no verified primary email address');
@@ -71,6 +75,7 @@ export async function exchangeGithubCode(code: string): Promise<OAuthProfile> {
     providerId: String(profileRes.data.id),
     email,
     name: profileRes.data.name || profileRes.data.login,
+    emailVerified: true,
   };
 }
 
@@ -103,5 +108,7 @@ export async function exchangeMicrosoftCode(code: string): Promise<OAuthProfile>
     providerId: profileRes.data.id,
     email: profileRes.data.mail || profileRes.data.userPrincipalName,
     name: profileRes.data.displayName,
+    // `mail` ist im Entra-Mandanten frei setzbar (nOAuth) — nie als bestätigt werten.
+    emailVerified: false,
   };
 }

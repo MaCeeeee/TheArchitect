@@ -181,8 +181,9 @@ export async function applyProposal(
 
 // ─── Rollback Proposal ───
 
-export async function rollbackProposal(proposalId: string): Promise<void> {
-  const proposal = await RemediationProposal.findById(proposalId);
+export async function rollbackProposal(projectId: string, proposalId: string): Promise<void> {
+  // Security-Audit H2: nur Vorschläge DIESES Projekts.
+  const proposal = await RemediationProposal.findOne({ _id: proposalId, projectId });
   if (!proposal) {
     throw new Error('Proposal not found.');
   }

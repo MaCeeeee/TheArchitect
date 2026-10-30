@@ -19,6 +19,7 @@
 
 import type { ConnectorConfig, ICostEnrichmentConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 export class AbacusConnector implements ICostEnrichmentConnector {
   readonly type: ConnectorType = 'abacus';
@@ -207,7 +208,7 @@ export class AbacusConnector implements ICostEnrichmentConnector {
       headers['X-Abacus-Mandant'] = config.credentials.mandant || config.filters.mandant;
     }
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

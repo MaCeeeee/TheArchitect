@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { authenticate } from '../middleware/auth.middleware';
 import { createAuditEntry } from '../middleware/audit.middleware';
+import { isKnownPermission, requireInteractiveAuth } from '../middleware/rbac.middleware';
+import { assertPublicHttpUrl, safeFetch, SsrfBlockedError } from '../utils/safeFetch';
 import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
 import { Connection, encryptCredentials, decryptCredentials } from '../models/Connection';
@@ -57,7 +59,7 @@ router.put('/profile', async (req: Request, res: Response) => {
 });
 
 // PUT /password
-router.put('/password', async (req: Request, res: Response) => {
+router.put('/password', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
@@ -96,7 +98,7 @@ router.put('/password', async (req: Request, res: Response) => {
 });
 
 // DELETE /account
-router.delete('/account', async (req: Request, res: Response) => {
+router.delete('/account', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { password } = req.body;
 
   const user = await User.findById(req.user!._id);
@@ -173,7 +175,7 @@ router.get('/oauth-providers', async (req: Request, res: Response) => {
 });
 
 // DELETE /oauth-providers/:provider
-router.delete('/oauth-providers/:provider', async (req: Request, res: Response) => {
+router.delete('/oauth-providers/:provider', requireInteractiveAuth, async (req: Request, res: Response) => {
   const user = req.user!;
   const provider = req.params.provider;
 
@@ -213,7 +215,7 @@ router.get('/sessions', async (req: Request, res: Response) => {
 // DELETE /sessions — alle ANDEREN Sitzungen abmelden (Geraeteverlust-Fall).
 // Die eigene bleibt: wer "ueberall abmelden" klickt, will nicht selbst
 // mitten in der Aktion ausgesperrt werden.
-router.delete('/sessions', async (req: Request, res: Response) => {
+router.delete('/sessions', requireInteractiveAuth, async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
   const revoked = await revokeAllSessions(getRedis(), userId, req.jwtPayload?.sid);
   await createAuditEntry({
@@ -227,7 +229,7 @@ router.delete('/sessions', async (req: Request, res: Response) => {
 });
 
 // DELETE /sessions/:sessionId
-router.delete('/sessions/:sessionId', async (req: Request, res: Response) => {
+router.delete('/sessions/:sessionId', requireInteractiveAuth, async (req: Request, res: Response) => {
   const userId = String(req.user!._id);
   const deleted = await revokeSession(getRedis(), userId, String(req.params.sessionId));
   if (!deleted) return res.status(404).json({ error: 'Session not found' });
@@ -264,10 +266,13 @@ router.get('/api-keys', async (req: Request, res: Response) => {
 });
 
 // POST /api-keys
-router.post('/api-keys', async (req: Request, res: Response) => {
+router.post('/api-keys', requireInteractiveAuth, async (req: Request, res: Response) => {
   const { name, permissions, expiresInDays } = req.body;
 
   if (!name) return res.status(400).json({ error: 'Name is required' });
+  if (permissions !== undefined && !(Array.isArray(permissions) && permissions.every(isKnownPermission))) {
+    return res.status(400).json({ error: 'permissions must be a list of known permissions' });
+  }
 
   // Generate a random API key
   const rawKey = `ta_${crypto.randomBytes(32).toString('hex')}`;
@@ -310,7 +315,7 @@ router.post('/api-keys', async (req: Request, res: Response) => {
 });
 
 // DELETE /api-keys/:keyId
-router.delete('/api-keys/:keyId', async (req: Request, res: Response) => {
+router.delete('/api-keys/:keyId', requireInteractiveAuth, async (req: Request, res: Response) => {
   const key = await ApiKey.findOneAndDelete({
     _id: req.params.keyId,
     userId: req.user!._id,
@@ -409,6 +414,13 @@ router.post('/connections', async (req: Request, res: Response) => {
     if (!name || !type || !baseUrl) {
       return res.status(400).json({ success: false, error: 'name, type, and baseUrl are required' });
     }
+    // Security-Audit H7: nur öffentliche http(s)-Ziele.
+    try {
+      await assertPublicHttpUrl(baseUrl);
+    } catch (err) {
+      if (err instanceof SsrfBlockedError) return res.status(400).json({ success: false, error: err.message });
+      throw err;
+    }
 
     const encrypted = credentials ? encryptCredentials(credentials) : '';
     const conn = await Connection.create({
@@ -445,6 +457,15 @@ router.put('/connections/:connectionId', async (req: Request, res: Response) => 
   if (!conn) return res.status(404).json({ success: false, error: 'Connection not found' });
 
   const { name, baseUrl, authMethod, credentials } = req.body;
+  if (baseUrl !== undefined) {
+    // Security-Audit H7: nur öffentliche http(s)-Ziele.
+    try {
+      await assertPublicHttpUrl(baseUrl);
+    } catch (err) {
+      if (err instanceof SsrfBlockedError) return res.status(400).json({ success: false, error: err.message });
+      throw err;
+    }
+  }
   if (name !== undefined) conn.name = name;
   if (baseUrl !== undefined) conn.baseUrl = baseUrl;
   if (authMethod !== undefined) conn.authMethod = authMethod;
@@ -535,8 +556,8 @@ router.get('/connections/:connectionId/orgs', async (req: Request, res: Response
 
       // Fetch user info + orgs in parallel
       const [userRes, orgsRes] = await Promise.all([
-        fetch(`${baseUrl}/user`, { headers }),
-        fetch(`${baseUrl}/user/orgs?per_page=100`, { headers }),
+        safeFetch(`${baseUrl}/user`, { headers }),
+        safeFetch(`${baseUrl}/user/orgs?per_page=100`, { headers }),
       ]);
 
       const orgs: Array<{ login: string; type: string }> = [];
@@ -555,7 +576,7 @@ router.get('/connections/:connectionId/orgs', async (req: Request, res: Response
     if (conn.type === 'gitlab') {
       if (!/api\/v4/i.test(baseUrl)) baseUrl = baseUrl.replace(/\/+$/, '');
       const headers: Record<string, string> = { 'PRIVATE-TOKEN': token, Accept: 'application/json' };
-      const resp = await fetch(`${baseUrl}/api/v4/groups?per_page=100&min_access_level=10`, { headers });
+      const resp = await safeFetch(`${baseUrl}/api/v4/groups?per_page=100&min_access_level=10`, { headers });
       if (!resp.ok) return res.json({ success: true, data: [] });
       const groups = await resp.json() as Array<Record<string, any>>;
       return res.json({ success: true, data: groups.map((g) => ({ login: g.full_path, type: 'group', id: g.id })) });
@@ -564,7 +585,7 @@ router.get('/connections/:connectionId/orgs', async (req: Request, res: Response
     if (conn.type === 'jira') {
       const email = creds.email || '';
       const auth = Buffer.from(`${email}:${token}`).toString('base64');
-      const resp = await fetch(`${baseUrl.replace(/\/+$/, '')}/rest/api/3/project/search?maxResults=100`, {
+      const resp = await safeFetch(`${baseUrl.replace(/\/+$/, '')}/rest/api/3/project/search?maxResults=100`, {
         headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
       });
       if (!resp.ok) return res.json({ success: true, data: [] });
@@ -601,7 +622,7 @@ router.get('/connections/:connectionId/repos', async (req: Request, res: Respons
       const path = orgType === 'organization'
         ? `/orgs/${org}/repos?per_page=100&type=all`
         : `/users/${org}/repos?per_page=100&sort=updated`;
-      const resp = await fetch(`${baseUrl}${path}`, { headers });
+      const resp = await safeFetch(`${baseUrl}${path}`, { headers });
       if (!resp.ok) return res.json({ success: true, data: [] });
       const repos = await resp.json() as Array<Record<string, any>>;
       return res.json({
@@ -624,7 +645,7 @@ router.get('/connections/:connectionId/repos', async (req: Request, res: Respons
       const path = org
         ? `/api/v4/groups/${encodeURIComponent(org)}/projects?per_page=100&include_subgroups=true`
         : `/api/v4/projects?membership=true&per_page=100`;
-      const resp = await fetch(`${baseUrl}${path}`, { headers });
+      const resp = await safeFetch(`${baseUrl}${path}`, { headers });
       if (!resp.ok) return res.json({ success: true, data: [] });
       const repos = await resp.json() as Array<Record<string, any>>;
       return res.json({

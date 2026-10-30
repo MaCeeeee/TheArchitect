@@ -9,26 +9,31 @@ export default function OAuthCallbackPage() {
   const login = useAuthStore((s) => s.login);
 
   useEffect(() => {
-    const accessToken = params.get('accessToken');
-    const refreshToken = params.get('refreshToken');
+    // Security-Audit H9: Tokens kommen nie aus der URL — sonst meldet ein
+    // fremder Link mit eingebetteten Tokens das Opfer im Konto des
+    // Angreifers an. Der Callback liefert einen Einmal-Code, den nur der
+    // Browser einlösen kann, der den Login gestartet hat.
+    const code = params.get('code');
 
-    if (!accessToken || !refreshToken) {
+    if (!code) {
       navigate('/login?error=Authentication+failed', { replace: true });
       return;
     }
 
-    // Set tokens so the /me call is authenticated via the Axios interceptor
-    useAuthStore.setState({ token: accessToken, refreshToken, isAuthenticated: false });
-
     authAPI
-      .me()
+      .oauthExchange(code)
       .then(({ data }) => {
-        login(data, accessToken, refreshToken);
-        navigate('/dashboard', { replace: true });
+        const { accessToken, refreshToken } = data as { accessToken: string; refreshToken: string };
+        // Set tokens so the /me call is authenticated via the Axios interceptor
+        useAuthStore.setState({ token: accessToken, refreshToken, isAuthenticated: false });
+        return authAPI.me().then(({ data: me }) => {
+          login(me, accessToken, refreshToken);
+          navigate('/dashboard', { replace: true });
+        });
       })
       .catch(() => {
         useAuthStore.getState().logout();
-        navigate('/login?error=Failed+to+load+profile', { replace: true });
+        navigate('/login?error=Authentication+failed', { replace: true });
       });
   }, []);
 

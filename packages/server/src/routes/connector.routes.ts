@@ -10,6 +10,7 @@ import { Project } from '../models/Project';
 import { SyncLog } from '../services/sync-scheduler.service';
 import { matchEnrichments } from '../services/enrichment-matcher.service';
 import { runCypher } from '../config/neo4j';
+import { assertPublicHttpUrl, SsrfBlockedError } from '../utils/safeFetch';
 import type { CostFields, ConflictStrategy, CostEnrichmentResult } from '@thearchitect/shared';
 
 const router = Router();
@@ -59,6 +60,14 @@ router.post(
 
       if (!type || !name || !baseUrl) {
         return res.status(400).json({ success: false, error: 'type, name, and baseUrl are required' });
+      }
+      // Security-Audit H7: nur öffentliche http(s)-Ziele (Durchsetzung beim
+      // Abruf in safeFetch; hier die frühe, verständliche Absage).
+      try {
+        await assertPublicHttpUrl(baseUrl);
+      } catch (err) {
+        if (err instanceof SsrfBlockedError) return res.status(400).json({ success: false, error: err.message });
+        throw err;
       }
 
       const connector = getConnector(type);
