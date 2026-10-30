@@ -9,6 +9,22 @@ const PROJECT_ROLE_HIERARCHY: Record<string, number> = {
   viewer: 1,
 };
 
+type ProjectMembership = {
+  ownerId: { toString(): string };
+  collaborators: Array<{ userId: { toString(): string }; role?: string }>;
+};
+
+/** Projektrolle des Nutzers: 'owner', die Collaborator-Rolle oder null (kein Mitglied). */
+export function projectRoleOf(project: ProjectMembership, userId: string): string | null {
+  if (project.ownerId.toString() === userId) return 'owner';
+  const collaborator = project.collaborators.find((c) => c.userId.toString() === userId);
+  return collaborator ? collaborator.role || 'viewer' : null;
+}
+
+export function hasProjectRole(role: string | null | undefined, minProjectRole: string): boolean {
+  return (PROJECT_ROLE_HIERARCHY[role ?? ''] || 0) >= (PROJECT_ROLE_HIERARCHY[minProjectRole] || 0);
+}
+
 /**
  * Middleware that checks if the authenticated user has access to the project.
  * Looks for projectId in req.params.projectId or req.params.id.
@@ -40,37 +56,18 @@ export function requireProjectAccess(minProjectRole?: string) {
         return res.status(404).json({ error: 'Project not found' });
       }
 
-      const userId = user._id.toString();
-
-      // Check if user is owner
-      if (project.ownerId.toString() === userId) {
-        (req as any).project = project;
-        (req as any).projectRole = 'owner';
-        return next();
-      }
-
-      // Check if user is collaborator
-      const collaborator = project.collaborators.find(
-        (c) => c.userId.toString() === userId
-      );
-
-      if (!collaborator) {
+      const userProjectRole = projectRoleOf(project, user._id.toString());
+      if (!userProjectRole) {
         return res.status(403).json({ error: 'Access denied — not a project member' });
       }
 
-      const userProjectRole = collaborator.role || 'viewer';
-
-      // Check minimum role level if specified
-      if (minProjectRole) {
-        const requiredLevel = PROJECT_ROLE_HIERARCHY[minProjectRole] || 0;
-        const userLevel = PROJECT_ROLE_HIERARCHY[userProjectRole] || 0;
-        if (userLevel < requiredLevel) {
-          return res.status(403).json({
-            error: 'Insufficient project role',
-            required: minProjectRole,
-            current: userProjectRole,
-          });
-        }
+      // Owner passes every level; collaborators need the minimum role
+      if (minProjectRole && !hasProjectRole(userProjectRole, minProjectRole)) {
+        return res.status(403).json({
+          error: 'Insufficient project role',
+          required: minProjectRole,
+          current: userProjectRole,
+        });
       }
 
       (req as any).project = project;

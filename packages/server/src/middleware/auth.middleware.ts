@@ -185,8 +185,8 @@ export function verifyMfaPendingToken(token: string): string | null {
 }
 
 /** Prueft Signatur und Token-Art; wirft bei allem, was kein Zugangs-Token ist. */
-export function verifyAccessToken(token: string): { userId: string; role: string } {
-  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string; type?: unknown };
+export function verifyAccessToken(token: string): { userId: string; role: string; sid?: string } {
+  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string; type?: unknown; sid?: string };
   if (!isAccessClaims(decoded)) throw new Error('Access token required');
   return decoded;
 }

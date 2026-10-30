@@ -1,6 +1,12 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import { isPlatformAdmin } from '@thearchitect/shared';
 import { verifyAccessToken } from '../middleware/auth.middleware';
+import { hasProjectRole, projectRoleOf } from '../middleware/projectAccess.middleware';
+import { getRedis } from '../config/redis';
+import { isSessionActive, sessionEvents, type SessionRevocation } from '../services/session.service';
+import { User } from '../models/User';
+import { Project } from '../models/Project';
 import {
   resolveConflict,
   lockElement,
@@ -9,10 +15,27 @@ import {
   getLockedElements,
 } from './conflictResolver';
 
+// Security (Folgebefund zum Audit): `join:project` nahm projectId, userId und
+// userName ungeprüft aus dem Payload — jeder angemeldete Nutzer konnte jedes
+// Projekt mithören, hineinschreiben und sich als jemand anderes ausgeben, und
+// ein widerrufener Login blieb verbunden. Jetzt gilt:
+//  - Identität kommt aus Token + DB (socket.data), nie aus dem Payload;
+//  - Beitritt nur mit Projektzugriff (dieselbe Regel wie requireProjectAccess);
+//  - Modell-Events (Elemente, Verbindungen, Locks) erst ab Projektrolle editor;
+//  - der Handshake prüft die Sitzung, und ein Widerruf trennt laufende Sockets.
+
+interface SocketIdentity {
+  userId: string;
+  userName: string;
+  role: string;
+  sid?: string;
+}
+
 interface ConnectedUser {
   userId: string;
   userName: string;
   projectId: string;
+  projectRole: string;
   cursor?: { x: number; y: number; z: number };
 }
 
@@ -25,6 +48,23 @@ export function getIO(): Server {
   return ioInstance;
 }
 
+function identityOf(socket: Socket): SocketIdentity {
+  return socket.data as SocketIdentity;
+}
+
+/** Projektrolle für den Socket — Plattform-Admins haben implizit vollen Zugriff. */
+async function resolveProjectRole(identity: SocketIdentity, projectId: string): Promise<string | null> {
+  if (isPlatformAdmin(identity.role)) return 'owner';
+  const project = await Project.findById(projectId).select('ownerId collaborators');
+  return project ? projectRoleOf(project, identity.userId) : null;
+}
+
+function onlineIn(projectId: string): Array<Omit<ConnectedUser, 'projectRole'>> {
+  return Array.from(connectedUsers.values())
+    .filter((u) => u.projectId === projectId)
+    .map(({ projectRole: _role, ...u }) => u);
+}
+
 export function initSocketServer(httpServer: HttpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -34,60 +74,121 @@ export function initSocketServer(httpServer: HttpServer) {
     },
   });
 
-  // Auth middleware for WebSocket
-  io.use((socket, next) => {
+  // Auth middleware for WebSocket: Token, Sitzung, Nutzer
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) {
       return next(new Error('Authentication required'));
     }
 
+    let decoded: { userId: string; role: string; sid?: string };
     try {
-      const decoded = verifyAccessToken(token);
-      (socket as Socket & { userId?: string; userRole?: string }).userId = decoded.userId;
-      (socket as Socket & { userId?: string; userRole?: string }).userRole = decoded.role;
+      decoded = verifyAccessToken(token);
+    } catch {
+      return next(new Error('Invalid token'));
+    }
+
+    try {
+      // Wie in `authenticate`: Tokens mit sid brauchen eine lebende Sitzung
+      // (fail-open bei Redis-Ausfall, siehe session.service).
+      if (decoded.sid && !(await isSessionActive(getRedis(), decoded.userId, decoded.sid))) {
+        return next(new Error('Session revoked'));
+      }
+      const user = await User.findById(decoded.userId).select('name role');
+      if (!user) return next(new Error('User not found'));
+      const identity: SocketIdentity = {
+        userId: String(user._id),
+        userName: user.name,
+        role: user.role,
+        sid: decoded.sid,
+      };
+      socket.data = identity;
       next();
     } catch {
-      next(new Error('Invalid token'));
+      next(new Error('Authentication error'));
     }
   });
 
+  // Widerruf einer Sitzung trennt die zugehörigen Sockets sofort.
+  const onRevoked = ({ userId, sessionId, keepSessionId }: SessionRevocation) => {
+    for (const socket of io.of('/').sockets.values()) {
+      const identity = identityOf(socket);
+      if (identity?.userId !== userId) continue;
+      const hit = sessionId ? identity.sid === sessionId : !keepSessionId || identity.sid !== keepSessionId;
+      if (hit) socket.disconnect(true);
+    }
+  };
+  sessionEvents.on('revoked', onRevoked); // initSocketServer läuft einmal pro Prozess
+
   io.on('connection', (socket: Socket) => {
     console.log(`[WS] Client connected: ${socket.id}`);
+    const identity = identityOf(socket);
 
-    // Join project room
-    socket.on('join:project', (data: { userId: string; userName: string; projectId: string }) => {
-      const { userId, userName, projectId } = data;
+    /** Nur für Mitglieder mit mindestens `minRole` im aktuell betretenen Projekt. */
+    const member = (minRole = 'viewer'): ConnectedUser | null => {
+      const user = connectedUsers.get(socket.id);
+      return user && hasProjectRole(user.projectRole, minRole) ? user : null;
+    };
+
+    const leaveCurrentProject = () => {
+      const user = connectedUsers.get(socket.id);
+      if (!user) return;
+      const room = `project:${user.projectId}`;
+      for (const elementId of unlockAllForUser(user.projectId, user.userId)) {
+        io.to(room).emit('element:unlocked', { elementId });
+      }
+      socket.leave(room);
+      connectedUsers.delete(socket.id);
+      socket.to(room).emit('user:left', { userId: user.userId, userName: user.userName });
+      io.to(room).emit('users:online', onlineIn(user.projectId));
+      console.log(`[WS] ${user.userName} left project ${user.projectId}`);
+    };
+
+    // Join project room — userId/userName im Payload werden ignoriert
+    socket.on('join:project', async (data: { projectId?: unknown }) => {
+      const projectId = typeof data?.projectId === 'string' ? data.projectId : '';
+      let projectRole: string | null = null;
+      try {
+        projectRole = projectId ? await resolveProjectRole(identity, projectId) : null;
+      } catch {
+        projectRole = null; // ungültige Id o. Ä. — wie kein Zugriff behandeln
+      }
+      if (!projectRole) {
+        socket.emit('join:denied', { projectId });
+        return;
+      }
+
+      leaveCurrentProject();
       const room = `project:${projectId}`;
-
       socket.join(room);
-      connectedUsers.set(socket.id, { userId, userName, projectId });
+      connectedUsers.set(socket.id, { userId: identity.userId, userName: identity.userName, projectId, projectRole });
 
       // Notify others
-      socket.to(room).emit('user:joined', { userId, userName });
+      socket.to(room).emit('user:joined', { userId: identity.userId, userName: identity.userName });
 
       // Send current online users
-      const roomUsers = Array.from(connectedUsers.values())
-        .filter((u) => u.projectId === projectId);
-      io.to(room).emit('users:online', roomUsers);
+      io.to(room).emit('users:online', onlineIn(projectId));
 
-      // Send current element locks
-      socket.emit('locks:state', getLockedElements());
+      // Send current element locks — nur die dieses Projekts
+      socket.emit('locks:state', getLockedElements(projectId));
 
-      console.log(`[WS] ${userName} joined project ${projectId}`);
+      console.log(`[WS] ${identity.userName} joined project ${projectId}`);
     });
 
-    // Element events with conflict resolution
+    socket.on('leave:project', leaveCurrentProject);
+
+    // Element events with conflict resolution — Modell-Änderungen ab editor
     socket.on('element:add', (element) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
       socket.to(`project:${user.projectId}`).emit('element:add', element);
     });
 
     socket.on('element:update', (data: { elementId: string; changes: Record<string, unknown>; version?: number }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
 
-      const result = resolveConflict(data.elementId, user.userId, data.changes, data.version);
+      const result = resolveConflict(user.projectId, data.elementId, user.userId, data.changes, data.version);
       const room = `project:${user.projectId}`;
 
       if (result.accepted) {
@@ -109,19 +210,19 @@ export function initSocketServer(httpServer: HttpServer) {
     });
 
     socket.on('element:delete', (data: { elementId: string }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
       const room = `project:${user.projectId}`;
-      unlockElement(data.elementId, user.userId);
+      unlockElement(user.projectId, data.elementId, user.userId);
       socket.to(room).emit('element:delete', data);
     });
 
     // Element locking
     socket.on('element:lock', (data: { elementId: string }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
 
-      const result = lockElement(data.elementId, user.userId, user.userName);
+      const result = lockElement(user.projectId, data.elementId, user.userId, user.userName);
       if (result.success) {
         io.to(`project:${user.projectId}`).emit('element:locked', {
           elementId: data.elementId,
@@ -137,10 +238,10 @@ export function initSocketServer(httpServer: HttpServer) {
     });
 
     socket.on('element:unlock', (data: { elementId: string }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
 
-      if (unlockElement(data.elementId, user.userId)) {
+      if (unlockElement(user.projectId, data.elementId, user.userId)) {
         io.to(`project:${user.projectId}`).emit('element:unlocked', {
           elementId: data.elementId,
         });
@@ -149,20 +250,20 @@ export function initSocketServer(httpServer: HttpServer) {
 
     // Connection events
     socket.on('connection:add', (connection) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
       socket.to(`project:${user.projectId}`).emit('connection:add', connection);
     });
 
     socket.on('connection:delete', (data: { connectionId: string }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member('editor');
       if (!user) return;
       socket.to(`project:${user.projectId}`).emit('connection:delete', data);
     });
 
-    // Cursor tracking
+    // Cursor tracking — Präsenz, für alle Mitglieder
     socket.on('cursor:move', (position: { x: number; y: number; z: number }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member();
       if (!user) return;
       user.cursor = position;
       socket.to(`project:${user.projectId}`).emit('cursor:move', {
@@ -172,9 +273,9 @@ export function initSocketServer(httpServer: HttpServer) {
       });
     });
 
-    // Chat
+    // Chat — für alle Mitglieder
     socket.on('chat:message', (data: { text: string }) => {
-      const user = connectedUsers.get(socket.id);
+      const user = member();
       if (!user) return;
       io.to(`project:${user.projectId}`).emit('chat:message', {
         userId: user.userId,
@@ -185,27 +286,7 @@ export function initSocketServer(httpServer: HttpServer) {
     });
 
     // Disconnect
-    socket.on('disconnect', () => {
-      const user = connectedUsers.get(socket.id);
-      if (user) {
-        const room = `project:${user.projectId}`;
-
-        // Release all locks held by this user
-        const unlockedElements = unlockAllForUser(user.userId);
-        for (const elementId of unlockedElements) {
-          io.to(room).emit('element:unlocked', { elementId });
-        }
-
-        socket.to(room).emit('user:left', { userId: user.userId, userName: user.userName });
-        connectedUsers.delete(socket.id);
-
-        const roomUsers = Array.from(connectedUsers.values())
-          .filter((u) => u.projectId === user.projectId);
-        io.to(room).emit('users:online', roomUsers);
-
-        console.log(`[WS] ${user.userName} left project ${user.projectId}`);
-      }
-    });
+    socket.on('disconnect', leaveCurrentProject);
   });
 
   ioInstance = io;

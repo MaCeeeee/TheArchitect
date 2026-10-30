@@ -29,6 +29,7 @@
  * Linear: THE-535 · Muster: CLAUDE.md „Sessions: session:{userId}:{sessionId}"
  */
 import crypto from 'crypto';
+import { EventEmitter } from 'events';
 
 /** 7 Tage — die Lebensdauer des Refresh-Tokens. Länger lebt keine Anmeldung. */
 export const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -136,7 +137,16 @@ export async function listSessions(
 }
 
 /** Widerruft EINE Sitzung. `false`, wenn es sie nicht gab — keine falsche Bestätigung. */
+/**
+ * Meldet Widerrufe an langlebige Verbindungen (Socket.IO): ein Zugangs-Token
+ * wird bei jedem REST-Request neu geprüft, ein Socket nur beim Handshake —
+ * ohne dieses Signal bliebe ein abgemeldetes Gerät in Echtzeit verbunden.
+ */
+export type SessionRevocation = { userId: string; sessionId?: string; keepSessionId?: string };
+export const sessionEvents = new EventEmitter();
+
 export async function revokeSession(redis: SessionStore, userId: string, sessionId: string): Promise<boolean> {
+  sessionEvents.emit('revoked', { userId, sessionId } satisfies SessionRevocation);
   try {
     return (await redis.del(sessionKey(userId, sessionId))) > 0;
   } catch {
@@ -153,6 +163,7 @@ export async function revokeAllSessions(
   userId: string,
   keepSessionId?: string,
 ): Promise<number> {
+  sessionEvents.emit('revoked', { userId, keepSessionId } satisfies SessionRevocation);
   try {
     const keys = await redis.keys(`session:${userId}:*`);
     const toDelete = keepSessionId ? keys.filter((k) => k !== sessionKey(userId, keepSessionId)) : keys;
