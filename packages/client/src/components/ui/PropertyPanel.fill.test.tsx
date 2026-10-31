@@ -105,3 +105,26 @@ describe('PropertyPanel fill prop', () => {
     expect(aside).not.toHaveClass('w-full');
   });
 });
+
+// UC-PROV-003 (THE-737) — the Evidence section is wired into the overview tab.
+describe('PropertyPanel evidence section', () => {
+  test('selected assumption shows the Evidence section with its validation ref', () => {
+    const assumption = {
+      ...baseElement,
+      id: 'sh-bsh-gov',
+      status: 'target',
+      source: 'api',
+      provenance: 'import',
+      metadata: {
+        assumption: true,
+        assumptionNote: 'Buyer role unproven',
+        validationRef: 'docs/strategy/2026-10-30-annahmen-validierung.md#A4',
+      },
+    };
+    useArchitectureStore.setState({ elements: [assumption], selectedElementId: assumption.id } as never);
+    const { getByTestId, getByText } = render(<PropertyPanel />);
+    expect(getByText('Evidence')).toBeInTheDocument();
+    expect(getByTestId('evidence-badge')).toHaveTextContent('Assumption');
+    expect(getByText('docs/strategy/2026-10-30-annahmen-validierung.md#A4')).toBeInTheDocument();
+  });
+});
