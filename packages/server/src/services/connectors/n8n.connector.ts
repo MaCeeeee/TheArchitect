@@ -139,6 +139,7 @@ export class N8nConnector implements IConnector {
     const wfElemId = `elem-${uuid().slice(0, 8)}`;
     elements.push({
       id: wfElemId,
+      externalId: String(wf.id),
       name: wf.name || 'n8n Workflow',
       type: 'process',
       layer: 'business',
@@ -157,6 +158,7 @@ export class N8nConnector implements IConnector {
 
       elements.push({
         id: elemId,
+        externalId: `${wf.id}:${node.id ?? node.name}`,
         name: node.name,
         type: mapping.type,
         layer: mapping.layer,

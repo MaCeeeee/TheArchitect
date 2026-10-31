@@ -134,6 +134,7 @@ export class JiraConnector implements IConnector, ICostEnrichmentConnector {
 
         elements.push({
           id: elemId,
+          externalId: issue.key,
           name: `[${issue.key}] ${fields.summary || 'Untitled'}`,
           type,
           layer: this.inferLayer(type),
