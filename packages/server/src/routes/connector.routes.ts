@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { getAllConnectorTypes, getConnector, getEnrichmentConnector, getAllEnrichmentConnectorTypes } from '../services/connectors';
-import { createTemporaryGraph, migrateTemporaryGraph } from '../services/upload.service';
+import { importConnectorResult } from '../services/connector-import.service';
 import type { ConnectorConfig, ConnectorType, AuthMethod } from '../services/connectors';
 import { Connection, decryptCredentials } from '../models/Connection';
 import { ConnectorConfigModel, toConnectorConfig, encryptCredentials } from '../models/ConnectorConfig';
@@ -127,28 +127,18 @@ router.post(
       const start = Date.now();
       const fetchResult = await connector.fetchData(config);
 
-      // Create temp graph, then migrate to project
-      const parsed = {
-        elements: fetchResult.elements,
-        connections: fetchResult.connections,
-        warnings: fetchResult.warnings,
-        format: `connector:${config.type}`,
-      };
-
-      const graph = await createTemporaryGraph(parsed, {
-        origin: {
-          sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
-          connectorConfigId: connectorName,
-        },
+      const imported = await importConnectorResult(projectId, fetchResult, {
+        source: config.type,
+        connectorConfigId: connectorName,
+        sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
       });
-      await migrateTemporaryGraph(graph.projectId, projectId);
 
       const syncResult = {
         connectorId: connectorName,
         status: 'success' as const,
-        elementsCreated: fetchResult.elements.length,
-        elementsUpdated: 0,
-        connectionsCreated: fetchResult.connections.length,
+        elementsCreated: imported.elementsCreated,
+        elementsUpdated: imported.elementsUpdated,
+        connectionsCreated: imported.connectionsSynced,
         warnings: fetchResult.warnings,
         syncedAt: new Date().toISOString(),
         durationMs: Date.now() - start,
@@ -326,26 +316,17 @@ router.post(
       const start = Date.now();
       const fetchResult = await connector.fetchData(config);
 
-      const parsed = {
-        elements: fetchResult.elements,
-        connections: fetchResult.connections,
-        warnings: fetchResult.warnings,
-        format: `connector:${conn.type}`,
-      };
-
-      const graph = await createTemporaryGraph(parsed, {
-        origin: {
-          sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
-          connectorConfigId: config.name,
-        },
+      const imported = await importConnectorResult(String(project._id), fetchResult, {
+        source: conn.type,
+        connectorConfigId: config.name,
+        sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
       });
-      await migrateTemporaryGraph(graph.projectId, String(project._id));
 
       integ.lastSync = {
         status: 'success',
         syncedAt: new Date(),
-        elementsCreated: fetchResult.elements.length,
-        connectionsCreated: fetchResult.connections.length,
+        elementsCreated: imported.elementsCreated,
+        connectionsCreated: imported.connectionsSynced,
         durationMs: Date.now() - start,
         warnings: fetchResult.warnings,
       };

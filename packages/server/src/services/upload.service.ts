@@ -22,6 +22,8 @@ export interface ParsedElement {
   riskLevel: string;
   maturityLevel: number;
   properties?: Record<string, string>;
+  /** Stable key in the source system (connectors only) — the re-sync upsert key. */
+  externalId?: string;
 }
 
 export interface ParsedConnection {
