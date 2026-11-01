@@ -44,6 +44,9 @@ import {
   precisionByConfidenceBand,
   bootstrapCI,
   concisenessMetrics,
+  calibrationSamplesFromOutcomes,
+  expectedCalibrationError,
+  thresholdRoutingStats,
   type CaseOutcome,
 } from './metrics';
 
@@ -175,6 +178,9 @@ function ratio(x: number): string {
   return x.toFixed(2);
 }
 
+// THE-606: Mindest-N je Facette; unterhalb ist es eine Beobachtung, keine Kalibrierung.
+const MIN_CALIBRATION_SAMPLES = 30;
+
 /** "0: 4 · 1: 6 · 5+: 2" — Buckets numerisch sortiert, "<cap>+" ans Ende. */
 export function formatDistribution(dist: Record<string, number>): string {
   const entries = Object.entries(dist).sort(([a], [b]) => {
@@ -254,7 +260,23 @@ function buildMarkdownReport(args: {
   lines.push('| Band | Vorhersagen | korrekt | Precision |');
   lines.push('|---|---|---|---|');
   for (const b of bands) {
-    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} |`);
+    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${b.predictions ? pct(b.precision) : '—'} |`);
+  }
+  lines.push('');
+  // THE-597: dieselbe Rechnung wie das retrospektive Gate — ECE plus
+  // Schwellen-Routing (confidence < t ⇒ Mensch). Unter 30 Samples ist das
+  // eine Beobachtung, keine Kalibrierung (THE-606: Mindest-N je Facette).
+  // Recall/Fehlalarm bei leerem Nenner: „—" statt 0 % (Konvention aus metrics.ts).
+  const calSamples = calibrationSamplesFromOutcomes(outcomes);
+  const cal = expectedCalibrationError(calSamples);
+  lines.push('## ECE + Schwellen-Routing (THE-597)');
+  lines.push('');
+  lines.push(`ECE: ${cal.samples ? `**${cal.ece.toFixed(3)}**` : '—'} über ${cal.samples} Vorhersagen${cal.samples < MIN_CALIBRATION_SAMPLES ? ' — ⚠️ unter Mindest-N, uncalibrated' : ''}`);
+  lines.push('');
+  lines.push('| Schwelle | falsche | gefangen | Recall | richtige | Fehlalarme | Fehlalarmquote |');
+  lines.push('|---|---|---|---|---|---|---|');
+  for (const r of thresholdRoutingStats(calSamples)) {
+    lines.push(`| < ${r.threshold} | ${r.wrong} | ${r.caught} | ${r.wrong ? pct(r.recall) : '—'} | ${r.correct} | ${r.falseAlarms} | ${r.correct ? pct(r.falseAlarmRate) : '—'} |`);
   }
   lines.push('');
   lines.push('## Fehler-Detail (FP/FN je Case)');
@@ -369,6 +391,7 @@ async function main(): Promise<void> {
     const modelSlug = model.replace(/[^a-zA-Z0-9._-]/g, '_');
     const base = path.join(opts.outDir, `mapping-eval-${set.version}-${modelSlug}-${stamp}`);
     fs.writeFileSync(`${base}.md`, markdown);
+    const runCalSamples = calibrationSamplesFromOutcomes(run.outcomes);
     fs.writeFileSync(
       `${base}.json`,
       JSON.stringify(
@@ -385,6 +408,9 @@ async function main(): Promise<void> {
           conciseness: concisenessMetrics(run.outcomes, cap),
           bySource: breakdownBySource(run.outcomes),
           confidenceBands: precisionByConfidenceBand(run.outcomes),
+          calibration: expectedCalibrationError(runCalSamples),
+          uncalibrated: runCalSamples.length < MIN_CALIBRATION_SAMPLES,
+          routing: thresholdRoutingStats(runCalSamples),
           f2CI: bootstrapCI(run.outcomes, o => aggregateMetrics(o).f2),
           recallCI: bootstrapCI(run.outcomes, o => aggregateMetrics(o).recall),
           outcomes: run.outcomes,
