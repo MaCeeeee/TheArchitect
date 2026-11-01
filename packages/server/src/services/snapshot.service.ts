@@ -7,6 +7,9 @@
 import { v4 as uuid } from 'uuid';
 import crypto from 'crypto';
 import { runCypher } from '../config/neo4j';
+import mongoose from 'mongoose';
+import { Project } from '../models/Project';
+import { User } from '../models/User';
 
 export interface Snapshot {
   id: string;
@@ -108,21 +111,84 @@ export async function createSnapshot(params: {
   return snapshot;
 }
 
-export function getSnapshot(token: string): Snapshot | null {
+// ─── THE-655: Ein geteilter Link überlebt seinen Ursprung nicht ─────
+//
+// Befund (Prod, 2026-08-12): Snapshot-Links lieferten nach Projekt- UND
+// Kontolöschung weiter aus, bis die 72-h-TTL ablief. Der Speicher ist
+// in-memory und kennt keine Kaskade — also wird beim LESEN geprüft, ob
+// Projekt und Ersteller noch existieren. Fehlt eines, ist der Link "gone"
+// und wird entfernt. Die Prüfer sind injizierbar (Tests ohne MongoDB).
+
+export type SnapshotResolution =
+  | { kind: 'not_found' }
+  | { kind: 'gone'; reason: 'project' | 'owner' }
+  | { kind: 'ok'; snapshot: Snapshot };
+
+export interface OriginChecks {
+  projectExists: (projectId: string) => Promise<boolean>;
+  ownerExists: (userId: string) => Promise<boolean>;
+}
+
+/**
+ * Standard-Prüfer gegen MongoDB. Zwei Ausgänge, bewusst unterschieden:
+ * "existiert nicht" (Projekt/Owner fehlt in der DB) → gone, der Token wird
+ * gelöscht. "nicht feststellbar" (Datenbank nicht erreichbar, die Abfrage
+ * wirft) → der Fehler wird propagiert, nie als `false` interpretiert; der
+ * Token bleibt bestehen, die Route antwortet 500. Kein `.catch(() => false)`
+ * hier — ein Mongo-Aussetzer würde sonst jeden in dieser Zeit besuchten
+ * Link dauerhaft löschen.
+ *
+ * `mongoose.isValidObjectId` (bson ≥ 6) akzeptiert für Strings nur die
+ * 24-Hex-Form; ein leeres oder 12-Zeichen-createdBy gilt als nicht
+ * existent, ohne DB-Abfrage — fail closed: lieber ein Link zu viel
+ * gesperrt als ein Link ohne Eigentümer öffentlich.
+ */
+export const DEFAULT_ORIGIN_CHECKS: OriginChecks = {
+  projectExists: async (id) => mongoose.isValidObjectId(id) && !!(await Project.exists({ _id: id })),
+  ownerExists: async (id) => mongoose.isValidObjectId(id) && !!(await User.exists({ _id: id })),
+};
+
+/**
+ * Liest ohne zu zählen: null bei unbekannt, abgelaufen oder Zugriffs-Limit erreicht.
+ * Räumt einen abgelaufenen Eintrag dabei weg (einzige Nebenwirkung).
+ */
+export function peekSnapshot(token: string): Snapshot | null {
   const snapshot = snapshotStore.get(token);
   if (!snapshot) return null;
-
-  // Check expiry
   if (new Date() > snapshot.expiresAt) {
-    snapshotStore.delete(token);
+    revokeSnapshot(token);
     return null;
   }
+  if (snapshot.maxAccesses > 0 && snapshot.accessCount >= snapshot.maxAccesses) return null;
+  return snapshot;
+}
 
-  // Check max accesses
-  if (snapshot.maxAccesses > 0 && snapshot.accessCount >= snapshot.maxAccesses) {
-    return null;
+/**
+ * Auflösung für den öffentlichen Endpunkt. Reihenfolge ist Absicht:
+ * erst Ablauf/Limit (billig, keine DB), dann Ursprung (zwei Existenz-
+ * abfragen), erst dann zählt der Zugriff (getSnapshot).
+ */
+export async function resolveSharedSnapshot(
+  token: string,
+  checks: OriginChecks = DEFAULT_ORIGIN_CHECKS,
+): Promise<SnapshotResolution> {
+  const peeked = peekSnapshot(token);
+  if (!peeked) return { kind: 'not_found' };
+  if (!(await checks.projectExists(peeked.projectId))) {
+    revokeSnapshot(token);
+    return { kind: 'gone', reason: 'project' };
   }
+  if (!(await checks.ownerExists(peeked.createdBy))) {
+    revokeSnapshot(token);
+    return { kind: 'gone', reason: 'owner' };
+  }
+  const snapshot = getSnapshot(token);
+  return snapshot ? { kind: 'ok', snapshot } : { kind: 'not_found' };
+}
 
+export function getSnapshot(token: string): Snapshot | null {
+  const snapshot = peekSnapshot(token);
+  if (!snapshot) return null;
   snapshot.accessCount++;
   return snapshot;
 }
