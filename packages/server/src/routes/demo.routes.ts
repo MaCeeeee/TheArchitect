@@ -6,7 +6,6 @@ import { Project } from '../models/Project';
 import { Standard } from '../models/Standard';
 import { Policy } from '../models/Policy';
 import { SimulationRun } from '../models/SimulationRun';
-import { User } from '../models/User';
 import { runCypher } from '../config/neo4j';
 import { DEMO_PROJECT_NAME, DEMO_ELEMENTS, DEMO_CONNECTIONS } from '../data/demo-architecture';
 import { DEMO_VISION, DEMO_STAKEHOLDERS, DEMO_STANDARDS, DEMO_POLICIES, DEMO_SIMULATION_RUN } from '../data/demo-seed';
@@ -47,8 +46,9 @@ router.post('/create', authenticate, requirePermission(PERMISSIONS.PROJECT_CREAT
 
     const projectId = project._id.toString();
 
-    // Ensure user has full access to demo features (compliance, governance, etc.)
-    await User.findByIdAndUpdate(userId, { role: 'enterprise_architect' });
+    // Security-Audit H6: hier stand `User.findByIdAndUpdate(userId, { role:
+    // 'enterprise_architect' })` — Selbst-Anhebung ohne Audit, und ein
+    // chief_architect verlor dabei seine Admin-Rolle. Rollen vergibt nur admin.
 
     // Bulk-create elements in Neo4j with Tier 1-3 cost fields
     for (const el of DEMO_ELEMENTS) {
@@ -222,8 +222,6 @@ router.post('/create-bsh', authenticate, requirePermission(PERMISSIONS.PROJECT_C
 
     const projectId = project._id.toString();
 
-    // Ensure user has full access to demo features (compliance, governance, etc.)
-    await User.findByIdAndUpdate(userId, { role: 'enterprise_architect' });
 
     for (const el of DEMO_ELEMENTS_BSH) {
       await runCypher(

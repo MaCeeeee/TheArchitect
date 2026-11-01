@@ -12,6 +12,7 @@
 import { v4 as uuid } from 'uuid';
 import type { IConnector, ConnectorConfig, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import { safeFetch } from '../../utils/safeFetch';
 
 const LANGUAGE_TO_TYPE: Record<string, string> = {
   'typescript': 'application_component',
@@ -210,7 +211,7 @@ export class GitHubConnector implements IConnector {
     const token = config.credentials.token || config.credentials.accessToken;
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    return fetch(url, { headers });
+    return safeFetch(url, { headers });
   }
 
   private mapType(language: string, topics: string[], rules: ConnectorConfig['mappingRules']): string {
@@ -326,7 +327,7 @@ export class GitLabConnector implements IConnector {
     const baseUrl = config.baseUrl || 'https://gitlab.com';
     const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
     const token = config.credentials.token || config.credentials.accessToken;
-    return fetch(url, {
+    return safeFetch(url, {
       headers: {
         'PRIVATE-TOKEN': token || '',
         'Accept': 'application/json',

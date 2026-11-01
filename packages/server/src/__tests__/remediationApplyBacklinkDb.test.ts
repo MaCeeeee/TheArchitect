@@ -113,7 +113,7 @@ describe('rollbackProposal → symmetrischer Rückweg', () => {
     const req = await makeRequirement();
 
     const applied = await applyProposal(projectId.toString(), 'ws1', proposal.id, userId);
-    await rollbackProposal(proposal.id);
+    await rollbackProposal(projectId.toString(), proposal.id);
 
     const fresh = await ComplianceRequirement.findById(req._id).lean();
     expect(fresh!.linkedElementIds).toEqual([]);

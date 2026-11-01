@@ -16,6 +16,7 @@ import type { ConnectorConfig, IConnector, ICostEnrichmentConnector, AuthMethod,
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
 import { ELEMENT_TYPES, LEGACY_TYPE_MAP } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Type Mappings ───
 
@@ -352,7 +353,7 @@ export class ServiceNowConnector implements IConnector, ICostEnrichmentConnector
       headers['Authorization'] = `Bearer ${config.credentials.token || config.credentials.api_key}`;
     }
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

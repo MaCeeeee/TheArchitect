@@ -5,6 +5,9 @@ import { User } from '../models/User';
 import { ApiKey } from '../models/ApiKey';
 import { getRedis } from '../config/redis';
 import { isSessionActive, touchSession } from '../services/session.service';
+import { isReadOnlyScope } from './rbac.middleware';
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // Types are extended via src/types/express.d.ts
 
@@ -53,6 +56,9 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
     if (decoded.type === 'refresh') {
       return res.status(401).json({ error: 'Access token required, refresh token provided' });
     }
+    if (!isAccessClaims(decoded)) {
+      return res.status(401).json({ error: 'Access token required' });
+    }
 
     req.jwtPayload = {
       userId: decoded.userId,
@@ -85,7 +91,7 @@ export function authenticate(req: Request, res: Response, next: NextFunction) {
           return res.status(401).json({ error: 'User not found' });
         }
         req.user = user;
-        (req as any).authMethod = 'jwt';
+        req.authMethod = 'jwt';
         next();
       })
       .catch(() => {
@@ -121,9 +127,18 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
         return res.status(401).json({ error: 'API key owner not found' });
       }
 
+      // Security-Audit H12: der gespeicherte Scope gilt. Leere Liste = Rechte
+      // des Besitzers (so legt die UI Keys an); sonst Schnittmenge in
+      // requirePermission, und ein reiner Lese-Scope schreibt nie.
+      const scope = apiKeyDoc.permissions?.length ? [...apiKeyDoc.permissions] : undefined;
+      if (scope && isReadOnlyScope(scope) && !SAFE_METHODS.has(req.method)) {
+        return res.status(403).json({ error: 'API key is read-only' });
+      }
+
       // Set request context (compatible with JWT flow)
       req.user = user;
-      (req as any).authMethod = 'api_key';
+      req.authMethod = 'api_key';
+      req.apiKeyScope = scope;
       (req as any).apiKeyPrefix = keyHash.slice(0, 8);
       req.jwtPayload = {
         userId: user._id.toString(),
@@ -143,10 +158,42 @@ function authenticateApiKey(rawKey: string, req: Request, res: Response, next: N
     });
 }
 
+// Security-Audit H1: der MFA-Zwischen-Token war ein normaler Zugangs-Token
+// (`type: 'access'`) mit der Pseudo-Rolle `__mfa_pending__` — `authenticate`
+// liess ihn durch und las die Rechte aus der DB-Rolle. Jetzt hat er eine
+// eigene Token-Art und taugt nur fuer `/mfa/verify`. Die Rollen-Pruefung
+// faengt Zwischen-Tokens ab, die noch vor dem Fix ausgestellt wurden.
+const MFA_PENDING_TYPE = 'mfa_pending';
+const LEGACY_MFA_PENDING_ROLE = '__mfa_pending__';
+
+export function isAccessClaims(claims: { type?: unknown; role?: unknown }): boolean {
+  return claims.type === 'access' && claims.role !== LEGACY_MFA_PENDING_ROLE;
+}
+
+export function generateMfaPendingToken(userId: string): string {
+  return jwt.sign({ userId, type: MFA_PENDING_TYPE }, JWT_SECRET, { expiresIn: '5m' });
+}
+
+/** Liefert die userId eines gueltigen MFA-Zwischen-Tokens, sonst null. */
+export function verifyMfaPendingToken(token: string): string | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId?: unknown; type?: unknown };
+    return decoded.type === MFA_PENDING_TYPE && typeof decoded.userId === 'string' ? decoded.userId : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Prueft Signatur und Token-Art; wirft bei allem, was kein Zugangs-Token ist. */
+export function verifyAccessToken(token: string): { userId: string; role: string } {
+  const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string; type?: unknown };
+  if (!isAccessClaims(decoded)) throw new Error('Access token required');
+  return decoded;
+}
+
 // THE-535: Tokens tragen die Session-Id (`sid`), damit Widerruf sofort wirkt
-// und die Sessions-Ansicht die aktuelle Sitzung erkennt. Optional, weil der
-// MFA-Zwischen-Token bewusst KEINE Sitzung hat (sie entsteht erst nach
-// vollstaendiger Anmeldung) und Alt-Tokens von vor dem Deploy keine kennen.
+// und die Sessions-Ansicht die aktuelle Sitzung erkennt. Optional, weil
+// Alt-Tokens von vor dem Deploy keine kennen.
 export function generateAccessToken(userId: string, role: string, sessionId?: string): string {
   return jwt.sign({ userId, role, type: 'access', ...(sessionId ? { sid: sessionId } : {}) }, JWT_SECRET, { expiresIn: '15m' });
 }

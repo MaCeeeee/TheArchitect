@@ -55,6 +55,23 @@ export function isUndeliverableRecipient(to: string): boolean {
   return UNDELIVERABLE_TLDS.test(to.trim());
 }
 
+// Security-Audit H10: Namen von Nutzern, Projekten und Wartelisten-Einträgen
+// sind fremder Text. Ins HTML nur escaped, in den Betreff nur als EINE,
+// begrenzte Zeile — sonst verschickt noreply@ vom Angreifer verfasstes HTML.
+export function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function headerText(value: unknown, max = 80): string {
+  const line = String(value ?? '').replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+  return line.length > max ? `${line.slice(0, max - 1)}…` : line;
+}
+
 function emailWrapper(content: string): string {
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: ${BG_DARK}; color: ${TEXT_PRIMARY}; border-radius: 12px; border: 1px solid #1a2a1a;">
@@ -167,13 +184,13 @@ export async function sendWaitlistAdminNotification(
   }
 
   const row = (label: string, value: string | null | undefined) => value
-    ? `<tr><td style="padding: 4px 12px 4px 0; color: ${TEXT_DIM}; font-size: 12px;">${label}</td><td style="padding: 4px 0; color: ${TEXT_PRIMARY}; font-size: 13px;">${value}</td></tr>`
+    ? `<tr><td style="padding: 4px 12px 4px 0; color: ${TEXT_DIM}; font-size: 12px;">${label}</td><td style="padding: 4px 0; color: ${TEXT_PRIMARY}; font-size: 13px;">${escapeHtml(value)}</td></tr>`
     : '';
 
   await transporter.sendMail({
     from: getFrom(),
     to: adminTo,
-    subject: `[Waitlist] #${totalSignups} — ${signup.email}`,
+    subject: `[Waitlist] #${totalSignups} — ${headerText(signup.email)}`,
     html: emailWrapper(`
       <p style="margin: 0 0 16px 0; font-size: 14px; color: ${TEXT_MUTED};">New waitlist signup (#${totalSignups}):</p>
       <div style="background: ${BG_PANEL}; border: 1px solid #1a2a1a; border-radius: 8px; padding: 16px; margin: 0 0 16px 0;">
@@ -212,7 +229,9 @@ export async function sendProjectInvitationEmail(
     return true;
   }
 
-  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+  const roleLabel = escapeHtml(role.charAt(0).toUpperCase() + role.slice(1));
+  const inviterHtml = escapeHtml(inviterName);
+  const projectHtml = escapeHtml(projectName);
 
   const ROLE_DESCRIPTIONS: Record<string, string> = {
     editor: 'You will be able to create, edit, and organize architecture elements within the project.',
@@ -225,13 +244,13 @@ export async function sendProjectInvitationEmail(
   await transporter.sendMail({
     from: getFrom(),
     to,
-    subject: `${inviterName} invited you to collaborate on "${projectName}"`,
+    subject: `${headerText(inviterName, 60)} invited you to collaborate on "${headerText(projectName)}"`,
     html: emailWrapper(`
       <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: ${TEXT_MUTED};">
-        <strong style="color: ${TEXT_PRIMARY};">${inviterName}</strong> has invited you to join an architecture project on <strong style="color: ${TEXT_PRIMARY};">TheArchitect</strong> — a platform for visualizing, managing, and governing enterprise architecture.
+        <strong style="color: ${TEXT_PRIMARY};">${inviterHtml}</strong> has invited you to join an architecture project on <strong style="color: ${TEXT_PRIMARY};">TheArchitect</strong> — a platform for visualizing, managing, and governing enterprise architecture.
       </p>
       <div style="background: ${BG_PANEL}; border: 1px solid #1a2a1a; border-radius: 8px; padding: 16px; margin: 0 0 8px 0;">
-        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: ${TEXT_PRIMARY};">${projectName}</p>
+        <p style="margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: ${TEXT_PRIMARY};">${projectHtml}</p>
         <p style="margin: 0; font-size: 13px; color: ${TEXT_MUTED};">Your role: <span style="color: ${ACCENT}; font-weight: 600;">${roleLabel}</span></p>
       </div>
       <p style="margin: 0 0 24px 0; font-size: 13px; line-height: 1.5; color: ${TEXT_DIM};">

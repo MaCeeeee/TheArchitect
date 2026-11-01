@@ -22,6 +22,7 @@ import { v4 as uuid } from 'uuid';
 import type { ConnectorConfig, IConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import { ELEMENT_TYPES, LEGACY_TYPE_MAP } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Sparx EA Object Type → ArchiMate Mapping ───
 
@@ -253,7 +254,7 @@ export class SparxEAConnector implements IConnector {
       headers['Authorization'] = `Bearer ${config.credentials.token || config.credentials.api_key}`;
     }
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

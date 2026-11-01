@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { sendWaitlistAdminNotification } from '../services/email.service';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
@@ -7,8 +8,11 @@ const NOCODB_URL = process.env.NOCODB_URL || '';
 const NOCODB_TOKEN = process.env.NOCODB_API_TOKEN || '';
 const TABLE_ID = process.env.NOCODB_TABLE_ID || '';
 
+// Security-Audit H10: öffentlich und löst eine Mail aus — pro IP begrenzt.
+const waitlistLimiter = rateLimit({ windowMs: 60 * 60_000, max: 10, name: 'waitlist' });
+
 // POST /api/waitlist — public, no auth required
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', waitlistLimiter, async (req: Request, res: Response) => {
   try {
     if (!NOCODB_URL || !NOCODB_TOKEN || !TABLE_ID) {
       return res.status(503).json({ success: false, error: 'Waitlist not configured' });

@@ -1,6 +1,6 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from '../middleware/auth.middleware';
 import {
   resolveConflict,
   lockElement,
@@ -8,8 +8,6 @@ import {
   unlockAllForUser,
   getLockedElements,
 } from './conflictResolver';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'thearchitect-dev-secret-change-in-production';
 
 interface ConnectedUser {
   userId: string;
@@ -44,7 +42,7 @@ export function initSocketServer(httpServer: HttpServer) {
     }
 
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: string };
+      const decoded = verifyAccessToken(token);
       (socket as Socket & { userId?: string; userRole?: string }).userId = decoded.userId;
       (socket as Socket & { userId?: string; userRole?: string }).userRole = decoded.role;
       next();

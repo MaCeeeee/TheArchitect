@@ -13,6 +13,7 @@ import type { ConnectorConfig, IConnector, ICostEnrichmentConnector, AuthMethod,
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
 import { ELEMENT_TYPES, LEGACY_TYPE_MAP } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Type Mappings (from leanix.adapter.ts) ───
 
@@ -332,7 +333,7 @@ export class LeanIXConnector implements IConnector, ICostEnrichmentConnector {
     const host = config.baseUrl.replace(/\/$/, '');
     const tokenUrl = `${host}/services/mtm/v1/oauth2/token`;
 
-    const resp = await fetch(tokenUrl, {
+    const resp = await safeFetch(tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -357,7 +358,7 @@ export class LeanIXConnector implements IConnector, ICostEnrichmentConnector {
     const host = config.baseUrl.replace(/\/$/, '');
     const url = `${host}/services/pathfinder/v1/graphql`;
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

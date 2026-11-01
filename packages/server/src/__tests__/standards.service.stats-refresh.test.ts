@@ -103,7 +103,7 @@ describe('mapping writes keep pipeline stats fresh (THE-389)', () => {
     const mapping = await upsertMapping(mappingInput(standardId, sectionIds[0], 'gap'));
     expect((await getStats(standardId))?.gap).toBe(1);
 
-    await deleteMapping(String(mapping._id));
+    await deleteMapping(String(mapping.projectId), String(mapping._id));
 
     const stats = await getStats(standardId);
     expect(stats?.gap).toBe(0);
