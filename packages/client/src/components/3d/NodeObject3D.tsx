@@ -10,6 +10,7 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
 import { getSensitivityColor } from './sensitivityColors';
+import { isAssumption, HYPOTHESIS_OPACITY } from '../../utils/evidence';
 // Single source of truth — official ArchiMate layer palette (shared constants)
 import { LAYER_COLORS } from '@thearchitect/shared/src/constants/togaf.constants';
 
@@ -43,6 +44,12 @@ interface NodeObject3DProps {
   labelForced?: boolean;
 }
 
+// UC-PROV-003: a hypothesis (metadata.assumption === true) gets a dashed amber
+// ring — same amber as the PropertyPanel "Assumption" badge.
+const HYPOTHESIS_COLOR = '#f59e0b';
+const HYPOTHESIS_DASHES = 12;
+const HYPOTHESIS_DASH_ARC = (Math.PI * 2) / HYPOTHESIS_DASHES / 2;
+
 const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 
@@ -62,6 +69,7 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
   const setDraggingStore = useArchitectureStore((s) => s.setDragging);
 
   const isSelected = selectedId === element.id || selectedIds.has(element.id);
+  const hypothesis = isAssumption(element);
   const layerColor = LAYER_COLORS[element.layer] || '#4a5a4a';
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
 
@@ -393,8 +401,9 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
       if (element.status === 'retired') return 0.25;
     }
     if (element.metadata?.isProposal) return 0.5;
+    if (hypothesis) return HYPOTHESIS_OPACITY;
     return element.status === 'retired' ? 0.4 : 1;
-  }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta, element.metadata]);
+  }, [isXRayActive, xrayData, xraySubView, element.status, simCombinedDelta, element.metadata, hypothesis]);
 
   return (
     <group position={finalPosition}>
@@ -434,6 +443,18 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
           <ringGeometry args={[0.9, 1.0, 32]} />
           <meshBasicMaterial color={color} transparent opacity={0.8} />
         </mesh>
+      )}
+
+      {/* Hypothesis ring — dashed, so an assumption reads as unproven at a glance */}
+      {hypothesis && !isPolicyNode && (
+        <group rotation={[-Math.PI / 2, 0, 0]}>
+          {Array.from({ length: HYPOTHESIS_DASHES }, (_, i) => (
+            <mesh key={i} rotation={[0, 0, (i * Math.PI * 2) / HYPOTHESIS_DASHES]}>
+              <torusGeometry args={[is2DMode ? (isLayerMode ? 1.9 : 1.3) : 1.15, 0.04, 6, 8, HYPOTHESIS_DASH_ARC]} />
+              <meshBasicMaterial color={HYPOTHESIS_COLOR} transparent opacity={0.9} />
+            </mesh>
+          ))}
+        </group>
       )}
 
       {/* Status indicator dot */}
@@ -521,11 +542,12 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
             </div>
           ) : isLayerMode ? (
             <div style={{ fontSize: '8px', color: '#7a8a7a', marginTop: '1px' }}>
-              {element.type.replace(/_/g, ' ')} · {element.status}
+              {element.type.replace(/_/g, ' ')} · {element.status}{hypothesis ? ' · assumption' : ''}
             </div>
           ) : (
             <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '2px' }}>
               {element.type.replace(/_/g, ' ')}
+              {hypothesis && <span style={{ color: HYPOTHESIS_COLOR }}> · assumption</span>}
             </div>
           )}
         </Html>

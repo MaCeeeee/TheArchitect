@@ -8,6 +8,7 @@ import { useComplianceStore } from '../../stores/complianceStore';
 import { useElementHealth, type HealthLevel } from '../../hooks/useElementHealth';
 import { governanceAPI, oracleAPI, architectureAPI, regulationsAPI } from '../../services/api';
 import { RequirementsForElementSection } from '../compliance/RequirementsForElementSection';
+import { EvidenceSection } from './EvidenceSection';
 import type { PolicyViolationDTO, ComplianceMappingDTO } from '@thearchitect/shared';
 import { mapLegacySeverity } from '@thearchitect/shared';
 import { CONNECTION_TYPES, ELEMENT_TYPES } from '@thearchitect/shared/src/constants/togaf.constants';
@@ -452,6 +453,9 @@ export default function PropertyPanel({ fill = false }: PropertyPanelProps = {})
           <Field label="TOGAF Domain" value={element.togafDomain} />
           <SelectField label="Status" value={element.status} options={STATUS_OPTIONS} onChange={(v) => handleFieldChange('status', v)} />
         </Section>
+
+        {/* Assumption vs validated + traceability (UC-PROV-003) */}
+        <EvidenceSection element={element} />
 
         {/* Risk & Maturity */}
         <Section title="Assessment">
