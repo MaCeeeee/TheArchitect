@@ -1,0 +1,5 @@
+# Versiegelte Prüfszenarien: aus rekursiven ripgrep-Suchen (Grep-/Glob-Tool, rg) heraushalten,
+# damit eine Suche nach einer REQ-ID den Szenariotext nicht einblendet.
+# Der blinde Prüfer liest die Datei über den expliziten Pfad (Read), das ist davon nicht betroffen.
+# Explizite Zugriffe sperrt zusätzlich der Hook ~/.claude/hooks/pruefszenarien-sperre.sh.
+docs/superpowers/pruefszenarien/
