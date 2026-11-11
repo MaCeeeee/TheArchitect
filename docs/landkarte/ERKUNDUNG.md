@@ -139,3 +139,22 @@ Nein. `modelVersion` kommt nur im ArchiMate-Exchange-Parser vor, mit anderer Bed
 ## Nächster Schritt
 
 Für Schnitt 1 ist der Pre-Flight fällig, bevor ein Plan entsteht: Bestand ist hier erhoben; offen sind Prämisse, Wert und Komplexität. Kein Bau ohne Freigabe.
+
+## Nachtrag 11.11.: Pre-Flight Schnitt 3, Prämissenmessung
+
+Tragende Annahme des Briefs: „Schleifen und starke Komponenten sind Befunde.“ Gemessen mit [schnitt3-messung.mjs](schnitt3-messung.mjs) auf allen vorhandenen Modellen (`node --experimental-strip-types docs/landkarte/schnitt3-messung.mjs`):
+
+| Modell | Elemente / Kanten | β₀ | β₁ | starke Komp. | gerichtete Zyklen | Inseln ≥ 2 |
+|---|---|---|---|---|---|---|
+| Banking-Demo | 28 / 35 | 1 | 8 | 0 | 0 | 0 |
+| BSH-Demo | 30 / 35 | 3 | 8 | 0 | 0 | 0 |
+| Self-Model | 76 / 74 | 9 | 7 | 0 | 0 | 4 |
+| Landkarte | 24 / 28 | 1 | 5 | 0 | 0 | 0 |
+| Workflow-Fixture 7.6 | 6 / 7 | 1 | 2 | 1 | 1 | 0 |
+
+- **Starke Komponenten: widerlegt.** Kein echtes Modell hat einen gerichteten Zyklus. `flow`- und `triggering`-Kanten sind selten (13, 0, 1, 0).
+- **β₁: widerlegt.** Alle Schleifen sind normale Struktur, etwa „Docker Runtime enthält Redis, Express nutzt Redis“.
+- **β₀: hält als Insel-Detektor.** Self-Model-Inseln: AI Service + LLM, Email Service + Resend, Real-time Collaboration + Socket.IO, Roadmap-/Plateau-Block (9 Elemente). `detectOrphans` sieht keine davon.
+- **Nebenfund:** Die BSH-Demo nutzt 8 Beziehungstypen außerhalb von `StandardConnectionType` (`realizes`, `used_by`, `depends_on`, `hosted_on` u. a.).
+
+Ergebnis: Schnitt 3 ist auf den Insel-Detektor zugeschnitten (THE-745 mit REQs THE-746 bis THE-748, Backlog). Vor Baubeginn beurteilt der PO die vier Self-Model-Inseln.

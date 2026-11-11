@@ -273,9 +273,10 @@ Erst sinnvoll, wenn Regeln Bedingungen tragen (Betrag, Datenklasse). Dann beweis
 - Eingabe für 7.12 ist ein Gold-Set aus echten Agentenfehlern mit Gate-Score. Ein vollständig kalibrierter Score (THE-606) ist dafür nicht nötig.
 - Abnahme: Die Oberfläche zeigt neben jeder Schwelle ihre Herleitung, ihr Zertifikat mit Basis (7.13) und je Eingabe „gemessen (n, Quelle)“ oder „Annahme“. Unterhalb der Mindestzahl steht „nicht zertifiziert (n von nötigen m)“ statt einer Zahl. Ein Basiswechsel setzt das Zertifikat sichtbar aus.
 
-**Schnitt 3: Topologie-Detektoren im Architecture Advisor.**
-- β₀, β₁ und starke Zusammenhangskomponenten nach 7.6, mit Liste gewollter Schleifen.
-- Abnahme: Die Testwerte aus 7.6 stimmen. Jeder Befund nennt die beteiligten Elemente.
+**Schnitt 3: Insel-Detektor im Architecture Advisor (nach Pre-Flight zugeschnitten, THE-745).**
+- Nur β₀: Jede Gruppe von mindestens zwei Elementen außerhalb der größten Komponente ist ein Befund mit allen beteiligten Elementen. Einzelne isolierte Elemente meldet weiter `detectOrphans`.
+- Abnahme: Self-Model 4 Inseln, Banking- und BSH-Demo 0 Inseln (Messung in `ERKUNDUNG.md`).
+- Verworfen nach Messung: starke Komponenten (in 0 von 4 Modellen ein gerichteter Zyklus) und β₁ als Befund (alle 5–8 Schleifen je Modell sind normale Struktur). Re-Trigger: ein Kundenmodell mit gerichtetem Zyklus oder dichten Prozessflüssen.
 
 **Danach, nur bei belegter Nachfrage:** Markov-Kette aus Event-Logs (7.2), Kontexte mit Schleifenprüfung (7.5, 7.7), Sichtenprüfung (7.8), SMT (7.11), Messung von β Gate–Mensch mit eingeschleusten Fehlern, laufende Prüfung der Austauschbarkeit (konforme Martingale), Übertragung über Basiswechsel (gewichtetes Conformal).
 
@@ -333,3 +334,4 @@ Erst sinnvoll, wenn Regeln Bedingungen tragen (Betrag, Datenklasse). Dann beweis
 | Leitplanke Kalibrierung | „nur kalibrierte Werte“ | „nur zertifizierte Schranken“, dazu „jede Garantie trägt ihre Basis“ |
 | Schnitt 2 | hängt an THE-606 | Conformal-Fassung; braucht Gold-Fälle mit Agentenfehlern, keinen voll kalibrierten Score |
 | Neu | – | 7.12 Zertifizierte Schwelle, 7.13 Basis; Fragen 12 und 13 |
+| Schnitt 3 (Nachtrag 11.11.) | β₀, β₁, starke Komponenten, Liste gewollter Schleifen | nur Insel-Detektor (β₀), nach Messung an vier Modellen; THE-745 bis THE-748 |
