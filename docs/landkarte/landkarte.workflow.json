@@ -1,0 +1,786 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Landkarte des berechenbaren Unternehmens",
+  "quality_profile": "standard",
+  "output": "landkarte-archify.html",
+  "views": [
+   {
+    "id": "risiko",
+    "label": "Risiko von oben nach unten",
+    "focus": [
+     "budget",
+     "anf",
+     "gate",
+     "rolle",
+     "est"
+    ],
+    "note": "Das Budget erzwingt die Freigabepflicht. Gate und Freigeber sind die Schutzschichten, der Schätzer führt die Raten nach."
+   },
+   {
+    "id": "ontologie",
+    "label": "Ontologie und Kontexte",
+    "focus": [
+     "onto",
+     "obj",
+     "prinzip",
+     "cap",
+     "plateau"
+    ],
+    "note": "NLP liefert Tripel, FCA Begriffe und Regeln, Grothendieck verklebt Kontexte und Plateaus. Die Schleifenprüfung zeigt Widersprüche."
+   },
+   {
+    "id": "betrieb",
+    "label": "Workflow, Rechte und Harness",
+    "focus": [
+     "agent",
+     "wf",
+     "proc",
+     "harness",
+     "llm",
+     "jev",
+     "traces"
+    ],
+    "note": "Graph-Algebra prüft Rechte, die Markov-Kette misst Läufe, der Harness testet jede Kante. Agentenverhalten bleibt unbeweisbar."
+   },
+   {
+    "id": "fehlt",
+    "label": "Wo ein Baustein fehlt",
+    "focus": [
+     "ziel",
+     "lage",
+     "option",
+     "cap",
+     "vs",
+     "rolle",
+     "wp"
+    ],
+    "note": "Zielfunktion, Entwurfssuche, Co-Design, Kausalmodell, Anreize, Realoptionen und Regelkreis fehlen. Bisher wird geprüft, nicht erzeugt."
+   },
+   {
+    "id": "grenzen",
+    "label": "Wo die Rechnung endet",
+    "focus": [
+     "stake",
+     "ziel",
+     "agent",
+     "onto",
+     "traces",
+     "plateau"
+    ],
+    "note": "Arrow, Goodhart, Rice, Kolmogorov, Popper und fehlende Ground Truth: Hier bleibt es bei Verhandlung, Hypothese oder Näherung."
+   }
+  ],
+  "legend": {
+   "entries": {
+    "backend": {
+     "label": "Mathematik trägt"
+    },
+    "frontend": {
+     "label": "KI trägt"
+    },
+    "cloud": {
+     "label": "Baustein fehlt"
+    },
+    "security": {
+     "label": "Grenze greift"
+    }
+   }
+  }
+ },
+ "lanes": [
+  {
+   "id": "mot",
+   "label": "Motivation"
+  },
+  {
+   "id": "str",
+   "label": "Strategy"
+  },
+  {
+   "id": "bus",
+   "label": "Business"
+  },
+  {
+   "id": "app",
+   "label": "Application"
+  },
+  {
+   "id": "tec",
+   "label": "Technology"
+  },
+  {
+   "id": "mig",
+   "label": "Implementation & Migration"
+  }
+ ],
+ "phases": [
+  {
+   "id": "zielwissen",
+   "label": "Ziel und Wissen",
+   "fromCol": 0,
+   "toCol": 1
+  },
+  {
+   "id": "ablauf",
+   "label": "Regeln und Ablauf",
+   "fromCol": 2,
+   "toCol": 3,
+   "variant": "emphasis"
+  },
+  {
+   "id": "sichern",
+   "label": "Absichern und messen",
+   "fromCol": 4,
+   "toCol": 5,
+   "variant": "dashed"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "stake",
+   "lane": "mot",
+   "col": 0,
+   "type": "security",
+   "label": "Stakeholder",
+   "sublabel": "Vorstand bis Revision",
+   "tag": "Kongruenzen · Grenze: Arrow",
+   "width": 136,
+   "icon": "person"
+  },
+  {
+   "id": "ziel",
+   "lane": "mot",
+   "col": 1,
+   "type": "security",
+   "label": "Durchlaufzeit",
+   "sublabel": "Goal: halbieren",
+   "tag": "Pareto fehlt, Grenze Goodhart",
+   "width": 136,
+   "icon": "flag"
+  },
+  {
+   "id": "prinzip",
+   "lane": "mot",
+   "col": 2,
+   "type": "backend",
+   "label": "Knappe Rechte",
+   "sublabel": "Principle",
+   "tag": "FCA-Implikationen",
+   "width": 136
+  },
+  {
+   "id": "anf",
+   "lane": "mot",
+   "col": 3,
+   "type": "backend",
+   "label": "Freigabepflicht",
+   "sublabel": "Requirement",
+   "tag": "Mikro-Vorfall · SMT",
+   "width": 136
+  },
+  {
+   "id": "budget",
+   "lane": "mot",
+   "col": 4,
+   "type": "backend",
+   "label": "Risikobudget",
+   "sublabel": "Constraint",
+   "tag": "Mikro-Vorfall",
+   "width": 136
+  },
+  {
+   "id": "lage",
+   "lane": "mot",
+   "col": 5,
+   "type": "cloud",
+   "label": "Lagebild",
+   "sublabel": "Assessment",
+   "tag": "Ko-/Homologie · Regler fehlt",
+   "width": 136
+  },
+  {
+   "id": "option",
+   "lane": "str",
+   "col": 1,
+   "type": "cloud",
+   "label": "Agenten-Einsatz",
+   "sublabel": "Course of action",
+   "tag": "fehlt: Suche, Realoptionen",
+   "width": 136
+  },
+  {
+   "id": "cap",
+   "lane": "str",
+   "col": 2,
+   "type": "cloud",
+   "label": "Änderungswesen",
+   "sublabel": "Capability",
+   "tag": "FCA · Co-Design fehlt",
+   "width": 136
+  },
+  {
+   "id": "vs",
+   "lane": "str",
+   "col": 3,
+   "type": "cloud",
+   "label": "Änderungsfluss",
+   "sublabel": "Value stream",
+   "tag": "Kongruenzen · Kausal fehlt",
+   "width": 136
+  },
+  {
+   "id": "obj",
+   "lane": "bus",
+   "col": 1,
+   "type": "backend",
+   "label": "Stückliste",
+   "sublabel": "Business object",
+   "tag": "Grothendieck · Kohomologie",
+   "width": 136,
+   "icon": "database"
+  },
+  {
+   "id": "proc",
+   "lane": "bus",
+   "col": 3,
+   "type": "backend",
+   "label": "Änderungslauf",
+   "sublabel": "Business process",
+   "tag": "Markov-Kette",
+   "width": 136
+  },
+  {
+   "id": "rolle",
+   "lane": "bus",
+   "col": 4,
+   "type": "cloud",
+   "label": "Freigeber",
+   "sublabel": "Business role",
+   "tag": "Mikro-Vorfall · Anreiz fehlt",
+   "width": 136,
+   "icon": "person"
+  },
+  {
+   "id": "onto",
+   "lane": "app",
+   "col": 1,
+   "type": "security",
+   "label": "Ontologie",
+   "sublabel": "Data object",
+   "tag": "NLP, FCA · Grenze: Kolmogorov",
+   "width": 136,
+   "icon": "database"
+  },
+  {
+   "id": "agent",
+   "lane": "app",
+   "col": 2,
+   "type": "security",
+   "label": "Agenten",
+   "sublabel": "Application component",
+   "tag": "Graph-Algebra · Grenze: Rice",
+   "width": 136
+  },
+  {
+   "id": "wf",
+   "lane": "app",
+   "col": 3,
+   "type": "backend",
+   "label": "Workflow",
+   "sublabel": "Application process",
+   "tag": "Markov-Kette · SMT",
+   "width": 136
+  },
+  {
+   "id": "gate",
+   "lane": "app",
+   "col": 4,
+   "type": "frontend",
+   "label": "Jev-Gate",
+   "sublabel": "Application function",
+   "tag": "Jev · Bayes",
+   "width": 136
+  },
+  {
+   "id": "est",
+   "lane": "app",
+   "col": 5,
+   "type": "frontend",
+   "label": "Schätzer",
+   "sublabel": "Application function",
+   "tag": "Bayes · KAN unsicher",
+   "width": 136
+  },
+  {
+   "id": "llm",
+   "lane": "tec",
+   "col": 2,
+   "type": "frontend",
+   "label": "LLM-Plattform",
+   "sublabel": "Node",
+   "tag": "System 2 · versioniert",
+   "width": 136
+  },
+  {
+   "id": "harness",
+   "lane": "tec",
+   "col": 3,
+   "type": "backend",
+   "label": "Harness",
+   "sublabel": "System software",
+   "tag": "Rekursion · Eulertour",
+   "width": 136
+  },
+  {
+   "id": "jev",
+   "lane": "tec",
+   "col": 4,
+   "type": "frontend",
+   "label": "Jev-Dienst",
+   "sublabel": "Node",
+   "tag": "System 1 · eigene Familie",
+   "width": 136
+  },
+  {
+   "id": "traces",
+   "lane": "tec",
+   "col": 5,
+   "type": "security",
+   "label": "Traces",
+   "sublabel": "Artifact",
+   "tag": "Bayes · Grenze: Ground Truth",
+   "width": 136,
+   "icon": "database"
+  },
+  {
+   "id": "plateau",
+   "lane": "mig",
+   "col": 0,
+   "type": "security",
+   "label": "Ist und Ziel",
+   "sublabel": "Plateau",
+   "tag": "Grothendieck · Grenze: Popper",
+   "width": 136,
+   "icon": "calendar"
+  },
+  {
+   "id": "wp",
+   "lane": "mig",
+   "col": 1,
+   "type": "cloud",
+   "label": "Pilot",
+   "sublabel": "Work package",
+   "tag": "fehlt: Realoption, Kausal",
+   "width": 136,
+   "icon": "briefcase"
+  },
+  {
+   "id": "gap",
+   "lane": "mig",
+   "col": 5,
+   "type": "backend",
+   "label": "Lücke",
+   "sublabel": "Gap",
+   "tag": "Homologie · Kohomologie",
+   "width": 136
+  }
+ ],
+ "edges": [
+  {
+   "id": "stake-ziel",
+   "from": "stake",
+   "to": "ziel",
+   "label": "verbunden",
+   "variant": "default",
+   "fromSide": "right",
+   "toSide": "left"
+  },
+  {
+   "id": "prinzip-ziel",
+   "from": "prinzip",
+   "to": "ziel",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "anf-prinzip",
+   "from": "anf",
+   "to": "prinzip",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "budget-anf",
+   "from": "budget",
+   "to": "anf",
+   "label": "beeinflusst",
+   "variant": "security",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "lage-ziel",
+   "from": "lage",
+   "to": "ziel",
+   "label": "beeinflusst",
+   "variant": "security",
+   "fromSide": "top",
+   "toSide": "top",
+   "via": [
+    [
+     1106.8,
+     74
+    ],
+    [
+     318.0,
+     74
+    ]
+   ]
+  },
+  {
+   "id": "option-ziel",
+   "from": "option",
+   "to": "ziel",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "cap-option",
+   "from": "cap",
+   "to": "option",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "cap-vs",
+   "from": "cap",
+   "to": "vs",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "right",
+   "toSide": "left"
+  },
+  {
+   "id": "proc-vs",
+   "from": "proc",
+   "to": "vs",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "rolle-proc",
+   "from": "rolle",
+   "to": "proc",
+   "label": "zugewiesen",
+   "variant": "emphasis",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "proc-obj",
+   "from": "proc",
+   "to": "obj",
+   "label": "greift zu",
+   "variant": "default",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "wf-proc",
+   "from": "wf",
+   "to": "proc",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "agent-wf",
+   "from": "agent",
+   "to": "wf",
+   "label": "zugewiesen",
+   "variant": "emphasis",
+   "fromSide": "right",
+   "toSide": "left"
+  },
+  {
+   "id": "gate-wf",
+   "from": "gate",
+   "to": "wf",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "est-gate",
+   "from": "est",
+   "to": "gate",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "agent-onto",
+   "from": "agent",
+   "to": "onto",
+   "label": "greift zu",
+   "variant": "default",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "onto-obj",
+   "from": "onto",
+   "to": "obj",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "gate-anf",
+   "from": "gate",
+   "to": "anf",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "top",
+   "toSide": "bottom",
+   "via": [
+    [
+     928.8,
+     420.0
+    ],
+    [
+     1017.8,
+     420.0
+    ],
+    [
+     1017.8,
+     168.0
+    ],
+    [
+     722.0,
+     168.0
+    ]
+   ],
+   "labelAt": [
+    1017.8,
+    250.0
+   ]
+  },
+  {
+   "id": "est-lage",
+   "from": "est",
+   "to": "lage",
+   "label": "beeinflusst",
+   "variant": "security",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "harness-wf",
+   "from": "harness",
+   "to": "wf",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "llm-agent",
+   "from": "llm",
+   "to": "agent",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "jev-gate",
+   "from": "jev",
+   "to": "gate",
+   "label": "dient",
+   "variant": "default",
+   "fromSide": "top",
+   "toSide": "bottom"
+  },
+  {
+   "id": "est-traces",
+   "from": "est",
+   "to": "traces",
+   "label": "greift zu",
+   "variant": "default",
+   "fromSide": "bottom",
+   "toSide": "top"
+  },
+  {
+   "id": "harness-traces",
+   "from": "harness",
+   "to": "traces",
+   "label": "greift zu",
+   "variant": "default",
+   "fromSide": "bottom",
+   "toSide": "bottom",
+   "via": [
+    [
+     722.0,
+     672.0
+    ],
+    [
+     1106.8,
+     672.0
+    ]
+   ],
+   "labelDy": 10
+  },
+  {
+   "id": "wp-plateau",
+   "from": "wp",
+   "to": "plateau",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "right"
+  },
+  {
+   "id": "gap-plateau",
+   "from": "gap",
+   "to": "plateau",
+   "label": "verbunden",
+   "variant": "default",
+   "fromSide": "bottom",
+   "toSide": "bottom",
+   "via": [
+    [
+     1106.8,
+     800
+    ],
+    [
+     116.0,
+     800
+    ]
+   ]
+  },
+  {
+   "id": "plateau-option",
+   "from": "plateau",
+   "to": "option",
+   "label": "realisiert",
+   "variant": "dashed",
+   "fromSide": "left",
+   "toSide": "left",
+   "via": [
+    [
+     28,
+     750.0
+    ],
+    [
+     28,
+     246.0
+    ]
+   ]
+  },
+  {
+   "id": "lage-gap",
+   "from": "lage",
+   "to": "gap",
+   "variant": "default",
+   "fromSide": "right",
+   "toSide": "right",
+   "via": [
+    [
+     1191.8,
+     120.0
+    ],
+    [
+     1191.8,
+     750.0
+    ]
+   ]
+  }
+ ],
+ "cards": [
+  {
+   "dot": "violet",
+   "title": "Motivation: warum hier",
+   "items": [
+    "Stakeholder: Jede Sicht ist ein Quotient des Modells (Kongruenz). Arrow: Widersprüchliche Rangfolgen lassen sich nicht fair zusammenfassen.",
+    "Durchlaufzeit: Ohne Zielfunktion gibt es nur Verbote, die Pareto-Front fehlt. Goodhart: Als Ziel verfälscht die Kennzahl das Verhalten.",
+    "Knappe Rechte: FCA-Implikationen wie „wer schreibt, braucht Freigabe“ werden nach Bestätigung zu Prinzipien.",
+    "Freigabepflicht: folgt rechnerisch aus dem Budget (10 statt 1 Mikro-Vorfall ohne Mensch). Der SMT-Solver beweist, dass kein Pfad sie umgeht.",
+    "Risikobudget: steht oben, weil alles darunter es verbraucht. Höchstens ein schwerer Vorfall in zehn Jahren.",
+    "Lagebild: zählt Inseln und Schleifen, prüft Übersetzungsschleifen. Ob der Regelkreis zum Ziel stabil ist, prüft noch nichts."
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "Strategy: warum hier",
+   "items": [
+    "Agenten-Einsatz: Alternativen müssten erzeugt und verglichen werden (Entwurfssuche) und nach Umkehrbarkeit bewertet (Realoptionen).",
+    "Änderungswesen: Der Begriffsverband liefert den Zuschnitt. Co-Design könnte Leistung gegen Ressourcen rechnen.",
+    "Änderungsfluss: Die vergröberte Sicht stimmt nur, wenn die Schritte sich gleich verhalten. Ob der Umbau wirkt, ist eine Kausalfrage."
+   ]
+  },
+  {
+   "dot": "orange",
+   "title": "Business: warum hier",
+   "items": [
+    "Freigeber: eine Schutzschicht mit eigener Übersehquote (im Beispiel 10 %). Durchwinken ist ein Anreizproblem.",
+    "Änderungslauf: Die absorbierende Markov-Kette liefert Besuche je Schritt (1,0 / 1,125 / 0,9) und 67,5 % Fertig.",
+    "Stückliste: Entwicklung und Produktion bleiben zwei Knoten mit erklärtem Pfeil. Die Mengeneinheit ergibt 10 oder 12, die Schleife geht nicht auf."
+   ]
+  },
+  {
+   "dot": "cyan",
+   "title": "Application: warum hier",
+   "items": [
+    "Agenten: Rechte sind ein Tabellen-Lookup mit Fehlerelement u, Delegation überträgt keine Rechte. Rice: Ihr Verhalten ist nicht allgemein beweisbar.",
+    "Workflow: Hier entstehen die Traces für die Übergangswahrscheinlichkeiten. Routing und Bedingungen sind beweisbar.",
+    "Jev-Gate: viele kleine typisierte Jev-Fragen statt eines Gesamturteils. Es darf höchstens 10 % der Fehler übersehen, nachzuweisen auf eigenen Daten.",
+    "Schätzer: führt Raten aus Traces und Beinahe-Vorfällen nach. Ein KAN hätte nur hier Platz, ob es eine Regression schlägt, ist offen.",
+    "Ontologie: NLP liefert Tripel, FCA die Hierarchie, Grothendieck den Gesamtgraphen. Die bestmögliche Kompression ist nicht berechenbar."
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "Technology: warum hier",
+   "items": [
+    "LLM-Plattform und Jev-Dienst: zwei Modellfamilien mit Absicht, sonst irren Agent und Prüfer korreliert. Jeder Modellwechsel verschiebt die Raten.",
+    "Harness: dieselbe Kaskade auf jeder Systemebene, mit Basisfällen unten und oben. Vier Läufe decken alle sieben Kanten ab.",
+    "Traces: Beinahe-Vorfälle sind die eigentliche Datenquelle. Ob die Architektur gut ist, zeigen sie nicht: Die Kontrollgruppe fehlt."
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "Implementation & Migration: warum hier",
+   "items": [
+    "Ist und Ziel: Mit Plateaus als Basis ist die Roadmap ein Graph. Popper: Das Zielbild lässt sich widerlegen, nie als perfekt beweisen.",
+    "Pilot: ein einzelner Wertstrom als gekaufte Option, billig zu stoppen. Als Experiment angelegt die seltene Chance auf eine Kausalaussage.",
+    "Lücke: Inseln und ungewollte Schleifen lassen sich zählen. Eine Schleife, die nicht aufgeht, hat keinen einzelnen Schuldigen."
+   ]
+  },
+  {
+   "dot": "slate",
+   "title": "Lesart",
+   "items": [
+    "Farbe eines Knotens: Mathematik trägt, KI trägt, ein Baustein fehlt oder eine Grenze greift. Es zählt jeweils der härteste Befund.",
+    "Kanten sind vereinfachte ArchiMate-Beziehungen und nicht einzeln gegen die Beziehungstabelle geprüft.",
+    "Alle Zahlen sind illustrativ. Angaben zu Jev stammen vom Hersteller."
+   ]
+  }
+ ]
+}

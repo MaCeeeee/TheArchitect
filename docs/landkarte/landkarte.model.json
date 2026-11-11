@@ -1,0 +1,1674 @@
+{
+  "meta": {
+    "title": "Landkarte des berechenbaren Unternehmens",
+    "date": "2026-11-10",
+    "language": "de",
+    "note": "Gedankenexperiment am Beispiel einer Stücklistenänderung. Alle Zahlen sind illustrativ. ArchiMate-Beziehungen sind vereinfacht und nicht einzeln gegen die Beziehungstabelle der Spezifikation geprüft. Die Zuordnung von Agenten-Konzepten zu ArchiMate-Typen ist ein Modellierungsvorschlag. Angaben zu Jev stammen vom Hersteller.",
+    "statusLegend": {
+      "mathematik_traegt": "Eine mathematische Methode trägt die Entscheidung an diesem Punkt.",
+      "ki_traegt": "Ein KI-Baustein trägt die Entscheidung.",
+      "baustein_fehlt": "Mindestens ein nötiger Baustein fehlt noch.",
+      "grenze_greift": "Eine prinzipielle Grenze greift; es zählt je Punkt der härteste Befund."
+    }
+  },
+  "layers": [
+    "Motivation",
+    "Strategy",
+    "Business",
+    "Application",
+    "Technology",
+    "Implementation & Migration"
+  ],
+  "admPhases": [
+    {
+      "code": "V",
+      "title": "Vorbereitung",
+      "description": "Prinzipien und Risikobudget stehen, bevor der erste Agent läuft."
+    },
+    {
+      "code": "A",
+      "title": "Phase A: Architekturvision",
+      "description": "Ziel, Stakeholder und Handlungsoption werden geklärt."
+    },
+    {
+      "code": "B",
+      "title": "Phase B: Geschäftsarchitektur",
+      "description": "Fähigkeiten, Wertstrom, Prozess und Rollen werden geschnitten."
+    },
+    {
+      "code": "C",
+      "title": "Phase C: Informationssysteme",
+      "description": "Ontologie, Agenten, Workflow und Gates werden entworfen."
+    },
+    {
+      "code": "D",
+      "title": "Phase D: Technologiearchitektur",
+      "description": "Harness, Modellplattform und Traces werden bereitgestellt."
+    },
+    {
+      "code": "E",
+      "title": "Phase E: Chancen und Lösungen",
+      "description": "Lücken zwischen Ist und Ziel werden bestimmt und Optionen bewertet."
+    },
+    {
+      "code": "F",
+      "title": "Phase F: Migrationsplanung",
+      "description": "Plateaus und Pilot werden geplant."
+    },
+    {
+      "code": "G",
+      "title": "Phase G: Umsetzungssteuerung",
+      "description": "Die Umsetzung wird gegen Harness und Tests gesteuert."
+    },
+    {
+      "code": "H",
+      "title": "Phase H: Änderungsmanagement",
+      "description": "Das Lagebild wird gemessen und in die nächste Vision zurückgeführt."
+    },
+    {
+      "code": "R",
+      "title": "Anforderungsmanagement",
+      "description": "Anforderungen aus Budget und Prinzipien werden laufend nachgeführt."
+    }
+  ],
+  "methods": [
+    {
+      "id": "fca",
+      "short": "FCA",
+      "name": "Formale Begriffsanalyse",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Macht aus einer Kreuztabelle (Objekte mal Merkmale) einen Begriffsverband. Liefert natürliche Schnitte, Hierarchien und Regeln der Form „wer W hat, hat auch F“."
+    },
+    {
+      "id": "groth",
+      "short": "Grothendieck",
+      "name": "Grothendieck-Konstruktion",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Verklebt lokale Modelle über einer Basis aus Kontexten. Jeder Knoten ist ein Paar aus Kontext und Element. Pfeile zwischen Kontexten gibt es nur entlang erklärter Übersetzungen."
+    },
+    {
+      "id": "galg",
+      "short": "Graph-Algebra",
+      "name": "Graph-Algebra mit Fehlerelement u",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "x·y = x, wenn die Kante erlaubt ist, sonst u. Ein einziger unerlaubter Schritt lässt die ganze Kette auf u kippen. Die Klammerung trennt eigenes Recht von Delegation."
+    },
+    {
+      "id": "kong",
+      "short": "Kongruenzen",
+      "name": "Kongruenzen und Quotienten",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Eine Sicht ist ein Quotient: Sie setzt Elemente gleich. Ehrlich ist sie nur, wenn die Beziehungen, auf die es ankommt, dabei erhalten bleiben."
+    },
+    {
+      "id": "markov",
+      "short": "Markov-Kette",
+      "name": "Absorbierende Markov-Kette",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Arbeitsschritte sind Zustände, Enden sind absorbierende Zustände. Die Fundamentalmatrix liefert Besuche je Schritt und daraus Kosten, Dauer und Risiko je Lauf."
+    },
+    {
+      "id": "micro",
+      "short": "Mikro-Vorfall",
+      "name": "Mikro-Vorfall nach dem Vorbild Micromort",
+      "category": "mathematik",
+      "rating": "Analogie",
+      "description": "Einheit: eins zu einer Million, dass eine Aktion einen fest definierten schweren Vorfall auslöst. Nur Einheit; gerechnet wird mit LOPA, Beta-Faktor und Kostenvektor."
+    },
+    {
+      "id": "bayes",
+      "short": "Bayes",
+      "name": "Bayes-Schätzung und Dreierregel",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Fehlerraten werden als Verteilung geführt, gerechnet wird mit der oberen Grenze. Null Fehler in n Versuchen heißt nur: Rate unter 3/n."
+    },
+    {
+      "id": "homo",
+      "short": "Homologie",
+      "name": "Homologie mit β₀ und β₁",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "β₀ zählt Inseln, β₁ zählt unabhängige Schleifen. Billig zu rechnen und sofort deutbar, aber blind für die Richtung der Kanten."
+    },
+    {
+      "id": "koho",
+      "short": "Kohomologie",
+      "name": "Kohomologie als Schleifenprüfung",
+      "category": "mathematik",
+      "rating": "Analyse-Linse",
+      "description": "Prüft, ob Übersetzungen entlang einer Schleife aufgehen. Geht eine Schleife nicht auf, gehört der Fehler der Schleife und nicht einer einzelnen Kante."
+    },
+    {
+      "id": "euler",
+      "short": "Eulertour",
+      "name": "Eulertour-Tests",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Deckt jede Kante des Workflow-Graphen mit möglichst wenigen Läufen ab. Ein Rauchtest, keine Ratenmessung."
+    },
+    {
+      "id": "smt",
+      "short": "SMT-Solver",
+      "name": "SAT- und SMT-Solver",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Beweist für das deterministische Regelwerk, dass ein verbotener Zustand auf keinem Pfad erreichbar ist, oder liefert das Gegenbeispiel."
+    },
+    {
+      "id": "rek",
+      "short": "Rekursion",
+      "name": "Rekursion mit Basisfällen",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Dieselbe Kaskade aus Spezifizieren, Ausführen, Prüfen und Lernen gilt auf jeder Systemebene. Keine Ebene genehmigt Änderungen an ihrem eigenen Gate."
+    },
+    {
+      "id": "nlp",
+      "short": "NLP",
+      "name": "NLP-Extraktion",
+      "category": "ki",
+      "rating": "tragend",
+      "description": "Zieht aus Dokumenten, Spezifikationen und Tickets Kandidaten-Tripel mit Quelle und Konfidenz. Liefert Kandidaten, keine Wahrheit."
+    },
+    {
+      "id": "llm",
+      "short": "LLM-Agenten",
+      "name": "LLM-Agenten als System 2",
+      "category": "ki",
+      "rating": "tragend",
+      "description": "Planen und handeln mit Werkzeugen. Flexibel, aber stochastisch und in ihrem Verhalten nicht beweisbar."
+    },
+    {
+      "id": "jev",
+      "short": "Jev",
+      "name": "Jev als System 1",
+      "category": "ki",
+      "rating": "unsicher",
+      "description": "Typisierte Urteile mit Wahrscheinlichkeit statt Freitext, schnell genug für jede einzelne Aktion. Noch Early Access, die Leistungsangaben stammen vom Hersteller."
+    },
+    {
+      "id": "kan",
+      "short": "KAN",
+      "name": "Kolmogorov-Arnold-Netz",
+      "category": "ki",
+      "rating": "unsicher",
+      "description": "Lernt eine ablesbare Funktion aus wenigen Eingangsgrößen. Schwächster Kandidat der Karte: Bei kleinen Datenmengen reicht vermutlich eine Regression."
+    },
+    {
+      "id": "pareto",
+      "short": "Mehrzieloptimierung",
+      "name": "Mehrzieloptimierung",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Liefert die Pareto-Front: alle Entwürfe, die sich in keinem Ziel verbessern lassen, ohne in einem anderen schlechter zu werden. Die Wahl auf der Front bleibt Verhandlung."
+    },
+    {
+      "id": "suche",
+      "short": "Entwurfssuche",
+      "name": "Entwurfssuche",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Ein formaler Entwurfsraum (eine Graph-Grammatik zulässiger Umbauten) plus Suche mit MaxSAT, ILP oder evolutionären Verfahren. Bisher wird nur geprüft, nichts erzeugt."
+    },
+    {
+      "id": "codesign",
+      "short": "Co-Design",
+      "name": "Co-Design",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Rechnet Funktion gegen Ressourcen, kompositional über Teilsysteme hinweg. Bekannt aus Robotik und Fahrzeugentwurf, für Unternehmensarchitektur unerprobt."
+    },
+    {
+      "id": "kausal",
+      "short": "Kausalmodell",
+      "name": "Kausalmodell",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Beantwortet „was passiert, wenn ich umbaue“ statt „was wurde beobachtet“. Braucht Annahmen, die sich im Unternehmen selten experimentell prüfen lassen."
+    },
+    {
+      "id": "spiel",
+      "short": "Spieltheorie",
+      "name": "Spieltheorie und Anreize",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Behandelt die Architektur als Spielregel für Menschen und Bereiche, die strategisch reagieren."
+    },
+    {
+      "id": "option",
+      "short": "Realoptionen",
+      "name": "Realoptionen",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Bewertet Flexibilität, wenn es für die Zukunft keine Wahrscheinlichkeiten gibt. Umkehrbarkeit wird zu einem Wert, den man einpreisen kann."
+    },
+    {
+      "id": "regel",
+      "short": "Regelungstheorie",
+      "name": "Regelungstheorie",
+      "category": "fehlender_baustein",
+      "rating": "fehlt noch",
+      "description": "Prüft Stabilität und Verzögerungen im Regelkreis aus Messen und Umbauen. Nach Ashby braucht die Steuerung so viel Vielfalt wie das Gesteuerte."
+    },
+    {
+      "id": "arrow",
+      "short": "Arrow",
+      "name": "Unmöglichkeitssatz von Arrow",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Widersprüchliche Rangfolgen mehrerer Stakeholder lassen sich nicht fair zu einer zusammenfassen. Die Gewichtung bleibt eine politische Entscheidung."
+    },
+    {
+      "id": "goodhart",
+      "short": "Goodhart",
+      "name": "Gesetz von Goodhart",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Wird eine Kennzahl zum Ziel, verändert sie das Verhalten, das sie misst."
+    },
+    {
+      "id": "rice",
+      "short": "Rice",
+      "name": "Satz von Rice",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Nichttriviale Eigenschaften beliebigen Agentenverhaltens sind nicht allgemein beweisbar. Beweisbar ist nur die deterministische Hülle."
+    },
+    {
+      "id": "kolmo",
+      "short": "Kolmogorov",
+      "name": "Kolmogorov-Komplexität",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Die kürzeste korrekte Beschreibung eines Unternehmens ist nicht berechenbar. Jedes Modell bleibt eine Näherung."
+    },
+    {
+      "id": "popper",
+      "short": "Popper",
+      "name": "Falsifikation nach Popper",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Eine Architektur ist eine Hypothese. Sie lässt sich widerlegen, aber nie als perfekt beweisen."
+    },
+    {
+      "id": "truth",
+      "short": "Keine Ground Truth",
+      "name": "Keine Ground Truth",
+      "category": "prinzipielle_grenze",
+      "rating": "Grenze",
+      "description": "Jedes Unternehmen ist ein Einzelfall ohne Kontrollgruppe, und die Rückmeldung kommt nach Jahren. „Gute Architektur“ lässt sich daraus nicht lernen."
+    },
+    {
+      "id": "lopa",
+      "short": "LOPA",
+      "name": "Layer of Protection Analysis (IEC 61511)",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Auslösendes Ereignis mal Versagenswahrscheinlichkeit jeder unabhängigen Schutzschicht. Bringt Kriterien mit, wann eine Schicht als unabhängig zählen darf."
+    },
+    {
+      "id": "betaf",
+      "short": "Beta-Faktor",
+      "name": "Beta-Faktor für Common-Cause-Fehler (IEC 61508-6)",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Macht Korrelation zwischen Schichten zu einem messbaren Parameter. Agent und Prüfmodell derselben Modellfamilie sind der Hauptfall."
+    },
+    {
+      "id": "thr",
+      "short": "THR-Aufteilung",
+      "name": "Aufteilung der tolerierbaren Gefährdungsrate (EN 50126)",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Verteilt das Unternehmensbudget nach einer erklärten Regel mit Reserve auf Workflows, statt Anteile zu setzen."
+    },
+    {
+      "id": "conformal",
+      "short": "Conformal",
+      "name": "Conformal Risk Control und Learn-then-Test",
+      "category": "mathematik",
+      "rating": "tragend",
+      "description": "Beweist eine Fehlerschranke an einer Schwelle ohne Verteilungsannahme, nur unter Austauschbarkeit mit dem Gold-Set. Die Garantie gilt über ihrer Basis."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "stake",
+      "name": "Stakeholder",
+      "longName": "Vorstand, Fachbereich und Revision",
+      "archimateType": "Stakeholder",
+      "layer": "Motivation",
+      "status": "grenze_greift",
+      "admPhases": [
+        "V",
+        "A"
+      ],
+      "methods": [
+        {
+          "id": "kong",
+          "why": "Jede Stakeholder-Sicht ist ein Quotient des Gesamtmodells. Das Anliegen bestimmt, welche Beziehungen erhalten bleiben müssen: beim Vorstand Zielbeitrag und Risikobudget, bei der Revision die Schreibrechte."
+        },
+        {
+          "id": "arrow",
+          "why": "Hier treffen die Rangfolgen aufeinander. Ein für alle zugleich bestes Unternehmen gibt es deshalb nicht zu berechnen."
+        }
+      ]
+    },
+    {
+      "id": "ziel",
+      "name": "Durchlaufzeit",
+      "longName": "Durchlaufzeit halbieren",
+      "archimateType": "Goal",
+      "layer": "Motivation",
+      "status": "grenze_greift",
+      "admPhases": [
+        "A"
+      ],
+      "methods": [
+        {
+          "id": "pareto",
+          "why": "Das Ziel konkurriert mit Kosten und Risiko. Ohne Zielfunktion gibt es nur Verbote und kein „besser“. Erst die Pareto-Front macht den Zielkonflikt sichtbar."
+        },
+        {
+          "id": "goodhart",
+          "why": "Sobald die Durchlaufzeit zum Ziel wird, wird sie optimiert, notfalls auf Kosten dessen, was sie anzeigen sollte."
+        }
+      ]
+    },
+    {
+      "id": "prinzip",
+      "name": "Knappe Rechte",
+      "longName": "Rechte so knapp wie möglich",
+      "archimateType": "Principle",
+      "layer": "Motivation",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "V"
+      ],
+      "methods": [
+        {
+          "id": "fca",
+          "why": "Die Merkmalexploration liefert Regelkandidaten wie „wer die Stückliste schreibt, braucht Freigabe“. Vom Fachexperten bestätigt, werden sie zu Prinzipien."
+        }
+      ]
+    },
+    {
+      "id": "anf",
+      "name": "Freigabepflicht",
+      "longName": "Freigabe vor dem Schreiben",
+      "archimateType": "Requirement",
+      "layer": "Motivation",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "R"
+      ],
+      "methods": [
+        {
+          "id": "micro",
+          "why": "Die Anforderung folgt rechnerisch aus dem Budget: Ohne menschliche Freigabe läge die Schreibaktion bei 10 statt 1 Mikro-Vorfall."
+        },
+        {
+          "id": "smt",
+          "why": "Der Solver beweist, dass es keinen Pfad gibt, auf dem ohne Freigabe geschrieben wird."
+        }
+      ]
+    },
+    {
+      "id": "budget",
+      "name": "Risikobudget",
+      "longName": "Risikobudget",
+      "archimateType": "Constraint",
+      "layer": "Motivation",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "V",
+        "A"
+      ],
+      "methods": [
+        {
+          "id": "thr",
+          "why": "Das Budget steht ganz oben, weil alles darunter es verbraucht: höchstens ein schwerer Vorfall in zehn Jahren, nach erklärter Regel mit Reserve auf die Workflows verteilt."
+        },
+        {
+          "id": "lopa",
+          "why": "Je Aktion wird das Budget über die Schutzschichten gerechnet; die Einheit ist der Mikro-Vorfall."
+        },
+        {
+          "id": "betaf",
+          "why": "Sind Schichten korreliert, kann keine Schwelle das Budget halten. Diversität der Modellfamilie ist dann der Hebel, nicht das Gate."
+        }
+      ]
+    },
+    {
+      "id": "lage",
+      "name": "Lagebild",
+      "longName": "Lagebild",
+      "archimateType": "Assessment",
+      "layer": "Motivation",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "H"
+      ],
+      "methods": [
+        {
+          "id": "homo",
+          "why": "Zählt je Plateau die Inseln und Schleifen der Architektur. Jede Schleife steht auf der Liste gewollter Schleifen oder ist ein Befund."
+        },
+        {
+          "id": "koho",
+          "why": "Prüft, ob die Übersetzungen zwischen den Kontexten entlang jeder Schleife aufgehen."
+        },
+        {
+          "id": "regel",
+          "why": "Das Lagebild schließt den Regelkreis zurück zum Ziel. Ob dieser Kreis mit seinen Verzögerungen stabil ist, prüft bisher nichts."
+        }
+      ]
+    },
+    {
+      "id": "option",
+      "name": "Agenten-Einsatz",
+      "longName": "Agenten einführen",
+      "archimateType": "Course of action",
+      "layer": "Strategy",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "A",
+        "E"
+      ],
+      "methods": [
+        {
+          "id": "suche",
+          "why": "An dieser Stelle müssten Alternativen erzeugt und verglichen werden. Bisher wird eine Option gesetzt und geprüft, aber nicht gesucht."
+        },
+        {
+          "id": "option",
+          "why": "Die Option sollte nach ihrer Umkehrbarkeit bewertet werden: Was kostet es, wenn die Annahme dahinter falsch war?"
+        }
+      ]
+    },
+    {
+      "id": "cap",
+      "name": "Änderungswesen",
+      "longName": "Änderungsmanagement",
+      "archimateType": "Capability",
+      "layer": "Strategy",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "B"
+      ],
+      "methods": [
+        {
+          "id": "fca",
+          "why": "Der Begriffsverband zeigt, welche Aufgaben dieselben Daten und Rechte teilen. Daraus ergibt sich der Zuschnitt der Fähigkeit und ihrer Agentenrollen."
+        },
+        {
+          "id": "codesign",
+          "why": "Hier wird Leistung gegen Ressourcen getauscht: wie viel Durchsatz für wie viel Rechenzeit, Personal und Risiko. Co-Design könnte das über Teilfähigkeiten hinweg rechnen."
+        }
+      ]
+    },
+    {
+      "id": "vs",
+      "name": "Änderungsfluss",
+      "longName": "Änderung umsetzen",
+      "archimateType": "Value stream",
+      "layer": "Strategy",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "B"
+      ],
+      "methods": [
+        {
+          "id": "kong",
+          "why": "Der Wertstrom ist die vergröberte Sicht auf den Prozess. Seine Kennzahlen stimmen nur, wenn die zusammengefassten Schritte sich gleich verhalten."
+        },
+        {
+          "id": "kausal",
+          "why": "Ob der Umbau die Durchlaufzeit wirklich senkt, ist eine Kausalfrage. Beobachtete Läufe beantworten sie nicht."
+        }
+      ]
+    },
+    {
+      "id": "obj",
+      "name": "Stückliste",
+      "longName": "Stückliste",
+      "archimateType": "Business object",
+      "layer": "Business",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "B",
+        "C"
+      ],
+      "methods": [
+        {
+          "id": "groth",
+          "why": "Die Stückliste der Entwicklung und die BOM der Produktion bleiben zwei Knoten mit erklärtem Pfeil. Es gibt kein erzwungenes Einheitsmodell und keine verdeckten Homonyme."
+        },
+        {
+          "id": "koho",
+          "why": "Die Mengeneinheit ergibt über die Produktion 10 Stück je Gebinde, direkt aber 12. Jede Übersetzung ist für sich plausibel, die Schleife geht nicht auf."
+        }
+      ]
+    },
+    {
+      "id": "proc",
+      "name": "Änderungslauf",
+      "longName": "Stücklistenänderung",
+      "archimateType": "Business process",
+      "layer": "Business",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "B"
+      ],
+      "methods": [
+        {
+          "id": "markov",
+          "why": "Die Kette aus Klassifizieren, Prüfen und Schreiben liefert die Besuche je Schritt: 1,0, 1,125 und 0,9. Daraus folgen 67,5 % Fertig, 21,25 % Eskalation und 11,25 % Abgelehnt."
+        }
+      ]
+    },
+    {
+      "id": "rolle",
+      "name": "Freigeber",
+      "longName": "Freigeber",
+      "archimateType": "Business role",
+      "layer": "Business",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "B"
+      ],
+      "methods": [
+        {
+          "id": "micro",
+          "why": "Der Mensch ist eine Schutzschicht mit eigener Übersehquote, im Beispiel 10 %, gemessen mit eingeschleusten Fehlern."
+        },
+        {
+          "id": "spiel",
+          "why": "Freigeber winken mit der Zeit durch, wenn Prüfen ihnen nur Aufwand bringt. Das ist ein Anreizproblem und kein Schulungsproblem."
+        }
+      ]
+    },
+    {
+      "id": "onto",
+      "name": "Ontologie",
+      "longName": "Ontologie",
+      "archimateType": "Data object",
+      "layer": "Application",
+      "status": "grenze_greift",
+      "admPhases": [
+        "C"
+      ],
+      "methods": [
+        {
+          "id": "nlp",
+          "why": "Dokumente und Tickets werden zu Tripeln, geprüft gegen das ArchiMate-Typsystem. Was nirgends geschrieben steht, bleibt unsichtbar."
+        },
+        {
+          "id": "fca",
+          "why": "Aus der Kreuztabelle der Tripel entsteht die Begriffshierarchie, erst je Kontext und dann verklebt."
+        },
+        {
+          "id": "groth",
+          "why": "Der Gesamtgraph ist die Verklebung der lokalen Modelle. Als Basis dienen Kontexte oder Plateaus."
+        },
+        {
+          "id": "kolmo",
+          "why": "Die Ontologie ist eine Kompression des Unternehmens. Die bestmögliche Kompression ist nicht berechenbar."
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "name": "Agenten",
+      "longName": "Klassifizierer, Prüfer und Änderer",
+      "archimateType": "Application component",
+      "layer": "Application",
+      "status": "grenze_greift",
+      "admPhases": [
+        "C"
+      ],
+      "methods": [
+        {
+          "id": "llm",
+          "why": "Die Agenten erledigen die eigentliche Arbeit und sind zugleich die Fehlerquelle: Im Beispiel irrt der Änderer bei 2 % der Schreibaktionen."
+        },
+        {
+          "id": "galg",
+          "why": "Wer was darf, ist ein Tabellen-Lookup. Klassifizierer·(Änderer·Stückliste) ist erlaubt, (Klassifizierer·Änderer)·Stückliste ergibt u. Delegation überträgt keine Rechte."
+        },
+        {
+          "id": "rice",
+          "why": "Was ein Agent in jedem denkbaren Fall tut, lässt sich nicht beweisen. Deshalb liegt die Sicherheit in der Hülle um ihn herum."
+        }
+      ]
+    },
+    {
+      "id": "wf",
+      "name": "Workflow",
+      "longName": "Änderungs-Workflow",
+      "archimateType": "Application process",
+      "layer": "Application",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "C"
+      ],
+      "methods": [
+        {
+          "id": "markov",
+          "why": "Hier entstehen die Traces, aus denen die Übergangswahrscheinlichkeiten geschätzt werden, je Modellversion neu."
+        },
+        {
+          "id": "smt",
+          "why": "Routing und Bedingungen des Workflows sind deterministisch und damit beweisbar, anders als das Verhalten der Agenten."
+        }
+      ]
+    },
+    {
+      "id": "gate",
+      "name": "Jev-Gate",
+      "longName": "Gate mit Jev-Urteil",
+      "archimateType": "Application function",
+      "layer": "Application",
+      "status": "ki_traegt",
+      "admPhases": [
+        "C"
+      ],
+      "methods": [
+        {
+          "id": "jev",
+          "why": "Zwischen fester Regel und Mensch sitzt ein Urteil aus vielen kleinen typisierten Fragen. Jev ist eine Option, jeder Klassifikator mit Zertifikat erfüllt die Rolle."
+        },
+        {
+          "id": "conformal",
+          "why": "Gemessen nur an echten Agentenfehlern liefert Learn-then-Test eine bewiesene Schranke für die bedingte Fehlquote an der gewählten Schwelle, ab 29 Fällen ohne Fehlgriff für 10 %."
+        }
+      ]
+    },
+    {
+      "id": "est",
+      "name": "Schätzer",
+      "longName": "Schätzer für Kosten und Risiko",
+      "archimateType": "Application function",
+      "layer": "Application",
+      "status": "ki_traegt",
+      "admPhases": [
+        "C",
+        "H"
+      ],
+      "methods": [
+        {
+          "id": "bayes",
+          "why": "Führt Fehlerraten und Übergänge aus Traces und Beinahe-Vorfällen nach und rechnet mit der oberen Grenze."
+        },
+        {
+          "id": "kan",
+          "why": "Ein ablesbares Modell für Kosten oder Risiko je Aktion hätte hier seinen einzigen sinnvollen Platz. Ob es eine einfache Regression schlägt, ist offen."
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "name": "LLM-Plattform",
+      "longName": "LLM-Plattform für die Agenten (System 2)",
+      "archimateType": "Node",
+      "layer": "Technology",
+      "status": "ki_traegt",
+      "admPhases": [
+        "D"
+      ],
+      "methods": [
+        {
+          "id": "llm",
+          "why": "Jeder Modellwechsel verschiebt Fehlerraten und Übergänge. Die Plattform ist deshalb selbst ein versioniertes Architekturelement."
+        }
+      ]
+    },
+    {
+      "id": "harness",
+      "name": "Harness",
+      "longName": "Harness",
+      "archimateType": "System software",
+      "layer": "Technology",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "D",
+        "G"
+      ],
+      "methods": [
+        {
+          "id": "rek",
+          "why": "Dieselbe Kaskade gilt für Skill, Agent, Workflow und Wertstrom. Unten enden die Prüfungen in deterministischen Checks, oben beim Architecture Board."
+        },
+        {
+          "id": "euler",
+          "why": "Vier Läufe mit zehn Schritten decken alle sieben Kanten des Workflows ab, als Pflichttest vor jedem Release."
+        }
+      ]
+    },
+    {
+      "id": "jev",
+      "name": "Jev-Dienst",
+      "longName": "Jev-Dienst für das Gate (System 1)",
+      "archimateType": "Node",
+      "layer": "Technology",
+      "status": "ki_traegt",
+      "admPhases": [
+        "D"
+      ],
+      "methods": [
+        {
+          "id": "jev",
+          "why": "Eine eigene Modellfamilie mit Absicht: Prüft dasselbe Modell, das auch handelt, irren beide korreliert und die Schutzschichten multiplizieren sich nicht mehr."
+        }
+      ]
+    },
+    {
+      "id": "traces",
+      "name": "Traces",
+      "longName": "Traces",
+      "archimateType": "Artifact",
+      "layer": "Technology",
+      "status": "grenze_greift",
+      "admPhases": [
+        "D",
+        "H"
+      ],
+      "methods": [
+        {
+          "id": "bayes",
+          "why": "Beinahe-Vorfälle, die eine Schicht abfängt, sind die eigentliche Datenquelle. Schwere Vorfälle sind zum Lernen zu selten."
+        },
+        {
+          "id": "truth",
+          "why": "Traces zeigen, was passiert ist, aber nicht, ob die Architektur gut ist. Dafür fehlt die Kontrollgruppe."
+        }
+      ]
+    },
+    {
+      "id": "plateau",
+      "name": "Ist und Ziel",
+      "longName": "Ist und Ziel",
+      "archimateType": "Plateau",
+      "layer": "Implementation & Migration",
+      "status": "grenze_greift",
+      "admPhases": [
+        "E",
+        "F"
+      ],
+      "methods": [
+        {
+          "id": "groth",
+          "why": "Mit Plateaus als Basis ist die ganze Roadmap ein einziger Graph. Jedes Element trägt sein Plateau im Schlüssel."
+        },
+        {
+          "id": "homo",
+          "why": "Der Unterschied der Schleifenzahl zwischen Ist und Ziel zeigt, ob die Transformation die Architektur vereinfacht."
+        },
+        {
+          "id": "popper",
+          "why": "Das Zielbild ist eine Hypothese. Es kann im Betrieb scheitern, aber nie als perfekt bestätigt werden."
+        }
+      ]
+    },
+    {
+      "id": "wp",
+      "name": "Pilot",
+      "longName": "Pilot in einem Wertstrom",
+      "archimateType": "Work package",
+      "layer": "Implementation & Migration",
+      "status": "baustein_fehlt",
+      "admPhases": [
+        "F",
+        "G"
+      ],
+      "methods": [
+        {
+          "id": "option",
+          "why": "Ein Pilot in einem einzigen Wertstrom ist eine gekaufte Option: billig zu stoppen und erst bei Erfolg teuer."
+        },
+        {
+          "id": "kausal",
+          "why": "Als Experiment angelegt, ist der Pilot die seltene Chance auf eine Kausalaussage."
+        }
+      ]
+    },
+    {
+      "id": "gap",
+      "name": "Lücke",
+      "longName": "Lücke",
+      "archimateType": "Gap",
+      "layer": "Implementation & Migration",
+      "status": "mathematik_traegt",
+      "admPhases": [
+        "E"
+      ],
+      "methods": [
+        {
+          "id": "homo",
+          "why": "Eine Insel im Zielbild oder eine ungewollte Schleife ist eine Lücke, die sich zählen lässt."
+        },
+        {
+          "id": "koho",
+          "why": "Eine Schleife, die nicht aufgeht, ist eine Lücke ohne einzelnen Schuldigen. Alle Beteiligten müssen an einen Tisch."
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "stake",
+      "to": "ziel",
+      "relation": "association",
+      "labelDe": "verbunden"
+    },
+    {
+      "from": "prinzip",
+      "to": "ziel",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "anf",
+      "to": "prinzip",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "budget",
+      "to": "anf",
+      "relation": "influence",
+      "labelDe": "beeinflusst"
+    },
+    {
+      "from": "lage",
+      "to": "ziel",
+      "relation": "influence",
+      "labelDe": "beeinflusst"
+    },
+    {
+      "from": "option",
+      "to": "ziel",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "cap",
+      "to": "option",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "cap",
+      "to": "vs",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "proc",
+      "to": "vs",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "rolle",
+      "to": "proc",
+      "relation": "assignment",
+      "labelDe": "zugewiesen"
+    },
+    {
+      "from": "proc",
+      "to": "obj",
+      "relation": "access",
+      "labelDe": "greift zu"
+    },
+    {
+      "from": "wf",
+      "to": "proc",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "agent",
+      "to": "wf",
+      "relation": "assignment",
+      "labelDe": "zugewiesen"
+    },
+    {
+      "from": "gate",
+      "to": "wf",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "est",
+      "to": "gate",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "agent",
+      "to": "onto",
+      "relation": "access",
+      "labelDe": "greift zu"
+    },
+    {
+      "from": "onto",
+      "to": "obj",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "gate",
+      "to": "anf",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "est",
+      "to": "lage",
+      "relation": "influence",
+      "labelDe": "beeinflusst"
+    },
+    {
+      "from": "harness",
+      "to": "wf",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "llm",
+      "to": "agent",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "jev",
+      "to": "gate",
+      "relation": "serving",
+      "labelDe": "dient"
+    },
+    {
+      "from": "est",
+      "to": "traces",
+      "relation": "access",
+      "labelDe": "greift zu"
+    },
+    {
+      "from": "harness",
+      "to": "traces",
+      "relation": "access",
+      "labelDe": "greift zu"
+    },
+    {
+      "from": "wp",
+      "to": "plateau",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "gap",
+      "to": "plateau",
+      "relation": "association",
+      "labelDe": "verbunden"
+    },
+    {
+      "from": "plateau",
+      "to": "option",
+      "relation": "realization",
+      "labelDe": "realisiert"
+    },
+    {
+      "from": "lage",
+      "to": "gap",
+      "relation": "association",
+      "labelDe": "verbunden"
+    }
+  ],
+  "fixtures": {
+    "markov": {
+      "transient": [
+        "klassifizieren",
+        "pruefen",
+        "schreiben"
+      ],
+      "absorbing": [
+        "fertig",
+        "abgelehnt",
+        "eskalation"
+      ],
+      "Q": [
+        [
+          0,
+          0.9,
+          0
+        ],
+        [
+          0,
+          0,
+          0.8
+        ],
+        [
+          0,
+          0.25,
+          0
+        ]
+      ],
+      "R": [
+        [
+          0,
+          0,
+          0.1
+        ],
+        [
+          0,
+          0.1,
+          0.1
+        ],
+        [
+          0.75,
+          0,
+          0
+        ]
+      ],
+      "start": "klassifizieren",
+      "expectedVisits": {
+        "klassifizieren": 1.0,
+        "pruefen": 1.125,
+        "schreiben": 0.9
+      },
+      "expectedSteps": 3.025,
+      "absorption": {
+        "fertig": 0.675,
+        "abgelehnt": 0.1125,
+        "eskalation": 0.2125
+      },
+      "sensitivity": {
+        "change": "schreiben->pruefen von 0.25 auf 0.10 (schreiben->fertig 0.90)",
+        "absorption": {
+          "fertig": 0.7043,
+          "abgelehnt": 0.0978,
+          "eskalation": 0.1978
+        }
+      }
+    },
+    "riskBudget": {
+      "unit": "Mikro-Vorfall = 1e-6 Wahrscheinlichkeit eines definierten schweren Referenzvorfalls je Aktion",
+      "layers": {
+        "agentError": 0.02,
+        "gateMiss": 0.1,
+        "humanMiss": 0.1,
+        "severeIfUndetected": 0.005
+      },
+      "riskPerActionMicro": 1.0,
+      "riskWithoutHumanMicro": 10.0,
+      "budget": {
+        "see": "fixtures.thr"
+      },
+      "workflowRiskMicro": 0.9,
+      "derivedMaxGateMiss": 0.1,
+      "ruleOfThree": {
+        "failures": 0,
+        "trials": 29,
+        "upperBound95": 0.1,
+        "note": "exakt: 0,9^29 = 0,047 <= 0,05; 30 Versuche aus der Faustregel 3/n sind leicht konservativ"
+      },
+      "workflowRiskNote": "nur schreibende Schritte (Kostenvektor nurSchreibend)",
+      "lopa": {
+        "norm": "IEC 61511 / CCPS: Layer of Protection Analysis",
+        "initiatingEvent": {
+          "id": "agentError",
+          "probabilityPerAction": 0.02
+        },
+        "independentProtectionLayers": [
+          {
+            "id": "gate",
+            "pfd": 0.1,
+            "criteria": [
+              "unabhängig",
+              "spezifisch",
+              "verlässlich",
+              "prüfbar"
+            ]
+          },
+          {
+            "id": "human",
+            "pfd": 0.1,
+            "criteria": [
+              "unabhängig",
+              "spezifisch",
+              "verlässlich",
+              "prüfbar"
+            ]
+          }
+        ],
+        "conditionalModifier": {
+          "id": "severeIfUndetected",
+          "probability": 0.005
+        },
+        "riskPerActionMicro": 1.0
+      }
+    },
+    "graphAlgebra": {
+      "elements": [
+        "klassifizierer",
+        "aenderer",
+        "stueckliste",
+        "u"
+      ],
+      "allowedEdges": [
+        [
+          "klassifizierer",
+          "aenderer"
+        ],
+        [
+          "aenderer",
+          "stueckliste"
+        ]
+      ],
+      "rule": "x*y = x, wenn (x,y) erlaubte Kante ist, sonst u; u ist absorbierend",
+      "cases": [
+        {
+          "term": "klassifizierer*(aenderer*stueckliste)",
+          "result": "klassifizierer"
+        },
+        {
+          "term": "(klassifizierer*aenderer)*stueckliste",
+          "result": "u"
+        },
+        {
+          "term": "aenderer*stueckliste",
+          "result": "aenderer"
+        },
+        {
+          "term": "klassifizierer*stueckliste",
+          "result": "u"
+        }
+      ]
+    },
+    "fca": {
+      "attributes": {
+        "A": "liest Änderung",
+        "S": "liest Stückliste",
+        "W": "schreibt Stückliste",
+        "F": "Freigabe nötig"
+      },
+      "context": {
+        "klassifizierer": [
+          "A"
+        ],
+        "pruefer": [
+          "A",
+          "S"
+        ],
+        "aenderer": [
+          "A",
+          "S",
+          "W",
+          "F"
+        ],
+        "reporter": [
+          "S"
+        ]
+      },
+      "concepts": [
+        {
+          "extent": [
+            "klassifizierer",
+            "pruefer",
+            "aenderer",
+            "reporter"
+          ],
+          "intent": []
+        },
+        {
+          "extent": [
+            "klassifizierer",
+            "pruefer",
+            "aenderer"
+          ],
+          "intent": [
+            "A"
+          ]
+        },
+        {
+          "extent": [
+            "pruefer",
+            "aenderer",
+            "reporter"
+          ],
+          "intent": [
+            "S"
+          ]
+        },
+        {
+          "extent": [
+            "pruefer",
+            "aenderer"
+          ],
+          "intent": [
+            "A",
+            "S"
+          ]
+        },
+        {
+          "extent": [
+            "aenderer"
+          ],
+          "intent": [
+            "A",
+            "S",
+            "W",
+            "F"
+          ]
+        }
+      ],
+      "implications": [
+        {
+          "premise": [
+            "W"
+          ],
+          "conclusion": [
+            "F",
+            "A",
+            "S"
+          ]
+        },
+        {
+          "premise": [
+            "F"
+          ],
+          "conclusion": [
+            "W",
+            "A",
+            "S"
+          ]
+        }
+      ]
+    },
+    "homology": {
+      "graph": "Workflow-Graph als ungerichteter Multigraph",
+      "vertices": 6,
+      "edges": 7,
+      "beta0": 1,
+      "beta1": 2,
+      "edgeList": [
+        [
+          "klassifizieren",
+          "pruefen"
+        ],
+        [
+          "klassifizieren",
+          "eskalation"
+        ],
+        [
+          "pruefen",
+          "schreiben"
+        ],
+        [
+          "schreiben",
+          "pruefen"
+        ],
+        [
+          "pruefen",
+          "eskalation"
+        ],
+        [
+          "pruefen",
+          "abgelehnt"
+        ],
+        [
+          "schreiben",
+          "fertig"
+        ]
+      ],
+      "nontrivialSCC": [
+        [
+          "pruefen",
+          "schreiben"
+        ]
+      ],
+      "note": "beta1 zählt Rückkopplung und Alternativweg zusammen; echte Rückkopplungen liefern die starken Zusammenhangskomponenten."
+    },
+    "loopCheck": {
+      "contexts": [
+        "TE",
+        "Produktion",
+        "Logistik"
+      ],
+      "translations": [
+        {
+          "from": "TE",
+          "to": "Produktion",
+          "factor": 1
+        },
+        {
+          "from": "Produktion",
+          "to": "Logistik",
+          "factor": 10
+        },
+        {
+          "from": "TE",
+          "to": "Logistik",
+          "factor": 12
+        }
+      ],
+      "expected": {
+        "consistent": false,
+        "viaProduktion": 10,
+        "direct": 12
+      },
+      "independentLoopsFullMesh": {
+        "n": 6,
+        "loops": 10,
+        "formula": "(n-1)(n-2)/2"
+      }
+    },
+    "eulerSuite": {
+      "edges": 7,
+      "minimalRuns": 4,
+      "totalSteps": 10,
+      "runs": [
+        [
+          "klassifizieren",
+          "eskalation"
+        ],
+        [
+          "klassifizieren",
+          "pruefen",
+          "eskalation"
+        ],
+        [
+          "klassifizieren",
+          "pruefen",
+          "schreiben",
+          "pruefen",
+          "abgelehnt"
+        ],
+        [
+          "klassifizieren",
+          "pruefen",
+          "schreiben",
+          "fertig"
+        ]
+      ]
+    },
+    "views": {
+      "rule": "Zwei Elemente dürfen nur verschmelzen, wenn sie bezüglich der zu erhaltenden Beziehungen Zwillinge sind (identisches Muster).",
+      "permissionRows": {
+        "klassifizierer": [
+          "A"
+        ],
+        "pruefer": [
+          "A",
+          "S"
+        ],
+        "aenderer": [
+          "A",
+          "S",
+          "W",
+          "F"
+        ]
+      },
+      "twinsUnderPermissions": [],
+      "mergeableUnder": [
+        "zielbeitrag",
+        "risikobudget"
+      ]
+    },
+    "betaFactor": {
+      "norm": "IEC 61508-6: Beta-Faktor-Modell für Common-Cause-Fehler (hier auf bedingte Wahrscheinlichkeiten übertragen)",
+      "rule": "P(Schicht versagt | Vorschicht versagt) = beta + (1 - beta) * p; beta = 0 heißt unabhängig, beta = 1 heißt die Schicht ist für diesen Fehler blind",
+      "budgetPerActionMicro": 1.0,
+      "cases": [
+        {
+          "betaAgentGate": 0.0,
+          "betaGateHuman": 0.0,
+          "gateMissGivenAgentError": 0.1,
+          "humanMissGivenGateMiss": 0.1,
+          "riskPerActionMicro": 1.0,
+          "floorWithPerfectGateMicro": 0.0,
+          "maxConditionalGateMiss": 0.1,
+          "maxRawGateMiss": 0.1,
+          "budgetReachable": true
+        },
+        {
+          "betaAgentGate": 0.05,
+          "betaGateHuman": 0.0,
+          "gateMissGivenAgentError": 0.145,
+          "humanMissGivenGateMiss": 0.1,
+          "riskPerActionMicro": 1.45,
+          "floorWithPerfectGateMicro": 0.5,
+          "maxConditionalGateMiss": 0.1,
+          "maxRawGateMiss": 0.052632,
+          "budgetReachable": true
+        },
+        {
+          "betaAgentGate": 0.1,
+          "betaGateHuman": 0.0,
+          "gateMissGivenAgentError": 0.19,
+          "humanMissGivenGateMiss": 0.1,
+          "riskPerActionMicro": 1.9,
+          "floorWithPerfectGateMicro": 1.0,
+          "maxConditionalGateMiss": 0.1,
+          "maxRawGateMiss": 0.0,
+          "budgetReachable": true
+        },
+        {
+          "betaAgentGate": 0.1,
+          "betaGateHuman": 0.1,
+          "gateMissGivenAgentError": 0.19,
+          "humanMissGivenGateMiss": 0.19,
+          "riskPerActionMicro": 3.61,
+          "floorWithPerfectGateMicro": 1.9,
+          "maxConditionalGateMiss": 0.052632,
+          "maxRawGateMiss": null,
+          "budgetReachable": false
+        }
+      ]
+    },
+    "costVector": {
+      "rule": "Risiko je Lauf = N[start] · c; c[i] = Risiko je Besuch von Schritt i in µ",
+      "derivation": "c[i] = r, wenn die Rolle von Schritt i in fixtures.fca das Merkmal W (schreibt Stückliste) trägt, sonst 0",
+      "stepRole": {
+        "klassifizieren": "klassifizierer",
+        "pruefen": "pruefer",
+        "schreiben": "aenderer"
+      },
+      "variants": [
+        {
+          "id": "nurSchreibend",
+          "c": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "runRiskMicro": 0.9
+        },
+        {
+          "id": "alleSchritte",
+          "c": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "runRiskMicro": 3.025
+        },
+        {
+          "id": "nurSchreibendMitBeta0.1",
+          "c": [
+            0,
+            0,
+            3.61
+          ],
+          "runRiskMicro": 3.249
+        },
+        {
+          "id": "nurSchreibendSensitivitaet",
+          "change": "schreiben->pruefen von 0.25 auf 0.10 (schreiben->fertig 0.90)",
+          "c": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "runRiskMicro": 0.782609
+        }
+      ]
+    },
+    "thr": {
+      "norm": "EN 50126 / EN 50129: Aufteilung einer tolerierbaren Gefährdungsrate (THR) von oben nach unten",
+      "target": "höchstens 1 schwerer Vorfall in 10 Jahren = 0,1 je Jahr = 100000 µ je Jahr",
+      "totalMicroPerYear": 100000.0,
+      "reserveShare": 0.4,
+      "reserveReason": "nicht modellierte Wege, künftige Workflows, Schätzfehler",
+      "rule": "gleiches Risiko je Lauf über alle Agenten-Workflows derselben Schwereklasse",
+      "workflowRunsPerYear": {
+        "stueckliste": 20000,
+        "lieferantenstamm": 10000,
+        "preispflege": 30000
+      },
+      "budgetPerRunMicro": 1.0,
+      "allocationMicroPerYear": {
+        "stueckliste": 20000.0,
+        "lieferantenstamm": 10000.0,
+        "preispflege": 30000.0
+      },
+      "check": {
+        "sumAllocations": 60000.0,
+        "allocatable": 60000.0
+      },
+      "stueckliste": {
+        "annualRiskMicro": 18000.0,
+        "utilisation": 0.9,
+        "annualRiskWithBeta0.1Micro": 64980.0,
+        "withinBudgetWithBeta0.1": false
+      }
+    },
+    "conformal": {
+      "stratum": "nur Fälle, in denen der Agent tatsächlich geirrt hat (Mondrian); gemessen wird damit direkt P(Gate verfehlt | Agent irrt), der Common-Cause-Anteil beta Agent–Gate steckt schon darin",
+      "score": "Gate meldet, wenn Score >= lambda; Fehlgriff = Agentenfehler mit Score < lambda",
+      "nAgentErrors": 60,
+      "lambdaGrid": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ],
+      "missesPerLambda": [
+        0,
+        0,
+        1,
+        3,
+        8
+      ],
+      "ltt": {
+        "method": "Learn-then-Test mit Fixed-Sequence-Test (aufsteigend lambda), H0: Fehlquote(lambda) > eps, p = BinomCDF(k; n, eps)",
+        "eps": 0.1,
+        "delta": 0.05,
+        "steps": [
+          {
+            "lambda": 0.1,
+            "misses": 0,
+            "pValue": 0.0018,
+            "rejectH0": true
+          },
+          {
+            "lambda": 0.2,
+            "misses": 0,
+            "pValue": 0.0018,
+            "rejectH0": true
+          },
+          {
+            "lambda": 0.3,
+            "misses": 1,
+            "pValue": 0.0138,
+            "rejectH0": true
+          },
+          {
+            "lambda": 0.4,
+            "misses": 3,
+            "pValue": 0.1374,
+            "rejectH0": false
+          }
+        ],
+        "certifiedLambda": 0.3,
+        "guarantee": "mit Wahrscheinlichkeit >= 0.95 über die Ziehung des Gold-Sets: P(Gate verfehlt | Agent irrt) <= 0.1 bei lambda = 0.3"
+      },
+      "crc": {
+        "method": "Conformal Risk Control, Verlust = Fehlgriff (0/1, monoton in lambda, B = 1): wähle größtes lambda mit (k+1)/(n+1) <= alpha",
+        "alpha": 0.1,
+        "maxMisses": 5,
+        "lambda": 0.4,
+        "guarantee": "Erwartungswert über Gold-Set und neuen Fall: P(Gate verfehlt | Agent irrt) <= 0.1"
+      },
+      "minimalGoldCases": {
+        "rule": "null Fehlgriffe in n Fällen zertifiziert eps, sobald (1-eps)^n <= delta",
+        "eps0.1": 29,
+        "eps0.1_check": [
+          0.0523,
+          0.0471
+        ],
+        "eps_bei_betaGateHuman0.1": 0.052632,
+        "n_bei_betaGateHuman0.1": 56
+      },
+      "uncertified": "Liegen weniger Agentenfehler-Fälle vor als minimalGoldCases verlangt, zeigt die Oberfläche „nicht zertifiziert (n von nötigen m)“ statt einer Zahl."
+    },
+    "basis": {
+      "certificateKey": [
+        "goldSetId",
+        "modelVersion",
+        "gateVersion",
+        "context",
+        "n",
+        "k",
+        "eps",
+        "delta",
+        "validFrom"
+      ],
+      "baseChange": [
+        {
+          "event": "neue Modellversion (Agent oder Gate)",
+          "effect": "Zertifikat ungültig, neu messen"
+        },
+        {
+          "event": "neuer Kontext (Domäne, Rechtsgebiet, Kunde)",
+          "effect": "kein Zertifikat für den neuen Kontext; altes gilt dort nicht"
+        },
+        {
+          "event": "Gold-Set erweitert",
+          "effect": "neu rechnen; altes Zertifikat bleibt bis dahin gültig"
+        },
+        {
+          "event": "Verteilungsverschiebung festgestellt",
+          "effect": "Zertifikat ausgesetzt"
+        }
+      ],
+      "gluing": {
+        "rule": "gelten alle Kontext-Schranken gleichzeitig, dann globale Fehlquote <= Summe w_c * eps_c mit Wahrscheinlichkeit >= 1 - Summe delta_c (Union Bound); w_c = Anteil des Kontexts an den Agentenfehlern",
+        "contexts": [
+          {
+            "context": "DE-Recht",
+            "weight": 0.7,
+            "eps": 0.05,
+            "delta": 0.025
+          },
+          {
+            "context": "EU-Recht",
+            "weight": 0.3,
+            "eps": 0.1,
+            "delta": 0.025
+          }
+        ],
+        "globalEps": 0.065,
+        "globalConfidence": 0.95
+      },
+      "cocycle": "fixtures.loopCheck ist die Verklebungsbedingung: Übersetzungen müssen um jede Schleife aufgehen (10 != 12, also kein globales Objekt)"
+    }
+  }
+}
