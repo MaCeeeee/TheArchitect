@@ -189,7 +189,8 @@ router.delete(
   async (req: Request, res: Response) => {
     try {
       const profileId = String(req.params.profileId);
-      await ImportProfile.findByIdAndDelete(profileId);
+      // Security-Audit H2: nur Profile DIESES Projekts.
+      await ImportProfile.findOneAndDelete({ _id: profileId, projectId: String(req.params.projectId) });
       res.json({ success: true });
     } catch (err) {
       console.error('[Import] Delete profile error:', err);

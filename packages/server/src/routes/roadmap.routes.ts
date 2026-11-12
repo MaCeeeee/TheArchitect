@@ -115,7 +115,11 @@ router.get(
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
     try {
-      const doc = await TransformationRoadmap.findById(req.params.roadmapId).lean();
+      // Security-Audit H2: Sub-Ressource immer im Projekt der Route suchen.
+      const doc = await TransformationRoadmap.findOne({
+        _id: String(req.params.roadmapId),
+        projectId: String(req.params.projectId),
+      }).lean();
       if (!doc) return res.status(404).json({ success: false, error: 'Roadmap not found' });
 
       const roadmap = {
@@ -152,8 +156,8 @@ router.patch(
       if (!name || typeof name !== 'string' || name.trim().length === 0) {
         return res.status(400).json({ success: false, error: 'Name is required' });
       }
-      const doc = await TransformationRoadmap.findByIdAndUpdate(
-        req.params.roadmapId,
+      const doc = await TransformationRoadmap.findOneAndUpdate(
+        { _id: String(req.params.roadmapId), projectId: String(req.params.projectId) },
         { name: name.trim().slice(0, 200) },
         { new: true },
       );
@@ -173,7 +177,10 @@ router.delete(
   requirePermission(PERMISSIONS.ANALYTICS_SIMULATE),
   async (req: Request, res: Response) => {
     try {
-      const result = await TransformationRoadmap.findByIdAndDelete(req.params.roadmapId);
+      const result = await TransformationRoadmap.findOneAndDelete({
+        _id: String(req.params.roadmapId),
+        projectId: String(req.params.projectId),
+      });
       if (!result) return res.status(404).json({ success: false, error: 'Roadmap not found' });
       res.json({ success: true });
     } catch (err) {
@@ -310,7 +317,7 @@ router.post(
     try {
       const projectId = String(req.params.projectId);
       const userId = String((req as any).user?._id || (req as any).user?.id);
-      const existing = await TransformationRoadmap.findById(req.params.roadmapId).lean();
+      const existing = await TransformationRoadmap.findOne({ _id: String(req.params.roadmapId), projectId }).lean();
       if (!existing) return res.status(404).json({ success: false, error: 'Roadmap not found' });
 
       const parsed = CreateRoadmapSchema.parse(req.body);

@@ -13,6 +13,12 @@ declare global {
         iat: number;
         exp: number;
       };
+      authMethod?: 'jwt' | 'api_key';
+      /**
+       * Security-Audit H12: Scope des API-Keys. Fehlt bei JWT und bei Keys
+       * ohne Scope (leere Liste = Rechte des Besitzers, so legt die UI sie an).
+       */
+      apiKeyScope?: string[];
     }
     interface User extends IUser {}
   }

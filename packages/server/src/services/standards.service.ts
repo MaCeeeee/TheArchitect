@@ -633,14 +633,17 @@ export async function getStandards(projectId: string) {
     .sort({ createdAt: -1 });
 }
 
-export async function getStandard(standardId: string) {
-  return Standard.findById(standardId);
+// Security-Audit H2: Standards und Mappings immer im Projekt der Route.
+export async function getStandard(projectId: string, standardId: string) {
+  return Standard.findOne({ _id: standardId, projectId });
 }
 
-export async function deleteStandard(standardId: string) {
-  await StandardMapping.deleteMany({ standardId });
-  await CompliancePipelineState.deleteMany({ standardId });
-  return Standard.findByIdAndDelete(standardId);
+export async function deleteStandard(projectId: string, standardId: string) {
+  const standard = await Standard.findOneAndDelete({ _id: standardId, projectId });
+  if (!standard) return null;
+  await StandardMapping.deleteMany({ standardId, projectId });
+  await CompliancePipelineState.deleteMany({ standardId, projectId });
+  return standard;
 }
 
 // ─── Mappings ───
@@ -874,8 +877,8 @@ export async function bulkCreateMappings(
   return result.upsertedCount + result.modifiedCount;
 }
 
-export async function deleteMapping(mappingId: string) {
-  const mapping = await StandardMapping.findByIdAndDelete(mappingId);
+export async function deleteMapping(projectId: string, mappingId: string) {
+  const mapping = await StandardMapping.findOneAndDelete({ _id: mappingId, projectId });
   if (mapping) {
     await refreshStatsAfterWrite(String(mapping.projectId), String(mapping.standardId));
   }

@@ -360,7 +360,11 @@ export async function getNormMappings(
   if (workId.startsWith('upload:')) {
     const standardId = workId.slice('upload:'.length);
     if (!mongoose.isValidObjectId(standardId)) return [];
-    const rows = await StandardMapping.find({ standardId: new mongoose.Types.ObjectId(standardId) });
+    // Security-Audit H3: nur Mappings DIESES Projekts.
+    const rows = await StandardMapping.find({
+      standardId: new mongoose.Types.ObjectId(standardId),
+      projectId: new mongoose.Types.ObjectId(projectId),
+    });
     return rows.map(standardMappingToNormMappingView);
   }
   if (workId.startsWith('corpus:')) {
