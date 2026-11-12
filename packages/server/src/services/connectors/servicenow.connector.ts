@@ -178,6 +178,7 @@ export class ServiceNowConnector implements IConnector, ICostEnrichmentConnector
 
           elements.push({
             id: elemId,
+            externalId: ci.sys_id,
             name,
             type,
             layer: inferLayer(type),

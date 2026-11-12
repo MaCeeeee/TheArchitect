@@ -179,6 +179,7 @@ export class LeanIXConnector implements IConnector, ICostEnrichmentConnector {
 
       elements.push({
         id: elemId,
+        externalId: fs.id,
         name,
         type,
         layer: inferLayer(type),

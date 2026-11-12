@@ -143,6 +143,7 @@ export class GitHubConnector implements IConnector {
 
       elements.push({
         id: elemId,
+        externalId: String(repo.id ?? repo.full_name),  // numeric repo id survives renames
         name: repo.name,
         type,
         layer: this.inferLayer(type),
@@ -299,6 +300,7 @@ export class GitLabConnector implements IConnector {
       const elemId = `gl-${uuid().slice(0, 8)}`;
       elements.push({
         id: elemId,
+        externalId: String(repo.id ?? repo.path_with_namespace),
         name: repo.name,
         type: 'application_component',
         layer: 'application',
