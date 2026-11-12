@@ -29,7 +29,16 @@ CORPUS_URL="https://thearchitect.site/api/regulations/corpus/health"
 # Builder LIEST — ohne das Verzeichnis bricht `COPY e2e/` den Build, bevor
 # irgendetwas passiert. Genau so ist es beim ersten Deploy nach THE-653
 # passiert: Produktion blieb unberuehrt, aber der Deploy stand.
-SOURCE_PATHS=(packages e2e package.json package-lock.json Dockerfile turbo.json tsconfig.base.json)
+# Dasselbe gilt fuer das Navigationsgraph-Tor (THE-696): das Dockerfile kopiert
+# `scripts/nav-graph.mjs` und die zwei Daten in `docs/strategy/`. Fehlen sie,
+# bricht `COPY`; sind sie veraltet, prueft das Tor gegen die falsche Baseline.
+# Bewusst einzelne Dateien statt `scripts/` und `docs/` — wie im Dockerfile.
+# `.dockerignore` steuert, was in den Build-Kontext kommt, und gehoert deshalb
+# zum Commit, nicht zum Zufallsstand auf dem VPS.
+SOURCE_PATHS=(
+  packages e2e package.json package-lock.json Dockerfile turbo.json tsconfig.base.json .dockerignore
+  scripts/nav-graph.mjs docs/strategy/nav-graph-baseline.json docs/strategy/mission-graph.json
+)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 log()  { printf '\n\033[1;36m▶ %s\033[0m\n' "$*"; }
@@ -80,6 +89,24 @@ diff -q "$COMPOSE" "$COMPOSE.SAFE" >/dev/null \
   || die "$COMPOSE changed during checkout! Restore: cp $COMPOSE.SAFE $COMPOSE — then investigate."
 diff -q Caddyfile Caddyfile.SAFE >/dev/null \
   || die "Caddyfile changed during checkout! Restore: cp Caddyfile.SAFE Caddyfile — then investigate."
+
+# ── 4b. Every Dockerfile COPY source exists ──────────────────────────────────
+# Kommt eine neue Build-Datei ins Dockerfile, ohne dass SOURCE_PATHS sie kennt,
+# faellt das hier mit Namen auf — statt mitten im Build am COPY oder, schlimmer,
+# still gegen eine alte Datei vom VPS. Prueft nur Kopien aus dem Build-Kontext
+# (nicht `COPY --from=<stage>`).
+log "Verifying every Dockerfile COPY source exists in the build context"
+missing=()
+while read -r -a parts; do
+  [[ "${parts[0]:-}" == "COPY" ]] || continue
+  [[ "${parts[1]:-}" == --from=* ]] && continue
+  for src in "${parts[@]:1:${#parts[@]}-2}"; do
+    [[ "$src" == --* ]] && continue   # Flags wie --chown
+    compgen -G "$src" >/dev/null || missing+=("$src")
+  done
+done < Dockerfile
+(( ${#missing[@]} == 0 )) \
+  || die "Dockerfile COPY sources missing from the build context: ${missing[*]} — add them to SOURCE_PATHS."
 
 # ── 5. Build + recreate ONLY the app ─────────────────────────────────────────
 # DBs stay up → no Neo4j boot-race, no stale-network EAI_AGAIN. -f is hardcoded
