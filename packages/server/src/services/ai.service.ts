@@ -66,6 +66,7 @@ export async function buildProjectContext(projectId: string): Promise<string> {
   const connRecords = await runCypher(
     `MATCH (a:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(b:ArchitectureElement {projectId: $projectId})
      RETURN a.name as sourceName, b.name as targetName, r.type as type, r.label as label
+     ORDER BY sourceName, targetName, type, label
      LIMIT 200`,
     { projectId },
   );
@@ -268,7 +269,7 @@ export type OnChunk = (text: string) => void;
 export type OnDone = () => void;
 export type OnError = (err: Error) => void;
 
-interface ChatMessage {
+export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
@@ -307,14 +308,14 @@ export async function streamChat(
     if (provider === 'openai') {
       await streamOpenAI(systemPrompt, recentMessages, onChunk, onDone);
     } else {
-      await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone);
+      await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, true);
     }
   } catch (err) {
     // Fallback: if OpenAI fails and Anthropic key exists, try Anthropic
     if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
       console.warn('[AI] OpenAI failed, falling back to Anthropic:', (err as Error).message);
       try {
-        await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone);
+        await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, true);
         return;
       } catch (fallbackErr) {
         onError(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)));
@@ -355,12 +356,56 @@ async function streamOpenAI(
   onDone();
 }
 
+const CHAT_MAX_TOKENS = 2500;
+
+/**
+ * Builds the `system` + `messages` part of an Anthropic request.
+ *
+ * With `cache` enabled, two prompt-cache breakpoints are set:
+ *  1. on the system prompt (copilot instructions + project context) — it stays
+ *     byte-identical across the turns of a conversation as long as the
+ *     architecture does not change, so follow-up turns read it from the cache;
+ *  2. on the last message — caches the conversation history so the next turn
+ *     only pays full price for the new user message.
+ *
+ * Prefixes below the model's minimum (e.g. 4096 tokens on Haiku 4.5) are
+ * silently not cached — no error, no extra cost. Only use `cache` for
+ * multi-turn traffic: a cache write costs ~1.25x the normal input price and
+ * pays off from the second request onwards (within the 5-minute TTL).
+ */
+export function buildAnthropicPromptPayload(
+  systemPrompt: string,
+  messages: ChatMessage[],
+  cache: boolean,
+): { system: string | Anthropic.TextBlockParam[]; messages: Anthropic.MessageParam[] } {
+  if (!cache) {
+    return {
+      system: systemPrompt,
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    };
+  }
+
+  const lastIndex = messages.length - 1;
+  return {
+    system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+    messages: messages.map((m, i): Anthropic.MessageParam => {
+      // Empty text blocks are rejected by the API, so only mark non-empty content.
+      if (i !== lastIndex || m.content.length === 0) return { role: m.role, content: m.content };
+      return {
+        role: m.role,
+        content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }],
+      };
+    }),
+  };
+}
+
 async function streamAnthropic(
   systemPrompt: string,
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
-  maxTokens = 2500,
+  maxTokens = CHAT_MAX_TOKENS,
+  cache = false,
 ): Promise<void> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
@@ -368,14 +413,27 @@ async function streamAnthropic(
 
   const stream = anthropic.messages.stream({
     model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
-    system: systemPrompt,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    ...buildAnthropicPromptPayload(systemPrompt, messages, cache),
     max_tokens: maxTokens,
   });
 
   for await (const event of stream) {
     if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
       onChunk(event.delta.text);
+    }
+  }
+
+  if (cache) {
+    // Cache hit rate is only visible in the usage block — log it so caching can be
+    // verified in production (cache_read > 0 from the second turn onwards).
+    try {
+      const { usage } = await stream.finalMessage();
+      console.info(
+        `[AI] Copilot usage: input=${usage.input_tokens} cache_read=${usage.cache_read_input_tokens ?? 0} ` +
+          `cache_write=${usage.cache_creation_input_tokens ?? 0} output=${usage.output_tokens}`,
+      );
+    } catch {
+      /* usage logging must never break the chat */
     }
   }
   onDone();
