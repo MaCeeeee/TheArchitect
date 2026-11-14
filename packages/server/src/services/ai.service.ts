@@ -308,14 +308,14 @@ export async function streamChat(
     if (provider === 'openai') {
       await streamOpenAI(systemPrompt, recentMessages, onChunk, onDone);
     } else {
-      await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, true);
+      logUsage('Copilot', await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, CHAT_CACHE));
     }
   } catch (err) {
     // Fallback: if OpenAI fails and Anthropic key exists, try Anthropic
     if (provider === 'openai' && process.env.ANTHROPIC_API_KEY) {
       console.warn('[AI] OpenAI failed, falling back to Anthropic:', (err as Error).message);
       try {
-        await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, true);
+        logUsage('Copilot', await streamAnthropic(systemPrompt, recentMessages, onChunk, onDone, CHAT_MAX_TOKENS, CHAT_CACHE));
         return;
       } catch (fallbackErr) {
         onError(fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)));
@@ -359,38 +359,79 @@ async function streamOpenAI(
 const CHAT_MAX_TOKENS = 2500;
 
 /**
- * Builds the `system` + `messages` part of an Anthropic request.
+ * Where to put prompt-cache breakpoints on an Anthropic request.
  *
- * With `cache` enabled, two prompt-cache breakpoints are set:
- *  1. on the system prompt (copilot instructions + project context) — it stays
- *     byte-identical across the turns of a conversation as long as the
- *     architecture does not change, so follow-up turns read it from the cache;
- *  2. on the last message — caches the conversation history so the next turn
- *     only pays full price for the new user message.
+ * - `system`: breakpoint at the end of the system prompt. Use it when the same
+ *   system prompt is sent repeatedly (chat turns, one call per standard section).
+ * - `history`: breakpoint on the last message. Use it for multi-turn chat only —
+ *   the next turn then reads the whole conversation history from the cache.
  *
  * Prefixes below the model's minimum (e.g. 4096 tokens on Haiku 4.5) are
- * silently not cached — no error, no extra cost. Only use `cache` for
- * multi-turn traffic: a cache write costs ~1.25x the normal input price and
- * pays off from the second request onwards (within the 5-minute TTL).
+ * silently not cached — no error, no extra cost. A cache write costs ~1.25x the
+ * normal input price and pays off from the second request onwards (5-minute TTL),
+ * so leave caching off for prompts that are sent only once.
+ */
+export interface PromptCacheOptions {
+  system?: boolean;
+  history?: boolean;
+}
+
+const CHAT_CACHE: PromptCacheOptions = { system: true, history: true };
+
+/** Token usage of one or more requests — enough to judge the cache hit rate. */
+export interface UsageTotals {
+  input: number;
+  cacheRead: number;
+  cacheWrite: number;
+  output: number;
+}
+
+function toUsageTotals(usage: Anthropic.Usage): UsageTotals {
+  return {
+    input: usage.input_tokens,
+    cacheRead: usage.cache_read_input_tokens ?? 0,
+    cacheWrite: usage.cache_creation_input_tokens ?? 0,
+    output: usage.output_tokens,
+  };
+}
+
+function logUsage(label: string, usage: UsageTotals | null): void {
+  if (!usage) return;
+  console.info(
+    `[AI] ${label} usage: input=${usage.input} cache_read=${usage.cacheRead} ` +
+      `cache_write=${usage.cacheWrite} output=${usage.output}`,
+  );
+}
+
+/**
+ * Builds the `system` + `messages` part of an Anthropic request.
+ * `system` may be split into parts (e.g. instructions + a large, stable data
+ * block); they are sent as separate text blocks in the given order.
  */
 export function buildAnthropicPromptPayload(
-  systemPrompt: string,
+  system: string | string[],
   messages: ChatMessage[],
-  cache: boolean,
+  cache: PromptCacheOptions = {},
 ): { system: string | Anthropic.TextBlockParam[]; messages: Anthropic.MessageParam[] } {
-  if (!cache) {
-    return {
-      system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    };
-  }
+  const parts = typeof system === 'string' ? [system] : system;
+  const lastPart = parts.length - 1;
+  const systemPayload: string | Anthropic.TextBlockParam[] =
+    typeof system === 'string' && !cache.system
+      ? system
+      : parts.map((text, i): Anthropic.TextBlockParam =>
+          cache.system && i === lastPart
+            ? { type: 'text', text, cache_control: { type: 'ephemeral' } }
+            : { type: 'text', text },
+        );
 
-  const lastIndex = messages.length - 1;
+  const lastMessage = messages.length - 1;
   return {
-    system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+    system: systemPayload,
     messages: messages.map((m, i): Anthropic.MessageParam => {
       // Empty text blocks are rejected by the API, so only mark non-empty content.
-      if (i !== lastIndex || m.content.length === 0) return { role: m.role, content: m.content };
+      if (!cache.history || i !== lastMessage || m.content.length === 0) {
+        return { role: m.role, content: m.content };
+      }
       return {
         role: m.role,
         content: [{ type: 'text', text: m.content, cache_control: { type: 'ephemeral' } }],
@@ -399,21 +440,25 @@ export function buildAnthropicPromptPayload(
   };
 }
 
+/**
+ * Streams one Anthropic request. Returns the token usage when caching is
+ * enabled (so callers can log/aggregate the cache hit rate), otherwise null.
+ */
 async function streamAnthropic(
-  systemPrompt: string,
+  system: string | string[],
   messages: ChatMessage[],
   onChunk: OnChunk,
   onDone: OnDone,
   maxTokens = CHAT_MAX_TOKENS,
-  cache = false,
-): Promise<void> {
+  cache: PromptCacheOptions = {},
+): Promise<UsageTotals | null> {
   const anthropic = new Anthropic({
     apiKey: process.env.ANTHROPIC_API_KEY,
   });
 
   const stream = anthropic.messages.stream({
     model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001',
-    ...buildAnthropicPromptPayload(systemPrompt, messages, cache),
+    ...buildAnthropicPromptPayload(system, messages, cache),
     max_tokens: maxTokens,
   });
 
@@ -423,20 +468,16 @@ async function streamAnthropic(
     }
   }
 
-  if (cache) {
-    // Cache hit rate is only visible in the usage block — log it so caching can be
-    // verified in production (cache_read > 0 from the second turn onwards).
+  let usage: UsageTotals | null = null;
+  if (cache.system || cache.history) {
     try {
-      const { usage } = await stream.finalMessage();
-      console.info(
-        `[AI] Copilot usage: input=${usage.input_tokens} cache_read=${usage.cache_read_input_tokens ?? 0} ` +
-          `cache_write=${usage.cache_creation_input_tokens ?? 0} output=${usage.output_tokens}`,
-      );
+      usage = toUsageTotals((await stream.finalMessage()).usage);
     } catch {
-      /* usage logging must never break the chat */
+      /* usage reporting must never break the request */
     }
   }
   onDone();
+  return usage;
 }
 
 // ─── Standard Context ───
@@ -572,11 +613,37 @@ interface SectionInfo {
  * truncation mid-array — the failure mode that made the previous
  * single-shot version drop most of the matrix silently).
  */
+/**
+ * The element list is identical for every section of a mapping run, so it lives
+ * in the system prompt (after the instructions) where it can be prompt-cached:
+ * only the first section pays full input price for it, all later sections read
+ * it from the cache. Exported for tests.
+ */
+export function buildMappingElementContext(elements: ElementInfo[]): string {
+  const elementBlock = elements
+    .map((e) => `- ${e.id} | ${e.name} | layer=${e.layer} | type=${e.type}${e.description ? ` | desc="${e.description.slice(0, 200).replace(/"/g, "'")}"` : ''}`)
+    .join('\n');
+  return `# Available architecture elements (${elements.length} total)\n${elementBlock}`;
+}
+
+export function buildMappingSectionMessage(section: SectionInfo): string {
+  return `# Section to map
+sectionId: ${section.id}
+sectionNumber: ${section.number}
+title: ${section.title}
+${section.description ? `description: ${section.description.slice(0, 800)}` : ''}
+
+# Task
+Output a JSON array of mapping entries (and optionally coverage-gap entries) for this section, using the available architecture elements listed above.`;
+}
+
+const MAPPING_CACHE: PromptCacheOptions = { system: true };
+
 async function suggestForOneSection(
   section: SectionInfo,
-  elements: ElementInfo[],
+  elementContext: string,
   provider: 'openai' | 'anthropic',
-): Promise<MappingSuggestion[]> {
+): Promise<{ suggestions: MappingSuggestion[]; usage: UsageTotals | null }> {
   const systemPrompt = `You are an enterprise architecture compliance mapping expert.
 
 Your task: given ONE compliance standard section, identify which architecture elements demonstrate compliance with that section, AND identify if a coverage gap exists.
@@ -596,42 +663,31 @@ Rules:
 - Only include mapping entries with confidence >= 0.55. Coverage-gap entries have no confidence threshold.
 - "status":"compliant" = element clearly satisfies the section; "partial" = element is relevant but doesn't fully satisfy; "gap" = element is in scope but does not satisfy.`;
 
-  const elementBlock = elements
-    .map((e) => `- ${e.id} | ${e.name} | layer=${e.layer} | type=${e.type}${e.description ? ` | desc="${e.description.slice(0, 200).replace(/"/g, "'")}"` : ''}`)
-    .join('\n');
-
-  const userMessage = `# Section to map
-sectionId: ${section.id}
-sectionNumber: ${section.number}
-title: ${section.title}
-${section.description ? `description: ${section.description.slice(0, 800)}` : ''}
-
-# Available architecture elements (${elements.length} total)
-${elementBlock}
-
-# Task
-Output a JSON array of mapping entries (and optionally coverage-gap entries) for this section.`;
+  const userMessage = buildMappingSectionMessage(section);
 
   let fullText = '';
   const collect = (t: string) => { fullText += t; };
 
   // 4000 tokens is generous for 1-7 entries × ~200 tokens each.
   const MAX_TOKENS_PER_SECTION = 4000;
+  let usage: UsageTotals | null = null;
   if (provider === 'openai') {
-    await streamOpenAI(systemPrompt, [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION);
+    // Same order (instructions, then elements) → identical prefix across sections,
+    // which OpenAI's automatic prefix caching can reuse as well.
+    await streamOpenAI(`${systemPrompt}\n\n${elementContext}`, [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION);
   } else {
-    await streamAnthropic(systemPrompt, [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION);
+    usage = await streamAnthropic([systemPrompt, elementContext], [{ role: 'user', content: userMessage }], collect, () => {}, MAX_TOKENS_PER_SECTION, MAPPING_CACHE);
   }
 
   // Strip markdown fences just in case
   const cleaned = fullText.replace(/^```(?:json)?\s*/m, '').replace(/```\s*$/m, '').trim();
   const m = cleaned.match(/\[[\s\S]*\]/);
-  if (!m) return [];
+  if (!m) return { suggestions: [], usage };
   try {
     const parsed = JSON.parse(m[0]);
-    return Array.isArray(parsed) ? parsed : [];
+    return { suggestions: Array.isArray(parsed) ? parsed : [], usage };
   } catch {
-    return [];
+    return { suggestions: [], usage };
   }
 }
 
@@ -702,45 +758,68 @@ export async function generateMappingSuggestions(
   // entirely empty). One section per call keeps the output always
   // <500 tokens and the JSON always complete.
   const CONCURRENCY = 5;
+  const elementContext = buildMappingElementContext(elements);
   const queue = [...sections];
   const allSuggestions: MappingSuggestion[] = [];
+  const usageTotals: UsageTotals = { input: 0, cacheRead: 0, cacheWrite: 0, output: 0 };
+  let usageReported = false;
   let completed = 0;
   let failed = 0;
 
-  const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => {
+  const processSection = async (section: (typeof sections)[number]): Promise<void> => {
+    try {
+      const { suggestions: sectionSuggestions, usage } = await suggestForOneSection(
+        {
+          id: section.id,
+          number: section.number,
+          title: section.title,
+          description: (section as { description?: string }).description,
+        },
+        elementContext,
+        provider as 'openai' | 'anthropic',
+      );
+      if (usage) {
+        usageReported = true;
+        usageTotals.input += usage.input;
+        usageTotals.cacheRead += usage.cacheRead;
+        usageTotals.cacheWrite += usage.cacheWrite;
+        usageTotals.output += usage.output;
+      }
+      // Defensive: ensure each entry carries the section's id+number even
+      // if the LLM omitted them.
+      for (const s of sectionSuggestions) {
+        if (!s.sectionId) s.sectionId = section.id;
+        if (!s.sectionNumber) s.sectionNumber = section.number;
+      }
+      allSuggestions.push(...sectionSuggestions);
+      completed++;
+      onChunk(`✓ §${section.number} (${sectionSuggestions.length} mappings) [${completed + failed}/${sections.length}]\n`);
+    } catch (err) {
+      failed++;
+      const reason = err instanceof Error ? err.message : String(err);
+      onChunk(`✗ §${section.number} failed: ${reason} [${completed + failed}/${sections.length}]\n`);
+    }
+  };
+
+  const runWorker = async (): Promise<void> => {
     while (queue.length > 0) {
       const section = queue.shift();
       if (!section) break;
-      try {
-        const sectionSuggestions = await suggestForOneSection(
-          {
-            id: section.id,
-            number: section.number,
-            title: section.title,
-            description: (section as { description?: string }).description,
-          },
-          elements,
-          provider as 'openai' | 'anthropic',
-        );
-        // Defensive: ensure each entry carries the section's id+number even
-        // if the LLM omitted them.
-        for (const s of sectionSuggestions) {
-          if (!s.sectionId) s.sectionId = section.id;
-          if (!s.sectionNumber) s.sectionNumber = section.number;
-        }
-        allSuggestions.push(...sectionSuggestions);
-        completed++;
-        onChunk(`✓ §${section.number} (${sectionSuggestions.length} mappings) [${completed + failed}/${sections.length}]\n`);
-      } catch (err) {
-        failed++;
-        const reason = err instanceof Error ? err.message : String(err);
-        onChunk(`✗ §${section.number} failed: ${reason} [${completed + failed}/${sections.length}]\n`);
-      }
+      await processSection(section);
     }
-  });
+  };
 
   try {
+    // Cache warm-up: the first section runs alone so its request writes the
+    // prompt cache (instructions + element list). Starting all workers at once
+    // would make the first CONCURRENCY requests each pay a full cache write.
+    // Cost: one request's latency; benefit: every later section reads the
+    // element list at ~10% of the input price.
+    const firstSection = queue.shift();
+    if (firstSection) await processSection(firstSection);
+    const workers = Array.from({ length: Math.min(CONCURRENCY, queue.length) }, runWorker);
     await Promise.all(workers);
+    if (usageReported) logUsage(`Mapping (${sections.length} sections)`, usageTotals);
     onChunk(`\nDone: ${allSuggestions.length} total mappings across ${completed} sections${failed > 0 ? ` (${failed} sections failed)` : ''}\n`);
     await onDone(allSuggestions);
   } catch (err) {
