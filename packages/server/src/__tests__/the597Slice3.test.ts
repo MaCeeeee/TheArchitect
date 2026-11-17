@@ -11,6 +11,7 @@ import {
 import type { TypingEvalCase } from '../evals/typingMetrics';
 import { decideSlice3, meetsCriterion, type Slice3Run } from '../evals/the597Slice3';
 import type { RoutingStat } from '../evals/metrics';
+import { knownErrorClasses, renderSlice3Report } from '../evals/the597Slice3';
 
 /** Ein Fall: Gold und Vorhersage je Achse, Konfidenz je Achse. */
 export function mkCase(
@@ -208,5 +209,47 @@ describe('decideSlice3', () => {
   it('ist deterministisch', () => {
     const r = runs('obligationKind', [PASS, PASS, PASS, PASS, FAIL], [PASS, PASS]);
     expect(JSON.stringify(decideSlice3(r))).toBe(JSON.stringify(decideSlice3(r)));
+  });
+});
+
+describe('knownErrorClasses', () => {
+  it('zählt je Fehlerklasse Gold, falsch und geroutet (< 0,8 / < 1,0), gepoolt über gv3', () => {
+    const gv3 = [
+      mkCase('a', { obligationKind: 'prohibition' }, { obligationKind: 'obligation' }, { obligationKind: 0.6 }),
+      mkCase('b', { obligationKind: 'prohibition' }, { obligationKind: 'obligation' }, { obligationKind: 1 }),
+      mkCase('c', { obligationKind: 'prohibition' }, { obligationKind: 'prohibition' }, { obligationKind: 1 }),
+    ];
+    const r: Slice3Run[] = [{ label: 'gv3-run1', golden: 'gv3', fileSha256: 'x'.repeat(64), cases: gv3 }];
+    const f04 = knownErrorClasses(r).find((k) => k.id === 'F-04')!;
+    expect(f04).toMatchObject({ axis: 'obligationKind', goldClass: 'prohibition', gold: 3, wrong: 2, routedBelow08: 1, routedBelow10: 1 });
+  });
+
+  it('ignoriert gv2-Läufe', () => {
+    const r: Slice3Run[] = [{
+      label: 'gv2-run1', golden: 'gv2', fileSha256: 'y'.repeat(64),
+      cases: [mkCase('a', { obligationKind: 'prohibition' }, { obligationKind: 'obligation' }, { obligationKind: 0.6 })],
+    }];
+    expect(knownErrorClasses(r).find((k) => k.id === 'F-04')).toMatchObject({ gold: 0, wrong: 0 });
+  });
+});
+
+describe('renderSlice3Report', () => {
+  const d = decideSlice3(runs('obligationKind', [PASS, PASS, PASS, PASS, PASS], [PASS, PASS]));
+  const md = renderSlice3Report(d, []);
+
+  it('nennt das Verdikt und verweist auf die Vorregistrierung', () => {
+    expect(md).toMatch(/Schicht 1: \*\*GO\*\*/);
+    expect(md).toContain('docs/evals/the597-slice3-vorregistrierung.md');
+  });
+  it('listet alle 7 Input-Hashes', () => {
+    for (const i of d.inputs) expect(md).toContain(i.fileSha256);
+  });
+  it('markiert die Prüf-Last als nicht entscheidend und partyRole-Replikation als entfallen', () => {
+    expect(md).toMatch(/Prüf-Last.*entscheidet nicht/);
+    expect(md).toMatch(/partyRole[^\n]*entfällt/);
+  });
+  it('NO-GO wird als NO-GO gerendert', () => {
+    const no = decideSlice3(runs('obligationKind', [FAIL, FAIL, FAIL, FAIL, FAIL], [FAIL, FAIL]));
+    expect(renderSlice3Report(no, [])).toMatch(/Schicht 1: \*\*NO-GO\*\*/);
   });
 });

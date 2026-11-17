@@ -174,3 +174,104 @@ export function decideSlice3(runs: Slice3Run[]): Slice3Decision {
     inputs: runs.map((r) => ({ label: r.label, golden: r.golden, fileSha256: r.fileSha256 })),
   };
 }
+
+export const KNOWN_ERROR_CLASSES = [
+  { id: 'F-04', axis: 'obligationKind', goldClass: 'prohibition' },
+  { id: 'F-05', axis: 'partyRole', goldClass: 'supervisory_authority' },
+  { id: 'F-06', axis: 'provisionKind', goldClass: 'procedural' },
+  { id: 'F-07', axis: 'partyRole', goldClass: 'member_state' },
+] as const;
+
+export interface KnownErrorClassStat {
+  id: string;
+  axis: Slice3Axis;
+  goldClass: string;
+  gold: number;
+  wrong: number;
+  routedBelow08: number;
+  routedBelow10: number;
+}
+
+/** Beschreibend, gepoolt über gv3 — entscheidet nichts (Vorregistrierung, Abschnitt Instrument). */
+export function knownErrorClasses(runs: Slice3Run[]): KnownErrorClassStat[] {
+  const cases = pooled(runs.filter((r) => r.golden === 'gv3'));
+  return KNOWN_ERROR_CLASSES.map(({ id, axis, goldClass }) => {
+    const inClass = cases.filter((c) => (c.gold as Record<string, unknown>)[axis] === goldClass);
+    const wrong = inClass.filter((c) => (c.predicted as Record<string, unknown>)[axis] !== goldClass);
+    const conf = (c: TypingEvalCase) => c.confidence?.[axis];
+    return {
+      id,
+      axis,
+      goldClass,
+      gold: inClass.length,
+      wrong: wrong.length,
+      routedBelow08: wrong.filter((c) => (conf(c) ?? Infinity) < 0.8).length,
+      routedBelow10: wrong.filter((c) => (conf(c) ?? Infinity) < 1.0).length,
+    };
+  });
+}
+
+const pct = (x: number) => `${(x * 100).toFixed(1)} %`;
+/** Leerer Nenner → „—" statt 0 % (Konvention aus metrics.ts, THE-597 R-003). */
+const rate = (n: number, d: number) => (d ? `${pct(n / d)} (${n}/${d})` : '—');
+const thr = (t: number) => `< ${t.toFixed(1)}`;
+const yn = (b: boolean | null) => (b === null ? 'entfällt' : b ? 'ja' : 'nein');
+
+export function renderSlice3Report(d: Slice3Decision, known: KnownErrorClassStat[]): string {
+  const L: string[] = [];
+  L.push('# THE-597 Slice 3 — Ergebnis: Go/No-Go für Schicht 1');
+  L.push('');
+  L.push('Regel: `docs/evals/the597-slice3-vorregistrierung.md` (freigegeben 17.11.2026, vor der Messung).');
+  L.push(
+    `Instrument: \`${SLICE3_INSTRUMENT.model}\` · Prompt \`${SLICE3_INSTRUMENT.variante}\` · k = ${SLICE3_INSTRUMENT.samples} · Kriterium Recall ≥ ${pct(MIN_RECALL)} und Fehlalarm ≤ ${pct(MAX_FALSE_ALARM)} · stabil in ≥ ${MIN_STABLE_RUNS} von ${SLICE3_RUN_COUNT.gv3} gv3-Läufen · repliziert auf gv2 (nur ${REPLICATION_AXES.join(', ')}).`
+  );
+  L.push('');
+  const goText = d.goCombos.map((g) => `${g.axis} ${thr(g.threshold)}`).join(', ');
+  L.push(`## Verdikt — Schicht 1: **${d.layer1}**${d.layer1 === 'GO' ? ` (${goText})` : ''}`);
+  L.push('');
+  if (d.combos.some((c) => c.oneGoldSetOnly)) {
+    L.push('⚠️ Mindestens ein GO steht auf **einem** Gold-Set (partyRole, keine Replikation möglich).');
+    L.push('');
+  }
+  L.push('## Kombinationen');
+  L.push('');
+  L.push('| Achse | Schwelle | Recall gepoolt gv3 | Fehlalarm gepoolt gv3 | gepoolt erfüllt | stabil (Läufe) | gv2 repliziert | Prüf-Last | GO |');
+  L.push('|---|---|---|---|---|---|---|---|---|');
+  for (const c of d.combos) {
+    L.push(
+      `| ${c.axis} | ${thr(c.threshold)} | ${rate(c.pooledGv3.caught, c.pooledGv3.wrong)} | ${rate(c.pooledGv3.falseAlarms, c.pooledGv3.correct)} | ${yn(c.pooledGv3Pass)} | ${c.stableRuns}/${c.perRunGv3.length} | ${yn(c.replicationPass)}${c.pooledGv2 ? ` (${rate(c.pooledGv2.caught, c.pooledGv2.wrong)} / ${rate(c.pooledGv2.falseAlarms, c.pooledGv2.correct)})` : ''} | ${rate(c.pooledGv3.caught + c.pooledGv3.falseAlarms, c.pooledGv3.wrong + c.pooledGv3.correct)} | **${c.go ? 'GO' : 'nein'}** |`
+    );
+  }
+  L.push('');
+  L.push('Prüf-Last = Anteil aller gv3-Samples, die ein Mensch sehen müsste. Sie wird berichtet und entscheidet nicht (stand nicht im Kriterium vom 20.09.2026).');
+  L.push('');
+  L.push('## Einzelläufe gv3 (Recall / Fehlalarm)');
+  L.push('');
+  L.push(`| Achse | Schwelle | ${d.combos[0]?.perRunGv3.map((p) => p.label).join(' | ') ?? ''} |`);
+  L.push(`|---|---|${d.combos[0]?.perRunGv3.map(() => '---|').join('') ?? ''}`);
+  for (const c of d.combos) {
+    L.push(
+      `| ${c.axis} | ${thr(c.threshold)} | ${c.perRunGv3.map((p) => `${rate(p.stat.caught, p.stat.wrong)} / ${rate(p.stat.falseAlarms, p.stat.correct)}${p.pass ? ' ✓' : ''}`).join(' | ')} |`
+    );
+  }
+  L.push('');
+  if (known.length) {
+    L.push('## Bekannte Fehlerklassen (beschreibend, gepoolt über gv3 — entscheidet nicht)');
+    L.push('');
+    L.push('Gezählt wird die Gold-Seite: Fälle mit dieser Gold-Klasse, die falsch klassifiziert wurden (bei F-07 war im Register die Precision das Problem; diese Seite sieht die Tabelle nicht).');
+    L.push('');
+    L.push('| ID | Achse | Gold-Klasse | Gold | falsch | davon < 0,8 | davon < 1,0 |');
+    L.push('|---|---|---|---|---|---|---|');
+    for (const k of known) {
+      L.push(`| ${k.id} | ${k.axis} | ${k.goldClass} | ${k.gold} | ${k.wrong} | ${k.routedBelow08} | ${k.routedBelow10} |`);
+    }
+    L.push('');
+  }
+  L.push('## Inputs (SHA-256 der Lauf-Dateien)');
+  L.push('');
+  L.push('| Lauf | Golden | SHA-256 |');
+  L.push('|---|---|---|');
+  for (const i of d.inputs) L.push(`| ${i.label} | ${i.golden} | \`${i.fileSha256}\` |`);
+  L.push('');
+  return L.join('\n');
+}
