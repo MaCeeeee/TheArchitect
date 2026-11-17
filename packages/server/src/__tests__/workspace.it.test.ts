@@ -118,4 +118,18 @@ d('THE-768 — DELETE /api/workspaces cascades to ArchitectureElement', () => {
     expect(res.status).toBe(404);
     expect(await count(P, 'ws-a')).toBe(1);
   });
+  test('response and audit count what was removed: elements, edges, cross-workspace edges, certified', async () => {
+    await wsString(P, 'ws-a');
+    await el(P, 'a1', 'ws-a', 'notary-1'); await el(P, 'a2', 'ws-a');
+    await el(P, 'b1', 'ws-b');
+    await edge(P, 'a1', 'a2');   // internal
+    await edge(P, 'a2', 'b1');   // crosses into ws-b
+
+    const res = await request(app).delete(`/api/workspaces/${P}/ws-a`);
+
+    expect(res.body.removed).toEqual({ elements: 2, relationships: 2, crossWorkspaceRelationships: 1, certified: 1 });
+    expect(auditCreate).toHaveBeenCalledTimes(1);
+    expect(auditCreate.mock.calls[0][0].after).toEqual(res.body.removed);
+    expect(await count(P, 'ws-b')).toBe(1);   // the other end survives, only the edge is gone
+  });
 });

@@ -98,6 +98,19 @@ router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async 
     };
 
     await Workspace.deleteOne({ _id: workspaceId, projectId });
+    await createAuditEntry({
+      userId: String(req.user!._id),
+      projectId: String(projectId),
+      action: 'delete_workspace',
+      entityType: 'workspace',
+      entityId: String(workspaceId),
+      before: { name: workspace.name, source: workspace.source },
+      after: removed,
+      ip: req.ip || req.socket.remoteAddress || '',
+      userAgent: req.get('user-agent') || '',
+      // Certified elements removed by an editor bypass the notary — flag for review.
+      riskLevel: removed.certified > 0 ? 'high' : 'medium',
+    });
 
     res.json({ message: 'Workspace deleted', removed });
   } catch (err) {
