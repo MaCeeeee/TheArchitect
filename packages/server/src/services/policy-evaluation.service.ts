@@ -263,7 +263,7 @@ export async function evaluateAllForPolicy(
   projectId: string,
   policyId: string,
 ): Promise<void> {
-  const policy = await Policy.findById(policyId);
+  const policy = await Policy.findOne({ _id: policyId, projectId });
   if (!policy || !policy.enabled || (policy.status && policy.status !== 'active')) return;
 
   const now = new Date();

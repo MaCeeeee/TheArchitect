@@ -366,7 +366,7 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const proposalId = String(req.params.proposalId);
-      await rollbackProposal(proposalId);
+      await rollbackProposal(String(req.params.projectId), proposalId);
       res.json({ success: true });
     } catch (err) {
       const message = (err as Error).message || 'Rollback failed';

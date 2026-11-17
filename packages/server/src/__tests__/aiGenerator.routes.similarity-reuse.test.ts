@@ -25,7 +25,7 @@ const PROCESS_ID = 'process-test-id';
 
 jest.mock('../middleware/auth.middleware', () => ({
   authenticate: (req: any, _res: any, next: any) => {
-    req.user = { _id: TEST_USER_ID, role: 'admin' };
+    req.user = { _id: TEST_USER_ID, role: 'enterprise_architect' };
     next();
   },
 }));

@@ -3,6 +3,12 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { Workspace } from '../models/Workspace';
 import { runCypher } from '../config/neo4j';
+import { createAuditEntry } from '../middleware/audit.middleware';
+import { log } from '../config/logger';
+
+/** Neo4j integer → number (counts only). Kept local: no dependency on another domain's service. */
+const toCount = (v: unknown): number =>
+  typeof v === 'number' ? v : (v as { toNumber?: () => number } | null)?.toNumber?.() ?? 0;
 
 const router = Router();
 
@@ -58,25 +64,71 @@ router.put('/:projectId/:workspaceId', requireProjectAccess('editor'), async (re
   }
 });
 
-// DELETE /api/workspaces/:projectId/:workspaceId — delete workspace + cascade Neo4j elements
+// DELETE /api/workspaces/:projectId/:workspaceId — delete workspace + cascade its Neo4j elements.
+// Neo4j first: if it fails the workspace still exists and the delete can be retried. Deleting Mongo
+// first (before THE-767) left orphans whenever Neo4j failed.
+// Legacy workspaces with a BSON ObjectId _id are NOT found here (schema _id is String) — they are
+// normalised by scripts/workspace-integrity.ts --align (THE-769), not special-cased at request time.
 router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async (req: Request, res: Response) => {
   try {
     const { projectId, workspaceId } = req.params;
-    const result = await Workspace.findOneAndDelete({
-      _id: workspaceId,
-      projectId,
-    });
-    if (!result) {
+    const workspace = await Workspace.findOne({ _id: workspaceId, projectId });
+    if (!workspace) {
       return res.status(404).json({ error: 'Workspace not found' });
     }
-    // Cascade: delete all Neo4j elements and their connections for this workspace
-    await runCypher(
-      `MATCH (e:Element { projectId: $projectId, workspaceId: $workspaceId })
-       DETACH DELETE e`,
-      { projectId, workspaceId }
+
+    // Count and delete in one statement so the audit reports exactly what was removed.
+    const records = await runCypher(
+      `OPTIONAL MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
+       OPTIONAL MATCH (e)-[r]-(o)
+       WITH collect(DISTINCT e) AS els,
+            collect(DISTINCT r) AS rels,
+            collect(DISTINCT CASE WHEN o:ArchitectureElement AND coalesce(o.workspaceId, '') <> $workspaceId THEN r END) AS crossRels
+       WITH els, size(rels) AS relationships, size(crossRels) AS crossWorkspaceRelationships,
+            size([x IN els WHERE x.certifiedBy IS NOT NULL]) AS certified,
+            size([x IN rels WHERE x.certifiedBy IS NOT NULL]) AS certifiedRelationships
+       FOREACH (x IN els | DETACH DELETE x)
+       RETURN size(els) AS elements, relationships, crossWorkspaceRelationships, certified, certifiedRelationships`,
+      { projectId, workspaceId },
     );
-    res.json({ message: 'Workspace deleted' });
+    const row = records[0];
+    const removed = {
+      elements: toCount(row?.get('elements')),
+      relationships: toCount(row?.get('relationships')),
+      crossWorkspaceRelationships: toCount(row?.get('crossWorkspaceRelationships')),
+      certified: toCount(row?.get('certified')),
+      certifiedRelationships: toCount(row?.get('certifiedRelationships')),
+    };
+
+    // Neo4j is already gone: the audit entry must be written even if the Mongo delete fails.
+    let mongoDeleted = true;
+    let mongoError: unknown;
+    // If this fails after Neo4j succeeded the workspace reappears empty on reload — accepted; audit records mongoDeleted:false.
+    try {
+      await Workspace.deleteOne({ _id: workspaceId, projectId });
+    } catch (e) {
+      mongoDeleted = false;
+      mongoError = e;
+      log.error({ err: e, projectId, workspaceId }, '[workspaces] mongo delete failed after neo4j cascade');
+    }
+    await createAuditEntry({
+      userId: String(req.user!._id),
+      projectId: String(projectId),
+      action: 'delete_workspace',
+      entityType: 'workspace',
+      entityId: String(workspaceId),
+      before: { name: workspace.name, source: workspace.source },
+      after: { ...removed, mongoDeleted },
+      ip: req.ip || req.socket.remoteAddress || '',
+      userAgent: req.get('user-agent') || '',
+      // Certified elements or relationships removed by an editor bypass the notary — flag for review.
+      riskLevel: removed.certified > 0 || removed.certifiedRelationships > 0 ? 'high' : 'medium',
+    });
+    if (!mongoDeleted) throw mongoError;
+
+    res.json({ message: 'Workspace deleted', removed });
   } catch (err) {
+    log.error({ err, projectId: req.params.projectId, workspaceId: req.params.workspaceId }, '[workspaces] delete failed');
     res.status(500).json({ error: 'Failed to delete workspace' });
   }
 });

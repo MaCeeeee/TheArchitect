@@ -4,6 +4,7 @@
  */
 import { v4 as uuid } from 'uuid';
 import * as XLSX from 'xlsx';
+import { sanitizeSpreadsheet } from '../utils/zipBudget';
 import { XMLParser } from 'fast-xml-parser';
 import { runCypher, runCypherTransaction } from '../config/neo4j';
 import { ELEMENT_TYPES, ARCHIMATE_STANDARD_TYPES, LEGACY_TYPE_MAP, type OriginFields } from '@thearchitect/shared';
@@ -22,6 +23,8 @@ export interface ParsedElement {
   riskLevel: string;
   maturityLevel: number;
   properties?: Record<string, string>;
+  /** Stable key in the source system (connectors only) — the re-sync upsert key. */
+  externalId?: string;
 }
 
 export interface ParsedConnection {
@@ -223,7 +226,8 @@ export function parseCSV(text: string): ParseResult {
 // ─── Excel Parser ───
 
 export function parseExcel(buffer: Buffer): ParseResult {
-  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  // Security-Audit H11: SheetJS bekommt nur das budgetgeprüfte, neu gebaute Archiv.
+  const workbook = XLSX.read(sanitizeSpreadsheet(buffer), { type: 'buffer' });
   const elements: ParsedElement[] = [];
   const connections: ParsedConnection[] = [];
   const warnings: string[] = [];

@@ -13,7 +13,7 @@ import { Project } from '../models/Project';
 import { Connection, decryptCredentials } from '../models/Connection';
 import { getConnector } from './connectors';
 import type { ConnectorConfig, ConnectorType, AuthMethod } from './connectors';
-import { createTemporaryGraph, migrateTemporaryGraph } from './upload.service';
+import { importConnectorResult } from './connector-import.service';
 
 // ─── SyncLog Model ───
 
@@ -152,20 +152,11 @@ async function runIntegrationSync(
 
     const fetchResult = await connector.fetchData(config);
 
-    const parsed = {
-      elements: fetchResult.elements,
-      connections: fetchResult.connections,
-      warnings: fetchResult.warnings,
-      format: `connector:${conn.type}`,
-    };
-
-    const graph = await createTemporaryGraph(parsed, {
-      origin: {
-        sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
-        connectorConfigId: config.name,
-      },
+    const imported = await importConnectorResult(String(project._id), fetchResult, {
+      source: conn.type,
+      connectorConfigId: config.name,
+      sourceRef: (fetchResult.metadata?.url as string) ?? config.baseUrl,
     });
-    await migrateTemporaryGraph(graph.projectId, String(project._id));
 
     const durationMs = Date.now() - start;
 
@@ -177,8 +168,8 @@ async function runIntegrationSync(
           'integrations.$.lastSync': {
             status: 'success',
             syncedAt: new Date(),
-            elementsCreated: fetchResult.elements.length,
-            connectionsCreated: fetchResult.connections.length,
+            elementsCreated: imported.elementsCreated,
+            connectionsCreated: imported.connectionsSynced,
             durationMs,
             warnings: fetchResult.warnings,
           },
@@ -193,15 +184,15 @@ async function runIntegrationSync(
       connectionType: conn.type,
       connectionName: conn.name,
       status: 'success',
-      elementsCreated: fetchResult.elements.length,
-      connectionsCreated: fetchResult.connections.length,
+      elementsCreated: imported.elementsCreated,
+      connectionsCreated: imported.connectionsSynced,
       durationMs,
       warnings: fetchResult.warnings,
       triggeredBy: 'scheduler',
       syncedAt: new Date(),
     });
 
-    console.log(`[SyncScheduler] Synced ${conn.type}:${conn.name} → project ${project._id} (${fetchResult.elements.length} elements, ${durationMs}ms)`);
+    console.log(`[SyncScheduler] Synced ${conn.type}:${conn.name} → project ${project._id} (${imported.elementsCreated} created, ${imported.elementsUpdated} updated, ${durationMs}ms)`);
   } catch (err: any) {
     const durationMs = Date.now() - start;
 

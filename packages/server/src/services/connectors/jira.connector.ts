@@ -16,6 +16,7 @@ import { v4 as uuid } from 'uuid';
 import type { IConnector, ICostEnrichmentConnector, ConnectorConfig, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 const JIRA_TYPE_MAP: Record<string, string> = {
   'epic': 'work_package',
@@ -134,6 +135,7 @@ export class JiraConnector implements IConnector, ICostEnrichmentConnector {
 
         elements.push({
           id: elemId,
+          externalId: issue.key,
           name: `[${issue.key}] ${fields.summary || 'Untitled'}`,
           type,
           layer: this.inferLayer(type),
@@ -349,7 +351,7 @@ export class JiraConnector implements IConnector, ICostEnrichmentConnector {
         break;
     }
 
-    return fetch(url, { headers });
+    return safeFetch(url, { headers });
   }
 
   private mapType(jiraType: string, rules: ConnectorConfig['mappingRules']): string {

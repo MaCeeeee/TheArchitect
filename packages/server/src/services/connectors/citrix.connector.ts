@@ -15,6 +15,7 @@ import { v4 as uuid } from 'uuid';
 import type { ConnectorConfig, IConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
 import { ELEMENT_TYPES } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Citrix Object → ArchiMate Mapping ───
 
@@ -318,7 +319,7 @@ export class CitrixConnector implements IConnector {
     const clientId = config.credentials.client_id || '';
     const clientSecret = config.credentials.client_secret || '';
 
-    const resp = await fetch('https://api-us.cloud.com/cctrustoauth2/root/tokens/clients', {
+    const resp = await safeFetch('https://api-us.cloud.com/cctrustoauth2/root/tokens/clients', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -358,7 +359,7 @@ export class CitrixConnector implements IConnector {
       }
     }
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers,
       signal: AbortSignal.timeout(30000),

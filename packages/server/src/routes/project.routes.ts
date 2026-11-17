@@ -9,6 +9,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { audit } from '../middleware/audit.middleware';
+import { rateLimit } from '../middleware/rateLimit.middleware';
 import { PERMISSIONS, isPlatformAdmin } from '@thearchitect/shared';
 
 const router = Router();
@@ -302,9 +303,14 @@ router.get(
   }
 );
 
+// Security-Audit H10: kann eine Einladungs-Mail an eine frei gewählte Adresse
+// auslösen — pro IP begrenzt.
+const collaboratorInviteLimiter = rateLimit({ windowMs: 60 * 60_000, max: 30, name: 'collaborator-invite' });
+
 // Add collaborator by email — if user exists: direct add, otherwise: send invitation email
 router.post(
   '/:id/collaborators',
+  collaboratorInviteLimiter,
   requirePermission(PERMISSIONS.PROJECT_MANAGE_COLLABORATORS),
   requireProjectAccess('editor'),
   audit({ action: 'add_collaborator', entityType: 'project', riskLevel: 'medium' }),

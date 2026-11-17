@@ -1,0 +1,678 @@
+{
+  "decision": {
+    "layer1": "NO-GO",
+    "goCombos": [],
+    "combos": [
+      {
+        "axis": "obligationKind",
+        "threshold": 0.8,
+        "pooledGv3": {
+          "threshold": 0.8,
+          "wrong": 73,
+          "correct": 277,
+          "caught": 11,
+          "falseAlarms": 4,
+          "recall": 0.1506849315068493,
+          "falseAlarmRate": 0.01444043321299639
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 5,
+              "falseAlarms": 1,
+              "recall": 0.29411764705882354,
+              "falseAlarmRate": 0.018867924528301886
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 2,
+              "falseAlarms": 1,
+              "recall": 0.11764705882352941,
+              "falseAlarmRate": 0.018867924528301886
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 2,
+              "falseAlarms": 0,
+              "recall": 0.15384615384615385,
+              "falseAlarmRate": 0
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 2,
+              "falseAlarms": 2,
+              "recall": 0.15384615384615385,
+              "falseAlarmRate": 0.03508771929824561
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 0,
+              "falseAlarms": 0,
+              "recall": 0,
+              "falseAlarmRate": 0
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 0,
+        "stablePass": false,
+        "pooledGv2": {
+          "threshold": 0.8,
+          "wrong": 30,
+          "correct": 110,
+          "caught": 1,
+          "falseAlarms": 1,
+          "recall": 0.03333333333333333,
+          "falseAlarmRate": 0.00909090909090909
+        },
+        "replicationPass": false,
+        "reviewLoad": 0.04285714285714286,
+        "go": false,
+        "oneGoldSetOnly": false
+      },
+      {
+        "axis": "obligationKind",
+        "threshold": 1,
+        "pooledGv3": {
+          "threshold": 1,
+          "wrong": 73,
+          "correct": 277,
+          "caught": 22,
+          "falseAlarms": 10,
+          "recall": 0.3013698630136986,
+          "falseAlarmRate": 0.036101083032490974
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 1,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 6,
+              "falseAlarms": 1,
+              "recall": 0.35294117647058826,
+              "falseAlarmRate": 0.018867924528301886
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 1,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 6,
+              "falseAlarms": 2,
+              "recall": 0.35294117647058826,
+              "falseAlarmRate": 0.03773584905660377
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 1,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 3,
+              "falseAlarms": 2,
+              "recall": 0.23076923076923078,
+              "falseAlarmRate": 0.03508771929824561
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 1,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 4,
+              "falseAlarms": 2,
+              "recall": 0.3076923076923077,
+              "falseAlarmRate": 0.03508771929824561
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 1,
+              "wrong": 13,
+              "correct": 57,
+              "caught": 3,
+              "falseAlarms": 3,
+              "recall": 0.23076923076923078,
+              "falseAlarmRate": 0.05263157894736842
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 0,
+        "stablePass": false,
+        "pooledGv2": {
+          "threshold": 1,
+          "wrong": 30,
+          "correct": 110,
+          "caught": 5,
+          "falseAlarms": 2,
+          "recall": 0.16666666666666666,
+          "falseAlarmRate": 0.01818181818181818
+        },
+        "replicationPass": false,
+        "reviewLoad": 0.09142857142857143,
+        "go": false,
+        "oneGoldSetOnly": false
+      },
+      {
+        "axis": "partyRole",
+        "threshold": 0.8,
+        "pooledGv3": {
+          "threshold": 0.8,
+          "wrong": 103,
+          "correct": 247,
+          "caught": 13,
+          "falseAlarms": 11,
+          "recall": 0.1262135922330097,
+          "falseAlarmRate": 0.044534412955465584
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 4,
+              "falseAlarms": 7,
+              "recall": 0.23529411764705882,
+              "falseAlarmRate": 0.1320754716981132
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 21,
+              "correct": 49,
+              "caught": 5,
+              "falseAlarms": 1,
+              "recall": 0.23809523809523808,
+              "falseAlarmRate": 0.02040816326530612
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 22,
+              "correct": 48,
+              "caught": 2,
+              "falseAlarms": 0,
+              "recall": 0.09090909090909091,
+              "falseAlarmRate": 0
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 22,
+              "correct": 48,
+              "caught": 2,
+              "falseAlarms": 1,
+              "recall": 0.09090909090909091,
+              "falseAlarmRate": 0.020833333333333332
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 21,
+              "correct": 49,
+              "caught": 0,
+              "falseAlarms": 2,
+              "recall": 0,
+              "falseAlarmRate": 0.04081632653061224
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 0,
+        "stablePass": false,
+        "pooledGv2": null,
+        "replicationPass": null,
+        "reviewLoad": 0.06857142857142857,
+        "go": false,
+        "oneGoldSetOnly": false
+      },
+      {
+        "axis": "partyRole",
+        "threshold": 1,
+        "pooledGv3": {
+          "threshold": 1,
+          "wrong": 103,
+          "correct": 247,
+          "caught": 30,
+          "falseAlarms": 20,
+          "recall": 0.2912621359223301,
+          "falseAlarmRate": 0.08097165991902834
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 1,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 6,
+              "falseAlarms": 8,
+              "recall": 0.35294117647058826,
+              "falseAlarmRate": 0.1509433962264151
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 1,
+              "wrong": 21,
+              "correct": 49,
+              "caught": 11,
+              "falseAlarms": 3,
+              "recall": 0.5238095238095238,
+              "falseAlarmRate": 0.061224489795918366
+            },
+            "pass": true
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 1,
+              "wrong": 22,
+              "correct": 48,
+              "caught": 6,
+              "falseAlarms": 2,
+              "recall": 0.2727272727272727,
+              "falseAlarmRate": 0.041666666666666664
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 1,
+              "wrong": 22,
+              "correct": 48,
+              "caught": 2,
+              "falseAlarms": 4,
+              "recall": 0.09090909090909091,
+              "falseAlarmRate": 0.08333333333333333
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 1,
+              "wrong": 21,
+              "correct": 49,
+              "caught": 5,
+              "falseAlarms": 3,
+              "recall": 0.23809523809523808,
+              "falseAlarmRate": 0.061224489795918366
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 1,
+        "stablePass": false,
+        "pooledGv2": null,
+        "replicationPass": null,
+        "reviewLoad": 0.14285714285714285,
+        "go": false,
+        "oneGoldSetOnly": false
+      },
+      {
+        "axis": "provisionKind",
+        "threshold": 0.8,
+        "pooledGv3": {
+          "threshold": 0.8,
+          "wrong": 80,
+          "correct": 270,
+          "caught": 14,
+          "falseAlarms": 6,
+          "recall": 0.175,
+          "falseAlarmRate": 0.022222222222222223
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 15,
+              "correct": 55,
+              "caught": 5,
+              "falseAlarms": 2,
+              "recall": 0.3333333333333333,
+              "falseAlarmRate": 0.03636363636363636
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 2,
+              "falseAlarms": 3,
+              "recall": 0.125,
+              "falseAlarmRate": 0.05555555555555555
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 3,
+              "falseAlarms": 0,
+              "recall": 0.17647058823529413,
+              "falseAlarmRate": 0
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 3,
+              "falseAlarms": 1,
+              "recall": 0.1875,
+              "falseAlarmRate": 0.018518518518518517
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 0.8,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 1,
+              "falseAlarms": 0,
+              "recall": 0.0625,
+              "falseAlarmRate": 0
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 0,
+        "stablePass": false,
+        "pooledGv2": {
+          "threshold": 0.8,
+          "wrong": 30,
+          "correct": 110,
+          "caught": 4,
+          "falseAlarms": 5,
+          "recall": 0.13333333333333333,
+          "falseAlarmRate": 0.045454545454545456
+        },
+        "replicationPass": false,
+        "reviewLoad": 0.05714285714285714,
+        "go": false,
+        "oneGoldSetOnly": false
+      },
+      {
+        "axis": "provisionKind",
+        "threshold": 1,
+        "pooledGv3": {
+          "threshold": 1,
+          "wrong": 80,
+          "correct": 270,
+          "caught": 31,
+          "falseAlarms": 15,
+          "recall": 0.3875,
+          "falseAlarmRate": 0.05555555555555555
+        },
+        "pooledGv3Pass": false,
+        "perRunGv3": [
+          {
+            "label": "gv3-run1",
+            "stat": {
+              "threshold": 1,
+              "wrong": 15,
+              "correct": 55,
+              "caught": 6,
+              "falseAlarms": 4,
+              "recall": 0.4,
+              "falseAlarmRate": 0.07272727272727272
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run2",
+            "stat": {
+              "threshold": 1,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 6,
+              "falseAlarms": 5,
+              "recall": 0.375,
+              "falseAlarmRate": 0.09259259259259259
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run3",
+            "stat": {
+              "threshold": 1,
+              "wrong": 17,
+              "correct": 53,
+              "caught": 8,
+              "falseAlarms": 1,
+              "recall": 0.47058823529411764,
+              "falseAlarmRate": 0.018867924528301886
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run4",
+            "stat": {
+              "threshold": 1,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 5,
+              "falseAlarms": 1,
+              "recall": 0.3125,
+              "falseAlarmRate": 0.018518518518518517
+            },
+            "pass": false
+          },
+          {
+            "label": "gv3-run5",
+            "stat": {
+              "threshold": 1,
+              "wrong": 16,
+              "correct": 54,
+              "caught": 6,
+              "falseAlarms": 4,
+              "recall": 0.375,
+              "falseAlarmRate": 0.07407407407407407
+            },
+            "pass": false
+          }
+        ],
+        "stableRuns": 0,
+        "stablePass": false,
+        "pooledGv2": {
+          "threshold": 1,
+          "wrong": 30,
+          "correct": 110,
+          "caught": 9,
+          "falseAlarms": 10,
+          "recall": 0.3,
+          "falseAlarmRate": 0.09090909090909091
+        },
+        "replicationPass": false,
+        "reviewLoad": 0.13142857142857142,
+        "go": false,
+        "oneGoldSetOnly": false
+      }
+    ],
+    "inputs": [
+      {
+        "label": "gv3-run1",
+        "golden": "gv3",
+        "fileSha256": "b31f401748034dfe7ae2ecf46839ba674c12918c07647fa2800945bb6b3eec66",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv3-run2",
+        "golden": "gv3",
+        "fileSha256": "3f72f11544f535281af4153b3886f66fb28dd4667a0c25ab8e0165a4a67263bb",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv3-run3",
+        "golden": "gv3",
+        "fileSha256": "e13aacbbac066e1aeb0da972b49eab7ae503225216f484e3b614ddf2605cbdc8",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv3-run4",
+        "golden": "gv3",
+        "fileSha256": "472177033ea25a3fe5966297730bbc78d1d4b6ad5681372241cbaa4b3e45aff5",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv3-run5",
+        "golden": "gv3",
+        "fileSha256": "976768155b78df656f0ef92aff80a88b56f3a25d9d98abe8fcb21a559bd82d43",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv2-run1",
+        "golden": "gv2",
+        "fileSha256": "7f6b8b01f7d4f500b95af1687f16167a9f860176834b2afd127ebc1ca72d35d8",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      },
+      {
+        "label": "gv2-run2",
+        "golden": "gv2",
+        "fileSha256": "b227cd275cba3fcfc62858a99ee6f2c44bbcace331ca25779b9ae015aee8e728",
+        "openByAxis": {
+          "obligationKind": 0,
+          "partyRole": 0,
+          "provisionKind": 0
+        }
+      }
+    ]
+  },
+  "known": [
+    {
+      "id": "F-04",
+      "axis": "obligationKind",
+      "goldClass": "prohibition",
+      "gold": 15,
+      "wrong": 7,
+      "routedBelow08": 1,
+      "routedBelow10": 4
+    },
+    {
+      "id": "F-05",
+      "axis": "partyRole",
+      "goldClass": "supervisory_authority",
+      "gold": 70,
+      "wrong": 47,
+      "routedBelow08": 3,
+      "routedBelow10": 9
+    },
+    {
+      "id": "F-06",
+      "axis": "provisionKind",
+      "goldClass": "procedural",
+      "gold": 70,
+      "wrong": 50,
+      "routedBelow08": 8,
+      "routedBelow10": 17
+    },
+    {
+      "id": "F-07",
+      "axis": "partyRole",
+      "goldClass": "member_state",
+      "gold": 30,
+      "wrong": 5,
+      "routedBelow08": 0,
+      "routedBelow10": 0
+    }
+  ]
+}

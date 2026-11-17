@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
-import axios from 'axios';
+import { safeFetch } from '../utils/safeFetch';
 import { runCypher, serializeNeo4jProperties } from '../config/neo4j';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
@@ -167,6 +167,8 @@ router.use(authenticate);
 
 // All routes with :projectId require project membership
 router.use('/:projectId', requireProjectAccess('viewer'));
+// Security-Audit H4: Schreibrouten setzen zusaetzlich requireProjectAccess('editor')
+// — die System-Rolle allein sagt nichts ueber die Rolle im Projekt.
 
 // Get all elements for a project
 router.get(
@@ -229,6 +231,7 @@ const MAX_REINDEX = 500;
 
 router.post(
   '/:projectId/elements/reindex',
+  requireProjectAccess('editor'),
   rateLimit({ windowMs: 60 * 60_000, max: 5, name: 'similarity-reindex' }),
   requirePermission(PERMISSIONS.ELEMENT_UPDATE),
   audit({ action: 'similarity_reindex', entityType: 'project', riskLevel: 'medium' }),
@@ -485,6 +488,7 @@ const ResolveBodySchema = z.object({
 
 router.post(
   '/:projectId/redundancies/resolve',
+  requireProjectAccess('editor'),
   rateLimit({ windowMs: 60_000, max: 10, name: 'redundancy-resolve' }),
   requirePermission(PERMISSIONS.ELEMENT_DELETE),
   audit({ action: 'redundancy_resolve', entityType: 'project', riskLevel: 'high' }),
@@ -583,6 +587,7 @@ router.get(
 // Create element
 router.post(
   '/:projectId/elements',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   audit({ action: 'create_element', entityType: 'element', getAfter: (req) => req.body }),
   async (req: Request, res: Response) => {
@@ -692,6 +697,7 @@ router.post(
 // Update element
 router.put(
   '/:projectId/elements/:elementId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_UPDATE),
   audit({ action: 'update_element', entityType: 'element', getAfter: (req) => req.body }),
   async (req: Request, res: Response) => {
@@ -849,6 +855,7 @@ router.get(
 // Delete element
 router.delete(
   '/:projectId/elements/:elementId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_DELETE),
   audit({ action: 'delete_element', entityType: 'element', riskLevel: 'high' }),
   async (req: Request, res: Response) => {
@@ -962,6 +969,7 @@ router.get(
 // Create connection
 router.post(
   '/:projectId/connections',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.CONNECTION_CREATE),
   audit({ action: 'create_connection', entityType: 'connection', getAfter: (req) => req.body }),
   async (req: Request, res: Response) => {
@@ -1032,6 +1040,7 @@ const HealConnectionsBodySchema = z.object({
 
 router.post(
   '/:projectId/heal-connections',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.CONNECTION_CREATE),
   audit({ action: 'heal_connections', entityType: 'connection', riskLevel: 'low' }),
   async (req: Request, res: Response) => {
@@ -1190,6 +1199,7 @@ router.post(
 // Delete connection
 router.delete(
   '/:projectId/connections/:connectionId',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.CONNECTION_DELETE),
   audit({ action: 'delete_connection', entityType: 'connection', riskLevel: 'medium' }),
   async (req: Request, res: Response) => {
@@ -1237,6 +1247,7 @@ router.get(
 // BPMN Import endpoint
 router.post(
   '/:projectId/import/bpmn',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   audit({ action: 'import_bpmn', entityType: 'project', riskLevel: 'medium' }),
   async (req: Request, res: Response) => {
@@ -1316,6 +1327,7 @@ router.post(
 // n8n Import endpoint (same pattern as BPMN import)
 router.post(
   '/:projectId/import/n8n',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   audit({ action: 'import_n8n', entityType: 'project', riskLevel: 'medium' }),
   async (req: Request, res: Response) => {
@@ -1398,6 +1410,7 @@ router.post(
 // n8n API proxy — fetch workflows from a remote n8n instance (avoids CORS)
 router.post(
   '/:projectId/import/n8n/fetch',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   async (req: Request, res: Response) => {
     try {
@@ -1408,17 +1421,19 @@ router.post(
         return;
       }
 
-      const baseUrl = n8nUrl.replace(/\/+$/, '');
+      const baseUrl = String(n8nUrl).replace(/\/+$/, '');
       const url = workflowId
-        ? `${baseUrl}/api/v1/workflows/${workflowId}`
+        ? `${baseUrl}/api/v1/workflows/${encodeURIComponent(String(workflowId))}`
         : `${baseUrl}/api/v1/workflows?limit=100`;
 
-      const response = await axios.get(url, {
-        headers: { 'X-N8N-API-KEY': apiKey },
-        timeout: 15_000,
+      // Security-Audit H7: nutzergewählte Adresse — nur öffentliche Ziele.
+      const response = await safeFetch(url, {
+        headers: { 'X-N8N-API-KEY': String(apiKey) },
+        timeoutMs: 15_000,
       });
+      if (!response.ok) throw new Error(`n8n API ${response.status}`);
 
-      res.json({ success: true, data: response.data });
+      res.json({ success: true, data: await response.json() });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to fetch from n8n';
       console.error('n8n fetch error:', msg);
@@ -1430,6 +1445,7 @@ router.post(
 // CSV Import endpoint (same pattern as BPMN/n8n import)
 router.post(
   '/:projectId/import/csv',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_CREATE),
   audit({ action: 'import_csv', entityType: 'project', riskLevel: 'medium' }),
   async (req: Request, res: Response) => {
@@ -1619,6 +1635,7 @@ router.get(
 
 router.patch(
   '/:projectId/criticality/settings',
+  requireProjectAccess('editor'),
   requirePermission(PERMISSIONS.ELEMENT_UPDATE),
   async (req: Request, res: Response) => {
     try {

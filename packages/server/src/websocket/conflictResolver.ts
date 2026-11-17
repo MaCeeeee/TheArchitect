@@ -16,19 +16,26 @@ interface ElementVersion {
 const elementVersions = new Map<string, ElementVersion>();
 const pendingChanges = new Map<string, ChangeOperation[]>();
 
-export function getElementVersion(elementId: string): ElementVersion {
-  if (!elementVersions.has(elementId)) {
-    elementVersions.set(elementId, {
+// Versionen und Locks gelten je PROJEKT: Element-Ids kommen vom Client, und
+// ein Socket darf über eine fremde Id nie den Zustand eines anderen
+// Mandanten berühren (Lock, Version) oder ihn sehen (locks:state).
+const scoped = (projectId: string, elementId: string) => `${projectId}\u0000${elementId}`;
+
+export function getElementVersion(projectId: string, elementId: string): ElementVersion {
+  const key = scoped(projectId, elementId);
+  if (!elementVersions.has(key)) {
+    elementVersions.set(key, {
       elementId,
       version: 0,
       lastModifiedBy: '',
       lastModifiedAt: 0,
     });
   }
-  return elementVersions.get(elementId)!;
+  return elementVersions.get(key)!;
 }
 
 export function resolveConflict(
+  projectId: string,
   elementId: string,
   userId: string,
   changes: Record<string, unknown>,
@@ -39,7 +46,7 @@ export function resolveConflict(
   newVersion: number;
   conflict?: { field: string; serverValue: unknown; clientValue: unknown }[];
 } {
-  const current = getElementVersion(elementId);
+  const current = getElementVersion(projectId, elementId);
 
   // If client provides a version and it matches, accept directly (no conflict)
   if (clientVersion === undefined || clientVersion >= current.version) {
@@ -72,58 +79,62 @@ export function resolveConflict(
 }
 
 // Element locking
-const elementLocks = new Map<string, { userId: string; userName: string; lockedAt: number }>();
+const elementLocks = new Map<string, { projectId: string; elementId: string; userId: string; userName: string; lockedAt: number }>();
 const LOCK_TIMEOUT = 30_000; // 30 seconds
 
 export function lockElement(
+  projectId: string,
   elementId: string,
   userId: string,
   userName: string
 ): { success: boolean; lockedBy?: string } {
-  const existing = elementLocks.get(elementId);
+  const key = scoped(projectId, elementId);
+  const existing = elementLocks.get(key);
 
   if (existing) {
     // Check if lock expired
     if (Date.now() - existing.lockedAt > LOCK_TIMEOUT) {
-      elementLocks.delete(elementId);
+      elementLocks.delete(key);
     } else if (existing.userId !== userId) {
       return { success: false, lockedBy: existing.userName };
     }
   }
 
-  elementLocks.set(elementId, { userId, userName, lockedAt: Date.now() });
+  elementLocks.set(key, { projectId, elementId, userId, userName, lockedAt: Date.now() });
   return { success: true };
 }
 
-export function unlockElement(elementId: string, userId: string): boolean {
-  const lock = elementLocks.get(elementId);
+export function unlockElement(projectId: string, elementId: string, userId: string): boolean {
+  const key = scoped(projectId, elementId);
+  const lock = elementLocks.get(key);
   if (lock && lock.userId === userId) {
-    elementLocks.delete(elementId);
+    elementLocks.delete(key);
     return true;
   }
   return false;
 }
 
-export function unlockAllForUser(userId: string): string[] {
+/** Gibt alle Locks des Nutzers in diesem Projekt frei; liefert die Element-Ids. */
+export function unlockAllForUser(projectId: string, userId: string): string[] {
   const unlocked: string[] = [];
-  for (const [elementId, lock] of elementLocks) {
-    if (lock.userId === userId) {
-      elementLocks.delete(elementId);
-      unlocked.push(elementId);
+  for (const [key, lock] of elementLocks) {
+    if (lock.projectId === projectId && lock.userId === userId) {
+      elementLocks.delete(key);
+      unlocked.push(lock.elementId);
     }
   }
   return unlocked;
 }
 
-export function getLockedElements(): { elementId: string; userId: string; userName: string }[] {
+export function getLockedElements(projectId: string): { elementId: string; userId: string; userName: string }[] {
   const now = Date.now();
   const result: { elementId: string; userId: string; userName: string }[] = [];
 
-  for (const [elementId, lock] of elementLocks) {
+  for (const [key, lock] of elementLocks) {
     if (now - lock.lockedAt > LOCK_TIMEOUT) {
-      elementLocks.delete(elementId);
-    } else {
-      result.push({ elementId, userId: lock.userId, userName: lock.userName });
+      elementLocks.delete(key);
+    } else if (lock.projectId === projectId) {
+      result.push({ elementId: lock.elementId, userId: lock.userId, userName: lock.userName });
     }
   }
 

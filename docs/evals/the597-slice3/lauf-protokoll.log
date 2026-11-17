@@ -1,0 +1,35 @@
+
+> @thearchitect/server@0.1.0 typing:eval
+> ts-node src/evals/runTypingEval.ts --golden src/evals/golden/typing.gv3.json --samples 5
+
+[typing-eval] k=5 · 70 Fälle → 350 LLM-Aufrufe
+[typing-eval] Report (tp-4) → /Users/mac_macee/javis-the597-s3/packages/server/src/evals/reports/typing-gv3-sc5.md / .json
+[slice3] gv3-run3 fertig
+
+> @thearchitect/server@0.1.0 typing:eval
+> ts-node src/evals/runTypingEval.ts --golden src/evals/golden/typing.gv3.json --samples 5
+
+[typing-eval] k=5 · 70 Fälle → 350 LLM-Aufrufe
+[typing-eval] Report (tp-4) → /Users/mac_macee/javis-the597-s3/packages/server/src/evals/reports/typing-gv3-sc5.md / .json
+[slice3] gv3-run4 fertig
+
+> @thearchitect/server@0.1.0 typing:eval
+> ts-node src/evals/runTypingEval.ts --golden src/evals/golden/typing.gv3.json --samples 5
+
+[typing-eval] k=5 · 70 Fälle → 350 LLM-Aufrufe
+[typing-eval] Report (tp-4) → /Users/mac_macee/javis-the597-s3/packages/server/src/evals/reports/typing-gv3-sc5.md / .json
+[slice3] gv3-run5 fertig
+
+> @thearchitect/server@0.1.0 typing:eval
+> ts-node src/evals/runTypingEval.ts --golden src/evals/golden/typing.gv2.json --samples 5
+
+[typing-eval] k=5 · 70 Fälle → 350 LLM-Aufrufe
+[typing-eval] Report (tp-4) → /Users/mac_macee/javis-the597-s3/packages/server/src/evals/reports/typing-gv2-sc5.md / .json
+[slice3] gv2-run1 fertig
+
+> @thearchitect/server@0.1.0 typing:eval
+> ts-node src/evals/runTypingEval.ts --golden src/evals/golden/typing.gv2.json --samples 5
+
+[typing-eval] k=5 · 70 Fälle → 350 LLM-Aufrufe
+[typing-eval] Report (tp-4) → /Users/mac_macee/javis-the597-s3/packages/server/src/evals/reports/typing-gv2-sc5.md / .json
+[slice3] gv2-run2 fertig

@@ -246,7 +246,7 @@ router.post(
       }
 
       const { Standard } = await import('../models/Standard');
-      const standard = await Standard.findById(standardId);
+      const standard = await Standard.findOne({ _id: standardId, projectId: pid(req) });
       if (!standard) return res.status(404).json({ error: 'Standard not found' });
 
       const crypto = await import('crypto');
@@ -356,7 +356,7 @@ router.get(
   requirePermission(PERMISSIONS.GOVERNANCE_VIEW),
   async (req: Request, res: Response) => {
     try {
-      const standard = await getStandard(sid(req));
+      const standard = await getStandard(pid(req), sid(req));
       if (!standard) return res.status(404).json({ error: 'Standard not found' });
       res.json(standard);
     } catch (err) {
@@ -373,7 +373,8 @@ router.delete(
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
-      await deleteStandard(sid(req));
+      const deleted = await deleteStandard(pid(req), sid(req));
+      if (!deleted) return res.status(404).json({ error: 'Standard not found' });
       res.json({ success: true });
     } catch (err) {
       console.error('[Standards] Delete error:', err);
@@ -497,7 +498,8 @@ router.delete(
   requirePermission(PERMISSIONS.GOVERNANCE_MANAGE_POLICIES),
   async (req: Request, res: Response) => {
     try {
-      await deleteMapping(String(req.params.mappingId));
+      const deleted = await deleteMapping(pid(req), String(req.params.mappingId));
+      if (!deleted) return res.status(404).json({ error: 'Mapping not found' });
       res.json({ success: true });
     } catch (err) {
       console.error('[Standards] Mapping delete error:', err);

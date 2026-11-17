@@ -9,6 +9,10 @@ import multer from 'multer';
 import { v4 as uuid } from 'uuid';
 import { authenticate } from '../middleware/auth.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
+// Security-Audit H4: apply-* schreibt ins Modell — Projektrolle 'editor' und
+// System-Permission, nicht nur Lesezugriff.
+import { requirePermission } from '../middleware/rbac.middleware';
+import { PERMISSIONS } from '@thearchitect/shared';
 import { rateLimit } from '../middleware/rateLimit.middleware';
 import { runCypher } from '../config/neo4j';
 import { Project } from '../models/Project';
@@ -105,7 +109,8 @@ interface ApplyRequest {
 
 router.post(
   '/projects/:projectId/processes/:processId/apply-activities',
-  requireProjectAccess('viewer'),
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ELEMENT_CREATE, PERMISSIONS.CONNECTION_CREATE),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const processId = String(req.params.processId);
@@ -359,7 +364,8 @@ interface ReusedItem {
 
 router.post(
   '/projects/:projectId/processes/:processId/apply-data-objects',
-  requireProjectAccess('viewer'),
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ELEMENT_CREATE, PERMISSIONS.CONNECTION_CREATE),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const processId = String(req.params.processId);
@@ -591,7 +597,8 @@ interface ApplyDataObjectDecisionsRequest {
 
 router.post(
   '/projects/:projectId/processes/:processId/apply-data-object-decisions',
-  requireProjectAccess('viewer'),
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ELEMENT_CREATE, PERMISSIONS.CONNECTION_CREATE),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const processId = String(req.params.processId);
@@ -803,7 +810,8 @@ interface ApplyProcessesRequest {
 
 router.post(
   '/projects/:projectId/capabilities/:capabilityId/apply-processes',
-  requireProjectAccess('viewer'),
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ELEMENT_CREATE, PERMISSIONS.CONNECTION_CREATE),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const capabilityId = String(req.params.capabilityId);
@@ -1064,7 +1072,8 @@ interface ApplyHierarchyRequest {
 
 router.post(
   '/projects/:projectId/architecture/apply-hierarchy',
-  requireProjectAccess('viewer'),
+  requireProjectAccess('editor'),
+  requirePermission(PERMISSIONS.ELEMENT_CREATE, PERMISSIONS.CONNECTION_CREATE),
   async (req: Request, res: Response) => {
     const projectId = String(req.params.projectId);
     const body = req.body as ApplyHierarchyRequest;

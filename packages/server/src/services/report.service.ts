@@ -787,8 +787,14 @@ async function renderInventoryReport(doc: PDFKit.PDFDocument, project: { name: s
 
 // ─── Roadmap Report ──────────────────────────────────────
 
-async function renderRoadmapReport(doc: PDFKit.PDFDocument, project: { name: string }, roadmapId: string) {
-  const roadmap = await TransformationRoadmap.findById(roadmapId).lean();
+async function renderRoadmapReport(
+  doc: PDFKit.PDFDocument,
+  project: { name: string },
+  projectId: string,
+  roadmapId: string,
+) {
+  // Security-Audit H2: nur Roadmaps DIESES Projekts.
+  const roadmap = await TransformationRoadmap.findOne({ _id: roadmapId, projectId }).lean();
   if (!roadmap) throw new Error('Roadmap not found');
 
   const subtitle = `Generated ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
@@ -907,9 +913,10 @@ const POSITION_COLORS: Record<string, string> = {
 async function renderOracleReport(
   doc: PDFKit.PDFDocument,
   project: { name: string } | null,
+  projectId: string,
   assessmentId: string,
 ) {
-  const assessment = await OracleAssessment.findById(assessmentId).lean();
+  const assessment = await OracleAssessment.findOne({ _id: assessmentId, projectId }).lean();
   if (!assessment) throw new Error('Oracle assessment not found');
 
   const verdict = assessment.verdict as Record<string, unknown>;
@@ -1293,7 +1300,7 @@ export async function generateReport(
       break;
     case 'simulation': {
       if (!options?.runId) throw new Error('runId is required for simulation reports');
-      const run = await SimulationRun.findById(options.runId).lean();
+      const run = await SimulationRun.findOne({ _id: options.runId, projectId }).lean();
       if (!run) throw new Error('Simulation run not found');
       await renderSimulationReport(doc, project, run as unknown as Record<string, unknown>);
       break;
@@ -1303,12 +1310,12 @@ export async function generateReport(
       break;
     case 'roadmap': {
       if (!options?.roadmapId) throw new Error('roadmapId is required for roadmap reports');
-      await renderRoadmapReport(doc, project, options.roadmapId);
+      await renderRoadmapReport(doc, project, projectId, options.roadmapId);
       break;
     }
     case 'oracle': {
       if (!options?.assessmentId) throw new Error('assessmentId is required for oracle reports');
-      await renderOracleReport(doc, project, options.assessmentId);
+      await renderOracleReport(doc, project, projectId, options.assessmentId);
       break;
     }
     default:

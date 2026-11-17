@@ -14,6 +14,7 @@
 import { v4 as uuid } from 'uuid';
 import type { ConnectorConfig, IConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { ParsedElement, ParsedConnection } from '../upload.service';
+import { safeFetch } from '../../utils/safeFetch';
 
 // ─── Salesforce Object → ArchiMate Mapping ───
 
@@ -253,7 +254,7 @@ export class SalesforceConnector implements IConnector {
       password: `${config.credentials.password || ''}${config.credentials.security_token || ''}`,
     });
 
-    const resp = await fetch(loginUrl, {
+    const resp = await safeFetch(loginUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
@@ -280,7 +281,7 @@ export class SalesforceConnector implements IConnector {
   private async sfRequest(config: ConnectorConfig, token: AuthToken, path: string): Promise<Response> {
     const url = `${token.instanceUrl}${path}`;
 
-    const resp = await fetch(url, {
+    const resp = await safeFetch(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token.accessToken}`,

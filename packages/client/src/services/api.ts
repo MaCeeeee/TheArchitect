@@ -144,6 +144,11 @@ export const authAPI = {
   mfaVerify: (mfaToken: string, code: string) =>
     api.post('/auth/mfa/verify', { mfaToken, code }),
 
+  // Tauscht den Einmal-Code aus dem OAuth-Callback gegen Tokens; das
+  // Bindungs-Cookie des Browsers muss mitgehen.
+  oauthExchange: (code: string) =>
+    api.post('/auth/oauth/exchange', { code }, { withCredentials: true }),
+
   mfaSetup: () =>
     api.post('/auth/mfa/setup'),
 

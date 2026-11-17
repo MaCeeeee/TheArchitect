@@ -523,7 +523,7 @@ router.get(
 
       if (!emitter) {
         // Emitter gone — simulation may have completed between checks
-        const current = await SimulationRun.findById(runId).lean() as any;
+        const current = await SimulationRun.findOne({ _id: runId, projectId: req.params.projectId }).lean() as any;
         if (current?.result) {
           res.write(`data: ${JSON.stringify({ type: 'complete', result: current.result })}\n\n`);
         }
@@ -588,6 +588,10 @@ router.post(
   async (req: Request, res: Response) => {
     try {
       const runId = String(req.params.runId);
+      // Security-Audit H2: erst prüfen, dass der Lauf zu DIESEM Projekt gehört.
+      const run = await SimulationRun.findOne({ _id: runId, projectId: String(req.params.projectId) }).select('_id').lean();
+      if (!run) return res.status(404).json({ error: 'Simulation run not found' });
+
       const engine = activeEngines.get(runId);
       if (engine) {
         engine.cancel();
@@ -599,7 +603,7 @@ router.post(
         activeEventStreams.delete(runId);
       }
 
-      await SimulationRun.findByIdAndUpdate(runId, { status: 'cancelled' });
+      await SimulationRun.updateOne({ _id: runId, projectId: String(req.params.projectId) }, { status: 'cancelled' });
       res.json({ status: 'cancelled' });
     } catch (err: any) {
       console.error('[MiroFish] Cancel error:', err.message);

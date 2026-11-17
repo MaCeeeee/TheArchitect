@@ -100,7 +100,7 @@ router.put(
         return res.status(400).json({ success: false, error: 'decision must be approved or rejected' });
       }
 
-      const approval = await ApprovalRequest.findById(approvalId);
+      const approval = await ApprovalRequest.findOne({ _id: approvalId, projectId: String(req.params.projectId) });
       if (!approval) return res.status(404).json({ success: false, error: 'Approval not found' });
       if (approval.status !== 'pending') {
         return res.status(400).json({ success: false, error: 'Approval is not pending' });
@@ -139,7 +139,7 @@ router.put(
   async (req: Request, res: Response) => {
     try {
       const approvalId = String(req.params.approvalId);
-      const approval = await ApprovalRequest.findById(approvalId);
+      const approval = await ApprovalRequest.findOne({ _id: approvalId, projectId: String(req.params.projectId) });
       if (!approval) return res.status(404).json({ success: false, error: 'Not found' });
       if (approval.requesterId.toString() !== req.user!._id.toString()) {
         return res.status(403).json({ success: false, error: 'Only requester can cancel' });
@@ -159,6 +159,19 @@ router.put(
 );
 
 // ─── Policies ───
+
+// Security-Audit H5: vom Server verwaltete Felder und Mongo-Operatoren kommen
+// nie aus dem Request-Body.
+const SERVER_OWNED_POLICY_FIELDS = new Set(['_id', 'id', 'projectId', 'createdBy', 'updatedBy', 'version', 'createdAt', 'updatedAt', '__v']);
+
+function writablePolicyFields(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return {};
+  return Object.fromEntries(
+    Object.entries(body as Record<string, unknown>).filter(
+      ([key]) => !key.startsWith('$') && !SERVER_OWNED_POLICY_FIELDS.has(key),
+    ),
+  );
+}
 
 // List policies for a project
 router.get(
@@ -244,9 +257,12 @@ router.put(
         req.body.severity = mapLegacySeverity(req.body.severity) ?? req.body.severity;
       }
 
-      const policy = await Policy.findByIdAndUpdate(
-        policyId,
-        { ...req.body, updatedBy: req.user!._id, $inc: { version: 1 } },
+      // Security-Audit H2 + H5: nur Policies DIESES Projekts, und nur
+      // fachliche Felder aus dem Body — nie projectId, Urheber, Version oder
+      // Mongo-Operatoren.
+      const policy = await Policy.findOneAndUpdate(
+        { _id: policyId, projectId },
+        { ...writablePolicyFields(req.body), updatedBy: req.user!._id, $inc: { version: 1 } },
         { new: true, runValidators: true }, // THE-442: Backstop gegen Out-of-Domain-Werte
       );
       if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
@@ -280,8 +296,8 @@ router.delete(
       const policyId = String(req.params.policyId);
 
       // Soft-delete: archive the policy
-      const policy = await Policy.findByIdAndUpdate(
-        policyId,
+      const policy = await Policy.findOneAndUpdate(
+        { _id: policyId, projectId },
         { status: 'archived', enabled: false, updatedBy: req.user!._id },
         { new: true, runValidators: true }, // THE-442: Backstop gegen Out-of-Domain-Werte
       );

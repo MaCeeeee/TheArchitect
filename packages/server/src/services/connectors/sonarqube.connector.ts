@@ -11,6 +11,7 @@
 
 import type { ConnectorConfig, ICostEnrichmentConnector, AuthMethod, ConnectorType } from './base.connector';
 import type { CostEnrichmentResult } from '@thearchitect/shared';
+import { safeFetch } from '../../utils/safeFetch';
 
 const METRICS = [
   'ncloc', 'sqale_debt_ratio', 'bugs', 'code_smells',
@@ -25,7 +26,7 @@ export class SonarQubeConnector implements ICostEnrichmentConnector {
 
   async testConnection(config: ConnectorConfig): Promise<{ success: boolean; message: string }> {
     try {
-      const resp = await this.fetch(config, '/api/system/status');
+      const resp = await this.request(config, '/api/system/status');
       if (resp.status === 'UP') {
         return { success: true, message: `Connected to SonarQube ${resp.version || ''}`.trim() };
       }
@@ -41,7 +42,7 @@ export class SonarQubeConnector implements ICostEnrichmentConnector {
     const pageSize = 100;
 
     while (true) {
-      const resp = await this.fetch(config, `/api/projects/search?ps=${pageSize}&p=${page}`);
+      const resp = await this.request(config, `/api/projects/search?ps=${pageSize}&p=${page}`);
       const components = resp.components || [];
 
       for (const comp of components) {
@@ -79,7 +80,7 @@ export class SonarQubeConnector implements ICostEnrichmentConnector {
 
     for (const key of projectKeys) {
       try {
-        const resp = await this.fetch(
+        const resp = await this.request(
           config,
           `/api/measures/component?component=${encodeURIComponent(key)}&metricKeys=${METRICS}`,
         );
@@ -153,7 +154,7 @@ export class SonarQubeConnector implements ICostEnrichmentConnector {
 
   // ─── HTTP Helper ───
 
-  private async fetch(config: ConnectorConfig, path: string): Promise<any> {
+  private async request(config: ConnectorConfig, path: string): Promise<any> {
     const url = `${config.baseUrl.replace(/\/$/, '')}${path}`;
     const headers: Record<string, string> = { 'Accept': 'application/json' };
 
@@ -165,7 +166,7 @@ export class SonarQubeConnector implements ICostEnrichmentConnector {
       headers['Authorization'] = `Basic ${Buffer.from(`${config.credentials.username}:${config.credentials.password}`).toString('base64')}`;
     }
 
-    const resp = await fetch(url, { headers, signal: AbortSignal.timeout(30000) });
+    const resp = await safeFetch(url, { headers, signal: AbortSignal.timeout(30000) });
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
       throw new Error(`SonarQube API ${resp.status}: ${body.slice(0, 200)}`);
