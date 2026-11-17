@@ -9,6 +9,7 @@
  *
  * Linear: THE-380 (REQ-EVAL-001.2)
  */
+import { jeffreysInterval } from './proportionInterval';
 
 export interface PredictedMapping {
   elementId: string;
@@ -113,6 +114,8 @@ export interface ConfidenceBandStat {
   predictions: number;
   correct: number;
   precision: number;
+  /** 95-%-Beta-Intervall (Jeffreys) der Precision; `null` bei leerem Band. */
+  ci: ConfidenceInterval | null;
 }
 
 /**
@@ -145,6 +148,7 @@ export function precisionByConfidenceBand(
       predictions,
       correct,
       precision: predictions === 0 ? 0 : correct / predictions,
+      ci: jeffreysInterval(correct, predictions),
     });
   }
   return stats;

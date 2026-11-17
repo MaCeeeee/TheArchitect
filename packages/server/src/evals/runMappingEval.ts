@@ -46,6 +46,7 @@ import {
   concisenessMetrics,
   type CaseOutcome,
 } from './metrics';
+import { formatInterval } from './proportionInterval';
 
 const CACHE_DIR = path.join(__dirname, 'cache');
 const REPORTS_DIR = path.join(__dirname, 'reports');
@@ -251,10 +252,10 @@ function buildMarkdownReport(args: {
   lines.push('');
   lines.push('## Precision je Confidence-Band (Kalibrierungs-Vorstufe, THE-383)');
   lines.push('');
-  lines.push('| Band | Vorhersagen | korrekt | Precision |');
-  lines.push('|---|---|---|---|');
+  lines.push('| Band | Vorhersagen | korrekt | Precision | 95 % (Beta) |');
+  lines.push('|---|---|---|---|---|');
   for (const b of bands) {
-    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} |`);
+    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} | ${formatInterval(b.ci)} |`);
   }
   lines.push('');
   lines.push('## Fehler-Detail (FP/FN je Case)');
