@@ -41,18 +41,24 @@ export default function WorkspaceBar() {
     handleSelectWorkspace(workspaces[nextIndex].id);
   };
 
-  const handleDelete = (wsId: string) => {
+  const handleDelete = async (wsId: string) => {
     const projectId = useArchitectureStore.getState().projectId;
+    setConfirmDeleteId(null);
+    if (!projectId) {
+      toast.error('No project loaded — workspace not deleted');
+      return;
+    }
+    try {
+      // Server first (THE-775): the local view only changes once the deletion really happened.
+      await workspaceAPI.delete(projectId, wsId);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
+      toast.error('Could not delete the workspace on the server. Nothing was removed.');
+      return;
+    }
     removeWorkspaceElements(wsId);
     removeWorkspace(wsId);
-    setConfirmDeleteId(null);
     toast.success('Workspace deleted');
-    if (projectId) {
-      workspaceAPI.delete(projectId, wsId).catch((err) => {
-        if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
-        toast.error('Failed to sync workspace deletion');
-      });
-    }
   };
 
   const handleDoubleClick = (wsId: string, name: string) => {
