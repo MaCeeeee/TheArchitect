@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 
@@ -65,5 +65,58 @@ describe('WorkspaceBar — delete', () => {
     expect(toastSuccess).not.toHaveBeenCalled();
     resolve({ data: { success: true } });
     await waitFor(() => expect(useArchitectureStore.getState().elements).toHaveLength(0));
+  });
+});
+
+const rename = async (to: string) => {
+  const user = userEvent.setup();
+  await user.dblClick(screen.getByText('Alpha'));
+  const input = screen.getByRole('textbox');
+  await user.clear(input);
+  await user.type(input, `${to}{Enter}`);
+};
+
+describe('WorkspaceBar — rename', () => {
+  test('server confirms → new name stays, exactly one PUT with name, color and offsetX', async () => {
+    update.mockResolvedValue({ data: { data: { ...WS, name: 'Beta' } } });
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    expect(update).toHaveBeenCalledWith('p1', 'ws-1', { name: 'Beta', color: '#f00', offsetX: 0 });
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Beta');
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  test('server fails → old name is back, one error toast', async () => {
+    update.mockRejectedValue({ response: { status: 500 } });
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Alpha');
+  });
+
+  test('empty or unchanged name → no PUT', async () => {
+    render(<WorkspaceBar />);
+    await rename('   ');
+    await rename('Alpha');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  test('Escape cancels: no PUT, old name stays — even if blur follows', async () => {
+    const user = userEvent.setup();
+    render(<WorkspaceBar />);
+    await user.dblClick(screen.getByText('Alpha'));
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, 'Beta');
+    // Browsers may fire blur while the input is being removed; jsdom does not.
+    // Fire both in one act so the blur reaches the still-mounted input.
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Escape' });
+      fireEvent.blur(input);
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(update).not.toHaveBeenCalled();
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Alpha');
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Layers, X, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -18,6 +18,7 @@ export default function WorkspaceBar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const renameCancelledRef = useRef(false);
 
   // Show as soon as ONE architecture is imported (so it can be managed/deleted).
   // The base "Main Architecture" has no workspace entry, so length===0 = nothing imported.
@@ -62,15 +63,33 @@ export default function WorkspaceBar() {
   };
 
   const handleDoubleClick = (wsId: string, name: string) => {
+    renameCancelledRef.current = false;
     setEditingId(wsId);
     setEditName(name);
   };
 
-  const handleRenameSubmit = (wsId: string) => {
-    if (editName.trim()) {
-      updateWorkspace(wsId, { name: editName.trim() });
-    }
+  const handleRenameSubmit = async (wsId: string) => {
     setEditingId(null);
+    if (renameCancelledRef.current) return; // Escape pressed — a following blur must not save
+    const ws = useWorkspaceStore.getState().workspaces.find((w) => w.id === wsId);
+    const next = editName.trim();
+    // Empty or unchanged (also covers the onBlur that follows Enter) → nothing to save.
+    if (!ws || !next || next === ws.name) return;
+    const projectId = useArchitectureStore.getState().projectId;
+    if (!projectId) {
+      toast.error('No project loaded — name not saved');
+      return;
+    }
+    const previous = ws.name;
+    updateWorkspace(wsId, { name: next });
+    try {
+      // THE-775: until now the new name lived only in the local store and was lost on reload.
+      await workspaceAPI.update(projectId, wsId, { name: next, color: ws.color, offsetX: ws.offsetX });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to rename workspace on server:', err);
+      updateWorkspace(wsId, { name: previous });
+      toast.error('Could not save the new name on the server.');
+    }
   };
 
   const getElementCount = (wsId: string) => {
@@ -124,7 +143,7 @@ export default function WorkspaceBar() {
                 onBlur={() => handleRenameSubmit(ws.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleRenameSubmit(ws.id);
-                  if (e.key === 'Escape') setEditingId(null);
+                  if (e.key === 'Escape') { renameCancelledRef.current = true; setEditingId(null); }
                 }}
                 autoFocus
                 className="w-24 bg-transparent border-b border-[#00ff41] text-xs text-white outline-none"
