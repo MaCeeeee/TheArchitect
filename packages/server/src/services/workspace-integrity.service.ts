@@ -16,12 +16,13 @@ export const WINDOW_MS = 10_000;
 const CLIENT_ID = /^ws-(\d{13})-/;
 const HEX_ID = /^[0-9a-f]{24}$/;
 
-export interface ElementGroup { projectId: string; workspaceId: string; n: number; certified: number }
+/** certifiedRelationships: relationships touching the group's elements with certifiedBy set. */
+export interface ElementGroup { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships?: number }
 /** `_id` as hex string; `objectIdStored` = the document's _id is a BSON ObjectId (legacy). */
 export interface WorkspaceDoc { _id: string; projectId: string; createdAt?: Date | null; objectIdStored: boolean }
 export interface AlignStep { projectId: string; from: string; to: string; n: number; certified: number }
 export interface Ambiguous { projectId: string; workspaceId: string; n: number; candidates: string[] }
-export interface Orphan { projectId: string; workspaceId: string; n: number; certified: number }
+export interface Orphan { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships?: number }
 /** workspaceId is a workspace of ANOTHER project: reported only, never deleted or aligned. */
 export interface CrossProject { projectId: string; workspaceId: string; n: number; certified: number; workspaceProjectId: string }
 export interface IntegrityPlan {
@@ -77,8 +78,17 @@ export function planWorkspaceIntegrity(groups: ElementGroup[], workspaces: Works
     } else if (candidates.length > 1) {
       plan.ambiguous.push({ projectId: grp.projectId, workspaceId: grp.workspaceId, n: grp.n, candidates: candidates.map((w) => w._id).sort() });
     } else {
-      plan.orphans.push({ projectId: grp.projectId, workspaceId: grp.workspaceId, n: grp.n, certified: grp.certified });
+      plan.orphans.push({ projectId: grp.projectId, workspaceId: grp.workspaceId, n: grp.n, certified: grp.certified, certifiedRelationships: grp.certifiedRelationships });
     }
+  }
+  // Unambiguous per TARGET too: several groups aligning to one workspace would merge them blindly.
+  const perTarget = new Map<string, AlignStep[]>();
+  for (const a of plan.align) perTarget.set(`${a.projectId}\u0000${a.to}`, [...(perTarget.get(`${a.projectId}\u0000${a.to}`) ?? []), a]);
+  const clashing = new Set<AlignStep>();
+  for (const steps of perTarget.values()) if (steps.length > 1) steps.forEach((a) => clashing.add(a));
+  if (clashing.size > 0) {
+    plan.align = plan.align.filter((a) => !clashing.has(a));
+    for (const a of clashing) plan.ambiguous.push({ projectId: a.projectId, workspaceId: a.from, n: a.n, candidates: [a.to] });
   }
   return plan;
 }
@@ -101,13 +111,16 @@ export async function loadElementGroups(s: Session, { projectIds = null }: { pro
     `MATCH (e:ArchitectureElement)
      WHERE e.workspaceId IS NOT NULL AND e.workspaceId <> ''
        AND (($projectIds IS NULL AND NOT e.projectId STARTS WITH 'tmp-') OR e.projectId IN $projectIds)
-     RETURN e.projectId AS projectId, e.workspaceId AS workspaceId, count(e) AS n,
-            sum(CASE WHEN e.certifiedBy IS NOT NULL THEN 1 ELSE 0 END) AS certified`,
+     WITH e.projectId AS projectId, e.workspaceId AS workspaceId, count(e) AS n,
+          sum(CASE WHEN e.certifiedBy IS NOT NULL THEN 1 ELSE 0 END) AS certified, collect(e) AS els
+     UNWIND els AS x
+     OPTIONAL MATCH (x)-[r]-() WHERE r.certifiedBy IS NOT NULL
+     RETURN projectId, workspaceId, n, certified, count(DISTINCT r) AS certifiedRelationships`,
     { projectIds },
   );
   return res.records.map((r) => ({
     projectId: String(r.get('projectId')), workspaceId: String(r.get('workspaceId')),
-    n: num(r.get('n')), certified: num(r.get('certified')),
+    n: num(r.get('n')), certified: num(r.get('certified')), certifiedRelationships: num(r.get('certifiedRelationships')),
   }));
 }
 
@@ -141,8 +154,8 @@ export async function normalizeWorkspaceIds(coll: Collection<Document>, hexIds: 
 }
 
 /** Rewrites element workspaceId from → to, one transaction per step; the old id stays as workspaceIdAlignedFrom. */
-export async function applyAlign(s: Session, steps: AlignStep[]): Promise<number> {
-  let moved = 0;
+export async function applyAlign(s: Session, steps: AlignStep[]): Promise<Array<AlignStep & { moved: number }>> {
+  const out: Array<AlignStep & { moved: number }> = [];
   for (const step of steps) {
     const res = await s.executeWrite((tx) => tx.run(
       `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $from})
@@ -150,20 +163,44 @@ export async function applyAlign(s: Session, steps: AlignStep[]): Promise<number
        RETURN count(e) AS n`,
       step,
     ));
-    moved += num(res.records[0]?.get('n'));
+    out.push({ ...step, moved: num(res.records[0]?.get('n')) });
   }
-  return moved;
+  return out;
 }
 
+export interface GroupSample { names: string[]; minCreatedAt: string | null; maxCreatedAt: string | null }
+
+/** READ-ONLY: up to 5 element names and the createdAt range of a group, so a human can judge what a deletion would remove. */
+export async function sampleGroup(s: Session, projectId: string, workspaceId: string): Promise<GroupSample> {
+  const res = await s.run(
+    `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
+     WITH e ORDER BY e.name
+     RETURN collect(e.name)[0..5] AS names, min(toString(e.createdAt)) AS minC, max(toString(e.createdAt)) AS maxC`,
+    { projectId, workspaceId },
+  );
+  const r = res.records[0];
+  return {
+    names: ((r?.get('names') as unknown[]) ?? []).map(String),
+    minCreatedAt: r?.get('minC') ?? null, maxCreatedAt: r?.get('maxC') ?? null,
+  };
+}
+
+export interface DeleteOrphansResult { removed: number; skippedCertified: string[]; skippedNowExists: string[] }
+
 /**
- * DETACH DELETEs uncertified orphan groups. Groups with certified elements are skipped (certified
- * content is only removed via the notary); their workspace ids are returned.
+ * DETACH DELETEs uncertified orphan groups. Skipped (and reported): groups with certified elements or
+ * certified relationships (certified content is only removed via the notary), and groups whose
+ * workspace id exists in Mongo NOW (checked right before each delete, any _id BSON type).
  */
-export async function deleteOrphans(s: Session, orphans: Orphan[]): Promise<{ removed: number; skippedCertified: string[] }> {
+export async function deleteOrphans(s: Session, wsColl: Collection<Document>, orphans: Orphan[]): Promise<DeleteOrphansResult> {
   let removed = 0;
   const skippedCertified: string[] = [];
+  const skippedNowExists: string[] = [];
   for (const o of orphans) {
-    if (o.certified > 0) { skippedCertified.push(o.workspaceId); continue; }
+    if (o.certified > 0 || (o.certifiedRelationships ?? 0) > 0) { skippedCertified.push(o.workspaceId); continue; }
+    const ids: unknown[] = [o.workspaceId];
+    if (HEX_ID.test(o.workspaceId)) ids.push(new Types.ObjectId(o.workspaceId));
+    if (await wsColl.findOne({ _id: { $in: ids } } as Document, { projection: { _id: 1 } })) { skippedNowExists.push(o.workspaceId); continue; }
     const res = await s.executeWrite((tx) => tx.run(
       `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
        WHERE e.certifiedBy IS NULL
@@ -172,5 +209,15 @@ export async function deleteOrphans(s: Session, orphans: Orphan[]): Promise<{ re
     ));
     removed += num(res.records[0]?.get('n'));
   }
-  return { removed, skippedCertified };
+  return { removed, skippedCertified, skippedNowExists };
+}
+
+export interface ChangeLog {
+  fileName: string; writtenAt: string; mode: string; projectId: string | null; plan: IntegrityPlan; results: Record<string, unknown>;
+}
+
+/** Pure: the JSON document a writing run leaves behind (the script only writes it to disk). */
+export function buildChangeLog(a: { mode: string; projectId: string | null; plan: IntegrityPlan; results: Record<string, unknown>; now?: Date }): ChangeLog {
+  const writtenAt = (a.now ?? new Date()).toISOString();
+  return { fileName: `workspace-integrity-${writtenAt.replace(/:/g, '-')}.json`, writtenAt, mode: a.mode, projectId: a.projectId, plan: a.plan, results: a.results };
 }

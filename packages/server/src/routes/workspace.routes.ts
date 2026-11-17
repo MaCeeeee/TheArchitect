@@ -103,6 +103,7 @@ router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async 
     // Neo4j is already gone: the audit entry must be written even if the Mongo delete fails.
     let mongoDeleted = true;
     let mongoError: unknown;
+    // If this fails after Neo4j succeeded the workspace reappears empty on reload — accepted; audit records mongoDeleted:false.
     try {
       await Workspace.deleteOne({ _id: workspaceId, projectId });
     } catch (e) {

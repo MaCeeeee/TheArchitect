@@ -25,7 +25,7 @@ const auditCreate = jest.fn().mockResolvedValue({});
 jest.mock('../models/AuditLog', () => ({ AuditLog: { create: (...a: unknown[]) => auditCreate(...a) } }));
 
 import workspaceRoutes from '../routes/workspace.routes';
-import { loadElementGroups, loadWorkspaceDocs, normalizeWorkspaceIds, applyAlign, deleteOrphans, planWorkspaceIntegrity } from '../services/workspace-integrity.service';
+import { loadElementGroups, loadWorkspaceDocs, normalizeWorkspaceIds, applyAlign, deleteOrphans, sampleGroup, planWorkspaceIntegrity } from '../services/workspace-integrity.service';
 
 const hex = () => new Types.ObjectId().toHexString();
 const P = hex();          // project under test
@@ -174,7 +174,7 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     const p = await plan();
     const s = getNeo4jDriver().session();
     try {
-      return { normalized: (await normalizeWorkspaceIds(wsColl(), p.normalize)).normalized, moved: await applyAlign(s, p.align) };
+      return { normalized: (await normalizeWorkspaceIds(wsColl(), p.normalize)).normalized, moved: (await applyAlign(s, p.align)).reduce((t, x) => t + x.moved, 0) };
     } finally { await s.close(); }
   }
 
@@ -260,8 +260,8 @@ d('THE-771 — delete orphans only', () => {
     const s = getNeo4jDriver().session();
     try {
       const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
-      expect(p.orphans).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-e269m', n: 2, certified: 0 }]);
-      expect(await deleteOrphans(s, p.orphans)).toEqual({ removed: 2, skippedCertified: [] });
+      expect(p.orphans).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-e269m', n: 2, certified: 0, certifiedRelationships: 0 }]);
+      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 2, skippedCertified: [], skippedNowExists: [] });
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-e269m')).toBe(0);
@@ -277,10 +277,67 @@ d('THE-771 — delete orphans only', () => {
     try {
       const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
       expect(p.orphans).toHaveLength(2);
-      expect(await deleteOrphans(s, p.orphans)).toEqual({ removed: 1, skippedCertified: ['ws-1782282061855-cccc1'] });
+      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 1, skippedCertified: ['ws-1782282061855-cccc1'], skippedNowExists: [] });
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-cccc1')).toBe(2);
     expect(await count(P, 'ws-1782282061855-uuuu1')).toBe(0);
+  });
+
+  test('race: a workspace with that id appears after planning → group is not deleted, reported as skippedNowExists (string and ObjectId _id)', async () => {
+    const hexOrphan = hex();
+    await el(P, 'r1', 'ws-1782282061855-race1'); await el(P, 'r2', hexOrphan);
+
+    const s = getNeo4jDriver().session();
+    try {
+      const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      expect(p.orphans).toHaveLength(2);
+      await wsString(P, 'ws-1782282061855-race1');
+      await wsLegacy(P, hexOrphan, new Date());
+      const r = await deleteOrphans(s, wsColl(), p.orphans);
+      expect(r.removed).toBe(0);
+      expect(r.skippedNowExists.sort()).toEqual(['ws-1782282061855-race1', hexOrphan].sort());
+    } finally { await s.close(); }
+
+    expect(await count(P, 'ws-1782282061855-race1')).toBe(1);
+    expect(await count(P, hexOrphan)).toBe(1);
+  });
+
+  test('an uncertified orphan group whose only relationship is certified survives', async () => {
+    await el(P, 'k1', 'ws-1782282061855-kkkk1'); await el(P, 'k2', 'ws-1782282061855-kkkk1');
+    await edge(P, 'k1', 'k2', 'notary-1');
+    await el(P, 'u1', 'ws-1782282061855-uuuu2');
+    await edge(P, 'u1', 'k1');   // plain edge, no certification
+
+    const s = getNeo4jDriver().session();
+    try {
+      const groups = await loadElementGroups(s, { projectIds: ALL });
+      expect(groups.find((x) => x.workspaceId === 'ws-1782282061855-kkkk1')).toMatchObject({ certified: 0, certifiedRelationships: 1 });
+      const p = planWorkspaceIntegrity(groups, await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      const r = await deleteOrphans(s, wsColl(), p.orphans);
+      expect(r.skippedCertified).toEqual(['ws-1782282061855-kkkk1']);
+      expect(r.removed).toBe(1);
+    } finally { await s.close(); }
+
+    expect(await count(P, 'ws-1782282061855-kkkk1')).toBe(2);
+    expect(await count(P, 'ws-1782282061855-uuuu2')).toBe(0);
+  });
+
+  test('sampleGroup (read-only) returns up to 5 names and the createdAt range', async () => {
+    for (let i = 1; i <= 7; i += 1) {
+      await runCypher(
+        `CREATE (:ArchitectureElement {id: $id, projectId: $p, workspaceId: 'ws-1782282061855-smpl1', name: $name, type: 'application_component',
+           createdAt: datetime($c)})`,
+        { id: `${P}-s${i}`, p: P, name: `Sample ${i}`, c: `2026-0${i}-01T00:00:00Z` },
+      );
+    }
+    const s = getNeo4jDriver().session();
+    try {
+      const r = await sampleGroup(s, P, 'ws-1782282061855-smpl1');
+      expect(r.names).toEqual(['Sample 1', 'Sample 2', 'Sample 3', 'Sample 4', 'Sample 5']);
+      expect(r.minCreatedAt).toMatch(/^2026-01-01/);
+      expect(r.maxCreatedAt).toMatch(/^2026-07-01/);
+    } finally { await s.close(); }
+    expect(await count(P, 'ws-1782282061855-smpl1')).toBe(7);
   });
 });

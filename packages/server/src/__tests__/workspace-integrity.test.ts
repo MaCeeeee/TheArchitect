@@ -1,4 +1,4 @@
-import { planWorkspaceIntegrity, parseIntegrityArgs, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
+import { planWorkspaceIntegrity, parseIntegrityArgs, buildChangeLog, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
 
 const P = 'p-live';
 const at = (ms: number) => new Date(ms);
@@ -79,6 +79,26 @@ test('cross-project: workspaceId exists only as a workspace of another project â
   expect(plan.orphans).toEqual([]);
   expect(plan.align).toEqual([]);
   expect(plan.ok).toBe(0);
+});
+
+test('negative: two groups aligning to the same target â†’ none aligned, both ambiguous with candidates [to]', () => {
+  const t = 1782282111647;
+  const plan = planWorkspaceIntegrity(
+    [g(`ws-${t}-aaaaa`, 3), g(`ws-${t + 2000}-bbbbb`, 4)],
+    [ws('6a3b777ff1bf836dc790f8f0', at(t + 1000), true)], live);
+  expect(plan.align).toEqual([]);
+  expect(plan.orphans).toEqual([]);
+  expect(plan.ambiguous).toEqual([
+    { projectId: P, workspaceId: `ws-${t}-aaaaa`, n: 3, candidates: ['6a3b777ff1bf836dc790f8f0'] },
+    { projectId: P, workspaceId: `ws-${t + 2000}-bbbbb`, n: 4, candidates: ['6a3b777ff1bf836dc790f8f0'] },
+  ]);
+});
+
+test('buildChangeLog: mode, project filter, plan and results are all in the log', () => {
+  const plan = planWorkspaceIntegrity([g('ws-1782282111647-aaaaa', 3)], [], live);
+  const log = buildChangeLog({ mode: 'APPLY align', projectId: P, plan, results: { normalized: { normalized: 1, conflicts: ['x'] }, aligned: [{ projectId: P, from: 'a', to: 'b', moved: 2 }] }, now: new Date('2026-11-17T10:00:00Z') });
+  expect(log).toMatchObject({ mode: 'APPLY align', projectId: P, writtenAt: '2026-11-17T10:00:00.000Z', plan, results: { normalized: { conflicts: ['x'] }, aligned: [{ moved: 2 }] } });
+  expect(log.fileName).toBe('workspace-integrity-2026-11-17T10-00-00.000Z.json');
 });
 
 describe('parseIntegrityArgs', () => {
