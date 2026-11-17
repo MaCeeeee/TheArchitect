@@ -31,4 +31,10 @@ describe('persistNewWorkspace', () => {
     const err = await persistNewWorkspace('p1', ws).catch((e) => e);
     expect(err.message).toBe('Could not create workspace "My Import" on the server (Network Error). Nothing was imported.');
   });
+
+  test('empty server error string and no other message → falls through to unknown error', async () => {
+    create.mockRejectedValue({ response: { data: { error: '' } } });
+    const err = await persistNewWorkspace('p1', ws).catch((e) => e);
+    expect(err.message).toContain('(unknown error)');
+  });
 });

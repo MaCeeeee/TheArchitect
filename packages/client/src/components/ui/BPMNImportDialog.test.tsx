@@ -66,6 +66,7 @@ describe('BPMNImportDialog — new workspace', () => {
     expect(useArchitectureStore.getState().elements).toHaveLength(0);
     expect(onClose).not.toHaveBeenCalled();
     expect(toastSuccess).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith('Import failed');
   });
 
   test('workspace create succeeds → workspace + elements carry its id, server import called, dialog closes', async () => {
@@ -82,7 +83,10 @@ describe('BPMNImportDialog — new workspace', () => {
     const sent = importBPMN.mock.calls[0][1] as { elements: Array<{ workspaceId: string }> };
     expect(sent.elements).toHaveLength(2);
     expect(sent.elements.every((e) => e.workspaceId === wsId)).toBe(true);
-    // order: create resolved before the element import was sent
+    const local = useArchitectureStore.getState().elements;
+    expect(local).toHaveLength(2);
+    expect(local.every((e) => e.workspaceId === wsId)).toBe(true);
+    // order: create called before the element import
     expect(create.mock.invocationCallOrder[0]).toBeLessThan(importBPMN.mock.invocationCallOrder[0]);
     expect(toastSuccess).toHaveBeenCalledWith('BPMN import complete');
   });
