@@ -1,0 +1,3381 @@
+{
+  "variante": "tp-4",
+  "model": "claude-haiku-4-5-20251001",
+  "samples": 5,
+  "report": {
+    "total": 70,
+    "axes": {
+      "normKind": {
+        "accuracy": {
+          "axis": "normKind",
+          "labeled": 70,
+          "correct": 70,
+          "accuracy": 1
+        },
+        "confusion": {
+          "axis": "normKind",
+          "classes": [
+            {
+              "cls": "legislation",
+              "tp": 70,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 70
+            }
+          ],
+          "macroF1": 1
+        },
+        "byLanguage": {
+          "de": {
+            "axis": "normKind",
+            "labeled": 37,
+            "correct": 37,
+            "accuracy": 1
+          },
+          "en": {
+            "axis": "normKind",
+            "labeled": 33,
+            "correct": 33,
+            "accuracy": 1
+          }
+        },
+        "bySource": {
+          "dora-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "dora": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "normKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "eprivacy-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-de": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "normKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": {
+          "ece": 0.00857142857142857,
+          "bins": [
+            {
+              "band": "0.0–0.1",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.1–0.2",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.2–0.3",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.3–0.4",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.4–0.5",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.5–0.6",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.6–0.7",
+              "count": 1,
+              "avgConfidence": 0.6,
+              "accuracy": 1,
+              "gap": 0.4
+            },
+            {
+              "band": "0.7–0.8",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.8–0.9",
+              "count": 1,
+              "avgConfidence": 0.8,
+              "accuracy": 1,
+              "gap": 0.19999999999999996
+            },
+            {
+              "band": "0.9–1.0",
+              "count": 68,
+              "avgConfidence": 1,
+              "accuracy": 1,
+              "gap": 0
+            }
+          ],
+          "samples": 70
+        }
+      },
+      "bindingness": {
+        "accuracy": {
+          "axis": "bindingness",
+          "labeled": 70,
+          "correct": 70,
+          "accuracy": 1
+        },
+        "confusion": {
+          "axis": "bindingness",
+          "classes": [
+            {
+              "cls": "binding",
+              "tp": 70,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 70
+            }
+          ],
+          "macroF1": 1
+        },
+        "byLanguage": {
+          "de": {
+            "axis": "bindingness",
+            "labeled": 37,
+            "correct": 37,
+            "accuracy": 1
+          },
+          "en": {
+            "axis": "bindingness",
+            "labeled": 33,
+            "correct": 33,
+            "accuracy": 1
+          }
+        },
+        "bySource": {
+          "dora-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "dora": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "nis2-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "mdr-en": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "bindingness",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "eprivacy-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-de": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "bindingness",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": {
+          "ece": 0,
+          "bins": [
+            {
+              "band": "0.0–0.1",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.1–0.2",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.2–0.3",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.3–0.4",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.4–0.5",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.5–0.6",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.6–0.7",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.7–0.8",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.8–0.9",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.9–1.0",
+              "count": 70,
+              "avgConfidence": 1,
+              "accuracy": 1,
+              "gap": 0
+            }
+          ],
+          "samples": 70
+        }
+      },
+      "obligationKind": {
+        "accuracy": {
+          "axis": "obligationKind",
+          "labeled": 70,
+          "correct": 55,
+          "accuracy": 0.7857142857142857
+        },
+        "confusion": {
+          "axis": "obligationKind",
+          "classes": [
+            {
+              "cls": "__na__",
+              "tp": 12,
+              "fp": 1,
+              "fn": 9,
+              "precision": 0.9230769230769231,
+              "recall": 0.5714285714285714,
+              "f1": 0.7058823529411765,
+              "support": 21
+            },
+            {
+              "cls": "obligation",
+              "tp": 33,
+              "fp": 11,
+              "fn": 0,
+              "precision": 0.75,
+              "recall": 1,
+              "f1": 0.8571428571428571,
+              "support": 33
+            },
+            {
+              "cls": "permission",
+              "tp": 10,
+              "fp": 2,
+              "fn": 3,
+              "precision": 0.8333333333333334,
+              "recall": 0.7692307692307693,
+              "f1": 0.8,
+              "support": 13
+            },
+            {
+              "cls": "prohibition",
+              "tp": 0,
+              "fp": 1,
+              "fn": 3,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0,
+              "support": 3
+            }
+          ],
+          "macroF1": 0.5907563025210084
+        },
+        "byLanguage": {
+          "de": {
+            "axis": "obligationKind",
+            "labeled": 37,
+            "correct": 32,
+            "accuracy": 0.8648648648648649
+          },
+          "en": {
+            "axis": "obligationKind",
+            "labeled": 33,
+            "correct": 23,
+            "accuracy": 0.696969696969697
+          }
+        },
+        "bySource": {
+          "dora-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "dora": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "nis2-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "mdr-en": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "cra-en": {
+            "axis": "obligationKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "eprivacy-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "dsgvo-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "eprivacy-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "lksg": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "ai-act-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 1,
+            "accuracy": 0.3333333333333333
+          },
+          "nis2": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "eidas-de": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "data-act-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "obligationKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": {
+          "ece": 0.2028571428571428,
+          "bins": [
+            {
+              "band": "0.0–0.1",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.1–0.2",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.2–0.3",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.3–0.4",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.4–0.5",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.5–0.6",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.6–0.7",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.7–0.8",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.8–0.9",
+              "count": 4,
+              "avgConfidence": 0.8,
+              "accuracy": 0.25,
+              "gap": 0.55
+            },
+            {
+              "band": "0.9–1.0",
+              "count": 66,
+              "avgConfidence": 1,
+              "accuracy": 0.8181818181818182,
+              "gap": 0.18181818181818177
+            }
+          ],
+          "samples": 70
+        }
+      },
+      "partyRole": {
+        "accuracy": {
+          "axis": "partyRole",
+          "labeled": 70,
+          "correct": 49,
+          "accuracy": 0.7
+        },
+        "confusion": {
+          "axis": "partyRole",
+          "classes": [
+            {
+              "cls": "__na__",
+              "tp": 15,
+              "fp": 3,
+              "fn": 8,
+              "precision": 0.8333333333333334,
+              "recall": 0.6521739130434783,
+              "f1": 0.7317073170731708,
+              "support": 23
+            },
+            {
+              "cls": "authorized_representative",
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0,
+              "support": 1
+            },
+            {
+              "cls": "controller",
+              "tp": 2,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 2
+            },
+            {
+              "cls": "deployer",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "essential_important_entity",
+              "tp": 0,
+              "fp": 0,
+              "fn": 1,
+              "precision": 0,
+              "recall": 0,
+              "f1": 0,
+              "support": 1
+            },
+            {
+              "cls": "financial_entity",
+              "tp": 4,
+              "fp": 1,
+              "fn": 1,
+              "precision": 0.8,
+              "recall": 0.8,
+              "f1": 0.8000000000000002,
+              "support": 5
+            },
+            {
+              "cls": "importer",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "manufacturer",
+              "tp": 4,
+              "fp": 1,
+              "fn": 0,
+              "precision": 0.8,
+              "recall": 1,
+              "f1": 0.888888888888889,
+              "support": 4
+            },
+            {
+              "cls": "member_state",
+              "tp": 9,
+              "fp": 8,
+              "fn": 1,
+              "precision": 0.5294117647058824,
+              "recall": 0.9,
+              "f1": 0.6666666666666667,
+              "support": 10
+            },
+            {
+              "cls": "obligated_enterprise",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "provider",
+              "tp": 2,
+              "fp": 1,
+              "fn": 4,
+              "precision": 0.6666666666666666,
+              "recall": 0.3333333333333333,
+              "f1": 0.4444444444444444,
+              "support": 6
+            },
+            {
+              "cls": "supervisory_authority",
+              "tp": 10,
+              "fp": 0,
+              "fn": 5,
+              "precision": 1,
+              "recall": 0.6666666666666666,
+              "f1": 0.8,
+              "support": 15
+            }
+          ],
+          "macroF1": 0.694308943089431
+        },
+        "byLanguage": {
+          "de": {
+            "axis": "partyRole",
+            "labeled": 37,
+            "correct": 27,
+            "accuracy": 0.7297297297297297
+          },
+          "en": {
+            "axis": "partyRole",
+            "labeled": 33,
+            "correct": 22,
+            "accuracy": 0.6666666666666666
+          }
+        },
+        "bySource": {
+          "dora-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "data-act-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 1,
+            "accuracy": 0.25
+          },
+          "dora": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "nis2-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "psd2-de": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 1,
+            "accuracy": 0.25
+          },
+          "mdr-en": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "cra-en": {
+            "axis": "partyRole",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "eprivacy-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 0,
+            "accuracy": 0
+          },
+          "dsgvo-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eprivacy-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "mdr-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "lksg": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "eidas-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "nis2": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 1,
+            "accuracy": 0.3333333333333333
+          },
+          "eidas-de": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "data-act-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 1,
+            "accuracy": 0.3333333333333333
+          },
+          "psd2-en": {
+            "axis": "partyRole",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": {
+          "ece": 0.2914285714285714,
+          "bins": [
+            {
+              "band": "0.0–0.1",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.1–0.2",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.2–0.3",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.3–0.4",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.4–0.5",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.5–0.6",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.6–0.7",
+              "count": 1,
+              "avgConfidence": 0.6,
+              "accuracy": 1,
+              "gap": 0.4
+            },
+            {
+              "band": "0.7–0.8",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.8–0.9",
+              "count": 5,
+              "avgConfidence": 0.8,
+              "accuracy": 0.2,
+              "gap": 0.6000000000000001
+            },
+            {
+              "band": "0.9–1.0",
+              "count": 64,
+              "avgConfidence": 1,
+              "accuracy": 0.734375,
+              "gap": 0.265625
+            }
+          ],
+          "samples": 70
+        }
+      },
+      "provisionKind": {
+        "accuracy": {
+          "axis": "provisionKind",
+          "labeled": 70,
+          "correct": 55,
+          "accuracy": 0.7857142857142857
+        },
+        "confusion": {
+          "axis": "provisionKind",
+          "classes": [
+            {
+              "cls": "definition",
+              "tp": 1,
+              "fp": 0,
+              "fn": 0,
+              "precision": 1,
+              "recall": 1,
+              "f1": 1,
+              "support": 1
+            },
+            {
+              "cls": "enforcement-supervision",
+              "tp": 9,
+              "fp": 0,
+              "fn": 1,
+              "precision": 1,
+              "recall": 0.9,
+              "f1": 0.9473684210526316,
+              "support": 10
+            },
+            {
+              "cls": "obligation",
+              "tp": 25,
+              "fp": 12,
+              "fn": 0,
+              "precision": 0.6756756756756757,
+              "recall": 1,
+              "f1": 0.8064516129032258,
+              "support": 25
+            },
+            {
+              "cls": "other",
+              "tp": 3,
+              "fp": 2,
+              "fn": 2,
+              "precision": 0.6,
+              "recall": 0.6,
+              "f1": 0.6,
+              "support": 5
+            },
+            {
+              "cls": "procedural",
+              "tp": 9,
+              "fp": 1,
+              "fn": 11,
+              "precision": 0.9,
+              "recall": 0.45,
+              "f1": 0.6,
+              "support": 20
+            },
+            {
+              "cls": "scope-applicability",
+              "tp": 8,
+              "fp": 0,
+              "fn": 1,
+              "precision": 1,
+              "recall": 0.8888888888888888,
+              "f1": 0.9411764705882353,
+              "support": 9
+            }
+          ],
+          "macroF1": 0.8158327507573487
+        },
+        "byLanguage": {
+          "de": {
+            "axis": "provisionKind",
+            "labeled": 37,
+            "correct": 28,
+            "accuracy": 0.7567567567567568
+          },
+          "en": {
+            "axis": "provisionKind",
+            "labeled": 33,
+            "correct": 27,
+            "accuracy": 0.8181818181818182
+          }
+        },
+        "bySource": {
+          "dora-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "data-act-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "dora": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 2,
+            "accuracy": 0.5
+          },
+          "nis2-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "psd2-de": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "mdr-en": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 4,
+            "accuracy": 1
+          },
+          "cra-en": {
+            "axis": "provisionKind",
+            "labeled": 4,
+            "correct": 3,
+            "accuracy": 0.75
+          },
+          "eprivacy-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "dsgvo": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 1,
+            "accuracy": 0.3333333333333333
+          },
+          "eprivacy-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "cra-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "mdr-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "lksg": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "eidas-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "nis2": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "ai-act-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "eidas-de": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          },
+          "data-act-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 3,
+            "accuracy": 1
+          },
+          "psd2-en": {
+            "axis": "provisionKind",
+            "labeled": 3,
+            "correct": 2,
+            "accuracy": 0.6666666666666666
+          }
+        },
+        "byComplexityBand": {},
+        "calibration": {
+          "ece": 0.18857142857142856,
+          "bins": [
+            {
+              "band": "0.0–0.1",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.1–0.2",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.2–0.3",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.3–0.4",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.4–0.5",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.5–0.6",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.6–0.7",
+              "count": 4,
+              "avgConfidence": 0.6,
+              "accuracy": 0.75,
+              "gap": 0.15000000000000002
+            },
+            {
+              "band": "0.7–0.8",
+              "count": 0,
+              "avgConfidence": 0,
+              "accuracy": 0,
+              "gap": 0
+            },
+            {
+              "band": "0.8–0.9",
+              "count": 7,
+              "avgConfidence": 0.7999999999999999,
+              "accuracy": 0.42857142857142855,
+              "gap": 0.3714285714285714
+            },
+            {
+              "band": "0.9–1.0",
+              "count": 59,
+              "avgConfidence": 1,
+              "accuracy": 0.8305084745762712,
+              "gap": 0.1694915254237288
+            }
+          ],
+          "samples": 70
+        }
+      }
+    },
+    "observed": {
+      "total": 2,
+      "whereGoldNa": 2,
+      "whereGoldHasRole": 0
+    }
+  },
+  "oovDrops": {},
+  "majority": {
+    "normKind": {
+      "klass": "legislation",
+      "accuracy": 1
+    },
+    "bindingness": {
+      "klass": "binding",
+      "accuracy": 1
+    },
+    "obligationKind": {
+      "klass": "obligation",
+      "accuracy": 0.4714285714285714
+    },
+    "partyRole": {
+      "klass": "na",
+      "accuracy": 0.32857142857142857
+    },
+    "provisionKind": {
+      "klass": "obligation",
+      "accuracy": 0.35714285714285715
+    }
+  },
+  "the597": {
+    "k": 5,
+    "goldenSha256": "39e09d58d20391ee89a95b687157862286f13f12219ce98f9dd0ddb5b1a006a3",
+    "thresholds": [
+      0.6,
+      0.8,
+      1
+    ],
+    "axes": {
+      "normKind": {
+        "samples": 70,
+        "wrong": 0,
+        "auroc": null,
+        "routing": [
+          {
+            "threshold": 0.6,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 0.8,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 1,
+            "recall": 0,
+            "falseAlarmRate": 0.014285714285714285
+          },
+          {
+            "threshold": 1,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 2,
+            "recall": 0,
+            "falseAlarmRate": 0.02857142857142857
+          }
+        ],
+        "aktMetadatum": true
+      },
+      "bindingness": {
+        "samples": 70,
+        "wrong": 0,
+        "auroc": null,
+        "routing": [
+          {
+            "threshold": 0.6,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 0.8,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 1,
+            "wrong": 0,
+            "correct": 70,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          }
+        ],
+        "aktMetadatum": true
+      },
+      "obligationKind": {
+        "samples": 70,
+        "wrong": 15,
+        "auroc": 0.5909090909090909,
+        "routing": [
+          {
+            "threshold": 0.6,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 0.8,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 1,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 3,
+            "falseAlarms": 1,
+            "recall": 0.2,
+            "falseAlarmRate": 0.01818181818181818
+          }
+        ],
+        "aktMetadatum": false
+      },
+      "partyRole": {
+        "samples": 70,
+        "wrong": 21,
+        "auroc": 0.5728862973760933,
+        "routing": [
+          {
+            "threshold": 0.6,
+            "wrong": 21,
+            "correct": 49,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 0.8,
+            "wrong": 21,
+            "correct": 49,
+            "caught": 0,
+            "falseAlarms": 1,
+            "recall": 0,
+            "falseAlarmRate": 0.02040816326530612
+          },
+          {
+            "threshold": 1,
+            "wrong": 21,
+            "correct": 49,
+            "caught": 4,
+            "falseAlarms": 2,
+            "recall": 0.19047619047619047,
+            "falseAlarmRate": 0.04081632653061224
+          }
+        ],
+        "aktMetadatum": false
+      },
+      "provisionKind": {
+        "samples": 70,
+        "wrong": 15,
+        "auroc": 0.6066666666666667,
+        "routing": [
+          {
+            "threshold": 0.6,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 0,
+            "falseAlarms": 0,
+            "recall": 0,
+            "falseAlarmRate": 0
+          },
+          {
+            "threshold": 0.8,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 1,
+            "falseAlarms": 3,
+            "recall": 0.06666666666666667,
+            "falseAlarmRate": 0.05454545454545454
+          },
+          {
+            "threshold": 1,
+            "wrong": 15,
+            "correct": 55,
+            "caught": 5,
+            "falseAlarms": 6,
+            "recall": 0.3333333333333333,
+            "falseAlarmRate": 0.10909090909090909
+          }
+        ],
+        "aktMetadatum": false
+      }
+    }
+  },
+  "cases": [
+    {
+      "caseId": "dora-de-art-28",
+      "source": "dora-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-de-art-30",
+      "source": "data-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-art-62",
+      "source": "dora",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 0.8,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-de-art-5",
+      "source": "nis2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "member_state",
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "member_state",
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-de-art-18",
+      "source": "psd2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "mdr-en-art-67",
+      "source": "mdr-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "member_state",
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "member_state",
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-en-art-12",
+      "source": "cra-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 0.8,
+        "partyRole": 0.8,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "eprivacy-en-art-9",
+      "source": "eprivacy-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "prohibition",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "ecs_provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-en-art-24",
+      "source": "dsgvo-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "controller",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "controller",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-art-25",
+      "source": "dsgvo",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "controller",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "controller",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eprivacy-de-art-3",
+      "source": "eprivacy-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-de-art-62",
+      "source": "cra-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "mdr-de-art-8",
+      "source": "mdr-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 0.6,
+        "provisionKind": 0.6
+      }
+    },
+    {
+      "caseId": "lksg-8",
+      "source": "lksg",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "obligated_enterprise",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "obligated_enterprise",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "ai-act-de-art-77",
+      "source": "ai-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-en-art-41",
+      "source": "eidas-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "prohibition",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-art-1",
+      "source": "nis2",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "ai-act-en-art-58",
+      "source": "ai-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-de-art-10",
+      "source": "eidas-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-en-art-9",
+      "source": "data-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "data_holder",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-en-art-107",
+      "source": "psd2-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "member_state",
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 0.8,
+        "partyRole": 1,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "dora-de-art-50",
+      "source": "dora-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-de-art-11",
+      "source": "data-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "data_holder",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-art-51",
+      "source": "dora",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-de-art-15",
+      "source": "nis2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "member_state",
+        "provisionKind": "other"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 0.8,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-de-art-35",
+      "source": "psd2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "prohibition",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "mdr-en-art-43",
+      "source": "mdr-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 0.8,
+        "partyRole": 0.8,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-en-art-25",
+      "source": "cra-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.6
+      }
+    },
+    {
+      "caseId": "eprivacy-en-art-12",
+      "source": "eprivacy-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-en-art-60",
+      "source": "dsgvo-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-art-63",
+      "source": "dsgvo",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "eprivacy-de-art-1",
+      "source": "eprivacy-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-de-art-21",
+      "source": "cra-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "importer",
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "importer",
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.6
+      }
+    },
+    {
+      "caseId": "mdr-de-art-32",
+      "source": "mdr-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "lksg-21",
+      "source": "lksg",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "ai-act-de-art-93",
+      "source": "ai-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": null,
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-en-art-50",
+      "source": "eidas-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-art-19",
+      "source": "nis2",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "ai-act-en-art-8",
+      "source": "ai-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-de-art-45",
+      "source": "eidas-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "trust_service_provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-en-art-40",
+      "source": "data-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-en-art-47",
+      "source": "psd2-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-de-art-62",
+      "source": "dora-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "other"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "financial_entity",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 0.6,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-de-art-37",
+      "source": "data-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-art-21",
+      "source": "dora",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "nis2-de-art-28",
+      "source": "nis2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "essential_important_entity",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-de-art-98",
+      "source": "psd2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 0.8,
+        "partyRole": 0.8,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "mdr-en-art-74",
+      "source": "mdr-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-en-art-13",
+      "source": "cra-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eprivacy-en-art-8",
+      "source": "eprivacy-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "ecs_provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-en-art-58",
+      "source": "dsgvo-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dsgvo-art-93",
+      "source": "dsgvo",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eprivacy-de-art-21",
+      "source": "eprivacy-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-de-art-36",
+      "source": "cra-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "mdr-de-art-9",
+      "source": "mdr-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "lksg-23",
+      "source": "lksg",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 0.8,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "ai-act-de-art-26",
+      "source": "ai-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "deployer",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "deployer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-en-art-26",
+      "source": "eidas-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "definition"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "definition"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-art-41",
+      "source": "nis2",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.6
+      }
+    },
+    {
+      "caseId": "ai-act-en-art-54",
+      "source": "ai-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "authorized_representative",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "eidas-de-art-43",
+      "source": "eidas-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-en-art-20",
+      "source": "data-act-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "data_holder",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "psd2-en-art-39",
+      "source": "psd2-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "scope-applicability"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-de-art-47",
+      "source": "dora-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "data-act-de-art-10",
+      "source": "data-act-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": null,
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "data_holder",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "dora-art-64",
+      "source": "dora",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": null,
+        "partyRole": null,
+        "provisionKind": "other"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "nis2-de-art-19",
+      "source": "nis2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "procedural"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 0.8
+      }
+    },
+    {
+      "caseId": "psd2-de-art-78",
+      "source": "psd2-de",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "provider",
+        "provisionKind": "procedural"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "mdr-en-art-17",
+      "source": "mdr-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "prohibition",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "manufacturer",
+        "provisionKind": "obligation"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    },
+    {
+      "caseId": "cra-en-art-58",
+      "source": "cra-en",
+      "gold": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "permission",
+        "partyRole": "supervisory_authority",
+        "provisionKind": "enforcement-supervision"
+      },
+      "predicted": {
+        "normKind": "legislation",
+        "bindingness": "binding",
+        "obligationKind": "obligation",
+        "partyRole": "member_state",
+        "provisionKind": "enforcement-supervision"
+      },
+      "confidence": {
+        "normKind": 1,
+        "bindingness": 1,
+        "obligationKind": 1,
+        "partyRole": 1,
+        "provisionKind": 1
+      }
+    }
+  ]
+}

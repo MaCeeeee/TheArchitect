@@ -101,3 +101,12 @@ Lauf 1 entstand vor den Review-Nachzügen am Renderer (Code-Stand 08dbb47; Zahle
 
 Raster-Hinweis: Bei k = 5 kann die Konfidenz nur 0,2 / 0,4 / 0,6 / 0,8 / 1,0 annehmen; in Lauf 2 kamen auf den Inhalts-Achsen vor: 1.0 × 177, 0.8 × 19, 0.6 × 14 (Samples je Achse × 3 Achsen). Die Spalte „< 0,6" ist deshalb strukturell leer — eine Eigenschaft des Rasters, nicht des Signals.
 
+
+## E. Slice-3-Ergebnis (Vorregistrierung 17.11.2026)
+
+Regel: `docs/evals/the597-slice3-vorregistrierung.md` · Bericht: `docs/evals/the597-slice3-ergebnis.md`
+
+**Schicht 1 (Kalibrierung/Schwelle): NO-GO** — keine der sechs Kombinationen (3 Achsen × Schwelle 0,8 / 1,0) erfüllt das Kriterium gepoolt über 5 gv3-Läufe; höchster gepoolter Recall 38,8 % (provisionKind < 1,0, Fehlalarm 5,6 %). Stabilität: höchstens 1 von 5 Läufen (partyRole < 1,0 — der Slice-1-Lauf 2, gepoolt 29,1 %). Replikation auf gv2 erfüllt für keine Achse.
+**Schicht 2 (Zod-Shape-Set) und Schicht 3 (FCA): nicht gemessen** (Slice 2 lief nie).
+Fehlerklassen F-04…F-07 (gepoolt über 5 gv3-Läufe, Gold-Seite): F-04 prohibition 7 falsch, davon 1 < 0,8 · F-05 supervisory_authority 47 falsch, davon 3 < 0,8 · F-06 procedural 50 falsch, davon 8 < 0,8 · F-07 member_state 5 falsch, davon 0 < 0,8.
+Abweichungen vom vorregistrierten Ablauf: keine — alle 5 Läufe ohne Abbruch (`docs/evals/the597-slice3/lauf-protokoll.log`), 0 offene Achsen in allen 7 Läufen, Bericht reproduzierbar (zweiter Lauf byte-gleich).
