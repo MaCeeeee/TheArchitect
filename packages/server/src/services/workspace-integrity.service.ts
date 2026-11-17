@@ -7,6 +7,10 @@
  * workspaces cannot be found by id at all. The Mongo document does not store the client id; the only
  * link is time: createdAt within WINDOW_MS of <ms>. The heuristic is used for planning only.
  */
+import type { Session } from 'neo4j-driver';
+import { Types } from 'mongoose';
+import type { Collection, Document } from 'mongodb';
+
 export const WINDOW_MS = 10_000;
 const CLIENT_ID = /^ws-(\d{13})-/;
 const HEX_ID = /^[0-9a-f]{24}$/;
@@ -49,4 +53,79 @@ export function planWorkspaceIntegrity(groups: ElementGroup[], workspaces: Works
     }
   }
   return plan;
+}
+
+const num = (v: unknown): number =>
+  typeof v === 'number' ? v : (v as { toNumber?: () => number } | null)?.toNumber?.() ?? 0;
+
+/** Workspaces as stored, with the BSON type of their _id. Raw collection: Mongoose would cast _id to String. */
+export async function loadWorkspaceDocs(coll: Collection<Document>): Promise<WorkspaceDoc[]> {
+  const docs = await coll.find({}, { projection: { _id: 1, projectId: 1, createdAt: 1 } }).toArray();
+  return docs.map((w) => ({
+    _id: String(w._id), projectId: String(w.projectId), createdAt: (w.createdAt as Date | undefined) ?? null,
+    objectIdStored: w._id instanceof Types.ObjectId,
+  }));
+}
+
+/** Element groups with a workspaceId. Without projectIds, tmp-* projects (test data) are excluded. */
+export async function loadElementGroups(s: Session, { projectIds = null }: { projectIds?: string[] | null } = {}): Promise<ElementGroup[]> {
+  const res = await s.run(
+    `MATCH (e:ArchitectureElement)
+     WHERE e.workspaceId IS NOT NULL AND e.workspaceId <> ''
+       AND (($projectIds IS NULL AND NOT e.projectId STARTS WITH 'tmp-') OR e.projectId IN $projectIds)
+     RETURN e.projectId AS projectId, e.workspaceId AS workspaceId, count(e) AS n,
+            sum(CASE WHEN e.certifiedBy IS NOT NULL THEN 1 ELSE 0 END) AS certified`,
+    { projectIds },
+  );
+  return res.records.map((r) => ({
+    projectId: String(r.get('projectId')), workspaceId: String(r.get('workspaceId')),
+    n: num(r.get('n')), certified: num(r.get('certified')),
+  }));
+}
+
+/**
+ * Rewrites each ObjectId-stored workspace as the same document with _id = its hex string.
+ * Insert first, then delete the old one: an interruption leaves a duplicate that the next run removes,
+ * never a lost workspace. Returns the number of workspaces normalised.
+ */
+export async function normalizeWorkspaceIds(coll: Collection<Document>, hexIds: string[]): Promise<number> {
+  let done = 0;
+  for (const id of hexIds) {
+    const legacy = await coll.findOne({ _id: new Types.ObjectId(id) });
+    if (!legacy) continue;
+    const existing = await coll.findOne({ _id: id as unknown as Types.ObjectId });
+    if (!existing) await coll.insertOne({ ...legacy, _id: id as unknown as Types.ObjectId });
+    await coll.deleteOne({ _id: new Types.ObjectId(id) });
+    done += 1;
+  }
+  return done;
+}
+
+/** Rewrites element workspaceId from → to, one transaction per step; the old id stays as workspaceIdAlignedFrom. */
+export async function applyAlign(s: Session, steps: AlignStep[]): Promise<number> {
+  let moved = 0;
+  for (const step of steps) {
+    const res = await s.executeWrite((tx) => tx.run(
+      `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $from})
+       SET e.workspaceId = $to, e.workspaceIdAlignedFrom = $from
+       RETURN count(e) AS n`,
+      step,
+    ));
+    moved += num(res.records[0]?.get('n'));
+  }
+  return moved;
+}
+
+/** DETACH DELETEs every orphan group. Returns the number of elements removed. */
+export async function deleteOrphans(s: Session, orphans: Orphan[]): Promise<number> {
+  let removed = 0;
+  for (const o of orphans) {
+    const res = await s.executeWrite((tx) => tx.run(
+      `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
+       WITH collect(e) AS els FOREACH (x IN els | DETACH DELETE x) RETURN size(els) AS n`,
+      o,
+    ));
+    removed += num(res.records[0]?.get('n'));
+  }
+  return removed;
 }

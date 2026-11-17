@@ -25,6 +25,7 @@ const auditCreate = jest.fn().mockResolvedValue({});
 jest.mock('../models/AuditLog', () => ({ AuditLog: { create: (...a: unknown[]) => auditCreate(...a) } }));
 
 import workspaceRoutes from '../routes/workspace.routes';
+import { loadElementGroups, loadWorkspaceDocs, normalizeWorkspaceIds, applyAlign, deleteOrphans, planWorkspaceIntegrity } from '../services/workspace-integrity.service';
 
 const hex = () => new Types.ObjectId().toHexString();
 const P = hex();          // project under test
@@ -131,5 +132,71 @@ d('THE-768 — DELETE /api/workspaces cascades to ArchitectureElement', () => {
     expect(auditCreate).toHaveBeenCalledTimes(1);
     expect(auditCreate.mock.calls[0][0].after).toEqual(res.body.removed);
     expect(await count(P, 'ws-b')).toBe(1);   // the other end survives, only the edge is gone
+  });
+});
+
+d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () => {
+  const T = 1782282111647;
+  const LEGACY = '6a3b777ff1bf836dc790f8f0';
+  const live = () => new Set([P, OTHER_P]);
+  async function plan() {
+    const s = getNeo4jDriver().session();
+    try {
+      return planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), live());
+    } finally { await s.close(); }
+  }
+  async function align() {
+    const p = await plan();
+    const s = getNeo4jDriver().session();
+    try {
+      return { normalized: await normalizeWorkspaceIds(wsColl(), p.normalize), moved: await applyAlign(s, p.align) };
+    } finally { await s.close(); }
+  }
+
+  test('before align: the legacy workspace cannot be found by the route (404) and nothing is deleted', async () => {
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    await el(P, 'l1', `ws-${T}-16dxo`);
+    const res = await request(app).delete(`/api/workspaces/${P}/${LEGACY}`);
+    expect(res.status).toBe(404);
+    expect(await count(P, `ws-${T}-16dxo`)).toBe(1);
+  });
+
+  test('after align: deleting the legacy workspace removes all its elements (REQ-2 positive)', async () => {
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    await el(P, 'l1', `ws-${T}-16dxo`); await el(P, 'l2', `ws-${T}-16dxo`);
+    await el(P, 'k1', LEGACY);                       // already on the hex id (n8n merge case)
+    await el(P, 'o1', `ws-${T - 50_000}-e269m`);     // orphan, must not move
+
+    const r = await align();
+
+    expect(r).toEqual({ normalized: 1, moved: 2 });
+    expect(await wsColl().countDocuments({ _id: LEGACY as any })).toBe(1);
+    expect(await wsColl().countDocuments({ _id: new Types.ObjectId(LEGACY) as any })).toBe(0);
+    expect(await count(P, LEGACY)).toBe(3);
+    expect(await count(P, `ws-${T - 50_000}-e269m`)).toBe(1);
+
+    const res = await request(app).delete(`/api/workspaces/${P}/${LEGACY}`);
+    expect(res.status).toBe(200);
+    expect(await count(P, LEGACY)).toBe(0);
+    expect(await count(P, `ws-${T - 50_000}-e269m`)).toBe(1);
+  });
+
+  test('negative: ambiguous candidates are not written', async () => {
+    await wsLegacy(P, '6a00000000000000000000a1', new Date(T + 1000));
+    await wsLegacy(P, '6a00000000000000000000a2', new Date(T - 2000));
+    await el(P, 'l1', `ws-${T}-xxxxx`);
+    const r = await align();
+    expect(r.moved).toBe(0);
+    expect(await count(P, `ws-${T}-xxxxx`)).toBe(1);
+  });
+
+  test('align keeps every workspace field and is idempotent', async () => {
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    await el(P, 'l1', `ws-${T}-16dxo`);
+    await align();
+    const doc = await wsColl().findOne({ _id: LEGACY as any });
+    expect(doc).toMatchObject({ name: 'legacy', source: 'csv' });
+    expect(String(doc!.projectId)).toBe(P);
+    expect(await align()).toEqual({ normalized: 0, moved: 0 });
   });
 });
