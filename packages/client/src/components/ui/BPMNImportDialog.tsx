@@ -5,7 +5,8 @@ import { X, Upload, FileCode, AlertCircle, CheckCircle2, Layers, GitMerge } from
 import { parseBPMN } from '../../utils/bpmnParser';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
-import { architectureAPI, workspaceAPI } from '../../services/api';
+import { architectureAPI } from '../../services/api';
+import { persistNewWorkspace } from '../../utils/workspacePersistence';
 import { findSharedElements } from '../../utils/workspaceMatcher';
 
 interface Props {
@@ -117,11 +118,9 @@ export default function BPMNImportDialog({ isOpen, onClose }: Props) {
       }));
 
       if (isNew) {
-        // Create workspace locally
+        // Server first (THE-775): if this throws, nothing has been written locally or on the server.
+        await persistNewWorkspace(projectId, { id: wsId, name, source: 'bpmn', color, offsetX });
         addWorkspace({ id: wsId, name, projectId, source: 'bpmn', color, offsetX, createdAt: new Date().toISOString() });
-
-        // Persist workspace to server
-        await workspaceAPI.create(projectId, { id: wsId, name, source: 'bpmn', color, offsetX }).catch(() => {});
       }
 
       // Import elements into local store
