@@ -18,7 +18,13 @@
  *
  * Linear: THE-430 (REQ-ONTO-001.5) · Bänder THE-431 · ECE-Reuse THE-380
  */
-import { expectedCalibrationError, type CalibrationSample, type CalibrationReport } from './metrics';
+import {
+  expectedCalibrationError,
+  type CalibrationSample,
+  type CalibrationReport,
+  type ConfidenceInterval,
+} from './metrics';
+import { jeffreysInterval } from './proportionInterval';
 import type { TypingLabels, TypingAxis } from './typingGolden';
 import { TYPING_AXES } from './typingGolden';
 import type { ComplexityBand } from '../norms/complexityScore';
@@ -58,6 +64,8 @@ export interface AxisAccuracy {
   labeled: number; // Gold-Achse gesetzt (string ODER null)
   correct: number;
   accuracy: number;
+  /** 95-%-Beta-Intervall (Jeffreys); `null` ohne gelabelte Fälle. */
+  ci: ConfidenceInterval | null;
 }
 
 export function axisAccuracy(cases: TypingEvalCase[], axis: TypingAxis): AxisAccuracy {
@@ -71,7 +79,13 @@ export function axisAccuracy(cases: TypingEvalCase[], axis: TypingAxis): AxisAcc
     // null===null gilt als korrekt; string-Gleichheit sonst.
     if ((g === null && p === null) || (g !== null && g === p)) correct++;
   }
-  return { axis, labeled, correct, accuracy: labeled ? correct / labeled : 0 };
+  return {
+    axis,
+    labeled,
+    correct,
+    accuracy: labeled ? correct / labeled : 0,
+    ci: jeffreysInterval(correct, labeled),
+  };
 }
 
 // ─── per-Klassen-Confusion + macro-F1 je Achse ──────────────────

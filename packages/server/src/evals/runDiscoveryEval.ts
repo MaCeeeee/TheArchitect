@@ -46,6 +46,7 @@ import {
   type ConfidenceInterval,
   type PrfMetrics,
 } from './metrics';
+import { formatInterval } from './proportionInterval';
 
 const REPORTS_DIR = path.join(__dirname, 'reports');
 const DEFAULT_TOP_K = Number(process.env.LAW_DISCOVERY_TOP_K) || 60;
@@ -416,9 +417,9 @@ export function buildMarkdownReport(args: BuildReportArgs): string {
     lines.push('');
     lines.push('### Confidence bands');
     lines.push('');
-    lines.push('| Band | Predictions | Correct | Precision |');
-    lines.push('|---|---|---|---|');
-    for (const b of bands) lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} |`);
+    lines.push('| Band | Predictions | Correct | Precision | 95 % (Beta) |');
+    lines.push('|---|---|---|---|---|');
+    for (const b of bands) lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${pct(b.precision)} | ${formatInterval(b.ci)} |`);
     lines.push('');
     lines.push('## Cost (AC-4)');
     lines.push('');

@@ -92,11 +92,23 @@ describe('tierFor (THE-438)', () => {
 
 describe('armRates (THE-438)', () => {
   it('counts hits and returns a rate', () => {
-    expect(armRates([true, false, true, true])).toEqual({ yes: 3, n: 4, rate: 0.75 });
+    expect(armRates([true, false, true, true])).toMatchObject({ yes: 3, n: 4, rate: 0.75 });
   });
 
   it('returns rate 0 for an empty arm rather than NaN', () => {
-    expect(armRates([])).toEqual({ yes: 0, n: 0, rate: 0 });
+    expect(armRates([])).toEqual({ yes: 0, n: 0, rate: 0, ci: null });
+  });
+
+  it('carries a Beta interval around the rate', () => {
+    const { ci } = armRates([true, false, false, false, false]); // 1/5
+    expect(ci!.lo).toBeCloseTo(0.022513, 5);
+    expect(ci!.hi).toBeCloseTo(0.628626, 5);
+  });
+
+  it('shows the interval in the report table', () => {
+    const r = buildActionReport({ P: [true, true, true, true, true], T: [true, false], K: [false, false] }, 1);
+    expect(r.markdown).toContain('| 95-%-Intervall |');
+    expect(r.markdown).toMatch(/\| P Positiv-Kontrolle .*\| 5\/5 \| 100 % \| \d+–100 % \|/);
   });
 });
 

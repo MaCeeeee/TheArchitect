@@ -26,8 +26,9 @@ import crypto from 'node:crypto';
 import { config as loadEnv } from 'dotenv';
 import Anthropic from '@anthropic-ai/sdk';
 import { loadTypingGolden, TYPING_AXES, type TypingGoldenSet, type TypingLabels, type TypingAxis } from './typingGolden';
-import { buildTypingReport, type TypingEvalCase, type TypingReport, axisCalibrationSamples } from './typingMetrics';
+import { buildTypingReport, type AxisAccuracy, type TypingEvalCase, type TypingReport, axisCalibrationSamples } from './typingMetrics';
 import { aurocFromSamples, thresholdRoutingStats, type RoutingStat } from './metrics';
+import { formatInterval } from './proportionInterval';
 import type { ComplexityBand } from '../norms/complexityScore';
 import { complexityForNorm } from '../norms/normComplexity.reader';
 import { listNorms } from '../services/norm.service';
@@ -158,8 +159,8 @@ function pct(x: number): string {
   return `${(x * 100).toFixed(1)}%`;
 }
 
-function accRow(label: string, a: { labeled: number; correct: number; accuracy: number }): string {
-  return `| ${label} | ${a.correct}/${a.labeled} | ${a.labeled ? pct(a.accuracy) : '—'} |`;
+function accRow(label: string, a: AxisAccuracy): string {
+  return `| ${label} | ${a.correct}/${a.labeled} | ${a.labeled ? pct(a.accuracy) : '—'} | ${formatInterval(a.ci)} |`;
 }
 
 export function renderTypingReportMarkdown(report: TypingReport, meta: { golden: string; model?: string; samples?: number } = { golden: '' }): string {
@@ -193,15 +194,15 @@ export function renderTypingReportMarkdown(report: TypingReport, meta: { golden:
       lines.push('> ⚠️ **Akt-Metadatum (THE-691)** — ererbt vom Rechtsakt, zählt nicht als Klassifikator-Leistung.');
       lines.push('');
     }
-    lines.push(`Accuracy: **${a.accuracy.labeled ? pct(a.accuracy.accuracy) : '—'}** (${a.accuracy.correct}/${a.accuracy.labeled}) · macro-F1: **${a.accuracy.labeled ? a.confusion.macroF1.toFixed(3) : '—'}**${a.calibration ? ` · ECE: ${a.calibration.ece.toFixed(3)}` : ''}`);
+    lines.push(`Accuracy: **${a.accuracy.labeled ? pct(a.accuracy.accuracy) : '—'}** (${a.accuracy.correct}/${a.accuracy.labeled}, 95 %: ${formatInterval(a.accuracy.ci)}) · macro-F1: **${a.accuracy.labeled ? a.confusion.macroF1.toFixed(3) : '—'}**${a.calibration ? ` · ECE: ${a.calibration.ece.toFixed(3)}` : ''}`);
     lines.push('');
     if (!a.accuracy.labeled) {
       lines.push('_keine gelabelten Gold-Achsen_');
       lines.push('');
       continue;
     }
-    lines.push('| Breakdown | correct/labeled | accuracy |');
-    lines.push('| --- | --- | --- |');
+    lines.push('| Breakdown | correct/labeled | accuracy | 95 % (Beta) |');
+    lines.push('| --- | --- | --- | --- |');
     for (const [k, v] of Object.entries(a.byLanguage)) lines.push(accRow(`lang: ${k}`, v));
     for (const [k, v] of Object.entries(a.bySource)) lines.push(accRow(`source: ${k}`, v));
     for (const [k, v] of Object.entries(a.byComplexityBand)) lines.push(accRow(`C_score: ${k}`, v));

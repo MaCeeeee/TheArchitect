@@ -49,6 +49,7 @@ import {
   thresholdRoutingStats,
   type CaseOutcome,
 } from './metrics';
+import { formatInterval } from './proportionInterval';
 
 const CACHE_DIR = path.join(__dirname, 'cache');
 const REPORTS_DIR = path.join(__dirname, 'reports');
@@ -257,10 +258,10 @@ function buildMarkdownReport(args: {
   lines.push('');
   lines.push('## Precision je Confidence-Band (Kalibrierungs-Vorstufe, THE-383)');
   lines.push('');
-  lines.push('| Band | Vorhersagen | korrekt | Precision |');
-  lines.push('|---|---|---|---|');
+  lines.push('| Band | Vorhersagen | korrekt | Precision | 95 % (Beta) |');
+  lines.push('|---|---|---|---|---|');
   for (const b of bands) {
-    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${b.predictions ? pct(b.precision) : '—'} |`);
+    lines.push(`| ${b.band} | ${b.predictions} | ${b.correct} | ${b.predictions ? pct(b.precision) : '—'} | ${formatInterval(b.ci)} |`);
   }
   lines.push('');
   // THE-597: dieselbe Rechnung wie das retrospektive Gate — ECE plus

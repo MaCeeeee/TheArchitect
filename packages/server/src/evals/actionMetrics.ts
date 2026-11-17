@@ -23,6 +23,8 @@
  * Linear: THE-438 · Vorgeschichte: THE-538
  */
 import { CANARY_CATCH_MIN } from './canaries';
+import type { ConfidenceInterval } from './metrics';
+import { jeffreysInterval, formatInterval } from './proportionInterval';
 
 /** Ein Prüfer-Votum. `null` = Haus hat nicht geantwortet (Ausfall, keine Ablehnung). */
 export type Vote = boolean | null;
@@ -267,11 +269,18 @@ export interface ArmRate {
   yes: number;
   n: number;
   rate: number;
+  /** 95-%-Beta-Intervall (Jeffreys); `null` bei leerem Arm. */
+  ci: ConfidenceInterval | null;
 }
 
 export function armRates(arm: boolean[]): ArmRate {
   const yes = arm.filter(Boolean).length;
-  return { yes, n: arm.length, rate: arm.length === 0 ? 0 : yes / arm.length };
+  return {
+    yes,
+    n: arm.length,
+    rate: arm.length === 0 ? 0 : yes / arm.length,
+    ci: jeffreysInterval(yes, arm.length),
+  };
 }
 
 export interface ActionReport {
@@ -342,13 +351,17 @@ export function buildActionReport(
 
   const tRate = valid ? t.rate : null;
   const tCell = valid ? `${(100 * t.rate).toFixed(0)} %` : '— (Lauf ungültig)';
+  // Das Intervall von T fällt mit der Quote weg — es ist auch eine Zahl über T.
+  const tCiCell = valid ? formatInterval(t.ci) : '—';
 
   const markdown = [
-    '| Arm | Treffer | Quote |',
-    '| --- | --- | --- |',
-    `| P Positiv-Kontrolle *(dieselbe Pflicht)* | ${p.yes}/${p.n} | ${(100 * p.rate).toFixed(0)} % |`,
-    `| T gleiche kanonische Handlung | ${t.yes}/${t.n} | ${tCell} |`,
-    `| K Negativ-Kontrolle *(verschiedene Handlung)* | ${k.yes}/${k.n} | ${(100 * k.rate).toFixed(0)} % |`,
+    '| Arm | Treffer | Quote | 95-%-Intervall |',
+    '| --- | --- | --- | --- |',
+    `| P Positiv-Kontrolle *(dieselbe Pflicht)* | ${p.yes}/${p.n} | ${(100 * p.rate).toFixed(0)} % | ${formatInterval(p.ci)} |`,
+    `| T gleiche kanonische Handlung | ${t.yes}/${t.n} | ${tCell} | ${tCiCell} |`,
+    `| K Negativ-Kontrolle *(verschiedene Handlung)* | ${k.yes}/${k.n} | ${(100 * k.rate).toFixed(0)} % | ${formatInterval(k.ci)} |`,
+    '',
+    'Intervall: Beta (Jeffreys), 95 %. Bei kleinem n ist es breit — das ist die Aussage, kein Mangel.',
     '',
     valid && p.rate > 0
       ? `Arm T gegen die Decke des Instruments: ${((100 * t.rate) / p.rate).toFixed(0)} %.`
