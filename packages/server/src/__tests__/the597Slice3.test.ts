@@ -80,15 +80,35 @@ describe('parseRun', () => {
   });
 
   it('lehnt NaN/fehlende/außerhalb [0,1] liegende Konfidenz ab', () => {
+    const predicted = { obligationKind: 'obligation', partyRole: 'x', provisionKind: 'y' };
     const bad = (conf: Record<string, unknown>) => [
-      { ...one[0], confidence: conf },
+      { ...one[0], predicted, confidence: conf },
       ...one.slice(1),
     ];
     const ok = { obligationKind: 1, partyRole: 1, provisionKind: 1 };
     // JSON.stringify macht NaN zu null → „nicht endlich“
     expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ ...ok, partyRole: NaN }) as TypingEvalCase[]))).toThrow(/confidence ungültig: c0\/partyRole/);
+    // Konfidenz fehlt, Vorhersage gesetzt → abgewiesen
     expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ obligationKind: 1, partyRole: 1 }) as TypingEvalCase[]))).toThrow(/confidence ungültig: c0\/provisionKind/);
     expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ ...ok, obligationKind: 1.5 }) as TypingEvalCase[]))).toThrow(/confidence/);
+  });
+
+  it('nimmt offene Achsen (Konfidenz und Vorhersage fehlen) an und zählt sie', () => {
+    const open = (i: number) =>
+      mkCase(`c${i}`, { obligationKind: 'obligation' }, { obligationKind: 'obligation' }, { obligationKind: 1, partyRole: 1 });
+    const withPred = (i: number) => ({
+      ...open(i),
+      predicted: { obligationKind: 'obligation', partyRole: 'x' },
+    });
+    const cs = [...one.slice(2), open(0), withPred(1)].map((c) => ({ ...c })) as TypingEvalCase[];
+    // c0: provisionKind weder Vorhersage noch Konfidenz → offen; c1 ebenso
+    const run = parseRun('x', 'gv3', runJson('gv3', cs.map((c, i) => (i >= 68 ? { ...c, caseId: `o${i}` } : c)) as TypingEvalCase[]));
+    expect(run.openByAxis).toEqual({ obligationKind: 0, partyRole: 0, provisionKind: 2 });
+  });
+
+  it('lehnt eine Vorhersage ohne Konfidenz ab (auch null = nicht anwendbar)', () => {
+    const c0 = { ...one[0], predicted: { obligationKind: 'obligation', provisionKind: null }, confidence: { obligationKind: 1, partyRole: 1 } };
+    expect(() => parseRun('x', 'gv3', runJson('gv3', [c0, ...one.slice(1)] as TypingEvalCase[]))).toThrow(/c0\/provisionKind/);
   });
 
   it('lehnt einen gv3-Lauf ab, der als gv2 deklariert wird (Golden-Hash passt nicht)', () => {
@@ -141,7 +161,7 @@ function axisRun(
   add(n.wrongHigh, false, 1);
   add(n.rightLow, true, 0.6);
   add(n.rightHigh, true, 1);
-  return { label, golden, fileSha256: label.padEnd(64, '0'), cases };
+  return { label, golden, fileSha256: label.padEnd(64, '0'), cases, openByAxis: { obligationKind: 0, partyRole: 0, provisionKind: 0 } };
 }
 
 const PASS = { wrongLow: 6, wrongHigh: 4, rightLow: 2, rightHigh: 48 }; // Recall 60 %, FA 4 %
@@ -231,7 +251,7 @@ describe('decideSlice3', () => {
       for (let i = 0; i < 6; i++) cases.push(mkCase(`${label}-w${i}`, { obligationKind: 'a' }, { obligationKind: 'b' }, { obligationKind: 0.8 }));
       for (let i = 0; i < 4; i++) cases.push(mkCase(`${label}-x${i}`, { obligationKind: 'a' }, { obligationKind: 'b' }, { obligationKind: 1 }));
       for (let i = 0; i < 50; i++) cases.push(mkCase(`${label}-r${i}`, { obligationKind: 'a' }, { obligationKind: 'a' }, { obligationKind: 1 }));
-      return { label, golden, fileSha256: label.padEnd(64, '0'), cases };
+      return { label, golden, fileSha256: label.padEnd(64, '0'), cases, openByAxis: { obligationKind: 0, partyRole: 0, provisionKind: 0 } };
     };
     const d = decideSlice3([1, 2, 3, 4, 5].map((i) => mk(`gv3-run${i}`, 'gv3')).concat([1, 2].map((i) => mk(`gv2-run${i}`, 'gv2'))));
     expect(combo(d, 'obligationKind', 0.8).pooledGv3.recall).toBe(0);
@@ -270,14 +290,14 @@ describe('knownErrorClasses', () => {
       mkCase('b', { obligationKind: 'prohibition' }, { obligationKind: 'obligation' }, { obligationKind: 1 }),
       mkCase('c', { obligationKind: 'prohibition' }, { obligationKind: 'prohibition' }, { obligationKind: 1 }),
     ];
-    const r: Slice3Run[] = [{ label: 'gv3-run1', golden: 'gv3', fileSha256: 'x'.repeat(64), cases: gv3 }];
+    const r: Slice3Run[] = [{ label: 'gv3-run1', golden: 'gv3', fileSha256: 'x'.repeat(64), cases: gv3, openByAxis: { obligationKind: 0, partyRole: 0, provisionKind: 0 } }];
     const f04 = knownErrorClasses(r).find((k) => k.id === 'F-04')!;
     expect(f04).toMatchObject({ axis: 'obligationKind', goldClass: 'prohibition', gold: 3, wrong: 2, routedBelow08: 1, routedBelow10: 1 });
   });
 
   it('ignoriert gv2-Läufe', () => {
     const r: Slice3Run[] = [{
-      label: 'gv2-run1', golden: 'gv2', fileSha256: 'y'.repeat(64),
+      label: 'gv2-run1', golden: 'gv2', fileSha256: 'y'.repeat(64), openByAxis: { obligationKind: 0, partyRole: 0, provisionKind: 0 },
       cases: [mkCase('a', { obligationKind: 'prohibition' }, { obligationKind: 'obligation' }, { obligationKind: 0.6 })],
     }];
     expect(knownErrorClasses(r).find((k) => k.id === 'F-04')).toMatchObject({ gold: 0, wrong: 0 });
@@ -294,6 +314,11 @@ describe('renderSlice3Report', () => {
   });
   it('listet alle 7 Input-Hashes', () => {
     for (const i of d.inputs) expect(md).toContain(i.fileSha256);
+  });
+  it('weist offen gebliebene Fälle je Lauf aus und zeigt Prüf-Last mit Zählung', () => {
+    expect(md).toContain('Offen geblieben (alle k Aufrufe ohne Wert, wie in Slice 1 übersprungen)');
+    expect(md).toMatch(/\| gv3-run1 \| 0 \| 0 \| 0 \|/);
+    expect(md).toMatch(/obligationKind \| < 0\.8[^\n]*\| 13\.3 % \(40\/300\)/);
   });
   it('markiert die Prüf-Last als nicht entscheidend und partyRole-Replikation als entfallen', () => {
     expect(md).toMatch(/Prüf-Last.*entscheidet nicht/);

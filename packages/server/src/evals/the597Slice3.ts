@@ -36,6 +36,11 @@ export interface Slice3Run {
   /** SHA-256 der Lauf-Datei — Input-Hash des Berichts (AC-1). */
   fileSha256: string;
   cases: TypingEvalCase[];
+  /**
+   * Fälle je Achse, in denen alle k Aufrufe offen blieben (weder Vorhersage noch Konfidenz) —
+   * wie in Slice 1 übersprungen. Nur Anzeige, keine Wirkung auf die Entscheidung.
+   */
+  openByAxis: Record<Slice3Axis, number>;
 }
 
 interface RawRun {
@@ -59,6 +64,7 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
   }
   const j = parsed as RawRun;
   const errs: string[] = [];
+  const openByAxis = { obligationKind: 0, partyRole: 0, provisionKind: 0 } as Record<Slice3Axis, number>;
   if (j.model !== SLICE3_INSTRUMENT.model) errs.push(`model=${String(j.model)}`);
   if (j.samples !== SLICE3_INSTRUMENT.samples) errs.push(`samples=${String(j.samples)}`);
   if (j.variante !== SLICE3_INSTRUMENT.variante) errs.push(`variante=${String(j.variante)}`);
@@ -71,10 +77,21 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
     errs.push('cases: caseId doppelt');
   }
   if (Array.isArray(j.cases)) {
-    for (const c of j.cases as Array<{ caseId?: unknown; confidence?: Record<string, unknown> | null }>) {
+    // aggregateVotes (runTypingEval.ts) setzt für eine Achse, die in allen k Aufrufen offen blieb,
+    // weder Label noch Konfidenz: predicted[axis] fehlt (undefined). Das ist „offen" und wird
+    // wie in Slice 1 übersprungen. Jede Stimme (auch null = nicht anwendbar) trägt eine Konfidenz.
+    type RawCase = {
+      caseId?: unknown;
+      predicted?: Record<string, unknown> | null;
+      confidence?: Record<string, unknown> | null;
+    };
+    for (const c of j.cases as RawCase[]) {
       for (const axis of SLICE3_AXES) {
         const v = c?.confidence?.[axis];
-        if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
+        if (v === undefined) {
+          if (c?.predicted?.[axis] === undefined) openByAxis[axis]++;
+          else errs.push(`confidence ungültig: ${String(c?.caseId)}/${axis} (Vorhersage ohne Konfidenz)`);
+        } else if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
           errs.push(`confidence ungültig: ${String(c?.caseId)}/${axis}`);
         }
       }
@@ -88,6 +105,7 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
     golden,
     fileSha256: createHash('sha256').update(raw).digest('hex'),
     cases: j.cases as TypingEvalCase[],
+    openByAxis,
   };
 }
 
@@ -136,7 +154,7 @@ export interface Slice3Decision {
   layer1: 'GO' | 'NO-GO';
   goCombos: Array<{ axis: Slice3Axis; threshold: number }>;
   combos: ComboVerdict[];
-  inputs: Array<{ label: string; golden: GoldenId; fileSha256: string }>;
+  inputs: Array<{ label: string; golden: GoldenId; fileSha256: string; openByAxis: Record<Slice3Axis, number> }>;
 }
 
 export function decideSlice3(runs: Slice3Run[]): Slice3Decision {
@@ -191,7 +209,7 @@ export function decideSlice3(runs: Slice3Run[]): Slice3Decision {
     layer1: goCombos.length ? 'GO' : 'NO-GO',
     goCombos,
     combos,
-    inputs: runs.map((r) => ({ label: r.label, golden: r.golden, fileSha256: r.fileSha256 })),
+    inputs: runs.map((r) => ({ label: r.label, golden: r.golden, fileSha256: r.fileSha256, openByAxis: r.openByAxis })),
   };
 }
 
@@ -259,7 +277,7 @@ export function renderSlice3Report(d: Slice3Decision, known: KnownErrorClassStat
   L.push('|---|---|---|---|---|---|---|---|---|');
   for (const c of d.combos) {
     L.push(
-      `| ${c.axis} | ${thr(c.threshold)} | ${rate(c.pooledGv3.caught, c.pooledGv3.wrong)} | ${rate(c.pooledGv3.falseAlarms, c.pooledGv3.correct)} | ${yn(c.pooledGv3Pass)} | ${c.stableRuns}/${c.perRunGv3.length} | ${yn(c.replicationPass)}${c.pooledGv2 ? ` (${rate(c.pooledGv2.caught, c.pooledGv2.wrong)} / ${rate(c.pooledGv2.falseAlarms, c.pooledGv2.correct)})` : ''} | ${c.reviewLoad === null ? '—' : pct(c.reviewLoad)} | **${c.go ? 'GO' : 'nein'}** |`
+      `| ${c.axis} | ${thr(c.threshold)} | ${rate(c.pooledGv3.caught, c.pooledGv3.wrong)} | ${rate(c.pooledGv3.falseAlarms, c.pooledGv3.correct)} | ${yn(c.pooledGv3Pass)} | ${c.stableRuns}/${c.perRunGv3.length} | ${yn(c.replicationPass)}${c.pooledGv2 ? ` (${rate(c.pooledGv2.caught, c.pooledGv2.wrong)} / ${rate(c.pooledGv2.falseAlarms, c.pooledGv2.correct)})` : ''} | ${rate(c.pooledGv3.caught + c.pooledGv3.falseAlarms, c.pooledGv3.wrong + c.pooledGv3.correct)} | **${c.go ? 'GO' : 'nein'}** |`
     );
   }
   L.push('');
@@ -287,6 +305,12 @@ export function renderSlice3Report(d: Slice3Decision, known: KnownErrorClassStat
     }
     L.push('');
   }
+  L.push('## Offen geblieben (alle k Aufrufe ohne Wert, wie in Slice 1 übersprungen)');
+  L.push('');
+  L.push(`| Lauf | ${SLICE3_AXES.join(' | ')} |`);
+  L.push(`|---|${SLICE3_AXES.map(() => '---|').join('')}`);
+  for (const i of d.inputs) L.push(`| ${i.label} | ${SLICE3_AXES.map((a) => i.openByAxis[a]).join(' | ')} |`);
+  L.push('');
   L.push('## Inputs (SHA-256 der Lauf-Dateien)');
   L.push('');
   L.push('| Lauf | Golden | SHA-256 |');
