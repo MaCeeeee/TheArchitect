@@ -57,11 +57,11 @@ async function el(projectId: string, id: string, workspaceId: string | null, cer
     { id: `${projectId}-${id}`, projectId, workspaceId, certifiedBy },
   );
 }
-async function edge(projectId: string, from: string, to: string) {
+async function edge(projectId: string, from: string, to: string, certifiedBy: string | null = null) {
   await runCypher(
     `MATCH (a:ArchitectureElement {id: $from}), (b:ArchitectureElement {id: $to})
-     CREATE (a)-[:CONNECTS_TO {id: $from + '->' + $to}]->(b)`,
-    { from: `${projectId}-${from}`, to: `${projectId}-${to}` },
+     CREATE (a)-[:CONNECTS_TO {id: $from + '->' + $to, certifiedBy: $certifiedBy}]->(b)`,
+    { from: `${projectId}-${from}`, to: `${projectId}-${to}`, certifiedBy },
   );
 }
 async function count(projectId: string, workspaceId: string | null): Promise<number> {
@@ -86,10 +86,10 @@ if (RUN) {
     await connectNeo4j();
   });
   afterAll(async () => {
-    await runCypher(`MATCH (e:ArchitectureElement) WHERE e.projectId IN $ps DETACH DELETE e`, { ps: ALL });
-    await getNeo4jDriver().close();
-    await mongoose.disconnect();
-    await mongo.stop();
+    try { await runCypher(`MATCH (e:ArchitectureElement) WHERE e.projectId IN $ps DETACH DELETE e`, { ps: ALL }); } catch { /* neo4j not connected */ }
+    try { await getNeo4jDriver().close(); } catch { /* neo4j not connected */ }
+    try { await mongoose.disconnect(); } catch { /* not connected */ }
+    try { await mongo?.stop(); } catch { /* not started */ }
   });
   beforeEach(wipe);
 }
@@ -128,10 +128,35 @@ d('THE-768 — DELETE /api/workspaces cascades to ArchitectureElement', () => {
 
     const res = await request(app).delete(`/api/workspaces/${P}/ws-a`);
 
-    expect(res.body.removed).toEqual({ elements: 2, relationships: 2, crossWorkspaceRelationships: 1, certified: 1 });
+    expect(res.body.removed).toEqual({ elements: 2, relationships: 2, crossWorkspaceRelationships: 1, certified: 1, certifiedRelationships: 0 });
     expect(auditCreate).toHaveBeenCalledTimes(1);
-    expect(auditCreate.mock.calls[0][0].after).toEqual(res.body.removed);
+    expect(auditCreate.mock.calls[0][0].after).toEqual({ ...res.body.removed, mongoDeleted: true });
     expect(await count(P, 'ws-b')).toBe(1);   // the other end survives, only the edge is gone
+  });
+});
+
+d('THE-770 — audit scope for certified relationships and empty workspaces', () => {
+  test('only a relationship is certified → removed.certifiedRelationships 1, audit riskLevel high', async () => {
+    await wsString(P, 'ws-a');
+    await el(P, 'a1', 'ws-a'); await el(P, 'a2', 'ws-a');
+    await edge(P, 'a1', 'a2', 'notary-1');
+
+    const res = await request(app).delete(`/api/workspaces/${P}/ws-a`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.removed).toMatchObject({ certified: 0, certifiedRelationships: 1 });
+    expect(auditCreate.mock.calls[0][0].riskLevel).toBe('high');
+  });
+
+  test('workspace without elements → 200, all zeros, Mongo doc gone, one audit entry', async () => {
+    await wsString(P, 'ws-empty');
+
+    const res = await request(app).delete(`/api/workspaces/${P}/ws-empty`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.removed).toEqual({ elements: 0, relationships: 0, crossWorkspaceRelationships: 0, certified: 0, certifiedRelationships: 0 });
+    expect(await wsColl().countDocuments({ _id: 'ws-empty' as any })).toBe(0);
+    expect(auditCreate).toHaveBeenCalledTimes(1);
   });
 });
 

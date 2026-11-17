@@ -4,6 +4,7 @@ import { requireProjectAccess } from '../middleware/projectAccess.middleware';
 import { Workspace } from '../models/Workspace';
 import { runCypher } from '../config/neo4j';
 import { createAuditEntry } from '../middleware/audit.middleware';
+import { log } from '../config/logger';
 
 /** Neo4j integer → number (counts only). Kept local: no dependency on another domain's service. */
 const toCount = (v: unknown): number =>
@@ -84,9 +85,10 @@ router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async 
             collect(DISTINCT r) AS rels,
             collect(DISTINCT CASE WHEN o:ArchitectureElement AND coalesce(o.workspaceId, '') <> $workspaceId THEN r END) AS crossRels
        WITH els, size(rels) AS relationships, size(crossRels) AS crossWorkspaceRelationships,
-            size([x IN els WHERE x.certifiedBy IS NOT NULL]) AS certified
+            size([x IN els WHERE x.certifiedBy IS NOT NULL]) AS certified,
+            size([x IN rels WHERE x.certifiedBy IS NOT NULL]) AS certifiedRelationships
        FOREACH (x IN els | DETACH DELETE x)
-       RETURN size(els) AS elements, relationships, crossWorkspaceRelationships, certified`,
+       RETURN size(els) AS elements, relationships, crossWorkspaceRelationships, certified, certifiedRelationships`,
       { projectId, workspaceId },
     );
     const row = records[0];
@@ -95,9 +97,19 @@ router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async 
       relationships: toCount(row?.get('relationships')),
       crossWorkspaceRelationships: toCount(row?.get('crossWorkspaceRelationships')),
       certified: toCount(row?.get('certified')),
+      certifiedRelationships: toCount(row?.get('certifiedRelationships')),
     };
 
-    await Workspace.deleteOne({ _id: workspaceId, projectId });
+    // Neo4j is already gone: the audit entry must be written even if the Mongo delete fails.
+    let mongoDeleted = true;
+    let mongoError: unknown;
+    try {
+      await Workspace.deleteOne({ _id: workspaceId, projectId });
+    } catch (e) {
+      mongoDeleted = false;
+      mongoError = e;
+      log.error({ err: e, projectId, workspaceId }, '[workspaces] mongo delete failed after neo4j cascade');
+    }
     await createAuditEntry({
       userId: String(req.user!._id),
       projectId: String(projectId),
@@ -105,15 +117,17 @@ router.delete('/:projectId/:workspaceId', requireProjectAccess('editor'), async 
       entityType: 'workspace',
       entityId: String(workspaceId),
       before: { name: workspace.name, source: workspace.source },
-      after: removed,
+      after: { ...removed, mongoDeleted },
       ip: req.ip || req.socket.remoteAddress || '',
       userAgent: req.get('user-agent') || '',
-      // Certified elements removed by an editor bypass the notary — flag for review.
-      riskLevel: removed.certified > 0 ? 'high' : 'medium',
+      // Certified elements or relationships removed by an editor bypass the notary — flag for review.
+      riskLevel: removed.certified > 0 || removed.certifiedRelationships > 0 ? 'high' : 'medium',
     });
+    if (!mongoDeleted) throw mongoError;
 
     res.json({ message: 'Workspace deleted', removed });
   } catch (err) {
+    log.error({ err, projectId: req.params.projectId, workspaceId: req.params.workspaceId }, '[workspaces] delete failed');
     res.status(500).json({ error: 'Failed to delete workspace' });
   }
 });
