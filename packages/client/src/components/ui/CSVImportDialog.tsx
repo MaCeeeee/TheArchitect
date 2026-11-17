@@ -6,7 +6,8 @@ import { parseCSV, parseCSVSeparate } from '../../utils/csvParser';
 import type { CSVParseResult } from '../../utils/csvParser';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
-import { architectureAPI, workspaceAPI } from '../../services/api';
+import { architectureAPI } from '../../services/api';
+import { persistNewWorkspace } from '../../utils/workspacePersistence';
 import { findSharedElements } from '../../utils/workspaceMatcher';
 
 interface Props {
@@ -115,8 +116,9 @@ export default function CSVImportDialog({ isOpen, onClose }: Props) {
       }));
 
       if (isNew) {
+        // Server first (THE-775): if this throws, nothing has been written locally or on the server.
+        await persistNewWorkspace(projectId, { id: wsId, name, source: 'csv', color, offsetX });
         addWorkspace({ id: wsId, name, projectId, source: 'csv', color, offsetX, createdAt: new Date().toISOString() });
-        await workspaceAPI.create(projectId, { id: wsId, name, source: 'csv', color, offsetX }).catch(() => {});
       }
 
       importElements(offsetElements, preview.connections, wsId);
