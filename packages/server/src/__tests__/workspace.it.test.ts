@@ -200,3 +200,23 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     expect(await align()).toEqual({ normalized: 0, moved: 0 });
   });
 });
+
+d('THE-771 — delete orphans only', () => {
+  test('removes orphan groups of live projects; ok, aligned and dead-project elements stay', async () => {
+    await wsString(P, 'ws-a');
+    await el(P, 'a1', 'ws-a');
+    await el(P, 'o1', 'ws-1782282061855-e269m'); await el(P, 'o2', 'ws-1782282061855-e269m');
+    await el(DEAD, 'd1', 'ws-1775479541598-rfu4y');
+
+    const s = getNeo4jDriver().session();
+    try {
+      const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      expect(p.orphans).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-e269m', n: 2, certified: 0 }]);
+      expect(await deleteOrphans(s, p.orphans)).toBe(2);
+    } finally { await s.close(); }
+
+    expect(await count(P, 'ws-1782282061855-e269m')).toBe(0);
+    expect(await count(P, 'ws-a')).toBe(1);
+    expect(await count(DEAD, 'ws-1775479541598-rfu4y')).toBe(1);
+  });
+});
