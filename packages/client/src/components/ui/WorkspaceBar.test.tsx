@@ -28,6 +28,8 @@ beforeEach(() => {
   useArchitectureStore.setState({ projectId: 'p1', elements: [el('e1'), el('e2')] as never });
 });
 
+const tick = () => new Promise((r) => setTimeout(r, 0));
+
 const confirmDelete = async () => {
   const user = userEvent.setup();
   await user.click(screen.getByTitle('Remove this architecture from the project'));
@@ -40,6 +42,8 @@ describe('WorkspaceBar — delete', () => {
     render(<WorkspaceBar />);
     await confirmDelete();
     await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    await tick();
+    expect(toastError).toHaveBeenCalledTimes(1);
     expect(toastSuccess).not.toHaveBeenCalled();
     expect(useWorkspaceStore.getState().workspaces.map((w) => w.id)).toEqual(['ws-1']);
     expect(useArchitectureStore.getState().elements).toHaveLength(2);
@@ -51,6 +55,9 @@ describe('WorkspaceBar — delete', () => {
     render(<WorkspaceBar />);
     await confirmDelete();
     await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Workspace deleted'));
+    await tick();
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledTimes(1);
     expect(useWorkspaceStore.getState().workspaces).toHaveLength(0);
     expect(useArchitectureStore.getState().elements).toHaveLength(0);
     expect(toastError).not.toHaveBeenCalled();
@@ -65,6 +72,56 @@ describe('WorkspaceBar — delete', () => {
     expect(toastSuccess).not.toHaveBeenCalled();
     resolve({ data: { success: true } });
     await waitFor(() => expect(useArchitectureStore.getState().elements).toHaveLength(0));
+  });
+
+  test('pending DELETE → X is gone, "Deleting…" shown, a second DELETE is impossible; resolve → removed, one success toast', async () => {
+    let resolve!: (v: unknown) => void;
+    del.mockReturnValue(new Promise((r) => { resolve = r; }));
+    render(<WorkspaceBar />);
+    await confirmDelete();
+    expect(screen.queryByTitle('Remove this architecture from the project')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Yes' })).not.toBeInTheDocument();
+    expect(screen.getByText('Deleting…')).toBeInTheDocument();
+    await tick();
+    expect(del).toHaveBeenCalledTimes(1);
+    await act(async () => { resolve({ data: { success: true } }); });
+    await tick();
+    expect(useWorkspaceStore.getState().workspaces).toHaveLength(0);
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
+    expect(toastError).not.toHaveBeenCalled();
+    expect(del).toHaveBeenCalledTimes(1);
+  });
+
+  test('pending DELETE → double-click does not open the rename input', async () => {
+    del.mockReturnValue(new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<WorkspaceBar />);
+    await confirmDelete();
+    await user.dblClick(screen.getByText('Alpha'));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await tick();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  test('error toast names the server detail', async () => {
+    del.mockRejectedValue({ response: { data: { error: 'Workspace not found' } } });
+    render(<WorkspaceBar />);
+    await confirmDelete();
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    await tick();
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastError.mock.calls[0][0]).toBe('Could not delete the workspace on the server (Workspace not found). Nothing was removed.');
+  });
+
+  test('no project loaded → no DELETE, one error toast, workspace stays', async () => {
+    useArchitectureStore.setState({ projectId: null });
+    render(<WorkspaceBar />);
+    await confirmDelete();
+    await tick();
+    expect(del).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).not.toHaveBeenCalled();
+    expect(useWorkspaceStore.getState().workspaces.map((w) => w.id)).toEqual(['ws-1']);
   });
 });
 
@@ -82,6 +139,8 @@ describe('WorkspaceBar — rename', () => {
     render(<WorkspaceBar />);
     await rename('Beta');
     await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    await tick();
+    expect(update).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenCalledWith('p1', 'ws-1', { name: 'Beta', color: '#f00', offsetX: 0 });
     expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Beta');
     expect(toastError).not.toHaveBeenCalled();
@@ -92,6 +151,8 @@ describe('WorkspaceBar — rename', () => {
     render(<WorkspaceBar />);
     await rename('Beta');
     await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    await tick();
+    expect(toastError).toHaveBeenCalledTimes(1);
     expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Alpha');
   });
 
@@ -99,6 +160,7 @@ describe('WorkspaceBar — rename', () => {
     render(<WorkspaceBar />);
     await rename('   ');
     await rename('Alpha');
+    await tick();
     expect(update).not.toHaveBeenCalled();
   });
 
@@ -118,5 +180,82 @@ describe('WorkspaceBar — rename', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(update).not.toHaveBeenCalled();
     expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Alpha');
+  });
+  test('Escape guard is reset: cancel once, then rename to Beta → exactly one PUT', async () => {
+    update.mockResolvedValue({ data: { data: { ...WS, name: 'Beta' } } });
+    const user = userEvent.setup();
+    render(<WorkspaceBar />);
+    await user.dblClick(screen.getByText('Alpha'));
+    const first = screen.getByRole('textbox');
+    act(() => {
+      fireEvent.keyDown(first, { key: 'Escape' });
+      fireEvent.blur(first);
+    });
+    await rename('Beta');
+    await tick();
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Beta');
+  });
+
+  test('Enter followed by blur → exactly one PUT', async () => {
+    update.mockResolvedValue({ data: { data: { ...WS, name: 'Beta' } } });
+    const user = userEvent.setup();
+    render(<WorkspaceBar />);
+    await user.dblClick(screen.getByText('Alpha'));
+    const input = screen.getByRole('textbox');
+    await user.clear(input);
+    await user.type(input, 'Beta');
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Enter' });
+      fireEvent.blur(input);
+    });
+    await tick();
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  test('pending PUT → no second rename possible; PUT fails → "Alpha" back, one error toast', async () => {
+    let reject!: (e: unknown) => void;
+    update.mockReturnValue(new Promise((_, r) => { reject = r; }));
+    const user = userEvent.setup();
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Beta');
+    await user.dblClick(screen.getByText('Beta'));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await tick();
+    expect(update).toHaveBeenCalledTimes(1);
+    await act(async () => { reject({ response: { status: 500 } }); });
+    await tick();
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Alpha');
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  test('pending PUT → X is hidden, so no DELETE can start', async () => {
+    update.mockReturnValue(new Promise(() => {}));
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    expect(screen.queryByTitle('Remove this architecture from the project')).not.toBeInTheDocument();
+    await tick();
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  test('error toast names the server detail', async () => {
+    update.mockRejectedValue({ response: { status: 403, data: { error: 'Forbidden' } } });
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    await tick();
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastError.mock.calls[0][0]).toBe('Could not save the new name on the server (Forbidden).');
+  });
+
+  test('no project loaded → no PUT, one error toast', async () => {
+    useArchitectureStore.setState({ projectId: null });
+    render(<WorkspaceBar />);
+    await rename('Beta');
+    await tick();
+    expect(update).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledTimes(1);
   });
 });

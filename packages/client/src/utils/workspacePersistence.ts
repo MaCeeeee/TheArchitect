@@ -12,7 +12,8 @@ export class WorkspaceCreateError extends Error {
   }
 }
 
-const detailOf = (err: unknown): string =>
+/** The server's reason for a failed request (e.g. "Workspace not found"), for user-facing error messages. */
+export const serverErrorDetail = (err: unknown): string =>
   ((err as { response?: { data?: { error?: string } } })?.response?.data?.error
     || (err instanceof Error ? err.message : undefined))
   ?? 'unknown error';
@@ -25,6 +26,6 @@ export async function persistNewWorkspace(projectId: string, ws: NewWorkspace): 
   try {
     await workspaceAPI.create(projectId, ws);
   } catch (err) {
-    throw new WorkspaceCreateError(ws.name, detailOf(err));
+    throw new WorkspaceCreateError(ws.name, serverErrorDetail(err));
   }
 }
