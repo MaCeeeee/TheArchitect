@@ -139,7 +139,8 @@ const sameIgnoring = (a: Document, b: Document): boolean => {
  * legacy doc (ignoring _id and updatedAt): equal → leftover of an interrupted run, legacy is deleted;
  * different → nothing is touched and the id is reported as conflict.
  */
-export type NormalizeOutcome = 'normalized' | 'conflict' | 'skipped';
+/** 'inserted' is reported right after the insert commits, BEFORE the delete: if the delete throws, the committed insert is still logged. */
+export type NormalizeOutcome = 'inserted' | 'normalized' | 'conflict' | 'skipped';
 export async function normalizeWorkspaceIds(
   coll: Collection<Document>, hexIds: string[], onStep?: (done: { id: string; outcome: NormalizeOutcome }) => void,
 ): Promise<{ normalized: number; conflicts: string[] }> {
@@ -153,6 +154,7 @@ export async function normalizeWorkspaceIds(
       if (!sameIgnoring(legacy, existing)) { conflicts.push(id); onStep?.({ id, outcome: 'conflict' }); continue; }
     } else {
       await coll.insertOne({ ...legacy, _id: id as unknown as Types.ObjectId });
+      onStep?.({ id, outcome: 'inserted' });   // committed; logged before the delete can throw
     }
     await coll.deleteOne({ _id: new Types.ObjectId(id) });
     normalized += 1;
@@ -195,10 +197,10 @@ export async function sampleGroup(s: Session, projectId: string, workspaceId: st
   };
 }
 
-export interface PartialDelete { projectId: string; workspaceId: string; planned: number; removed: number }
+export interface PartialDelete { projectId: string; workspaceId: string; planned: number; removed: number; remaining: number }
 export interface DeleteOrphansResult { removed: number; skippedCertified: string[]; skippedNowExists: string[]; partial: PartialDelete[] }
 export type DeleteOutcome = 'removed' | 'skipped-certified' | 'skipped-now-exists';
-export interface DeleteStep { projectId: string; workspaceId: string; outcome: DeleteOutcome; planned: number; removed: number }
+export interface DeleteStep { projectId: string; workspaceId: string; outcome: DeleteOutcome; planned: number; removed: number; remaining: number }
 
 /**
  * DETACH DELETEs uncertified orphan groups. Skipped (and reported): groups with certified elements or
@@ -216,26 +218,34 @@ export async function deleteOrphans(
     // A non-number is never read as 0: without a trustworthy count the group is skipped.
     if (!Number.isFinite(o.certifiedRelationships) || o.certified > 0 || o.certifiedRelationships > 0) {
       skippedCertified.push(o.workspaceId);
-      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-certified', planned: o.n, removed: 0 });
+      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-certified', planned: o.n, removed: 0, remaining: o.n });
       continue;
     }
     const ids: unknown[] = [o.workspaceId];
     if (HEX_ID.test(o.workspaceId)) ids.push(new Types.ObjectId(o.workspaceId));
     if (await wsColl.findOne({ _id: { $in: ids } } as Document, { projection: { _id: 1 } })) {
       skippedNowExists.push(o.workspaceId);
-      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-now-exists', planned: o.n, removed: 0 });
+      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-now-exists', planned: o.n, removed: 0, remaining: o.n });
       continue;
     }
-    const res = await s.executeWrite((tx) => tx.run(
-      `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
-       WHERE e.certifiedBy IS NULL AND NOT EXISTS { (e)-[r]-() WHERE r.certifiedBy IS NOT NULL }
-       WITH collect(e) AS els FOREACH (x IN els | DETACH DELETE x) RETURN size(els) AS n`,
-      { projectId: o.projectId, workspaceId: o.workspaceId },
-    ));
-    const n = num(res.records[0]?.get('n'));
-    removed += n;
-    if (n < o.n) partial.push({ projectId: o.projectId, workspaceId: o.workspaceId, planned: o.n, removed: n });
-    onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'removed', planned: o.n, removed: n });
+    // Delete and recount in ONE write transaction. executeWrite may retry after an unacknowledged commit,
+    // so `removed` can under-report (the retry finds nothing left); `remaining` is the authoritative post-state.
+    const res = await s.executeWrite(async (tx) => {
+      const del = await tx.run(
+        `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
+         WHERE e.certifiedBy IS NULL AND NOT EXISTS { (e)-[r]-() WHERE r.certifiedBy IS NOT NULL }
+         WITH collect(e) AS els FOREACH (x IN els | DETACH DELETE x) RETURN size(els) AS n`,
+        { projectId: o.projectId, workspaceId: o.workspaceId },
+      );
+      const rest = await tx.run(
+        `MATCH (r:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId}) RETURN count(r) AS n`,
+        { projectId: o.projectId, workspaceId: o.workspaceId },
+      );
+      return { removed: num(del.records[0]?.get('n')), remaining: num(rest.records[0]?.get('n')) };
+    });
+    removed += res.removed;
+    if (res.remaining > 0) partial.push({ projectId: o.projectId, workspaceId: o.workspaceId, planned: o.n, removed: res.removed, remaining: res.remaining });
+    onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'removed', planned: o.n, removed: res.removed, remaining: res.remaining });
   }
   return { removed, skippedCertified, skippedNowExists, partial };
 }

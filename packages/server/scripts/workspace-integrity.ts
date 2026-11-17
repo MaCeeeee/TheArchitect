@@ -86,7 +86,7 @@ const MODE = ALIGN && DELETE_ORPHANS ? 'APPLY align+delete-orphans' : ALIGN ? 'A
         if (DELETE_ORPHANS) {
           const r = await deleteOrphans(s, wsColl, plan.orphans, (d) => step('delete-step', d));
           step('deleteOrphans', r);
-          for (const p of r.partial) console.log(`PARTIAL ${p.projectId} ${p.workspaceId} — planned ${p.planned}, removed ${p.removed} (rest guarded by certified relationships)`);
+          for (const p of r.partial) console.log(`PARTIAL ${p.projectId} ${p.workspaceId} — planned ${p.planned}, removed ${p.removed}, remaining ${p.remaining} (rest guarded by certified relationships)`);
           console.log(`deleted orphans: ${r.removed} element(s)`);
           for (const id of r.skippedCertified) console.log(`SKIPPED-CERTIFIED ${id} — not deleted`);
           for (const id of r.skippedNowExists) console.log(`SKIPPED-NOW-EXISTS ${id} — a workspace with this id exists now, not deleted`);
