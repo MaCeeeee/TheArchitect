@@ -23,6 +23,10 @@ export const SLICE3_GOLDEN_SHA256 = {
 
 export type GoldenId = keyof typeof SLICE3_GOLDEN_SHA256;
 
+export const SLICE3_AXES = ['obligationKind', 'partyRole', 'provisionKind'] as const;
+export type Slice3Axis = (typeof SLICE3_AXES)[number];
+export const SLICE3_THRESHOLDS = [0.8, 1.0] as const;
+
 /** gv3 und gv2 haben je 70 Fälle (beide frozen). */
 export const SLICE3_CASES = 70;
 
@@ -44,7 +48,16 @@ interface RawRun {
 
 /** Liest einen Lauf und weist alles ab, was nicht zum vorregistrierten Instrument passt. */
 export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Run {
-  const j = JSON.parse(raw) as RawRun;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`[the597-slice3] ${label}: kein gültiges JSON (${(e as Error).message})`);
+  }
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    throw new Error(`[the597-slice3] ${label}: kein gültiges JSON (Top-Level ist kein Objekt)`);
+  }
+  const j = parsed as RawRun;
   const errs: string[] = [];
   if (j.model !== SLICE3_INSTRUMENT.model) errs.push(`model=${String(j.model)}`);
   if (j.samples !== SLICE3_INSTRUMENT.samples) errs.push(`samples=${String(j.samples)}`);
@@ -57,6 +70,16 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
   } else if (new Set((j.cases as Array<{ caseId?: unknown }>).map((c) => c.caseId)).size !== SLICE3_CASES) {
     errs.push('cases: caseId doppelt');
   }
+  if (Array.isArray(j.cases)) {
+    for (const c of j.cases as Array<{ caseId?: unknown; confidence?: Record<string, unknown> | null }>) {
+      for (const axis of SLICE3_AXES) {
+        const v = c?.confidence?.[axis];
+        if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1) {
+          errs.push(`confidence ungültig: ${String(c?.caseId)}/${axis}`);
+        }
+      }
+    }
+  }
   if (errs.length) {
     throw new Error(`[the597-slice3] ${label}: passt nicht zum vorregistrierten Instrument (${errs.join(', ')})`);
   }
@@ -68,9 +91,6 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
   };
 }
 
-export const SLICE3_AXES = ['obligationKind', 'partyRole', 'provisionKind'] as const;
-export type Slice3Axis = (typeof SLICE3_AXES)[number];
-export const SLICE3_THRESHOLDS = [0.8, 1.0] as const;
 /** Nur diese Achsen werden auf gv2 repliziert — gv2 ist im Rollenraum 1.6.0 gelabelt, tp-4 kennt 1.7.0. */
 export const REPLICATION_AXES: readonly Slice3Axis[] = ['obligationKind', 'provisionKind'];
 export const SLICE3_RUN_COUNT = { gv3: 5, gv2: 2 } as const;
@@ -106,7 +126,7 @@ export interface ComboVerdict {
   pooledGv2: RoutingStat | null;
   replicationPass: boolean | null;
   /** (gefangen + Fehlalarme) / alle Samples, gepoolt über gv3. Berichtet, entscheidet nicht. */
-  reviewLoad: number;
+  reviewLoad: number | null;
   go: boolean;
   /** GO ohne Replikation — steht auf einem Gold-Set. */
   oneGoldSetOnly: boolean;
@@ -160,7 +180,7 @@ export function decideSlice3(runs: Slice3Run[]): Slice3Decision {
         stablePass,
         pooledGv2,
         replicationPass,
-        reviewLoad: total ? (pooledGv3.caught + pooledGv3.falseAlarms) / total : 0,
+        reviewLoad: total ? (pooledGv3.caught + pooledGv3.falseAlarms) / total : null,
         go,
         oneGoldSetOnly: go && replicationPass === null,
       });
@@ -180,7 +200,7 @@ export const KNOWN_ERROR_CLASSES = [
   { id: 'F-05', axis: 'partyRole', goldClass: 'supervisory_authority' },
   { id: 'F-06', axis: 'provisionKind', goldClass: 'procedural' },
   { id: 'F-07', axis: 'partyRole', goldClass: 'member_state' },
-] as const;
+] as const satisfies ReadonlyArray<{ id: string; axis: Slice3Axis; goldClass: string }>;
 
 export interface KnownErrorClassStat {
   id: string;
@@ -196,8 +216,8 @@ export interface KnownErrorClassStat {
 export function knownErrorClasses(runs: Slice3Run[]): KnownErrorClassStat[] {
   const cases = pooled(runs.filter((r) => r.golden === 'gv3'));
   return KNOWN_ERROR_CLASSES.map(({ id, axis, goldClass }) => {
-    const inClass = cases.filter((c) => (c.gold as Record<string, unknown>)[axis] === goldClass);
-    const wrong = inClass.filter((c) => (c.predicted as Record<string, unknown>)[axis] !== goldClass);
+    const inClass = cases.filter((c) => c.gold[axis] === goldClass);
+    const wrong = inClass.filter((c) => c.predicted[axis] !== goldClass);
     const conf = (c: TypingEvalCase) => c.confidence?.[axis];
     return {
       id,
@@ -205,8 +225,8 @@ export function knownErrorClasses(runs: Slice3Run[]): KnownErrorClassStat[] {
       goldClass,
       gold: inClass.length,
       wrong: wrong.length,
-      routedBelow08: wrong.filter((c) => (conf(c) ?? Infinity) < 0.8).length,
-      routedBelow10: wrong.filter((c) => (conf(c) ?? Infinity) < 1.0).length,
+      routedBelow08: wrong.filter((c) => (conf(c) ?? Infinity) < SLICE3_THRESHOLDS[0]).length,
+      routedBelow10: wrong.filter((c) => (conf(c) ?? Infinity) < SLICE3_THRESHOLDS[1]).length,
     };
   });
 }
@@ -239,7 +259,7 @@ export function renderSlice3Report(d: Slice3Decision, known: KnownErrorClassStat
   L.push('|---|---|---|---|---|---|---|---|---|');
   for (const c of d.combos) {
     L.push(
-      `| ${c.axis} | ${thr(c.threshold)} | ${rate(c.pooledGv3.caught, c.pooledGv3.wrong)} | ${rate(c.pooledGv3.falseAlarms, c.pooledGv3.correct)} | ${yn(c.pooledGv3Pass)} | ${c.stableRuns}/${c.perRunGv3.length} | ${yn(c.replicationPass)}${c.pooledGv2 ? ` (${rate(c.pooledGv2.caught, c.pooledGv2.wrong)} / ${rate(c.pooledGv2.falseAlarms, c.pooledGv2.correct)})` : ''} | ${rate(c.pooledGv3.caught + c.pooledGv3.falseAlarms, c.pooledGv3.wrong + c.pooledGv3.correct)} | **${c.go ? 'GO' : 'nein'}** |`
+      `| ${c.axis} | ${thr(c.threshold)} | ${rate(c.pooledGv3.caught, c.pooledGv3.wrong)} | ${rate(c.pooledGv3.falseAlarms, c.pooledGv3.correct)} | ${yn(c.pooledGv3Pass)} | ${c.stableRuns}/${c.perRunGv3.length} | ${yn(c.replicationPass)}${c.pooledGv2 ? ` (${rate(c.pooledGv2.caught, c.pooledGv2.wrong)} / ${rate(c.pooledGv2.falseAlarms, c.pooledGv2.correct)})` : ''} | ${c.reviewLoad === null ? '—' : pct(c.reviewLoad)} | **${c.go ? 'GO' : 'nein'}** |`
     );
   }
   L.push('');

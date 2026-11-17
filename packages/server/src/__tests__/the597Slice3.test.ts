@@ -3,18 +3,21 @@
  * Reine Logik, kein LLM. Run: cd packages/server && npx jest src/__tests__/the597Slice3.test.ts
  */
 import {
+  decideSlice3,
+  knownErrorClasses,
+  meetsCriterion,
   parseRun,
+  renderSlice3Report,
   SLICE3_GOLDEN_SHA256,
   SLICE3_INSTRUMENT,
   type GoldenId,
+  type Slice3Run,
 } from '../evals/the597Slice3';
 import type { TypingEvalCase } from '../evals/typingMetrics';
-import { decideSlice3, meetsCriterion, type Slice3Run } from '../evals/the597Slice3';
 import type { RoutingStat } from '../evals/metrics';
-import { knownErrorClasses, renderSlice3Report } from '../evals/the597Slice3';
 
 /** Ein Fall: Gold und Vorhersage je Achse, Konfidenz je Achse. */
-export function mkCase(
+function mkCase(
   id: string,
   gold: Record<string, string | null>,
   predicted: Record<string, string | null>,
@@ -23,7 +26,7 @@ export function mkCase(
   return { caseId: id, source: 's', language: 'en', gold, predicted, confidence } as unknown as TypingEvalCase;
 }
 
-export function runJson(golden: GoldenId, cases: TypingEvalCase[], over: Record<string, unknown> = {}): string {
+function runJson(golden: GoldenId, cases: TypingEvalCase[], over: Record<string, unknown> = {}): string {
   return JSON.stringify({
     variante: SLICE3_INSTRUMENT.variante,
     model: SLICE3_INSTRUMENT.model,
@@ -36,7 +39,12 @@ export function runJson(golden: GoldenId, cases: TypingEvalCase[], over: Record<
 
 /** 70 gültige Fälle mit eindeutigen caseIds — so groß wie gv3/gv2. */
 const one = Array.from({ length: 70 }, (_, i) =>
-  mkCase(`c${i}`, { obligationKind: 'obligation' }, { obligationKind: 'obligation' }, { obligationKind: 1 })
+  mkCase(
+    `c${i}`,
+    { obligationKind: 'obligation' },
+    { obligationKind: 'obligation' },
+    { obligationKind: 1, partyRole: 1, provisionKind: 1 }
+  )
 );
 
 describe('parseRun', () => {
@@ -63,6 +71,24 @@ describe('parseRun', () => {
     expect(() => parseRun('x', 'gv3', runJson('gv3', one.slice(1)))).toThrow(/cases=69 statt 70/);
     const dup = [...one.slice(1), one[1]];
     expect(() => parseRun('x', 'gv3', runJson('gv3', dup))).toThrow(/caseId doppelt/);
+  });
+
+  it('meldet ungültiges JSON und Nicht-Objekte mit Label', () => {
+    expect(() => parseRun('gv3-run9', 'gv3', '{kaputt')).toThrow(/gv3-run9: kein gültiges JSON/);
+    expect(() => parseRun('gv3-run9', 'gv3', 'null')).toThrow(/gv3-run9: kein gültiges JSON/);
+    expect(() => parseRun('gv3-run9', 'gv3', '[]')).toThrow(/kein gültiges JSON/);
+  });
+
+  it('lehnt NaN/fehlende/außerhalb [0,1] liegende Konfidenz ab', () => {
+    const bad = (conf: Record<string, unknown>) => [
+      { ...one[0], confidence: conf },
+      ...one.slice(1),
+    ];
+    const ok = { obligationKind: 1, partyRole: 1, provisionKind: 1 };
+    // JSON.stringify macht NaN zu null → „nicht endlich“
+    expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ ...ok, partyRole: NaN }) as TypingEvalCase[]))).toThrow(/confidence ungültig: c0\/partyRole/);
+    expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ obligationKind: 1, partyRole: 1 }) as TypingEvalCase[]))).toThrow(/confidence ungültig: c0\/provisionKind/);
+    expect(() => parseRun('x', 'gv3', runJson('gv3', bad({ ...ok, obligationKind: 1.5 }) as TypingEvalCase[]))).toThrow(/confidence/);
   });
 
   it('lehnt einen gv3-Lauf ab, der als gv2 deklariert wird (Golden-Hash passt nicht)', () => {
@@ -193,6 +219,27 @@ describe('decideSlice3', () => {
     expect(c.go).toBe(true);
   });
 
+  it('Prüf-Last ist null bei leerem Nenner (Achse ohne Daten)', () => {
+    const d = decideSlice3(runs('obligationKind', [PASS, PASS, PASS, PASS, PASS], [PASS, PASS]));
+    expect(combo(d, 'provisionKind', 0.8).reviewLoad).toBeNull();
+    expect(renderSlice3Report(d, [])).toMatch(/provisionKind \| < 0\.8[^\n]*\| — \| \*\*nein\*\*/);
+  });
+
+  it('Konfidenz genau 0,8: bei < 0,8 nicht geroutet, bei < 1,0 geroutet → Schwellen unterscheiden sich', () => {
+    const mk = (label: string, golden: 'gv3' | 'gv2'): Slice3Run => {
+      const cases: TypingEvalCase[] = [];
+      for (let i = 0; i < 6; i++) cases.push(mkCase(`${label}-w${i}`, { obligationKind: 'a' }, { obligationKind: 'b' }, { obligationKind: 0.8 }));
+      for (let i = 0; i < 4; i++) cases.push(mkCase(`${label}-x${i}`, { obligationKind: 'a' }, { obligationKind: 'b' }, { obligationKind: 1 }));
+      for (let i = 0; i < 50; i++) cases.push(mkCase(`${label}-r${i}`, { obligationKind: 'a' }, { obligationKind: 'a' }, { obligationKind: 1 }));
+      return { label, golden, fileSha256: label.padEnd(64, '0'), cases };
+    };
+    const d = decideSlice3([1, 2, 3, 4, 5].map((i) => mk(`gv3-run${i}`, 'gv3')).concat([1, 2].map((i) => mk(`gv2-run${i}`, 'gv2'))));
+    expect(combo(d, 'obligationKind', 0.8).pooledGv3.recall).toBe(0);
+    expect(combo(d, 'obligationKind', 0.8).go).toBe(false);
+    expect(combo(d, 'obligationKind', 1).pooledGv3.recall).toBeCloseTo(0.6);
+    expect(combo(d, 'obligationKind', 1).go).toBe(true);
+  });
+
   it('liefert 6 Kombinationen (3 Achsen × Schwellen 0,8 und 1,0) und die Input-Hashes', () => {
     const d = decideSlice3(runs('obligationKind', [PASS, PASS, PASS, PASS, PASS], [PASS, PASS]));
     expect(d.combos.map((c) => `${c.axis}@${c.threshold}`).sort()).toEqual([
@@ -206,9 +253,13 @@ describe('decideSlice3', () => {
     expect(combo(d, 'provisionKind', 0.8).go).toBe(false);
   });
 
-  it('ist deterministisch', () => {
+  it('ist unabhängig von der Reihenfolge der Läufe', () => {
     const r = runs('obligationKind', [PASS, PASS, PASS, PASS, FAIL], [PASS, PASS]);
-    expect(JSON.stringify(decideSlice3(r))).toBe(JSON.stringify(decideSlice3(r)));
+    const a = decideSlice3(r);
+    const b = decideSlice3([...r].reverse());
+    expect(b.layer1).toBe(a.layer1);
+    expect(b.goCombos).toEqual(a.goCombos);
+    expect(b.combos.map(({ perRunGv3: _p, ...rest }) => rest)).toEqual(a.combos.map(({ perRunGv3: _p, ...rest }) => rest));
   });
 });
 

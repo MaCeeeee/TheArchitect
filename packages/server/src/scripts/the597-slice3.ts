@@ -38,4 +38,11 @@ function main(): void {
   console.log(`[the597-slice3] Schicht 1: ${decision.layer1}`);
 }
 
-main();
+if (require.main === module) {
+  try {
+    main();
+  } catch (e) {
+    console.error((e as Error).message);
+    process.exitCode = 1;
+  }
+}
