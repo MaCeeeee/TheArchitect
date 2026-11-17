@@ -129,6 +129,11 @@ describe('change log helpers (pure)', () => {
     expect(finishChangeLog(l, null, t1)).not.toHaveProperty('error');
     expect(finishChangeLog(l, 'boom', t1)).toMatchObject({ status: 'failed', error: 'boom', steps: l.steps });
   });
+  test('finishChangeLog: an error argument with an empty message is still failed', () => {
+    const l = startChangeLog({ mode: 'm', projectId: null, plan, now: t0 });
+    expect(finishChangeLog(l, '', t0)).toMatchObject({ status: 'failed', error: '' });
+    expect(finishChangeLog(l, undefined, t0)).toMatchObject({ status: 'completed' });
+  });
 });
 
 describe('parseIntegrityArgs', () => {
@@ -138,6 +143,8 @@ describe('parseIntegrityArgs', () => {
   test('--project abc', () => expect(parseIntegrityArgs(['--project', 'abc'])).toEqual({ align: false, deleteOrphans: false, projectId: 'abc', logDir: null }));
   test('--project without value throws', () => expect(() => parseIntegrityArgs(['--project'])).toThrow(/--project/));
   test('--project followed by a flag throws', () => expect(() => parseIntegrityArgs(['--project', '--align'])).toThrow(/--project/));
+  test.each([[''], [' '], ['\t ']])('--project with empty/whitespace value %j throws', (v) => expect(() => parseIntegrityArgs(['--project', v])).toThrow(/--project/));
+  test.each([[''], [' '], ['\t ']])('--log-dir with empty/whitespace value %j throws', (v) => expect(() => parseIntegrityArgs(['--log-dir', v])).toThrow(/--log-dir/));
   test('--log-dir /x', () => expect(parseIntegrityArgs(['--log-dir', '/x'])).toMatchObject({ logDir: '/x' }));
   test('--log-dir without value throws', () => expect(() => parseIntegrityArgs(['--log-dir'])).toThrow(/--log-dir/));
   test('--log-dir followed by a flag throws', () => expect(() => parseIntegrityArgs(['--log-dir', '--align'])).toThrow(/--log-dir/));

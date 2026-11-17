@@ -39,15 +39,15 @@ const MODE = ALIGN && DELETE_ORPHANS ? 'APPLY align+delete-orphans' : ALIGN ? 'A
   try {
     // Element groups FIRST, workspaces second: a workspace created in between is then seen, never mistaken for missing.
     // All workspaces are loaded so cross-project ids are detected even with --project; normalisation is scoped below.
-    const groups = await loadElementGroups(s, { projectIds: projectArg ? [projectArg] : null });
+    const groups = await loadElementGroups(s, { projectIds: projectArg === null ? null : [projectArg] });
     const docs = await loadWorkspaceDocs(wsColl);
     const plan = planWorkspaceIntegrity(groups, docs, live);
-    if (projectArg) {
+    if (projectArg !== null) {
       const inScope = new Set(docs.filter((w) => w.projectId === projectArg).map((w) => w._id));
       plan.normalize = plan.normalize.filter((id) => inScope.has(id));
     }
     const sum = (xs: { n: number }[]) => xs.reduce((t, x) => t + x.n, 0);
-    console.log(`${MODE} — ${process.env.NEO4J_URI}${projectArg ? ` — project ${projectArg}` : ''}`);
+    console.log(`${MODE} — ${process.env.NEO4J_URI}${projectArg !== null ? ` — project ${projectArg}` : ''}`);
     if (ALIGN && DELETE_ORPHANS) console.log('NOTE orphan deletion uses the plan computed BEFORE alignment.');
     console.log(`ok: ${plan.ok} | dead-project elements (THE-656, untouched): ${plan.deadProject}`);
     for (const id of plan.normalize) console.log(`NORMALIZE workspace _id ObjectId(${id}) → "${id}"`);
@@ -70,10 +70,13 @@ const MODE = ALIGN && DELETE_ORPHANS ? 'APPLY align+delete-orphans' : ALIGN ? 'A
       save();   // BEFORE the first write: a crash later still leaves plan + completed steps behind
       console.log(`change log: ${file}`);
       let failure: string | null = null;
-      const step = (name: string, result: unknown) => { log = appendChangeLogStep(log, name, result); save(); };
+      const step = (name: string, result: unknown) => {
+        log = appendChangeLogStep(log, name, result);
+        try { save(); } catch (saveErr) { console.error(`could not save change log ${file}: ${(saveErr as Error).message}\n${JSON.stringify(log, null, 2)}`); throw saveErr; }
+      };
       try {
         if (ALIGN) {
-          const nr = await normalizeWorkspaceIds(wsColl, plan.normalize);
+          const nr = await normalizeWorkspaceIds(wsColl, plan.normalize, (d) => step('normalize-step', d));
           step('normalize', nr);
           console.log(`normalized: ${nr.normalized} workspace(s)`);
           for (const c of nr.conflicts) console.log(`CONFLICT workspace ${c}: string-_id doc differs from legacy ObjectId doc — nothing changed`);
@@ -81,18 +84,22 @@ const MODE = ALIGN && DELETE_ORPHANS ? 'APPLY align+delete-orphans' : ALIGN ? 'A
           console.log(`aligned: ${steps.reduce((t, x) => t + x.moved, 0)} element(s)`);
         }
         if (DELETE_ORPHANS) {
-          const r = await deleteOrphans(s, wsColl, plan.orphans);
+          const r = await deleteOrphans(s, wsColl, plan.orphans, (d) => step('delete-step', d));
           step('deleteOrphans', r);
+          for (const p of r.partial) console.log(`PARTIAL ${p.projectId} ${p.workspaceId} — planned ${p.planned}, removed ${p.removed} (rest guarded by certified relationships)`);
           console.log(`deleted orphans: ${r.removed} element(s)`);
           for (const id of r.skippedCertified) console.log(`SKIPPED-CERTIFIED ${id} — not deleted`);
           for (const id of r.skippedNowExists) console.log(`SKIPPED-NOW-EXISTS ${id} — a workspace with this id exists now, not deleted`);
         }
       } catch (e) {
-        failure = (e as Error).message ?? String(e);
+        failure = (e as Error)?.message ?? String(e);
         throw e;
       } finally {
         log = finishChangeLog(log, failure);
-        save();
+        try { save(); } catch (saveErr) {
+          // never throw over the original error: dump the full log so nothing committed is lost
+          console.error(`could not save change log ${file}: ${(saveErr as Error).message}\n${JSON.stringify(log, null, 2)}`);
+        }
       }
     }
   } finally {

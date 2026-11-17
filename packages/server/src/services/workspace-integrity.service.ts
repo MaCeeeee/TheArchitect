@@ -41,11 +41,11 @@ export function parseIntegrityArgs(argv: string[]): IntegrityArgs {
     else if (a === '--delete-orphans') out.deleteOrphans = true;
     else if (a === '--project') {
       const v = argv[i + 1];
-      if (v === undefined || v.startsWith('--')) throw new Error('--project needs a project id');
+      if (v === undefined || v.startsWith('--') || v.trim() === '') throw new Error('--project needs a non-empty project id');
       out.projectId = v; i += 1;
     } else if (a === '--log-dir') {
       const v = argv[i + 1];
-      if (v === undefined || v.startsWith('--')) throw new Error('--log-dir needs a directory');
+      if (v === undefined || v.startsWith('--') || v.trim() === '') throw new Error('--log-dir needs a non-empty directory');
       out.logDir = v; i += 1;
     } else throw new Error(`unknown argument: ${a}`);
   }
@@ -139,20 +139,24 @@ const sameIgnoring = (a: Document, b: Document): boolean => {
  * legacy doc (ignoring _id and updatedAt): equal → leftover of an interrupted run, legacy is deleted;
  * different → nothing is touched and the id is reported as conflict.
  */
-export async function normalizeWorkspaceIds(coll: Collection<Document>, hexIds: string[]): Promise<{ normalized: number; conflicts: string[] }> {
+export type NormalizeOutcome = 'normalized' | 'conflict' | 'skipped';
+export async function normalizeWorkspaceIds(
+  coll: Collection<Document>, hexIds: string[], onStep?: (done: { id: string; outcome: NormalizeOutcome }) => void,
+): Promise<{ normalized: number; conflicts: string[] }> {
   let normalized = 0;
   const conflicts: string[] = [];
   for (const id of hexIds) {
     const legacy = await coll.findOne({ _id: new Types.ObjectId(id) });
-    if (!legacy) continue;
+    if (!legacy) { onStep?.({ id, outcome: 'skipped' }); continue; }
     const existing = await coll.findOne({ _id: id as unknown as Types.ObjectId });
     if (existing) {
-      if (!sameIgnoring(legacy, existing)) { conflicts.push(id); continue; }
+      if (!sameIgnoring(legacy, existing)) { conflicts.push(id); onStep?.({ id, outcome: 'conflict' }); continue; }
     } else {
       await coll.insertOne({ ...legacy, _id: id as unknown as Types.ObjectId });
     }
     await coll.deleteOne({ _id: new Types.ObjectId(id) });
     normalized += 1;
+    onStep?.({ id, outcome: 'normalized' });   // after the commit, so a log entry always names a committed change
   }
   return { normalized, conflicts };
 }
@@ -191,32 +195,49 @@ export async function sampleGroup(s: Session, projectId: string, workspaceId: st
   };
 }
 
-export interface DeleteOrphansResult { removed: number; skippedCertified: string[]; skippedNowExists: string[] }
+export interface PartialDelete { projectId: string; workspaceId: string; planned: number; removed: number }
+export interface DeleteOrphansResult { removed: number; skippedCertified: string[]; skippedNowExists: string[]; partial: PartialDelete[] }
+export type DeleteOutcome = 'removed' | 'skipped-certified' | 'skipped-now-exists';
+export interface DeleteStep { projectId: string; workspaceId: string; outcome: DeleteOutcome; planned: number; removed: number }
 
 /**
  * DETACH DELETEs uncertified orphan groups. Skipped (and reported): groups with certified elements or
  * certified relationships (certified content is only removed via the notary), and groups whose
  * workspace id exists in Mongo NOW (checked right before each delete, any _id BSON type).
  */
-export async function deleteOrphans(s: Session, wsColl: Collection<Document>, orphans: Orphan[]): Promise<DeleteOrphansResult> {
+export async function deleteOrphans(
+  s: Session, wsColl: Collection<Document>, orphans: Orphan[], onStep?: (done: DeleteStep) => void,
+): Promise<DeleteOrphansResult> {
   let removed = 0;
+  const partial: PartialDelete[] = [];
   const skippedCertified: string[] = [];
   const skippedNowExists: string[] = [];
   for (const o of orphans) {
     // A non-number is never read as 0: without a trustworthy count the group is skipped.
-    if (typeof o.certifiedRelationships !== 'number' || o.certified > 0 || o.certifiedRelationships > 0) { skippedCertified.push(o.workspaceId); continue; }
+    if (!Number.isFinite(o.certifiedRelationships) || o.certified > 0 || o.certifiedRelationships > 0) {
+      skippedCertified.push(o.workspaceId);
+      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-certified', planned: o.n, removed: 0 });
+      continue;
+    }
     const ids: unknown[] = [o.workspaceId];
     if (HEX_ID.test(o.workspaceId)) ids.push(new Types.ObjectId(o.workspaceId));
-    if (await wsColl.findOne({ _id: { $in: ids } } as Document, { projection: { _id: 1 } })) { skippedNowExists.push(o.workspaceId); continue; }
+    if (await wsColl.findOne({ _id: { $in: ids } } as Document, { projection: { _id: 1 } })) {
+      skippedNowExists.push(o.workspaceId);
+      onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'skipped-now-exists', planned: o.n, removed: 0 });
+      continue;
+    }
     const res = await s.executeWrite((tx) => tx.run(
       `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
        WHERE e.certifiedBy IS NULL AND NOT EXISTS { (e)-[r]-() WHERE r.certifiedBy IS NOT NULL }
        WITH collect(e) AS els FOREACH (x IN els | DETACH DELETE x) RETURN size(els) AS n`,
       { projectId: o.projectId, workspaceId: o.workspaceId },
     ));
-    removed += num(res.records[0]?.get('n'));
+    const n = num(res.records[0]?.get('n'));
+    removed += n;
+    if (n < o.n) partial.push({ projectId: o.projectId, workspaceId: o.workspaceId, planned: o.n, removed: n });
+    onStep?.({ projectId: o.projectId, workspaceId: o.workspaceId, outcome: 'removed', planned: o.n, removed: n });
   }
-  return { removed, skippedCertified, skippedNowExists };
+  return { removed, skippedCertified, skippedNowExists, partial };
 }
 
 export type ChangeLogStatus = 'running' | 'completed' | 'failed';
@@ -241,8 +262,8 @@ export function appendChangeLogStep(log: ChangeLog, step: string, result: unknow
   return { ...log, steps: [...log.steps, { step, at: (now ?? new Date()).toISOString(), result }] };
 }
 
-/** Pure: final state. No error → 'completed'; an error message → 'failed'. */
+/** Pure: final state. No error argument (undefined/null) → 'completed'; any error argument, even an empty message → 'failed'. */
 export function finishChangeLog(log: ChangeLog, error?: string | null, now?: Date): ChangeLog {
   const done = { ...log, finishedAt: (now ?? new Date()).toISOString() };
-  return error ? { ...done, status: 'failed', error } : { ...done, status: 'completed' };
+  return error !== undefined && error !== null ? { ...done, status: 'failed', error } : { ...done, status: 'completed' };
 }

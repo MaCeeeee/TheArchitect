@@ -229,6 +229,19 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     expect((await wsColl().findOne({ _id: LEGACY as any }))!.name).toBe('DIFFERENT');
   });
 
+  test('normalizeWorkspaceIds calls onStep once per id with its outcome', async () => {
+    const CONFLICT = hex();
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    await wsLegacy(P, CONFLICT, new Date(T + 85));
+    await wsColl().insertOne({ _id: CONFLICT as any, name: 'DIFFERENT', projectId: new Types.ObjectId(P), source: 'manual',
+      color: '#888', offsetX: 0, createdBy: new Types.ObjectId(), createdAt: new Date(T + 85), updatedAt: new Date() });
+    const missing = hex();
+    const seen: Array<{ id: string; outcome: string }> = [];
+    const r = await normalizeWorkspaceIds(wsColl(), [LEGACY, CONFLICT, missing], (d) => seen.push(d));
+    expect(r).toEqual({ normalized: 1, conflicts: [CONFLICT] });
+    expect(seen).toEqual([{ id: LEGACY, outcome: 'normalized' }, { id: CONFLICT, outcome: 'conflict' }, { id: missing, outcome: 'skipped' }]);
+  });
+
   test('half-finished earlier run: identical string doc exists → legacy doc is removed', async () => {
     await wsLegacy(P, LEGACY, new Date(T + 84));
     const legacy = await wsColl().findOne({ _id: new Types.ObjectId(LEGACY) as any });
@@ -261,7 +274,7 @@ d('THE-771 — delete orphans only', () => {
     try {
       const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
       expect(p.orphans).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-e269m', n: 2, certified: 0, certifiedRelationships: 0 }]);
-      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 2, skippedCertified: [], skippedNowExists: [] });
+      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 2, skippedCertified: [], skippedNowExists: [], partial: [] });
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-e269m')).toBe(0);
@@ -277,7 +290,7 @@ d('THE-771 — delete orphans only', () => {
     try {
       const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
       expect(p.orphans).toHaveLength(2);
-      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 1, skippedCertified: ['ws-1782282061855-cccc1'], skippedNowExists: [] });
+      expect(await deleteOrphans(s, wsColl(), p.orphans)).toEqual({ removed: 1, skippedCertified: ['ws-1782282061855-cccc1'], skippedNowExists: [], partial: [] });
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-cccc1')).toBe(2);
@@ -337,6 +350,7 @@ d('THE-771 — delete orphans only', () => {
       const r = await deleteOrphans(s, wsColl(), [o]);
       expect(r.skippedCertified).toEqual([]);   // plan said uncertified; the Cypher guard saved s1
       expect(r.removed).toBe(1);                // only s2
+      expect(r.partial).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-stale1', planned: 2, removed: 1 }]);
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-stale1')).toBe(1);
@@ -347,9 +361,27 @@ d('THE-771 — delete orphans only', () => {
     const s = getNeo4jDriver().session();
     try {
       const bad = { projectId: P, workspaceId: 'ws-1782282061855-nnnn1', n: 1, certified: 0 } as any;
-      expect(await deleteOrphans(s, wsColl(), [bad])).toEqual({ removed: 0, skippedCertified: ['ws-1782282061855-nnnn1'], skippedNowExists: [] });
+      expect(await deleteOrphans(s, wsColl(), [bad])).toEqual({ removed: 0, skippedCertified: ['ws-1782282061855-nnnn1'], skippedNowExists: [], partial: [] });
     } finally { await s.close(); }
     expect(await count(P, 'ws-1782282061855-nnnn1')).toBe(1);
+  });
+
+  test('deleteOrphans calls onStep once per group with its outcome', async () => {
+    await el(P, 'e1', 'ws-1782282061855-step1'); await el(P, 'e2', 'ws-1782282061855-step1');
+    await el(P, 'e3', 'ws-1782282061855-step2', 'notary-1');
+    await el(P, 'e4', 'ws-1782282061855-step3');
+    const s = getNeo4jDriver().session();
+    try {
+      const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      await wsString(P, 'ws-1782282061855-step3');   // appears after planning
+      const seen: any[] = [];
+      await deleteOrphans(s, wsColl(), p.orphans, (d) => seen.push(d));
+      const by = (w: string) => seen.find((x) => x.workspaceId === w);
+      expect(seen).toHaveLength(3);
+      expect(by('ws-1782282061855-step1')).toMatchObject({ projectId: P, outcome: 'removed', planned: 2, removed: 2 });
+      expect(by('ws-1782282061855-step2')).toMatchObject({ outcome: 'skipped-certified', removed: 0 });
+      expect(by('ws-1782282061855-step3')).toMatchObject({ outcome: 'skipped-now-exists', removed: 0 });
+    } finally { await s.close(); }
   });
 
   test('sampleGroup (read-only) returns up to 5 names and the createdAt range', async () => {
