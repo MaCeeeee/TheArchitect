@@ -1,8 +1,8 @@
-import { planWorkspaceIntegrity, parseIntegrityArgs, buildChangeLog, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
+import { planWorkspaceIntegrity, parseIntegrityArgs, startChangeLog, appendChangeLogStep, finishChangeLog, changeLogFileName, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
 
 const P = 'p-live';
 const at = (ms: number) => new Date(ms);
-const g = (workspaceId: string, n: number, projectId = P, certified = 0): ElementGroup => ({ projectId, workspaceId, n, certified });
+const g = (workspaceId: string, n: number, projectId = P, certified = 0, certifiedRelationships = 0): ElementGroup => ({ projectId, workspaceId, n, certified, certifiedRelationships });
 const ws = (_id: string, createdAt: Date, objectIdStored = false, projectId = P): WorkspaceDoc => ({ _id, projectId, createdAt, objectIdStored });
 const live = new Set([P, 'p-other']);
 
@@ -38,14 +38,14 @@ test('negative: a ws-… workspace is never an alignment target', () => {
   const t = 1782282111647;
   const plan = planWorkspaceIntegrity([g(`ws-${t}-xxxxx`, 3)], [ws(`ws-${t + 500}-yyyyy`, at(t + 500))], live);
   expect(plan.align).toEqual([]);
-  expect(plan.orphans).toEqual([{ projectId: P, workspaceId: `ws-${t}-xxxxx`, n: 3, certified: 0 }]);
+  expect(plan.orphans).toEqual([{ projectId: P, workspaceId: `ws-${t}-xxxxx`, n: 3, certified: 0, certifiedRelationships: 0 }]);
 });
 
 test('negative: 10 s or more apart → orphan, not aligned', () => {
   const t = 1782282061855;
   const plan = planWorkspaceIntegrity([g(`ws-${t}-e269m`, 11)], [ws('6a3b777ff1bf836dc790f8f0', at(t + 10_000), true)], live);
   expect(plan.align).toEqual([]);
-  expect(plan.orphans).toEqual([{ projectId: P, workspaceId: `ws-${t}-e269m`, n: 11, certified: 0 }]);
+  expect(plan.orphans).toEqual([{ projectId: P, workspaceId: `ws-${t}-e269m`, n: 11, certified: 0, certifiedRelationships: 0 }]);
 });
 
 test('negative: a workspace in another project is never a candidate', () => {
@@ -94,20 +94,53 @@ test('negative: two groups aligning to the same target → none aligned, both am
   ]);
 });
 
-test('buildChangeLog: mode, project filter, plan and results are all in the log', () => {
+test('negative: a clashing target pair does not block a clean align step', () => {
+  const t = 1782282111647; const u = 1782290000000;
+  const plan = planWorkspaceIntegrity(
+    [g(`ws-${t}-aaaaa`, 3), g(`ws-${t + 2000}-bbbbb`, 4), g(`ws-${u}-ccccc`, 5)],
+    [ws('6a3b777ff1bf836dc790f8f0', at(t + 1000), true), ws('6a3b777ff1bf836dc790f8f1', at(u), true)], live);
+  expect(plan.align).toEqual([{ projectId: P, from: `ws-${u}-ccccc`, to: '6a3b777ff1bf836dc790f8f1', n: 5, certified: 0 }]);
+  expect(plan.ambiguous.map((a) => a.workspaceId)).toEqual([`ws-${t}-aaaaa`, `ws-${t + 2000}-bbbbb`]);
+});
+
+describe('change log helpers (pure)', () => {
   const plan = planWorkspaceIntegrity([g('ws-1782282111647-aaaaa', 3)], [], live);
-  const log = buildChangeLog({ mode: 'APPLY align', projectId: P, plan, results: { normalized: { normalized: 1, conflicts: ['x'] }, aligned: [{ projectId: P, from: 'a', to: 'b', moved: 2 }] }, now: new Date('2026-11-17T10:00:00Z') });
-  expect(log).toMatchObject({ mode: 'APPLY align', projectId: P, writtenAt: '2026-11-17T10:00:00.000Z', plan, results: { normalized: { conflicts: ['x'] }, aligned: [{ moved: 2 }] } });
-  expect(log.fileName).toBe('workspace-integrity-2026-11-17T10-00-00.000Z.json');
+  const t0 = new Date('2026-11-17T10:00:00Z');
+  test('changeLogFileName: colon-free ISO timestamp', () => expect(changeLogFileName(t0)).toBe('workspace-integrity-2026-11-17T10-00-00.000Z.json'));
+  test('startChangeLog: running, no steps, plan and scope included', () => {
+    expect(startChangeLog({ mode: 'APPLY align', projectId: P, plan, now: t0 }))
+      .toEqual({ mode: 'APPLY align', projectId: P, startedAt: '2026-11-17T10:00:00.000Z', status: 'running', plan, steps: [] });
+  });
+  test('appendChangeLogStep: appends, does not mutate the input', () => {
+    const l0 = startChangeLog({ mode: 'm', projectId: null, plan, now: t0 });
+    const l1 = appendChangeLogStep(l0, 'normalize', { normalized: 1 }, new Date('2026-11-17T10:00:01Z'));
+    const l2 = appendChangeLogStep(l1, 'align', { moved: 2 }, new Date('2026-11-17T10:00:02Z'));
+    expect(l0.steps).toEqual([]);
+    expect(l2.steps).toEqual([
+      { step: 'normalize', at: '2026-11-17T10:00:01.000Z', result: { normalized: 1 } },
+      { step: 'align', at: '2026-11-17T10:00:02.000Z', result: { moved: 2 } },
+    ]);
+    expect(l2.status).toBe('running');
+  });
+  test('finishChangeLog: completed without error, failed with message; steps survive', () => {
+    const l = appendChangeLogStep(startChangeLog({ mode: 'm', projectId: null, plan, now: t0 }), 'normalize', {}, t0);
+    const t1 = new Date('2026-11-17T10:05:00Z');
+    expect(finishChangeLog(l, null, t1)).toMatchObject({ status: 'completed', finishedAt: '2026-11-17T10:05:00.000Z', steps: l.steps });
+    expect(finishChangeLog(l, null, t1)).not.toHaveProperty('error');
+    expect(finishChangeLog(l, 'boom', t1)).toMatchObject({ status: 'failed', error: 'boom', steps: l.steps });
+  });
 });
 
 describe('parseIntegrityArgs', () => {
-  test('defaults', () => expect(parseIntegrityArgs([])).toEqual({ align: false, deleteOrphans: false, projectId: null }));
-  test('--align', () => expect(parseIntegrityArgs(['--align'])).toEqual({ align: true, deleteOrphans: false, projectId: null }));
+  test('defaults', () => expect(parseIntegrityArgs([])).toEqual({ align: false, deleteOrphans: false, projectId: null, logDir: null }));
+  test('--align', () => expect(parseIntegrityArgs(['--align'])).toEqual({ align: true, deleteOrphans: false, projectId: null, logDir: null }));
   test('--delete-orphans', () => expect(parseIntegrityArgs(['--delete-orphans'])).toMatchObject({ deleteOrphans: true }));
-  test('--project abc', () => expect(parseIntegrityArgs(['--project', 'abc'])).toEqual({ align: false, deleteOrphans: false, projectId: 'abc' }));
+  test('--project abc', () => expect(parseIntegrityArgs(['--project', 'abc'])).toEqual({ align: false, deleteOrphans: false, projectId: 'abc', logDir: null }));
   test('--project without value throws', () => expect(() => parseIntegrityArgs(['--project'])).toThrow(/--project/));
   test('--project followed by a flag throws', () => expect(() => parseIntegrityArgs(['--project', '--align'])).toThrow(/--project/));
+  test('--log-dir /x', () => expect(parseIntegrityArgs(['--log-dir', '/x'])).toMatchObject({ logDir: '/x' }));
+  test('--log-dir without value throws', () => expect(() => parseIntegrityArgs(['--log-dir'])).toThrow(/--log-dir/));
+  test('--log-dir followed by a flag throws', () => expect(() => parseIntegrityArgs(['--log-dir', '--align'])).toThrow(/--log-dir/));
   test('unknown flag throws', () => expect(() => parseIntegrityArgs(['--bogus'])).toThrow(/--bogus/));
   test('stray positional throws', () => expect(() => parseIntegrityArgs(['abc'])).toThrow(/abc/));
 });

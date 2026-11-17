@@ -16,13 +16,13 @@ export const WINDOW_MS = 10_000;
 const CLIENT_ID = /^ws-(\d{13})-/;
 const HEX_ID = /^[0-9a-f]{24}$/;
 
-/** certifiedRelationships: relationships touching the group's elements with certifiedBy set. */
-export interface ElementGroup { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships?: number }
+/** certifiedRelationships (required, never defaulted to 0): relationships touching the group's elements with certifiedBy set. */
+export interface ElementGroup { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships: number }
 /** `_id` as hex string; `objectIdStored` = the document's _id is a BSON ObjectId (legacy). */
 export interface WorkspaceDoc { _id: string; projectId: string; createdAt?: Date | null; objectIdStored: boolean }
 export interface AlignStep { projectId: string; from: string; to: string; n: number; certified: number }
 export interface Ambiguous { projectId: string; workspaceId: string; n: number; candidates: string[] }
-export interface Orphan { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships?: number }
+export interface Orphan { projectId: string; workspaceId: string; n: number; certified: number; certifiedRelationships: number }
 /** workspaceId is a workspace of ANOTHER project: reported only, never deleted or aligned. */
 export interface CrossProject { projectId: string; workspaceId: string; n: number; certified: number; workspaceProjectId: string }
 export interface IntegrityPlan {
@@ -30,11 +30,11 @@ export interface IntegrityPlan {
   crossProject: CrossProject[]; deadProject: number;
 }
 
-export interface IntegrityArgs { align: boolean; deleteOrphans: boolean; projectId: string | null }
+export interface IntegrityArgs { align: boolean; deleteOrphans: boolean; projectId: string | null; logDir: string | null }
 
 /** Strict CLI parsing: a missing --project value or an unknown flag throws — never widen the scope silently. */
 export function parseIntegrityArgs(argv: string[]): IntegrityArgs {
-  const out: IntegrityArgs = { align: false, deleteOrphans: false, projectId: null };
+  const out: IntegrityArgs = { align: false, deleteOrphans: false, projectId: null, logDir: null };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--align') out.align = true;
@@ -43,6 +43,10 @@ export function parseIntegrityArgs(argv: string[]): IntegrityArgs {
       const v = argv[i + 1];
       if (v === undefined || v.startsWith('--')) throw new Error('--project needs a project id');
       out.projectId = v; i += 1;
+    } else if (a === '--log-dir') {
+      const v = argv[i + 1];
+      if (v === undefined || v.startsWith('--')) throw new Error('--log-dir needs a directory');
+      out.logDir = v; i += 1;
     } else throw new Error(`unknown argument: ${a}`);
   }
   return out;
@@ -154,7 +158,7 @@ export async function normalizeWorkspaceIds(coll: Collection<Document>, hexIds: 
 }
 
 /** Rewrites element workspaceId from → to, one transaction per step; the old id stays as workspaceIdAlignedFrom. */
-export async function applyAlign(s: Session, steps: AlignStep[]): Promise<Array<AlignStep & { moved: number }>> {
+export async function applyAlign(s: Session, steps: AlignStep[], onStep?: (done: AlignStep & { moved: number }) => void): Promise<Array<AlignStep & { moved: number }>> {
   const out: Array<AlignStep & { moved: number }> = [];
   for (const step of steps) {
     const res = await s.executeWrite((tx) => tx.run(
@@ -163,7 +167,9 @@ export async function applyAlign(s: Session, steps: AlignStep[]): Promise<Array<
        RETURN count(e) AS n`,
       step,
     ));
-    out.push({ ...step, moved: num(res.records[0]?.get('n')) });
+    const done = { ...step, moved: num(res.records[0]?.get('n')) };
+    out.push(done);
+    onStep?.(done);   // lets the caller log each committed step before the next one can fail
   }
   return out;
 }
@@ -197,13 +203,14 @@ export async function deleteOrphans(s: Session, wsColl: Collection<Document>, or
   const skippedCertified: string[] = [];
   const skippedNowExists: string[] = [];
   for (const o of orphans) {
-    if (o.certified > 0 || (o.certifiedRelationships ?? 0) > 0) { skippedCertified.push(o.workspaceId); continue; }
+    // A non-number is never read as 0: without a trustworthy count the group is skipped.
+    if (typeof o.certifiedRelationships !== 'number' || o.certified > 0 || o.certifiedRelationships > 0) { skippedCertified.push(o.workspaceId); continue; }
     const ids: unknown[] = [o.workspaceId];
     if (HEX_ID.test(o.workspaceId)) ids.push(new Types.ObjectId(o.workspaceId));
     if (await wsColl.findOne({ _id: { $in: ids } } as Document, { projection: { _id: 1 } })) { skippedNowExists.push(o.workspaceId); continue; }
     const res = await s.executeWrite((tx) => tx.run(
       `MATCH (e:ArchitectureElement {projectId: $projectId, workspaceId: $workspaceId})
-       WHERE e.certifiedBy IS NULL
+       WHERE e.certifiedBy IS NULL AND NOT EXISTS { (e)-[r]-() WHERE r.certifiedBy IS NOT NULL }
        WITH collect(e) AS els FOREACH (x IN els | DETACH DELETE x) RETURN size(els) AS n`,
       { projectId: o.projectId, workspaceId: o.workspaceId },
     ));
@@ -212,12 +219,30 @@ export async function deleteOrphans(s: Session, wsColl: Collection<Document>, or
   return { removed, skippedCertified, skippedNowExists };
 }
 
+export type ChangeLogStatus = 'running' | 'completed' | 'failed';
+export interface ChangeLogStep { step: string; at: string; result: unknown }
 export interface ChangeLog {
-  fileName: string; writtenAt: string; mode: string; projectId: string | null; plan: IntegrityPlan; results: Record<string, unknown>;
+  mode: string; projectId: string | null; startedAt: string; status: ChangeLogStatus;
+  plan: IntegrityPlan; steps: ChangeLogStep[]; finishedAt?: string; error?: string;
 }
 
-/** Pure: the JSON document a writing run leaves behind (the script only writes it to disk). */
-export function buildChangeLog(a: { mode: string; projectId: string | null; plan: IntegrityPlan; results: Record<string, unknown>; now?: Date }): ChangeLog {
-  const writtenAt = (a.now ?? new Date()).toISOString();
-  return { fileName: `workspace-integrity-${writtenAt.replace(/:/g, '-')}.json`, writtenAt, mode: a.mode, projectId: a.projectId, plan: a.plan, results: a.results };
+/** Pure: file name of a run's change log. */
+export function changeLogFileName(now: Date): string {
+  return `workspace-integrity-${now.toISOString().replace(/:/g, '-')}.json`;
+}
+
+/** Pure: the log as written BEFORE the first write (status 'running', no steps yet). */
+export function startChangeLog(a: { mode: string; projectId: string | null; plan: IntegrityPlan; now?: Date }): ChangeLog {
+  return { mode: a.mode, projectId: a.projectId, startedAt: (a.now ?? new Date()).toISOString(), status: 'running', plan: a.plan, steps: [] };
+}
+
+/** Pure: a copy of the log with one completed step appended. */
+export function appendChangeLogStep(log: ChangeLog, step: string, result: unknown, now?: Date): ChangeLog {
+  return { ...log, steps: [...log.steps, { step, at: (now ?? new Date()).toISOString(), result }] };
+}
+
+/** Pure: final state. No error → 'completed'; an error message → 'failed'. */
+export function finishChangeLog(log: ChangeLog, error?: string | null, now?: Date): ChangeLog {
+  const done = { ...log, finishedAt: (now ?? new Date()).toISOString() };
+  return error ? { ...done, status: 'failed', error } : { ...done, status: 'completed' };
 }

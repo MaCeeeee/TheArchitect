@@ -323,6 +323,35 @@ d('THE-771 — delete orphans only', () => {
     expect(await count(P, 'ws-1782282061855-uuuu2')).toBe(0);
   });
 
+  test('stale plan: a relationship is certified AFTER planning → the element survives the delete-time guard', async () => {
+    await el(P, 's1', 'ws-1782282061855-stale1'); await el(P, 's2', 'ws-1782282061855-stale1');
+    await el(P, 'x1', 'ws-a-other-live');
+    await edge(P, 's1', 'x1');
+
+    const s = getNeo4jDriver().session();
+    try {
+      const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      const o = p.orphans.find((x) => x.workspaceId === 'ws-1782282061855-stale1')!;
+      expect(o).toMatchObject({ certified: 0, certifiedRelationships: 0 });
+      await runCypher(`MATCH ({id: $a})-[r]-({id: $b}) SET r.certifiedBy = 'notary-1'`, { a: `${P}-s1`, b: `${P}-x1` });
+      const r = await deleteOrphans(s, wsColl(), [o]);
+      expect(r.skippedCertified).toEqual([]);   // plan said uncertified; the Cypher guard saved s1
+      expect(r.removed).toBe(1);                // only s2
+    } finally { await s.close(); }
+
+    expect(await count(P, 'ws-1782282061855-stale1')).toBe(1);
+  });
+
+  test('a group without a numeric certifiedRelationships is skipped, never deleted', async () => {
+    await el(P, 'n1', 'ws-1782282061855-nnnn1');
+    const s = getNeo4jDriver().session();
+    try {
+      const bad = { projectId: P, workspaceId: 'ws-1782282061855-nnnn1', n: 1, certified: 0 } as any;
+      expect(await deleteOrphans(s, wsColl(), [bad])).toEqual({ removed: 0, skippedCertified: ['ws-1782282061855-nnnn1'], skippedNowExists: [] });
+    } finally { await s.close(); }
+    expect(await count(P, 'ws-1782282061855-nnnn1')).toBe(1);
+  });
+
   test('sampleGroup (read-only) returns up to 5 names and the createdAt range', async () => {
     for (let i = 1; i <= 7; i += 1) {
       await runCypher(
