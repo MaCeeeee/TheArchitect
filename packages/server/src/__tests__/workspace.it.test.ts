@@ -174,7 +174,7 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     const p = await plan();
     const s = getNeo4jDriver().session();
     try {
-      return { normalized: await normalizeWorkspaceIds(wsColl(), p.normalize), moved: await applyAlign(s, p.align) };
+      return { normalized: (await normalizeWorkspaceIds(wsColl(), p.normalize)).normalized, moved: await applyAlign(s, p.align) };
     } finally { await s.close(); }
   }
 
@@ -199,6 +199,10 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     expect(await wsColl().countDocuments({ _id: new Types.ObjectId(LEGACY) as any })).toBe(0);
     expect(await count(P, LEGACY)).toBe(3);
     expect(await count(P, `ws-${T - 50_000}-e269m`)).toBe(1);
+    const from = await runCypher(
+      `MATCH (e:ArchitectureElement {projectId: $p, workspaceId: $w}) WHERE e.workspaceIdAlignedFrom IS NOT NULL
+       RETURN collect(e.workspaceIdAlignedFrom) AS f`, { p: P, w: LEGACY });
+    expect(from[0].get('f')).toEqual([`ws-${T}-16dxo`, `ws-${T}-16dxo`]);
 
     const res = await request(app).delete(`/api/workspaces/${P}/${LEGACY}`);
     expect(res.status).toBe(200);
@@ -213,6 +217,26 @@ d('THE-769 — align legacy workspaces (ObjectId _id) and their elements', () =>
     const r = await align();
     expect(r.moved).toBe(0);
     expect(await count(P, `ws-${T}-xxxxx`)).toBe(1);
+  });
+
+  test('conflict: string doc with the same hex but different content → legacy kept, string doc untouched, reported', async () => {
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    await wsColl().insertOne({ _id: LEGACY as any, name: 'DIFFERENT', projectId: new Types.ObjectId(P), source: 'manual',
+      color: '#888', offsetX: 0, createdBy: new Types.ObjectId(), createdAt: new Date(T + 84), updatedAt: new Date() });
+    const r = await normalizeWorkspaceIds(wsColl(), [LEGACY]);
+    expect(r).toEqual({ normalized: 0, conflicts: [LEGACY] });
+    expect(await wsColl().countDocuments({ _id: new Types.ObjectId(LEGACY) as any })).toBe(1);
+    expect((await wsColl().findOne({ _id: LEGACY as any }))!.name).toBe('DIFFERENT');
+  });
+
+  test('half-finished earlier run: identical string doc exists → legacy doc is removed', async () => {
+    await wsLegacy(P, LEGACY, new Date(T + 84));
+    const legacy = await wsColl().findOne({ _id: new Types.ObjectId(LEGACY) as any });
+    await wsColl().insertOne({ ...legacy!, _id: LEGACY as any, updatedAt: new Date(T + 999_999) });
+    const r = await normalizeWorkspaceIds(wsColl(), [LEGACY]);
+    expect(r).toEqual({ normalized: 1, conflicts: [] });
+    expect(await wsColl().countDocuments({ _id: new Types.ObjectId(LEGACY) as any })).toBe(0);
+    expect(await wsColl().countDocuments({ _id: LEGACY as any })).toBe(1);
   });
 
   test('align keeps every workspace field and is idempotent', async () => {
@@ -237,11 +261,26 @@ d('THE-771 — delete orphans only', () => {
     try {
       const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
       expect(p.orphans).toEqual([{ projectId: P, workspaceId: 'ws-1782282061855-e269m', n: 2, certified: 0 }]);
-      expect(await deleteOrphans(s, p.orphans)).toBe(2);
+      expect(await deleteOrphans(s, p.orphans)).toEqual({ removed: 2, skippedCertified: [] });
     } finally { await s.close(); }
 
     expect(await count(P, 'ws-1782282061855-e269m')).toBe(0);
     expect(await count(P, 'ws-a')).toBe(1);
     expect(await count(DEAD, 'ws-1775479541598-rfu4y')).toBe(1);
+  });
+
+  test('certified orphan group survives, uncertified orphan group is deleted', async () => {
+    await el(P, 'c1', 'ws-1782282061855-cccc1', 'notary-1'); await el(P, 'c2', 'ws-1782282061855-cccc1');
+    await el(P, 'u1', 'ws-1782282061855-uuuu1');
+
+    const s = getNeo4jDriver().session();
+    try {
+      const p = planWorkspaceIntegrity(await loadElementGroups(s, { projectIds: ALL }), await loadWorkspaceDocs(wsColl()), new Set([P, OTHER_P]));
+      expect(p.orphans).toHaveLength(2);
+      expect(await deleteOrphans(s, p.orphans)).toEqual({ removed: 1, skippedCertified: ['ws-1782282061855-cccc1'] });
+    } finally { await s.close(); }
+
+    expect(await count(P, 'ws-1782282061855-cccc1')).toBe(2);
+    expect(await count(P, 'ws-1782282061855-uuuu1')).toBe(0);
   });
 });

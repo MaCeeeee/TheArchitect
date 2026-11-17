@@ -1,4 +1,4 @@
-import { planWorkspaceIntegrity, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
+import { planWorkspaceIntegrity, parseIntegrityArgs, type ElementGroup, type WorkspaceDoc } from '../services/workspace-integrity.service';
 
 const P = 'p-live';
 const at = (ms: number) => new Date(ms);
@@ -8,7 +8,7 @@ const live = new Set([P, 'p-other']);
 
 test('a group whose id is a workspace of the project is fine', () => {
   const plan = planWorkspaceIntegrity([g('ws-1782282031806-aaaaa', 5)], [ws('ws-1782282031806-aaaaa', at(1))], live);
-  expect(plan).toMatchObject({ ok: 5, normalize: [], align: [], ambiguous: [], orphans: [], deadProject: 0 });
+  expect(plan).toMatchObject({ ok: 5, normalize: [], align: [], ambiguous: [], orphans: [], crossProject: [], deadProject: 0 });
 });
 
 test('ObjectId-stored workspaces of live projects are normalised; of dead projects never', () => {
@@ -58,4 +58,36 @@ test('negative: a workspace in another project is never a candidate', () => {
 test('negative: elements of deleted projects are counted, never planned (THE-656)', () => {
   const plan = planWorkspaceIntegrity([g('ws-1775479541598-rfu4y', 89, 'p-dead')], [], live);
   expect(plan).toMatchObject({ align: [], orphans: [], ambiguous: [], deadProject: 89 });
+});
+
+test('boundary: 9_999 ms apart → still aligned', () => {
+  const t = 1782282061855;
+  const plan = planWorkspaceIntegrity([g(`ws-${t}-e269m`, 4)], [ws('6a3b777ff1bf836dc790f8f0', at(t + 9_999), true)], live);
+  expect(plan.align).toHaveLength(1);
+  expect(plan.orphans).toEqual([]);
+});
+
+test('negative-side offset: workspace created 9 s BEFORE <ms> → aligned', () => {
+  const t = 1782282061855;
+  const plan = planWorkspaceIntegrity([g(`ws-${t}-e269m`, 4)], [ws('6a3b777ff1bf836dc790f8f0', at(t - 9_000), true)], live);
+  expect(plan.align).toEqual([{ projectId: P, from: `ws-${t}-e269m`, to: '6a3b777ff1bf836dc790f8f0', n: 4, certified: 0 }]);
+});
+
+test('cross-project: workspaceId exists only as a workspace of another project → reported, not orphan, not aligned', () => {
+  const plan = planWorkspaceIntegrity([g('ws-shared', 6, P, 2)], [ws('ws-shared', at(1), false, 'p-other')], live);
+  expect(plan.crossProject).toEqual([{ projectId: P, workspaceId: 'ws-shared', n: 6, certified: 2, workspaceProjectId: 'p-other' }]);
+  expect(plan.orphans).toEqual([]);
+  expect(plan.align).toEqual([]);
+  expect(plan.ok).toBe(0);
+});
+
+describe('parseIntegrityArgs', () => {
+  test('defaults', () => expect(parseIntegrityArgs([])).toEqual({ align: false, deleteOrphans: false, projectId: null }));
+  test('--align', () => expect(parseIntegrityArgs(['--align'])).toEqual({ align: true, deleteOrphans: false, projectId: null }));
+  test('--delete-orphans', () => expect(parseIntegrityArgs(['--delete-orphans'])).toMatchObject({ deleteOrphans: true }));
+  test('--project abc', () => expect(parseIntegrityArgs(['--project', 'abc'])).toEqual({ align: false, deleteOrphans: false, projectId: 'abc' }));
+  test('--project without value throws', () => expect(() => parseIntegrityArgs(['--project'])).toThrow(/--project/));
+  test('--project followed by a flag throws', () => expect(() => parseIntegrityArgs(['--project', '--align'])).toThrow(/--project/));
+  test('unknown flag throws', () => expect(() => parseIntegrityArgs(['--bogus'])).toThrow(/--bogus/));
+  test('stray positional throws', () => expect(() => parseIntegrityArgs(['abc'])).toThrow(/abc/));
 });
