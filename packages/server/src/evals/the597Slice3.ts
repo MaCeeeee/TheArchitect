@@ -7,7 +7,8 @@
  * Rein und LLM-frei.
  */
 import { createHash } from 'crypto';
-import type { TypingEvalCase } from './typingMetrics';
+import { thresholdRoutingStats, type RoutingStat } from './metrics';
+import { axisCalibrationSamples, type TypingEvalCase } from './typingMetrics';
 
 export const SLICE3_INSTRUMENT = {
   model: 'claude-haiku-4-5-20251001',
@@ -64,5 +65,112 @@ export function parseRun(label: string, golden: GoldenId, raw: string): Slice3Ru
     golden,
     fileSha256: createHash('sha256').update(raw).digest('hex'),
     cases: j.cases as TypingEvalCase[],
+  };
+}
+
+export const SLICE3_AXES = ['obligationKind', 'partyRole', 'provisionKind'] as const;
+export type Slice3Axis = (typeof SLICE3_AXES)[number];
+export const SLICE3_THRESHOLDS = [0.8, 1.0] as const;
+/** Nur diese Achsen werden auf gv2 repliziert — gv2 ist im Rollenraum 1.6.0 gelabelt, tp-4 kennt 1.7.0. */
+export const REPLICATION_AXES: readonly Slice3Axis[] = ['obligationKind', 'provisionKind'];
+export const SLICE3_RUN_COUNT = { gv3: 5, gv2: 2 } as const;
+export const MIN_RECALL = 0.5;
+export const MAX_FALSE_ALARM = 0.1;
+export const MIN_STABLE_RUNS = 4;
+
+/**
+ * Kill-Kriterium vom 20.09.2026. Leerer Nenner (keine falschen oder keine richtigen Fälle) =
+ * nicht erfüllt — Klarstellung in der Vorregistrierung vom 17.11.2026, Abschnitt Entscheidungsregel.
+ */
+export function meetsCriterion(s: RoutingStat): boolean {
+  return s.wrong > 0 && s.correct > 0 && s.recall >= MIN_RECALL && s.falseAlarmRate <= MAX_FALSE_ALARM;
+}
+
+function routingAt(cases: TypingEvalCase[], axis: Slice3Axis, threshold: number): RoutingStat {
+  return thresholdRoutingStats(axisCalibrationSamples(cases, axis), [threshold])[0];
+}
+
+function pooled(runs: Slice3Run[]): TypingEvalCase[] {
+  return runs.flatMap((r) => r.cases);
+}
+
+export interface ComboVerdict {
+  axis: Slice3Axis;
+  threshold: number;
+  pooledGv3: RoutingStat;
+  pooledGv3Pass: boolean;
+  perRunGv3: Array<{ label: string; stat: RoutingStat; pass: boolean }>;
+  stableRuns: number;
+  stablePass: boolean;
+  /** null = Replikation entfällt (partyRole). */
+  pooledGv2: RoutingStat | null;
+  replicationPass: boolean | null;
+  /** (gefangen + Fehlalarme) / alle Samples, gepoolt über gv3. Berichtet, entscheidet nicht. */
+  reviewLoad: number;
+  go: boolean;
+  /** GO ohne Replikation — steht auf einem Gold-Set. */
+  oneGoldSetOnly: boolean;
+}
+
+export interface Slice3Decision {
+  layer1: 'GO' | 'NO-GO';
+  goCombos: Array<{ axis: Slice3Axis; threshold: number }>;
+  combos: ComboVerdict[];
+  inputs: Array<{ label: string; golden: GoldenId; fileSha256: string }>;
+}
+
+export function decideSlice3(runs: Slice3Run[]): Slice3Decision {
+  const gv3 = runs.filter((r) => r.golden === 'gv3');
+  const gv2 = runs.filter((r) => r.golden === 'gv2');
+  if (gv3.length !== SLICE3_RUN_COUNT.gv3 || gv2.length !== SLICE3_RUN_COUNT.gv2) {
+    throw new Error(
+      `[the597-slice3] Vorregistrierung verlangt ${SLICE3_RUN_COUNT.gv3} gv3- und ${SLICE3_RUN_COUNT.gv2} gv2-Läufe, bekam ${gv3.length}/${gv2.length}`
+    );
+  }
+  if (new Set(runs.map((r) => r.label)).size !== runs.length) {
+    throw new Error('[the597-slice3] Label doppelt vergeben');
+  }
+  if (new Set(runs.map((r) => r.fileSha256)).size !== runs.length) {
+    throw new Error('[the597-slice3] Zwei Läufe sind byte-identisch — dieselbe Datei doppelt gezählt?');
+  }
+
+  const combos: ComboVerdict[] = [];
+  for (const axis of SLICE3_AXES) {
+    for (const threshold of SLICE3_THRESHOLDS) {
+      const pooledGv3 = routingAt(pooled(gv3), axis, threshold);
+      const perRunGv3 = gv3.map((r) => {
+        const stat = routingAt(r.cases, axis, threshold);
+        return { label: r.label, stat, pass: meetsCriterion(stat) };
+      });
+      const stableRuns = perRunGv3.filter((p) => p.pass).length;
+      const replicates = REPLICATION_AXES.includes(axis);
+      const pooledGv2 = replicates ? routingAt(pooled(gv2), axis, threshold) : null;
+      const replicationPass = pooledGv2 ? meetsCriterion(pooledGv2) : null;
+      const pooledGv3Pass = meetsCriterion(pooledGv3);
+      const stablePass = stableRuns >= MIN_STABLE_RUNS;
+      const go = pooledGv3Pass && stablePass && replicationPass !== false;
+      const total = pooledGv3.wrong + pooledGv3.correct;
+      combos.push({
+        axis,
+        threshold,
+        pooledGv3,
+        pooledGv3Pass,
+        perRunGv3,
+        stableRuns,
+        stablePass,
+        pooledGv2,
+        replicationPass,
+        reviewLoad: total ? (pooledGv3.caught + pooledGv3.falseAlarms) / total : 0,
+        go,
+        oneGoldSetOnly: go && replicationPass === null,
+      });
+    }
+  }
+  const goCombos = combos.filter((c) => c.go).map((c) => ({ axis: c.axis, threshold: c.threshold }));
+  return {
+    layer1: goCombos.length ? 'GO' : 'NO-GO',
+    goCombos,
+    combos,
+    inputs: runs.map((r) => ({ label: r.label, golden: r.golden, fileSha256: r.fileSha256 })),
   };
 }
