@@ -11,7 +11,9 @@ export type ArchitectureLayer =
 // ✅ FIX: 'strategy' als eigenständige Domain hinzugefügt (ArchiMate 3.2 Strategy Layer)
 export type TOGAFDomain = 'business' | 'data' | 'application' | 'technology' | 'motivation' | 'implementation' | 'strategy';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
-export type ElementStatus = 'current' | 'target' | 'transitional' | 'retired';
+/** Laufzeit-Quelle der Element-Status. Prompts und Validierung lesen hier, statt die Liste zu kopieren (THE-774). */
+export const ELEMENT_STATUSES = ['current', 'target', 'transitional', 'retired'] as const;
+export type ElementStatus = (typeof ELEMENT_STATUSES)[number];
 
 // Lifecycle phases for Application Portfolio Management
 export type LifecyclePhase =
