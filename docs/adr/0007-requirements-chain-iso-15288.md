@@ -86,6 +86,7 @@ Derselbe Maßstab wie „singulär". Der Regelfall ist die geteilte Maßnahme; d
 | Homologie | H0 = die vorhandene Komponenten-Bündelung (`measureGrouping.ts`); b1 = 47 auf req-self-v1 ohne Gold, also ohne Aussage (ADR-0012) |
 | Z3 über Policies | Dev 1, Prod 0 SMT-Fälle |
 | „leere Zeile ⇒ Lücke" | 2 von 6 adjudizierten Leerzeilen sind Hard Negatives (DSGVO Art. 83, NIS2 Art. 22) — die Lücke hängt am Adressaten (THE-692) |
+| SVD / Korrespondenzanalyse (THE-781) | Residuen sagen ENISA-Abweichungen vom SCF nicht vorher: AUROC 0,568 = Nachbarzeilen-Baseline 0,565; Singulärwerte flach (5 Achsen = 31 % Trägheit) — keine wenigen Hauptachsen |
 
 **Regel für jeden Mathe-Spike** (verankert im Pre-Flight-Skill, Stufe 3): Vorregistrierung, Pflicht-Baseline „identische Zeilen gruppieren / einfache Graph-Abfrage", Kill-Kriterium — und Gold, auf dem noch nicht gerechnet wurde.
 
