@@ -23,7 +23,7 @@ const el = (id: string) => ({ id, name: id, type: 'goal', layer: 'motivation', t
 
 beforeEach(() => {
   del.mockReset(); update.mockReset(); toastSuccess.mockReset(); toastError.mockReset();
-  useWorkspaceStore.setState({ workspaces: [WS], activeWorkspaceId: 'ws-1' });
+  useWorkspaceStore.setState({ workspaces: [WS], activeWorkspaceId: 'ws-1', pendingRequests: {} });
   // cast: the test elements carry only the fields WorkspaceBar reads
   useArchitectureStore.setState({ projectId: 'p1', elements: [el('e1'), el('e2')] as never });
 });
@@ -257,5 +257,43 @@ describe('WorkspaceBar — rename', () => {
     await tick();
     expect(update).not.toHaveBeenCalled();
     expect(toastError).toHaveBeenCalledTimes(1);
+  });
+});
+
+// X-ray and the plateau view unmount the bar (Scene.tsx); the guard must outlive the component.
+describe('WorkspaceBar — remount while a request is pending', () => {
+  test('pending DELETE survives a remount → still "Deleting…", no second DELETE', async () => {
+    let resolveDelete!: (v: unknown) => void;
+    del.mockImplementation(() => new Promise((r) => { resolveDelete = r; }));
+    const first = render(<WorkspaceBar />);
+    await confirmDelete();
+    expect(screen.getByText('Deleting…')).toBeInTheDocument();
+    first.unmount();
+    render(<WorkspaceBar />);
+    expect(screen.getByText('Deleting…')).toBeInTheDocument();
+    expect(screen.queryByTitle('Remove this architecture from the project')).not.toBeInTheDocument();
+    await act(async () => { resolveDelete({ data: { success: true } }); });
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith('Workspace deleted'));
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(useWorkspaceStore.getState().workspaces).toHaveLength(0);
+    expect(useWorkspaceStore.getState().pendingRequests).toEqual({});
+  });
+
+  test('pending PUT survives a remount → still "Saving…", no second rename', async () => {
+    let resolveUpdate!: (v: unknown) => void;
+    update.mockImplementation(() => new Promise((r) => { resolveUpdate = r; }));
+    const user = userEvent.setup();
+    const first = render(<WorkspaceBar />);
+    await rename('Beta');
+    first.unmount();
+    render(<WorkspaceBar />);
+    expect(screen.getByText('Saving…')).toBeInTheDocument();
+    await user.dblClick(screen.getByText('Beta'));
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await act(async () => { resolveUpdate({ data: { data: { ...WS, name: 'Beta' } } }); });
+    await tick();
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText('Saving…')).not.toBeInTheDocument();
+    expect(useWorkspaceStore.getState().workspaces[0].name).toBe('Beta');
   });
 });

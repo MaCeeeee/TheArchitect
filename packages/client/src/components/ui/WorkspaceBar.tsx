@@ -7,8 +7,6 @@ import { workspaceAPI } from '../../services/api';
 import { flyToWorkspace, fitAllWorkspaces } from '../3d/CameraControls';
 import { serverErrorDetail } from '../../utils/workspacePersistence';
 
-type PendingRequest = 'delete' | 'rename';
-
 export default function WorkspaceBar() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -17,6 +15,8 @@ export default function WorkspaceBar() {
   const updateWorkspace = useWorkspaceStore((s) => s.updateWorkspace);
   const removeWorkspaceElements = useArchitectureStore((s) => s.removeWorkspaceElements);
   const elements = useArchitectureStore((s) => s.elements);
+  const pending = useWorkspaceStore((s) => s.pendingRequests);
+  const setPendingRequest = useWorkspaceStore((s) => s.setPendingRequest);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -24,15 +24,9 @@ export default function WorkspaceBar() {
   const renameCancelledRef = useRef(false);
   // One request per workspace at a time (THE-775): a second PUT/DELETE while one is pending caused
   // out-of-order renames, rollbacks over newer names and a false error toast after a successful delete.
-  // The ref answers synchronously inside one event batch; the state re-renders the busy label.
-  const pendingRef = useRef(new Map<string, PendingRequest>());
-  const [pending, setPending] = useState<ReadonlyMap<string, PendingRequest>>(new Map());
-
-  const markPending = (wsId: string, kind: PendingRequest | null) => {
-    if (kind) pendingRef.current.set(wsId, kind);
-    else pendingRef.current.delete(wsId);
-    setPending(new Map(pendingRef.current));
-  };
+  // Read via getState(): it answers synchronously inside one event batch (Enter + blur) and survives
+  // a remount of the bar (X-ray / plateau view); the subscription above re-renders the busy label.
+  const isPending = (wsId: string) => wsId in useWorkspaceStore.getState().pendingRequests;
 
   // Show as soon as ONE architecture is imported (so it can be managed/deleted).
   // The base "Main Architecture" has no workspace entry, so length===0 = nothing imported.
@@ -58,30 +52,30 @@ export default function WorkspaceBar() {
 
   const handleDelete = async (wsId: string) => {
     setConfirmDeleteId(null);
-    if (pendingRef.current.has(wsId)) return;
+    if (isPending(wsId)) return;
     const projectId = useArchitectureStore.getState().projectId;
     if (!projectId) {
       toast.error('No project loaded — workspace not deleted');
       return;
     }
-    markPending(wsId, 'delete');
+    setPendingRequest(wsId, 'delete');
     try {
       // Server first (THE-775): the local view only changes once the deletion really happened.
       await workspaceAPI.delete(projectId, wsId);
     } catch (err) {
       if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
       toast.error(`Could not delete the workspace on the server (${serverErrorDetail(err)}). Nothing was removed.`);
-      markPending(wsId, null);
+      setPendingRequest(wsId, null);
       return;
     }
-    markPending(wsId, null);
+    setPendingRequest(wsId, null);
     removeWorkspaceElements(wsId);
     removeWorkspace(wsId);
     toast.success('Workspace deleted');
   };
 
   const handleDoubleClick = (wsId: string, name: string) => {
-    if (pendingRef.current.has(wsId)) return; // a PUT or DELETE is still running for it
+    if (isPending(wsId)) return; // a PUT or DELETE is still running for it
     renameCancelledRef.current = false;
     setEditingId(wsId);
     setEditName(name);
@@ -90,7 +84,7 @@ export default function WorkspaceBar() {
   const handleRenameSubmit = async (wsId: string) => {
     setEditingId(null);
     if (renameCancelledRef.current) return; // Escape pressed — a following blur must not save
-    if (pendingRef.current.has(wsId)) return; // Enter already sent the PUT — the following blur must not
+    if (isPending(wsId)) return; // Enter already sent the PUT — the following blur must not
     const ws = useWorkspaceStore.getState().workspaces.find((w) => w.id === wsId);
     const next = editName.trim();
     // Empty or unchanged (also covers the onBlur that follows Enter) → nothing to save.
@@ -101,7 +95,7 @@ export default function WorkspaceBar() {
       return;
     }
     const previous = ws.name;
-    markPending(wsId, 'rename');
+    setPendingRequest(wsId, 'rename');
     updateWorkspace(wsId, { name: next });
     try {
       // THE-775: until now the new name lived only in the local store and was lost on reload.
@@ -113,7 +107,7 @@ export default function WorkspaceBar() {
       if (current?.name === next) updateWorkspace(wsId, { name: previous });
       toast.error(`Could not save the new name on the server (${serverErrorDetail(err)}).`);
     } finally {
-      markPending(wsId, null);
+      setPendingRequest(wsId, null);
     }
   };
 
@@ -189,9 +183,9 @@ export default function WorkspaceBar() {
             </span>
 
             {/* Delete button — hidden while a request for this workspace is pending */}
-            {pending.has(ws.id) ? (
+            {pending[ws.id] ? (
               <span className="text-[9px] text-[var(--text-disabled)]" onClick={(e) => e.stopPropagation()}>
-                {pending.get(ws.id) === 'delete' ? 'Deleting…' : 'Saving…'}
+                {pending[ws.id] === 'delete' ? 'Deleting…' : 'Saving…'}
               </span>
             ) : confirmDeleteId === ws.id ? (
               <span className="flex items-center gap-1 text-[9px]" onClick={(e) => e.stopPropagation()}>

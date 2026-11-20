@@ -10,6 +10,9 @@ export interface Workspace {
   createdAt: string;
 }
 
+/** A server request still running for a workspace; the bar shows it and blocks a second one (THE-775). */
+export type PendingWorkspaceRequest = 'delete' | 'rename';
+
 const WORKSPACE_GAP = 40; // 30-unit plane + 10-unit gap
 
 const WORKSPACE_COLORS = [
@@ -26,6 +29,8 @@ const WORKSPACE_COLORS = [
 interface WorkspaceState {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
+  // Lives in the store, not in WorkspaceBar: X-ray and the plateau view unmount the bar mid-request.
+  pendingRequests: Readonly<Record<string, PendingWorkspaceRequest>>;
 
   addWorkspace: (ws: Workspace) => void;
   removeWorkspace: (id: string) => void;
@@ -36,11 +41,13 @@ interface WorkspaceState {
   getWorkspaceById: (id: string) => Workspace | undefined;
   setWorkspaces: (workspaces: Workspace[]) => void;
   createDefaultWorkspace: (projectId: string) => Workspace;
+  setPendingRequest: (id: string, kind: PendingWorkspaceRequest | null) => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspaces: [],
   activeWorkspaceId: null,
+  pendingRequests: {},
 
   addWorkspace: (ws) =>
     set((state) => ({
@@ -99,6 +106,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     };
     return ws;
   },
+
+  setPendingRequest: (id, kind) =>
+    set((state) => {
+      const { [id]: _done, ...rest } = state.pendingRequests;
+      return { pendingRequests: kind ? { ...rest, [id]: kind } : rest };
+    }),
 }));
 
 export { WORKSPACE_GAP };
