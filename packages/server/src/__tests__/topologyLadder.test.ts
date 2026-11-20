@@ -360,3 +360,137 @@ describe('assessLadder — robust against odd input', () => {
     expect(r.cohomology.map((c) => [c.quantity, c.verdict])).toEqual([['pieces', 'global_obstruction']]);
   });
 });
+
+describe('assessLadder — what a reported loop says', () => {
+  type Defect = ReturnType<typeof assessLadder>['cohomology'][number]['loopDefects'][number];
+  const stepProduct = (d: Defect) => d.steps.reduce((p, s) => (s.direction === 'forward' ? p * s.factor : p / s.factor), 1);
+
+  test('the Landkarte loop is reported in the direction it is walked: ×1 · ×10 · ÷12 = 10/12', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, ...landkarteTranslations],
+    }), NOW);
+    const [loop] = r.cohomology[0].loopDefects;
+    expect(loop.steps).toEqual([
+      { relationshipId: 't1', fromContext: 'TE', toContext: 'Produktion', factor: 1, direction: 'forward' },
+      { relationshipId: 't2', fromContext: 'Produktion', toContext: 'Logistik', factor: 10, direction: 'forward' },
+      { relationshipId: 't3', fromContext: 'Logistik', toContext: 'TE', factor: 12, direction: 'reverse' },
+    ]);
+    expect(loop.product).toBeCloseTo(10 / 12, 9);
+  });
+
+  test('property: every reported loop chains head to tail and its product is the product of its steps', () => {
+    // small deterministic generator (LCG), so a failure can be reproduced
+    let seed = 20261120;
+    const next = (n: number) => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed % n;
+    };
+    const factors = [0.25, 0.5, 1, 1, 2, 3, 10];
+    let checked = 0;
+    for (let model = 0; model < 60; model++) {
+      const n = 3 + next(4);
+      const ids = Array.from({ length: n }, (_, i) => `k${next(1000)}-${i}`);
+      const name = new Map(ids.map((id, i) => [id, `Context ${i}`]));
+      const elements = [...ids.map((id) => ctx(id, name.get(id)!)), ...ids.map((id) => obj(`own-${id}`)), obj('shared')];
+      const membership = [...ids.map((id) => has(id, `own-${id}`)), ...ids.filter(() => next(2) === 0).map((id) => has(id, 'shared'))];
+      const translations: ModelRelationship[] = [];
+      for (let e = 0; e < n + 2 + next(4); e++) {
+        const from = ids[next(n)];
+        const to = ids[next(n)];
+        if (from !== to) translations.push(tr(`e${next(1000)}-${e}`, from, to, factors[next(factors.length)]));
+      }
+      const relation = new Map(translations.map((t) => [t.id, t]));
+      const r = assessLadder('p', input({ elements, relationships: [...membership, ...translations] }), NOW);
+      for (const c of r.cohomology) {
+        for (const defect of [...c.loopDefects, ...c.faceDefects]) {
+          defect.steps.forEach((step, i) => {
+            const rel = relation.get(step.relationshipId)!;
+            const [from, to] = step.direction === 'forward' ? [rel.sourceId, rel.targetId] : [rel.targetId, rel.sourceId];
+            expect([step.fromContext, step.toContext, step.factor]).toEqual([name.get(from), name.get(to), rel.translationFactor]);
+            expect(step.toContext).toBe(defect.steps[(i + 1) % defect.steps.length].fromContext);
+          });
+          expect(defect.product / stepProduct(defect)).toBeCloseTo(1, 9);
+          expect(Math.abs(Math.log(defect.product))).toBeGreaterThan(r.tolerance);
+          checked++;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(50);
+  });
+
+  test('pairwise overlaps without a common member: an inconsistent triangle is a global obstruction, not a local defect', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, obj('te-prod'), obj('prod-log'), obj('te-log')],
+      relationships: [
+        has('te', 'te-prod'), has('prod', 'te-prod'), has('prod', 'prod-log'), has('log', 'prod-log'), has('te', 'te-log'), has('log', 'te-log'),
+        ...landkarteTranslations,
+      ],
+    }), NOW);
+    expect(r.rungs[2].facts.slice(2)).toEqual([
+      { label: 'overlapping context pairs', value: 3 },
+      { label: 'triple overlaps', value: 0 },
+    ]);
+    const c = r.cohomology[0];
+    expect([c.verdict, c.faces, c.h1Dimension]).toEqual(['global_obstruction', 0, 1]);
+    expect(c.faceDefects).toEqual([]);
+  });
+
+  test('of two triple overlaps only the defective one is reported, with its own contexts', () => {
+    const five = ['a', 'b', 'c', 'd', 'e'];
+    const r = assessLadder('p', input({
+      elements: [...five.map((id) => ctx(id, id.toUpperCase())), obj('m1'), obj('m2')],
+      relationships: [
+        has('a', 'm1'), has('b', 'm1'), has('c', 'm1'),
+        has('c', 'm2'), has('d', 'm2'), has('e', 'm2'),
+        tr('ab', 'a', 'b', 1), tr('bc', 'b', 'c', 1), tr('ac', 'a', 'c', 1),
+        tr('cd', 'c', 'd', 1), tr('de', 'd', 'e', 1), tr('ce', 'c', 'e', 2),
+      ],
+    }), NOW);
+    const c = r.cohomology[0];
+    expect([c.verdict, c.faces]).toEqual(['local_defect', 2]);
+    expect(c.faceDefects).toHaveLength(1);
+    expect(c.faceDefects[0].steps.map((s) => s.relationshipId)).toEqual(['cd', 'de', 'ce']);
+    expect(c.faceDefects[0].steps.map((s) => s.fromContext)).toEqual(['C', 'D', 'E']);
+    expect(c.faceDefects[0].product).toBeCloseTo(0.5, 9);
+  });
+
+  test('a translation from a context to itself is counted as unusable and closes no loop', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('self', 'te', 'te', 2)],
+    }), NOW);
+    expect(r.rungs[3].facts[2]).toEqual({ label: 'unusable translations', value: 1 });
+    expect(r.rungs[4].status).toBe('open');
+    expect(r.cohomology).toEqual([]);
+  });
+
+  test('tolerance: a loop product of 1 + 5e-7 closes, 1 + 5e-6 does not', () => {
+    const pair = (back: number) => assessLadder('p', input({
+      elements: [ctx('a', 'A'), ctx('b', 'B'), obj('o1'), obj('o2')],
+      relationships: [has('a', 'o1'), has('b', 'o2'), tr('ab', 'a', 'b', 1), tr('ba', 'b', 'a', back)],
+    }), NOW).cohomology[0];
+    expect(pair(1 + 5e-7).verdict).toBe('exact');
+    expect(pair(1 - 5e-7).verdict).toBe('exact');
+    expect(pair(1 + 5e-6).verdict).toBe('global_obstruction');
+    expect(pair(1 - 5e-6).verdict).toBe('global_obstruction');
+  });
+
+  test('duplicate ids do not throw; the first element and the first relationship win', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers, { id: 'log', name: 'Shadow', type: 'business_object' }, obj('bom', 'Shadow BOM')],
+      relationships: [
+        ...ownMembership,
+        tr('t1', 'te', 'prod', 1), tr('t2', 'prod', 'log', 10), tr('t3', 'te', 'log', 10),
+        tr('t3', 'te', 'log', 12), // same id again, contradicting: must be ignored
+        has('te', 'bom'),
+      ],
+    }), NOW);
+    expect(r.rungs[0].facts).toEqual([{ label: 'elements', value: 6 }, { label: 'duplicate names', value: 0 }]);
+    expect(r.rungs[1].facts[0]).toEqual({ label: 'relationships', value: 6 });
+    expect(r.rungs[2].facts[0]).toEqual({ label: 'contexts', value: 3 }); // 'log' is still the context Logistik
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('exact');
+    expect(c.canonicalScale!.map((s) => s.contextName)).toEqual(['Produktion', 'TE', 'Logistik']);
+  });
+});

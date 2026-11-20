@@ -81,3 +81,59 @@ describe('buildContextStructure', () => {
     expect(s.quantities.every((q) => q.complex.edges.length === 1)).toBe(true);
   });
 });
+
+describe('buildContextStructure — semantics that must not drift', () => {
+  test('three contexts that overlap pairwise through three different members are no triple overlap', () => {
+    const s = buildContextStructure(
+      [ctx('a'), ctx('b'), ctx('c'), obj('ab'), obj('bc'), obj('ac')],
+      [
+        has('a', 'ab'), has('b', 'ab'), has('b', 'bc'), has('c', 'bc'), has('a', 'ac'), has('c', 'ac'),
+        tr('a', 'b', 1), tr('b', 'c', 10), tr('a', 'c', 12),
+      ],
+    );
+    expect(s.overlappingPairs).toEqual([['a', 'b'], ['a', 'c'], ['b', 'c']]);
+    expect(s.tripleOverlaps).toEqual([]);
+    expect(s.quantities[0].complex.faces).toEqual([]);
+  });
+
+  test('a translation from a context to itself is unusable', () => {
+    const s = buildContextStructure(
+      [ctx('a'), ctx('b'), obj('m'), obj('n')],
+      [has('a', 'm'), has('b', 'n'), tr('a', 'a', 2), tr('a', 'b', 10)],
+    );
+    expect(s.translations.map((t) => t.id)).toEqual(['a>b']);
+    expect(s.invalidTranslations).toEqual(['a>a']);
+    expect(s.quantities[0].complex.edges).toEqual([{ id: 'a>b', source: 'a', target: 'b' }]);
+  });
+
+  test('a factor that is not finite or outside 1e-12 … 1e12 is unusable; the bounds themselves are usable', () => {
+    const withFactor = (id: string, factor: number): ModelRelationship => ({ ...tr('a', 'b', factor), id });
+    const s = buildContextStructure(
+      [ctx('a'), ctx('b'), obj('m'), obj('n')],
+      [
+        has('a', 'm'), has('b', 'n'),
+        withFactor('nan', Number.NaN), withFactor('infinite', Number.POSITIVE_INFINITY),
+        withFactor('too-large', 1.0001e12), withFactor('too-small', 0.9999e-12),
+        withFactor('largest', 1e12), withFactor('smallest', 1e-12),
+      ],
+    );
+    expect(s.translations.map((t) => t.id)).toEqual(['largest', 'smallest']);
+    expect(s.invalidTranslations).toEqual(['infinite', 'nan', 'too-large', 'too-small']);
+  });
+
+  test('the quantity is trimmed and lower case; a missing or blank quantity is the default quantity', () => {
+    const named = (id: string, quantity: string | null | undefined): ModelRelationship => ({ ...tr('a', 'b', 2), id, translationQuantity: quantity });
+    const s = buildContextStructure(
+      [ctx('a'), ctx('b'), obj('m'), obj('n')],
+      [
+        has('a', 'm'), has('b', 'n'),
+        named('p1', ' pieces '), named('p2', 'pieces'), named('p3', 'Pieces'),
+        named('d1', undefined), named('d2', null), named('d3', ''), named('d4', '   '), named('d5', 'default'),
+      ],
+    );
+    expect(s.quantities.map((q) => [q.quantity, q.complex.edges.map((e) => e.id)])).toEqual([
+      ['default', ['d1', 'd2', 'd3', 'd4', 'd5']],
+      ['pieces', ['p1', 'p2', 'p3']],
+    ]);
+  });
+});
