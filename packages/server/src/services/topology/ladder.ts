@@ -10,6 +10,9 @@
  *
  * A rung counts only if every rung below it is reached; rungs above the first open one
  * are 'locked'. Cohomology is computed only when rungs 0–4 are reached.
+ *
+ * The assessment runs inside a request. Where a limit of limits.ts applies — too many contexts,
+ * a quantity too large to classify, a count that stops — the rung concerned says so.
  */
 import { toMethodRef } from '@thearchitect/shared';
 import type {
@@ -28,15 +31,26 @@ import { assessApplicability } from './applicability';
 import { buildComplex, OrientedStep } from './cellComplex';
 import {
   buildContextStructure,
+  compareText,
   ContextStructure,
   MAX_TRANSLATION_FACTOR,
   MIN_TRANSLATION_FACTOR,
   ModelElement,
   ModelRelationship,
   QuantityComplex,
+  SkippedQuantity,
 } from './contextComplex';
 import { classifyOneCochain } from './h1';
 import { bettiNumbers, componentIndex, graphBetti, spanningForest } from './homology';
+import {
+  MAX_CHECKED_TRIPLE_CANDIDATES,
+  MAX_COMPARED_MEMBERS,
+  MAX_CONTEXTS,
+  MAX_COUNTED_TRIPLE_OVERLAPS,
+  MAX_FACES_PER_QUANTITY,
+  MAX_TRANSLATIONS_PER_QUANTITY,
+  MAX_TRANSLATIONS_PER_REPORT,
+} from './limits';
 
 export const LOOP_CHECK_METHOD_ID = 'PA-kategorientheorie';
 /**
@@ -73,9 +87,37 @@ function countBy<T>(items: T[], key: (item: T) => string): Record<string, number
   return counts;
 }
 
-/** Plain code-unit order: the same on every machine, unlike localeCompare. */
-function compareText(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
+/** A count as shown in a text: 10,000 — the same on every machine. */
+function shown(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+/** At most this many skipped quantities are named in the warning; the rest are counted. */
+const NAMED_SKIPPED_QUANTITIES = 5;
+
+function whySkipped(q: SkippedQuantity): string {
+  if (q.reason === 'translations') return `${shown(q.translations)} translations`;
+  if (q.reason === 'faces') return `more than ${shown(MAX_FACES_PER_QUANTITY)} faces`;
+  if (q.reason === 'members') return `more than ${shown(MAX_COMPARED_MEMBERS)} members to compare`;
+  return `beyond ${shown(MAX_TRANSLATIONS_PER_REPORT)} translations in total`;
+}
+
+function skippedWarning(skipped: SkippedQuantity[]): string {
+  const named = skipped.slice(0, NAMED_SKIPPED_QUANTITIES).map((q) => `"${q.quantity}" (${whySkipped(q)})`);
+  if (skipped.length > named.length) named.push(`and ${shown(skipped.length - named.length)} more`);
+  const count = skipped.length === 1 ? '1 quantity is' : `${shown(skipped.length)} quantities are`;
+  return `${count} not checked — a quantity is checked up to ${shown(MAX_TRANSLATIONS_PER_QUANTITY)} translations and ${shown(MAX_FACES_PER_QUANTITY)} faces, all quantities together up to ${shown(MAX_TRANSLATIONS_PER_REPORT)} translations: ${named.join(', ')}.`;
+}
+
+/** What rung 4 asks for. If quantities were skipped for their size, that is said first. */
+function nextForGluing(skippedQuantities: number): string {
+  const how = ': two different paths between the same contexts (for example A→B, B→C and A→C).';
+  if (skippedQuantities === 0) return `Declare translations that close a loop${how}`;
+  const tooLarge =
+    skippedQuantities === 1
+      ? 'The quantity named in the warning is too large to check. Bring it within the limits'
+      : 'The quantities named in the warning are too large to check. Bring one within the limits';
+  return `${tooLarge}, or declare translations of another quantity that close a loop${how}`;
 }
 
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
@@ -88,13 +130,20 @@ function duplicateNameCount(elements: ModelElement[]): number {
   return Object.values(names).reduce((sum, n) => sum + (n > 1 ? n - 1 : 0), 0);
 }
 
-function describeLoop(
-  loop: OrientedStep[],
-  structure: ContextStructure,
-  value: number,
-): TranslationLoopDefect {
-  const relationById = new Map(structure.translations.map((t) => [t.id, t]));
-  const nameById = new Map(structure.contexts.map((c) => [c.id, c.name]));
+/** What a reported loop needs to name its steps: built once per report, not once per loop. */
+export interface LoopLabels {
+  relationById: Map<string, ModelRelationship>;
+  nameById: Map<string, string>;
+}
+
+export function loopLabels(structure: Pick<ContextStructure, 'contexts' | 'translations'>): LoopLabels {
+  return {
+    relationById: new Map(structure.translations.map((t) => [t.id, t])),
+    nameById: new Map(structure.contexts.map((c) => [c.id, c.name])),
+  };
+}
+
+function describeLoop(loop: OrientedStep[], { relationById, nameById }: LoopLabels, value: number): TranslationLoopDefect {
   const steps: TranslationStep[] = loop.map((step) => {
     const rel = relationById.get(step.edgeId)!;
     const forward = step.sign === 1;
@@ -109,11 +158,11 @@ function describeLoop(
   return { steps, product: additiveToFactor(value) };
 }
 
-function cohomologyOf(q: QuantityComplex, structure: ContextStructure): CohomologyResult {
+export function cohomologyOf(q: QuantityComplex, labels: LoopLabels): CohomologyResult {
   const group = reals(LOOP_TOLERANCE);
   const result = classifyOneCochain(q.complex, group, q.cochain);
   const facesById = new Map(q.complex.faces.map((f) => [f.id, f]));
-  const nameById = new Map(structure.contexts.map((c) => [c.id, c.name]));
+  const { nameById } = labels;
   // The potential is only fixed up to one constant per connected group of contexts.
   // Normalise so that the smallest scale in each group is 1 — independent of ids and of the root.
   // Groups are numbered by their smallest context name and the entries sorted by group, scale
@@ -163,8 +212,8 @@ function cohomologyOf(q: QuantityComplex, structure: ContextStructure): Cohomolo
     independentLoops: graphBetti(q.complex).b1,
     faces: q.complex.faces.length,
     h1Dimension: bettiNumbers(q.complex).b1,
-    loopDefects: result.loopDefects.map((d) => describeLoop(d.loop, structure, d.value)),
-    faceDefects: result.faceDefects.map((d) => describeLoop(facesById.get(d.faceId)!.boundary, structure, d.value)),
+    loopDefects: result.loopDefects.map((d) => describeLoop(d.loop, labels, d.value)),
+    faceDefects: result.faceDefects.map((d) => describeLoop(facesById.get(d.faceId)!.boundary, labels, d.value)),
     canonicalScale,
   };
 }
@@ -189,6 +238,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
   // A lone translation is consistent by default; reporting it as "exact" would be vacuous.
   const testable = structure.quantities.filter((q) => toCheck(q) > 0);
   const loopsAndFaces = testable.reduce((sum, q) => sum + toCheck(q), 0);
+  const skipped = structure.skippedQuantities;
 
   const drafts: RungDraft[] = [
     {
@@ -224,15 +274,21 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       index: 2,
       title: 'Cover',
       provides: 'Contexts with members: named areas of the model. Shared members are overlaps; three contexts sharing a member form a 2-cell.',
-      reached: structure.contextsWithMembers >= 2,
-      facts: [
-        { label: 'contexts', value: structure.contexts.length },
-        { label: 'contexts with members', value: structure.contextsWithMembers },
-        { label: 'overlapping context pairs', value: structure.overlappingPairs.length },
-        { label: 'triple overlaps', value: structure.tripleOverlaps.length },
-      ],
-      warnings: [],
-      next: 'Model at least 2 contexts: grouping or location elements with composition or aggregation relationships to their members.',
+      reached: structure.analysed && structure.contextsWithMembers >= 2,
+      facts: structure.analysed
+        ? [
+            { label: 'contexts', value: structure.contexts.length },
+            { label: 'contexts with members', value: structure.contextsWithMembers },
+            { label: 'overlapping context pairs', value: structure.overlappingPairs.length },
+            { label: 'triple overlaps', value: structure.tripleOverlaps.length },
+          ]
+        : [{ label: 'contexts', value: structure.contexts.length }],
+      warnings: structure.tripleOverlapsCapped
+        ? [`At least ${shown(structure.tripleOverlaps.length)} triple overlaps: counting stops at ${shown(MAX_COUNTED_TRIPLE_OVERLAPS)} triples or after ${shown(MAX_CHECKED_TRIPLE_CANDIDATES)} candidates, so the number shown is a lower bound.`]
+        : [],
+      next: structure.analysed
+        ? 'Model at least 2 contexts: grouping or location elements with composition or aggregation relationships to their members.'
+        : `The model has ${shown(structure.contexts.length)} contexts; the cover is analysed for at most ${shown(MAX_CONTEXTS)}. Reduce the grouping and location elements to ${shown(MAX_CONTEXTS)} or fewer.`,
     },
     {
       index: 3,
@@ -241,7 +297,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       reached: structure.translations.length > 0,
       facts: [
         { label: 'declared translations', value: structure.translations.length },
-        { label: 'quantities', value: structure.quantities.length },
+        { label: 'quantities', value: structure.quantities.length + skipped.length },
         { label: 'unusable translations', value: structure.invalidTranslations.length },
       ],
       warnings:
@@ -260,16 +316,22 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
         { label: 'quantities without a loop', value: structure.quantities.length - testable.length },
         { label: 'overlaps without translation', value: structure.overlapsWithoutTranslation.length },
       ],
-      warnings:
-        structure.overlapsWithoutTranslation.length > 0
+      warnings: [
+        ...(skipped.length > 0 ? [skippedWarning(skipped)] : []),
+        ...(structure.overlapsWithoutTranslation.length > 0
           ? [`${structure.overlapsWithoutTranslation.length} overlapping context pair(s) have no declared translation.`]
-          : [],
-      next: 'Declare translations that close a loop: two different paths between the same contexts (for example A→B, B→C and A→C).',
+          : []),
+      ],
+      next: nextForGluing(skipped.length),
     },
   ];
 
   const lowerReached = drafts.every((d) => d.reached);
-  const cohomology = lowerReached ? testable.map((q) => cohomologyOf(q, structure)) : [];
+  let cohomology: CohomologyResult[] = [];
+  if (lowerReached) {
+    const labels = loopLabels(structure);
+    cohomology = testable.map((q) => cohomologyOf(q, labels));
+  }
   drafts.push({
     index: 5,
     title: 'Cohomology',

@@ -50,8 +50,9 @@ export function spanningForest(complex: CellComplex): SpanningForest {
     roots.push(start);
     visited.add(start);
     const queue = [start];
-    while (queue.length > 0) {
-      const current = queue.shift()!;
+    // Read with an index: shift() moves the whole queue, which is quadratic on a wide model.
+    for (let head = 0; head < queue.length; head++) {
+      const current = queue[head];
       order.push(current);
       for (const { neighbour, edge } of adjacency.get(current)!) {
         if (visited.has(neighbour)) continue;
