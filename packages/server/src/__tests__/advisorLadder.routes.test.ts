@@ -21,11 +21,25 @@ jest.mock('../middleware/projectAccess.middleware', () => ({
     next();
   },
 }));
+type LimiterOptions = { name?: string; windowMs?: number; max?: number };
+const limiters: LimiterOptions[] = [];
+const limiterHits: Array<string | undefined> = [];
 jest.mock('../middleware/rateLimit.middleware', () => ({
-  rateLimit: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  rateLimit: (options: LimiterOptions) => {
+    limiters.push(options);
+    return (_req: unknown, _res: unknown, next: () => void) => {
+      limiterHits.push(options.name);
+      next();
+    };
+  },
 }));
+type AuditOptions = { action: string; getAfter?: (req: { body: unknown }) => Record<string, unknown> };
+const audits: AuditOptions[] = [];
 jest.mock('../middleware/audit.middleware', () => ({
-  audit: () => (_req: unknown, _res: unknown, next: () => void) => next(),
+  audit: (options: AuditOptions) => {
+    audits.push(options);
+    return (_req: unknown, _res: unknown, next: () => void) => next();
+  },
 }));
 jest.mock('../services/advisor.service', () => ({ runAdvisorScan: jest.fn() }));
 
@@ -48,6 +62,7 @@ function app() {
 beforeEach(() => {
   mockRunCypher.mockReset();
   accessCalls.length = 0;
+  limiterHits.length = 0;
 });
 
 describe('GET /:projectId/advisor/ladder', () => {
@@ -96,6 +111,19 @@ describe('GET /:projectId/advisor/ladder', () => {
     expect(res.status).toBe(500);
     expect(JSON.stringify(res.body)).not.toContain('secret');
   });
+
+  test('has its own rate limiter: 30 requests per minute', async () => {
+    expect(limiters).toContainEqual({ name: 'advisor-ladder', windowMs: 60_000, max: 30 });
+    mockRunCypher.mockResolvedValue([]);
+    await request(app()).get('/api/projects/p1/advisor/ladder');
+    expect(limiterHits).toEqual(['advisor-ladder']);
+  });
+
+  test('the limiter of the ladder does not sit on the translation routes', async () => {
+    mockRunCypher.mockResolvedValueOnce([rec({ id: 'c1' })]);
+    await request(app()).put('/api/projects/p1/advisor/translations/c1').send({ factor: 2 });
+    expect(limiterHits).toEqual([]);
+  });
 });
 
 describe('PUT /:projectId/advisor/translations/:connectionId', () => {
@@ -141,6 +169,17 @@ describe('PUT /:projectId/advisor/translations/:connectionId', () => {
     const res = await request(app()).put('/api/projects/p1/advisor/translations/c1').send({ factor });
     expect(res.status).toBe(200);
     expect(mockRunCypher.mock.calls[0][1].factor).toBe(factor);
+  });
+
+  test('the audit entry holds the parsed factor and quantity, not the request body', () => {
+    const getAfter = audits.find((a) => a.action === 'set_translation')!.getAfter!;
+    expect(getAfter({ body: { factor: 12, quantity: ' pieces ', note: 'x'.repeat(100_000), nested: { a: 1 } } })).toEqual({
+      factor: 12,
+      quantity: 'pieces',
+    });
+    expect(getAfter({ body: { factor: 0.5 } })).toEqual({ factor: 0.5, quantity: 'default' });
+    expect(getAfter({ body: { factor: 'twelve', note: 'kept out' } })).toEqual({});
+    expect(getAfter({ body: undefined })).toEqual({});
   });
 
   test('unknown relationship, foreign project, non-context ends or a membership → 404', async () => {

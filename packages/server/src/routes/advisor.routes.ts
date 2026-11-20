@@ -55,9 +55,14 @@ router.get(
 );
 
 // ─── UC-METH-001: ladder to cohomology ───
-// Ladder report — mechanical, three read-only count/list queries, no AI limiter
+// Ladder report — mechanical, three read-only count/list queries, no AI limiter. It reads the
+// whole model and computes in the request, so it has a limiter of its own: the panel asks once
+// when it opens and once per refresh.
+const ladderRateLimit = rateLimit({ name: 'advisor-ladder', windowMs: 60_000, max: 30 });
+
 router.get(
   '/:projectId/advisor/ladder',
+  ladderRateLimit,
   requireProjectAccess('viewer'),
   requirePermission(PERMISSIONS.ANALYTICS_VIEW),
   async (req: Request, res: Response) => {
@@ -87,7 +92,11 @@ router.put(
     action: 'set_translation',
     entityType: 'connection',
     getEntityId: (req: Request) => String(req.params.connectionId),
-    getAfter: (req: Request) => req.body,
+    // The parsed values only: the body may carry any number of other keys.
+    getAfter: (req: Request) => {
+      const parsed = TranslationSchema.safeParse(req.body);
+      return parsed.success ? parsed.data : {};
+    },
   }),
   async (req: Request, res: Response) => {
     try {
