@@ -11,6 +11,7 @@
  */
 import type { ElementType } from '../types/architecture.types';
 import { CATEGORY_BY_TYPE, type ArchiMateAspect } from './archimate-categories';
+import { CONTEXT_ELEMENT_TYPES } from './method-catalog.constants';
 
 // Re-use the ConnectionType from the types (string literal union)
 export type StandardConnectionType =
@@ -251,6 +252,17 @@ export function getDefaultRelationship(
   const srcAspect = src.aspect;
   const tgtAspect = tgt.aspect;
   const sameLayer = src.layer === tgt.layer;
+
+  // A group contains its members: a grouping or location joined to an element that is not a
+  // group composes it. The ladder asks for exactly this relationship (UC-METH-001, step 2).
+  // Between two groups nothing changes — a composition there would make one a member of the other.
+  if (
+    CONTEXT_ELEMENT_TYPES.includes(sourceType) &&
+    !CONTEXT_ELEMENT_TYPES.includes(targetType) &&
+    valid.includes('composition')
+  ) {
+    return 'composition';
+  }
 
   // Same type → specialization
   if (sourceType === targetType && valid.includes('specialization')) {
