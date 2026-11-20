@@ -207,9 +207,13 @@ export function getValidRelationships(
     const baseRules = SAME_LAYER_RULES[key] || ['association'];
     allowed = [...baseRules];
 
-    // Cross-layer filter: restrict to cross-layer allowed set
+    // Cross-layer filter: restrict to cross-layer allowed set.
+    // Exception: a composite element (grouping, location) aggregates or composes concepts of
+    // any layer — that is what it is for (ArchiMate 3.2, ch. 4).
     if (!sameLayer) {
-      allowed = allowed.filter(r => CROSS_LAYER_ALLOWED.includes(r));
+      allowed = allowed.filter(r =>
+        CROSS_LAYER_ALLOWED.includes(r) ||
+        (srcAspect === 'composite' && (r === 'composition' || r === 'aggregation')));
     }
   }
 
