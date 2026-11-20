@@ -1,8 +1,8 @@
 # UC-METH-001 Stufenleiter zur Kohomologie — Abnahmeprotokoll
 
-Messdatum: 20.11.2026 · Stand: Zweig `feat/uc-meth-001-kohomologie-leiter`, 25 Commits auf `origin/master` (c8aea68) · Umgebung: lokal (Mac), Server und Client aus dem Worktree, MongoDB, Neo4j und Redis in Docker.
+Messdatum: 20.11.2026 · lokaler Teil auf dem Zweig `feat/uc-meth-001-kohomologie-leiter` vor dem Merge (lokal: Mac, Server und Client aus dem Worktree, MongoDB, Neo4j und Redis in Docker) · Prod-Teil nach dem Deploy von `576c39a` am selben Abend.
 
-**Dieses Protokoll ist unvollständig.** Der lokale Teil (Abschnitte 1–6) ist gemessen. Die Teile, die den Product Owner oder Produktion brauchen (Abschnitt 7), sind offen. THE-783 wird erst mit ihnen geschlossen.
+**Dieses Protokoll ist unvollständig.** Gemessen sind der lokale Teil (Abschnitte 1–6) und die Leiter auf den Referenzmodellen in Produktion (Abschnitt 7). Offen ist, was den Product Owner braucht (Abschnitt 8). THE-783 wird erst damit geschlossen.
 
 ## 1 Landkarte 7.7 gegen die echte Datenbank
 
@@ -81,13 +81,31 @@ Bekannt und nicht behoben:
 - Übersetzungen lassen sich in diesem Slice nur über die API setzen; der Editor ist Slice 2. Der Text des nächsten Schritts auf Stufe 3 sagt das nicht.
 - „Entfernen“ antwortet auch dann mit 200 und schreibt einen Audit-Eintrag, wenn die Beziehung keine Übersetzung trug.
 
-## 7 Offen
+## 7 Leiter auf den Referenzmodellen (Produktion, nur lesend)
+
+Deploy von `576c39a` mit `scripts/deploy-vps.sh`, Exit 0, Health `ok`; der Leiter-Endpunkt antwortet ohne Token mit 401 (vorher 404). Gemessen wurde im App-Container: der Leiterbericht je Modell über die Funktion, die auch der Endpunkt aufruft (drei lesende Abfragen und die Rechnung), fünfmal hintereinander. Die HTTP-Schicht mit Anmeldung und Rechteprüfung ist in den Zeiten nicht enthalten.
+
+| Modell | Elemente | Beziehungen | b0 | b1 | höchste Stufe | Stufe 2 | Methoden rechenbar | Zeit (Median von 5) |
+|---|---|---|---|---|---|---|---|---|
+| Self-Model | 128 | 196 | 8 | 76 | 1 | offen, 0 Kontexte | 6 von 14 | 104 ms |
+| Demo-Modell, ältere Instanz | 156 | 227 | 41 | 112 | 1 | offen, 0 Kontexte | 12 von 14 | 77 ms |
+| Demo-Modell, jüngere Instanz | 66 | 103 | 3 | 40 | 1 | offen, 0 Kontexte | 12 von 14 | 52 ms |
+| kundenbezogenes Modell | — | — | — | — | 1 | offen | — | — |
+
+- Das Demo-Modell gibt es unter demselben Namen zweimal; beide Instanzen sind gemessen.
+- Der allererste Aufruf im frischen Prozess brauchte auf dem größten Modell 1.082 ms, danach 52–130 ms. Die Berichte sind rund 8,5 kB groß.
+- Nächster Schritt auf Stufe 2, in allen Modellen derselbe Text: „Model at least 2 contexts: grouping or location elements with composition or aggregation relationships to their members.“
+- Stufe 0 warnt im Self-Model und in der älteren Demo-Instanz vor je einem mehrfach vergebenen Elementnamen.
+- Im Self-Model fehlt vier Methoden genau ein Eingang: `PA-kanaele` (2 Akteure oder Rollen), `PA-lernkurve` (userCount an 1 Element), `PA-rty` (errorRatePercent an 2 Elementen), `PA-pareto` (annualCost an 5 Elementen). Im Demo-Modell fehlt nur `PA-kanaele`.
+- Der Bericht zum kundenbezogenen Modell liegt im privaten Repository; hier steht nur die erreichte Stufe.
+
+Das Ergebnis deckt sich mit der Erwartung aus der Messung vor dem Bau: alle Modelle auf Stufe 1, kein Modell hat Kontexte oder Übersetzungen. Eine Kohomologieklasse entsteht in Produktion bisher in keinem Modell.
+
+## 8 Offen
 
 | Teil | Braucht |
 |---|---|
-| Deploy | Go des Product Owners, `scripts/deploy-vps.sh` |
+| Urteil je Modell, ob der nächste Schritt verständlich ist (Ziel 3 von 3) | Product Owner |
 | Modellierversuch auf einer Kopie des Self-Models bis Stufe 2 (Kill-Kriterium a): erreicht ja/nein, Minuten, Hindernisse | Product Owner |
-| Leiterbericht für das Self-Model und das Demo-Modell, Urteil zum nächsten Schritt je Modell | Produktion, Product Owner |
-| Antwortzeit des Endpunkts auf dem größten Modell | Produktion |
-| Kundenbezogenes Modell | privates Repository; hier steht nur, dass der Bericht existiert und welche Stufe erreicht ist |
+| Antwortzeit des Endpunkts über HTTP mit Anmeldung | ein Konto in Produktion |
 | Sieben versiegelte Browser-Szenarien | blinder Prüfer mit Browser |
