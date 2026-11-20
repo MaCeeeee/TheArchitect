@@ -36,15 +36,15 @@ export interface TranslationStep {
 
 export interface TranslationLoopDefect {
   steps: TranslationStep[];
-  /** Product of the factors around the loop; 1 would mean the loop closes. */
-  product: number;
+  /** Product of the factors around the loop; 1 would mean the loop closes. null: the product is outside the range a number can hold. */
+  product: number | null;
 }
 
 export interface CanonicalScale {
   contextId: string;
   contextName: string;
-  /** Scale of this context; within each connected group the smallest scale is 1. */
-  factor: number;
+  /** Scale of this context; within each connected group the smallest scale is 1. null: the scale is outside the range a number can hold. */
+  factor: number | null;
   /** 1-based number of the connected group of contexts this scale belongs to; groups are numbered by their smallest context name. */
   component: number;
 }
@@ -65,11 +65,16 @@ export interface CohomologyResult {
   /**
    * Loops whose product is not 1 (class of the cochain in H¹ is not zero). The list is one basis of
    * the loops with a defect, picked by a spanning tree: one wrong factor can show up in several
-   * loops, so its length is not a count of errors.
+   * loops, so its length is not a count of errors. Only the first loops of that basis are listed;
+   * loopDefectCount is the size of the whole basis.
    */
   loopDefects: TranslationLoopDefect[];
-  /** Triple overlaps on which the cocycle condition fails (δg ≠ 0). */
+  /** Number of loops with a defect in that basis, listed in loopDefects or not. */
+  loopDefectCount: number;
+  /** Triple overlaps on which the cocycle condition fails (δg ≠ 0). Only the first are listed; faceDefectCount counts all. */
   faceDefects: TranslationLoopDefect[];
+  /** Number of triple overlaps with a defect, listed in faceDefects or not. */
+  faceDefectCount: number;
   /** Only when verdict is 'exact': one consistent scale per context for this quantity. */
   canonicalScale: CanonicalScale[] | null;
 }

@@ -48,6 +48,7 @@ import {
   MAX_CONTEXTS,
   MAX_COUNTED_TRIPLE_OVERLAPS,
   MAX_FACES_PER_QUANTITY,
+  MAX_REPORTED_DEFECTS_PER_QUANTITY,
   MAX_TRANSLATIONS_PER_QUANTITY,
   MAX_TRANSLATIONS_PER_REPORT,
 } from './limits';
@@ -143,6 +144,16 @@ export function loopLabels(structure: Pick<ContextStructure, 'contexts' | 'trans
   };
 }
 
+/**
+ * A log value as the factor shown in the report. A long loop or chain can leave the range of a
+ * double although every single factor is within its bounds (27 steps of 1e12): exp then gives
+ * Infinity or 0, which is no factor — and Infinity does not survive JSON. null says so.
+ */
+function reportedFactor(value: number): number | null {
+  const factor = additiveToFactor(value);
+  return Number.isFinite(factor) && factor > 0 ? factor : null;
+}
+
 function describeLoop(loop: OrientedStep[], { relationById, nameById }: LoopLabels, value: number): TranslationLoopDefect {
   const steps: TranslationStep[] = loop.map((step) => {
     const rel = relationById.get(step.edgeId)!;
@@ -155,7 +166,7 @@ function describeLoop(loop: OrientedStep[], { relationById, nameById }: LoopLabe
       direction: forward ? 'forward' : 'reverse',
     };
   });
-  return { steps, product: additiveToFactor(value) };
+  return { steps, product: reportedFactor(value) };
 }
 
 export function cohomologyOf(q: QuantityComplex, labels: LoopLabels): CohomologyResult {
@@ -189,7 +200,7 @@ export function cohomologyOf(q: QuantityComplex, labels: LoopLabels): Cohomology
         const c = component.get(id)!;
         const offset = (result.potential.get(id) ?? 0) - lowest.get(c)!;
         return {
-          entry: { contextId: id, contextName: nameById.get(id) ?? '', factor: additiveToFactor(offset), component: number.get(c)! },
+          entry: { contextId: id, contextName: nameById.get(id) ?? '', factor: reportedFactor(offset), component: number.get(c)! },
           // Ordering key in steps of the tolerance: log(0.1) + log(10) is 4.4e-16, not 0, and such
           // rounding must not decide the order of two scales that are both 1.
           step: Math.round(offset / LOOP_TOLERANCE),
@@ -212,8 +223,13 @@ export function cohomologyOf(q: QuantityComplex, labels: LoopLabels): Cohomology
     independentLoops: graphBetti(q.complex).b1,
     faces: q.complex.faces.length,
     h1Dimension: bettiNumbers(q.complex).b1,
-    loopDefects: result.loopDefects.map((d) => describeLoop(d.loop, labels, d.value)),
-    faceDefects: result.faceDefects.map((d) => describeLoop(facesById.get(d.faceId)!.boundary, labels, d.value)),
+    // Only the listed defects are described: a loop can be as long as the quantity has contexts.
+    loopDefects: result.loopDefects.slice(0, MAX_REPORTED_DEFECTS_PER_QUANTITY).map((d) => describeLoop(d.loop, labels, d.value)),
+    loopDefectCount: result.loopDefects.length,
+    faceDefects: result.faceDefects
+      .slice(0, MAX_REPORTED_DEFECTS_PER_QUANTITY)
+      .map((d) => describeLoop(facesById.get(d.faceId)!.boundary, labels, d.value)),
+    faceDefectCount: result.faceDefects.length,
     canonicalScale,
   };
 }

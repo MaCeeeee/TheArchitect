@@ -1,4 +1,4 @@
-import type { CohomologyResult, MethodRef, TranslationLoopDefect, TranslationStep } from '@thearchitect/shared';
+import type { CanonicalScale, CohomologyResult, MethodRef, TranslationLoopDefect, TranslationStep } from '@thearchitect/shared';
 
 function verdictOf(result: CohomologyResult): { label: string; text: string; tone: string } {
   if (result.verdict === 'exact') {
@@ -26,9 +26,16 @@ function verdictOf(result: CohomologyResult): { label: string; text: string; ton
   };
 }
 
+/** What stands for a product or scale the report could not hold as a number: too large or too small. */
+const OUT_OF_RANGE = 'outside the representable range';
+
 /** Seven significant digits: enough to show any deviation that exceeds the tolerance. */
-function formatNumber(value: number): string {
-  return String(Number(value.toPrecision(7)));
+function formatNumber(value: number | null): string {
+  return value === null ? OUT_OF_RANGE : String(Number(value.toPrecision(7)));
+}
+
+function formatScale(scale: CanonicalScale): string {
+  return scale.factor === null ? `${scale.contextName} (${OUT_OF_RANGE})` : `${scale.contextName} ×${formatNumber(scale.factor)}`;
 }
 
 /** "1 loop", "2 loops" */
@@ -67,6 +74,12 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
     result.verdict === 'local_defect'
       ? [...result.faceDefects, ...result.loopDefects.filter((d) => !faceKeys.has(loopKey(d)))]
       : result.loopDefects;
+  // The report lists only the first defects of each kind and counts all of them. The counts are
+  // those of the report: a loop that runs along a triple overlap is counted as both.
+  const more = [
+    { count: result.faceDefectCount - result.faceDefects.length, noun: 'more triple overlap' },
+    { count: result.loopDefectCount - result.loopDefects.length, noun: 'more loop' },
+  ].filter((rest) => rest.count > 0);
   const components = [...new Set((result.canonicalScale ?? []).map((s) => s.component))].sort((a, b) => a - b);
 
   return (
@@ -85,6 +98,11 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
           {defects.map((defect) => (
             <DefectLine key={loopKey(defect)} defect={defect} />
           ))}
+          {more.length > 0 && (
+            <li className="text-[9px] text-[var(--text-tertiary)]">
+              {`and ${more.map((rest) => counted(rest.count, rest.noun)).join(' and ')}`}
+            </li>
+          )}
         </ul>
       )}
 
@@ -92,7 +110,7 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
         <p key={component} className="text-[9px] text-[var(--text-secondary)]">
           {`Canonical scale: ${(result.canonicalScale ?? [])
             .filter((s) => s.component === component)
-            .map((s) => `${s.contextName} ×${formatNumber(s.factor)}`)
+            .map(formatScale)
             .join(' · ')}`}
         </p>
       ))}

@@ -37,8 +37,10 @@ export const CONTEXT_TYPES: ReadonlySet<string> = new Set(CONTEXT_ELEMENT_TYPES)
 export const MEMBERSHIP_TYPES: ReadonlySet<string> = new Set(['composition', 'aggregation']);
 export const DEFAULT_QUANTITY = 'default';
 /**
- * Accepted range of a translation factor. Outside it a factor is unusable: products around a
- * loop would leave the range of a double (1e308 × 1e308 = Infinity) and no real unit needs it.
+ * Accepted range of a translation factor. Outside it a factor is unusable: no real unit needs it,
+ * and already the product of two such factors can leave the range of a double (1e308 × 1e308 =
+ * Infinity). The bounds do not rule that out for a long loop or chain — 27 steps of 1e12 are
+ * 1e324 — so the report gives null for a product or scale it cannot hold (ladder.ts).
  */
 export const MIN_TRANSLATION_FACTOR = 1e-12;
 export const MAX_TRANSLATION_FACTOR = 1e12;

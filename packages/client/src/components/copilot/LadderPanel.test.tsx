@@ -62,7 +62,9 @@ const obstructed: LadderReport = {
       ],
       product: 1.2,
     }],
+    loopDefectCount: 1,
     faceDefects: [],
+    faceDefectCount: 0,
     canonicalScale: null,
   }],
 };
@@ -134,6 +136,7 @@ describe('LadderPanel', () => {
         ...obstructed.cohomology[0],
         verdict: 'exact',
         loopDefects: [],
+        loopDefectCount: 0,
         canonicalScale: [
           { contextId: 'te', contextName: 'TE', factor: 1, component: 1 },
           { contextId: 'prod', contextName: 'Produktion', factor: 1, component: 1 },
@@ -172,7 +175,7 @@ describe('LadderPanel', () => {
     };
     const local: LadderReport = {
       ...obstructed,
-      cohomology: [{ ...obstructed.cohomology[0], verdict: 'local_defect', faces: 1, h1Dimension: 1, faceDefects: [loop], loopDefects: [loop, other] }],
+      cohomology: [{ ...obstructed.cohomology[0], verdict: 'local_defect', faces: 1, h1Dimension: 1, faceDefects: [loop], faceDefectCount: 1, loopDefects: [loop, other], loopDefectCount: 2 }],
     };
     render(<LadderPanel report={local} />);
     fireEvent.click(screen.getByRole('button'));
@@ -186,5 +189,59 @@ describe('LadderPanel', () => {
     render(<LadderPanel report={withFaces} />);
     fireEvent.click(screen.getByRole('button'));
     expect(screen.getByText('Every triple overlap is consistent, but the translations do not close around a loop.')).toBeInTheDocument();
+  });
+
+  test('a product outside the range of a number is said in words, the panel does not break', () => {
+    const [loop] = obstructed.cohomology[0].loopDefects;
+    const beyond: LadderReport = { ...obstructed, cohomology: [{ ...obstructed.cohomology[0], loopDefects: [{ ...loop, product: null }] }] };
+    render(<LadderPanel report={beyond} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(
+      screen.getByText('TE → Logistik ×12 · Logistik → Produktion ÷10 · Produktion → TE ÷1 — product outside the representable range, expected 1'),
+    ).toBeInTheDocument();
+  });
+
+  test('a scale outside the range of a number is said in words, the panel does not break', () => {
+    const beyond: LadderReport = {
+      ...obstructed,
+      cohomology: [{
+        ...obstructed.cohomology[0],
+        verdict: 'exact',
+        loopDefects: [],
+        loopDefectCount: 0,
+        canonicalScale: [
+          { contextId: 'te', contextName: 'TE', factor: 1, component: 1 },
+          { contextId: 'log', contextName: 'Logistik', factor: null, component: 1 },
+        ],
+      }],
+    };
+    render(<LadderPanel report={beyond} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('Canonical scale: TE ×1 · Logistik (outside the representable range)')).toBeInTheDocument();
+  });
+
+  test('more defects than the report lists: the rest is counted after the list', () => {
+    const [loop] = obstructed.cohomology[0].loopDefects;
+    const listed = Array.from({ length: 20 }, (_, i) => ({ ...loop, steps: loop.steps.map((s) => ({ ...s, relationshipId: `${s.relationshipId}-${i}` })) }));
+    const many: LadderReport = { ...obstructed, cohomology: [{ ...obstructed.cohomology[0], loopDefects: listed, loopDefectCount: 604 }] };
+    const { unmount } = render(<LadderPanel report={many} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getAllByText(/expected 1/)).toHaveLength(20);
+    expect(screen.getByText('and 584 more loops')).toBeInTheDocument();
+    unmount();
+
+    const local: LadderReport = {
+      ...obstructed,
+      cohomology: [{ ...obstructed.cohomology[0], verdict: 'local_defect', faces: 40, faceDefects: [loop], faceDefectCount: 29, loopDefects: listed, loopDefectCount: 21 }],
+    };
+    render(<LadderPanel report={local} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('and 28 more triple overlaps and 1 more loop')).toBeInTheDocument();
+  });
+
+  test('every defect listed: no line about more', () => {
+    render(<LadderPanel report={obstructed} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.queryByText(/^and \d+ more/)).not.toBeInTheDocument();
   });
 });

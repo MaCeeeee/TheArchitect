@@ -4,9 +4,10 @@
  * Run: cd packages/server && npx jest src/__tests__/topologyLadderLimits.test.ts
  */
 import { performance } from 'node:perf_hooks';
-import { factorToAdditive } from '../services/topology/abelianGroup';
+import { factorToAdditive, reals } from '../services/topology/abelianGroup';
 import { buildComplex, Edge, Face, OrientedStep } from '../services/topology/cellComplex';
 import { buildContextStructure, ModelElement, ModelRelationship, QuantityComplex } from '../services/topology/contextComplex';
+import { classifyOneCochain } from '../services/topology/h1';
 import { graphBetti } from '../services/topology/homology';
 import { assessLadder, cohomologyOf, LadderInput, loopLabels } from '../services/topology/ladder';
 import {
@@ -15,6 +16,7 @@ import {
   MAX_CONTEXTS,
   MAX_COUNTED_TRIPLE_OVERLAPS,
   MAX_FACES_PER_QUANTITY,
+  MAX_REPORTED_DEFECTS_PER_QUANTITY,
   MAX_TRANSLATIONS_PER_QUANTITY,
   MAX_TRANSLATIONS_PER_REPORT,
 } from '../services/topology/limits';
@@ -399,12 +401,12 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity is', '"default" (20,000 translations)'));
   });
 
-  test('hundreds of reported loops stay fast next to 20,000 translations of a skipped quantity', () => {
+  test('hundreds of loops with a defect stay fast next to 20,000 translations of a skipped quantity', () => {
     const bulk = Array.from({ length: 20_000 }, (_, copy) => tr(0, 1, 'bulk', copy));
     const contradicting = Array.from({ length: 400 }, (_, copy) => tr(1, 2, 'pieces', copy, copy === 0 ? 1 : 2));
     const { report, ms } = timed(withTranslations(sharing(3), [...bulk, ...contradicting]));
     expect(ms).toBeLessThan(1000);
-    expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.loopDefects.length])).toEqual([['pieces', 'global_obstruction', 399]]);
+    expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.loopDefectCount, c.loopDefects.length])).toEqual([['pieces', 'global_obstruction', 399, 20]]);
   });
 
   test('a quantity exactly at both limits is still classified', () => {
@@ -425,6 +427,74 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     const { report } = timed(withTranslations(sharing(160), [...mesh(14), ...fan(14, 138)]));
     expect(report.cohomology).toEqual([]);
     expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity is', '"default" (more than 500 faces)'));
+  });
+});
+
+describe('assessLadder — a report lists a bounded number of defects per quantity and counts all of them', () => {
+  /** n contexts with one member of their own each: no overlap, so no face. */
+  function separate(contexts: number): Model {
+    const model = sharing(contexts, 0);
+    for (let i = 0; i < contexts; i++) {
+      model.elements.push(obj(`own${pad(i)}`));
+      model.relationships.push(has(i, `own${pad(i)}`));
+    }
+    return model;
+  }
+
+  /**
+   * Two arms of a path leave context 0 and `extra` translations ×2 join their far ends. The
+   * spanning tree starts at context 0 and takes both arms, so each of the `extra` translations
+   * closes a loop through every context, with the product 2.
+   */
+  function longLoops(contexts: number, extra: number, quantity: string): ModelRelationship[] {
+    const half = Math.floor(contexts / 2);
+    const out: ModelRelationship[] = [];
+    for (let i = 0; i < half; i++) out.push(tr(i, i + 1, quantity));
+    out.push(tr(0, half + 1, quantity));
+    for (let i = half + 1; i < contexts - 1; i++) out.push(tr(i, i + 1, quantity));
+    for (let copy = 0; copy < extra; copy++) out.push(tr(half, contexts - 1, quantity, copy, 2));
+    return out;
+  }
+
+  test('the limit is 20', () => {
+    expect(MAX_REPORTED_DEFECTS_PER_QUANTITY).toBe(20);
+  });
+
+  test('199 contexts, two quantities of 500 translations, 302 loops through every context each: 20 listed, all counted, the answer stays small', () => {
+    const model = withTranslations(separate(199), [...longLoops(199, 302, 'hours'), ...longLoops(199, 302, 'pieces')]);
+    const { report } = timed(model);
+    expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.translationCount, c.independentLoops, c.loopDefectCount, c.loopDefects.length])).toEqual([
+      ['hours', 'global_obstruction', 500, 302, 302, 20],
+      ['pieces', 'global_obstruction', 500, 302, 302, 20],
+    ]);
+    expect(report.cohomology.flatMap((c) => c.loopDefects).every((d) => d.steps.length === 199)).toBe(true);
+    expect(fact(report, 5, 'with global obstruction')).toBe(2);
+    // 2 quantities × 20 loops × 199 steps of about 125 bytes: 1 MB, where all 604 loops were 15 MB
+    expect(JSON.stringify(report).length).toBeLessThan(2_000_000);
+
+    // the listed loops are the first 20 of all loops with a defect, in their order
+    const [hours] = buildContextStructure(model.elements, model.relationships).quantities;
+    const all = classifyOneCochain(hours.complex, reals(report.tolerance), hours.cochain).loopDefects;
+    expect(all).toHaveLength(302);
+    expect(report.cohomology[0].loopDefects.map((d) => d.steps[0].relationshipId)).toEqual(all.slice(0, 20).map((d) => d.loop[0].edgeId));
+  });
+
+  test('29 defective triple overlaps: 20 faces and 20 loops are listed, 29 of each are counted', () => {
+    // a hub translating ×1 to 30 contexts that translate ×2 along a path: every triangle hub–i–i+1 has the product 2
+    const translations = [
+      ...Array.from({ length: 30 }, (_, i) => tr(0, i + 1)),
+      ...Array.from({ length: 29 }, (_, i) => tr(i + 1, i + 2, undefined, 0, 2)),
+    ];
+    const { report } = timed(withTranslations(sharing(31), translations));
+    const [c] = report.cohomology;
+    expect([c.verdict, c.faces, c.faceDefectCount, c.faceDefects.length, c.loopDefectCount, c.loopDefects.length]).toEqual(['local_defect', 29, 29, 20, 29, 20]);
+    expect(fact(report, 5, 'with local defects')).toBe(1);
+  });
+
+  test('up to 20 defects the list and the count are the same', () => {
+    const translations = [tr(0, 1), ...Array.from({ length: 20 }, (_, copy) => tr(0, 1, undefined, copy + 1, 2))];
+    const [c] = timed(withTranslations(separate(2), translations)).report.cohomology;
+    expect([c.loopDefectCount, c.loopDefects.length, c.faceDefectCount, c.faceDefects.length]).toEqual([20, 20, 0, 0]);
   });
 });
 

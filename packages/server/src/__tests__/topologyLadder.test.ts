@@ -100,7 +100,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(r.tolerance).toBe(1e-6);
     expect(c.loopDefects).toHaveLength(1);
     expect(c.loopDefects[0].steps.map((s) => s.relationshipId).sort()).toEqual(['t1', 't2', 't3']);
-    const product = c.loopDefects[0].product;
+    const product = c.loopDefects[0].product!;
     expect(Math.max(product, 1 / product)).toBeCloseTo(1.2, 9);
     const t3 = c.loopDefects[0].steps.find((s) => s.relationshipId === 't3')!;
     expect(t3.factor).toBe(12);
@@ -132,7 +132,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     const c = r.cohomology[0];
     expect(c.verdict).toBe('exact');
     expect(c.loopDefects).toEqual([]);
-    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor * 1e6) / 1e6]));
+    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor! * 1e6) / 1e6]));
     expect(scale).toEqual({ TE: 1, Produktion: 1, Logistik: 10 });
     expect(c.canonicalScale!.every((s) => s.component === 1)).toBe(true);
   });
@@ -147,7 +147,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     const c = r.cohomology[0];
     expect(c.verdict).toBe('exact');
-    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor * 1e6) / 1e6]));
+    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor! * 1e6) / 1e6]));
     expect(scale).toEqual({ TE: 1, Produktion: 1, Logistik: 10 });
   });
 
@@ -162,7 +162,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     const c = r.cohomology[0];
     expect(c.verdict).toBe('exact');
-    const byName = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, [s.component, Math.round(s.factor * 1e6) / 1e6]]));
+    const byName = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, [s.component, Math.round(s.factor! * 1e6) / 1e6]]));
     expect(byName).toEqual({ A: [1, 1], B: [1, 4], C: [2, 2], D: [2, 1] });
   });
 
@@ -240,7 +240,7 @@ describe('assessLadder — the same model always gives the same report', () => {
   });
 
   const shown = (r: ReturnType<typeof assessLadder>) =>
-    r.cohomology[0].canonicalScale!.map((s) => ({ contextName: s.contextName, factor: Math.round(s.factor * 1e6) / 1e6, component: s.component }));
+    r.cohomology[0].canonicalScale!.map((s) => ({ contextName: s.contextName, factor: Math.round(s.factor! * 1e6) / 1e6, component: s.component }));
   // ids as [TE, Produktion, Logistik]; the names and the translations stay the same
   const landkarteExact = ([te, prod, log]: string[]) => assessLadder('p', input({
     elements: [ctx(te, 'TE'), ctx(prod, 'Produktion'), ctx(log, 'Logistik'), obj('o1'), obj('o2'), obj('o3')],
@@ -329,7 +329,7 @@ describe('assessLadder — robust against odd input', () => {
     expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 }); // both count as the empty name
   });
 
-  test('factors outside 1e-12 … 1e12 are unusable, so no product can overflow', () => {
+  test('factors outside 1e-12 … 1e12 are unusable; the product of two factors at the bound is still a number', () => {
     const pair = (there: number, back: number) => assessLadder('p', input({
       elements: [ctx('a', 'A'), ctx('b', 'B'), obj('o1'), obj('o2')],
       relationships: [has('a', 'o1'), has('b', 'o2'), tr('ab', 'a', 'b', there), tr('ba', 'b', 'a', back)],
@@ -349,6 +349,41 @@ describe('assessLadder — robust against odd input', () => {
     expect(atTheBound.cohomology[0].loopDefects[0].product).toBeCloseTo(1e24, -14);
     expect(allNumbers(atTheBound).filter((n) => !Number.isFinite(n))).toEqual([]);
     expect(pair(1e-12, 1e12).cohomology[0].verdict).toBe('exact');
+  });
+
+  // 27 steps of 1e12: 27 × log(1e12) = 746, above log(Number.MAX_VALUE) = 709.8
+  const longIds = Array.from({ length: 27 }, (_, i) => `k${String(i).padStart(2, '0')}`);
+  const longModel = (translations: ModelRelationship[]) => assessLadder('p', input({
+    elements: [...longIds.map((id) => ctx(id, id.toUpperCase())), ...longIds.map((id) => obj(`m-${id}`))],
+    relationships: [...longIds.map((id) => has(id, `m-${id}`)), ...translations],
+  }), NOW);
+
+  test.each([1e12, 1e-12])('a ring of 27 translations ×%s: the product leaves the range of a double and is reported as null', (factor) => {
+    const r = longModel(longIds.map((id, i) => tr(`t${i}`, id, longIds[(i + 1) % 27], factor)));
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('global_obstruction');
+    expect([c.loopDefectCount, c.faceDefectCount]).toEqual([1, 0]);
+    expect(c.loopDefects).toHaveLength(1);
+    expect(c.loopDefects[0].steps).toHaveLength(27);
+    expect(c.loopDefects[0].product).toBeNull(); // neither Infinity nor 0
+    expect(allNumbers(r).filter((n) => !Number.isFinite(n))).toEqual([]);
+    expect(JSON.parse(JSON.stringify(r))).toEqual(r); // the report arrives as it was sent
+  });
+
+  test('a consistent chain of 27 translations ×1e12: exact, and the one scale outside the range of a double is null', () => {
+    const chain = longIds.slice(1).map((id, i) => tr(`t${i}`, longIds[i], id, 1e12));
+    // the first translation declared twice closes a loop, so the quantity is classified
+    const r = longModel([...chain, tr('again', longIds[0], longIds[1], 1e12)]);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('exact');
+    const scale = c.canonicalScale!;
+    expect(scale.map((s) => s.contextName)).toEqual(longIds.map((id) => id.toUpperCase()));
+    expect(scale[0].factor).toBe(1);
+    expect(scale[25].factor).toBeCloseTo(1e300, -290); // 25 steps still fit
+    expect(scale.map((s) => s.factor).filter((f) => f === null)).toHaveLength(1);
+    expect(scale[26].factor).toBeNull(); // 1e312 does not
+    expect(allNumbers(r).filter((n) => !Number.isFinite(n))).toEqual([]);
+    expect(JSON.parse(JSON.stringify(r))).toEqual(r);
   });
 
   test('quantity names that differ only by case are one quantity', () => {
@@ -410,8 +445,8 @@ describe('assessLadder — what a reported loop says', () => {
             expect([step.fromContext, step.toContext, step.factor]).toEqual([name.get(from), name.get(to), rel.translationFactor]);
             expect(step.toContext).toBe(defect.steps[(i + 1) % defect.steps.length].fromContext);
           });
-          expect(defect.product / stepProduct(defect)).toBeCloseTo(1, 9);
-          expect(Math.abs(Math.log(defect.product))).toBeGreaterThan(r.tolerance);
+          expect(defect.product! / stepProduct(defect)).toBeCloseTo(1, 9);
+          expect(Math.abs(Math.log(defect.product!))).toBeGreaterThan(r.tolerance);
           checked++;
         }
       }

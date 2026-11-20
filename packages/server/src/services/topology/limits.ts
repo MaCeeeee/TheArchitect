@@ -39,3 +39,11 @@ export const MAX_TRANSLATIONS_PER_REPORT = 1_000;
  * test is not classified.
  */
 export const MAX_COMPARED_MEMBERS = 20_000_000;
+
+/**
+ * Of the loops with a defect and of the triple overlaps with a defect, a report lists this many
+ * per quantity — the first ones, in the order they are found — and gives the number of all of
+ * them. A loop can pass through every context, so the answer would otherwise grow with the
+ * product of loops and contexts.
+ */
+export const MAX_REPORTED_DEFECTS_PER_QUANTITY = 20;
