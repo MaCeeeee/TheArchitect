@@ -13,8 +13,10 @@ export interface LadderFact {
 export interface LadderRung {
   index: LadderRungIndex;
   title: string;
-  /** What this rung provides mathematically. */
+  /** What this step is, in plain words (ASD-STE100). */
   provides: string;
+  /** What this step provides mathematically; shown only on request. */
+  math: string;
   status: LadderRungStatus;
   facts: LadderFact[];
   warnings: string[];

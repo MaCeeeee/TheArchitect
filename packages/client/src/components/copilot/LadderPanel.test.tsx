@@ -9,7 +9,7 @@ import LadderPanel from './LadderPanel';
 import type { LadderReport, LadderRung } from '@thearchitect/shared';
 
 const rung = (index: LadderRung['index'], title: string, status: LadderRung['status'], next: string | null = null): LadderRung => ({
-  index, title, provides: `provides ${index}`, status, facts: [{ label: 'count', value: index + 1 }], warnings: [], next,
+  index, title, provides: `provides ${index}`, math: `math ${index}`, status, facts: [{ label: 'count', value: index + 1 }], warnings: [], next,
 });
 
 const method = {

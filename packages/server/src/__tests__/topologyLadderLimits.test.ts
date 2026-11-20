@@ -89,7 +89,7 @@ const fact = (r: ReturnType<typeof assessLadder>, rung: number, label: string) =
 
 /** What the report says about quantities it does not check; `named` lists them with their reason. */
 const notChecked = (count: string, named: string) =>
-  `${count} not checked — a quantity is checked up to 500 translations and 500 faces, all quantities together up to 1,000 translations: ${named}.`;
+  `The check does not include ${count} too large. The limits for each quantity are 500 conversion factors and 500 sets of three groups. The limit for all quantities together is 1,000 conversion factors. ${named}.`;
 
 test('the texts below quote the limits as they are', () => {
   expect([MAX_CONTEXTS, MAX_COUNTED_TRIPLE_OVERLAPS, MAX_CHECKED_TRIPLE_CANDIDATES]).toEqual([200, 10_000, 1_000_000]);
@@ -286,8 +286,8 @@ describe('assessLadder — a wide model without any context', () => {
     expect(ms).toBeLessThan(1500);
     expect(report.rungs[1].facts.slice(0, 3)).toEqual([
       { label: 'relationships', value: 200_000 },
-      { label: 'connected components (b0)', value: 1 },
-      { label: 'independent loops (b1)', value: 0 },
+      { label: 'parts that are not connected', value: 1 },
+      { label: 'closed paths', value: 0 },
     ]);
   });
 });
@@ -301,9 +301,9 @@ describe('assessLadder — more contexts than the cover is analysed for', () => 
     expect(report.cohomology).toEqual([]);
     expect(report.rungs[0].facts[0]).toEqual({ label: 'elements', value: 701 });
     expect(report.rungs[1].facts[0]).toEqual({ label: 'relationships', value: 700 });
-    expect(report.rungs[2].facts).toEqual([{ label: 'contexts', value: 700 }]);
+    expect(report.rungs[2].facts).toEqual([{ label: 'groups', value: 700 }]);
     expect(report.rungs[2].next).toBe(
-      'The model has 700 contexts; the cover is analysed for at most 200. Reduce the grouping and location elements to 200 or fewer.',
+      'The model has 700 groups. The check uses a maximum of 200 groups. Remove Grouping elements or Location elements until the model has a maximum of 200 groups.',
     );
   });
 
@@ -311,7 +311,7 @@ describe('assessLadder — more contexts than the cover is analysed for', () => 
     const { report, ms } = timed(sharing(300));
     expect(ms).toBeLessThan(1000);
     expect(report.highestRung).toBe(1);
-    expect(report.rungs[2].next).toContain('The model has 300 contexts');
+    expect(report.rungs[2].next).toContain('The model has 300 groups');
   });
 
   test('above the limit translations are not looked at either', () => {
@@ -326,24 +326,24 @@ describe('assessLadder — more contexts than the cover is analysed for', () => 
     const { report, ms } = timed(sharing(MAX_CONTEXTS));
     expect(ms).toBeLessThan(1000);
     expect(report.highestRung).toBe(2);
-    expect(fact(report, 2, 'contexts with members')).toBe(MAX_CONTEXTS);
-    expect(fact(report, 2, 'overlapping context pairs')).toBe((MAX_CONTEXTS * (MAX_CONTEXTS - 1)) / 2);
+    expect(fact(report, 2, 'groups with members')).toBe(MAX_CONTEXTS);
+    expect(fact(report, 2, 'pairs of groups with the same member')).toBe((MAX_CONTEXTS * (MAX_CONTEXTS - 1)) / 2);
   });
 });
 
 describe('assessLadder — triple overlaps are counted with bounded work', () => {
   const atLeast = (count: string) =>
-    `At least ${count} triple overlaps: counting stops at 10,000 triples or after 1,000,000 candidates, so the number shown is a lower bound.`;
+    `The model has a minimum of ${count} sets of three groups with the same member. The software counts to this number only.`;
 
   test('below the limit the count is exact and nothing is said about a limit', () => {
     const { report } = timed(sharing(40)); // C(40, 3) = 9,880
-    expect(fact(report, 2, 'triple overlaps')).toBe(9880);
+    expect(fact(report, 2, 'sets of three groups with the same member')).toBe(9880);
     expect(report.rungs[2].warnings).toEqual([]);
   });
 
   test('at the limit the count stops and the report says "at least"', () => {
     const { report } = timed(sharing(60)); // C(60, 3) = 34,220
-    expect(fact(report, 2, 'triple overlaps')).toBe(MAX_COUNTED_TRIPLE_OVERLAPS);
+    expect(fact(report, 2, 'sets of three groups with the same member')).toBe(MAX_COUNTED_TRIPLE_OVERLAPS);
     expect(report.rungs[2].status).toBe('reached');
     expect(report.rungs[2].warnings).toEqual([atLeast('10,000')]);
   });
@@ -351,7 +351,7 @@ describe('assessLadder — triple overlaps are counted with bounded work', () =>
   test('a triple shared through many members is one triple, and many members cost no extra time', () => {
     const { report, ms } = timed(sharing(30, 400)); // C(30, 3) = 4,060 — the same for every member
     expect(ms).toBeLessThan(1000);
-    expect(fact(report, 2, 'triple overlaps')).toBe(4060);
+    expect(fact(report, 2, 'sets of three groups with the same member')).toBe(4060);
     expect(report.rungs[2].warnings).toEqual([]);
   });
 
@@ -367,7 +367,7 @@ describe('assessLadder — triple overlaps are counted with bounded work', () =>
     }
     const { report, ms } = timed(model);
     expect(ms).toBeLessThan(1000);
-    const counted = fact(report, 2, 'triple overlaps')!;
+    const counted = fact(report, 2, 'sets of three groups with the same member')!;
     expect(counted).toBeGreaterThan(0);
     expect(counted).toBeLessThanOrEqual(8436);
     expect(report.rungs[2].warnings).toEqual([atLeast(counted.toLocaleString('en-US'))]);
@@ -381,12 +381,12 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     expect(report.cohomology).toEqual([]);
     expect(statuses(report)).toEqual(['reached', 'reached', 'reached', 'reached', 'open', 'locked']);
     expect(report.rungs[3].facts.slice(0, 2)).toEqual([
-      { label: 'declared translations', value: 496 },
+      { label: 'conversion factors', value: 496 },
       { label: 'quantities', value: 1 },
     ]);
-    expect(report.rungs[4].warnings).toEqual([notChecked('1 quantity is', '"default" (more than 500 faces)')]);
+    expect(report.rungs[4].warnings).toEqual([notChecked('1 quantity because it is', 'This quantity is "default" (more than 500 sets of three groups)')]);
     expect(report.rungs[4].next).toBe(
-      'The quantity named in the warning is too large to check. Bring it within the limits, or declare translations of another quantity that close a loop: two different paths between the same contexts (for example A→B, B→C and A→C).',
+      'Decrease the number of conversion factors of this quantity. Or add conversion factors of a different quantity until two different paths connect the same two groups.',
     );
   });
 
@@ -398,15 +398,15 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     expect(report.highestRung).toBe(5);
     expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.faces])).toEqual([['pieces', 'exact', 1]]);
     expect(report.rungs[3].facts.slice(0, 2)).toEqual([
-      { label: 'declared translations', value: 504 },
+      { label: 'conversion factors', value: 504 },
       { label: 'quantities', value: 2 },
     ]);
     expect(report.rungs[4].facts.slice(0, 2)).toEqual([
-      { label: 'loops and faces to check', value: 2 },
-      { label: 'quantities without a loop', value: 0 },
+      { label: 'closed paths to examine', value: 2 },
+      { label: 'quantities without a closed path', value: 0 },
     ]);
-    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity is', '"bulk" (501 translations)'));
-    expect(report.rungs[5].facts[0]).toEqual({ label: 'quantities checked', value: 1 });
+    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity because it is', 'This quantity is "bulk" (more than 500 conversion factors)'));
+    expect(report.rungs[5].facts[0]).toEqual({ label: 'quantities examined', value: 1 });
   });
 
   test('20,000 translations between the same two contexts are skipped without quadratic work', () => {
@@ -414,7 +414,7 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     const { report, ms } = timed(withTranslations(sharing(3), bulk));
     expect(ms).toBeLessThan(1000);
     expect(report.cohomology).toEqual([]);
-    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity is', '"default" (20,000 translations)'));
+    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity because it is', 'This quantity is "default" (more than 500 conversion factors)'));
   });
 
   test('hundreds of loops with a defect stay fast next to 20,000 translations of a skipped quantity', () => {
@@ -432,7 +432,7 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     expect(translations).toHaveLength(MAX_TRANSLATIONS_PER_QUANTITY);
     const { report } = timed(withTranslations(sharing(160), translations));
     expect(report.highestRung).toBe(5);
-    expect(report.rungs[4].warnings.filter((w) => w.includes('not checked'))).toEqual([]);
+    expect(report.rungs[4].warnings.filter((w) => w.includes('does not include'))).toEqual([]);
     expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.translationCount, c.faces])).toEqual([
       ['default', 'exact', MAX_TRANSLATIONS_PER_QUANTITY, MAX_FACES_PER_QUANTITY],
     ]);
@@ -442,7 +442,7 @@ describe('assessLadder — a quantity above the limits is skipped and named', ()
     // mesh of 14 and a fan of 138: 364 + 137 = 501 faces
     const { report } = timed(withTranslations(sharing(160), [...mesh(14), ...fan(14, 138)]));
     expect(report.cohomology).toEqual([]);
-    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity is', '"default" (more than 500 faces)'));
+    expect(report.rungs[4].warnings[0]).toBe(notChecked('1 quantity because it is', 'This quantity is "default" (more than 500 sets of three groups)'));
   });
 });
 
@@ -484,7 +484,7 @@ describe('assessLadder — a report lists a bounded number of defects per quanti
       ['pieces', 'global_obstruction', 500, 302, 302, 20],
     ]);
     expect(report.cohomology.flatMap((c) => c.loopDefects).every((d) => d.steps.length === 199)).toBe(true);
-    expect(fact(report, 5, 'with global obstruction')).toBe(2);
+    expect(fact(report, 5, 'quantities that do not agree along a closed path')).toBe(2);
     // 2 quantities × 20 loops × 199 steps of about 125 bytes: 1 MB, where all 604 loops were 15 MB
     expect(JSON.stringify(report).length).toBeLessThan(2_000_000);
 
@@ -504,7 +504,7 @@ describe('assessLadder — a report lists a bounded number of defects per quanti
     const { report } = timed(withTranslations(sharing(31), translations));
     const [c] = report.cohomology;
     expect([c.verdict, c.faces, c.faceDefectCount, c.faceDefects.length, c.loopDefectCount, c.loopDefects.length]).toEqual(['local_defect', 29, 29, 20, 29, 20]);
-    expect(fact(report, 5, 'with local defects')).toBe(1);
+    expect(fact(report, 5, 'quantities that do not agree at a member')).toBe(1);
   });
 
   test('up to 20 defects the list and the count are the same', () => {
@@ -541,8 +541,8 @@ describe('assessLadder — large contexts do not make the search for a common me
     expect(ms).toBeLessThan(5000); // about half a second; the bound is against blocking for many seconds, not against milliseconds
     expect(MAX_COMPARED_MEMBERS).toBe(20_000_000);
     expect(report.cohomology).toEqual([]);
-    const members = 'more than 20,000,000 members to compare';
-    expect(report.rungs[4].warnings).toEqual([notChecked('2 quantities are', `"hours" (${members}), "pieces" (${members})`)]);
+    const members = 'too many members to compare';
+    expect(report.rungs[4].warnings).toEqual([notChecked('2 quantities because they are', `These quantities are "hours" (${members}) and "pieces" (${members})`)]);
   });
 });
 
@@ -556,7 +556,7 @@ describe('assessLadder — many quantities do not add up without bound', () => {
     expect(report.cohomology.map((c) => c.quantity)).toEqual(names.slice(0, 10));
     expect(report.rungs[3].facts[1]).toEqual({ label: 'quantities', value: 12 });
     expect(report.rungs[4].warnings).toEqual([
-      notChecked('2 quantities are', '"q0010" (beyond 1,000 translations in total), "q0011" (beyond 1,000 translations in total)'),
+      notChecked('2 quantities because they are', 'These quantities are "q0010" (more than 1,000 conversion factors in all quantities) and "q0011" (more than 1,000 conversion factors in all quantities)'),
     ]);
   });
 
@@ -569,7 +569,7 @@ describe('assessLadder — many quantities do not add up without bound', () => {
       ['b', 'exact', 500],
     ]);
     expect(report.cohomology.reduce((sum, c) => sum + c.translationCount, 0)).toBe(MAX_TRANSLATIONS_PER_REPORT);
-    expect(report.rungs[4].warnings).toEqual([notChecked('1 quantity is', '"c" (beyond 1,000 translations in total)')]);
+    expect(report.rungs[4].warnings).toEqual([notChecked('1 quantity because it is', 'This quantity is "c" (more than 1,000 conversion factors in all quantities)')]);
   });
 
   test('a small quantity after a large one still fits; only the first five skipped quantities are named', () => {
@@ -578,9 +578,9 @@ describe('assessLadder — many quantities do not add up without bound', () => {
     const quantities = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
     const { report } = timed(withTranslations(sharing(3), [...quantities.flatMap(large), ...small]));
     expect(report.cohomology.map((c) => c.quantity)).toEqual(['a', 'b', 'z']);
-    const total = 'beyond 1,000 translations in total';
+    const total = 'more than 1,000 conversion factors in all quantities';
     expect(report.rungs[4].warnings[0]).toBe(
-      notChecked('7 quantities are', `"c" (${total}), "d" (${total}), "e" (${total}), "f" (${total}), "g" (${total}), and 2 more`),
+      notChecked('7 quantities because they are', `These quantities are "c" (${total}), "d" (${total}), "e" (${total}), "f" (${total}), "g" (${total}), and 2 more`),
     );
   });
 
