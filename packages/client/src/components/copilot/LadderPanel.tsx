@@ -14,19 +14,19 @@ function RungRow({ rung }: { rung: LadderRung }) {
     <li className="flex gap-1.5" data-testid={`rung-${rung.index}`} data-status={rung.status}>
       <RungIcon status={rung.status} />
       <div className="min-w-0 space-y-0.5">
-        <p className="text-[10px] text-white">{`${rung.index} · ${rung.title}`}</p>
-        <p className="text-[8px] text-[var(--text-tertiary)]">{rung.provides}</p>
+        <p className="text-[10px] text-white [overflow-wrap:anywhere]">{`${rung.index} · ${rung.title}`}</p>
+        <p className="text-[8px] text-[var(--text-tertiary)] [overflow-wrap:anywhere]">{rung.provides}</p>
         {rung.status !== 'locked' && (
-          <p className="text-[8px] text-[var(--text-secondary)]">
+          <p className="text-[8px] text-[var(--text-secondary)] [overflow-wrap:anywhere]">
             {rung.facts.map((fact) => `${fact.label}: ${fact.value}`).join(' · ')}
           </p>
         )}
         {rung.status !== 'locked' &&
           rung.warnings.map((warning) => (
-            <p key={warning} className="text-[8px] text-yellow-400">{warning}</p>
+            <p key={warning} className="text-[8px] text-yellow-400 [overflow-wrap:anywhere]">{warning}</p>
           ))}
         {rung.status === 'open' && rung.next && (
-          <p className="text-[9px] text-[#7c3aed]">{`Next: ${rung.next}`}</p>
+          <p className="text-[9px] text-[#7c3aed] [overflow-wrap:anywhere]">{`Next: ${rung.next}`}</p>
         )}
       </div>
     </li>

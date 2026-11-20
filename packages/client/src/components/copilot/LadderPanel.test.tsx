@@ -239,6 +239,50 @@ describe('LadderPanel', () => {
     expect(screen.getByText('and 28 more triple overlaps and 1 more loop')).toBeInTheDocument();
   });
 
+  test('long names without a place to break can wrap inside the narrow panel', () => {
+    // jsdom does not lay out a page, so an overflow cannot be measured here. The test pins the
+    // classes that let a name without spaces break and let the flex child holding it shrink.
+    const WRAP = '[overflow-wrap:anywhere]';
+    const quantity = 'net_weight_per_packaging_unit_including_pallet_and_wrapping_kilo'; // 64 characters, the longest accepted
+    const context = 'Customer_Relationship_Management_Platform_Europe_Central';
+    const [loop] = obstructed.cohomology[0].loopDefects;
+    const warning = `1 quantity is not checked: "${quantity}" (501 translations).`;
+    const long: LadderReport = {
+      ...obstructed,
+      rungs: obstructed.rungs.map((r) => (r.index === 4 ? { ...r, warnings: [warning] } : r)),
+      cohomology: [
+        { ...obstructed.cohomology[0], quantity, loopDefects: [{ ...loop, steps: loop.steps.map((s) => ({ ...s, fromContext: context })) }] },
+        {
+          ...obstructed.cohomology[0],
+          quantity: 'pieces',
+          verdict: 'exact',
+          loopDefects: [],
+          loopDefectCount: 0,
+          canonicalScale: [{ contextId: 'crm', contextName: context, factor: 1, component: 1 }],
+        },
+      ],
+    };
+    render(<LadderPanel report={long} />);
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByText(warning)).toHaveClass(WRAP);
+    const rungTexts = [...screen.getByTestId('rung-4').querySelectorAll('p')];
+    expect(rungTexts).toHaveLength(4); // title, provides, facts, warning
+    for (const text of rungTexts) expect(text).toHaveClass(WRAP);
+
+    const header = screen.getByText(`quantity: ${quantity}`);
+    expect(header).toHaveClass('min-w-0', WRAP);
+    expect(header.parentElement).toHaveClass('flex');
+    expect(screen.getByText(new RegExp(`^${context} → .* expected 1$`))).toHaveClass(WRAP);
+    expect(screen.getByText(`Canonical scale: ${context} ×1`)).toHaveClass(WRAP);
+  });
+
+  test('the next step of an open rung can wrap as well', () => {
+    render(<LadderPanel report={stopped} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('Next: Model at least 2 contexts.')).toHaveClass('[overflow-wrap:anywhere]');
+  });
+
   test('every defect listed: no line about more', () => {
     render(<LadderPanel report={obstructed} />);
     fireEvent.click(screen.getByRole('button'));

@@ -21,6 +21,10 @@ interface AdvisorState {
   clear: () => void;
 }
 
+// Number of the latest ladder request. An answer or an error that belongs to an earlier one —
+// another project's, or an older refresh — must not replace what the latest request shows.
+let latestLadderRequest = 0;
+
 export const useAdvisorStore = create<AdvisorState>((set) => ({
   healthScore: null,
   insights: [],
@@ -53,11 +57,12 @@ export const useAdvisorStore = create<AdvisorState>((set) => ({
   },
 
   loadLadder: async (projectId: string) => {
+    const request = ++latestLadderRequest;
     try {
       const { data } = await advisorAPI.ladder(projectId);
-      set({ ladder: data.data as LadderReport });
+      if (request === latestLadderRequest) set({ ladder: data.data as LadderReport });
     } catch {
-      set({ ladder: null }); // optional block — the scan stays usable without it
+      if (request === latestLadderRequest) set({ ladder: null }); // optional block — the scan stays usable without it
     }
   },
 

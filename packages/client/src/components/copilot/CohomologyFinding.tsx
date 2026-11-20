@@ -54,7 +54,7 @@ function loopKey(defect: TranslationLoopDefect): string {
 
 function DefectLine({ defect }: { defect: TranslationLoopDefect }) {
   return (
-    <li className="text-[9px] text-[var(--text-secondary)] leading-relaxed">
+    <li className="text-[9px] text-[var(--text-secondary)] leading-relaxed [overflow-wrap:anywhere]">
       {`${defect.steps.map(formatStep).join(' · ')} — product ${formatNumber(defect.product)}, expected 1`}
     </li>
   );
@@ -85,8 +85,8 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
   return (
     <div className="rounded border border-[#334155] bg-white/[0.02] p-2 space-y-1.5">
       <div className="flex items-center gap-1.5">
-        <span className={`text-[10px] font-medium ${verdict.tone}`}>{verdict.label}</span>
-        <span className="text-[8px] text-[var(--text-disabled)] ml-auto">{`quantity: ${result.quantity}`}</span>
+        <span className={`text-[10px] font-medium shrink-0 ${verdict.tone}`}>{verdict.label}</span>
+        <span className="text-[8px] text-[var(--text-disabled)] ml-auto min-w-0 [overflow-wrap:anywhere]">{`quantity: ${result.quantity}`}</span>
       </div>
       <p className="text-[9px] text-[var(--text-secondary)]">{verdict.text}</p>
       <p className="text-[8px] text-[var(--text-tertiary)]">
@@ -107,7 +107,7 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
       )}
 
       {components.map((component) => (
-        <p key={component} className="text-[9px] text-[var(--text-secondary)]">
+        <p key={component} className="text-[9px] text-[var(--text-secondary)] [overflow-wrap:anywhere]">
           {`Canonical scale: ${(result.canonicalScale ?? [])
             .filter((s) => s.component === component)
             .map(formatScale)
