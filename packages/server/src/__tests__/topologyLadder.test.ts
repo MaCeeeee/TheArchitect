@@ -1,0 +1,219 @@
+/**
+ * REQ-METH-001.3 — the ladder: rungs in order, cohomology only on top of rungs 0–4.
+ * Run: cd packages/server && npx jest src/__tests__/topologyLadder.test.ts
+ */
+import { assessLadder, LadderInput } from '../services/topology/ladder';
+import type { ModelElement, ModelRelationship } from '../services/topology/contextComplex';
+
+const NOW = new Date('2026-11-20T12:00:00Z');
+const ctx = (id: string, name: string): ModelElement => ({ id, name, type: 'grouping' });
+const obj = (id: string, name = id): ModelElement => ({ id, name, type: 'business_object' });
+const has = (context: string, member: string): ModelRelationship =>
+  ({ id: `${context}-has-${member}`, sourceId: context, targetId: member, type: 'composition' });
+const tr = (id: string, from: string, to: string, factor: number, quantity?: string): ModelRelationship =>
+  ({ id, sourceId: from, targetId: to, type: 'association', translationFactor: factor, translationQuantity: quantity });
+
+const contexts = [ctx('te', 'TE'), ctx('prod', 'Produktion'), ctx('log', 'Logistik')];
+const ownMembers = [obj('bom'), obj('order'), obj('delivery')];
+const ownMembership = [has('te', 'bom'), has('prod', 'order'), has('log', 'delivery')];
+const landkarteTranslations = [tr('t1', 'te', 'prod', 1), tr('t2', 'prod', 'log', 10), tr('t3', 'te', 'log', 12)];
+
+const input = (p: Partial<LadderInput>): LadderInput => ({ elements: [], relationships: [], fieldCounts: {}, ...p });
+const statuses = (r: ReturnType<typeof assessLadder>) => r.rungs.map((rung) => rung.status);
+
+describe('assessLadder — rungs', () => {
+  test('empty model: rung 0 open, everything above locked, no cohomology', () => {
+    const r = assessLadder('p', input({}), NOW);
+    expect(statuses(r)).toEqual(['open', 'locked', 'locked', 'locked', 'locked', 'locked']);
+    expect(r.highestRung).toBeNull();
+    expect(r.cohomology).toEqual([]);
+    expect(r.rungs[0].next).toBe('Add elements to the model.');
+    expect(r.timestamp).toBe('2026-11-20T12:00:00.000Z');
+  });
+
+  test('a plain model with relationships stops at rung 1 and says what rung 2 needs', () => {
+    const r = assessLadder('p', input({
+      elements: [obj('a'), obj('b'), obj('c'), obj('d')],
+      relationships: [
+        { id: 'r1', sourceId: 'a', targetId: 'b', type: 'serving' },
+        { id: 'r2', sourceId: 'b', targetId: 'c', type: 'serving' },
+        { id: 'r3', sourceId: 'a', targetId: 'c', type: 'serving' },
+      ],
+    }), NOW);
+    expect(statuses(r)).toEqual(['reached', 'reached', 'open', 'locked', 'locked', 'locked']);
+    expect(r.highestRung).toBe(1);
+    expect(r.rungs[1].facts).toEqual([
+      { label: 'relationships', value: 3 },
+      { label: 'connected components (b0)', value: 2 },
+      { label: 'independent loops (b1)', value: 1 },
+      { label: 'self-loops', value: 0 },
+    ]);
+    expect(r.rungs[2].next).toContain('grouping or location');
+    expect(r.rungs[1].next).toBeNull();
+  });
+
+  test('duplicate names are a warning on rung 0, dangling relationships on rung 1', () => {
+    const r = assessLadder('p', input({
+      elements: [obj('a', 'ERP'), obj('b', ' erp '), obj('c', 'CRM')],
+      relationships: [{ id: 'r1', sourceId: 'a', targetId: 'c', type: 'flow' }, { id: 'r2', sourceId: 'a', targetId: 'ghost', type: 'flow' }],
+    }), NOW);
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 });
+    expect(r.rungs[0].warnings[0]).toContain('1 element name(s) occur more than once');
+    expect(r.rungs[1].warnings[0]).toContain('1 relationship(s) point to elements that do not exist');
+    expect(r.rungs[1].facts[0].value).toBe(1);
+  });
+
+  test('contexts without members do not make a cover; their translations are unusable', () => {
+    const r = assessLadder('p', input({ elements: contexts, relationships: landkarteTranslations }), NOW);
+    expect(statuses(r)).toEqual(['reached', 'reached', 'open', 'locked', 'locked', 'locked']);
+    expect(r.cohomology).toEqual([]);
+    expect(r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!.status).toBe('missing_input');
+  });
+
+  test('cover without translations stops at rung 2; one translation without a loop stops at rung 3', () => {
+    const cover = { elements: [...contexts, ...ownMembers], relationships: ownMembership };
+    expect(assessLadder('p', input(cover), NOW).highestRung).toBe(2);
+    const one = assessLadder('p', input({ ...cover, relationships: [...ownMembership, tr('t1', 'te', 'prod', 1)] }), NOW);
+    expect(one.highestRung).toBe(3);
+    expect(one.rungs[4].status).toBe('open');
+    expect(one.rungs[4].next).toContain('close a loop');
+  });
+});
+
+describe('assessLadder — cohomology (Landkarte 7.7)', () => {
+  test('separate members: every rung reached, global obstruction, the loop names all three translations', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, ...landkarteTranslations],
+    }), NOW);
+    expect(statuses(r)).toEqual(['reached', 'reached', 'reached', 'reached', 'reached', 'reached']);
+    expect(r.highestRung).toBe(5);
+    expect(r.cohomology).toHaveLength(1);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('global_obstruction');
+    expect(c.contextCount).toBe(3);
+    expect(c.translationCount).toBe(3);
+    expect(c.independentLoops).toBe(1);
+    expect(c.faces).toBe(0);
+    expect(c.h1Dimension).toBe(1);
+    expect(c.canonicalScale).toBeNull();
+    expect(r.tolerance).toBe(1e-6);
+    expect(c.loopDefects).toHaveLength(1);
+    expect(c.loopDefects[0].steps.map((s) => s.relationshipId).sort()).toEqual(['t1', 't2', 't3']);
+    const product = c.loopDefects[0].product;
+    expect(Math.max(product, 1 / product)).toBeCloseTo(1.2, 9);
+    const t3 = c.loopDefects[0].steps.find((s) => s.relationshipId === 't3')!;
+    expect(t3.factor).toBe(12);
+    expect([t3.fromContext, t3.toContext].sort()).toEqual(['Logistik', 'TE']);
+    expect(r.cohomologyMethod.id).toBe('PA-kategorientheorie');
+    expect(r.rungs[5].facts[3]).toEqual({ label: 'with global obstruction', value: 1 });
+  });
+
+  test('a member shared by all three contexts turns the same data into a local defect', () => {
+    const shared = obj('material');
+    const r = assessLadder('p', input({
+      elements: [...contexts, shared],
+      relationships: [has('te', 'material'), has('prod', 'material'), has('log', 'material'), ...landkarteTranslations],
+    }), NOW);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('local_defect');
+    expect(c.faces).toBe(1);
+    expect(c.h1Dimension).toBe(0); // the only loop is filled: nothing global can remain
+    expect(c.faceDefects).toHaveLength(1);
+    expect(c.faceDefects[0].steps).toHaveLength(3);
+    expect(r.rungs[2].facts[3]).toEqual({ label: 'triple overlaps', value: 1 });
+  });
+
+  test('corrected translation: exact, with one canonical scale per context', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('t2', 'prod', 'log', 10), tr('t3', 'te', 'log', 10)],
+    }), NOW);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('exact');
+    expect(c.loopDefects).toEqual([]);
+    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor * 1e6) / 1e6]));
+    expect(scale).toEqual({ TE: 1, Produktion: 1, Logistik: 10 });
+    expect(c.canonicalScale!.every((s) => s.component === 1)).toBe(true);
+  });
+
+  test('the canonical scale does not depend on ids or on the direction of the declarations', () => {
+    const r = assessLadder('p', input({
+      elements: [ctx('z', 'TE'), ctx('m', 'Produktion'), ctx('a', 'Logistik'), obj('o1'), obj('o2'), obj('o3')],
+      relationships: [
+        has('z', 'o1'), has('m', 'o2'), has('a', 'o3'),
+        tr('t1', 'm', 'z', 1), tr('t2', 'a', 'm', 0.1), tr('t3', 'z', 'a', 10),
+      ],
+    }), NOW);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('exact');
+    const scale = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, Math.round(s.factor * 1e6) / 1e6]));
+    expect(scale).toEqual({ TE: 1, Produktion: 1, Logistik: 10 });
+  });
+
+  test('two separate groups of contexts get their own scale, each starting at 1', () => {
+    const r = assessLadder('p', input({
+      elements: [ctx('a', 'A'), ctx('b', 'B'), ctx('c', 'C'), ctx('d', 'D'), obj('o1'), obj('o2'), obj('o3'), obj('o4')],
+      relationships: [
+        has('a', 'o1'), has('b', 'o2'), has('c', 'o3'), has('d', 'o4'),
+        tr('ab', 'a', 'b', 4), tr('ba', 'b', 'a', 0.25),
+        tr('cd', 'c', 'd', 0.5), tr('dc', 'd', 'c', 2),
+      ],
+    }), NOW);
+    const c = r.cohomology[0];
+    expect(c.verdict).toBe('exact');
+    const byName = Object.fromEntries(c.canonicalScale!.map((s) => [s.contextName, [s.component, Math.round(s.factor * 1e6) / 1e6]]));
+    expect(byName).toEqual({ A: [1, 1], B: [1, 4], C: [2, 2], D: [2, 1] });
+  });
+
+  test('rounded reciprocal factors are not a contradiction; a real difference is', () => {
+    const pair = (back: number) => assessLadder('p', input({
+      elements: [ctx('m', 'Metric'), ctx('i', 'Imperial'), obj('o1'), obj('o2')],
+      relationships: [has('m', 'o1'), has('i', 'o2'), tr('mi', 'm', 'i', 3.28084), tr('im', 'i', 'm', back)],
+    }), NOW).cohomology[0];
+    expect(pair(0.3048).verdict).toBe('exact'); // 3.28084 × 0.3048 = 1.00000003
+    const off = pair(0.3);
+    expect(off.verdict).toBe('global_obstruction');
+    expect(off.loopDefects[0].steps).toHaveLength(2);
+  });
+
+  test('a quantity whose translations close no loop is not reported as consistent', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [
+        ...ownMembership,
+        tr('p1', 'te', 'prod', 1, 'pieces'), tr('p2', 'prod', 'log', 10, 'pieces'), tr('p3', 'te', 'log', 10, 'pieces'),
+        tr('c1', 'te', 'prod', 1.1, 'currency'),
+      ],
+    }), NOW);
+    expect(r.cohomology.map((c) => c.quantity)).toEqual(['pieces']);
+    expect(r.rungs[4].facts).toEqual([
+      { label: 'loops and faces to check', value: 1 },
+      { label: 'quantities without a loop', value: 1 },
+      { label: 'overlaps without translation', value: 0 },
+    ]);
+  });
+
+  test('translations that close no loop: rung 4 open, and the loop check is not "computable"', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('t2', 'prod', 'log', 10)],
+    }), NOW);
+    expect(r.highestRung).toBe(3);
+    expect(r.cohomology).toEqual([]);
+    const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
+    expect(loopCheck.status).toBe('missing_input');
+    expect(loopCheck.oneInputAway).toBe('ladder rung 5 reached');
+  });
+
+  test('the report always carries the method applicability', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, ...landkarteTranslations],
+      fieldCounts: { annualCost: 2 },
+    }), NOW);
+    const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
+    expect(loopCheck.status).toBe('computable');
+    expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on at least 1 element');
+  });
+});
