@@ -1033,6 +1033,8 @@ export const advisorAPI = {
     api.get(`/projects/${projectId}/advisor/scan`),
   health: (projectId: string) =>
     api.get(`/projects/${projectId}/advisor/health`),
+  ladder: (projectId: string) =>
+    api.get(`/projects/${projectId}/advisor/ladder`),
 };
 
 export const roadmapAPI = {
