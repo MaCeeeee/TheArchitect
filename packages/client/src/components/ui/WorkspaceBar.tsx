@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Layers, X, ChevronLeft, ChevronRight, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { workspaceAPI } from '../../services/api';
 import { flyToWorkspace, fitAllWorkspaces } from '../3d/CameraControls';
+import { serverErrorDetail } from '../../utils/workspacePersistence';
+
+type PendingRequest = 'delete' | 'rename';
 
 export default function WorkspaceBar() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
@@ -18,6 +21,18 @@ export default function WorkspaceBar() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const renameCancelledRef = useRef(false);
+  // One request per workspace at a time (THE-775): a second PUT/DELETE while one is pending caused
+  // out-of-order renames, rollbacks over newer names and a false error toast after a successful delete.
+  // The ref answers synchronously inside one event batch; the state re-renders the busy label.
+  const pendingRef = useRef(new Map<string, PendingRequest>());
+  const [pending, setPending] = useState<ReadonlyMap<string, PendingRequest>>(new Map());
+
+  const markPending = (wsId: string, kind: PendingRequest | null) => {
+    if (kind) pendingRef.current.set(wsId, kind);
+    else pendingRef.current.delete(wsId);
+    setPending(new Map(pendingRef.current));
+  };
 
   // Show as soon as ONE architecture is imported (so it can be managed/deleted).
   // The base "Main Architecture" has no workspace entry, so length===0 = nothing imported.
@@ -41,30 +56,65 @@ export default function WorkspaceBar() {
     handleSelectWorkspace(workspaces[nextIndex].id);
   };
 
-  const handleDelete = (wsId: string) => {
+  const handleDelete = async (wsId: string) => {
+    setConfirmDeleteId(null);
+    if (pendingRef.current.has(wsId)) return;
     const projectId = useArchitectureStore.getState().projectId;
+    if (!projectId) {
+      toast.error('No project loaded — workspace not deleted');
+      return;
+    }
+    markPending(wsId, 'delete');
+    try {
+      // Server first (THE-775): the local view only changes once the deletion really happened.
+      await workspaceAPI.delete(projectId, wsId);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
+      toast.error(`Could not delete the workspace on the server (${serverErrorDetail(err)}). Nothing was removed.`);
+      markPending(wsId, null);
+      return;
+    }
+    markPending(wsId, null);
     removeWorkspaceElements(wsId);
     removeWorkspace(wsId);
-    setConfirmDeleteId(null);
     toast.success('Workspace deleted');
-    if (projectId) {
-      workspaceAPI.delete(projectId, wsId).catch((err) => {
-        if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to delete workspace on server:', err);
-        toast.error('Failed to sync workspace deletion');
-      });
-    }
   };
 
   const handleDoubleClick = (wsId: string, name: string) => {
+    if (pendingRef.current.has(wsId)) return; // a PUT or DELETE is still running for it
+    renameCancelledRef.current = false;
     setEditingId(wsId);
     setEditName(name);
   };
 
-  const handleRenameSubmit = (wsId: string) => {
-    if (editName.trim()) {
-      updateWorkspace(wsId, { name: editName.trim() });
-    }
+  const handleRenameSubmit = async (wsId: string) => {
     setEditingId(null);
+    if (renameCancelledRef.current) return; // Escape pressed — a following blur must not save
+    if (pendingRef.current.has(wsId)) return; // Enter already sent the PUT — the following blur must not
+    const ws = useWorkspaceStore.getState().workspaces.find((w) => w.id === wsId);
+    const next = editName.trim();
+    // Empty or unchanged (also covers the onBlur that follows Enter) → nothing to save.
+    if (!ws || !next || next === ws.name) return;
+    const projectId = useArchitectureStore.getState().projectId;
+    if (!projectId) {
+      toast.error('No project loaded — name not saved');
+      return;
+    }
+    const previous = ws.name;
+    markPending(wsId, 'rename');
+    updateWorkspace(wsId, { name: next });
+    try {
+      // THE-775: until now the new name lived only in the local store and was lost on reload.
+      await workspaceAPI.update(projectId, wsId, { name: next, color: ws.color, offsetX: ws.offsetX });
+    } catch (err) {
+      if (import.meta.env.DEV) console.error('[WorkspaceBar] Failed to rename workspace on server:', err);
+      // Roll back only our own optimistic name — never overwrite a name someone set in the meantime.
+      const current = useWorkspaceStore.getState().workspaces.find((w) => w.id === wsId);
+      if (current?.name === next) updateWorkspace(wsId, { name: previous });
+      toast.error(`Could not save the new name on the server (${serverErrorDetail(err)}).`);
+    } finally {
+      markPending(wsId, null);
+    }
   };
 
   const getElementCount = (wsId: string) => {
@@ -118,7 +168,7 @@ export default function WorkspaceBar() {
                 onBlur={() => handleRenameSubmit(ws.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleRenameSubmit(ws.id);
-                  if (e.key === 'Escape') setEditingId(null);
+                  if (e.key === 'Escape') { renameCancelledRef.current = true; setEditingId(null); }
                 }}
                 autoFocus
                 className="w-24 bg-transparent border-b border-[#00ff41] text-xs text-white outline-none"
@@ -138,8 +188,12 @@ export default function WorkspaceBar() {
               {index + 1}
             </span>
 
-            {/* Delete button */}
-            {confirmDeleteId === ws.id ? (
+            {/* Delete button — hidden while a request for this workspace is pending */}
+            {pending.has(ws.id) ? (
+              <span className="text-[9px] text-[var(--text-disabled)]" onClick={(e) => e.stopPropagation()}>
+                {pending.get(ws.id) === 'delete' ? 'Deleting…' : 'Saving…'}
+              </span>
+            ) : confirmDeleteId === ws.id ? (
               <span className="flex items-center gap-1 text-[9px]" onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => handleDelete(ws.id)} className="text-red-400 hover:text-red-300 font-medium">Yes</button>
                 <span className="text-[var(--text-disabled)]">/</span>
