@@ -31,6 +31,11 @@ function formatNumber(value: number): string {
   return String(Number(value.toPrecision(7)));
 }
 
+/** "1 loop", "2 loops" */
+function counted(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
 function formatStep(step: TranslationStep): string {
   const operator = step.direction === 'forward' ? '×' : '÷';
   return `${step.fromContext} → ${step.toContext} ${operator}${formatNumber(step.factor)}`;
@@ -72,7 +77,7 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
       </div>
       <p className="text-[9px] text-[var(--text-secondary)]">{verdict.text}</p>
       <p className="text-[8px] text-[var(--text-tertiary)]">
-        {`${result.contextCount} contexts · ${result.translationCount} translations · ${result.independentLoops} independent loops · ${result.faces} triple overlaps · dim H¹ = ${result.h1Dimension}`}
+        {`${counted(result.contextCount, 'context')} · ${counted(result.translationCount, 'translation')} · ${counted(result.independentLoops, 'independent loop')} · ${counted(result.faces, 'triple overlap')} · dim H¹ = ${result.h1Dimension}`}
       </p>
 
       {defects.length > 0 && (

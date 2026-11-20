@@ -56,7 +56,11 @@ export interface CohomologyResult {
   translationCount: number;
   independentLoops: number;
   faces: number;
-  /** dim H¹ of the complex: independent loops that no triple overlap fills. Only there can a global contradiction live. */
+  /**
+   * dim H¹ of the complex: independent loops that no triple overlap fills. A global contradiction
+   * lives there in exact arithmetic; within the tolerance it can also appear where dim H¹ = 0, when
+   * several triple overlaps that each pass add up to a loop that does not.
+   */
   h1Dimension: number;
   /**
    * Loops whose product is not 1 (class of the cochain in H¹ is not zero). The list is one basis of

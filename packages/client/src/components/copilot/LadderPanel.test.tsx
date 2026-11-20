@@ -105,12 +105,26 @@ describe('LadderPanel', () => {
     expect(screen.getByText('Global contradiction')).toBeInTheDocument();
     expect(screen.getByText('The translations do not close around a loop.')).toBeInTheDocument();
     expect(screen.queryByText(/Every triple overlap is consistent/)).not.toBeInTheDocument(); // nothing local was checked
-    expect(screen.getByText('3 contexts · 3 translations · 1 independent loops · 0 triple overlaps · dim H¹ = 1')).toBeInTheDocument();
+    expect(screen.getByText('3 contexts · 3 translations · 1 independent loop · 0 triple overlaps · dim H¹ = 1')).toBeInTheDocument();
     expect(screen.getByText('TE → Logistik ×12 · Logistik → Produktion ÷10 · Produktion → TE ÷1 — product 1.2, expected 1')).toBeInTheDocument();
     expect(screen.getByText('A product counts as 1 within a tolerance of 0.000001.')).toBeInTheDocument();
     expect(screen.getByText('Method · PA-kategorientheorie')).toBeInTheDocument();
     expect(screen.getByText('F(g ∘ f) = F(g) ∘ F(f)')).toBeInTheDocument();
     expect(screen.getByText('Limits: Sound only for invertible numeric translations.')).toBeInTheDocument();
+  });
+
+  test('the count line uses the singular for 1 and the plural otherwise', () => {
+    const counts = (contextCount: number, translationCount: number, independentLoops: number, faces: number): LadderReport => ({
+      ...obstructed,
+      cohomology: [{ ...obstructed.cohomology[0], contextCount, translationCount, independentLoops, faces }],
+    });
+    const { unmount } = render(<LadderPanel report={counts(1, 1, 1, 1)} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('1 context · 1 translation · 1 independent loop · 1 triple overlap · dim H¹ = 1')).toBeInTheDocument();
+    unmount();
+    render(<LadderPanel report={counts(2, 4, 0, 2)} />);
+    fireEvent.click(screen.getByRole('button'));
+    expect(screen.getByText('2 contexts · 4 translations · 0 independent loops · 2 triple overlaps · dim H¹ = 1')).toBeInTheDocument();
   });
 
   test('exact result shows the canonical scale and no defect lines', () => {

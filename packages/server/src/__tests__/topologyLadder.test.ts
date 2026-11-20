@@ -465,6 +465,16 @@ describe('assessLadder — what a reported loop says', () => {
     expect(r.cohomology).toEqual([]);
   });
 
+  test('the warning about unusable translations names every reason', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('self', 'te', 'te', 2), tr('nan', 'te', 'log', Number.NaN), tr('huge', 'prod', 'log', 1e13)],
+    }), NOW);
+    expect(r.rungs[3].warnings).toEqual([
+      '3 relationship(s) carry a factor but are not usable: both ends must be contexts with members and not the same context, the relationship must not be a composition or aggregation, and the factor must be a finite number between 1e-12 and 1e12.',
+    ]);
+  });
+
   test('tolerance: a loop product of 1 + 5e-7 closes, 1 + 5e-6 does not', () => {
     const pair = (back: number) => assessLadder('p', input({
       elements: [ctx('a', 'A'), ctx('b', 'B'), obj('o1'), obj('o2')],

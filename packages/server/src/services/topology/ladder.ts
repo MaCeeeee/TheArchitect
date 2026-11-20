@@ -26,7 +26,15 @@ import type {
 import { additiveToFactor, reals } from './abelianGroup';
 import { assessApplicability } from './applicability';
 import { buildComplex, OrientedStep } from './cellComplex';
-import { buildContextStructure, ContextStructure, ModelElement, ModelRelationship, QuantityComplex } from './contextComplex';
+import {
+  buildContextStructure,
+  ContextStructure,
+  MAX_TRANSLATION_FACTOR,
+  MIN_TRANSLATION_FACTOR,
+  ModelElement,
+  ModelRelationship,
+  QuantityComplex,
+} from './contextComplex';
 import { classifyOneCochain } from './h1';
 import { bettiNumbers, componentIndex, graphBetti, spanningForest } from './homology';
 
@@ -37,6 +45,9 @@ export const LOOP_CHECK_METHOD_ID = 'PA-kategorientheorie';
  * value would report rounding as contradiction. It is a declared threshold, shown in the report.
  */
 export const LOOP_TOLERANCE = 1e-6;
+
+/** "1e-12 and 1e12" — the accepted range of a translation factor, as shown in the warning. */
+const FACTOR_RANGE = [MIN_TRANSLATION_FACTOR, MAX_TRANSLATION_FACTOR].map((f) => f.toExponential().replace('+', '')).join(' and ');
 
 export interface LadderInput {
   elements: ModelElement[];
@@ -235,7 +246,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       ],
       warnings:
         structure.invalidTranslations.length > 0
-          ? [`${structure.invalidTranslations.length} relationship(s) carry a factor but are not usable: both ends must be contexts with members, the relationship must not be a composition or aggregation, and the factor must be positive.`]
+          ? [`${structure.invalidTranslations.length} relationship(s) carry a factor but are not usable: both ends must be contexts with members and not the same context, the relationship must not be a composition or aggregation, and the factor must be a finite number between ${FACTOR_RANGE}.`]
           : [],
       next: 'Declare a translation between two contexts: a relationship between them (for example an association) with a factor (1 unit in the source = factor units in the target).',
     },
