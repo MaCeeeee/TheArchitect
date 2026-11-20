@@ -208,8 +208,11 @@ export function getValidRelationships(
     allowed = [...baseRules];
 
     // Cross-layer filter: restrict to cross-layer allowed set.
-    // Exception: a composite element (grouping, location) aggregates or composes concepts of
-    // any layer — that is what it is for (ArchiMate 3.2, ch. 4).
+    // Exception: a source whose aspect is composite — grouping, location and product — keeps
+    // composition and aggregation across layers: composite elements aggregate or compose
+    // concepts of any layer (ArchiMate 3.2, ch. 4). The exception adds nothing of its own. It
+    // keeps what the same-layer rule for the pair lists, and only here, between core elements:
+    // a motivation or implementation target is decided above, so grouping → goal has neither.
     if (!sameLayer) {
       allowed = allowed.filter(r =>
         CROSS_LAYER_ALLOWED.includes(r) ||

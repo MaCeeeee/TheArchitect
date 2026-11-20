@@ -126,9 +126,13 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
   return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)));
 }
 
+/**
+ * The number of names — trimmed, case ignored — that more than one element carries: three
+ * elements named "Same" are one such name. Elements without a name share no name.
+ */
 function duplicateNameCount(elements: ModelElement[]): number {
   const names = countBy(elements, (e) => (e.name ?? '').trim().toLowerCase());
-  return Object.values(names).reduce((sum, n) => sum + (n > 1 ? n - 1 : 0), 0);
+  return Object.entries(names).filter(([name, n]) => name !== '' && n > 1).length;
 }
 
 /** What a reported loop needs to name its steps: built once per report, not once per loop. */

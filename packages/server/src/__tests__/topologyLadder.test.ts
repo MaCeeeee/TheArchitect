@@ -63,6 +63,12 @@ describe('assessLadder — rungs', () => {
     expect(r.rungs[1].facts[0].value).toBe(1);
   });
 
+  test('duplicate names counts the names that occur more than once, not the elements that carry them', () => {
+    const r = assessLadder('p', input({ elements: [obj('a', 'Same'), obj('b', 'Same'), obj('c', ' same'), obj('d', 'Other')] }), NOW);
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 });
+    expect(r.rungs[0].warnings).toEqual(['1 element name(s) occur more than once — duplicates create artificial holes and false contradictions.']);
+  });
+
   test('contexts without members do not make a cover; their translations are unusable', () => {
     const r = assessLadder('p', input({ elements: contexts, relationships: landkarteTranslations }), NOW);
     expect(statuses(r)).toEqual(['reached', 'reached', 'open', 'locked', 'locked', 'locked']);
@@ -326,7 +332,8 @@ describe('assessLadder — robust against odd input', () => {
     const nameless = [null, undefined].map((name, i) => ({ id: `n${i}`, name: name as unknown as string, type: 'business_object' }));
     const r = assessLadder('p', input({ elements: [...nameless, obj('a', 'A')] }), NOW);
     expect(r.rungs[0].facts[0]).toEqual({ label: 'elements', value: 3 });
-    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 }); // both count as the empty name
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 0 }); // no name is not a name that occurs twice
+    expect(r.rungs[0].warnings).toEqual([]);
   });
 
   test('factors outside 1e-12 … 1e12 are unusable; the product of two factors at the bound is still a number', () => {

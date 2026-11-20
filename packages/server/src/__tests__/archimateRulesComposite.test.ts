@@ -18,6 +18,17 @@ describe('composite elements across layers', () => {
     expect(getValidRelationships('location', 'business_actor')).toEqual(expect.arrayContaining(['aggregation']));
   });
 
+  test('the exception holds for every element whose aspect is composite — a product as well', () => {
+    expect(getValidRelationships('product', 'application_component')).toEqual(expect.arrayContaining(['composition', 'aggregation']));
+    expect(getValidRelationships('product', 'node')).toEqual(expect.arrayContaining(['composition', 'aggregation']));
+  });
+
+  test('the exception only keeps what the base rules list: a grouping cannot compose or aggregate a goal', () => {
+    // Recorded as the function answers today. Motivation targets have rules of their own, which the
+    // exception does not touch — a context of goals cannot be modelled the way rung 2 asks for.
+    expect(getValidRelationships('grouping', 'goal')).toEqual(['realization', 'influence', 'association']);
+  });
+
   test('same-layer membership is unchanged', () => {
     expect(getValidRelationships('grouping', 'business_object')).toEqual(expect.arrayContaining(['composition', 'aggregation']));
   });
