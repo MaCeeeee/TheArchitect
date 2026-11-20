@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { advisorAPI } from '../services/api';
-import type { AdvisorScanResult, AdvisorInsight, HealthScore } from '@thearchitect/shared';
+import type { AdvisorScanResult, AdvisorInsight, HealthScore, LadderReport } from '@thearchitect/shared';
 
 interface AdvisorState {
   // Data
@@ -8,6 +8,7 @@ interface AdvisorState {
   insights: AdvisorInsight[];
   totalElements: number;
   scanDurationMs: number;
+  ladder: LadderReport | null;
 
   // UI state
   isScanning: boolean;
@@ -16,14 +17,20 @@ interface AdvisorState {
 
   // Actions
   scan: (projectId: string) => Promise<void>;
+  loadLadder: (projectId: string) => Promise<void>;
   clear: () => void;
 }
+
+// Number of the latest ladder request. An answer or an error that belongs to an earlier one —
+// another project's, or an older refresh — must not replace what the latest request shows.
+let latestLadderRequest = 0;
 
 export const useAdvisorStore = create<AdvisorState>((set) => ({
   healthScore: null,
   insights: [],
   totalElements: 0,
   scanDurationMs: 0,
+  ladder: null,
   isScanning: false,
   lastScanAt: null,
   error: null,
@@ -49,11 +56,22 @@ export const useAdvisorStore = create<AdvisorState>((set) => ({
     }
   },
 
+  loadLadder: async (projectId: string) => {
+    const request = ++latestLadderRequest;
+    try {
+      const { data } = await advisorAPI.ladder(projectId);
+      if (request === latestLadderRequest) set({ ladder: data.data as LadderReport });
+    } catch {
+      if (request === latestLadderRequest) set({ ladder: null }); // optional block — the scan stays usable without it
+    }
+  },
+
   clear: () => set({
     healthScore: null,
     insights: [],
     totalElements: 0,
     scanDurationMs: 0,
+    ladder: null,
     isScanning: false,
     lastScanAt: null,
     error: null,

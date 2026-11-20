@@ -4,19 +4,21 @@ import { RefreshCw, Loader2, AlertCircle, CheckCircle2, ShieldAlert } from 'luci
 import { useAdvisorStore } from '../../stores/advisorStore';
 import HealthScoreRing from './HealthScoreRing';
 import InsightCard from './InsightCard';
+import LadderPanel from './LadderPanel';
 import type { InsightSeverity } from '@thearchitect/shared';
 
 export default function AdvisorPanel() {
   const { projectId } = useParams();
   const {
     healthScore, insights, isScanning, lastScanAt, error, totalElements,
-    scanDurationMs, scan, clear,
+    scanDurationMs, scan, clear, ladder, loadLadder,
   } = useAdvisorStore();
 
   // Auto-scan on mount if no data
   useEffect(() => {
     if (projectId && !healthScore && !isScanning) {
       scan(projectId);
+      loadLadder(projectId);
     }
     return () => { clear(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -25,6 +27,7 @@ export default function AdvisorPanel() {
   const handleRefresh = () => {
     if (projectId && !isScanning) {
       scan(projectId);
+      loadLadder(projectId);
     }
   };
 
@@ -138,6 +141,8 @@ export default function AdvisorPanel() {
             )}
           </div>
         )}
+
+        <LadderPanel report={ladder && ladder.projectId === projectId ? ladder : null} />
 
         {/* Insights List */}
         {insights.length > 0 && (
