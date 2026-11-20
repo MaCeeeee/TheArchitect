@@ -96,7 +96,7 @@ describe('GET /:projectId/advisor/ladder', () => {
     expect(res.body.data.cohomology[0].loopDefects[0].steps).toHaveLength(3);
     expect(res.body.data.tolerance).toBe(1e-6);
     const schuld = res.body.data.methods.find((m: { methodId: string }) => m.methodId === 'DA-technische-schuld');
-    expect(schuld.oneInputAway).toBe('technicalDebtRatio on at least 1 element');
+    expect(schuld.oneInputAway).toBe('technicalDebtRatio on a minimum of 1 element');
     expect(accessCalls).toEqual(['viewer']);
     expect(mockRunCypher).toHaveBeenCalledTimes(3);
     mockRunCypher.mock.calls.forEach(([query, params]) => {

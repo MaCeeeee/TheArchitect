@@ -20,11 +20,21 @@ export const LADDER_TEXT = {
   headline: (step: number) => `Model check: step ${step} of 5`,
   headlineNotStarted: 'Model check: not started',
   nextStep: (next: string) => `Next step: ${next}`,
-  methodSummary: (calculable: number, all: number) => `The software can calculate ${calculable} of ${all} methods.`,
+  /**
+   * `withInput`: the methods whose inputs are in the model and whose step is reached. The software
+   * calculates only some of them, so the text does not say "can calculate".
+   */
+  methodSummary: (withInput: number, all: number) => `The model has the input for ${withInput} of ${all} methods.`,
   oneMoreInputHeading: 'Methods for which one more input is necessary',
-  /** `input` comes from the report (applicability of the method). */
+  /**
+   * `method` and `input` come from the report (applicability of the method). The name of a method,
+   * of an element type and of a field is a technical name of the method catalogue.
+   */
   oneMoreInput: (method: string, input: string) => `${method} — necessary: ${input}`,
   mathButton: 'Math',
+  /** Accessible names of the Math buttons: the visible text "Math" is the same on each of them. */
+  mathOfStep: (step: number) => `Math of step ${step}`,
+  mathOfQuantity: 'Math of this quantity',
 
   quantity: (name: string) => `quantity: ${name}`,
   exactTitle: 'The conversion factors agree',
@@ -46,10 +56,13 @@ export const LADDER_TEXT = {
   result: (shown: string | null) => `result ${shown ?? TOO_LARGE_OR_SMALL}, must be 1`,
   scale: (entries: string) => `Scale of each group: ${entries}`,
   scaleEntry: (group: string, shown: string | null) => (shown === null ? `${group} (${TOO_LARGE_OR_SMALL})` : `${group} ×${shown}`),
-  /** What the report counts but does not list. At least one of the two counts is above 0. */
-  more: (setsOfThreeGroups: number, closedPaths: number) =>
+  /**
+   * What the report counts but does not list. At least one of the two counts is above 0. The
+   * first count is of triangles of conversion factors: three groups can have more than one.
+   */
+  more: (setsOfThreeConversionFactors: number, closedPaths: number) =>
     `and ${[
-      ...(setsOfThreeGroups > 0 ? [`${counted(setsOfThreeGroups, 'more set', 'more sets')} of three groups`] : []),
+      ...(setsOfThreeConversionFactors > 0 ? [`${counted(setsOfThreeConversionFactors, 'more set', 'more sets')} of three conversion factors`] : []),
       ...(closedPaths > 0 ? [counted(closedPaths, 'more closed path', 'more closed paths')] : []),
     ].join(' and ')}`,
   tolerance: (lower: string, upper: string) => `A result between ${lower} and ${upper} is equal to 1.`,

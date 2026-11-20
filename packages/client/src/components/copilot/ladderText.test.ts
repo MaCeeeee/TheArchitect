@@ -18,7 +18,8 @@ const SAMPLES: Record<string, unknown[][]> = {
   headline: [[0], [2], [5]],
   nextStep: [['Add elements to the model.']],
   methodSummary: [[4, 14], [1, 14], [0, 14]],
-  oneMoreInput: [['A', 'B']],
+  oneMoreInput: [['A', 'step 5 of the model check'], ['A', 'step 0 of the model check']],
+  mathOfStep: [[0], [5]],
   quantity: [['A']],
   summary: [[3, 3, 1], [1, 1, 1], [2, 4, 0]],
   result: [['0.8333333'], [null]],
@@ -46,12 +47,19 @@ describe('ladderText — the wording of the approved draft', () => {
     expect(LADDER_TEXT.headline(2)).toBe('Model check: step 2 of 5');
     expect(LADDER_TEXT.headlineNotStarted).toBe('Model check: not started');
     expect(LADDER_TEXT.nextStep('Add elements to the model.')).toBe('Next step: Add elements to the model.');
-    expect(LADDER_TEXT.methodSummary(4, 14)).toBe('The software can calculate 4 of 14 methods.');
+    // "computable" in the report means: the inputs are there and the step is reached. It does not
+    // mean that the software calculates the method.
+    expect(LADDER_TEXT.methodSummary(4, 14)).toBe('The model has the input for 4 of 14 methods.');
     expect(LADDER_TEXT.oneMoreInputHeading).toBe('Methods for which one more input is necessary');
-    expect(LADDER_TEXT.oneMoreInput('Technical debt', 'technicalDebtRatio on at least 1 element')).toBe(
-      'Technical debt — necessary: technicalDebtRatio on at least 1 element',
+    expect(LADDER_TEXT.oneMoreInput('Technical debt', 'technicalDebtRatio on a minimum of 1 element')).toBe(
+      'Technical debt — necessary: technicalDebtRatio on a minimum of 1 element',
+    );
+    expect(LADDER_TEXT.oneMoreInput('Cyclomatic complexity', 'step 1 of the model check')).toBe(
+      'Cyclomatic complexity — necessary: step 1 of the model check',
     );
     expect(LADDER_TEXT.mathButton).toBe('Math');
+    expect(LADDER_TEXT.mathOfStep(3)).toBe('Math of step 3');
+    expect(LADDER_TEXT.mathOfQuantity).toBe('Math of this quantity');
   });
 
   test('the three results', () => {
@@ -74,8 +82,8 @@ describe('ladderText — the wording of the approved draft', () => {
     expect(LADDER_TEXT.summary(3, 3, 1)).toBe('3 groups · 3 conversion factors · 1 closed path');
     expect(LADDER_TEXT.summary(1, 1, 0)).toBe('1 group · 1 conversion factor · 0 closed paths');
     expect(LADDER_TEXT.more(0, 584)).toBe('and 584 more closed paths');
-    expect(LADDER_TEXT.more(28, 1)).toBe('and 28 more sets of three groups and 1 more closed path');
-    expect(LADDER_TEXT.more(1, 0)).toBe('and 1 more set of three groups');
+    expect(LADDER_TEXT.more(28, 1)).toBe('and 28 more sets of three conversion factors and 1 more closed path');
+    expect(LADDER_TEXT.more(1, 0)).toBe('and 1 more set of three conversion factors');
   });
 
   test('result, scale and tolerance', () => {

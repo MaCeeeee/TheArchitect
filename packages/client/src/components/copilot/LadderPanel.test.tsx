@@ -36,7 +36,7 @@ const stopped: LadderReport = {
   cohomologyMethod: method,
   methods: [
     { methodId: 'DA-propagation', name: 'Propagation cost', rung: 1, status: 'computable', computedBy: 'none', checks: [], oneInputAway: null },
-    { methodId: 'DA-technische-schuld', name: 'Technical debt as compound interest', rung: 0, status: 'missing_input', computedBy: 'none', checks: [], oneInputAway: 'technicalDebtRatio on at least 1 element' },
+    { methodId: 'DA-technische-schuld', name: 'Technical debt as compound interest', rung: 0, status: 'missing_input', computedBy: 'none', checks: [], oneInputAway: 'technicalDebtRatio on a minimum of 1 element' },
     { methodId: 'PA-pert', name: 'Three-point estimate and Monte Carlo', rung: 1, status: 'missing_input', computedBy: 'cost_engine', checks: [], oneInputAway: null },
   ],
   timestamp: '2026-11-20T12:00:00.000Z',
@@ -70,7 +70,9 @@ const obstructed: LadderReport = {
 };
 
 /** The Math button of the finding for one quantity. */
-const findingMath = (quantity: string) => within(screen.getByTestId(`finding-${quantity}`)).getByRole('button', { name: 'Math' });
+const findingMath = (quantity: string) => within(screen.getByTestId(`finding-${quantity}`)).getByRole('button', { name: 'Math of this quantity' });
+/** The Math button of one step. */
+const stepMath = (index: number) => within(screen.getByTestId(`rung-${index}`)).getByRole('button', { name: `Math of step ${index}` });
 
 describe('LadderPanel', () => {
   test('no report → renders nothing', () => {
@@ -81,7 +83,7 @@ describe('LadderPanel', () => {
   test('collapsed: headline with the highest rung and the method count', () => {
     render(<LadderPanel report={stopped} />);
     expect(screen.getByText('Model check: step 1 of 5')).toBeInTheDocument();
-    expect(screen.getByText('The software can calculate 1 of 3 methods.')).toBeInTheDocument();
+    expect(screen.getByText('The model has the input for 1 of 3 methods.')).toBeInTheDocument();
     expect(screen.queryByText('2 · Cover')).not.toBeInTheDocument();
   });
 
@@ -95,7 +97,7 @@ describe('LadderPanel', () => {
     expect(screen.queryByText('Next step: Declare a translation.')).not.toBeInTheDocument();
     expect(screen.getByText('count: 3')).toBeInTheDocument();
     expect(screen.queryByText('count: 4')).not.toBeInTheDocument();
-    expect(screen.getByText('Technical debt as compound interest — necessary: technicalDebtRatio on at least 1 element')).toBeInTheDocument();
+    expect(screen.getByText('Technical debt as compound interest — necessary: technicalDebtRatio on a minimum of 1 element')).toBeInTheDocument();
     expect(screen.queryByText(/Three-point estimate/)).not.toBeInTheDocument();
   });
 
@@ -247,7 +249,7 @@ describe('LadderPanel', () => {
     };
     render(<LadderPanel report={local} />);
     fireEvent.click(screen.getByRole('button'));
-    expect(screen.getByText('and 28 more sets of three groups and 1 more closed path')).toBeInTheDocument();
+    expect(screen.getByText('and 28 more sets of three conversion factors and 1 more closed path')).toBeInTheDocument();
   });
 
   test('long names without a place to break can wrap inside the narrow panel', () => {
@@ -257,7 +259,7 @@ describe('LadderPanel', () => {
     const quantity = 'net_weight_per_packaging_unit_including_pallet_and_wrapping_kilo'; // 64 characters, the longest accepted
     const context = 'Customer_Relationship_Management_Platform_Europe_Central';
     const [loop] = obstructed.cohomology[0].loopDefects;
-    const warning = `1 quantity is not checked: "${quantity}" (501 translations).`;
+    const warning = `The check does not include 1 quantity. This quantity is "${quantity}" (501 conversion factors).`;
     const long: LadderReport = {
       ...obstructed,
       rungs: obstructed.rungs.map((r) => (r.index === 4 ? { ...r, warnings: [warning] } : r)),
@@ -300,7 +302,7 @@ describe('LadderPanel', () => {
     expect(screen.getByText('provides 1')).toBeInTheDocument();
     expect(screen.queryByText('math 1')).not.toBeInTheDocument();
 
-    const button = within(screen.getByTestId('rung-1')).getByRole('button', { name: 'Math' });
+    const button = stepMath(1);
     expect(button).toHaveAttribute('type', 'button');
     expect(button).toHaveAttribute('aria-expanded', 'false');
     const region = document.getElementById(button.getAttribute('aria-controls')!)!;
@@ -322,7 +324,7 @@ describe('LadderPanel', () => {
   test('every step has its own Math button, a locked step as well, each with its own region', () => {
     render(<LadderPanel report={stopped} />);
     fireEvent.click(screen.getByRole('button'));
-    const buttons = [0, 1, 2, 3, 4, 5].map((i) => within(screen.getByTestId(`rung-${i}`)).getByRole('button', { name: 'Math' }));
+    const buttons = [0, 1, 2, 3, 4, 5].map(stepMath);
     expect(new Set(buttons.map((b) => b.getAttribute('aria-controls'))).size).toBe(6);
     fireEvent.click(buttons[4]);
     expect(screen.getByText('math 4')).toBeInTheDocument();
@@ -353,10 +355,26 @@ describe('LadderPanel', () => {
     expect(within(region).queryByText(/is equal to 1/)).not.toBeInTheDocument();
   });
 
-  test('the tolerance is shown as the two bounds around 1', () => {
+  test('the tolerance is shown as the two bounds the check uses: exp(-tolerance) and exp(tolerance)', () => {
+    // The check compares the sum of the logarithms with 0. The bounds of the result are thus
+    // exp(∓tolerance), not 1 ∓ tolerance: 0.999 itself is outside (log 0.999 = -0.0010005).
     render(<LadderPanel report={{ ...obstructed, tolerance: 0.001 }} />);
     fireEvent.click(screen.getByRole('button'));
-    expect(screen.getByText('A result between 0.999 and 1.001 is equal to 1.')).toBeInTheDocument();
+    expect(screen.getByText('A result between 0.9990005 and 1.001001 is equal to 1.')).toBeInTheDocument();
+  });
+
+  test('each Math button says what it belongs to, shows only "Math", and is 16 px high or more', () => {
+    render(<LadderPanel report={obstructed} />);
+    fireEvent.click(screen.getByRole('button'));
+    const buttons = [...[0, 1, 2, 3, 4, 5].map(stepMath), findingMath('default')];
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Math of step 0', 'Math of step 1', 'Math of step 2', 'Math of step 3', 'Math of step 4', 'Math of step 5', 'Math of this quantity',
+    ]);
+    for (const button of buttons) {
+      expect(button).toHaveTextContent(/^Math$/);
+      // jsdom does not lay out a page: the test pins the classes that give the height.
+      expect(button).toHaveClass('min-h-4', 'py-1');
+    }
   });
 
   test('every defect listed: no line about more', () => {

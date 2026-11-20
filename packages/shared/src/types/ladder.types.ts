@@ -20,7 +20,7 @@ export interface LadderRung {
   status: LadderRungStatus;
   facts: LadderFact[];
   warnings: string[];
-  /** What to model to reach this rung; null when reached. */
+  /** What to do in the model to reach this step, in plain words (ASD-STE100); null when reached. */
   next: string | null;
 }
 
@@ -87,7 +87,7 @@ export interface LadderReport {
   highestRung: LadderRungIndex | null;
   rungs: LadderRung[];
   cohomology: CohomologyResult[];
-  /** Relative tolerance used when a product around a loop is compared with 1. */
+  /** Tolerance on the logarithm of a product around a loop: a product from exp(-tolerance) to exp(tolerance) counts as 1. */
   tolerance: number;
   cohomologyMethod: MethodRef;
   methods: MethodApplicability[];

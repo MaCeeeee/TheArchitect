@@ -12,7 +12,7 @@
  * are 'locked'. Cohomology is computed only when rungs 0–4 are reached.
  *
  * The assessment runs inside a request. Where a limit of limits.ts applies — too many contexts,
- * a quantity too large to classify, a count that stops — the rung concerned says so.
+ * a quantity above a limit, a count that stops — the rung concerned says so.
  *
  * What the report shows to a user — title, provides, next, warnings, fact labels — is written in
  * ASD-STE100 (Simplified Technical English): a context is a "group", a translation a "conversion
@@ -49,6 +49,7 @@ import {
 import { classifyOneCochain } from './h1';
 import { bettiNumbers, componentIndex, graphBetti, spanningForest } from './homology';
 import {
+  MAX_COMPARED_MEMBERS,
   MAX_CONTEXTS,
   MAX_FACES_PER_QUANTITY,
   MAX_REPORTED_DEFECTS_PER_QUANTITY,
@@ -97,9 +98,9 @@ function shown(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-/** "1 name is" / "3 names are": the noun and its verb in the form the count asks for. */
+/** "1 name is" / "3 names are" / "1,200 names are": the noun and its verb in the form the count asks for. */
 function counted(count: number, one: string, many: string): string {
-  return `${count} ${count === 1 ? one : many}`;
+  return `${shown(count)} ${count === 1 ? one : many}`;
 }
 
 /** "a", "a and b", "a, b, and c" */
@@ -111,10 +112,15 @@ function listed(items: string[]): string {
 /** At most this many skipped quantities are named in the warning; the rest are counted. */
 const NAMED_SKIPPED_QUANTITIES = 5;
 
+/**
+ * The limit that left a quantity out. Only the first reason is about the quantity itself, and it
+ * gives the number the quantity has. A face is a triangle of conversion factors — three groups
+ * with eight conversion factors on each side have 512 — so that limit does not count groups.
+ */
 function whySkipped(q: SkippedQuantity): string {
-  if (q.reason === 'translations') return `more than ${shown(MAX_TRANSLATIONS_PER_QUANTITY)} conversion factors`;
-  if (q.reason === 'faces') return `more than ${shown(MAX_FACES_PER_QUANTITY)} sets of three groups`;
-  if (q.reason === 'members') return 'too many members to compare';
+  if (q.reason === 'translations') return `${shown(q.translations)} conversion factors`;
+  if (q.reason === 'faces') return `more than ${shown(MAX_FACES_PER_QUANTITY)} sets of three conversion factors`;
+  if (q.reason === 'members') return `more than ${shown(MAX_COMPARED_MEMBERS)} members to compare`;
   return `more than ${shown(MAX_TRANSLATIONS_PER_REPORT)} conversion factors in all quantities`;
 }
 
@@ -124,20 +130,19 @@ function skippedWarning(skipped: SkippedQuantity[]): string {
   if (skipped.length > named.length) named.push(`${shown(skipped.length - named.length)} more`);
   const one = skipped.length === 1;
   return [
-    `The check does not include ${one ? '1 quantity because it is' : `${shown(skipped.length)} quantities because they are`} too large.`,
-    `The limits for each quantity are ${shown(MAX_TRANSLATIONS_PER_QUANTITY)} conversion factors and ${shown(MAX_FACES_PER_QUANTITY)} sets of three groups.`,
+    `The check does not include ${counted(skipped.length, 'quantity', 'quantities')}.`,
+    `The limits for each quantity are ${shown(MAX_TRANSLATIONS_PER_QUANTITY)} conversion factors and ${shown(MAX_FACES_PER_QUANTITY)} sets of three conversion factors.`,
     `The limit for all quantities together is ${shown(MAX_TRANSLATIONS_PER_REPORT)} conversion factors.`,
     `${one ? 'This quantity is' : 'These quantities are'} ${listed(named)}.`,
   ].join(' ');
 }
 
-/** What rung 4 asks for. If quantities were skipped for their size, that is said first. */
+/** What rung 4 asks for. If the check left quantities out, fewer conversion factors come first. */
 function nextForClosedPath(skippedQuantities: number): string {
   if (skippedQuantities === 0) {
     return 'Add conversion factors until two different paths connect the same two groups. Example: A to B, B to C, and A to C.';
   }
-  const tooLarge = skippedQuantities === 1 ? 'this quantity' : 'these quantities';
-  return `Decrease the number of conversion factors of ${tooLarge}. Or add conversion factors of a different quantity until two different paths connect the same two groups.`;
+  return 'Decrease the number of conversion factors in the model. Or add conversion factors of a different quantity until two different paths connect the same two groups.';
 }
 
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
@@ -300,12 +305,12 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       index: 1,
       title: 'Relationships',
       provides: 'A relationship connects two elements and has a direction.',
-      math: 'Directed graph. Oriented relationships: the chain complex C₁ → C₀ with boundary ∂. b0 = parts that are not connected, b1 = closed paths.',
+      math: 'Directed graph. Oriented relationships: the chain complex C₁ → C₀ with boundary ∂. connected components (b0) = parts of the model, independent loops (b1) = closed paths between elements.',
       reached: relationships.length > 0,
       facts: [
         { label: 'relationships', value: relationships.length },
-        { label: 'parts that are not connected', value: betti.b0 },
-        { label: 'closed paths', value: betti.b1 },
+        { label: 'parts of the model', value: betti.b0 },
+        { label: 'closed paths between elements', value: betti.b1 },
         { label: 'relationships that connect an element to the same element', value: selfLoops },
       ],
       warnings:
@@ -314,7 +319,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
           : [
               dangling === 1
                 ? '1 relationship connects to an element that is not in the model. The check does not use this relationship.'
-                : `${dangling} relationships connect to elements that are not in the model. The check does not use these relationships.`,
+                : `${shown(dangling)} relationships connect to elements that are not in the model. The check does not use these relationships.`,
             ],
       next: 'Connect the elements with relationships.',
     },
@@ -333,7 +338,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
           ]
         : [{ label: 'groups', value: structure.contexts.length }],
       warnings: structure.tripleOverlapsCapped
-        ? [`The model has a minimum of ${shown(structure.tripleOverlaps.length)} ${structure.tripleOverlaps.length === 1 ? 'set' : 'sets'} of three groups with the same member. The software counts to this number only.`]
+        ? [`The model has a minimum of ${shown(structure.tripleOverlaps.length)} sets of three groups with the same member. The software stopped at this number.`]
         : [],
       next: structure.analysed
         ? 'Make a minimum of two groups. Add a Grouping element for each group. Then connect each Grouping element to its members with a Composition relationship.'
@@ -343,7 +348,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       index: 3,
       title: 'Conversion factors',
       provides:
-        'A conversion factor is a number on a relationship between two groups. It shows how a quantity changes from one group to the other group. Example: 1 unit in group A is equal to 10 units in group B.',
+        'A conversion factor is a number on a relationship between two groups. It shows how a quantity changes from one group to the other group. Example: The relationship from group A to group B has the conversion factor 10. Then 1 unit in group A is equal to 10 units in group B.',
       math: 'Coefficients. Values in an abelian group: translation factors between contexts, (ℝ>0, ·) ≅ (ℝ, +).',
       reached: structure.translations.length > 0,
       facts: [
@@ -355,7 +360,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
         structure.invalidTranslations.length > 0
           ? [`${counted(structure.invalidTranslations.length, 'relationship has', 'relationships have')} a conversion factor that the check cannot use. A conversion factor must be between two different groups that have members. It cannot be on a Composition relationship or an Aggregation relationship. It must be a number between ${FACTOR_RANGE}.`]
           : [],
-      next: 'Connect two groups with a relationship. Then give a conversion factor to the relationship.',
+      next: 'Connect two groups with an Association relationship. Then give a conversion factor to the relationship. At this time, you can give the conversion factor only with the API.',
     },
     {
       index: 4,
@@ -364,7 +369,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       math: 'Gluing testable. The translations close loops or meet on triple overlaps, so the cocycle condition can be tested.',
       reached: loopsAndFaces > 0,
       facts: [
-        { label: 'closed paths to examine', value: loopsAndFaces },
+        { label: 'closed paths and sets of three groups to examine', value: loopsAndFaces },
         { label: 'quantities without a closed path', value: structure.quantities.length - testable.length },
         { label: 'pairs of groups without a conversion factor', value: structure.overlapsWithoutTranslation.length },
       ],

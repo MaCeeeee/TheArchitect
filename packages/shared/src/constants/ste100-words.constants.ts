@@ -19,9 +19,9 @@ export const STE100_WORDS_IN_USE: readonly string[] = [
   'item', 'its', 'large', 'limit', 'limits', 'make', 'many', 'maximum', 'minimum', 'more', 'multiplies',
   'must', 'name', 'names', 'necessary', 'next', 'no', 'not', 'number', 'of', 'on', 'one', 'only', 'or',
   'other', 'pair', 'pairs', 'parts', 'possible', 'quantities', 'quantity', 'remove', 'result', 'same', 'set',
-  'sets', 'show', 'shows', 'small', 'started', 'starts', 'step', 'steps', 'stops', 'than', 'that', 'the',
+  'sets', 'show', 'shows', 'small', 'started', 'starts', 'step', 'steps', 'stopped', 'stops', 'than', 'that', 'the',
   'their', 'then', 'these', 'they', 'this', 'three', 'thru', 'time', 'to', 'together', 'too', 'two', 'unit',
-  'units', 'until', 'use', 'used', 'uses', 'which', 'with', 'without',
+  'units', 'until', 'use', 'used', 'uses', 'which', 'with', 'without', 'you',
 ];
 
 /**
@@ -29,7 +29,8 @@ export const STE100_WORDS_IN_USE: readonly string[] = [
  * An entry of two words counts only as the pair — "closed" alone is not a checked word.
  */
 export const STE100_TECHNICAL_NOUNS: readonly string[] = [
-  'Aggregation', 'closed path', 'closed paths', 'Composition', 'conversion factor', 'conversion factors',
-  'element', 'elements', 'Grouping', 'input', 'Location', 'math', 'member', 'members', 'method', 'methods',
-  'model', 'path', 'paths', 'relationship', 'relationships', 'scale', 'software',
+  'Aggregation', 'API', 'Association', 'closed path', 'closed paths', 'Composition', 'conversion factor',
+  'conversion factors', 'element', 'elements', 'Grouping', 'input', 'Location', 'math', 'member', 'members',
+  'method', 'methods', 'model', 'model check', 'path', 'paths', 'relationship', 'relationships', 'scale',
+  'software',
 ];

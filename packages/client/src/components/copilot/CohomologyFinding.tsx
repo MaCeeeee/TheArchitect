@@ -18,14 +18,14 @@ function verdictOf(result: CohomologyResult): { label: string; text: string; ton
   };
 }
 
-/** Seven significant digits: enough to show any deviation that exceeds the tolerance. null: outside the range of a number. */
-function formatNumber(value: number | null): string | null {
-  return value === null ? null : String(Number(value.toPrecision(7)));
+/** Seven significant digits: enough to show any deviation that exceeds the tolerance. */
+function sevenDigits(value: number): string {
+  return String(Number(value.toPrecision(7)));
 }
 
-/** A bound of the tolerance around 1: 0.999999 or 1.000001, without the noise of floating point. */
-function formatBound(value: number): string {
-  return String(Number(value.toPrecision(12)));
+/** null: outside the range of a number. */
+function formatNumber(value: number | null): string | null {
+  return value === null ? null : sevenDigits(value);
 }
 
 function formatScale(scale: CanonicalScale): string {
@@ -105,9 +105,12 @@ export default function CohomologyFinding({ result, method, tolerance }: Cohomol
         </p>
       ))}
 
-      <p className="text-[8px] text-[var(--text-tertiary)]">{LADDER_TEXT.tolerance(formatBound(1 - tolerance), formatBound(1 + tolerance))}</p>
+      {/* The check compares the sum of the logarithms with 0, so the bounds of a result are exp(∓tolerance). */}
+      <p className="text-[8px] text-[var(--text-tertiary)]">
+        {LADDER_TEXT.tolerance(sevenDigits(Math.exp(-tolerance)), sevenDigits(Math.exp(tolerance)))}
+      </p>
 
-      <MathToggle open={mathOpen} controls={mathId} onToggle={() => setMathOpen(!mathOpen)} />
+      <MathToggle open={mathOpen} controls={mathId} label={LADDER_TEXT.mathOfQuantity} onToggle={() => setMathOpen(!mathOpen)} />
       <div id={mathId} hidden={!mathOpen}>
         {mathOpen && (
           <div className="border-t border-[#334155] pt-1 space-y-0.5">

@@ -25,7 +25,7 @@ export function assessApplicability(facts: ModelFacts, highestRung: LadderRungIn
   return METHOD_CATALOG.map((method) => {
     const checks = method.inputs.map((input) => check(input, facts));
     checks.push({
-      label: `ladder rung ${method.rung} reached`,
+      label: `step ${method.rung} of the model check`,
       required: method.rung,
       available: reached,
       satisfied: reached >= method.rung,

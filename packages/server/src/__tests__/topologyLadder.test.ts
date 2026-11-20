@@ -44,8 +44,8 @@ describe('assessLadder — rungs', () => {
     expect(r.highestRung).toBe(1);
     expect(r.rungs[1].facts).toEqual([
       { label: 'relationships', value: 3 },
-      { label: 'parts that are not connected', value: 2 },
-      { label: 'closed paths', value: 1 },
+      { label: 'parts of the model', value: 2 },
+      { label: 'closed paths between elements', value: 1 },
       { label: 'relationships that connect an element to the same element', value: 0 },
     ]);
     expect(r.rungs[2].next).toContain('Grouping element');
@@ -194,7 +194,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     expect(r.cohomology.map((c) => c.quantity)).toEqual(['pieces']);
     expect(r.rungs[4].facts).toEqual([
-      { label: 'closed paths to examine', value: 1 },
+      { label: 'closed paths and sets of three groups to examine', value: 1 },
       { label: 'quantities without a closed path', value: 1 },
       { label: 'pairs of groups without a conversion factor', value: 0 },
     ]);
@@ -209,7 +209,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(r.cohomology).toEqual([]);
     const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
     expect(loopCheck.status).toBe('missing_input');
-    expect(loopCheck.oneInputAway).toBe('ladder rung 5 reached');
+    expect(loopCheck.oneInputAway).toBe('step 5 of the model check');
   });
 
   test('the report always carries the method applicability', () => {
@@ -220,7 +220,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
     expect(loopCheck.status).toBe('computable');
-    expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on at least 1 element');
+    expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on a minimum of 1 element');
   });
 });
 
@@ -324,7 +324,7 @@ describe('assessLadder — robust against odd input', () => {
     }), NOW);
     const available = r.methods.flatMap((m) => m.checks.map((c) => c.available));
     expect(available.filter((n) => typeof n !== 'number')).toEqual([]);
-    const anyElement = r.methods.flatMap((m) => m.checks).find((c) => c.label === 'at least 3 elements')!;
+    const anyElement = r.methods.flatMap((m) => m.checks).find((c) => c.label === 'a minimum of 3 elements')!;
     expect(anyElement.available).toBe(2);
   });
 

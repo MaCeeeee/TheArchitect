@@ -20,7 +20,7 @@ function RungRow({ rung }: { rung: LadderRung }) {
       <div className="min-w-0 space-y-0.5">
         <p className="text-[10px] text-white [overflow-wrap:anywhere]">{`${rung.index} · ${rung.title}`}</p>
         <p className="text-[8px] text-[var(--text-tertiary)] [overflow-wrap:anywhere]">{rung.provides}</p>
-        <MathToggle open={mathOpen} controls={mathId} onToggle={() => setMathOpen(!mathOpen)} />
+        <MathToggle open={mathOpen} controls={mathId} label={LADDER_TEXT.mathOfStep(rung.index)} onToggle={() => setMathOpen(!mathOpen)} />
         <div id={mathId} hidden={!mathOpen}>
           {mathOpen && <span className="block text-[8px] text-[var(--text-tertiary)] [overflow-wrap:anywhere]">{rung.math}</span>}
         </div>
@@ -49,7 +49,8 @@ export default function LadderPanel({ report }: LadderPanelProps) {
   const [open, setOpen] = useState(false);
   if (!report) return null;
 
-  const computable = report.methods.filter((m) => m.status === 'computable').length;
+  // 'computable' in the report: the inputs are in the model and the step is reached.
+  const withInput = report.methods.filter((m) => m.status === 'computable').length;
   const oneAway = report.methods.filter((m) => m.status === 'missing_input' && m.oneInputAway);
   const headline = report.highestRung === null ? LADDER_TEXT.headlineNotStarted : LADDER_TEXT.headline(report.highestRung);
 
@@ -63,7 +64,7 @@ export default function LadderPanel({ report }: LadderPanelProps) {
       >
         <Sigma size={10} className="text-[#7c3aed]" />
         <span className="text-[10px] text-white">{headline}</span>
-        <span className="text-[8px] text-[var(--text-disabled)] ml-auto text-right">{LADDER_TEXT.methodSummary(computable, report.methods.length)}</span>
+        <span className="text-[8px] text-[var(--text-disabled)] ml-auto text-right">{LADDER_TEXT.methodSummary(withInput, report.methods.length)}</span>
         {open ? <ChevronDown size={10} className="text-[var(--text-tertiary)]" /> : <ChevronRight size={10} className="text-[var(--text-tertiary)]" />}
       </button>
 

@@ -69,6 +69,7 @@ export interface QuantityComplex {
 
 export interface SkippedQuantity {
   quantity: string;
+  /** Number of translations of the quantity; the report shows it when the reason is 'translations'. */
   translations: number;
   /**
    * The limit that applies: MAX_TRANSLATIONS_PER_QUANTITY ('translations'), MAX_FACES_PER_QUANTITY
