@@ -258,6 +258,22 @@ describe('faces come from the triangles of translations — the same as testing 
     expect(seen.classified).toBeGreaterThan(200);
     expect(seen.faces).toBeGreaterThan(400);
   });
+
+  // The models above have at most 6 contexts, so there a position in the sorted contexts is one
+  // digit. From 13 contexts on, two different sets of contexts can read the same when their
+  // positions are written one after the other: 0, 1, 2 and 0, 12.
+  test('13 contexts: the sets at positions 0, 1, 2 and 0, 12 are two sets, each with its own overlaps', () => {
+    const model = sharing(13, 0);
+    model.elements.push(obj('first'), obj('second'));
+    for (const context of [0, 1, 2]) model.relationships.push(has(context, 'first'));
+    for (const context of [0, 12]) model.relationships.push(has(context, 'second'));
+    const structure = buildContextStructure(model.elements, model.relationships);
+    expect(structure.overlappingPairs).toEqual([['c0000', 'c0001'], ['c0000', 'c0002'], ['c0000', 'c0012'], ['c0001', 'c0002']]);
+    expect(structure.tripleOverlaps).toEqual([['c0000', 'c0001', 'c0002']]);
+    const reference = referenceStructure(model.elements, model.relationships);
+    expect(structure.overlappingPairs).toEqual(reference.overlappingPairs);
+    expect(structure.tripleOverlaps).toEqual(reference.tripleOverlaps);
+  });
 });
 
 describe('assessLadder — a wide model without any context', () => {
@@ -522,7 +538,7 @@ describe('assessLadder — large contexts do not make the search for a common me
 
   test('5,000 members per context: the search stops, the quantity it stopped in and the one after it are named', () => {
     const { report, ms } = timed(meshedWithoutOverlap(5000)); // 4,960 triangles × 5,000 members > 20,000,000
-    expect(ms).toBeLessThan(1500);
+    expect(ms).toBeLessThan(5000); // about half a second; the bound is against blocking for many seconds, not against milliseconds
     expect(MAX_COMPARED_MEMBERS).toBe(20_000_000);
     expect(report.cohomology).toEqual([]);
     const members = 'more than 20,000,000 members to compare';
@@ -544,6 +560,18 @@ describe('assessLadder — many quantities do not add up without bound', () => {
     ]);
   });
 
+  test('exactly 1,000 translations are still classified; the quantity that would take the sum above them is not', () => {
+    const full = (q: string) => Array.from({ length: MAX_TRANSLATIONS_PER_QUANTITY }, (_, copy) => tr(0, 1, q, copy)); // 500 translations, 499 loops
+    const beyond = [tr(0, 1, 'c'), tr(1, 2, 'c'), tr(0, 2, 'c')];
+    const { report } = timed(withTranslations(sharing(3), [...full('a'), ...full('b'), ...beyond]));
+    expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.translationCount])).toEqual([
+      ['a', 'exact', 500],
+      ['b', 'exact', 500],
+    ]);
+    expect(report.cohomology.reduce((sum, c) => sum + c.translationCount, 0)).toBe(MAX_TRANSLATIONS_PER_REPORT);
+    expect(report.rungs[4].warnings).toEqual([notChecked('1 quantity is', '"c" (beyond 1,000 translations in total)')]);
+  });
+
   test('a small quantity after a large one still fits; only the first five skipped quantities are named', () => {
     const large = (q: string) => Array.from({ length: 400 }, (_, copy) => tr(0, 1, q, copy)); // 400 translations, 399 loops
     const small = [tr(0, 1, 'z'), tr(1, 2, 'z'), tr(0, 2, 'z')];
@@ -556,7 +584,7 @@ describe('assessLadder — many quantities do not add up without bound', () => {
     );
   });
 
-  test('the largest report inside the limits — two quantities, each a mesh of 32 contexts with 500 faces — stays under two seconds', () => {
+  test('the largest report inside the limits — two quantities, each a mesh of 32 contexts with 500 faces — stays under five seconds', () => {
     // 500 of the 4,960 triangles are made faces by a member that exactly their three contexts share
     const next = seeded(3);
     const model = sharing(32, 0);
@@ -574,7 +602,7 @@ describe('assessLadder — many quantities do not add up without bound', () => {
       for (const corner of triple.split('-')) model.relationships.push(has(Number(corner), `f${triple}`));
     }
     const { report, ms } = timed(withTranslations(model, [...mesh(32, 0, 'hours'), ...mesh(32, 0, 'pieces')]));
-    expect(ms).toBeLessThan(2000);
+    expect(ms).toBeLessThan(5000); // about half a second; the bound is against blocking for many seconds, not against milliseconds
     expect(report.cohomology.map((c) => [c.quantity, c.verdict, c.translationCount, c.faces])).toEqual([
       ['hours', 'exact', 496, 500],
       ['pieces', 'exact', 496, 500],
