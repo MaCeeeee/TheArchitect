@@ -68,6 +68,11 @@ function sharesMember(a: Set<string> | undefined, b: Set<string> | undefined): b
   return false;
 }
 
+/** Plain code-unit order: the same on every machine, unlike localeCompare. */
+function byId(a: { id: string }, b: { id: string }): number {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
 function stepsBetween(edges: Edge[], from: string, to: string): OrientedStep[] {
   return edges
     .filter((e) => (e.source === from && e.target === to) || (e.source === to && e.target === from))
@@ -108,7 +113,9 @@ export function buildContextStructure(elements: ModelElement[], relationships: M
   const hasMembers = (id: string) => (members.get(id)?.size ?? 0) > 0;
   const translations: ModelRelationship[] = [];
   const invalidTranslations: string[] = [];
-  for (const rel of relationships) {
+  // Sorted by id: the edge order picks the spanning tree and with it the reported loops,
+  // so it must not depend on the order in which the database returns the relationships.
+  for (const rel of [...relationships].sort(byId)) {
     if (rel.translationFactor === undefined || rel.translationFactor === null) continue;
     const usable =
       contextIds.has(rel.sourceId) &&

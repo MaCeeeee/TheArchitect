@@ -61,6 +61,11 @@ function countBy<T>(items: T[], key: (item: T) => string): Record<string, number
   return counts;
 }
 
+/** Plain code-unit order: the same on every machine, unlike localeCompare. */
+function compareText(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function uniqueById<T extends { id: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   return items.filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)));
@@ -99,23 +104,44 @@ function cohomologyOf(q: QuantityComplex, structure: ContextStructure): Cohomolo
   const nameById = new Map(structure.contexts.map((c) => [c.id, c.name]));
   // The potential is only fixed up to one constant per connected group of contexts.
   // Normalise so that the smallest scale in each group is 1 — independent of ids and of the root.
+  // Groups are numbered by their smallest context name and the entries sorted by group, scale
+  // and name, so the list reads the same whatever the ids are.
   let canonicalScale: CanonicalScale[] | null = null;
   if (result.verdict === 'exact') {
     const component = componentIndex(spanningForest(q.complex));
     const lowest = new Map<number, number>();
+    const first = new Map<number, { name: string; id: string }>();
     for (const id of q.complex.vertices) {
       const c = component.get(id)!;
       lowest.set(c, Math.min(lowest.get(c) ?? Number.POSITIVE_INFINITY, result.potential.get(id) ?? 0));
+      const name = nameById.get(id) ?? '';
+      const known = first.get(c);
+      if (!known || compareText(name, known.name) < 0 || (name === known.name && compareText(id, known.id) < 0)) first.set(c, { name, id });
     }
-    canonicalScale = q.complex.vertices.map((id) => {
-      const c = component.get(id)!;
-      return {
-        contextId: id,
-        contextName: nameById.get(id) ?? '',
-        factor: additiveToFactor((result.potential.get(id) ?? 0) - lowest.get(c)!),
-        component: c + 1,
-      };
-    });
+    const number = new Map(
+      [...first.entries()]
+        .sort(([, a], [, b]) => compareText(a.name, b.name) || compareText(a.id, b.id))
+        .map(([c], i) => [c, i + 1]),
+    );
+    canonicalScale = q.complex.vertices
+      .map((id) => {
+        const c = component.get(id)!;
+        const offset = (result.potential.get(id) ?? 0) - lowest.get(c)!;
+        return {
+          entry: { contextId: id, contextName: nameById.get(id) ?? '', factor: additiveToFactor(offset), component: number.get(c)! },
+          // Ordering key in steps of the tolerance: log(0.1) + log(10) is 4.4e-16, not 0, and such
+          // rounding must not decide the order of two scales that are both 1.
+          step: Math.round(offset / LOOP_TOLERANCE),
+        };
+      })
+      .sort(
+        (a, b) =>
+          a.entry.component - b.entry.component ||
+          a.step - b.step ||
+          compareText(a.entry.contextName, b.entry.contextName) ||
+          compareText(a.entry.contextId, b.entry.contextId),
+      )
+      .map((s) => s.entry);
   }
   return {
     quantity: q.quantity,

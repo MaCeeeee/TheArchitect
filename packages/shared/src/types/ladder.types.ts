@@ -45,7 +45,7 @@ export interface CanonicalScale {
   contextName: string;
   /** Scale of this context; within each connected group the smallest scale is 1. */
   factor: number;
-  /** 1-based number of the connected group of contexts this scale belongs to. */
+  /** 1-based number of the connected group of contexts this scale belongs to; groups are numbered by their smallest context name. */
   component: number;
 }
 
@@ -58,7 +58,11 @@ export interface CohomologyResult {
   faces: number;
   /** dim H¹ of the complex: independent loops that no triple overlap fills. Only there can a global contradiction live. */
   h1Dimension: number;
-  /** Loops whose product is not 1 (class of the cochain in H¹ is not zero). */
+  /**
+   * Loops whose product is not 1 (class of the cochain in H¹ is not zero). The list is one basis of
+   * the loops with a defect, picked by a spanning tree: one wrong factor can show up in several
+   * loops, so its length is not a count of errors.
+   */
   loopDefects: TranslationLoopDefect[];
   /** Triple overlaps on which the cocycle condition fails (δg ≠ 0). */
   faceDefects: TranslationLoopDefect[];

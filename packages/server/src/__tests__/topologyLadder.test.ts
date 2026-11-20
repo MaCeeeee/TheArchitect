@@ -217,3 +217,86 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on at least 1 element');
   });
 });
+
+describe('assessLadder — the same model always gives the same report', () => {
+  // five contexts, one wrong factor: t5 says c3 → c4 ×6 where t1 says ×2
+  const five = ['c0', 'c1', 'c2', 'c3', 'c4'];
+  const fiveElements = [...five.map((id) => ctx(id, id.toUpperCase())), ...five.map((id) => obj(`m-${id}`))];
+  const fiveMembership = five.map((id) => has(id, `m-${id}`));
+  const fiveTranslations = [
+    tr('t0', 'c4', 'c0', 1), tr('t1', 'c3', 'c4', 2), tr('t2', 'c3', 'c1', 2), tr('t3', 'c3', 'c2', 1), tr('t4', 'c0', 'c1', 1),
+    tr('t5', 'c3', 'c4', 6), tr('t6', 'c4', 'c2', 0.5), tr('t7', 'c1', 'c2', 0.5), tr('t8', 'c4', 'c0', 1),
+  ];
+  const assessIn = (translations: ModelRelationship[]) =>
+    assessLadder('p', input({ elements: fiveElements, relationships: [...fiveMembership, ...translations] }), NOW).cohomology;
+
+  test('the order in which the relationships arrive does not change the cohomology', () => {
+    const byId = assessIn(fiveTranslations);
+    const reversed = assessIn([...fiveTranslations].reverse());
+    const mixed = assessIn([5, 2, 8, 0, 7, 3, 1, 6, 4].map((i) => fiveTranslations[i]));
+    expect(byId[0].verdict).toBe('global_obstruction');
+    expect(reversed).toEqual(byId);
+    expect(mixed).toEqual(byId);
+  });
+
+  const shown = (r: ReturnType<typeof assessLadder>) =>
+    r.cohomology[0].canonicalScale!.map((s) => ({ contextName: s.contextName, factor: Math.round(s.factor * 1e6) / 1e6, component: s.component }));
+  // ids as [TE, Produktion, Logistik]; the names and the translations stay the same
+  const landkarteExact = ([te, prod, log]: string[]) => assessLadder('p', input({
+    elements: [ctx(te, 'TE'), ctx(prod, 'Produktion'), ctx(log, 'Logistik'), obj('o1'), obj('o2'), obj('o3')],
+    relationships: [has(te, 'o1'), has(prod, 'o2'), has(log, 'o3'), tr('t1', te, prod, 1), tr('t2', prod, log, 10), tr('t3', te, log, 10)],
+  }), NOW);
+
+  test('the canonical scale is listed by factor, then name — whatever the ids are', () => {
+    const expected = [
+      { contextName: 'Produktion', factor: 1, component: 1 },
+      { contextName: 'TE', factor: 1, component: 1 },
+      { contextName: 'Logistik', factor: 10, component: 1 },
+    ];
+    expect(shown(landkarteExact(['te', 'prod', 'log']))).toEqual(expected);
+    expect(shown(landkarteExact(['a', 'b', 'c']))).toEqual(expected);
+    expect(shown(landkarteExact(['7f3e', '02aa', 'c91d']))).toEqual(expected);
+  });
+
+  test('equal scales stay in name order when the factors differ only by rounding (0.1 × 10)', () => {
+    // log(0.1) + log(10) is 4.4e-16, not 0: the raw factors of TE and Produktion differ in the last digit
+    const reversed = ([te, prod, log]: string[]) => assessLadder('p', input({
+      elements: [ctx(te, 'TE'), ctx(prod, 'Produktion'), ctx(log, 'Logistik'), obj('o1'), obj('o2'), obj('o3')],
+      relationships: [has(te, 'o1'), has(prod, 'o2'), has(log, 'o3'), tr('t1', prod, te, 1), tr('t2', log, prod, 0.1), tr('t3', te, log, 10)],
+    }), NOW);
+    const expected = [
+      { contextName: 'Produktion', factor: 1, component: 1 },
+      { contextName: 'TE', factor: 1, component: 1 },
+      { contextName: 'Logistik', factor: 10, component: 1 },
+    ];
+    for (const ids of [['te', 'prod', 'log'], ['a', 'b', 'c'], ['b', 'c', 'a'], ['c', 'a', 'b'], ['z', 'm', 'a'], ['b', 'a', 'c']]) {
+      expect(shown(reversed(ids))).toEqual(expected);
+    }
+  });
+
+  test('groups of contexts are numbered by their smallest name, not by their ids', () => {
+    const groups = ([a, b, c, d]: string[]) => assessLadder('p', input({
+      elements: [ctx(a, 'A'), ctx(b, 'B'), ctx(c, 'C'), ctx(d, 'D'), obj('o1'), obj('o2'), obj('o3'), obj('o4')],
+      relationships: [
+        has(a, 'o1'), has(b, 'o2'), has(c, 'o3'), has(d, 'o4'),
+        tr('ab', a, b, 4), tr('ba', b, a, 0.25), tr('cd', c, d, 0.5), tr('dc', d, c, 2),
+      ],
+    }), NOW);
+    const expected = [
+      { contextName: 'A', factor: 1, component: 1 },
+      { contextName: 'B', factor: 4, component: 1 },
+      { contextName: 'D', factor: 1, component: 2 },
+      { contextName: 'C', factor: 2, component: 2 },
+    ];
+    expect(shown(groups(['a', 'b', 'c', 'd']))).toEqual(expected);
+    expect(shown(groups(['z', 'y', 'x', 'w']))).toEqual(expected);
+  });
+
+  test('two contexts with the same name and scale are listed by id', () => {
+    const r = assessLadder('p', input({
+      elements: [ctx('k2', 'Werk'), ctx('k1', 'Werk'), ctx('k0', 'Zentrale'), obj('o1'), obj('o2'), obj('o3')],
+      relationships: [has('k2', 'o1'), has('k1', 'o2'), has('k0', 'o3'), tr('t1', 'k0', 'k1', 1), tr('t2', 'k0', 'k2', 1), tr('t3', 'k2', 'k1', 1)],
+    }), NOW);
+    expect(r.cohomology[0].canonicalScale!.map((s) => s.contextId)).toEqual(['k1', 'k2', 'k0']);
+  });
+});
