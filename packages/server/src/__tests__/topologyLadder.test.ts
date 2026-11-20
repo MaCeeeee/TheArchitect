@@ -300,3 +300,63 @@ describe('assessLadder — the same model always gives the same report', () => {
     expect(r.cohomology[0].canonicalScale!.map((s) => s.contextId)).toEqual(['k1', 'k2', 'k0']);
   });
 });
+
+describe('assessLadder — robust against odd input', () => {
+  const allNumbers = (value: unknown): number[] =>
+    typeof value === 'number' ? [value] : value && typeof value === 'object' ? Object.values(value).flatMap(allNumbers) : [];
+
+  test('names that collide with Object members are counted like any other name', () => {
+    const names = ['Constructor', 'constructor', 'toString', 'tostring ', '__proto__', '__proto__'];
+    const r = assessLadder('p', input({ elements: names.map((name, i) => obj(`e${i}`, name)) }), NOW);
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 3 });
+  });
+
+  test.each(['constructor', 'toString', '__proto__'])('two elements of type %s give numeric "available" values', (type) => {
+    const r = assessLadder('p', input({
+      elements: [{ id: 'a', name: 'A', type }, { id: 'b', name: 'B', type }],
+      relationships: [{ id: 'r', sourceId: 'a', targetId: 'b', type }],
+    }), NOW);
+    const available = r.methods.flatMap((m) => m.checks.map((c) => c.available));
+    expect(available.filter((n) => typeof n !== 'number')).toEqual([]);
+    const anyElement = r.methods.flatMap((m) => m.checks).find((c) => c.label === 'at least 3 elements')!;
+    expect(anyElement.available).toBe(2);
+  });
+
+  test('an element without a name does not break the assessment', () => {
+    const nameless = [null, undefined].map((name, i) => ({ id: `n${i}`, name: name as unknown as string, type: 'business_object' }));
+    const r = assessLadder('p', input({ elements: [...nameless, obj('a', 'A')] }), NOW);
+    expect(r.rungs[0].facts[0]).toEqual({ label: 'elements', value: 3 });
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 }); // both count as the empty name
+  });
+
+  test('factors outside 1e-12 … 1e12 are unusable, so no product can overflow', () => {
+    const pair = (there: number, back: number) => assessLadder('p', input({
+      elements: [ctx('a', 'A'), ctx('b', 'B'), obj('o1'), obj('o2')],
+      relationships: [has('a', 'o1'), has('b', 'o2'), tr('ab', 'a', 'b', there), tr('ba', 'b', 'a', back)],
+    }), NOW);
+    const huge = pair(1e308, 1e308);
+    expect(huge.rungs[3].facts).toEqual([
+      { label: 'declared translations', value: 0 },
+      { label: 'quantities', value: 0 },
+      { label: 'unusable translations', value: 2 },
+    ]);
+    expect(huge.cohomology).toEqual([]);
+    expect(allNumbers(huge).filter((n) => !Number.isFinite(n))).toEqual([]);
+    expect(pair(1e-13, 1).rungs[3].facts[2].value).toBe(1);
+
+    const atTheBound = pair(1e12, 1e12);
+    expect(atTheBound.rungs[3].facts[2].value).toBe(0);
+    expect(atTheBound.cohomology[0].loopDefects[0].product).toBeCloseTo(1e24, -14);
+    expect(allNumbers(atTheBound).filter((n) => !Number.isFinite(n))).toEqual([]);
+    expect(pair(1e-12, 1e12).cohomology[0].verdict).toBe('exact');
+  });
+
+  test('quantity names that differ only by case are one quantity', () => {
+    const r = assessLadder('p', input({
+      elements: [...contexts, ...ownMembers],
+      relationships: [...ownMembership, tr('p1', 'te', 'prod', 1, 'Pieces'), tr('p2', 'prod', 'log', 10, 'pieces'), tr('p3', 'te', 'log', 12, 'PIECES ')],
+    }), NOW);
+    expect(r.highestRung).toBe(5);
+    expect(r.cohomology.map((c) => [c.quantity, c.verdict])).toEqual([['pieces', 'global_obstruction']]);
+  });
+});

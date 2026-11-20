@@ -130,6 +130,19 @@ describe('PUT /:projectId/advisor/translations/:connectionId', () => {
     expect(mockRunCypher).not.toHaveBeenCalled();
   });
 
+  test.each([[1e13], [1e-13], [1e308]])('factor %p is outside the accepted range: 400 and nothing is written', async (factor) => {
+    const res = await request(app()).put('/api/projects/p1/advisor/translations/c1').send({ factor });
+    expect(res.status).toBe(400);
+    expect(mockRunCypher).not.toHaveBeenCalled();
+  });
+
+  test.each([[1e12], [1e-12]])('factor %p is the edge of the accepted range and is stored', async (factor) => {
+    mockRunCypher.mockResolvedValueOnce([rec({ id: 'c1' })]);
+    const res = await request(app()).put('/api/projects/p1/advisor/translations/c1').send({ factor });
+    expect(res.status).toBe(200);
+    expect(mockRunCypher.mock.calls[0][1].factor).toBe(factor);
+  });
+
   test('unknown relationship, foreign project, non-context ends or a membership → 404', async () => {
     mockRunCypher.mockResolvedValueOnce([]);
     const res = await request(app()).put('/api/projects/p1/advisor/translations/nope').send({ factor: 2 });

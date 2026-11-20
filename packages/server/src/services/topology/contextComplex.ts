@@ -24,6 +24,12 @@ import type { Cochain } from './cochain';
 export const CONTEXT_TYPES: ReadonlySet<string> = new Set(CONTEXT_ELEMENT_TYPES);
 export const MEMBERSHIP_TYPES: ReadonlySet<string> = new Set(['composition', 'aggregation']);
 export const DEFAULT_QUANTITY = 'default';
+/**
+ * Accepted range of a translation factor. Outside it a factor is unusable: products around a
+ * loop would leave the range of a double (1e308 × 1e308 = Infinity) and no real unit needs it.
+ */
+export const MIN_TRANSLATION_FACTOR = 1e-12;
+export const MAX_TRANSLATION_FACTOR = 1e12;
 
 export interface ModelElement {
   id: string;
@@ -54,9 +60,9 @@ export interface ContextStructure {
   contextsWithMembers: number;
   overlappingPairs: Array<[string, string]>;
   tripleOverlaps: Array<[string, string, string]>;
-  /** Valid translations: both ends are contexts with members, not a membership, factor positive and finite. */
+  /** Valid translations: two different contexts with members, not a membership, factor within the accepted range. */
   translations: ModelRelationship[];
-  /** Relationship ids that carry a factor but are not usable (wrong ends, a membership, or factor ≤ 0). */
+  /** Relationship ids that carry a factor but are not usable (wrong ends, a membership, or a factor outside the accepted range). */
   invalidTranslations: string[];
   overlapsWithoutTranslation: Array<[string, string]>;
   quantities: QuantityComplex[];
@@ -125,7 +131,8 @@ export function buildContextStructure(elements: ModelElement[], relationships: M
       !MEMBERSHIP_TYPES.has(rel.type) &&
       rel.sourceId !== rel.targetId &&
       Number.isFinite(rel.translationFactor) &&
-      rel.translationFactor > 0;
+      rel.translationFactor >= MIN_TRANSLATION_FACTOR &&
+      rel.translationFactor <= MAX_TRANSLATION_FACTOR;
     if (usable) translations.push(rel);
     else invalidTranslations.push(rel.id);
   }
@@ -135,7 +142,8 @@ export function buildContextStructure(elements: ModelElement[], relationships: M
 
   const byQuantity = new Map<string, ModelRelationship[]>();
   for (const t of translations) {
-    const quantity = t.translationQuantity && t.translationQuantity.trim() !== '' ? t.translationQuantity.trim() : DEFAULT_QUANTITY;
+    // Trimmed and lower case: "Pieces" and "pieces " are the same quantity.
+    const quantity = t.translationQuantity?.trim().toLowerCase() || DEFAULT_QUANTITY;
     byQuantity.set(quantity, [...(byQuantity.get(quantity) ?? []), t]);
   }
 

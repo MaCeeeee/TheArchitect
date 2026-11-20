@@ -10,7 +10,7 @@ import { runCypher } from '../config/neo4j';
 import { z } from 'zod';
 import { audit } from '../middleware/audit.middleware';
 import { buildLadderReport } from '../services/topology/ladderLoader';
-import { CONTEXT_TYPES, MEMBERSHIP_TYPES } from '../services/topology/contextComplex';
+import { CONTEXT_TYPES, MAX_TRANSLATION_FACTOR, MEMBERSHIP_TYPES, MIN_TRANSLATION_FACTOR } from '../services/topology/contextComplex';
 
 const router = Router();
 
@@ -73,7 +73,7 @@ router.get(
 );
 
 const TranslationSchema = z.object({
-  factor: z.number().positive().finite(),
+  factor: z.number().positive().finite().min(MIN_TRANSLATION_FACTOR).max(MAX_TRANSLATION_FACTOR),
   quantity: z.string().trim().min(1).max(64).default('default'),
 });
 

@@ -56,7 +56,8 @@ interface RungDraft {
 }
 
 function countBy<T>(items: T[], key: (item: T) => string): Record<string, number> {
-  const counts: Record<string, number> = {};
+  // No prototype: keys such as "constructor" or "__proto__" are ordinary names and types here.
+  const counts: Record<string, number> = Object.create(null);
   for (const item of items) counts[key(item)] = (counts[key(item)] ?? 0) + 1;
   return counts;
 }
@@ -72,7 +73,7 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
 }
 
 function duplicateNameCount(elements: ModelElement[]): number {
-  const names = countBy(elements, (e) => e.name.trim().toLowerCase());
+  const names = countBy(elements, (e) => (e.name ?? '').trim().toLowerCase());
   return Object.values(names).reduce((sum, n) => sum + (n > 1 ? n - 1 : 0), 0);
 }
 
