@@ -120,6 +120,7 @@ interface ArchitectureState {
   setProjectName: (name: string | null) => void;
   setElements: (elements: ArchitectureElement[]) => void;
   addElement: (element: ArchitectureElement) => void;
+  addFromServer: (elements: ArchitectureElement[], connections: Connection[]) => void;
   updateElement: (id: string, changes: Partial<ArchitectureElement>) => void;
   removeElement: (id: string) => void;
   selectElement: (id: string | null) => void;
@@ -225,6 +226,12 @@ export const useArchitectureStore = create<ArchitectureState>((set, get) => ({
       });
     }
   },
+  /** Adds what the server already created (UC-METH-002): no POST, no history step. */
+  addFromServer: (elements, connections) =>
+    set((state) => ({
+      elements: [...state.elements, ...elements.map(alignYToLayer)],
+      connections: [...state.connections, ...connections],
+    })),
   updateElement: (id, changes) => {
     set((state) => ({
       elements: state.elements.map((el) =>

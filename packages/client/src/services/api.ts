@@ -1037,6 +1037,12 @@ export const advisorAPI = {
     api.get(`/projects/${projectId}/advisor/ladder`),
 };
 
+// UC-METH-002 — make a group in one step (group element + compositions)
+export const groupsAPI = {
+  create: (projectId: string, body: { name: string; type: 'grouping' | 'location'; memberIds: string[] }) =>
+    api.post(`/projects/${projectId}/groups`, body),
+};
+
 export const roadmapAPI = {
   generate: (projectId: string, config: Record<string, unknown>) =>
     api.post(`/projects/${projectId}/roadmaps`, config),
