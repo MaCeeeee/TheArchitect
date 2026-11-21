@@ -13,6 +13,13 @@ import MissionControl from './MissionControl';
 import ComplianceOverlay from './ComplianceOverlay';
 import NextStepBanner from '../../design-system/patterns/NextStepBanner';
 import { useProjectData } from '../../hooks/useProjectData';
+import { useLadderSync } from '../groups/useLadderSync';
+import { ladderGuidance } from '../groups/ladderGuidance';
+import { showLadderStep } from '../groups/showLadderStep';
+import GroupModeBar from '../groups/GroupModeBar';
+import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useAdvisorStore } from '../../stores/advisorStore';
+import { buildCommandRegistry, type CommandContext } from '../journey/commands';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -30,6 +37,13 @@ export default function ProjectView() {
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const elements = useArchitectureStore((s) => s.elements);
   const { loading, error } = useProjectData(projectId);
+  // UC-METH-002 — the ladder report drives the action field; the group mode belongs to this project.
+  useLadderSync(projectId);
+  const ladder = useAdvisorStore((s) => s.ladder);
+  const guidance = ladderGuidance(ladder, projectId, elements.length);
+  const groupModeShown = useGroupModeStore((s) => s.projectId === projectId && (s.active || s.feedback !== null));
+  // Connection mode has priority: a group mode that is still open ends when it starts.
+  useEffect(() => { if (isConnectionMode) useGroupModeStore.getState().cancel(); }, [isConnectionMode]);
   const [dismissedEmpty, setDismissedEmpty] = useState(false);
 
   const currentPhaseInfo = phases.find((p) => p.phase === currentPhase);
@@ -115,6 +129,10 @@ export default function ProjectView() {
     );
   }
 
+  // The same registry command the v2 station and ⌘K use (REQ .2 "one command").
+  const commandCtx: CommandContext = { projectId: projectId!, navigate, phase: currentPhase };
+  const makeGroup = buildCommandRegistry(commandCtx)['action:make-group'];
+
   return (
     <div className="flex h-full">
       <div className="flex-1 relative">
@@ -153,27 +171,41 @@ export default function ProjectView() {
         {/* Selection action bar (Save as Pattern) */}
         <SelectionActionBar />
 
-        {/* Contextual next-step guidance floating above 3D scene */}
-        {currentPhaseInfo?.nextAction && !isConnectionMode && (
+        {/* Action field above the 3D scene: group mode › ladder step › phase hint (UC-METH-002) */}
+        {!isConnectionMode && (groupModeShown || guidance || currentPhaseInfo?.nextAction) && (
           <div className={`absolute left-1/2 -translate-x-1/2 z-30 w-[420px] max-w-[90%] pointer-events-auto ${isPlateauActive ? 'bottom-14' : 'bottom-4'}`}>
-            <NextStepBanner
-              message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
-              actionLabel={currentPhaseInfo.nextAction.label}
-              onAction={() => {
-                if (currentPhaseInfo.nextAction!.route === '__connection_mode__') {
-                  useUIStore.getState().enterConnectionMode();
-                } else if (currentPhaseInfo.nextAction!.route.startsWith('__envision')) {
-                  useUIStore.getState().setSidebarPanel('envision');
-                  useUIStore.setState({ isSidebarOpen: true });
-                  const targetField = currentPhaseInfo.nextAction!.field
-                    ?? (currentPhaseInfo.nextAction!.route === '__envision_stakeholders__' ? 'stakeholders' : 'scope');
-                  useUIStore.getState().highlightField(targetField);
-                } else {
-                  navigate(currentPhaseInfo.nextAction!.route);
-                }
-              }}
-              className="backdrop-blur-md bg-[var(--surface-base)]/80 shadow-lg"
-            />
+            {groupModeShown ? (
+              <GroupModeBar projectId={projectId!} className="w-full" />
+            ) : guidance ? (
+              <NextStepBanner
+                tone="ladder"
+                label={guidance.headline}
+                onLabel={() => showLadderStep(guidance.rung)}
+                message={guidance.next}
+                actionLabel={makeGroup.label}
+                onAction={() => makeGroup.run(commandCtx)}
+                className="backdrop-blur-md bg-[var(--surface-base)]/80 shadow-lg"
+              />
+            ) : currentPhaseInfo?.nextAction ? (
+              <NextStepBanner
+                message={`Phase ${currentPhase}: ${currentPhaseInfo.name} — ${currentPhaseInfo.description}`}
+                actionLabel={currentPhaseInfo.nextAction.label}
+                onAction={() => {
+                  if (currentPhaseInfo.nextAction!.route === '__connection_mode__') {
+                    useUIStore.getState().enterConnectionMode();
+                  } else if (currentPhaseInfo.nextAction!.route.startsWith('__envision')) {
+                    useUIStore.getState().setSidebarPanel('envision');
+                    useUIStore.setState({ isSidebarOpen: true });
+                    const targetField = currentPhaseInfo.nextAction!.field
+                      ?? (currentPhaseInfo.nextAction!.route === '__envision_stakeholders__' ? 'stakeholders' : 'scope');
+                    useUIStore.getState().highlightField(targetField);
+                  } else {
+                    navigate(currentPhaseInfo.nextAction!.route);
+                  }
+                }}
+                className="backdrop-blur-md bg-[var(--surface-base)]/80 shadow-lg"
+              />
+            ) : null}
           </div>
         )}
         <MissionControl isOpen={showMissionControl} onClose={toggleMissionControl} />
