@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { Boxes, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
 import SavePatternDialog from './SavePatternDialog';
 import { extractPattern, saveCustomPattern } from '../../utils/patternUtils';
 
@@ -14,6 +15,7 @@ export default function SelectionActionBar() {
   const elements = useArchitectureStore(s => s.elements);
   const connections = useArchitectureStore(s => s.connections);
   const selectElement = useArchitectureStore(s => s.selectElement);
+  const groupModeActive = useGroupModeStore(s => s.active);
   const [showDialog, setShowDialog] = useState(false);
 
   const count = selectedIds.size;
@@ -26,7 +28,7 @@ export default function SelectionActionBar() {
     ).length;
   }, [selectedIds, connections, count]);
 
-  if (count < 2) return null;
+  if (count < 2 || groupModeActive) return null;
 
   const handleSave = (name: string, description: string) => {
     try {
