@@ -268,6 +268,72 @@ describe('Compliance Routes (UC-ICM-002 / THE-280)', () => {
       expect(mapRegulationsBatchMock.mock.calls[0][0].regulations).toHaveLength(1);
     });
 
+    // THE-807 (UC-REGVER-001): ohne ausdrückliche IDs nur die höchste Fassung je
+    // Paragraph; live-paste bleibt vollständig; nichts wird gelöscht.
+    it('THE-807: mappt je Paragraph nur die höchste Version, live-paste vollständig', async () => {
+      const baseReg = {
+        projectId: new mongoose.Types.ObjectId(PROJECT_ID),
+        title: 'T',
+        fullText: 'a'.repeat(60),
+        sourceUrl: 'https://example.org',
+        effectiveFrom: new Date('2024-01-01'),
+        language: 'de' as const,
+        jurisdiction: 'EU',
+      };
+      const art50 = await Regulation.create(
+        [1, 2, 3, 4, 5].map(v => ({ ...baseReg, source: 'dsgvo', paragraphNumber: 'Art. 50', version: v })),
+      );
+      await Regulation.create([
+        { ...baseReg, source: 'dsgvo', paragraphNumber: 'Art. 17', version: 1 },
+        { ...baseReg, source: 'lksg', paragraphNumber: 'live-paste', version: 1, fullText: 'b'.repeat(60) },
+        { ...baseReg, source: 'lksg', paragraphNumber: 'live-paste', version: 2, fullText: 'c'.repeat(60) },
+      ]);
+      const before = await Regulation.countDocuments({});
+
+      loadCandidatesMock.mockResolvedValue([{ id: 'cap-1', name: 'X', type: 'capability' }]);
+      mapRegulationsBatchMock.mockResolvedValue({ totalRegulations: 4, totalMapped: 0, errors: [], durationMs: 1 });
+
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
+        .send({});
+
+      expect(res.status).toBe(200);
+      const input = mapRegulationsBatchMock.mock.calls[0][0].regulations as Array<{ _id: unknown; paragraphNumber: string }>;
+      expect(input).toHaveLength(4); // Art. 50 v5 · Art. 17 · 2× live-paste
+      // nach _id filtern, nicht nach paragraphNumber (bei Korpus-Treffer käme die aus dem Korpus)
+      const allArt50 = new Set(art50.map(d => String(d._id)));
+      const art50Ids = input.map(x => String(x._id)).filter(id => allArt50.has(id));
+      expect(art50Ids).toEqual([String(art50[4]._id)]);
+      expect(input.filter(x => x.paragraphNumber === 'live-paste')).toHaveLength(2);
+      expect(await Regulation.countDocuments({})).toBe(before);
+    });
+
+    it('THE-807: ausdrücklich angefragte ältere Version wird genau so gemappt', async () => {
+      const baseReg = {
+        projectId: new mongoose.Types.ObjectId(PROJECT_ID),
+        title: 'T',
+        fullText: 'a'.repeat(60),
+        sourceUrl: 'https://example.org',
+        effectiveFrom: new Date('2024-01-01'),
+        language: 'de' as const,
+        jurisdiction: 'EU',
+      };
+      const art50 = await Regulation.create(
+        [1, 2, 3].map(v => ({ ...baseReg, source: 'dsgvo', paragraphNumber: 'Art. 50', version: v })),
+      );
+
+      loadCandidatesMock.mockResolvedValue([{ id: 'cap-1', name: 'X', type: 'capability' }]);
+      mapRegulationsBatchMock.mockResolvedValue({ totalRegulations: 1, totalMapped: 0, errors: [], durationMs: 1 });
+
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
+        .send({ regulationIds: [String(art50[1]._id)] });
+
+      expect(res.status).toBe(200);
+      const input = mapRegulationsBatchMock.mock.calls[0][0].regulations as Array<{ _id: unknown }>;
+      expect(input.map(x => String(x._id))).toEqual([String(art50[1]._id)]);
+    });
+
     it('rejects invalid regulationIds', async () => {
       const res = await request(app)
         .post(`/api/projects/${PROJECT_ID}/compliance/mappings/auto`)
