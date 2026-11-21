@@ -28,15 +28,15 @@ describe('assessApplicability', () => {
 
   test('exactly one missing input → oneInputAway names it', () => {
     const r = assess({ fieldCounts: { annualCost: 3 } }, 0);
-    expect(status(r, 'DA-technische-schuld').oneInputAway).toBe('technicalDebtRatio on at least 1 element');
+    expect(status(r, 'DA-technische-schuld').oneInputAway).toBe('technicalDebtRatio on a minimum of 1 element');
     expect(status(r, 'PA-pert').oneInputAway).toBeNull(); // three fields missing
   });
 
   test('checks report required vs available counts; the rung check comes last', () => {
     const r = assess({ fieldCounts: { annualCost: 3 } }, 1);
     expect(status(r, 'PA-pareto').checks).toEqual([
-      { label: 'annualCost on at least 5 elements', required: 5, available: 3, satisfied: false },
-      { label: 'ladder rung 0 reached', required: 0, available: 1, satisfied: true },
+      { label: 'annualCost on a minimum of 5 elements', required: 5, available: 3, satisfied: false },
+      { label: 'step 0 of the model check', required: 0, available: 1, satisfied: true },
     ]);
   });
 
@@ -49,13 +49,20 @@ describe('assessApplicability', () => {
     const inputs = { elementTypeCounts: { grouping: 2, location: 1 }, translationCount: 3 };
     const noLoop = assess(inputs, 3);
     expect(status(noLoop, 'PA-kategorientheorie').status).toBe('missing_input');
-    expect(status(noLoop, 'PA-kategorientheorie').oneInputAway).toBe('ladder rung 5 reached');
+    expect(status(noLoop, 'PA-kategorientheorie').oneInputAway).toBe('step 5 of the model check');
     expect(status(noLoop, 'PA-kategorientheorie').rung).toBe(5);
     expect(status(assess(inputs, 5), 'PA-kategorientheorie').status).toBe('computable');
   });
 
   test('an empty model (no rung reached) has no computable method', () => {
     expect(assess({}, null).every((m) => m.status === 'missing_input')).toBe(true);
+  });
+
+  test('no input label says "at least" or "rung"', () => {
+    const labels = assess({}, null).flatMap((m) => m.checks.map((c) => c.label));
+    expect(labels.filter((label) => /at least|rung/.test(label))).toEqual([]);
+    expect(status(assess({}, null), 'PA-kanaele').checks[0].label).toBe('a minimum of 2 business actors or roles');
+    expect(status(assess({}, null), 'PA-lernkurve').checks.map((c) => c.label)).toContain('userCount on a minimum of 1 element');
   });
 
   test('covers every catalog method', () => {

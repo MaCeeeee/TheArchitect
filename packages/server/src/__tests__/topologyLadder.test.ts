@@ -44,11 +44,11 @@ describe('assessLadder — rungs', () => {
     expect(r.highestRung).toBe(1);
     expect(r.rungs[1].facts).toEqual([
       { label: 'relationships', value: 3 },
-      { label: 'connected components (b0)', value: 2 },
-      { label: 'independent loops (b1)', value: 1 },
-      { label: 'self-loops', value: 0 },
+      { label: 'parts of the model', value: 2 },
+      { label: 'closed paths between elements', value: 1 },
+      { label: 'relationships that connect an element to the same element', value: 0 },
     ]);
-    expect(r.rungs[2].next).toContain('grouping or location');
+    expect(r.rungs[2].next).toContain('Grouping element');
     expect(r.rungs[1].next).toBeNull();
   });
 
@@ -57,16 +57,16 @@ describe('assessLadder — rungs', () => {
       elements: [obj('a', 'ERP'), obj('b', ' erp '), obj('c', 'CRM')],
       relationships: [{ id: 'r1', sourceId: 'a', targetId: 'c', type: 'flow' }, { id: 'r2', sourceId: 'a', targetId: 'ghost', type: 'flow' }],
     }), NOW);
-    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 });
-    expect(r.rungs[0].warnings[0]).toContain('1 element name(s) occur more than once');
-    expect(r.rungs[1].warnings[0]).toContain('1 relationship(s) point to elements that do not exist');
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'names used more than one time', value: 1 });
+    expect(r.rungs[0].warnings[0]).toContain('1 name is on more than one element');
+    expect(r.rungs[1].warnings[0]).toContain('1 relationship connects to an element that is not in the model');
     expect(r.rungs[1].facts[0].value).toBe(1);
   });
 
   test('duplicate names counts the names that occur more than once, not the elements that carry them', () => {
     const r = assessLadder('p', input({ elements: [obj('a', 'Same'), obj('b', 'Same'), obj('c', ' same'), obj('d', 'Other')] }), NOW);
-    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 1 });
-    expect(r.rungs[0].warnings).toEqual(['1 element name(s) occur more than once — duplicates create artificial holes and false contradictions.']);
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'names used more than one time', value: 1 });
+    expect(r.rungs[0].warnings).toEqual(['1 name is on more than one element. Give each element a different name.']);
   });
 
   test('contexts without members do not make a cover; their translations are unusable', () => {
@@ -82,7 +82,7 @@ describe('assessLadder — rungs', () => {
     const one = assessLadder('p', input({ ...cover, relationships: [...ownMembership, tr('t1', 'te', 'prod', 1)] }), NOW);
     expect(one.highestRung).toBe(3);
     expect(one.rungs[4].status).toBe('open');
-    expect(one.rungs[4].next).toContain('close a loop');
+    expect(one.rungs[4].next).toContain('two different paths connect the same two groups');
   });
 });
 
@@ -112,7 +112,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(t3.factor).toBe(12);
     expect([t3.fromContext, t3.toContext].sort()).toEqual(['Logistik', 'TE']);
     expect(r.cohomologyMethod.id).toBe('PA-kategorientheorie');
-    expect(r.rungs[5].facts[3]).toEqual({ label: 'with global obstruction', value: 1 });
+    expect(r.rungs[5].facts[3]).toEqual({ label: 'quantities that do not agree along a closed path', value: 1 });
   });
 
   test('a member shared by all three contexts turns the same data into a local defect', () => {
@@ -127,7 +127,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(c.h1Dimension).toBe(0); // the only loop is filled: nothing global can remain
     expect(c.faceDefects).toHaveLength(1);
     expect(c.faceDefects[0].steps).toHaveLength(3);
-    expect(r.rungs[2].facts[3]).toEqual({ label: 'triple overlaps', value: 1 });
+    expect(r.rungs[2].facts[3]).toEqual({ label: 'sets of three groups with the same member', value: 1 });
   });
 
   test('corrected translation: exact, with one canonical scale per context', () => {
@@ -194,9 +194,9 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     expect(r.cohomology.map((c) => c.quantity)).toEqual(['pieces']);
     expect(r.rungs[4].facts).toEqual([
-      { label: 'loops and faces to check', value: 1 },
-      { label: 'quantities without a loop', value: 1 },
-      { label: 'overlaps without translation', value: 0 },
+      { label: 'closed paths and sets of three groups to examine', value: 1 },
+      { label: 'quantities without a closed path', value: 1 },
+      { label: 'pairs of groups without a conversion factor', value: 0 },
     ]);
   });
 
@@ -209,7 +209,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     expect(r.cohomology).toEqual([]);
     const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
     expect(loopCheck.status).toBe('missing_input');
-    expect(loopCheck.oneInputAway).toBe('ladder rung 5 reached');
+    expect(loopCheck.oneInputAway).toBe('step 5 of the model check');
   });
 
   test('the report always carries the method applicability', () => {
@@ -220,7 +220,7 @@ describe('assessLadder — cohomology (Landkarte 7.7)', () => {
     }), NOW);
     const loopCheck = r.methods.find((m) => m.methodId === 'PA-kategorientheorie')!;
     expect(loopCheck.status).toBe('computable');
-    expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on at least 1 element');
+    expect(r.methods.find((m) => m.methodId === 'DA-technische-schuld')!.oneInputAway).toBe('technicalDebtRatio on a minimum of 1 element');
   });
 });
 
@@ -314,7 +314,7 @@ describe('assessLadder — robust against odd input', () => {
   test('names that collide with Object members are counted like any other name', () => {
     const names = ['Constructor', 'constructor', 'toString', 'tostring ', '__proto__', '__proto__'];
     const r = assessLadder('p', input({ elements: names.map((name, i) => obj(`e${i}`, name)) }), NOW);
-    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 3 });
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'names used more than one time', value: 3 });
   });
 
   test.each(['constructor', 'toString', '__proto__'])('two elements of type %s give numeric "available" values', (type) => {
@@ -324,7 +324,7 @@ describe('assessLadder — robust against odd input', () => {
     }), NOW);
     const available = r.methods.flatMap((m) => m.checks.map((c) => c.available));
     expect(available.filter((n) => typeof n !== 'number')).toEqual([]);
-    const anyElement = r.methods.flatMap((m) => m.checks).find((c) => c.label === 'at least 3 elements')!;
+    const anyElement = r.methods.flatMap((m) => m.checks).find((c) => c.label === 'a minimum of 3 elements')!;
     expect(anyElement.available).toBe(2);
   });
 
@@ -332,7 +332,7 @@ describe('assessLadder — robust against odd input', () => {
     const nameless = [null, undefined].map((name, i) => ({ id: `n${i}`, name: name as unknown as string, type: 'business_object' }));
     const r = assessLadder('p', input({ elements: [...nameless, obj('a', 'A')] }), NOW);
     expect(r.rungs[0].facts[0]).toEqual({ label: 'elements', value: 3 });
-    expect(r.rungs[0].facts[1]).toEqual({ label: 'duplicate names', value: 0 }); // no name is not a name that occurs twice
+    expect(r.rungs[0].facts[1]).toEqual({ label: 'names used more than one time', value: 0 }); // no name is not a name that occurs twice
     expect(r.rungs[0].warnings).toEqual([]);
   });
 
@@ -343,9 +343,9 @@ describe('assessLadder — robust against odd input', () => {
     }), NOW);
     const huge = pair(1e308, 1e308);
     expect(huge.rungs[3].facts).toEqual([
-      { label: 'declared translations', value: 0 },
+      { label: 'conversion factors', value: 0 },
       { label: 'quantities', value: 0 },
-      { label: 'unusable translations', value: 2 },
+      { label: 'conversion factors that the check cannot use', value: 2 },
     ]);
     expect(huge.cohomology).toEqual([]);
     expect(allNumbers(huge).filter((n) => !Number.isFinite(n))).toEqual([]);
@@ -470,8 +470,8 @@ describe('assessLadder — what a reported loop says', () => {
       ],
     }), NOW);
     expect(r.rungs[2].facts.slice(2)).toEqual([
-      { label: 'overlapping context pairs', value: 3 },
-      { label: 'triple overlaps', value: 0 },
+      { label: 'pairs of groups with the same member', value: 3 },
+      { label: 'sets of three groups with the same member', value: 0 },
     ]);
     const c = r.cohomology[0];
     expect([c.verdict, c.faces, c.h1Dimension]).toEqual(['global_obstruction', 0, 1]);
@@ -502,7 +502,7 @@ describe('assessLadder — what a reported loop says', () => {
       elements: [...contexts, ...ownMembers],
       relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('self', 'te', 'te', 2)],
     }), NOW);
-    expect(r.rungs[3].facts[2]).toEqual({ label: 'unusable translations', value: 1 });
+    expect(r.rungs[3].facts[2]).toEqual({ label: 'conversion factors that the check cannot use', value: 1 });
     expect(r.rungs[4].status).toBe('open');
     expect(r.cohomology).toEqual([]);
   });
@@ -513,7 +513,7 @@ describe('assessLadder — what a reported loop says', () => {
       relationships: [...ownMembership, tr('t1', 'te', 'prod', 1), tr('self', 'te', 'te', 2), tr('nan', 'te', 'log', Number.NaN), tr('huge', 'prod', 'log', 1e13)],
     }), NOW);
     expect(r.rungs[3].warnings).toEqual([
-      '3 relationship(s) carry a factor but are not usable: both ends must be contexts with members and not the same context, the relationship must not be a composition or aggregation, and the factor must be a finite number between 1e-12 and 1e12.',
+      '3 relationships have a conversion factor that the check cannot use. A conversion factor must be between two different groups that have members. It cannot be on a Composition relationship or an Aggregation relationship. It must be a number between 1e-12 and 1e12.',
     ]);
   });
 
@@ -538,9 +538,9 @@ describe('assessLadder — what a reported loop says', () => {
         has('te', 'bom'),
       ],
     }), NOW);
-    expect(r.rungs[0].facts).toEqual([{ label: 'elements', value: 6 }, { label: 'duplicate names', value: 0 }]);
+    expect(r.rungs[0].facts).toEqual([{ label: 'elements', value: 6 }, { label: 'names used more than one time', value: 0 }]);
     expect(r.rungs[1].facts[0]).toEqual({ label: 'relationships', value: 6 });
-    expect(r.rungs[2].facts[0]).toEqual({ label: 'contexts', value: 3 }); // 'log' is still the context Logistik
+    expect(r.rungs[2].facts[0]).toEqual({ label: 'groups', value: 3 }); // 'log' is still the context Logistik
     const c = r.cohomology[0];
     expect(c.verdict).toBe('exact');
     expect(c.canonicalScale!.map((s) => s.contextName)).toEqual(['Produktion', 'TE', 'Logistik']);
