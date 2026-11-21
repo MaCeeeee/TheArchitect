@@ -5,6 +5,8 @@
  */
 export const GROUP_MODE_TEXT = {
   start: 'Make a group',
+  /** Accessible name of the action field while the group mode runs (not the button name again). */
+  modeName: 'Group mode',
   nextStepShort: 'Make a minimum of two groups.',
   selectHint: 'Select the elements of the group.',
   selectedCount: (count: number) => (count === 1 ? '1 element selected.' : `${count} elements selected.`),

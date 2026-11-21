@@ -9,6 +9,7 @@
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Boxes, X } from 'lucide-react';
 import { useGroupModeStore, MIN_GROUP_SELECTION } from '../../stores/groupModeStore';
+import { useUIStore } from '../../stores/uiStore';
 import { GROUP_MODE_TEXT as T } from './groupModeText';
 
 interface Props {
@@ -26,18 +27,22 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
   const againRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const wasBusy = useRef(busy);
+  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!active || !own) return;
-    // Capture phase: the group mode takes Esc before other handlers (PlateauHUD, ActivityHUD, …).
+    // Bubble phase, no stopPropagation: Esc ends the group mode only when nothing else needs it.
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      e.stopPropagation();
-      // While busy the store ignores the cancel: the group may already exist on the server.
-      if (!useGroupModeStore.getState().busy) cancel();
+      if (useUIStore.getState().isCommandMenuOpen) return; // the menu closes first
+      if (useGroupModeStore.getState().busy) return; // the group may already exist on the server
+      const target = e.target instanceof Element ? e.target : null;
+      const elsewhere = target?.closest('input,textarea,select,[contenteditable=true],[role=dialog]');
+      if (elsewhere && !barRef.current?.contains(elsewhere)) return; // an edit or a dialog outside the bar
+      cancel();
     };
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, [active, own, cancel]);
 
   // After the group is made (the request ends with feedback): focus the next action of the feedback.
@@ -55,7 +60,7 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
   const naming = active && phase === 'name';
 
   return (
-    <div className={`${frame} ${className}`} onPointerDown={stop} role="group" aria-label={T.start}>
+    <div ref={barRef} className={`${frame} ${className}`} onPointerDown={stop} role="group" aria-label={T.modeName}>
       <form
         className="flex items-center gap-2"
         onSubmit={(e) => { e.preventDefault(); if (naming) void submit(projectId); }}

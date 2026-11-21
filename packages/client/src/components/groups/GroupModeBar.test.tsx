@@ -16,6 +16,7 @@ vi.mock('../../services/api', () => ({
 
 import GroupModeBar from './GroupModeBar';
 import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useUIStore } from '../../stores/uiStore';
 
 const submit = vi.fn(async () => {});
 beforeEach(() => {
@@ -112,15 +113,65 @@ describe('GroupModeBar', () => {
     expect(useGroupModeStore.getState().feedback).toBeNull();
   });
 
-  test('Esc is taken in the capture phase: other Esc handlers do not also react', () => {
+  test('the bar is the "Group mode" group, not a second "Make a group"', () => {
     useGroupModeStore.getState().start('p1');
-    const other = vi.fn();
-    document.addEventListener('keydown', other);
+    render(<GroupModeBar projectId="p1" />);
+    expect(screen.getByRole('group', { name: 'Group mode' })).toBeInTheDocument();
+  });
+
+  test('Esc while the command menu is open closes only the menu: the group mode stays', () => {
+    useGroupModeStore.getState().start('p1');
+    useUIStore.setState({ isCommandMenuOpen: true });
     render(<GroupModeBar projectId="p1" />);
     fireEvent.keyDown(document.body, { key: 'Escape' });
-    document.removeEventListener('keydown', other);
+    useUIStore.setState({ isCommandMenuOpen: false });
+    expect(useGroupModeStore.getState().active).toBe(true);
+  });
+
+  test('Esc in an input outside the bar is for that input: the group mode stays', () => {
+    useGroupModeStore.getState().start('p1');
+    render(<><input aria-label="Other field" /><GroupModeBar projectId="p1" /></>);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Other field' }), { key: 'Escape' });
+    expect(useGroupModeStore.getState().active).toBe(true);
+  });
+
+  test('Esc inside a dialog outside the bar is for that dialog: the group mode stays', () => {
+    useGroupModeStore.getState().start('p1');
+    render(<><div role="dialog" aria-label="Other dialog"><button type="button">x</button></div><GroupModeBar projectId="p1" /></>);
+    fireEvent.keyDown(screen.getByRole('button', { name: 'x' }), { key: 'Escape' });
+    expect(useGroupModeStore.getState().active).toBe(true);
+  });
+
+  test('Esc in the name field of the bar ends the group mode', () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
+    useGroupModeStore.getState().toNaming();
+    render(<GroupModeBar projectId="p1" />);
+    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name of the group' }), { key: 'Escape' });
     expect(useGroupModeStore.getState().active).toBe(false);
-    expect(other).not.toHaveBeenCalled();
+  });
+
+  test('Esc while busy: no cancel, and the event goes on to the other handlers', () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
+    useGroupModeStore.getState().toNaming();
+    useGroupModeStore.setState({ name: 'Sales', busy: true });
+    render(<GroupModeBar projectId="p1" />);
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    const stopped = vi.spyOn(event, 'stopPropagation');
+    document.body.dispatchEvent(event);
+    expect(useGroupModeStore.getState().active).toBe(true);
+    expect(stopped).not.toHaveBeenCalled();
+  });
+
+  test('Esc that ends the group mode does not stop the event', () => {
+    useGroupModeStore.getState().start('p1');
+    render(<GroupModeBar projectId="p1" />);
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    const stopped = vi.spyOn(event, 'stopPropagation');
+    document.body.dispatchEvent(event);
+    expect(useGroupModeStore.getState().active).toBe(false);
+    expect(stopped).not.toHaveBeenCalled();
   });
 
   test('one live region keeps its place from the count to the feedback (screen readers)', () => {

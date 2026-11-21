@@ -17,7 +17,7 @@ export const STE100_WORDS_IN_USE: readonly string[] = [
   'completed', 'connect', 'connected', 'connects', 'counts', 'decrease', 'did', 'different', 'direction',
   'do', 'does', 'each', 'equal', 'examine', 'examined', 'example', 'first', 'for', 'from', 'give', 'group',
   'groups', 'has', 'have', 'how', 'in', 'include', 'is', 'it', 'item', 'its', 'large', 'limit', 'limits',
-  'made', 'make', 'many', 'maximum', 'minimum', 'more', 'multiplies', 'must', 'name', 'names', 'necessary',
+  'made', 'make', 'many', 'maximum', 'minimum', 'mode', 'more', 'multiplies', 'must', 'name', 'names', 'necessary',
   'next', 'no', 'not', 'number', 'of', 'on', 'one', 'only', 'or', 'other', 'pair', 'pairs', 'parts',
   'possible', 'procedure', 'quantities', 'quantity', 'remove', 'result', 'same', 'select', 'selected',
   'set', 'sets', 'show', 'shows', 'small', 'started', 'starts', 'step', 'steps', 'stopped', 'stops',

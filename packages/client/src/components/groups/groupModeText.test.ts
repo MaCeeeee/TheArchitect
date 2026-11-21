@@ -39,6 +39,7 @@ describe('groupModeText — wording', () => {
     expect(GROUP_MODE_TEXT.youHave(1)).toBe('You have 1 group. Make one more group.');
     expect(GROUP_MODE_TEXT.completed).toBe('You completed step 2.');
     expect(GROUP_MODE_TEXT.showStep).toBe('Show this step in the model check.');
+    expect(GROUP_MODE_TEXT.modeName).toBe('Group mode');
     expect(GROUP_MODE_TEXT.notAMember('Logistik')).toBe('Logistik is not a member of the group.');
   });
 
