@@ -5,6 +5,7 @@
  * (shared/src/constants/ste100-words.constants.ts), stays within the sentence length, and uses
  * none of the terms the plain texts replaced. A new text with an unchecked word fails here and
  * names the word and the sentence. The mathematical wording lives in `math` and is not checked.
+ * What the guard itself must find is tested in ste100Guard.test.ts.
  * Run: cd packages/server && npx jest src/__tests__/topologyLadderText.test.ts
  */
 import type { LadderReport } from '@thearchitect/shared';
@@ -109,6 +110,15 @@ const MODELS: Record<string, Model> = {
     factor('z1', g(0), g(1), 1, 'z'), factor('z2', g(1), g(2), 1, 'z'), factor('z3', g(0), g(2), 1, 'z'),
   ]),
 };
+
+/**
+ * The names of the quantities in the models above, as a warning shows them: in quotation marks.
+ * They are the only words in a text that are not words of the software, so the guard gets them
+ * by name. Quotation marks alone hide nothing from it.
+ */
+const QUANTITY_NAMES = [
+  ...new Set(Object.values(MODELS).flatMap((model) => model.relationships.map((r) => r.translationQuantity ?? 'default'))),
+].map((name) => `"${name}"`);
 
 const input = (model: Model): LadderInput => ({ ...model, fieldCounts: {} });
 const REPORTS: Record<string, LadderReport> = Object.fromEntries(
@@ -324,25 +334,17 @@ describe('every text of the ladder is Simplified Technical English', () => {
 
   test.each(texts.map((t) => [`${t.where}: ${t.text.slice(0, 50)}`, t] as const))('%s', (_where, { text, kind }) => {
     // a failure names the word and the sentence it is in
-    expect(ste100Findings(text, kind)).toEqual([]);
+    expect(ste100Findings(text, kind, QUANTITY_NAMES)).toEqual([]);
   });
 
-  test('the guard names an unchecked word and its sentence', () => {
-    expect(ste100Findings('Insert elements to the model.', 'instruction')).toEqual([
-      '"insert" is not a checked STE100 word — in: "Insert elements to the model."',
-    ]);
-    expect(ste100Findings('The quantity "loop of contexts" (too many members to compare) is large.', 'description')).toEqual([]);
-    expect(ste100Findings('The check does not use the loop; it is large.', 'description')).toEqual([
-      '"loop" is not a checked STE100 word — in: "The check does not use the loop; it is large."',
-      'semicolon — in: "The check does not use the loop; it is large."',
-      '"loop" is a term the plain texts do not use — in: "The check does not use the loop; it is large."',
-    ]);
-    expect(ste100Findings("The check doesn't use it.", 'description')).toContain('contraction — in: "The check doesn\'t use it."');
-    const long = `Add ${Array.from({ length: 10 }, () => 'elements and').join(' ')} elements.`; // 22 words
-    expect(ste100Findings(long, 'instruction')).toEqual([`22 words, the limit for an instruction is 20 — in: "${long}"`]);
-    expect(ste100Findings(long, 'description')).toEqual([]);
-    // text in parentheses, a quoted name and a number count as one word each
-    expect(ste100Findings(`Add 1,000 elements (${long}) to the model "${long}".`, 'instruction')).toEqual([]);
+  test('the names of the quantities are the only words that the guard does not examine', () => {
+    expect(QUANTITY_NAMES.sort()).toEqual(
+      ['"a"', '"b"', '"bulk"', '"c"', '"d"', '"default"', '"e"', '"f"', '"g"', '"h"', '"hours"', '"i"', '"more bulk"', '"pieces"', '"z"'],
+    );
+    const named = texts.filter((t) => QUANTITY_NAMES.some((name) => t.text.includes(name)));
+    expect(named.length).toBeGreaterThanOrEqual(5);
+    // without the names, each of these texts fails: quotation marks alone hide nothing
+    for (const { text, kind } of named) expect(ste100Findings(text, kind)).not.toEqual([]);
   });
 
   test('the word lists are lower case, without duplicates, and a technical noun is not also a word', () => {

@@ -13,18 +13,30 @@ import { LADDER_MATH_TEXT, LADDER_TEXT } from './ladderText';
 
 type Template = (...args: never[]) => string;
 
-/** Arguments for every text that takes some. Names of groups, methods and quantities are single capital letters. */
+/**
+ * The names that the samples below put into the texts: groups, a quantity, methods. The guard
+ * gets them by name. Every other word of a sample is examined.
+ *
+ * The line "Methods for which one more input is necessary" shows names of the method catalogue:
+ * the name of the method, and in its input the names of element types and of fields
+ * ("technicalDebtRatio on a minimum of 1 element"). They are technical names and this change did
+ * not rewrite them. The input that the ladder itself writes is "step N of the model check": the
+ * samples compose the real line with it, so the guard examines its words.
+ */
+const NAMES = ['Produktion', 'TE', 'Logistik', 'pieces', 'Betweenness centrality', 'Net present value'];
+
+/** Arguments for every text that takes some. */
 const SAMPLES: Record<string, unknown[][]> = {
   headline: [[0], [2], [5]],
   nextStep: [['Add elements to the model.']],
   methodSummary: [[4, 14], [1, 14], [0, 14]],
-  oneMoreInput: [['A', 'step 5 of the model check'], ['A', 'step 0 of the model check']],
+  oneMoreInput: [['Betweenness centrality', 'step 1 of the model check'], ['Net present value', 'step 0 of the model check']],
   mathOfStep: [[0], [5]],
-  quantity: [['A']],
+  quantity: [['pieces']],
   summary: [[3, 3, 1], [1, 1, 1], [2, 4, 0]],
   result: [['0.8333333'], [null]],
-  scale: [['A ×1 · B ×10']],
-  scaleEntry: [['A', '10'], ['A', null]],
+  scale: [['Produktion ×1 · TE ×1 · Logistik ×10']],
+  scaleEntry: [['Logistik', '10'], ['Logistik', null]],
   more: [[0, 584], [28, 1], [1, 0], [1, 2]],
   tolerance: [['0.999999', '1.000001']],
 };
@@ -100,7 +112,30 @@ describe('ladderText — the wording of the approved draft', () => {
 describe('ladderText — every text is Simplified Technical English', () => {
   test.each(rendered().map((r) => [`${r.key}: ${r.text}`, r] as const))('%s', (_name, { text, kind }) => {
     // a failure names the word and the sentence it is in
-    expect(ste100Findings(text, kind)).toEqual([]);
+    expect(ste100Findings(text, kind, NAMES)).toEqual([]);
+  });
+
+  test('the line of a method that needs one more step is the real one, and only the name of the method is not examined', () => {
+    const line = LADDER_TEXT.oneMoreInput('Betweenness centrality', 'step 1 of the model check');
+    expect(line).toBe('Betweenness centrality — necessary: step 1 of the model check');
+    expect(ste100Findings(line, 'description', ['Betweenness centrality'])).toEqual([]);
+    expect(ste100Findings(line, 'description')).toEqual([
+      '"betweenness" is not a checked STE100 word — in: "Betweenness centrality — necessary: step 1 of the model check"',
+      '"centrality" is not a checked STE100 word — in: "Betweenness centrality — necessary: step 1 of the model check"',
+    ]);
+    // The one method that needs step 5 has a replaced term in its catalogue name. The guard finds
+    // it also in a name that the test gives. The name is not rewritten in this change.
+    const loopCheck = 'Composition and functor (loop check)';
+    expect(ste100Findings(LADDER_TEXT.oneMoreInput(loopCheck, 'step 5 of the model check'), 'description', [loopCheck])).toEqual([
+      '"loop" is a term the plain texts do not use — in: "Composition and functor (loop check) — necessary: step 5 of the model check"',
+    ]);
+    // the label that the ladder wrote before
+    expect(ste100Findings(LADDER_TEXT.oneMoreInput('Betweenness centrality', 'ladder rung 1 reached'), 'description', ['Betweenness centrality'])).toEqual([
+      '"ladder" is not a checked STE100 word — in: "Betweenness centrality — necessary: ladder rung 1 reached"',
+      '"rung" is not a checked STE100 word — in: "Betweenness centrality — necessary: ladder rung 1 reached"',
+      '"reached" is not a checked STE100 word — in: "Betweenness centrality — necessary: ladder rung 1 reached"',
+      '"rung" is a term the plain texts do not use — in: "Betweenness centrality — necessary: ladder rung 1 reached"',
+    ]);
   });
 
   test('every sample belongs to a text that takes arguments', () => {
@@ -121,8 +156,8 @@ describe('ladderText — every text is Simplified Technical English', () => {
 
   test('the guard finds a word that was not checked', () => {
     expect(ste100Findings('Model check: rung 2 of 5', 'description')).toEqual([
-      '"rung" is not a checked STE100 word — in: "rung 2 of 5"',
-      '"rung" is a term the plain texts do not use — in: "rung 2 of 5"',
+      '"rung" is not a checked STE100 word — in: "Model check: rung 2 of 5"',
+      '"rung" is a term the plain texts do not use — in: "Model check: rung 2 of 5"',
     ]);
   });
 });
