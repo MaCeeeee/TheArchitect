@@ -36,6 +36,9 @@ interface GroupModeState {
   submit: (projectId: string) => Promise<void>;
 }
 
+/** Counts every start, cancel, reset and submit: an answer that belongs to an earlier count is dropped. */
+let generation = 0;
+
 const IDLE = { active: false, phase: 'select' as const, selected: [] as string[], name: '', busy: false, error: null as string | null };
 
 function errorText(err: unknown): string {
@@ -58,6 +61,7 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
   feedback: null,
 
   start: (projectId) => {
+    generation++;
     useUIStore.getState().exitConnectionMode();
     useArchitectureStore.getState().clearSelection();
     set({ ...IDLE, projectId, active: true, feedback: null });
@@ -74,9 +78,15 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
 
   setName: (name) => set({ name }),
 
-  cancel: () => set((s) => ({ ...IDLE, projectId: s.feedback ? s.projectId : null })),
+  cancel: () => {
+    generation++;
+    set((s) => ({ ...IDLE, projectId: s.feedback ? s.projectId : null }));
+  },
 
-  reset: () => set({ ...IDLE, projectId: null, feedback: null }),
+  reset: () => {
+    generation++;
+    set({ ...IDLE, projectId: null, feedback: null });
+  },
 
   pruneSelection: (existingIds) =>
     set((s) => {
@@ -93,19 +103,21 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
     const { active, busy, selected, name } = get();
     const trimmed = name.trim();
     if (!active || busy || get().projectId !== projectId || selected.length < MIN_GROUP_SELECTION || !trimmed) return;
+    const mine = ++generation;
+    const stillHere = () =>
+      generation === mine && useArchitectureStore.getState().projectId === projectId && get().projectId === projectId && get().active;
     set({ busy: true, error: null });
     try {
       const { data } = await groupsAPI.create(projectId, { name: trimmed, type: 'grouping', memberIds: selected });
       const result = data.data as { element: ArchitectureElement; connections: Connection[]; skipped: SkippedMember[] };
-      // The mode was cancelled or another project was opened while the request ran: drop the answer.
-      const stillHere = () => useArchitectureStore.getState().projectId === projectId && get().projectId === projectId && get().active;
+      // The mode was cancelled, restarted or another project was opened while the request ran: drop the answer.
       if (!stillHere()) return;
       useArchitectureStore.getState().addFromServer([result.element], result.connections);
       const report = await useAdvisorStore.getState().loadLadder(projectId);
       if (!stillHere()) return;
       set({ ...IDLE, projectId, feedback: groupFeedback(report, projectId, result.skipped) });
     } catch (err) {
-      set({ busy: false, error: errorText(err) });
+      if (stillHere()) set({ busy: false, error: errorText(err) });
     }
   },
 }));

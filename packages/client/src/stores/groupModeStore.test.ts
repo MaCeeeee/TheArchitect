@@ -244,4 +244,31 @@ describe('groupModeStore', () => {
     state().reset();
     expect(state()).toMatchObject({ active: false, selected: [], error: null, feedback: null, projectId: null });
   });
+
+  test('an old answer does not end a new mode started after a cancel in the same project', async () => {
+    const answer = pendingCreate();
+    named();
+    const done = state().submit('p1');
+    state().cancel();
+    state().start('p1');
+    state().toggle('c');
+    answer(serverAnswer);
+    await done;
+    expect(state().active).toBe(true);
+    expect(state().selected).toEqual(['c']);
+    expect(state().feedback).toBeNull();
+    expect(useArchitectureStore.getState().elements).toHaveLength(3);
+  });
+
+  test('an old error does not write into the idle store or a new mode', async () => {
+    let reject!: (e: unknown) => void;
+    create.mockReturnValue(new Promise((_res, rej) => { reject = rej; }) as never);
+    named();
+    const done = state().submit('p1');
+    state().reset();
+    reject(Object.assign(new Error('500'), { response: { status: 500, data: {} } }));
+    await done;
+    expect(state().error).toBeNull();
+    expect(state().busy).toBe(false);
+  });
 });

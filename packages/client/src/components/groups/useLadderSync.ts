@@ -13,8 +13,7 @@ export const LADDER_RELOAD_DELAY_MS = 1500;
 
 export function useLadderSync(projectId: string | undefined): void {
   const loadLadder = useAdvisorStore((s) => s.loadLadder);
-  const elements = useArchitectureStore((s) => s.elements);
-  const elementCount = elements.length;
+  const elementCount = useArchitectureStore((s) => s.elements.length);
   const connectionCount = useArchitectureStore((s) => s.connections.length);
   /** What the last load was made for: project, elements, relationships. */
   const loadedKey = useRef<string | undefined>(undefined);
@@ -31,7 +30,7 @@ export function useLadderSync(projectId: string | undefined): void {
 
   // An element that left the model cannot stay in the group selection (not debounced).
   useEffect(() => {
-    useGroupModeStore.getState().pruneSelection(new Set(elements.map((e) => e.id)));
+    useGroupModeStore.getState().pruneSelection(new Set(useArchitectureStore.getState().elements.map((e) => e.id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elementCount]);
 
