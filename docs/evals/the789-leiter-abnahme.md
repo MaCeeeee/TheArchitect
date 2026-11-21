@@ -2,7 +2,7 @@
 
 Messdatum: 20.11.2026 · lokaler Teil auf dem Zweig `feat/uc-meth-001-kohomologie-leiter` vor dem Merge (lokal: Mac, Server und Client aus dem Worktree, MongoDB, Neo4j und Redis in Docker) · Prod-Teil nach dem Deploy von `576c39a` am selben Abend.
 
-**Dieses Protokoll ist unvollständig.** Gemessen sind der lokale Teil (Abschnitte 1–6) und die Leiter auf den Referenzmodellen in Produktion (Abschnitt 7). Offen ist, was den Product Owner braucht (Abschnitt 8). THE-783 wird erst damit geschlossen.
+**Dieses Protokoll ist unvollständig.** Gemessen sind der lokale Teil (Abschnitte 1–6) und die Leiter auf den Referenzmodellen in Produktion (Abschnitt 7). Das Urteil des Product Owners zum nächsten Schritt und der Umbau der Texte stehen in Abschnitt 8. Offen ist, was den Product Owner braucht (Abschnitt 9). THE-783 wird erst damit geschlossen.
 
 ## 1 Landkarte 7.7 gegen die echte Datenbank
 
@@ -101,11 +101,50 @@ Deploy von `576c39a` mit `scripts/deploy-vps.sh`, Exit 0, Health `ok`; der Leite
 
 Das Ergebnis deckt sich mit der Erwartung aus der Messung vor dem Bau: alle Modelle auf Stufe 1, kein Modell hat Kontexte oder Übersetzungen. Eine Kohomologieklasse entsteht in Produktion bisher in keinem Modell.
 
-## 8 Offen
+## 8 Urteil des Product Owners und Umbau der Texte (21.11.2026)
+
+**Urteil:** Der nächste Schritt „Model at least 2 contexts: grouping or location elements with composition or aggregation relationships to their members.“ ist für neue Nutzer nicht verständlich — 0 von 3 Modellen (Ziel war 3 von 3). Vorschlag des Product Owners: ASD-STE100.
+
+**Umbau (REQ-METH-001.7):** Alle standardmäßig sichtbaren Texte der Leiter sind nach ASD-STE100 Issue 9 neu geschrieben. Die Abschnitte 1 bis 7 zitieren noch den Wortlaut davor; die Zahlen und Urteile dort gelten unverändert.
+
+| Vorher | Nachher |
+|---|---|
+| Ladder to cohomology: rung 5 of 5 | Model check: step 5 of 5 |
+| Identity · Directed graph · Cover · Coefficients · Gluing testable · Cohomology | Elements · Relationships · Groups · Conversion factors · Closed paths · Result |
+| Model at least 2 contexts: grouping or location elements with composition or aggregation relationships to their members. | Make a minimum of two groups. Add a Grouping element for each group. Then connect each Grouping element to its members with a Composition relationship. |
+| Global contradiction — The translations do not close around a loop. | The conversion factors do not agree along a closed path — Each conversion factor is possible. But the result along the closed path is not 1. |
+| product 0.8333333, expected 1 | result 0.8333333, must be 1 |
+
+- **Mathematik:** Die bisherigen Erklärtexte stehen je Stufe wörtlich im neuen Feld `math` und erscheinen im Panel erst nach einem Klick auf „Math“.
+- **Rechnung:** unverändert. Das Landkarte-Beispiel liefert dieselben Urteile und Zahlen wie in Abschnitt 1.
+- **Vorauswahl:** Von einer Gruppierung oder einem Ort zu einem Element, das selbst keine Gruppe ist, wählt die Verbindungsauswahl jetzt Composition vor (94 von 4.624 Typ-Paaren ändern sich, alle auf Composition). Das gilt auch für die „Suggested Connections“ im Eigenschaften-Panel.
+
+**Wie geprüft:**
+
+- Prüfskript `scripts/ste100-check.py` gegen das Wörterbuch der Spezifikation: jedes Wort erlaubt oder Fachbegriff, Anweisungen höchstens 20 Wörter, Beschreibungen höchstens 25, kein Semikolon, keine Kurzformen. Ergebnis über alle Texte, die der laufende Server für sieben Modelle ausliefert: 0 Befunde. Die Spezifikation selbst liegt nicht im Repository.
+- Von Hand: Wortart und erlaubte Bedeutung der tragenden Wörter. Das Skript prüft beides nicht. Es ist keine Zertifizierung.
+- Wächter im Repository: Zwei Tests schlagen fehl, sobald ein Wort in die Texte kommt, das nicht auf der geprüften Wortliste steht (Probe: „Insert“ statt „Add“ lässt drei Tests fehlschlagen).
+- Review mit sieben Befunden, alle behoben; darunter drei sachlich falsche Sätze im ersten Entwurf und Lücken im Wächter.
+- Blinde Prüfung mit vorab versiegelten Szenarien: 14 von 18 bestanden. 1 nicht bestanden: Die versiegelte Liste der Fachbegriffe ist älter als die Review-Korrektur und kennt `Association` und `API` nicht; beide Sätze stehen im nächsten Schritt der Stufe 3. 3 nicht ausführbar (Browser).
+- Browser, nicht blind: Kopfzeile, Befundtexte, sieben „Math“-Schalter eingeklappt, `H¹` erst nach Klick sichtbar, kein horizontales Scrollen bei 240 px. Die Vorauswahl ist am ausgelieferten Client-Code belegt, nicht per Klick in der 3D-Ansicht.
+- Tests: Server 293 in den Suites des Vorhabens, Client 585 in 68 Dateien, beide Typechecks ohne Fehler.
+
+**Fachbegriffe (festgelegt, nicht im Wörterbuch):** model, element, relationship, member, conversion factor, path, closed path, scale, method, software, API, model check sowie die ArchiMate-Namen Grouping, Location, Composition, Aggregation, Association.
+
+**Bekannt und nicht umgeschrieben:**
+
+- Die Texte des Methodenkatalogs. Sichtbar wird davon der Methodenname „Composition and functor (loop check)“ in der Liste der Methoden mit einem fehlenden Eingang.
+- Eine unbenannte Größe heißt weiter `default`.
+- Der nächste Schritt der Stufe 3 sagt offen, dass der Faktor zurzeit nur über die API gesetzt werden kann.
+- Für Mitglieder aus Strategie, Motivation und Umsetzung (zum Beispiel business_capability, goal, work_package) bietet die Verbindungsauswahl keine Composition an; für sie ist der Schritt der Stufe 2 nicht ausführbar.
+
+**Offen:** ein neues Urteil des Product Owners zu den neuen Texten.
+
+## 9 Offen
 
 | Teil | Braucht |
 |---|---|
-| Urteil je Modell, ob der nächste Schritt verständlich ist (Ziel 3 von 3) | Product Owner |
+| Urteil zu den neuen Texten (Abschnitt 8) | Product Owner |
 | Modellierversuch auf einer Kopie des Self-Models bis Stufe 2 (Kill-Kriterium a): erreicht ja/nein, Minuten, Hindernisse | Product Owner |
 | Antwortzeit des Endpunkts über HTTP mit Anmeldung | ein Konto in Produktion |
 | Sieben versiegelte Browser-Szenarien | blinder Prüfer mit Browser |
