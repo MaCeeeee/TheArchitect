@@ -207,6 +207,7 @@ router.get(
 // POST /api/projects/:projectId/regulations
 // Body: { source, paragraphNumber, title, fullText, language, jurisdiction, sourceUrl? }
 // Manual create — used by UC-ICM-003.3 "Paste & See" Confirm flow.
+// Identical text (THE-806) returns 200 with the existing document and `reused: true`.
 // ──────────────────────────────────────────────────────────
 router.post(
   '/:projectId/regulations',
@@ -248,7 +249,9 @@ router.post(
       // des Textes, nicht Einfügungen. Gleicher Text (getrimmt) wie die höchste
       // vorhandene Version → kein neues Dokument; die Antwort nennt das vorhandene
       // (Paste & See braucht nur dessen _id). Anderer Text → Version n+1, wie bisher.
-      // Der Titel gehört nicht zur Fassung. Unique-Index (projectId, source,
+      // Titel, language, jurisdiction und sourceUrl gehören nicht zur Fassung; bei
+      // Wiederverwendung kommt das vorhandene Dokument unverändert zurück (gewollt).
+      // Unique-Index (projectId, source,
       // paragraphNumber, version) bleibt unverändert.
       const latest = await Regulation.findOne({
         projectId: new mongoose.Types.ObjectId(projectId),

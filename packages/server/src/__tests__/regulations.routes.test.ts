@@ -308,6 +308,7 @@ describe('Regulations Routes (UC-ICM-001 / THE-272)', () => {
       expect(second.status).toBe(200);
       expect(second.body.reused).toBe(true);
       expect(second.body.data._id).toBe(first.body.data._id);
+      expect(second.body.data).not.toHaveProperty('embedding');
       expect(await Regulation.countDocuments({})).toBe(1);
       expect(auditMock).toHaveBeenCalledTimes(1);
     });
@@ -319,6 +320,7 @@ describe('Regulations Routes (UC-ICM-001 / THE-272)', () => {
       expect(second.status).toBe(200);
       expect(second.body.reused).toBe(true);
       expect(await Regulation.countDocuments({})).toBe(1);
+      expect(auditMock).toHaveBeenCalledTimes(1);
     });
 
     it('gleicher Text, anderer Titel → kein neues Dokument', async () => {
@@ -326,7 +328,9 @@ describe('Regulations Routes (UC-ICM-001 / THE-272)', () => {
       const second = await post({ title: 'Zweiter Titel' });
 
       expect(second.status).toBe(200);
+      expect(second.body.data.title).toBe('Erster Titel');
       expect(await Regulation.countDocuments({})).toBe(1);
+      expect(auditMock).toHaveBeenCalledTimes(1);
     });
 
     it('Text weicht um ein Zeichen ab → Version 2, 201, zweiter Audit-Eintrag', async () => {
