@@ -593,42 +593,71 @@ router.post(
       }
     }
 
-    const ops = parsed.data.requirements.map(r => ({
-      updateOne: {
-        filter: {
+    // THE-809 (UC-REGVER-001): Seit THE-806 trifft erneutes Einfügen desselben
+    // Textes dieselbe regulationId. Erneutes Speichern darf menschliche
+    // Entscheidungen (status, createdBy, Tore enforced/attested) nicht
+    // überschreiben; `covered` wird mechanisch neu abgeleitet. Leser greifen
+    // ungeschützt auf gates.attested.state zu → nie ein halbes gates-Objekt.
+    const existingByTitle = new Map(
+      (
+        await ComplianceRequirement.find({
           projectId: projectObjectId,
           regulationId: regulationObjectId,
-          title: r.title,
-        },
-        update: {
-          $set: {
+          title: { $in: parsed.data.requirements.map(r => r.title) },
+        })
+          .select('title gates')
+          .lean()
+      ).map(d => [d.title, d]),
+    );
+
+    const ops = parsed.data.requirements.map(r => {
+      const covered = deriveCovered(r.linkedElementIds);
+      const existing = existingByTitle.get(r.title);
+      // THE-557: Deckung mechanisch — Mensch-Tore bleiben, wie sie sind (THE-809).
+      const gatesSet = !existing
+        ? {}
+        : existing.gates
+          ? { 'gates.covered': covered }
+          : { gates: { ...emptyGates(), covered } };
+      return {
+        updateOne: {
+          filter: {
             projectId: projectObjectId,
             regulationId: regulationObjectId,
-            ...(normId ? { normId } : {}),
-            ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
-            contextTraceId,
-            sourceParagraph: parsed.data.sourceParagraph,
             title: r.title,
-            description: r.description,
-            priority: r.priority,
-            linkedElementIds: r.linkedElementIds,
-            status: 'open' as const,
-            createdBy: 'human' as const,
-            // THE-557: Deckung mechanisch bei der Anlage — Mensch-Tore bleiben unknown.
-            gates: { ...emptyGates(), covered: deriveCovered(r.linkedElementIds) },
-            // Preserve LLM explainability through human curation (optional, audit trail)
-            ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
-            ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
-            ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
-            ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
-            // ADR-0008 Phase 1: Rueckverweise der Kette — nur wenn das Item
-            // aus der Chain-Engine stammt; Alt-Items bleiben byte-gleich.
-            ...(chainRefsByTitle.has(r.title) && { chain: chainRefsByTitle.get(r.title) }),
           },
+          update: {
+            $set: {
+              projectId: projectObjectId,
+              regulationId: regulationObjectId,
+              ...(normId ? { normId } : {}),
+              ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
+              contextTraceId,
+              sourceParagraph: parsed.data.sourceParagraph,
+              title: r.title,
+              description: r.description,
+              priority: r.priority,
+              linkedElementIds: r.linkedElementIds,
+              ...gatesSet,
+              // Preserve LLM explainability through human curation (optional, audit trail)
+              ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
+              ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
+              ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
+              ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
+              // ADR-0008 Phase 1: Rueckverweise der Kette — nur wenn das Item
+              // aus der Chain-Engine stammt; Alt-Items bleiben byte-gleich.
+              ...(chainRefsByTitle.has(r.title) && { chain: chainRefsByTitle.get(r.title) }),
+            },
+            $setOnInsert: {
+              status: 'open' as const,
+              createdBy: 'human' as const,
+              ...(existing ? {} : { gates: { ...emptyGates(), covered } }),
+            },
+          },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      };
+    });
 
     await ComplianceRequirement.bulkWrite(ops, { ordered: false });
 
