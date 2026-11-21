@@ -28,6 +28,10 @@ interface GroupModeState {
   toNaming: () => void;
   setName: (name: string) => void;
   cancel: () => void;
+  /** Full idle: no mode, no selection, no error, no feedback, no project. */
+  reset: () => void;
+  /** Drops selected ids that are no longer in the model. */
+  pruneSelection: (existingIds: Set<string> | string[]) => void;
   dismiss: () => void;
   submit: (projectId: string) => Promise<void>;
 }
@@ -72,6 +76,17 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
 
   cancel: () => set((s) => ({ ...IDLE, projectId: s.feedback ? s.projectId : null })),
 
+  reset: () => set({ ...IDLE, projectId: null, feedback: null }),
+
+  pruneSelection: (existingIds) =>
+    set((s) => {
+      if (!s.active) return {};
+      const existing = existingIds instanceof Set ? existingIds : new Set(existingIds);
+      const selected = s.selected.filter((id) => existing.has(id));
+      if (selected.length === s.selected.length) return {};
+      return { selected, phase: s.phase === 'name' && selected.length < MIN_GROUP_SELECTION ? 'select' : s.phase };
+    }),
+
   dismiss: () => set((s) => ({ feedback: null, projectId: s.active ? s.projectId : null })),
 
   submit: async (projectId) => {
@@ -82,9 +97,13 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
     try {
       const { data } = await groupsAPI.create(projectId, { name: trimmed, type: 'grouping', memberIds: selected });
       const result = data.data as { element: ArchitectureElement; connections: Connection[]; skipped: SkippedMember[] };
+      // The mode was cancelled or another project was opened while the request ran: drop the answer.
+      const stillHere = () => useArchitectureStore.getState().projectId === projectId && get().projectId === projectId && get().active;
+      if (!stillHere()) return;
       useArchitectureStore.getState().addFromServer([result.element], result.connections);
-      await useAdvisorStore.getState().loadLadder(projectId);
-      set({ ...IDLE, projectId, feedback: groupFeedback(useAdvisorStore.getState().ladder, projectId, result.skipped) });
+      const report = await useAdvisorStore.getState().loadLadder(projectId);
+      if (!stillHere()) return;
+      set({ ...IDLE, projectId, feedback: groupFeedback(report, projectId, result.skipped) });
     } catch (err) {
       set({ busy: false, error: errorText(err) });
     }

@@ -113,3 +113,23 @@ describe('advisorStore — the ladder outlives the panel (UC-METH-002)', () => {
     expect(useAdvisorStore.getState().focusRung).toBeNull();
   });
 });
+
+describe('advisorStore.loadLadder — return value', () => {
+  beforeEach(() => { ladder.mockReset(); useAdvisorStore.getState().clear(); });
+
+  test('returns the report of its own request even when a newer request owns the store', async () => {
+    const first = pending();
+    ladder.mockReturnValueOnce(first.promise);
+    ladder.mockResolvedValueOnce(answer(report('p1', 'newer')));
+    const a = useAdvisorStore.getState().loadLadder('p1');
+    await useAdvisorStore.getState().loadLadder('p1');
+    first.resolve(answer(report('p1', 'older')));
+    expect((await a)?.timestamp).toBe('older');
+    expect(shown()?.timestamp).toBe('newer');
+  });
+
+  test('an error → null', async () => {
+    ladder.mockRejectedValue(new Error('x'));
+    expect(await useAdvisorStore.getState().loadLadder('p1')).toBeNull();
+  });
+});

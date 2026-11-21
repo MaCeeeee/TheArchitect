@@ -13,27 +13,37 @@ export const LADDER_RELOAD_DELAY_MS = 1500;
 
 export function useLadderSync(projectId: string | undefined): void {
   const loadLadder = useAdvisorStore((s) => s.loadLadder);
-  const elementCount = useArchitectureStore((s) => s.elements.length);
+  const elements = useArchitectureStore((s) => s.elements);
+  const elementCount = elements.length;
   const connectionCount = useArchitectureStore((s) => s.connections.length);
-  const loadedFor = useRef<string | undefined>(undefined);
+  /** What the last load was made for: project, elements, relationships. */
+  const loadedKey = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!projectId) return;
-    loadedFor.current = projectId;
     // The group mode belongs to one project: end it and its feedback when another project opens.
     const groupMode = useGroupModeStore.getState();
-    if (groupMode.projectId !== null && groupMode.projectId !== projectId) {
-      groupMode.cancel();
-      groupMode.dismiss();
-    }
+    if (groupMode.projectId !== null && groupMode.projectId !== projectId) groupMode.reset();
+    loadedKey.current = `${projectId}:${elementCount}:${connectionCount}`;
     void loadLadder(projectId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, loadLadder]);
 
+  // An element that left the model cannot stay in the group selection (not debounced).
   useEffect(() => {
-    if (!projectId || loadedFor.current !== projectId) return;
-    const timer = setTimeout(() => void loadLadder(projectId), LADDER_RELOAD_DELAY_MS);
-    return () => clearTimeout(timer);
-    // the first run per project is covered by the effect above; this one reacts to changes
+    useGroupModeStore.getState().pruneSelection(new Set(elements.map((e) => e.id)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elementCount, connectionCount]);
+  }, [elementCount]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    const key = `${projectId}:${elementCount}:${connectionCount}`;
+    if (loadedKey.current === key) return;
+    const timer = setTimeout(() => {
+      loadedKey.current = key;
+      void loadLadder(projectId);
+    }, LADDER_RELOAD_DELAY_MS);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, elementCount, connectionCount]);
 }

@@ -15,7 +15,9 @@ import { useGroupModeStore } from './groupModeStore';
 import { useArchitectureStore } from './architectureStore';
 import { useAdvisorStore } from './advisorStore';
 import { useUIStore } from './uiStore';
-import { groupsAPI, architectureAPI } from '../services/api';
+import { groupsAPI, architectureAPI, advisorAPI } from '../services/api';
+
+const realLoadLadder = useAdvisorStore.getState().loadLadder;
 
 const create = vi.mocked(groupsAPI.create);
 const state = () => useGroupModeStore.getState();
@@ -41,7 +43,7 @@ beforeEach(() => {
   useGroupModeStore.setState({ feedback: null, projectId: null });
   useArchitectureStore.setState({ projectId: 'p1', elements: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] as never, connections: [], selectedElementIds: new Set(['a']), selectedElementId: 'a' });
   useUIStore.setState({ isConnectionMode: true });
-  useAdvisorStore.setState({ ladder: null, loadLadder: vi.fn(async () => { useAdvisorStore.setState({ ladder: ladderAfter(1, false) }); }) } as never);
+  useAdvisorStore.setState({ ladder: null, loadLadder: vi.fn(async () => { const r = ladderAfter(1, false); useAdvisorStore.setState({ ladder: r }); return r; }) } as never);
 });
 
 describe('groupModeStore', () => {
@@ -96,7 +98,7 @@ describe('groupModeStore', () => {
 
   test('step 2 reached after the second group → "completed"', async () => {
     create.mockResolvedValue(serverAnswer as never);
-    useAdvisorStore.setState({ loadLadder: vi.fn(async () => { useAdvisorStore.setState({ ladder: ladderAfter(2, true) }); }) } as never);
+    useAdvisorStore.setState({ loadLadder: vi.fn(async () => { const r = ladderAfter(2, true); useAdvisorStore.setState({ ladder: r }); return r; }) } as never);
     state().start('p1'); state().toggle('a'); state().toggle('b'); state().toNaming(); state().setName('Sales');
     await state().submit('p1');
     expect(state().feedback).toEqual({ lines: ['You completed step 2.'], offerAnother: false });
@@ -140,5 +142,106 @@ describe('groupModeStore', () => {
     state().start('p1'); state().toggle('a'); state().toggle('b'); state().toNaming(); state().setName('   ');
     await state().submit('p1');
     expect(create).not.toHaveBeenCalled();
+  });
+
+  const named = (name = 'Sales') => { state().start('p1'); state().toggle('a'); state().toggle('b'); state().toNaming(); state().setName(name); };
+  const pendingCreate = () => {
+    let resolve!: (v: never) => void;
+    create.mockReturnValue(new Promise((res) => { resolve = res as never; }) as never);
+    return (v: unknown) => resolve(v as never);
+  };
+
+  test('cancel while the request runs: the answer is not added, no feedback', async () => {
+    const answer = pendingCreate();
+    named();
+    const done = state().submit('p1');
+    state().reset();
+    answer(serverAnswer);
+    await done;
+    expect(useArchitectureStore.getState().elements).toHaveLength(3);
+    expect(state().feedback).toBeNull();
+    expect(state().active).toBe(false);
+  });
+
+  test('another project opened while the request runs: the answer is not added, no feedback', async () => {
+    const answer = pendingCreate();
+    named();
+    const done = state().submit('p1');
+    useArchitectureStore.setState({ projectId: 'p2' });
+    answer(serverAnswer);
+    await done;
+    expect(useArchitectureStore.getState().elements).toHaveLength(3);
+    expect(state().feedback).toBeNull();
+  });
+
+  test('feedback uses the report of its own request, not a newer one', async () => {
+    create.mockResolvedValue(serverAnswer as never);
+    const ladderApi = vi.mocked(advisorAPI.ladder);
+    let first!: (v: unknown) => void;
+    ladderApi.mockReset();
+    ladderApi.mockReturnValueOnce(new Promise((res) => { first = res; }) as never);
+    ladderApi.mockResolvedValueOnce({ data: { data: ladderAfter(2, true) } } as never);
+    useAdvisorStore.setState({ loadLadder: realLoadLadder } as never);
+    named();
+    const done = state().submit('p1');
+    await vi.waitFor(() => expect(ladderApi).toHaveBeenCalledTimes(1));
+    await useAdvisorStore.getState().loadLadder('p1');
+    first({ data: { data: ladderAfter(1, false) } });
+    await done;
+    expect(state().feedback).toEqual({ lines: ['You have 1 group. Make one more group.'], offerAnother: true });
+  });
+
+  test('a second submit while busy sends nothing', async () => {
+    const answer = pendingCreate();
+    named();
+    const first = state().submit('p1');
+    await state().submit('p1');
+    expect(create).toHaveBeenCalledTimes(1);
+    answer(serverAnswer);
+    await first;
+  });
+
+  test('a generic error → the generic text', async () => {
+    create.mockRejectedValue(Object.assign(new Error('500'), { response: { status: 500, data: {} } }));
+    named();
+    await state().submit('p1');
+    expect(state().error).toBe('The software did not make the group. Do the procedure again.');
+  });
+
+  test('success with skipped members → the feedback names them', async () => {
+    const skipped = [{ id: 'g', name: 'Revenue', type: 'goal', reason: 'composition_not_valid' }];
+    create.mockResolvedValue({ data: { data: { ...serverAnswer.data.data, skipped } } } as never);
+    named();
+    await state().submit('p1');
+    expect(state().feedback?.lines).toEqual([
+      'You have 1 group. Make one more group.',
+      'Revenue is not a member of the group.',
+      'A Grouping element cannot have this type of element as a member.',
+    ]);
+  });
+
+  test('400 with an empty skipped list → the generic text', async () => {
+    create.mockRejectedValue(Object.assign(new Error('400'), { response: { status: 400, data: { skipped: [] } } }));
+    named();
+    await state().submit('p1');
+    expect(state().error).toBe('The software did not make the group. Do the procedure again.');
+  });
+
+  test('pruneSelection drops deleted elements; in the naming phase fewer than 2 go back to select', () => {
+    named();
+    state().pruneSelection(['a', 'b', 'c']);
+    expect(state().phase).toBe('name');
+    state().pruneSelection(new Set(['a', 'c']));
+    expect(state().selected).toEqual(['a']);
+    expect(state().phase).toBe('select');
+  });
+
+  test('cancel clears the error; reset clears everything', () => {
+    named();
+    useGroupModeStore.setState({ error: 'x', feedback: { lines: ['y'], offerAnother: true } });
+    state().cancel();
+    expect(state().error).toBeNull();
+    state().reset();
+    expect(state()).toMatchObject({ active: false, selected: [], error: null, feedback: null, projectId: null });
   });
 });

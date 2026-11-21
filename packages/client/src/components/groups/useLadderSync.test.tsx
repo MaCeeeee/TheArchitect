@@ -39,14 +39,31 @@ describe('useLadderSync', () => {
     expect(loadLadder).toHaveBeenLastCalledWith('p2');
   });
 
-  test('more elements → loads again after the delay, once', () => {
+  test('mount → exactly one load, also after the delay', () => {
     renderHook(() => useLadderSync('p1'));
-    loadLadder.mockClear();
-    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] } as never); });
-    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] } as never); });
-    expect(loadLadder).not.toHaveBeenCalled();
+    act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS * 2); });
+    expect(loadLadder).toHaveBeenCalledTimes(1);
+  });
+
+  test('more elements → loads one more time after the delay, once', () => {
+    renderHook(() => useLadderSync('p1'));
     act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS); });
     expect(loadLadder).toHaveBeenCalledTimes(1);
+    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] } as never); });
+    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] } as never); });
+    expect(loadLadder).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS); });
+    expect(loadLadder).toHaveBeenCalledTimes(2);
+  });
+
+  test('a changed element count prunes the group selection at once', () => {
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] } as never);
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.getState().toggle('a');
+    useGroupModeStore.getState().toggle('b');
+    renderHook(() => useLadderSync('p1'));
+    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }] } as never); });
+    expect(useGroupModeStore.getState().selected).toEqual(['a']);
   });
 
   test('no project → nothing is loaded', () => {

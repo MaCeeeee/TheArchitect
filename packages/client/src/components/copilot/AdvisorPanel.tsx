@@ -18,7 +18,7 @@ export default function AdvisorPanel() {
   useEffect(() => {
     if (projectId && !healthScore && !isScanning) {
       scan(projectId);
-      loadLadder(projectId);
+      if (ladder?.projectId !== projectId) loadLadder(projectId);
     }
     return () => { clearScan(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
