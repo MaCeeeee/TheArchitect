@@ -25,7 +25,7 @@ import { decideTempo, markStationSeen } from './stationTempo';
 export default function JourneyShell() {
   const { projectId, station: stationParam } = useParams<{ projectId: string; station: string }>();
   const { loading, error } = useProjectData(projectId);
-  useLadderSync(projectId); // UC-METH-002 — the ladder report drives "Make a group" on station Model
+  useLadderSync(projectId, !loading); // UC-METH-002 — the ladder report drives "Make a group" on station Model; one load when the data is in
   const elements = useArchitectureStore((s) => s.elements);
   const projectName = useArchitectureStore((s) => s.projectName);
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);

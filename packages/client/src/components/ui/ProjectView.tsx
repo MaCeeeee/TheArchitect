@@ -40,7 +40,7 @@ export default function ProjectView() {
   const elements = useArchitectureStore((s) => s.elements);
   const { loading, error } = useProjectData(projectId);
   // UC-METH-002 — the ladder report drives the action field; the group mode belongs to this project.
-  useLadderSync(projectId);
+  useLadderSync(projectId, !loading); // one load when the project data is in
   const ladder = useAdvisorStore((s) => s.ladder);
   // Only where the scene shows the element boxes: a select in the plateau or activity view cannot reach the mode.
   const sceneSelectable = useGroupModeAvailableInScene();

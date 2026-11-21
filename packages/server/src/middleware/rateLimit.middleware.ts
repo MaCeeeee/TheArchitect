@@ -8,9 +8,19 @@ interface RateLimitStore {
 const stores = new Map<string, Map<string, RateLimitStore>>();
 const intervals = new Map<string, ReturnType<typeof setInterval>>();
 
-export function rateLimit(options: { windowMs?: number; max?: number; name?: string } = {}) {
+export interface RateLimitOptions {
+  windowMs?: number;
+  max?: number;
+  name?: string;
+  /** What is counted; default: the client IP. Runs after the middleware before it (e.g. authenticate). */
+  key?: (req: Request) => string;
+}
+
+const ipOf = (req: Request): string => req.ip || req.socket.remoteAddress || 'unknown';
+
+export function rateLimit(options: RateLimitOptions = {}) {
   const isDev = process.env.NODE_ENV !== 'production';
-  const { windowMs = 60_000, max: rawMax = 100, name = 'default' } = options;
+  const { windowMs = 60_000, max: rawMax = 100, name = 'default', key: keyOf = ipOf } = options;
   const max = isDev ? Math.max(rawMax * 100, 10000) : rawMax;
 
   if (!stores.has(name)) {
@@ -34,7 +44,7 @@ export function rateLimit(options: { windowMs?: number; max?: number; name?: str
   }
 
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = keyOf(req);
     const now = Date.now();
 
     let entry = store.get(key);

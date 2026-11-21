@@ -9,6 +9,7 @@ import { useArchitectureStore, type ArchitectureElement, type Connection } from 
 import { useAdvisorStore } from './advisorStore';
 import { useUIStore } from './uiStore';
 import { GROUP_MODE_TEXT } from '../components/groups/groupModeText';
+import { noteLadderLoaded } from '../components/groups/ladderLoadKey';
 import { groupFeedback, type GroupFeedback, type SkippedMember } from '../components/groups/ladderGuidance';
 
 export const MIN_GROUP_SELECTION = 2;
@@ -122,6 +123,8 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
       // The mode was cancelled, restarted or another project was opened while the request ran: drop the answer.
       if (!stillHere()) return;
       useArchitectureStore.getState().addFromServer([result.element], result.connections);
+      // This load is for the new model: useLadderSync does not load it again for the same counts.
+      noteLadderLoaded(projectId);
       const report = await useAdvisorStore.getState().loadLadder(projectId);
       if (!stillHere()) return;
       set({ ...IDLE, projectId, feedback: groupFeedback(report, projectId, result.skipped) });

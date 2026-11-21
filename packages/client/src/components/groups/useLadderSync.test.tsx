@@ -10,6 +10,7 @@ import { useAdvisorStore } from '../../stores/advisorStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
 import { useLadderSync, LADDER_RELOAD_DELAY_MS } from './useLadderSync';
+import { groupsAPI } from '../../services/api';
 
 vi.mock('../../services/api', () => ({
   groupsAPI: { create: vi.fn() },
@@ -21,6 +22,7 @@ const loadLadder = vi.fn().mockResolvedValue(undefined);
 
 beforeEach(() => {
   vi.useFakeTimers();
+  useGroupModeStore.getState().reset();
   loadLadder.mockClear();
   useAdvisorStore.setState({ loadLadder } as never);
   useArchitectureStore.setState({ elements: [], connections: [] } as never);
@@ -81,5 +83,34 @@ describe('useLadderSync', () => {
     expect(useGroupModeStore.getState().active).toBe(false);
     expect(useGroupModeStore.getState().selected).toEqual([]);
     expect(useGroupModeStore.getState().feedback).toBeNull();
+  });
+
+  test('while the project data is loading nothing is loaded; when it is in, exactly one load', () => {
+    const { rerender } = renderHook(({ ready }) => useLadderSync('p1', ready), { initialProps: { ready: false } });
+    act(() => { useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }], connections: [{ id: 'c' }] } as never); });
+    act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS * 2); });
+    expect(loadLadder).not.toHaveBeenCalled();
+    rerender({ ready: true });
+    expect(loadLadder).toHaveBeenCalledTimes(1);
+    act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS * 2); });
+    expect(loadLadder).toHaveBeenCalledTimes(1);
+  });
+
+  test('a group made: the ladder load of the submit is the only one for the new counts', async () => {
+    useArchitectureStore.setState({ projectId: 'p1', elements: [{ id: 'a' }, { id: 'b' }], connections: [] } as never);
+    renderHook(() => useLadderSync('p1'));
+    expect(loadLadder).toHaveBeenCalledTimes(1);
+    vi.mocked(groupsAPI.create).mockResolvedValue({ data: { success: true, data: {
+      element: { id: 'g1', projectId: 'p1', type: 'grouping', name: 'Sales', description: '', layer: 'business', togafDomain: 'business', maturityLevel: 1, riskLevel: 'low', status: 'current', position3D: { x: 0, y: 8, z: 0 }, metadata: {} },
+      connections: [{ id: 'c1', sourceId: 'g1', targetId: 'a', type: 'composition', label: '' }, { id: 'c2', sourceId: 'g1', targetId: 'b', type: 'composition', label: '' }],
+      skipped: [],
+    } } } as never);
+    const g = useGroupModeStore.getState();
+    g.start('p1'); g.toggle('a'); g.toggle('b'); g.toNaming(); g.setName('Sales');
+    await act(async () => { await useGroupModeStore.getState().submit('p1'); });
+    expect(useArchitectureStore.getState().elements).toHaveLength(3);
+    expect(loadLadder).toHaveBeenCalledTimes(2); // the submit loads it for the new model
+    act(() => { vi.advanceTimersByTime(LADDER_RELOAD_DELAY_MS * 2); });
+    expect(loadLadder).toHaveBeenCalledTimes(2); // no second load for the same counts
   });
 });

@@ -56,9 +56,16 @@ router.get(
 
 // ─── UC-METH-001: ladder to cohomology ───
 // Ladder report — mechanical, three read-only count/list queries, no AI limiter. It reads the
-// whole model and computes in the request, so it has a limiter of its own: the panel asks once
-// when it opens and once per refresh.
-const ladderRateLimit = rateLimit({ name: 'advisor-ladder', windowMs: 60_000, max: 30 });
+// whole model and computes in the request, so it has a limiter of its own. Callers: the action
+// field (UC-METH-002) loads it once per opened project, after model changes (debounced in the
+// client) and after a group is made; the advisor panel on refresh. Counted per user (the router
+// authenticates first), so users behind one IP do not share the limit; without a user per IP.
+const ladderRateLimit = rateLimit({
+  name: 'advisor-ladder',
+  windowMs: 60_000,
+  max: 30,
+  key: (req) => (req.user?._id ? `user:${String(req.user._id)}` : `ip:${req.ip || req.socket?.remoteAddress || 'unknown'}`),
+});
 
 router.get(
   '/:projectId/advisor/ladder',
