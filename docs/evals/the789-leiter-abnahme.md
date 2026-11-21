@@ -148,3 +148,38 @@ Das Ergebnis deckt sich mit der Erwartung aus der Messung vor dem Bau: alle Mode
 | Modellierversuch auf einer Kopie des Self-Models bis Stufe 2 (Kill-Kriterium a): erreicht ja/nein, Minuten, Hindernisse | Product Owner |
 | Antwortzeit des Endpunkts über HTTP mit Anmeldung | ein Konto in Produktion |
 | Sieben versiegelte Browser-Szenarien | blinder Prüfer mit Browser |
+
+## 10 UC-METH-002 „Make a group“ — geführter Schritt 2 (THE-798, lokal, 21.11.2026)
+
+Anlass: Nach dem STE100-Umbau war das *Was* von Stufe 2 klar, das *Wie* nicht („Grouping ist nirgends geübt“). Gebaut: ein Endpunkt `POST /api/projects/:projectId/groups` (Gruppierung plus eine Composition je gültigem Mitglied in einer Transaktion), ein Befehl `action:make-group` und ein Gruppen-Modus im Action Field, klassisch und in v2.
+
+### Lokaler Beweis gegen echtes Neo4j und Mongo (nur lokale Testprojekte)
+
+| Prüfung | Ergebnis |
+|---|---|
+| Mitglied aus einem anderen Projekt | 400 `Unknown members`, nichts angelegt |
+| 1 gültiges Mitglied; Goal + Process; leere Liste | je 400, Element- und Beziehungszahl unverändert |
+| Process, Application Component, Node, Goal, `business_process` | 201, 4 Compositions; Goal übersprungen mit `composition_not_valid`; `business_process` (vom KI-Generator) zählt als Mitglied |
+| Position | Schwerpunkt der Mitglieder auf der Business-Ebene (5, 8, 2), nicht auf einem Mitglied |
+| Leiter nach der Anlage | Stufe 2: 1 Gruppe mit Mitgliedern |
+| Audit | je Anlage genau ein Eintrag `create_group` mit Name, Typ, Mitgliederzahl, übersprungenen; keiner für abgelehnte Anfragen |
+
+### Browser (lokal, nicht blind)
+
+- **Klassisch:** Ohne geöffnetes Advisor-Panel zeigt das Action Field `Model check: step 1 of 5` · `Next step: Make a minimum of two groups.` · `Make a group`. Drei Elemente mit einfachem Klick gewählt → `3 elements selected.` → `Make the group (3)` → Name, Enter → `You have 1 group. Make one more group.`; zweite Gruppe → `You completed step 2.`; danach wieder der Phasen-Hinweis. Server: Stufe 2 erreicht, 5 Compositions.
+- **Label → Panel:** Der Druck auf `Model check: step 1 of 5` öffnet die Seitenleiste auf dem Advisor-Reiter; Zeile 2 „Groups“ ist markiert. Banner und Panel tragen dieselbe Kopfzeile und dieselbe Farbe für „Next step“.
+- **v2 (Station Model):** `Make a group` ist die erste Aktion; Esc nach zwei Klicks legt nichts an; zwei Gruppen → `You completed step 2.`; ⌘K listet `Make a group`.
+- **Projektwechsel:** Ein Projekt mit erreichter Stufe 2 zeigt den Phasen-Hinweis und kein `Make a group`.
+
+### Reviews während des Baus (Auswahl)
+
+Planprüfung: 6 Blocker (u. a. der Test „keine Ausführung“ bewies nichts; Gruppe konnte genau auf einem Mitglied landen; Zustand leckte über Projekte; `business_process` wäre übersprungen worden). Code-Reviews: Lookup je Mitglied als Label-Scan in der Schreibtransaktion → ein Scan; doppelte Element-IDs → 409 statt Doppelkanten; Abbruch während der Anfrage hätte die Gruppe lokal verloren → Abbruch und Neustart während der Anfrage gesperrt; Esc hätte ⌘K und Eingabefelder geschluckt; Gruppen-Modus war in Plateau- und Aktivitätsansicht tot → dort nicht angeboten; Leiter-Abrufe je IP begrenzt → je Nutzer.
+
+### Offen
+
+| Teil | Braucht |
+|---|---|
+| Entscheidung: Der Leiter-Schritt verdrängt bei Modellen auf Stufe 1 den Phasen-Hinweis, bis zwei Gruppen da sind | Product Owner |
+| Deploy | Go des Product Owners |
+| Modellierversuch auf einer Kopie des Self-Models mit Führung: erreicht ja/nein, Minuten, Klicks, „wie?“-Rückfragen, Hindernisse (Impact-Ist THE-798, Kill-Kriterium) | Product Owner |
+| Stufe 3: Umrechnungsfaktor nur über die API setzbar | eigenes Ticket nach dem Modellierversuch |
