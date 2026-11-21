@@ -75,6 +75,26 @@ function isLivePasteReg(r: Pick<IRegulation, 'paragraphNumber'>): boolean {
   return r.paragraphNumber === LIVE_PASTE_PARAGRAPH;
 }
 
+/**
+ * THE-807 (UC-REGVER-001, Entscheidung THE-804): je (source, paragraphNumber)
+ * nur das Dokument mit der höchsten `version` — `version` zählt Fassungen des
+ * Textes. Live-paste-Dokumente sind keine Fassungen desselben Paragraphen
+ * (Platzhalter-Nummer) und bleiben alle erhalten. Rein: liest nur, behält die
+ * Reihenfolge der Eingabe, fehlende `version` zählt als 1.
+ */
+export function latestVersionPerParagraph<
+  T extends { source: string; paragraphNumber: string; version?: number },
+>(regs: T[]): T[] {
+  const keyOf = (r: T) => `${r.source}::${r.paragraphNumber}`;
+  const best = new Map<string, T>();
+  for (const r of regs) {
+    if (isLivePasteReg(r)) continue;
+    const cur = best.get(keyOf(r));
+    if (!cur || (r.version ?? 1) > (cur.version ?? 1)) best.set(keyOf(r), r);
+  }
+  return regs.filter(r => isLivePasteReg(r) || best.get(keyOf(r)) === r);
+}
+
 function recordFallback(reason: keyof FallbackStats, context: Record<string, unknown>): void {
   fallbackStats[reason] += 1;
   log.warn(
