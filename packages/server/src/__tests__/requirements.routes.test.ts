@@ -405,6 +405,44 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
       expect(doc?.gates?.attested.state).toBe('unknown');
     });
 
+    it('THE-809: partial gates with only covered get enforced and attested added', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.collection.updateOne(reqFilter, {
+        $set: { status: 'done', gates: { covered: { state: 'no', setBy: 'system' } } },
+      });
+
+      await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements`)
+        .send(confirmBody(String(reg._id), { linkedElementIds: ['el-1'] }));
+
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.status).toBe('done');
+      expect(doc?.gates?.covered.state).toBe('yes');
+      expect(doc?.gates?.enforced.state).toBe('unknown');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
+    it('THE-809: partial gates keep a present human enforced and add the missing attested', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.collection.updateOne(reqFilter, {
+        $set: {
+          gates: {
+            covered: { state: 'no', setBy: 'system' },
+            enforced: { state: 'yes', setBy: 'human' },
+          },
+        },
+      });
+
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.gates?.enforced.state).toBe('yes');
+      expect(doc?.gates?.enforced.setBy).toBe('human');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
     it('rejects empty requirements array', async () => {
       const reg = await Regulation.create(baseReg(PROJECT_ID));
       const res = await request(app)

@@ -621,12 +621,17 @@ router.post(
         // Neu: alle drei Tore beim Einfügen.
         gatesOnInsert = { gates: { ...emptyGates(), covered } };
       } else if (existing.gates) {
-        // Vorhanden mit Toren: nur covered neu; enforced/attested nur falls der Datensatz inzwischen weg ist.
+        // Vorhanden mit Toren: covered neu. Fehlende Teil-Tore (z. B. durch PATCH auf Legacy-Daten)
+        // je Tor ergänzen; vorhandene bleiben (nur $setOnInsert für den Lösch-Wettlauf).
+        // Nie derselbe Pfad in $set und $setOnInsert.
         gatesSet = { 'gates.covered': covered };
-        gatesOnInsert = {
-          'gates.enforced': emptyGates().enforced,
-          'gates.attested': emptyGates().attested,
-        };
+        for (const name of ['enforced', 'attested'] as const) {
+          if (existing.gates[name]?.state) {
+            gatesOnInsert[`gates.${name}`] = emptyGates()[name];
+          } else {
+            gatesSet[`gates.${name}`] = emptyGates()[name];
+          }
+        }
       } else {
         // Legacy ohne gates: vollständiges Objekt setzen, Status bleibt.
         gatesSet = { gates: { ...emptyGates(), covered } };
