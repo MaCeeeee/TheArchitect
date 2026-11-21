@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { authAPI } from '../../services/api';
@@ -7,8 +7,15 @@ export default function OAuthCallbackPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
+  // The login code is valid once. React StrictMode runs this effect twice in development;
+  // a second redemption fails, and its error path would log out the user the first one
+  // signed in. The ref survives StrictMode's simulated remount, so the code is redeemed once.
+  const redeemed = useRef(false);
 
   useEffect(() => {
+    if (redeemed.current) return;
+    redeemed.current = true;
+
     // Security-Audit H9: Tokens kommen nie aus der URL — sonst meldet ein
     // fremder Link mit eingebetteten Tokens das Opfer im Konto des
     // Angreifers an. Der Callback liefert einen Einmal-Code, den nur der
