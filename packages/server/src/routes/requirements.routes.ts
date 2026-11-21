@@ -614,11 +614,23 @@ router.post(
       const covered = deriveCovered(r.linkedElementIds);
       const existing = existingByTitle.get(r.title);
       // THE-557: Deckung mechanisch — Mensch-Tore bleiben, wie sie sind (THE-809).
-      const gatesSet = !existing
-        ? {}
-        : existing.gates
-          ? { 'gates.covered': covered }
-          : { gates: { ...emptyGates(), covered } };
+      // Drei Fälle, in keinem Fall ein halbes gates-Objekt (auch nicht nach Lösch-Wettlauf):
+      let gatesSet: Record<string, unknown> = {};
+      let gatesOnInsert: Record<string, unknown> = {};
+      if (!existing) {
+        // Neu: alle drei Tore beim Einfügen.
+        gatesOnInsert = { gates: { ...emptyGates(), covered } };
+      } else if (existing.gates) {
+        // Vorhanden mit Toren: nur covered neu; enforced/attested nur falls der Datensatz inzwischen weg ist.
+        gatesSet = { 'gates.covered': covered };
+        gatesOnInsert = {
+          'gates.enforced': emptyGates().enforced,
+          'gates.attested': emptyGates().attested,
+        };
+      } else {
+        // Legacy ohne gates: vollständiges Objekt setzen, Status bleibt.
+        gatesSet = { gates: { ...emptyGates(), covered } };
+      }
       return {
         updateOne: {
           filter: {
@@ -651,7 +663,7 @@ router.post(
             $setOnInsert: {
               status: 'open' as const,
               createdBy: 'human' as const,
-              ...(existing ? {} : { gates: { ...emptyGates(), covered } }),
+              ...gatesOnInsert,
             },
           },
           upsert: true,
