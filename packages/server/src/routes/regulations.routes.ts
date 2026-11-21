@@ -27,7 +27,12 @@ import {
   listCorpusRelationSuggestionDocs,
 } from '../services/corpusClient.service';
 import { corpusVectorIndexHealth } from '../services/corpusVectorSync.service';
-import { getFallbackStats, isStrictCorpusReads, pinnedTextStaleness, type PinnedTextStaleness } from '../services/regulationResolver.service';
+import {
+  getFallbackStats,
+  isStrictCorpusReads,
+  pinnedTextStaleness,
+  type PinnedTextStaleness,
+} from '../services/regulationResolver.service';
 import {
   isNormSource,
   NORM_SOURCE_IDS,

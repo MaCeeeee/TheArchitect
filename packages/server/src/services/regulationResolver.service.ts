@@ -96,6 +96,9 @@ export function latestVersionPerParagraph<
   return regs.filter(r => isLivePasteReg(r) || best.get(keyOf(r)) === r);
 }
 
+// Muss mit dem `$regex`-String in pinnedTextStaleness() synchron bleiben.
+const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
+
 /**
  * THE-808 (UC-REGVER-001, Re-Trigger von THE-804): Wie viele Projekt-Regulations
  * stehen auf einem Korpus-Text, der sich seit der Übernahme geändert hat?
@@ -106,7 +109,6 @@ export function latestVersionPerParagraph<
  * WIRFT bei Korpus-Ausfall: ein Ausfall darf nie als „missing" zählen.
  * Liefert nur Zahlen (öffentlicher Health-Endpunkt).
  */
-const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
 
 export interface PinnedTextStaleness {
   total: number;
@@ -126,9 +128,14 @@ export async function pinnedTextStaleness(): Promise<PinnedTextStaleness> {
 
   const docs = await CorpusRegulation()
     .find({ regulationKey: { $in: [...new Set(pins.map(p => p.key))] } })
-    .select('regulationKey versionHash')
+    .select('regulationKey versionHash version')
+    .sort({ version: -1 })
     .lean();
-  const hashByKey = new Map(docs.map(d => [d.regulationKey, String(d.versionHash ?? '').toLowerCase()]));
+  // Erste = höchste Version je Schlüssel gewinnt.
+  const hashByKey = new Map<string, string>();
+  for (const d of docs) {
+    if (!hashByKey.has(d.regulationKey)) hashByKey.set(d.regulationKey, String(d.versionHash ?? '').toLowerCase());
+  }
 
   let stale = 0;
   let missing = 0;

@@ -157,6 +157,15 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
       expect(JSON.stringify(res.body)).not.toContain('art-17');
     });
 
+    it('Schlüssel mit @ und Hex in Großbuchstaben wird richtig verglichen', async () => {
+      __setCorpusForTests(
+        makeFakeCorpus([{ regulationKey: 'a@b:art-1', versionHash: 'abcd' + 'f'.repeat(60), version: 1 }]),
+      );
+      await seedPins(['corpus:a@b:art-1@ABCD']);
+      const res = await request(app).get(HEALTH);
+      expect(res.body.pinnedTexts).toEqual({ total: 1, stale: 0, missing: 0 });
+    });
+
     it('keine Pins → alles 0', async () => {
       __setCorpusForTests(makeFakeCorpus(corpusRows));
       await seedPins(['user-pasted']);
