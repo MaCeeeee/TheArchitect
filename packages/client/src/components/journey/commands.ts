@@ -12,6 +12,7 @@ import { useUIStore } from '../../stores/uiStore';
 import { useGroupModeStore, MIN_GROUP_SELECTION } from '../../stores/groupModeStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { GROUP_MODE_TEXT } from '../groups/groupModeText';
+import { groupModeAvailableInScene } from '../groups/sceneSelectable';
 
 export interface CommandContext {
   projectId: string;
@@ -74,7 +75,8 @@ export function buildCommandRegistry(ctx: CommandContext): Record<string, Comman
     // UC-METH-002 — the guided step 2 of the model check. Starts the group mode; no navigation.
     { id: 'action:make-group', group: 'Model', label: GROUP_MODE_TEXT.start, keywords: ['group', 'grouping', 'composition', 'model check', 'step 2'],
       run: (c) => useGroupModeStore.getState().start(c.projectId),
-      available: () => useArchitectureStore.getState().elements.length >= MIN_GROUP_SELECTION },
+      // Needs two elements, and the element boxes in the scene (not the plateau, track re-form or activity view).
+      available: () => useArchitectureStore.getState().elements.length >= MIN_GROUP_SELECTION && groupModeAvailableInScene() },
     // Compliance sections (id open:matrix frozen; the rest are new open:comply-*)
     { id: 'open:matrix', group: 'Compliance', label: 'Coverage matrix', keywords: ['compliance', 'mapping', 'gaps'], ...go(`/project/${projectId}/compliance/matrix`), available: sectionGate('comply', 'matrix') },
     comply('standards', 'Standards & regulations', ['upload', 'iso', 'togaf', 'norm']),

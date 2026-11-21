@@ -26,6 +26,7 @@ import { useJourneyStore, type PhaseInfo } from '../../stores/journeyStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 
 const ladderAt = (projectId: string, reached: number): LadderReport => ({
   projectId, highestRung: reached,
@@ -43,7 +44,8 @@ beforeEach(() => {
   useArchitectureStore.setState({ projectId: 'p1', elements: Array.from({ length: 6 }, (_, i) => ({ id: `e${i}`, name: `E${i}`, type: 'business_actor' })) as never, connections: [] });
   useJourneyStore.setState({ currentPhase: 2, phases: [phase(1), phase(2, { label: 'Add Connections', route: '__connection_mode__' }), phase(3), phase(4), phase(5), phase(6)] } as never);
   useAdvisorStore.setState({ ladder: null, focusRung: null });
-  useUIStore.setState({ isConnectionMode: false, connectionSourceId: null });
+  useUIStore.setState({ isConnectionMode: false, connectionSourceId: null, viewMode: '3d', journeyStation: null });
+  useRoadmapStore.setState({ isPlateauViewActive: false, plateauSnapshots: [] });
   useGroupModeStore.getState().reset();
 });
 
@@ -104,6 +106,29 @@ describe('ProjectView — the action field (UC-METH-002)', () => {
     useGroupModeStore.setState({ busy: true });
     renderView();
     act(() => { useUIStore.setState({ isConnectionMode: true }); });
+    expect(useGroupModeStore.getState().active).toBe(true);
+  });
+
+  test('plateau view → the phase hint, no "Make a group" (the scene cannot select there)', () => {
+    useAdvisorStore.setState({ ladder: ladderAt('p1', 1) });
+    useRoadmapStore.setState({ isPlateauViewActive: true });
+    renderView();
+    expect(screen.getByRole('button', { name: /Add Connections/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Make a group/ })).not.toBeInTheDocument();
+  });
+
+  test('the plateau view starts while the group mode runs → the group mode ends', () => {
+    useGroupModeStore.getState().start('p1');
+    renderView();
+    act(() => { useRoadmapStore.setState({ isPlateauViewActive: true }); });
+    expect(useGroupModeStore.getState().active).toBe(false);
+  });
+
+  test('the plateau view starts while the group is being made → the group mode stays', () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.setState({ busy: true });
+    renderView();
+    act(() => { useRoadmapStore.setState({ isPlateauViewActive: true }); });
     expect(useGroupModeStore.getState().active).toBe(true);
   });
 });

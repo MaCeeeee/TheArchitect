@@ -11,6 +11,7 @@ import { Boxes, X } from 'lucide-react';
 import { useGroupModeStore, MIN_GROUP_SELECTION } from '../../stores/groupModeStore';
 import { useUIStore } from '../../stores/uiStore';
 import { GROUP_MODE_TEXT as T } from './groupModeText';
+import { useGroupModeAvailableInScene } from './sceneSelectable';
 
 interface Props {
   projectId: string;
@@ -28,6 +29,13 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const wasBusy = useRef(busy);
   const barRef = useRef<HTMLDivElement>(null);
+  const sceneSelectable = useGroupModeAvailableInScene();
+
+  // The plateau, track re-form or activity view started: a select there cannot reach the mode, so it
+  // ends — after the answer when the group is being made (an error answer keeps the mode open otherwise).
+  useEffect(() => {
+    if (active && own && !busy && !sceneSelectable) cancel();
+  }, [active, own, busy, sceneSelectable, cancel]);
 
   useEffect(() => {
     if (!active || !own) return;
@@ -92,7 +100,9 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
         )}
         {naming && <button type="submit" className={primary} disabled={busy || name.trim() === ''}>{T.create}</button>}
         {active && <button type="button" className={secondary} onClick={cancel} disabled={busy}>{T.cancel}</button>}
-        {showFeedback && feedback.offerAnother && (
+        {/* Starts the mode directly (not through the registry command): accepted for the restart in the
+            feedback; it is offered only where the scene can select. */}
+        {showFeedback && feedback.offerAnother && sceneSelectable && (
           <button ref={againRef} type="button" className={primary} onClick={() => start(projectId)}>{T.start}</button>
         )}
         {showFeedback && (

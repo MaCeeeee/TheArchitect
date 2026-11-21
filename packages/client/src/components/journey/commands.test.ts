@@ -3,6 +3,7 @@ import { buildCommandRegistry, resolveActionRoute, type CommandContext } from '.
 import { useUIStore } from '../../stores/uiStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 
 vi.mock('../../services/api', () => ({
   groupsAPI: { create: vi.fn() },
@@ -115,6 +116,16 @@ describe('buildCommandRegistry — make a group (UC-METH-002)', () => {
     expect(cmd.available?.(c)).toBe(false);
     useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
     expect(cmd.available?.(c)).toBe(true);
+    useArchitectureStore.setState({ elements: [] as never });
+  });
+
+  test('action:make-group is not available in the plateau view (the scene cannot select there)', () => {
+    const c = ctx();
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
+    useUIStore.setState({ viewMode: '3d' });
+    useRoadmapStore.setState({ isPlateauViewActive: true });
+    expect(buildCommandRegistry(c)['action:make-group'].available?.(c)).toBe(false);
+    useRoadmapStore.setState({ isPlateauViewActive: false });
     useArchitectureStore.setState({ elements: [] as never });
   });
 

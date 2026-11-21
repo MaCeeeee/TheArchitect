@@ -13,6 +13,7 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import StationActions from './StationActions';
 import { useAdvisorStore } from '../../stores/advisorStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
 import type { LadderReport } from '@thearchitect/shared';
 
 const seedPhases = (nextLabel: string | null) =>
@@ -83,5 +84,14 @@ describe('StationActions — guided step 2 (UC-METH-002)', () => {
     useAdvisorStore.setState({ ladder: ladderAt('p1', 1) });
     renderIt('vision');
     expect(screen.getAllByRole('button')[0]).not.toHaveTextContent('Make a group');
+  });
+
+  test('station Model in the plateau view → no "Make a group" in front', () => {
+    sixElements();
+    useAdvisorStore.setState({ ladder: ladderAt('p1', 1) });
+    useRoadmapStore.setState({ isPlateauViewActive: true });
+    renderIt('model');
+    expect(screen.queryByRole('button', { name: 'Make a group' })).not.toBeInTheDocument();
+    useRoadmapStore.setState({ isPlateauViewActive: false });
   });
 });

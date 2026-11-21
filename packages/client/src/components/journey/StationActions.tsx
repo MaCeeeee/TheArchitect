@@ -6,6 +6,7 @@ import { useJourneyStore } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
 import { ladderGuidance } from '../groups/ladderGuidance';
+import { useGroupModeAvailableInScene } from '../groups/sceneSelectable';
 import { STATIONS, type StationKey } from './stations';
 import { getStationActions } from './stationCommands';
 import type { CommandContext } from './commands';
@@ -20,13 +21,14 @@ export default function StationActions({ projectId, station }: Props) {
   const phases = useJourneyStore((s) => s.phases);
   const elements = useArchitectureStore((s) => s.elements);
   const ladder = useAdvisorStore((s) => s.ladder);
+  const sceneSelectable = useGroupModeAvailableInScene();
 
   if (elements.length === 0) return null; // empty-world CTA owns this state
 
   const phase = STATIONS.find((s) => s.key === station)!.phase;
   const ctx: CommandContext = { projectId, navigate, phase };
   // UC-METH-002 — when the model check asks for groups, "Make a group" leads on station Model.
-  const guided = station === 'model' && ladderGuidance(ladder, projectId, elements.length) !== null;
+  const guided = station === 'model' && sceneSelectable && ladderGuidance(ladder, projectId, elements.length) !== null;
   const actions = getStationActions(station, phases, ctx, guided ? ['action:make-group'] : []);
   if (actions.length === 0) return null;
 

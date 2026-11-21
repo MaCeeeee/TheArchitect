@@ -16,6 +16,7 @@ import { useProjectData } from '../../hooks/useProjectData';
 import { useLadderSync } from '../groups/useLadderSync';
 import { ladderGuidance } from '../groups/ladderGuidance';
 import { showLadderStep } from '../groups/showLadderStep';
+import { useGroupModeAvailableInScene } from '../groups/sceneSelectable';
 import { GROUP_MODE_TEXT } from '../groups/groupModeText';
 import GroupModeBar from '../groups/GroupModeBar';
 import { useGroupModeStore } from '../../stores/groupModeStore';
@@ -41,7 +42,9 @@ export default function ProjectView() {
   // UC-METH-002 — the ladder report drives the action field; the group mode belongs to this project.
   useLadderSync(projectId);
   const ladder = useAdvisorStore((s) => s.ladder);
-  const guidance = ladderGuidance(ladder, projectId, elements.length);
+  // Only where the scene shows the element boxes: a select in the plateau or activity view cannot reach the mode.
+  const sceneSelectable = useGroupModeAvailableInScene();
+  const guidance = sceneSelectable ? ladderGuidance(ladder, projectId, elements.length) : null;
   const groupModeShown = useGroupModeStore((s) => s.projectId === projectId && (s.active || s.feedback !== null));
   // Connection mode has priority: a group mode that is still open ends when it starts.
   useEffect(() => { if (isConnectionMode) useGroupModeStore.getState().cancel(); }, [isConnectionMode]);
