@@ -6,6 +6,7 @@ import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import LadderPanel from './LadderPanel';
+import { useAdvisorStore } from '../../stores/advisorStore';
 import type { LadderReport, LadderRung } from '@thearchitect/shared';
 
 const rung = (index: LadderRung['index'], title: string, status: LadderRung['status'], next: string | null = null): LadderRung => ({
@@ -382,4 +383,15 @@ describe('LadderPanel', () => {
     fireEvent.click(screen.getByRole('button'));
     expect(screen.queryByText(/^and \d+ more/)).not.toBeInTheDocument();
   });
+});
+
+test('a marked rung opens the panel and marks its row once (UC-METH-002)', () => {
+  useAdvisorStore.setState({ focusRung: 2 });
+  const { unmount } = render(<LadderPanel report={stopped} />);
+  expect(screen.getByTestId('rung-2')).toHaveAttribute('data-focused', 'true');
+  expect(screen.getByTestId('rung-1')).not.toHaveAttribute('data-focused');
+  expect(useAdvisorStore.getState().focusRung).toBeNull(); // used once
+  unmount();
+  render(<LadderPanel report={stopped} />);
+  expect(screen.queryByTestId('rung-2')).not.toBeInTheDocument(); // collapsed again on a new mount
 });
