@@ -16,6 +16,7 @@ import {
   isCorpusConfigured,
   getRegulationsByKeys,
   corpusHealth,
+  CorpusRegulation,
   type ICorpusRegulation,
 } from './corpusClient.service';
 import { log } from '../config/logger';
@@ -93,6 +94,50 @@ export function latestVersionPerParagraph<
     if (!cur || (r.version ?? 1) > (cur.version ?? 1)) best.set(keyOf(r), r);
   }
   return regs.filter(r => isLivePasteReg(r) || best.get(keyOf(r)) === r);
+}
+
+/**
+ * THE-808 (UC-REGVER-001, Re-Trigger von THE-804): Wie viele Projekt-Regulations
+ * stehen auf einem Korpus-Text, der sich seit der Übernahme geändert hat?
+ * Grundlage ist die festgehaltene Übernahme `sourceUrl = corpus:<regulationKey>@<hash>`.
+ * Der Crawler überschreibt geänderte Paragraphen an Ort und Stelle (`version`
+ * bleibt 1, nur `versionHash` wechselt, compliance-crawler routes/crawl.ts) —
+ * deshalb der Vergleich über den Hash-Präfix, nicht über `version`.
+ * WIRFT bei Korpus-Ausfall: ein Ausfall darf nie als „missing" zählen.
+ * Liefert nur Zahlen (öffentlicher Health-Endpunkt).
+ */
+const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
+
+export interface PinnedTextStaleness {
+  total: number;
+  stale: number;
+  missing: number;
+}
+
+export async function pinnedTextStaleness(): Promise<PinnedTextStaleness> {
+  const rows = await Regulation.find({ sourceUrl: { $regex: '^corpus:.+@[0-9a-fA-F]+$' } })
+    .select('sourceUrl')
+    .lean();
+  const pins = rows.flatMap(r => {
+    const m = PINNED_CORPUS_SOURCE.exec(r.sourceUrl ?? '');
+    return m ? [{ key: m[1], hash: m[2].toLowerCase() }] : [];
+  });
+  if (pins.length === 0) return { total: 0, stale: 0, missing: 0 };
+
+  const docs = await CorpusRegulation()
+    .find({ regulationKey: { $in: [...new Set(pins.map(p => p.key))] } })
+    .select('regulationKey versionHash')
+    .lean();
+  const hashByKey = new Map(docs.map(d => [d.regulationKey, String(d.versionHash ?? '').toLowerCase()]));
+
+  let stale = 0;
+  let missing = 0;
+  for (const p of pins) {
+    const current = hashByKey.get(p.key);
+    if (current === undefined) missing += 1;
+    else if (!current.startsWith(p.hash)) stale += 1;
+  }
+  return { total: pins.length, stale, missing };
 }
 
 function recordFallback(reason: keyof FallbackStats, context: Record<string, unknown>): void {

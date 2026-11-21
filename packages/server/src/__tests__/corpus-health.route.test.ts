@@ -117,4 +117,71 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
     expect(res.body.fallbackStats.corpusUnconfigured).toBe(0);
     // A non-zero counter is exactly what must block the STRICT_READS flip.
   });
+
+  // THE-808 (UC-REGVER-001, neu gefasst): Re-Trigger von THE-804 — stehen
+  // Projekt-Paragraphen mit festgehaltenem Korpus-Hash auf einem veralteten Text?
+  describe('THE-808 — pinnedTexts', () => {
+    const corpusRows = [
+      { regulationKey: 'dsgvo:art-17', versionHash: 'aaaa1111' + 'f'.repeat(56), version: 1 },
+      { regulationKey: 'nis2:art-21', versionHash: 'bbbb2222' + 'f'.repeat(56), version: 1 },
+    ];
+    async function seedPins(sourceUrls: string[]) {
+      await Regulation.create(
+        sourceUrls.map((sourceUrl, i) => ({
+          projectId: new mongoose.Types.ObjectId(),
+          source: 'dsgvo',
+          paragraphNumber: `Art. ${i + 1}`,
+          title: 'T',
+          fullText: 'x'.repeat(60),
+          sourceUrl,
+          effectiveFrom: new Date('2024-01-01'),
+          language: 'de',
+          jurisdiction: 'EU',
+        })),
+      );
+    }
+
+    it('zählt total/stale/missing über die festgehaltenen Korpus-Hashes', async () => {
+      __setCorpusForTests(makeFakeCorpus(corpusRows));
+      await seedPins([
+        'corpus:dsgvo:art-17@aaaa1111', // aktuell
+        'corpus:nis2:art-21@cccc3333', // veraltet
+        'corpus:lksg:§-99@dddd4444', // Schlüssel fehlt im Korpus
+        'user-pasted', // zählt nicht
+        'corpus:dsgvo:art-17', // ohne @hash — zählt nicht
+      ]);
+      const res = await request(app).get(HEALTH);
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+      expect(res.body.pinnedTexts).toEqual({ total: 3, stale: 1, missing: 1 });
+      expect(JSON.stringify(res.body)).not.toContain('art-17');
+    });
+
+    it('keine Pins → alles 0', async () => {
+      __setCorpusForTests(makeFakeCorpus(corpusRows));
+      await seedPins(['user-pasted']);
+      const res = await request(app).get(HEALTH);
+      expect(res.body.pinnedTexts).toEqual({ total: 0, stale: 0, missing: 0 });
+    });
+
+    it('Korpus-Lesen wirft → pinnedTexts fehlt, ok unverändert, nie als missing gezählt', async () => {
+      const model = makeFakeCorpus(corpusRows) as unknown as { find: () => never };
+      model.find = () => {
+        throw new Error('boom');
+      };
+      __setCorpusForTests(model as never);
+      await seedPins(['corpus:dsgvo:art-17@aaaa1111']);
+      const res = await request(app).get(HEALTH);
+      expect(res.body.ok).toBe(true);
+      expect(res.body).not.toHaveProperty('pinnedTexts');
+    });
+
+    it('Korpus nicht konfiguriert → ok false, pinnedTexts fehlt', async () => {
+      delete process.env.CORPUS_MONGODB_URI;
+      await seedPins(['corpus:dsgvo:art-17@aaaa1111']);
+      const res = await request(app).get(HEALTH);
+      expect(res.body.ok).toBe(false);
+      expect(res.body).not.toHaveProperty('pinnedTexts');
+    });
+  });
 });

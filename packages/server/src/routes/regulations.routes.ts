@@ -27,7 +27,7 @@ import {
   listCorpusRelationSuggestionDocs,
 } from '../services/corpusClient.service';
 import { corpusVectorIndexHealth } from '../services/corpusVectorSync.service';
-import { getFallbackStats, isStrictCorpusReads } from '../services/regulationResolver.service';
+import { getFallbackStats, isStrictCorpusReads, pinnedTextStaleness, type PinnedTextStaleness } from '../services/regulationResolver.service';
 import {
   isNormSource,
   NORM_SOURCE_IDS,
@@ -62,6 +62,17 @@ router.get('/regulations/corpus/health', async (_req: Request, res: Response) =>
   // read and CORPUS_STRICT_READS can be flipped safely. `fallbackStats` is
   // in-memory (resets on restart) — interpret it together with `uptimeSeconds`.
   // Tamper-proof vs. log-grep: a typo can fake a "0" in a shell, not here.
+  // THE-808 (UC-REGVER-001): Re-Trigger von THE-804 — veraltete festgehaltene
+  // Korpus-Texte in Projekten. Nur bei lesbarem Korpus; ein Fehler lässt das
+  // Feld weg und berührt `ok` nicht (n8n-Healthcheck + STRICT-Readiness).
+  let pinnedTexts: PinnedTextStaleness | undefined;
+  if (health.ok) {
+    try {
+      pinnedTexts = await pinnedTextStaleness();
+    } catch (err) {
+      log.warn({ err: safeErrorMessage(err) }, '[corpus/health] pinnedTexts failed');
+    }
+  }
   res.json({
     configured,
     health,
@@ -70,6 +81,7 @@ router.get('/regulations/corpus/health', async (_req: Request, res: Response) =>
     strictReads: isStrictCorpusReads(),
     fallbackStats: getFallbackStats(),
     uptimeSeconds: Math.round(process.uptime()),
+    ...(pinnedTexts ? { pinnedTexts } : {}),
   });
 });
 
