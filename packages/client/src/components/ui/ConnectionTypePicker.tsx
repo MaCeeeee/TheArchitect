@@ -92,8 +92,11 @@ export default function ConnectionTypePicker() {
   // Without this, Backspace here deleted the selected source element.
   // preventDefault only for the keys the picker uses, so browser shortcuts
   // such as Cmd+R keep working.
+  // App shortcuts (Cmd/Ctrl+Z, Ctrl+1/2/3, Cmd+K) are swallowed on purpose while
+  // the picker is open; Tab/Space defaults still work because nothing calls preventDefault for them.
+  const isOpen = showPicker && !!position && !!sourceEl && !!targetEl;
   useEffect(() => {
-    if (!showPicker) return;
+    if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       e.stopImmediatePropagation();
       if (e.key === 'Escape') {
@@ -114,7 +117,7 @@ export default function ConnectionTypePicker() {
     };
     window.addEventListener('keydown', handler, { capture: true });
     return () => window.removeEventListener('keydown', handler, { capture: true });
-  }, [showPicker, selectedType, validTypes]);
+  }, [isOpen, selectedType, validTypes]);
 
   // Click outside → cancel
   useEffect(() => {
