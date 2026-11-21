@@ -84,10 +84,21 @@ export default function ConnectionTypePicker() {
     if (showPicker) setSelectedType(defaultType);
   }, [showPicker, defaultType]);
 
-  // Keyboard: Enter = confirm, Escape = cancel, arrows = navigate
+  // Keyboard: while the picker is open it OWNS the keyboard (THE-810).
+  // All scene handlers (Toolbar: Delete/Backspace/C/V, ProjectView: Escape,
+  // ViewModeCamera: arrows/F/digits) listen on window in the BUBBLE phase.
+  // This listener sits on window in the CAPTURE phase, so it runs before all
+  // of them, and stopImmediatePropagation keeps every key away from them.
+  // Without this, Backspace here deleted the selected source element.
+  // preventDefault only for the keys the picker uses, so browser shortcuts
+  // such as Cmd+R keep working.
+  // App shortcuts (Cmd/Ctrl+Z, Ctrl+1/2/3, Cmd+K) are swallowed on purpose while
+  // the picker is open; Tab/Space defaults still work because nothing calls preventDefault for them.
+  const isOpen = showPicker && !!position && !!sourceEl && !!targetEl;
   useEffect(() => {
-    if (!showPicker) return;
+    if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
+      e.stopImmediatePropagation();
       if (e.key === 'Escape') {
         e.preventDefault();
         handleCancel();
@@ -104,9 +115,9 @@ export default function ConnectionTypePicker() {
         if (idx > 0) setSelectedType(validTypes[idx - 1]);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showPicker, selectedType, validTypes]);
+    window.addEventListener('keydown', handler, { capture: true });
+    return () => window.removeEventListener('keydown', handler, { capture: true });
+  }, [isOpen, selectedType, validTypes]);
 
   // Click outside → cancel
   useEffect(() => {
