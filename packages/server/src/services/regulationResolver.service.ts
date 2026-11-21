@@ -96,7 +96,6 @@ export function latestVersionPerParagraph<
   return regs.filter(r => isLivePasteReg(r) || best.get(keyOf(r)) === r);
 }
 
-// Muss mit dem `$regex`-String in pinnedTextStaleness() synchron bleiben.
 const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
 
 /**
@@ -107,6 +106,8 @@ const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
  * bleibt 1, nur `versionHash` wechselt, compliance-crawler routes/crawl.ts) —
  * deshalb der Vergleich über den Hash-Präfix, nicht über `version`.
  * WIRFT bei Korpus-Ausfall: ein Ausfall darf nie als „missing" zählen.
+ * Nur die aktive (höchste) Version je Paragraph und Projekt zählt (wie THE-807):
+ * eine neuere eingefügte Fassung löst die veraltete Übernahme ab.
  * Liefert nur Zahlen (öffentlicher Health-Endpunkt).
  */
 
@@ -117,9 +118,19 @@ export interface PinnedTextStaleness {
 }
 
 export async function pinnedTextStaleness(): Promise<PinnedTextStaleness> {
-  const rows = await Regulation.find({ sourceUrl: { $regex: '^corpus:.+@[0-9a-fA-F]+$' } })
-    .select('sourceUrl')
+  // Alle Fassungen laden (kleine Sammlung): ein ungepinnter Nachfolger muss
+  // den gepinnten Vorgänger verdrängen können.
+  const all = await Regulation.find({})
+    .select('projectId source paragraphNumber version sourceUrl')
     .lean();
+  const byProject = new Map<string, typeof all>();
+  for (const r of all) {
+    const k = String(r.projectId);
+    const list = byProject.get(k);
+    if (list) list.push(r);
+    else byProject.set(k, [r]);
+  }
+  const rows = [...byProject.values()].flatMap(g => latestVersionPerParagraph(g));
   const pins = rows.flatMap(r => {
     const m = PINNED_CORPUS_SOURCE.exec(r.sourceUrl ?? '');
     return m ? [{ key: m[1], hash: m[2].toLowerCase() }] : [];

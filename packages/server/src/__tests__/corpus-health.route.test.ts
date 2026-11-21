@@ -141,6 +141,38 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
       );
     }
 
+    async function seedVersions(sourceUrlV1: string, sourceUrlV2: string) {
+      const projectId = new mongoose.Types.ObjectId();
+      await Regulation.create(
+        [sourceUrlV1, sourceUrlV2].map((sourceUrl, i) => ({
+          projectId,
+          source: 'dsgvo',
+          paragraphNumber: 'Art. 9',
+          version: i + 1,
+          title: 'T',
+          fullText: 'x'.repeat(60),
+          sourceUrl,
+          effectiveFrom: new Date('2024-01-01'),
+          language: 'de',
+          jurisdiction: 'EU',
+        })),
+      );
+    }
+
+    it('eine neuere eingefügte Fassung löst die veraltete Übernahme ab (zählt nicht mehr)', async () => {
+      __setCorpusForTests(makeFakeCorpus(corpusRows));
+      await seedVersions('corpus:nis2:art-21@cccc3333', 'user-pasted');
+      const res = await request(app).get(HEALTH);
+      expect(res.body.pinnedTexts).toEqual({ total: 0, stale: 0, missing: 0 });
+    });
+
+    it('ist die höchste Version die veraltete Übernahme, zählt sie', async () => {
+      __setCorpusForTests(makeFakeCorpus(corpusRows));
+      await seedVersions('user-pasted', 'corpus:nis2:art-21@cccc3333');
+      const res = await request(app).get(HEALTH);
+      expect(res.body.pinnedTexts).toEqual({ total: 1, stale: 1, missing: 0 });
+    });
+
     it('zählt total/stale/missing über die festgehaltenen Korpus-Hashes', async () => {
       __setCorpusForTests(makeFakeCorpus(corpusRows));
       await seedPins([
