@@ -117,4 +117,43 @@ describe('THE-419 — corpus/health telemetry endpoint', () => {
     expect(res.body.fallbackStats.corpusUnconfigured).toBe(0);
     // A non-zero counter is exactly what must block the STRICT_READS flip.
   });
+
+  // THE-808 (UC-REGVER-001): Re-Trigger von THE-804 — gibt es im Korpus eine
+  // zweite Fassung? Top-Level-`ok` behält seine Bedeutung.
+  describe('THE-808 — health.laterVersions', () => {
+    it('zählt Korpus-Dokumente mit version > 1', async () => {
+      __setCorpusForTests(
+        makeFakeCorpus([
+          { regulationKey: 'dsgvo:art-17', versionHash: 'h1', version: 1 },
+          { regulationKey: 'dsgvo:art-17', versionHash: 'h2', version: 2 },
+          { regulationKey: 'nis2:art-21', versionHash: 'h3', version: 1 },
+        ]),
+      );
+      const res = await request(app).get(HEALTH);
+      expect(res.status).toBe(200);
+      expect(res.body.ok).toBe(true);
+      expect(res.body.health.laterVersions).toBe(1);
+    });
+
+    it('nur Erstfassungen → laterVersions 0', async () => {
+      __setCorpusForTests(
+        makeFakeCorpus([{ regulationKey: 'dsgvo:art-17', versionHash: 'h1', version: 1 }]),
+      );
+      const res = await request(app).get(HEALTH);
+      expect(res.body.ok).toBe(true);
+      expect(res.body.health.laterVersions).toBe(0);
+    });
+
+    it('Zählen wirft → ok bleibt true, laterVersions fehlt', async () => {
+      const model = makeFakeCorpus([{ regulationKey: 'dsgvo:art-17', versionHash: 'h1', version: 1 }]) as any;
+      model.countDocuments = async () => {
+        throw new Error('boom');
+      };
+      __setCorpusForTests(model);
+      const res = await request(app).get(HEALTH);
+      expect(res.body.ok).toBe(true);
+      expect(res.body.health.count).toBe(1);
+      expect(res.body.health).not.toHaveProperty('laterVersions');
+    });
+  });
 });

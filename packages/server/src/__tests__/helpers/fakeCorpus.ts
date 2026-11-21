@@ -30,6 +30,8 @@ function matches(row: any, filter: Record<string, any>): boolean {
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       const op = v as Record<string, any>;
       if (Array.isArray(op.$in)) return op.$in.includes(row[k]);
+      // $gt kommt aus corpusHealth().laterVersions (THE-808).
+      if ('$gt' in op) return row[k] > op.$gt;
       // $exists/$ne kommen aus dem relationSuggestions-Read (THE-433): Docs ohne
       // Vorschlaege duerfen die Review-Liste nie erreichen.
       let ok = true;
@@ -85,5 +87,6 @@ export function makeFakeCorpus(rows: Array<Partial<Row>>): Model<ICorpusRegulati
     findOne: (f: Record<string, any>) => findOneQuery(full.filter(r => matches(r, f))),
     find: (f: Record<string, any>) => findQuery(full.filter(r => matches(r, f))),
     estimatedDocumentCount: async () => full.length,
+    countDocuments: async (f: Record<string, any> = {}) => full.filter(r => matches(r, f)).length,
   } as unknown as Model<ICorpusRegulation>;
 }
