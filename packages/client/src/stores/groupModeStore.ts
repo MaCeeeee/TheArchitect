@@ -23,6 +23,7 @@ interface GroupModeState {
   busy: boolean;
   error: string | null;
   feedback: GroupFeedback | null;
+  /** Starts the mode for this project. Ignored while a request runs (busy). */
   start: (projectId: string) => void;
   toggle: (elementId: string) => void;
   toNaming: () => void;
@@ -62,6 +63,9 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
   feedback: null,
 
   start: (projectId) => {
+    // While a group is being made a new mode would drop the answer (the group would exist on the
+    // server but not in the model, and the user would make it again). Ignored until the answer is in.
+    if (get().busy) return;
     generation++;
     useUIStore.getState().exitConnectionMode();
     useArchitectureStore.getState().clearSelection();

@@ -257,19 +257,21 @@ describe('groupModeStore', () => {
     expect(state()).toMatchObject({ active: false, selected: [], error: null, feedback: null, projectId: null });
   });
 
-  test('an old answer does not end a new mode started after a cancel in the same project', async () => {
+  test('start while the request runs is ignored: the answer lands, a start after the answer works', async () => {
     const answer = pendingCreate();
     named();
     const done = state().submit('p1');
     state().cancel();
     state().start('p1');
-    state().toggle('c');
+    expect(state()).toMatchObject({ active: true, busy: true, phase: 'name', selected: ['a', 'b'], name: 'Sales' });
     answer(serverAnswer);
     await done;
-    expect(state().active).toBe(true);
-    expect(state().selected).toEqual(['c']);
-    expect(state().feedback).toBeNull();
-    expect(useArchitectureStore.getState().elements).toHaveLength(3);
+    expect(useArchitectureStore.getState().elements.map((e) => e.id)).toContain('g1');
+    expect(state().active).toBe(false);
+    expect(state().feedback).toEqual({ lines: ['You have 1 group. Make one more group.'], offerAnother: true });
+    state().start('p1');
+    state().toggle('c');
+    expect(state()).toMatchObject({ active: true, busy: false, phase: 'select', selected: ['c'], feedback: null, projectId: 'p1' });
   });
 
   test('an old error does not write into the idle store or a new mode', async () => {
