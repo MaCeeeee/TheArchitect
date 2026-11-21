@@ -33,6 +33,7 @@ jest.mock('../middleware/audit.middleware', () => ({
 
 // Import the routes AFTER the mocks are registered
 import regulationsRoutes from '../routes/regulations.routes';
+import { createAuditEntry } from '../middleware/audit.middleware';
 
 const PROJECT_ID = '507f1f77bcf86cd799439011';
 const OTHER_PROJECT_ID = '507f1f77bcf86cd799439099';
@@ -280,6 +281,81 @@ describe('Regulations Routes (UC-ICM-001 / THE-272)', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.data.embedded).toBe(28);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────
+  // POST /api/projects/:projectId/regulations — THE-806 (UC-REGVER-001)
+  // `version` zählt Fassungen des Textes, nicht Einfügungen.
+  // ────────────────────────────────────────────────────────
+  describe('POST /:projectId/regulations — Fassung statt Erfassung (THE-806)', () => {
+    const TEXT = 'Article 17 right to erasure — a text long enough for the fifty-char rule.';
+    const auditMock = createAuditEntry as jest.Mock;
+
+    function post(body: Record<string, unknown>) {
+      return request(app)
+        .post(`/api/projects/${PROJECT_ID}/regulations`)
+        .send({ source: 'dsgvo', paragraphNumber: 'Art. 17', fullText: TEXT, ...body });
+    }
+
+    beforeEach(() => auditMock.mockClear());
+
+    it('gleicher Text zweimal → 1 Dokument, gleiche _id, 2. Antwort 200 reused', async () => {
+      const first = await post({});
+      const second = await post({});
+
+      expect(first.status).toBe(201);
+      expect(second.status).toBe(200);
+      expect(second.body.reused).toBe(true);
+      expect(second.body.data._id).toBe(first.body.data._id);
+      expect(await Regulation.countDocuments({})).toBe(1);
+      expect(auditMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('gleicher Text mit Leerraum drumherum → kein neues Dokument', async () => {
+      await post({});
+      const second = await post({ fullText: `  \n${TEXT}\n  ` });
+
+      expect(second.status).toBe(200);
+      expect(second.body.reused).toBe(true);
+      expect(await Regulation.countDocuments({})).toBe(1);
+    });
+
+    it('gleicher Text, anderer Titel → kein neues Dokument', async () => {
+      await post({ title: 'Erster Titel' });
+      const second = await post({ title: 'Zweiter Titel' });
+
+      expect(second.status).toBe(200);
+      expect(await Regulation.countDocuments({})).toBe(1);
+    });
+
+    it('Text weicht um ein Zeichen ab → Version 2, 201, zweiter Audit-Eintrag', async () => {
+      await post({});
+      const second = await post({ fullText: `${TEXT}!` });
+
+      expect(second.status).toBe(201);
+      expect(second.body.reused).toBeUndefined();
+      expect(second.body.data.version).toBe(2);
+      expect(await Regulation.countDocuments({})).toBe(2);
+      expect(auditMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('vergleicht mit der HÖCHSTEN Version: v1-Text nach v2 eingefügt → Version 3', async () => {
+      await post({});
+      await post({ fullText: `${TEXT}!` });
+      const third = await post({});
+
+      expect(third.status).toBe(201);
+      expect(third.body.data.version).toBe(3);
+      expect(await Regulation.countDocuments({})).toBe(3);
+    });
+
+    it('gleicher Text unter anderer paragraphNumber → 2 Dokumente', async () => {
+      await post({});
+      const other = await post({ paragraphNumber: 'Art. 18' });
+
+      expect(other.status).toBe(201);
+      expect(await Regulation.countDocuments({})).toBe(2);
     });
   });
 });

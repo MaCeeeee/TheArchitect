@@ -244,20 +244,24 @@ router.post(
     }
 
     try {
-      // Auto-bump version if (projectId, source, paragraphNumber) already exists.
-      // The unique index is on (projectId, source, paragraphNumber, version) so
-      // a fresh paste of the same paragraph creates a new version instead of
-      // a silent duplicate-key 500. UC-ICM-003.3 "Paste & See" is idempotent
-      // by intent — every paste = a new saved version.
-      const existingMax = await Regulation.findOne({
+      // THE-806 (UC-REGVER-001, Entscheidung THE-804): `version` zählt FASSUNGEN
+      // des Textes, nicht Einfügungen. Gleicher Text (getrimmt) wie die höchste
+      // vorhandene Version → kein neues Dokument; die Antwort nennt das vorhandene
+      // (Paste & See braucht nur dessen _id). Anderer Text → Version n+1, wie bisher.
+      // Der Titel gehört nicht zur Fassung. Unique-Index (projectId, source,
+      // paragraphNumber, version) bleibt unverändert.
+      const latest = await Regulation.findOne({
         projectId: new mongoose.Types.ObjectId(projectId),
         source,
         paragraphNumber,
       })
         .sort({ version: -1 })
-        .select('version')
+        .select('-embedding')
         .lean();
-      const nextVersion = existingMax ? (existingMax.version ?? 1) + 1 : 1;
+      if (latest && (latest.fullText ?? '').trim() === fullText.trim()) {
+        return res.status(200).json({ success: true, data: latest, reused: true });
+      }
+      const nextVersion = latest ? (latest.version ?? 1) + 1 : 1;
 
       const created = await Regulation.create({
         projectId: new mongoose.Types.ObjectId(projectId),
