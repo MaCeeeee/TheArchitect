@@ -68,7 +68,7 @@ test('3 valid members → 201, one grouping, 3 compositions, nothing skipped, on
   expect(readParams).toMatchObject({ projectId: 'p1', ids: ['p', 'a', 'n'] });
   expect(mockWriteGroup).toHaveBeenCalledTimes(1);
   expect(mockWriteGroup.mock.calls[0][0].members).toHaveLength(3);
-  expect(auditEntries).toEqual([{ action: 'create_group', after: { groupId: res.body.data.element.id, name: 'Sales', type: 'grouping', members: 3, skipped: 0 } }]);
+  expect(auditEntries).toEqual([{ action: 'create_group', after: { groupId: res.body.data.element.id, name: 'Sales', type: 'grouping', members: 3, skipped: 0, memberIds: ['a', 'n', 'p'], skippedIds: [] } }]);
 });
 
 test('a goal among the members is skipped with its reason; the group has the others', async () => {
@@ -118,4 +118,26 @@ test('a member vanished during the write → 409', async () => {
   const res = await post({ name: 'Sales', memberIds: ['p', 'a'] });
   expect(res.status).toBe(409);
   expect(auditEntries).toEqual([]);
+});
+
+test('an id that matches two elements of the project → 409, nothing written', async () => {
+  mockRunCypher.mockResolvedValue(rows(['p', 'process'], ['p', 'process'], ['a', 'application_component']));
+  const res = await post({ name: 'Sales', memberIds: ['p', 'a'] });
+  expect(res.status).toBe(409);
+  expect(res.body.ambiguousIds).toEqual(['p']);
+  expect(mockWriteGroup).not.toHaveBeenCalled();
+  expect(auditEntries).toEqual([]);
+});
+
+test('201 member ids → 400, nothing read', async () => {
+  const res = await post({ name: 'Sales', memberIds: Array.from({ length: 201 }, (_, i) => `id-${i}`) });
+  expect(res.status).toBe(400);
+  expect(mockRunCypher).not.toHaveBeenCalled();
+});
+
+test('audit carries the member ids and the skipped ids', async () => {
+  mockRunCypher.mockResolvedValue(rows(['p', 'process'], ['a', 'application_component'], ['g', 'goal']));
+  const res = await post({ name: 'Sales', memberIds: ['p', 'a', 'g'] });
+  expect(auditEntries[0].after).toMatchObject({ members: 2, skipped: 1, memberIds: ['a', 'p'], skippedIds: ['g'] });
+  expect(res.status).toBe(201);
 });

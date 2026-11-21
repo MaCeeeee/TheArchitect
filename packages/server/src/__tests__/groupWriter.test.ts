@@ -30,7 +30,9 @@ test('creates the group, then one composition per member, scoped to the project,
   expect(groupParams).toMatchObject({ groupId: 'g1', projectId: 'p1', type: 'grouping', name: 'Sales', layer: 'business', posX: 1, posY: 8, posZ: 2 });
   const [edgeQuery, edgeParams] = run.mock.calls[1];
   expect(edgeQuery).toContain("type: 'composition'");
-  expect(edgeQuery).toContain('{id: m.id, projectId: $projectId}');
+  expect(edgeQuery).toContain('{projectId: $projectId}) WHERE t.id IN $memberIds');
+  expect(edgeQuery).not.toContain('UNWIND');
+  expect(edgeParams.memberIds).toEqual(['a', 'b']);
   expect(edgeQuery).toContain('{id: $groupId, projectId: $projectId}');
   expect(edgeParams.members).toEqual(write.members);
   expect(close).toHaveBeenCalled();

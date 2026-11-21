@@ -70,4 +70,13 @@ describe('planGroup', () => {
     expect(plan.members.map((m) => m.id)).toEqual(['a', 'p']);
     expect(plan.skipped).toEqual([]);
   });
+
+  test('at the scene boundary the group still gets a free spot (clamping cannot pull it onto a member)', () => {
+    const y = LAYER_Y.business;
+    const plan = planGroup('grouping', [row('a', 'process', -1, 1000, y), row('b', 'process', 1, 1000, y)]);
+    for (const m of [[-1, 1000], [1, 1000]]) {
+      expect(Math.hypot(plan.position.x - m[0], plan.position.z - m[1])).toBeGreaterThanOrEqual(GROUP_CLEARANCE);
+    }
+    expect(Math.abs(plan.position.z)).toBeLessThanOrEqual(1000);
+  });
 });

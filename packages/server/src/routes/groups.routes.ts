@@ -26,11 +26,11 @@ router.use(authenticate);
 const CreateGroupSchema = z.object({
   name: z.string().trim().min(1).max(200),
   type: z.enum(GROUP_TYPES).default('grouping'),
-  memberIds: z.array(z.string().min(1)).min(1).max(MAX_GROUP_MEMBERS),
+  memberIds: z.array(z.string().min(1).max(128)).min(1).max(MAX_GROUP_MEMBERS),
 });
 
 interface GroupResponseBody {
-  data?: { element: { id: string; name: string; type: string }; connections: unknown[]; skipped: unknown[] };
+  data?: { element: { id: string; name: string; type: string }; connections: Array<{ targetId: string }>; skipped: Array<{ id: string }> };
 }
 
 router.post(
@@ -44,7 +44,7 @@ router.post(
     getAfter: (_req: Request, body: unknown) => {
       const data = (body as GroupResponseBody | undefined)?.data;
       return data
-        ? { groupId: data.element.id, name: data.element.name, type: data.element.type, members: data.connections.length, skipped: data.skipped.length }
+        ? { groupId: data.element.id, name: data.element.name, type: data.element.type, members: data.connections.length, skipped: data.skipped.length, memberIds: data.connections.map((c) => c.targetId), skippedIds: data.skipped.map((k) => k.id) }
         : {};
     },
   }),
@@ -71,7 +71,14 @@ router.post(
         posY: r.get('posY') == null ? null : coerceNeo4jNumber(r.get('posY'), 0),
         posZ: r.get('posZ') == null ? null : coerceNeo4jNumber(r.get('posZ'), 0),
       }));
-      const found = new Set(rows.map((r) => r.id));
+      const counts = new Map<string, number>();
+      for (const r of rows) counts.set(r.id, (counts.get(r.id) ?? 0) + 1);
+      const ambiguousIds = [...counts].filter(([, n]) => n > 1).map(([id]) => id);
+      if (ambiguousIds.length > 0) {
+        res.status(409).json({ success: false, error: 'Ambiguous member ids', ambiguousIds });
+        return;
+      }
+      const found = new Set(counts.keys());
       const unknownIds = ids.filter((id) => !found.has(id));
       if (unknownIds.length > 0) {
         res.status(400).json({ success: false, error: 'Unknown members', unknownIds });

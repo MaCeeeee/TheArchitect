@@ -49,12 +49,12 @@ export async function writeGroup(w: GroupWrite): Promise<void> {
       );
       const result = await tx.run(
         `MATCH (g:ArchitectureElement {id: $groupId, projectId: $projectId})
-         UNWIND $members AS m
-         MATCH (t:ArchitectureElement {id: m.id, projectId: $projectId})
-         CREATE (g)-[r:CONNECTS_TO {id: m.connectionId, sourceElementId: $groupId, targetElementId: m.id, type: 'composition', label: ''}]->(t)
+         MATCH (t:ArchitectureElement {projectId: $projectId}) WHERE t.id IN $memberIds
+         WITH g, t, [m IN $members WHERE m.id = t.id][0] AS m
+         CREATE (g)-[r:CONNECTS_TO {id: m.connectionId, sourceElementId: $groupId, targetElementId: t.id, type: 'composition', label: ''}]->(t)
          SET r.createdAt = timestamp(), ${provenanceCypherFragment('r')}
          RETURN count(r) AS created`,
-        { groupId: w.groupId, projectId: w.projectId, members: w.members, ...w.provenance },
+        { groupId: w.groupId, projectId: w.projectId, members: w.members, memberIds: w.members.map((m) => m.id), ...w.provenance },
       );
       const created = coerceNeo4jNumber(result.records[0]?.get('created'), 0);
       if (created !== w.members.length) throw new GroupMembersChangedError(w.members.length, created);

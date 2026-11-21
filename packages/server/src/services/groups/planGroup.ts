@@ -68,9 +68,17 @@ export function planGroup(type: GroupType, rows: readonly MemberRow[]): GroupPla
     else members.push(row);
   }
   const { layer, togafDomain } = PLACEMENT[type];
-  const position = { x: mean(members.map((m) => m.posX ?? 0)), y: LAYER_Y[layer], z: mean(members.map((m) => m.posZ ?? 0)) };
-  const tooClose = () =>
-    members.some((m) => Math.hypot(position.x - (m.posX ?? 0), position.y - (m.posY ?? 0), position.z - (m.posZ ?? 0)) < GROUP_CLEARANCE);
-  for (let step = 0; step < MAX_STEPS && tooClose(); step++) position.z += GROUP_STEP;
-  return { layer, togafDomain, position: clampPosition3D(position), members, skipped };
+  const start = { x: mean(members.map((m) => m.posX ?? 0)), y: LAYER_Y[layer], z: mean(members.map((m) => m.posZ ?? 0)) };
+  const tooClose = (p: { x: number; y: number; z: number }) =>
+    members.some((m) => Math.hypot(p.x - (m.posX ?? 0), p.y - (m.posY ?? 0), p.z - (m.posZ ?? 0)) < GROUP_CLEARANCE);
+  // Clamp first, then test: clamping must never pull the group back onto a member.
+  // Candidates alternate +z / -z so a cluster at the scene boundary still gets a free spot.
+  let position = clampPosition3D(start);
+  for (let step = 1; step <= MAX_STEPS && tooClose(position); step++) {
+    const up = clampPosition3D({ ...start, z: start.z + step * GROUP_STEP });
+    const down = clampPosition3D({ ...start, z: start.z - step * GROUP_STEP });
+    position = !tooClose(up) ? up : !tooClose(down) ? down : position;
+    if (!tooClose(position)) break;
+  }
+  return { layer, togafDomain, position, members, skipped };
 }
