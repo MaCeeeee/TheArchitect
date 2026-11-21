@@ -92,3 +92,24 @@ describe('advisorStore.loadLadder', () => {
     expect(shown()?.timestamp).toBe('2026-11-20T12:00:05.000Z');
   });
 });
+
+describe('advisorStore — the ladder outlives the panel (UC-METH-002)', () => {
+  beforeEach(() => { ladder.mockReset(); useAdvisorStore.getState().clear(); });
+
+  test('clearScan removes the scan but keeps the ladder report', async () => {
+    ladder.mockResolvedValue(answer(report('p1')));
+    await useAdvisorStore.getState().loadLadder('p1');
+    useAdvisorStore.setState({ insights: [{ id: 'i' }] as never });
+    useAdvisorStore.getState().clearScan();
+    expect(useAdvisorStore.getState().insights).toEqual([]);
+    expect(shown()?.projectId).toBe('p1');
+  });
+
+  test('focusLadderRung marks a rung; loading another project removes the mark', async () => {
+    useAdvisorStore.getState().focusLadderRung(2);
+    expect(useAdvisorStore.getState().focusRung).toBe(2);
+    ladder.mockResolvedValue(answer(report('p2')));
+    await useAdvisorStore.getState().loadLadder('p2');
+    expect(useAdvisorStore.getState().focusRung).toBeNull();
+  });
+});
