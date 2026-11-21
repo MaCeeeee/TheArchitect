@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ArrowRight, Sigma } from 'lucide-react';
 
 interface NextStepBannerProps {
@@ -9,11 +10,14 @@ interface NextStepBannerProps {
   label?: string;
   /** Opens the ladder panel on the same step; without it the label is plain text. */
   onLabel?: () => void;
+  /** What the label button does: shown as its title and read as its description. */
+  labelHint?: string;
   tone?: 'phase' | 'ladder';
 }
 
-export default function NextStepBanner({ message, actionLabel, onAction, className = '', label, onLabel, tone = 'phase' }: NextStepBannerProps) {
+export default function NextStepBanner({ message, actionLabel, onAction, className = '', label, onLabel, labelHint, tone = 'phase' }: NextStepBannerProps) {
   const ladder = tone === 'ladder';
+  const hintId = useId();
   return (
     <div
       className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -27,15 +31,25 @@ export default function NextStepBanner({ message, actionLabel, onAction, classNa
             <div className="flex items-center gap-1">
               <Sigma size={12} className="shrink-0 text-[#7c3aed]" />
               {onLabel ? (
-                <button type="button" onClick={onLabel} className="text-[11px] text-white hover:underline cursor-pointer text-left">
-                  {label}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={onLabel}
+                    title={labelHint}
+                    aria-describedby={labelHint ? hintId : undefined}
+                    className="text-[11px] text-white hover:underline cursor-pointer text-left"
+                  >
+                    {label}
+                  </button>
+                  {labelHint && <span id={hintId} className="sr-only">{labelHint}</span>}
+                </>
               ) : (
                 <span className="text-[11px] text-white">{label}</span>
               )}
             </div>
           )}
-          <p className="text-[11px] text-[#7c3aed]">{message}</p>
+          {/* Same colour as the "Next step" line of the ladder panel; #a78bfa is readable at 11 px. */}
+          <p className="text-[11px] text-[#a78bfa]">{message}</p>
         </div>
       ) : (
         <p className="flex-1 text-[11px] text-[var(--text-secondary)]">{message}</p>

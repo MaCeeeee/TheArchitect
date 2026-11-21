@@ -16,6 +16,7 @@ import { useProjectData } from '../../hooks/useProjectData';
 import { useLadderSync } from '../groups/useLadderSync';
 import { ladderGuidance } from '../groups/ladderGuidance';
 import { showLadderStep } from '../groups/showLadderStep';
+import { GROUP_MODE_TEXT } from '../groups/groupModeText';
 import GroupModeBar from '../groups/GroupModeBar';
 import { useGroupModeStore } from '../../stores/groupModeStore';
 import { useAdvisorStore } from '../../stores/advisorStore';
@@ -129,9 +130,9 @@ export default function ProjectView() {
     );
   }
 
-  // The same registry command the v2 station and ⌘K use (REQ .2 "one command").
-  const commandCtx: CommandContext = { projectId: projectId!, navigate, phase: currentPhase };
-  const makeGroup = buildCommandRegistry(commandCtx)['action:make-group'];
+  // The same registry command the v2 station and ⌘K use (REQ .2 "one command"); built only when shown.
+  const commandCtx: CommandContext | null = guidance ? { projectId: projectId!, navigate, phase: currentPhase } : null;
+  const makeGroup = commandCtx ? buildCommandRegistry(commandCtx)['action:make-group'] : null;
 
   return (
     <div className="flex h-full">
@@ -176,11 +177,12 @@ export default function ProjectView() {
           <div className={`absolute left-1/2 -translate-x-1/2 z-30 w-[420px] max-w-[90%] pointer-events-auto ${isPlateauActive ? 'bottom-14' : 'bottom-4'}`}>
             {groupModeShown ? (
               <GroupModeBar projectId={projectId!} className="w-full" />
-            ) : guidance ? (
+            ) : guidance && makeGroup && commandCtx ? (
               <NextStepBanner
                 tone="ladder"
                 label={guidance.headline}
                 onLabel={() => showLadderStep(guidance.rung)}
+                labelHint={GROUP_MODE_TEXT.showStep}
                 message={guidance.next}
                 actionLabel={makeGroup.label}
                 onAction={() => makeGroup.run(commandCtx)}

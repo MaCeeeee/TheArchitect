@@ -45,7 +45,7 @@ function RungRow({ rung, focused = false }: { rung: LadderRung; focused?: boolea
             <p key={warning} className="text-[8px] text-yellow-400 [overflow-wrap:anywhere]">{warning}</p>
           ))}
         {rung.status === 'open' && rung.next && (
-          <p className="text-[9px] text-[#7c3aed] [overflow-wrap:anywhere]">{LADDER_TEXT.nextStep(rung.next)}</p>
+          <p className="text-[9px] text-[#a78bfa] [overflow-wrap:anywhere]">{LADDER_TEXT.nextStep(rung.next)}</p>
         )}
       </div>
     </li>

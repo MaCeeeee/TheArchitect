@@ -2,6 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { buildCommandRegistry, resolveActionRoute, type CommandContext } from './commands';
 import { useUIStore } from '../../stores/uiStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
 
 vi.mock('../../services/api', () => ({
   groupsAPI: { create: vi.fn() },
@@ -105,6 +106,16 @@ describe('buildCommandRegistry — make a group (UC-METH-002)', () => {
     expect(useGroupModeStore.getState().projectId).toBe('p1');
     expect(c.navigate).not.toHaveBeenCalled();
     useGroupModeStore.getState().reset();
+  });
+
+  test('action:make-group is available only with a minimum of 2 elements in the model', () => {
+    const c = ctx();
+    const cmd = buildCommandRegistry(c)['action:make-group'];
+    useArchitectureStore.setState({ elements: [{ id: 'a' }] as never });
+    expect(cmd.available?.(c)).toBe(false);
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
+    expect(cmd.available?.(c)).toBe(true);
+    useArchitectureStore.setState({ elements: [] as never });
   });
 
   test('every navigating command declares its target, and the target is where run() goes', () => {

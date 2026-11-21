@@ -395,3 +395,16 @@ test('a marked rung opens the panel and marks its row once (UC-METH-002)', () =>
   render(<LadderPanel report={stopped} />);
   expect(screen.queryByTestId('rung-2')).not.toBeInTheDocument(); // collapsed again on a new mount
 });
+
+test('a marked rung asked for before the report arrives: the row is marked when the report is in (UC-METH-002)', () => {
+  useAdvisorStore.setState({ focusRung: 2 });
+  const { rerender } = render(<LadderPanel report={null} />);
+  rerender(<LadderPanel report={stopped} />);
+  expect(screen.getByTestId('rung-2')).toHaveAttribute('data-focused', 'true');
+});
+
+test('the "Next step" line has the colour of the action field line, readable at its size (UC-METH-002)', () => {
+  render(<LadderPanel report={stopped} />);
+  fireEvent.click(screen.getByRole('button', { expanded: false }));
+  expect(screen.getByText('Next step: Model at least 2 contexts.')).toHaveClass('text-[#a78bfa]');
+});

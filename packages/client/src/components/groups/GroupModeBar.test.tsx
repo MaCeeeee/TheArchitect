@@ -4,7 +4,8 @@
  * Run: cd packages/client && npx vitest run src/components/groups/GroupModeBar.test.tsx
  */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('../../services/api', () => ({
@@ -46,15 +47,15 @@ describe('GroupModeBar', () => {
     expect(screen.getByText('Write a name for the group.')).toBeInTheDocument();
   });
 
-  test('name: Enter makes the group; a blank name does not', () => {
+  test('name: Enter submits the form once; a blank name cannot be sent', async () => {
     useGroupModeStore.getState().start('p1');
     useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
     useGroupModeStore.getState().toNaming();
     render(<GroupModeBar projectId="p1" />);
     const box = screen.getByRole('textbox', { name: 'Name of the group' });
     expect(screen.getByRole('button', { name: 'Make the group' })).toBeDisabled();
-    fireEvent.change(box, { target: { value: 'Sales' } });
-    fireEvent.keyDown(box, { key: 'Enter' });
+    await userEvent.type(box, 'Sales{Enter}');
+    expect(submit).toHaveBeenCalledTimes(1);
     expect(submit).toHaveBeenCalledWith('p1');
   });
 
@@ -109,5 +110,57 @@ describe('GroupModeBar', () => {
     expect(screen.queryByRole('button', { name: 'Make a group' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(useGroupModeStore.getState().feedback).toBeNull();
+  });
+
+  test('Esc is taken in the capture phase: other Esc handlers do not also react', () => {
+    useGroupModeStore.getState().start('p1');
+    const other = vi.fn();
+    document.addEventListener('keydown', other);
+    render(<GroupModeBar projectId="p1" />);
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    document.removeEventListener('keydown', other);
+    expect(useGroupModeStore.getState().active).toBe(false);
+    expect(other).not.toHaveBeenCalled();
+  });
+
+  test('one live region keeps its place from the count to the feedback (screen readers)', () => {
+    useGroupModeStore.getState().start('p1');
+    const { container } = render(<GroupModeBar projectId="p1" />);
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live).not.toBeNull();
+    act(() => { useGroupModeStore.getState().toggle('a'); });
+    expect(container.querySelector('[aria-live="polite"]')).toBe(live);
+    expect(live).toHaveTextContent('1 element selected.');
+    act(() => { useGroupModeStore.setState({ active: false, selected: [], feedback: { lines: ['You have 1 group. Make one more group.'], offerAnother: true } }); });
+    expect(container.querySelector('[aria-live="polite"]')).toBe(live);
+    expect(live).toHaveTextContent('You have 1 group. Make one more group.');
+    expect(container.querySelectorAll('[aria-live]')).toHaveLength(1);
+  });
+
+  const busyNamed = () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
+    useGroupModeStore.getState().toNaming();
+    useGroupModeStore.setState({ name: 'Sales', busy: true });
+  };
+
+  test('after the group is made the focus goes to "Make a group" of the feedback', () => {
+    busyNamed();
+    render(<GroupModeBar projectId="p1" />);
+    act(() => { useGroupModeStore.setState({ active: false, busy: false, selected: [], name: '', feedback: { lines: ['You have 1 group. Make one more group.'], offerAnother: true } }); });
+    expect(screen.getByRole('button', { name: 'Make a group' })).toHaveFocus();
+  });
+
+  test('after the group is made and step 2 is completed the focus goes to Close', () => {
+    busyNamed();
+    render(<GroupModeBar projectId="p1" />);
+    act(() => { useGroupModeStore.setState({ active: false, busy: false, selected: [], name: '', feedback: { lines: ['You completed step 2.'], offerAnother: false } }); });
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+  });
+
+  test('feedback that was already there when the bar mounts does not take the focus', () => {
+    useGroupModeStore.setState({ projectId: 'p1', feedback: { lines: ['You completed step 2.'], offerAnother: false } });
+    render(<GroupModeBar projectId="p1" />);
+    expect(screen.getByRole('button', { name: 'Close' })).not.toHaveFocus();
   });
 });

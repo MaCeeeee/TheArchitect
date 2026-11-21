@@ -36,4 +36,13 @@ describe('NextStepBanner', () => {
     expect(screen.queryByRole('button', { name: 'Model check: step 1 of 5' })).not.toBeInTheDocument();
     expect(screen.getByText('Model check: step 1 of 5')).toBeInTheDocument();
   });
+
+  test('ladder tone: the label says what it does, the next step is in the readable violet of the panel', () => {
+    render(<NextStepBanner tone="ladder" label="Model check: step 1 of 5" onLabel={() => {}} labelHint="Show this step in the model check."
+      message="Next step: Make a minimum of two groups." actionLabel="Make a group" onAction={() => {}} />);
+    const label = screen.getByRole('button', { name: 'Model check: step 1 of 5' });
+    expect(label).toHaveAttribute('title', 'Show this step in the model check.');
+    expect(label).toHaveAccessibleDescription('Show this step in the model check.');
+    expect(screen.getByText('Next step: Make a minimum of two groups.')).toHaveClass('text-[#a78bfa]');
+  });
 });

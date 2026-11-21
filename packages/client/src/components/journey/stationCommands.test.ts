@@ -4,6 +4,7 @@ import type { CommandContext } from './commands';
 import type { PhaseInfo } from '../../stores/journeyStore';
 import { useGroupModeStore } from '../../stores/groupModeStore';
 import { useUIStore } from '../../stores/uiStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
 
 vi.mock('../../services/api', () => ({
   groupsAPI: { create: vi.fn() },
@@ -76,6 +77,7 @@ describe('getStationActions — no command is executed to build the list (UC-MET
   });
 
   test('a lead command comes first on its station, before the phase next step', () => {
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never }); // make-group needs 2 elements
     const p = phases({ 2: { label: 'Add Connections', route: '__connection_mode__' } });
     const actions = getStationActions('model', p, ctx(), ['action:make-group']);
     expect(actions[0].id).toBe('action:make-group');

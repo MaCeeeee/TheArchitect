@@ -17,6 +17,8 @@ export const GROUP_MODE_TEXT = {
   close: 'Close',
   youHave: (count: number) => (count === 1 ? 'You have 1 group. Make one more group.' : `You have ${count} groups. Make one more group.`),
   completed: 'You completed step 2.',
+  /** Hint on the action field label that opens the ladder panel on this step (classic view). */
+  showStep: 'Show this step in the model check.',
   groupMade: 'The software made the group.',
   notAMember: (name: string) => `${name} is not a member of the group.`,
   notAMemberReason: 'A Grouping element cannot have this type of element as a member.',

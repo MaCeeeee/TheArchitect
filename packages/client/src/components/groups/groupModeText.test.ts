@@ -15,7 +15,7 @@ const SAMPLES: Record<string, unknown[][]> = {
   notAMember: [['Logistik']],
 };
 /** Texts that tell the reader what to do: at most 20 words in a sentence. */
-const INSTRUCTIONS = new Set(['nextStepShort', 'selectHint', 'selectOneMore', 'nameHint', 'doAgain', 'youHave']);
+const INSTRUCTIONS = new Set(['nextStepShort', 'selectHint', 'selectOneMore', 'nameHint', 'doAgain', 'youHave', 'showStep']);
 
 function rendered(): Array<{ key: string; text: string; kind: Ste100Kind }> {
   return Object.entries(GROUP_MODE_TEXT).flatMap(([key, value]) => {
@@ -38,6 +38,7 @@ describe('groupModeText — wording', () => {
     expect(GROUP_MODE_TEXT.nameHint).toBe('Write a name for the group.');
     expect(GROUP_MODE_TEXT.youHave(1)).toBe('You have 1 group. Make one more group.');
     expect(GROUP_MODE_TEXT.completed).toBe('You completed step 2.');
+    expect(GROUP_MODE_TEXT.showStep).toBe('Show this step in the model check.');
     expect(GROUP_MODE_TEXT.notAMember('Logistik')).toBe('Logistik is not a member of the group.');
   });
 
