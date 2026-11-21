@@ -39,8 +39,7 @@ const serverAnswer = {
 
 beforeEach(() => {
   create.mockReset();
-  useGroupModeStore.getState().cancel();
-  useGroupModeStore.setState({ feedback: null, projectId: null });
+  useGroupModeStore.getState().reset();
   useArchitectureStore.setState({ projectId: 'p1', elements: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] as never, connections: [], selectedElementIds: new Set(['a']), selectedElementId: 'a' });
   useUIStore.setState({ isConnectionMode: true });
   useAdvisorStore.setState({ ladder: null, loadLadder: vi.fn(async () => { const r = ladderAfter(1, false); useAdvisorStore.setState({ ladder: r }); return r; }) } as never);
@@ -188,6 +187,19 @@ describe('groupModeStore', () => {
     await useAdvisorStore.getState().loadLadder('p1');
     first({ data: { data: ladderAfter(1, false) } });
     await done;
+    expect(state().feedback).toEqual({ lines: ['You have 1 group. Make one more group.'], offerAnother: true });
+  });
+
+  test('cancel while the request runs is ignored: the mode stays and the answer lands in the model (no second group)', async () => {
+    const answer = pendingCreate();
+    named();
+    const done = state().submit('p1');
+    state().cancel();
+    expect(state()).toMatchObject({ active: true, busy: true, phase: 'name', selected: ['a', 'b'] });
+    answer(serverAnswer);
+    await done;
+    expect(useArchitectureStore.getState().elements.map((e) => e.id)).toContain('g1');
+    expect(state().active).toBe(false);
     expect(state().feedback).toEqual({ lines: ['You have 1 group. Make one more group.'], offerAnother: true });
   });
 

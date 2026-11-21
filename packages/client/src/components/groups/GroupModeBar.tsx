@@ -15,7 +15,7 @@ interface Props {
 
 const frame = 'pointer-events-auto rounded-md border border-[#7c3aed]/40 bg-[var(--surface-base)]/90 px-3 py-2 shadow-lg backdrop-blur-md';
 const primary = 'rounded px-2 py-1 text-[11px] font-medium text-[#a78bfa] border border-[#7c3aed]/40 hover:bg-[#7c3aed]/10 disabled:opacity-40 disabled:cursor-not-allowed';
-const secondary = 'rounded px-2 py-1 text-[11px] text-[var(--text-tertiary)] border border-[var(--border-subtle)] hover:text-white';
+const secondary = 'rounded px-2 py-1 text-[11px] text-[var(--text-tertiary)] border border-[var(--border-subtle)] hover:text-white disabled:opacity-40 disabled:cursor-not-allowed';
 
 export default function GroupModeBar({ projectId, className = '' }: Props) {
   const { active, phase, selected, name, busy, error, feedback, start, toNaming, setName, cancel, dismiss, submit } = useGroupModeStore();
@@ -23,7 +23,8 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
 
   useEffect(() => {
     if (!active || !own) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancel(); };
+    // While busy the store ignores the cancel: the group may already exist on the server.
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !useGroupModeStore.getState().busy) cancel(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [active, own, cancel]);
@@ -59,7 +60,7 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
           {selected.length >= MIN_GROUP_SELECTION && (
             <button type="button" className={primary} onClick={toNaming}>{T.makeTheGroup(selected.length)}</button>
           )}
-          <button type="button" className={secondary} onClick={cancel}>{T.cancel}</button>
+          <button type="button" className={secondary} onClick={cancel} disabled={busy}>{T.cancel}</button>
         </div>
       ) : (
         <form
@@ -81,7 +82,7 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
             {error && <p role="alert" className="text-[10px] text-red-400">{error}</p>}
           </div>
           <button type="submit" className={primary} disabled={busy || name.trim() === ''}>{T.create}</button>
-          <button type="button" className={secondary} onClick={cancel}>{T.cancel}</button>
+          <button type="button" className={secondary} onClick={cancel} disabled={busy}>{T.cancel}</button>
         </form>
       )}
     </div>

@@ -27,6 +27,7 @@ interface GroupModeState {
   toggle: (elementId: string) => void;
   toNaming: () => void;
   setName: (name: string) => void;
+  /** Ends the mode without a change. Ignored while a request runs (busy). */
   cancel: () => void;
   /** Full idle: no mode, no selection, no error, no feedback, no project. */
   reset: () => void;
@@ -79,6 +80,10 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
   setName: (name) => set({ name }),
 
   cancel: () => {
+    // While the request runs the server may already have made the group: a cancel now would drop
+    // the answer and the user would make the group a second time. Ignored until the answer is in.
+    // (reset() — another project opened — still ends everything.)
+    if (get().busy) return;
     generation++;
     set((s) => ({ ...IDLE, projectId: s.feedback ? s.projectId : null }));
   },

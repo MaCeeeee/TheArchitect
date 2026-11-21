@@ -67,6 +67,18 @@ describe('GroupModeBar', () => {
     expect(submit).not.toHaveBeenCalled();
   });
 
+  test('while the request runs, Cancel is disabled and Esc is ignored', () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
+    useGroupModeStore.getState().toNaming();
+    useGroupModeStore.setState({ name: 'Sales', busy: true });
+    render(<GroupModeBar projectId="p1" />);
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(useGroupModeStore.getState().active).toBe(true);
+    expect(useGroupModeStore.getState().selected).toEqual(['a', 'b']);
+  });
+
   test('a server error is shown in the action field', () => {
     useGroupModeStore.getState().start('p1');
     useGroupModeStore.getState().toggle('a'); useGroupModeStore.getState().toggle('b');
