@@ -20,6 +20,9 @@ Usage
                          "procedure" holds instructions, "description" everything else.
                          A number can be written as a placeholder: {5}
 
+    Exit status: 0 no findings, 1 one or more sentences with findings, 2 wrong call or a
+    specification file in which the dictionary was not found.
+
 The specification is not in this repository
     ASD-STE100 is copyrighted. Get Issue 9 from the official site of ASD-STE100
     (asd-ste100.org) and keep it outside the repository.
@@ -28,10 +31,47 @@ Limits
     The script does not check the part of speech of a word (rule 1.2) or its approved meaning
     (rule 1.3), and not the rules about sentence structure (active voice, one instruction per
     sentence, articles). Check those by hand. It is a check of our own, not a certification.
+
+    Part of speech: a word that the dictionary approves as one part of speech is not flagged
+    when a text uses it as a different one. "Check" is approved as a noun: the script accepts
+    "check the model" as well. Look at each word of a new text in the dictionary by hand.
+
+The script and the guard in TypeScript (packages/shared/src/constants/ste100-guard.ts)
+    They do not accept the same texts. A text must pass both.
+
+    The script is stricter than the guard:
+    - It knows the whole dictionary. A word that is not approved is a finding, with the
+      replacement that the dictionary names. The guard knows only the list of checked words.
+    - An -ing form is a finding.
+
+    The script is looser than the guard:
+    - It accepts a word with -s, -es or -ies if the word without it is approved or is a
+      technical noun. The guard accepts only the listed form.
+    - A colon ends a sentence for the word count. For the guard it does not.
+    - It does not examine the words in parentheses. The guard does.
+    - It accepts one capital letter anywhere. The guard accepts it only in "A to B" and
+      "group A".
+    - It ignores a word without a plain letter or number (a Greek or Cyrillic word, a sign) and
+      does not look for letters or signs that the texts do not use.
+    - It does not look for the terms that the plain texts replaced ("loop", "context").
+    - A sample name in a text must be in "technical_nouns". The guard takes such names apart
+      from the technical nouns, and only from the test that put them into the text.
+    - It finds a contraction only with a straight apostrophe, and it accepts an empty text.
 """
 import re, sys, json
+if len(sys.argv) != 3:
+    print('usage: python3 scripts/ste100-check.py <specification.txt> <texts.json>\n'
+          '  <specification.txt>  ASD-STE100 Issue 9 as plain text (not in this repository)\n'
+          '  <texts.json>         {"technical_nouns": [...], "procedure": [...], "description": [...]}\n'
+          'The header of this file says more.', file=sys.stderr)
+    sys.exit(2)
 txt = open(sys.argv[1]).read().split('\n')
-start = next(i for i, l in enumerate(txt) if 'Page 2-1-A-1' in l or re.match(r'^A \(art\)', l)) if any(re.match(r'^A \(art\)', l) for l in txt) else 5425
+# The dictionary starts at its first entry, the article "A".
+start = next((i for i, l in enumerate(txt) if re.match(r'^A \(art\)', l)), None)
+if start is None:
+    print(f'{sys.argv[1]}: the dictionary was not found. No line starts with the entry "A (art)". '
+          'Give the specification as plain text with its layout (for example: pdftotext -layout).', file=sys.stderr)
+    sys.exit(2)
 POS = r'\((?:n|v|adj|adv|prep|conj|pron|art|pn)\)'
 approved, unapproved = {}, {}
 cur = None
@@ -85,3 +125,4 @@ for kind, limit in (('procedure', 20), ('description', 25)):
                 problems += 1
                 print(f'[{kind}] {sent}\n    ' + '\n    '.join(notes))
 print(f'\n{problems} sentences with findings')
+sys.exit(1 if problems else 0)
