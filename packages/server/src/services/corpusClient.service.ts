@@ -406,7 +406,7 @@ async function waitForCorpusReadyIfConnected(timeoutMs: number): Promise<void> {
   }
 }
 
-export async function corpusHealth(): Promise<{ ok: boolean; count?: number; laterVersions?: number }> {
+export async function corpusHealth(): Promise<{ ok: boolean; count?: number }> {
   if (!isCorpusConfigured()) return { ok: false };
   try {
     // Resolve the model first — this lazily opens the real corpus connection (or
@@ -416,16 +416,7 @@ export async function corpusHealth(): Promise<{ ok: boolean; count?: number; lat
     const model = CorpusRegulation();
     await waitForCorpusReadyIfConnected(CORPUS_HEALTH_READY_TIMEOUT_MS);
     const count = await model.estimatedDocumentCount();
-    // THE-808 (UC-REGVER-001): Re-Trigger von THE-804 — sobald der Crawler eine
-    // zweite Fassung anlegt, ist > 0. Ein Fehler beim Zählen darf `ok` nicht
-    // kippen (n8n-Healthcheck + STRICT-Readiness hängen daran) → Feld fehlt dann.
-    let laterVersions: number | undefined;
-    try {
-      laterVersions = await model.countDocuments({ version: { $gt: 1 } });
-    } catch (err) {
-      log.warn({ err: safeErrorMessage(err) }, '[corpus] laterVersions count failed');
-    }
-    return laterVersions === undefined ? { ok: true, count } : { ok: true, count, laterVersions };
+    return { ok: true, count };
   } catch (err) {
     log.warn({ err: safeErrorMessage(err) }, '[corpus] health check failed');
     return { ok: false };
