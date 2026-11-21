@@ -11,13 +11,11 @@
  * of GROUP_STEP until it is clear: the group is never drawn inside a member.
  * Legacy type names (business_process, …) are mapped through LEGACY_TYPE_MAP before the rule check.
  */
-import { getValidRelationships, LAYER_Y, LEGACY_TYPE_MAP, type ElementType } from '@thearchitect/shared';
+import { getValidRelationships, LAYER_Y, LEGACY_TYPE_MAP, type ElementType, type GroupSkipReason, type SkippedMember } from '@thearchitect/shared';
 import { clampPosition3D } from '../../utils/position';
 
 export const GROUP_TYPES = ['grouping', 'location'] as const;
 export type GroupType = (typeof GROUP_TYPES)[number];
-export const MIN_GROUP_MEMBERS = 2;
-export const MAX_GROUP_MEMBERS = 200;
 /** Minimum distance between the group and any member (scene units). */
 export const GROUP_CLEARANCE = 2;
 const GROUP_STEP = 3;
@@ -37,15 +35,6 @@ export interface MemberRow {
   posZ: number | null;
 }
 
-export type SkipReason = 'is_a_group' | 'composition_not_valid';
-
-export interface SkippedMember {
-  id: string;
-  name: string;
-  type: string;
-  reason: SkipReason;
-}
-
 export interface GroupPlan {
   layer: 'business' | 'technology';
   togafDomain: 'business' | 'technology';
@@ -61,7 +50,7 @@ export function planGroup(type: GroupType, rows: readonly MemberRow[]): GroupPla
   const members: MemberRow[] = [];
   const skipped: SkippedMember[] = [];
   for (const row of [...rows].sort((a, b) => a.id.localeCompare(b.id))) {
-    const skip = (reason: SkipReason) => skipped.push({ id: row.id, name: row.name, type: row.type, reason });
+    const skip = (reason: GroupSkipReason) => skipped.push({ id: row.id, name: row.name, type: row.type, reason });
     const archimateType = (LEGACY_TYPE_MAP[row.type] ?? row.type) as ElementType;
     if (isGroupType(archimateType)) skip('is_a_group');
     else if (!getValidRelationships(type as ElementType, archimateType).includes('composition')) skip('composition_not_valid');

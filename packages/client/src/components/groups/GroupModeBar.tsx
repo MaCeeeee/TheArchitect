@@ -8,7 +8,8 @@
  */
 import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { Boxes, X } from 'lucide-react';
-import { useGroupModeStore, MIN_GROUP_SELECTION } from '../../stores/groupModeStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
+import { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS } from '@thearchitect/shared';
 import { useUIStore } from '../../stores/uiStore';
 import { GROUP_MODE_TEXT as T } from './groupModeText';
 import { useGroupModeAvailableInScene } from './sceneSelectable';
@@ -91,11 +92,12 @@ export default function GroupModeBar({ projectId, className = '' }: Props) {
           <div aria-live="polite" className="space-y-0.5">
             {selecting && selected.length > 0 && <p className="text-[10px] text-[var(--text-secondary)]">{T.selectedCount(selected.length)}</p>}
             {selecting && selected.length === 1 && <p className="text-[10px] text-[#a78bfa]">{T.selectOneMore}</p>}
+            {selecting && selected.length >= MAX_GROUP_MEMBERS && <p className="text-[10px] text-[#a78bfa]">{T.maximum(MAX_GROUP_MEMBERS)}</p>}
             {showFeedback && feedback.lines.map((line) => <p key={line} className="text-[11px] text-[var(--text-secondary)]">{line}</p>)}
           </div>
           {naming && error && <p role="alert" className="text-[10px] text-red-400">{error}</p>}
         </div>
-        {selecting && selected.length >= MIN_GROUP_SELECTION && (
+        {selecting && selected.length >= MIN_GROUP_MEMBERS && (
           <button type="button" className={primary} onClick={toNaming}>{T.makeTheGroup(selected.length)}</button>
         )}
         {naming && <button type="submit" className={primary} disabled={busy || name.trim() === ''}>{T.create}</button>}

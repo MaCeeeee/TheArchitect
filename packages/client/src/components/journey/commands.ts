@@ -9,7 +9,8 @@
 import type { JourneyPhase } from '../../stores/journeyStore';
 import { getVisibleSections, isToolbarActionVisible } from '../../utils/phaseVisibility';
 import { useUIStore } from '../../stores/uiStore';
-import { useGroupModeStore, MIN_GROUP_SELECTION } from '../../stores/groupModeStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
+import { MIN_GROUP_MEMBERS } from '@thearchitect/shared';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { GROUP_MODE_TEXT } from '../groups/groupModeText';
 import { groupModeAvailableInScene } from '../groups/sceneSelectable';
@@ -76,7 +77,7 @@ export function buildCommandRegistry(ctx: CommandContext): Record<string, Comman
     { id: 'action:make-group', group: 'Model', label: GROUP_MODE_TEXT.start, keywords: ['group', 'grouping', 'composition', 'model check', 'step 2'],
       run: (c) => useGroupModeStore.getState().start(c.projectId),
       // Needs two elements, and the element boxes in the scene (not the plateau, track re-form or activity view).
-      available: () => useArchitectureStore.getState().elements.length >= MIN_GROUP_SELECTION && groupModeAvailableInScene() },
+      available: () => useArchitectureStore.getState().elements.length >= MIN_GROUP_MEMBERS && groupModeAvailableInScene() },
     // Compliance sections (id open:matrix frozen; the rest are new open:comply-*)
     { id: 'open:matrix', group: 'Compliance', label: 'Coverage matrix', keywords: ['compliance', 'mapping', 'gaps'], ...go(`/project/${projectId}/compliance/matrix`), available: sectionGate('comply', 'matrix') },
     comply('standards', 'Standards & regulations', ['upload', 'iso', 'togaf', 'norm']),

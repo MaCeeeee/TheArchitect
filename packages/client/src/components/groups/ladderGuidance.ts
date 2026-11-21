@@ -2,7 +2,7 @@
  * UC-METH-002 (REQ .2/.4) — reads the ladder report: does the model check ask for groups now, and
  * what does the action field say after a group was made. Pure.
  */
-import { LADDER_FACT_GROUPS_WITH_MEMBERS, LADDER_GROUPS_RUNG, type LadderReport } from '@thearchitect/shared';
+import { LADDER_FACT_GROUPS_WITH_MEMBERS, LADDER_GROUPS_RUNG, type LadderReport, type SkippedMember } from '@thearchitect/shared';
 import { LADDER_TEXT } from '../copilot/ladderText';
 import { GROUP_MODE_TEXT } from './groupModeText';
 
@@ -12,13 +12,6 @@ export interface LadderGuidance {
   headline: string;
   /** Same "Next step:" wording as the open row of the ladder panel. */
   next: string;
-}
-
-export interface SkippedMember {
-  id: string;
-  name: string;
-  type: string;
-  reason: 'is_a_group' | 'composition_not_valid';
 }
 
 export interface GroupFeedback {

@@ -10,9 +10,9 @@ import { useAdvisorStore } from './advisorStore';
 import { useUIStore } from './uiStore';
 import { GROUP_MODE_TEXT } from '../components/groups/groupModeText';
 import { noteLadderLoaded } from '../components/groups/ladderLoadKey';
-import { groupFeedback, type GroupFeedback, type SkippedMember } from '../components/groups/ladderGuidance';
+import { groupFeedback, type GroupFeedback } from '../components/groups/ladderGuidance';
+import { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, type SkippedMember } from '@thearchitect/shared';
 
-export const MIN_GROUP_SELECTION = 2;
 
 interface GroupModeState {
   /** The project the mode (or its feedback) belongs to; null when idle without feedback. */
@@ -54,6 +54,7 @@ function errorText(err: unknown): string {
     const names = (skipped as SkippedMember[]).map((s) => GROUP_MODE_TEXT.notAMember(s.name)).join(' ');
     return `${GROUP_MODE_TEXT.didNotMake} ${names} ${GROUP_MODE_TEXT.notAMemberReason}`;
   }
+  if (status === 403) return `${GROUP_MODE_TEXT.didNotMake} ${GROUP_MODE_TEXT.noRight}`;
   if (status === 409) return `${GROUP_MODE_TEXT.didNotMake} ${GROUP_MODE_TEXT.modelChanged} ${GROUP_MODE_TEXT.doAgain}`;
   return `${GROUP_MODE_TEXT.didNotMake} ${GROUP_MODE_TEXT.doAgain}`;
 }
@@ -76,11 +77,14 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
   toggle: (elementId) =>
     set((s) => {
       if (!s.active || s.phase !== 'select') return {};
-      const selected = s.selected.includes(elementId) ? s.selected.filter((id) => id !== elementId) : [...s.selected, elementId];
+      if (s.selected.includes(elementId)) return { selected: s.selected.filter((id) => id !== elementId), error: null };
+      // One request makes a group of a maximum of MAX_GROUP_MEMBERS members (the server refuses more).
+      if (s.selected.length >= MAX_GROUP_MEMBERS) return {};
+      const selected = [...s.selected, elementId];
       return { selected, error: null };
     }),
 
-  toNaming: () => set((s) => (s.active && s.selected.length >= MIN_GROUP_SELECTION ? { phase: 'name', error: null } : {})),
+  toNaming: () => set((s) => (s.active && s.selected.length >= MIN_GROUP_MEMBERS ? { phase: 'name', error: null } : {})),
 
   setName: (name) => set({ name }),
 
@@ -104,7 +108,7 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
       const existing = existingIds instanceof Set ? existingIds : new Set(existingIds);
       const selected = s.selected.filter((id) => existing.has(id));
       if (selected.length === s.selected.length) return {};
-      return { selected, phase: s.phase === 'name' && selected.length < MIN_GROUP_SELECTION ? 'select' : s.phase };
+      return { selected, phase: s.phase === 'name' && selected.length < MIN_GROUP_MEMBERS ? 'select' : s.phase };
     }),
 
   dismiss: () => set((s) => ({ feedback: null, projectId: s.active ? s.projectId : null })),
@@ -112,7 +116,7 @@ export const useGroupModeStore = create<GroupModeState>((set, get) => ({
   submit: async (projectId) => {
     const { active, busy, selected, name } = get();
     const trimmed = name.trim();
-    if (!active || busy || get().projectId !== projectId || selected.length < MIN_GROUP_SELECTION || !trimmed) return;
+    if (!active || busy || get().projectId !== projectId || selected.length < MIN_GROUP_MEMBERS || !trimmed) return;
     const mine = ++generation;
     const stillHere = () =>
       generation === mine && useArchitectureStore.getState().projectId === projectId && get().projectId === projectId && get().active;

@@ -13,7 +13,7 @@
 /** Approved dictionary words in the forms the texts use, lower case. */
 export const STE100_WORDS_IN_USE: readonly string[] = [
   'a', 'add', 'again', 'agree', 'all', 'along', 'an', 'and', 'are', 'as', 'at', 'be', 'because', 'between',
-  'but', 'calculate', 'can', 'cancel', 'cannot', 'changed', 'changes', 'check', 'close', 'compare',
+  'but', 'calculate', 'can', 'cancel', 'cannot', 'change', 'changed', 'changes', 'check', 'close', 'compare',
   'completed', 'connect', 'connected', 'connects', 'counts', 'decrease', 'did', 'different', 'direction',
   'do', 'does', 'each', 'equal', 'examine', 'examined', 'example', 'first', 'for', 'from', 'give', 'group',
   'groups', 'has', 'have', 'how', 'in', 'include', 'is', 'it', 'item', 'its', 'large', 'limit', 'limits',

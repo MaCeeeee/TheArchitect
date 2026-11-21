@@ -3,7 +3,7 @@
  * Run: cd packages/client && npx vitest run src/stores/groupModeStore.test.ts
  */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import type { LadderReport } from '@thearchitect/shared';
+import { MAX_GROUP_MEMBERS, type LadderReport } from '@thearchitect/shared';
 
 vi.mock('../services/api', () => ({
   groupsAPI: { create: vi.fn() },
@@ -112,6 +112,25 @@ describe('groupModeStore', () => {
     expect(state().selected).toEqual(['a', 'b']);
     expect(state().error).toBe('The software did not make the group. Each element must be in this model.');
     expect(useArchitectureStore.getState().elements).toHaveLength(3);
+  });
+
+  test('no right to change the model (403) → "You cannot change this model." in place of "Do the procedure again."', async () => {
+    create.mockRejectedValue(Object.assign(new Error('403'), { response: { status: 403, data: { error: 'Forbidden' } } }));
+    state().start('p1'); state().toggle('a'); state().toggle('b'); state().toNaming(); state().setName('Sales');
+    await state().submit('p1');
+    expect(state().error).toBe('The software did not make the group. You cannot change this model.');
+    expect(state().active).toBe(true);
+  });
+
+  test('a select beyond the maximum of members is refused; a select of a selected element still removes it', () => {
+    state().start('p1');
+    const full = Array.from({ length: MAX_GROUP_MEMBERS }, (_, i) => `e${i}`);
+    useGroupModeStore.setState({ selected: full });
+    state().toggle('extra');
+    expect(state().selected).toHaveLength(MAX_GROUP_MEMBERS);
+    expect(state().selected).not.toContain('extra');
+    state().toggle('e0');
+    expect(state().selected).toHaveLength(MAX_GROUP_MEMBERS - 1);
   });
 
   test('conflict → "The model changed." and "Do the procedure again."', async () => {

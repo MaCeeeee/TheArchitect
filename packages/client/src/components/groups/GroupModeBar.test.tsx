@@ -214,4 +214,12 @@ describe('GroupModeBar', () => {
     render(<GroupModeBar projectId="p1" />);
     expect(screen.getByRole('button', { name: 'Close' })).not.toHaveFocus();
   });
+
+  test('at the maximum of members: "Select a maximum of 200 elements."', () => {
+    useGroupModeStore.getState().start('p1');
+    useGroupModeStore.setState({ selected: Array.from({ length: 200 }, (_, i) => `e${i}`) });
+    render(<GroupModeBar projectId="p1" />);
+    expect(screen.getByText('Select a maximum of 200 elements.')).toBeInTheDocument();
+    expect(screen.getByText('200 elements selected.')).toBeInTheDocument();
+  });
 });

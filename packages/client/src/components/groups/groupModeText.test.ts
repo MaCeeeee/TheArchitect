@@ -5,6 +5,7 @@
 import { describe, test, expect } from 'vitest';
 import { ste100Findings, type Ste100Kind } from '@thearchitect/shared/src/constants/ste100-guard';
 import { GROUP_MODE_TEXT } from './groupModeText';
+import { MAX_GROUP_MEMBERS } from '@thearchitect/shared';
 
 type Template = (...args: never[]) => string;
 const NAMES = ['Logistik'];
@@ -13,9 +14,10 @@ const SAMPLES: Record<string, unknown[][]> = {
   makeTheGroup: [[2], [12]],
   youHave: [[1], [3]],
   notAMember: [['Logistik']],
+  maximum: [[200]],
 };
 /** Texts that tell the reader what to do: at most 20 words in a sentence. */
-const INSTRUCTIONS = new Set(['nextStepShort', 'selectHint', 'selectOneMore', 'nameHint', 'doAgain', 'youHave', 'showStep']);
+const INSTRUCTIONS = new Set(['nextStepShort', 'selectHint', 'selectOneMore', 'nameHint', 'doAgain', 'youHave', 'showStep', 'maximum']);
 
 function rendered(): Array<{ key: string; text: string; kind: Ste100Kind }> {
   return Object.entries(GROUP_MODE_TEXT).flatMap(([key, value]) => {
@@ -40,6 +42,8 @@ describe('groupModeText — wording', () => {
     expect(GROUP_MODE_TEXT.completed).toBe('You completed step 2.');
     expect(GROUP_MODE_TEXT.showStep).toBe('Show this step in the model check.');
     expect(GROUP_MODE_TEXT.modeName).toBe('Group mode');
+    expect(GROUP_MODE_TEXT.maximum(MAX_GROUP_MEMBERS)).toBe('Select a maximum of 200 elements.');
+    expect(GROUP_MODE_TEXT.noRight).toBe('You cannot change this model.');
     expect(GROUP_MODE_TEXT.notAMember('Logistik')).toBe('Logistik is not a member of the group.');
   });
 

@@ -14,6 +14,8 @@ export * from './types/advisor.types';
 export * from './types/method.types';
 export * from './types/ladder.types';
 export * from './constants/method-catalog.constants';
+export * from './constants/group.constants';
+export * from './types/group.types';
 export * from './types/roadmap.types';
 export * from './types/stochastic.types';
 export * from './types/compliance.types';

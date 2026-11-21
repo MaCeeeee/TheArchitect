@@ -6,7 +6,7 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
-import { PERMISSIONS } from '@thearchitect/shared';
+import { MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, PERMISSIONS } from '@thearchitect/shared';
 import { authenticate } from '../middleware/auth.middleware';
 import { requirePermission } from '../middleware/rbac.middleware';
 import { requireProjectAccess } from '../middleware/projectAccess.middleware';
@@ -16,7 +16,7 @@ import { coerceNeo4jNumber } from '../services/compliance.service';
 import { provenanceForActor, provenanceParams } from '../services/provenance.helper';
 import { upsertEmbedding } from '../services/elementSimilarity.service';
 import { evaluateElementPolicies } from '../services/policy-evaluation.service';
-import { GROUP_TYPES, MAX_GROUP_MEMBERS, MIN_GROUP_MEMBERS, planGroup, type MemberRow } from '../services/groups/planGroup';
+import { GROUP_TYPES, planGroup, type MemberRow } from '../services/groups/planGroup';
 import { GroupMembersChangedError, writeGroup } from '../services/groups/groupWriter';
 import { log } from '../config/logger';
 

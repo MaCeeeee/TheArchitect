@@ -28,4 +28,8 @@ export const GROUP_MODE_TEXT = {
   mustBeInModel: 'Each element must be in this model.',
   modelChanged: 'The model changed.',
   doAgain: 'Do the procedure again.',
+  /** The server refused: the user has no right to change the model (403). */
+  noRight: 'You cannot change this model.',
+  /** Shown when the selection has the maximum of members (MAX_GROUP_MEMBERS). */
+  maximum: (max: number) => `Select a maximum of ${max} elements.`,
 };
