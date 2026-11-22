@@ -20,7 +20,7 @@
  * ste100-words.constants.ts and topologyLadderText.test.ts fails on any other. The mathematical
  * wording of each rung is kept in its `math` field.
  */
-import { toMethodRef } from '@thearchitect/shared';
+import { LADDER_FACT_GROUPS_WITH_MEMBERS, LADDER_GROUPS_RUNG, toMethodRef } from '@thearchitect/shared';
 import type {
   CanonicalScale,
   CohomologyResult,
@@ -324,7 +324,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       next: 'Connect the elements with relationships.',
     },
     {
-      index: 2,
+      index: LADDER_GROUPS_RUNG,
       title: 'Groups',
       provides: 'A group is a Grouping element or a Location element with its members. Two groups can have the same member.',
       math: 'Cover. Contexts with members: named areas of the model. Shared members are overlaps; three contexts sharing a member form a 2-cell.',
@@ -332,7 +332,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
       facts: structure.analysed
         ? [
             { label: 'groups', value: structure.contexts.length },
-            { label: 'groups with members', value: structure.contextsWithMembers },
+            { label: LADDER_FACT_GROUPS_WITH_MEMBERS, value: structure.contextsWithMembers },
             { label: 'pairs of groups with the same member', value: structure.overlappingPairs.length },
             { label: 'sets of three groups with the same member', value: structure.tripleOverlaps.length },
           ]

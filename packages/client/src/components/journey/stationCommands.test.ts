@@ -2,6 +2,15 @@ import { describe, test, expect, vi } from 'vitest';
 import { getStationActions } from './stationCommands';
 import type { CommandContext } from './commands';
 import type { PhaseInfo } from '../../stores/journeyStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useUIStore } from '../../stores/uiStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
+
+vi.mock('../../services/api', () => ({
+  groupsAPI: { create: vi.fn() },
+  advisorAPI: { scan: vi.fn(), health: vi.fn(), ladder: vi.fn() },
+  architectureAPI: { createElement: vi.fn(), createConnection: vi.fn() },
+}));
 
 const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   projectId: 'p1', navigate: vi.fn(), phase: 2, ...over,
@@ -49,5 +58,35 @@ describe('getStationActions (THE-492)', () => {
   test('drops actions failing available() (analyze before phase 4)', () => {
     const actions = getStationActions('plan', phases({}), ctx({ phase: 3 }));
     expect(actions.some((a) => a.id === 'open:analyze')).toBe(false);
+  });
+});
+
+describe('getStationActions — no command is executed to build the list (UC-METH-002)', () => {
+  test('building the actions of every station runs no command: the group mode stays off, show-all stays as it was', () => {
+    // routeOf (today) runs each command with its own capturing navigate, so a spy on ctx.navigate
+    // proves nothing. The commands with an effect are the proof: their effect must not happen.
+    useGroupModeStore.getState().reset();
+    const salienceBefore = useUIStore.getState().salienceOverride;
+    const c = ctx();
+    for (const station of ['vision', 'model', 'explore', 'plan', 'govern', 'track'] as const) {
+      getStationActions(station, phases({ 2: { label: 'Add Connections', route: '__connection_mode__' } }), c, ['action:make-group', 'toggle:show-all']);
+    }
+    expect(useGroupModeStore.getState().active).toBe(false);
+    expect(useUIStore.getState().salienceOverride).toBe(salienceBefore);
+    expect(c.navigate).not.toHaveBeenCalled();
+  });
+
+  test('a lead command comes first on its station, before the phase next step', () => {
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never }); // make-group needs 2 elements
+    const p = phases({ 2: { label: 'Add Connections', route: '__connection_mode__' } });
+    const actions = getStationActions('model', p, ctx(), ['action:make-group']);
+    expect(actions[0].id).toBe('action:make-group');
+    expect(actions[1].label).toBe('Add Connections');
+    expect(actions.length).toBeLessThanOrEqual(4);
+  });
+
+  test('without a lead the list is as before', () => {
+    const p = phases({ 2: { label: 'Add Connections', route: '__connection_mode__' } });
+    expect(getStationActions('model', p, ctx())[0].label).toBe('Add Connections');
   });
 });

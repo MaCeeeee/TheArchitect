@@ -6,6 +6,7 @@ import { describe, test, expect } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import LadderPanel from './LadderPanel';
+import { useAdvisorStore } from '../../stores/advisorStore';
 import type { LadderReport, LadderRung } from '@thearchitect/shared';
 
 const rung = (index: LadderRung['index'], title: string, status: LadderRung['status'], next: string | null = null): LadderRung => ({
@@ -382,4 +383,28 @@ describe('LadderPanel', () => {
     fireEvent.click(screen.getByRole('button'));
     expect(screen.queryByText(/^and \d+ more/)).not.toBeInTheDocument();
   });
+});
+
+test('a marked rung opens the panel and marks its row once (UC-METH-002)', () => {
+  useAdvisorStore.setState({ focusRung: 2 });
+  const { unmount } = render(<LadderPanel report={stopped} />);
+  expect(screen.getByTestId('rung-2')).toHaveAttribute('data-focused', 'true');
+  expect(screen.getByTestId('rung-1')).not.toHaveAttribute('data-focused');
+  expect(useAdvisorStore.getState().focusRung).toBeNull(); // used once
+  unmount();
+  render(<LadderPanel report={stopped} />);
+  expect(screen.queryByTestId('rung-2')).not.toBeInTheDocument(); // collapsed again on a new mount
+});
+
+test('a marked rung asked for before the report arrives: the row is marked when the report is in (UC-METH-002)', () => {
+  useAdvisorStore.setState({ focusRung: 2 });
+  const { rerender } = render(<LadderPanel report={null} />);
+  rerender(<LadderPanel report={stopped} />);
+  expect(screen.getByTestId('rung-2')).toHaveAttribute('data-focused', 'true');
+});
+
+test('the "Next step" line has the colour of the action field line, readable at its size (UC-METH-002)', () => {
+  render(<LadderPanel report={stopped} />);
+  fireEvent.click(screen.getByRole('button', { expanded: false }));
+  expect(screen.getByText('Next step: Model at least 2 contexts.')).toHaveClass('text-[#a78bfa]');
 });

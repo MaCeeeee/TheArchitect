@@ -11,16 +11,16 @@ export default function AdvisorPanel() {
   const { projectId } = useParams();
   const {
     healthScore, insights, isScanning, lastScanAt, error, totalElements,
-    scanDurationMs, scan, clear, ladder, loadLadder,
+    scanDurationMs, scan, clearScan, ladder, loadLadder,
   } = useAdvisorStore();
 
   // Auto-scan on mount if no data
   useEffect(() => {
     if (projectId && !healthScore && !isScanning) {
       scan(projectId);
-      loadLadder(projectId);
+      if (ladder?.projectId !== projectId) loadLadder(projectId);
     }
-    return () => { clear(); };
+    return () => { clearScan(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 

@@ -21,7 +21,7 @@ jest.mock('../middleware/projectAccess.middleware', () => ({
     next();
   },
 }));
-type LimiterOptions = { name?: string; windowMs?: number; max?: number };
+type LimiterOptions = { name?: string; windowMs?: number; max?: number; key?: (req: unknown) => string };
 const limiters: LimiterOptions[] = [];
 const limiterHits: Array<string | undefined> = [];
 jest.mock('../middleware/rateLimit.middleware', () => ({
@@ -113,10 +113,19 @@ describe('GET /:projectId/advisor/ladder', () => {
   });
 
   test('has its own rate limiter: 30 requests per minute', async () => {
-    expect(limiters).toContainEqual({ name: 'advisor-ladder', windowMs: 60_000, max: 30 });
+    expect(limiters).toContainEqual(expect.objectContaining({ name: 'advisor-ladder', windowMs: 60_000, max: 30 }));
     mockRunCypher.mockResolvedValue([]);
     await request(app()).get('/api/projects/p1/advisor/ladder');
     expect(limiterHits).toEqual(['advisor-ladder']);
+  });
+
+  test('the limiter counts per user (the action field loads per project and after model changes); without a user per IP', () => {
+    const ladder = limiters.find((l) => l.name === 'advisor-ladder');
+    expect(ladder?.key).toBeDefined();
+    const a = ladder!.key!({ user: { _id: 'u1' }, ip: '10.0.0.1' });
+    const b = ladder!.key!({ user: { _id: 'u2' }, ip: '10.0.0.1' });
+    expect(a).not.toBe(b);
+    expect(ladder!.key!({ ip: '10.0.0.1' })).toBe('ip:10.0.0.1');
   });
 
   test('the limiter of the ladder does not sit on the translation routes', async () => {

@@ -28,6 +28,7 @@ vi.mock('../3d/ViewModeCamera', () => ({ flyToStation: (...a: unknown[]) => flyT
 vi.mock('../../hooks/useProjectData', () => ({
   useProjectData: () => ({ loading: false, error: null }),
 }));
+vi.mock('../groups/useLadderSync', () => ({ useLadderSync: () => {} })); // no ladder requests in the shell tests
 
 vi.mock('../ui/PropertyPanel', () => ({ default: () => <aside data-testid="property-panel" /> }));
 
