@@ -15,7 +15,7 @@ export const STE100_WORDS_IN_USE: readonly string[] = [
   'a', 'add', 'after', 'agree', 'all', 'along', 'an', 'and', 'are', 'at', 'back', 'be', 'because', 'before', 'between', 'but',
   'calculate', 'can', 'cannot', 'changes', 'check', 'compare', 'connect', 'connected', 'connects', 'counts',
   'decrease', 'different', 'direction', 'do', 'does', 'each', 'equal', 'examine', 'examined', 'example',
-  'find', 'first', 'found', 'for', 'from', 'give', 'go', 'group', 'groups', 'has', 'have', 'how', 'in', 'include', 'is', 'it',
+  'find', 'first', 'for', 'found', 'from', 'give', 'go', 'group', 'groups', 'has', 'have', 'how', 'in', 'include', 'is', 'it',
   'item', 'its', 'large', 'limit', 'limits', 'make', 'many', 'maximum', 'minimum', 'more', 'multiplies',
   'must', 'name', 'names', 'necessary', 'next', 'no', 'not', 'number', 'of', 'on', 'one', 'only', 'or',
   'other', 'pair', 'pairs', 'part', 'parts', 'possible', 'problem', 'quantities', 'quantity', 'remove', 'result', 'same', 'set',

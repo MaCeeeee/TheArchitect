@@ -92,8 +92,15 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
       hints.push({ kind: 'too_few_steps', elementIds: [folder.id], text: RING_TEXT.tooFewSteps(folder.name, steps.length) });
       return result;
     }
+    const seenUnknown = new Set<string>();
     const unknown = own
-      .filter((a) => a.kind === null)
+      .filter((a) => {
+        if (a.kind !== null) return false;
+        const key = `${a.step}|${a.target}`;
+        if (seenUnknown.has(key)) return false;
+        seenUnknown.add(key);
+        return true;
+      })
       .sort((x, y) => byName(ref(x.step), ref(y.step)) || byName(ref(x.target), ref(y.target)));
     for (const a of unknown) {
       hints.push({ kind: 'unknown_access', elementIds: [a.step, a.target], text: RING_TEXT.unknownAccess(ref(a.step).name, ref(a.target).name) });
@@ -174,7 +181,9 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
     return result;
   }
 
-  const folders = [...partsOf.keys()].map(ref).sort(byName).map(assessFolder);
+  // an object with parts that no step accesses is a plain data model, not a change folder
+  const hasSteps = (id: string) => [...partsOf.get(id)!].some((p) => (accessesByTarget.get(p) ?? []).length > 0);
+  const folders = [...partsOf.keys()].filter(hasSteps).map(ref).sort(byName).map(assessFolder);
 
   const hints: RingHint[] = [];
   const allParts = new Set([...partsOf.values()].flatMap((set) => [...set]));

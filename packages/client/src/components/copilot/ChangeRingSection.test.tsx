@@ -4,6 +4,7 @@
  */
 import { describe, test, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom/vitest';
 import ChangeRingSection from './ChangeRingSection';
 import type { ChangeRingReport } from '@thearchitect/shared';
@@ -46,5 +47,21 @@ describe('ChangeRingSection', () => {
   test('a hint of the whole model is shown', () => {
     render(<ChangeRingSection report={empty} />);
     expect(screen.getByText('No folder text')).toBeInTheDocument();
+  });
+
+  test('an unchecked folder shows its hint and no clean message', () => {
+    const unchecked: ChangeRingReport = {
+      ...clean,
+      folders: [{ ...clean.folders[0], checked: false, hints: [{ kind: 'no_start', elementIds: ['M'], text: 'No start text' }] }],
+    };
+    render(<ChangeRingSection report={unchecked} />);
+    expect(screen.getByText('No start text')).toBeInTheDocument();
+    expect(screen.queryByText('The check found no problem.')).not.toBeInTheDocument();
+  });
+
+  test('the Math toggle shows the Bernstein wording', async () => {
+    render(<ChangeRingSection report={clean} />);
+    await userEvent.click(screen.getByRole('button', { name: /math/i }));
+    expect(screen.getByText(/^Bernstein conditions \(1966\)/)).toBeInTheDocument();
   });
 });

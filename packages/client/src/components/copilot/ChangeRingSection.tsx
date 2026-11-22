@@ -20,14 +20,14 @@ export default function ChangeRingSection({ report }: { report: ChangeRingReport
           <span className="block text-[8px] text-[var(--text-tertiary)] [overflow-wrap:anywhere]">{`${LADDER_MATH_TEXT.changeFolders} ${report.method.formula} — ${report.method.limits}`}</span>
         )}
       </div>
-      {report.hints.map((hint) => <Hint key={`${hint.kind}-${hint.elementIds.join(',')}`} hint={hint} />)}
+      {report.hints.map((hint, i) => <Hint key={`${i}-${hint.kind}-${hint.elementIds.join(',')}`} hint={hint} />)}
       {report.folders.map((f) => (
         <div key={f.folder.id} data-testid={`ring-folder-${f.folder.id}`} data-checked={String(f.checked)} className="space-y-0.5">
           <p className="text-[10px] text-white [overflow-wrap:anywhere]">{f.folder.name}</p>
-          {f.findings.map((x) => (
-            <p key={`${x.rule}-${x.first.id}-${x.second?.id ?? ''}-${x.part?.id ?? ''}`} className="text-[8px] text-yellow-400 [overflow-wrap:anywhere]">{x.text}</p>
+          {f.findings.map((x, i) => (
+            <p key={`${i}-${x.rule}-${x.first.id}-${x.second?.id ?? ''}-${x.part?.id ?? ''}`} className="text-[8px] text-yellow-400 [overflow-wrap:anywhere]">{x.text}</p>
           ))}
-          {f.hints.map((hint) => <Hint key={`${hint.kind}-${hint.elementIds.join(',')}`} hint={hint} />)}
+          {f.hints.map((hint, i) => <Hint key={`${i}-${hint.kind}-${hint.elementIds.join(',')}`} hint={hint} />)}
           {f.checked && f.findings.length === 0 && (
             <p className="text-[8px] text-[#00ff41]">{LADDER_TEXT.changeFolderClean}</p>
           )}

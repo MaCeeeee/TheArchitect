@@ -174,6 +174,37 @@ describe('REQ-RING-001.4 (THE-824): hints name the next step', () => {
     expect(f.hints[0].text).toContain('"Vote production"');
   });
 
+  test('duplicate edges with an unreadable label → exactly 1 unknown_access hint', () => {
+    const m = unknownLabel();
+    const dup = { ...m, relationships: [...m.relationships, { id: 'dup-S3-vF', sourceId: 'S3', targetId: 'vF', type: 'access', label: 'accesses' }] };
+    expect(only(dup).hints.filter((h) => h.kind === 'unknown_access')).toHaveLength(1);
+  });
+
+  test('a data model without any process is no change folder → only no_folder', () => {
+    const elements = [
+      { id: 'O', name: 'Customer', type: 'business_object' },
+      { id: 'p1', name: 'Name', type: 'business_object' },
+      { id: 'p2', name: 'Street', type: 'business_object' },
+    ];
+    const relationships = [
+      { id: 'c1', sourceId: 'O', targetId: 'p1', type: 'composition' },
+      { id: 'c2', sourceId: 'O', targetId: 'p2', type: 'composition' },
+    ];
+    const r = assessChangeRings(elements, relationships);
+    expect(r.folders).toEqual([]);
+    expect(r.hints.map((h) => h.kind)).toEqual(['no_folder']);
+  });
+
+  test('a data object with parts that no step accesses does not change the gold result', () => {
+    const m = goldRing();
+    const extra = {
+      elements: [...m.elements, { id: 'A', name: 'Address', type: 'business_object' }, { id: 'a1', name: 'Street', type: 'business_object' }, { id: 'a2', name: 'City', type: 'business_object' }],
+      relationships: [...m.relationships, { id: 'ca1', sourceId: 'A', targetId: 'a1', type: 'composition' }, { id: 'ca2', sourceId: 'A', targetId: 'a2', type: 'composition' }],
+    };
+    expect(run(extra)).toEqual(run(m));
+    expect(run(extra).folders).toHaveLength(1);
+  });
+
   test('AC-3: no Business Event → hint no_start, not checked, no pair findings from a guessed order', () => {
     const f = only(noStart());
     expect(f.hints.map((h) => h.kind)).toEqual(['no_start']);
