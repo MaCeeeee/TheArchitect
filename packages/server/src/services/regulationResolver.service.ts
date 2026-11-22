@@ -16,6 +16,7 @@ import {
   isCorpusConfigured,
   getRegulationsByKeys,
   corpusHealth,
+  CorpusRegulation,
   type ICorpusRegulation,
 } from './corpusClient.service';
 import { log } from '../config/logger';
@@ -73,6 +74,88 @@ function isLivePasteKey(key: string): boolean {
 /** An app-DB Regulation that is user-pasted (live-paste), not canonical law. */
 function isLivePasteReg(r: Pick<IRegulation, 'paragraphNumber'>): boolean {
   return r.paragraphNumber === LIVE_PASTE_PARAGRAPH;
+}
+
+/**
+ * THE-807 (UC-REGVER-001, Entscheidung THE-804): je (source, paragraphNumber)
+ * nur das Dokument mit der höchsten `version` — `version` zählt Fassungen des
+ * Textes. Live-paste-Dokumente sind keine Fassungen desselben Paragraphen
+ * (Platzhalter-Nummer) und bleiben alle erhalten. Rein: liest nur, behält die
+ * Reihenfolge der Eingabe, fehlende `version` zählt als 1.
+ */
+export function latestVersionPerParagraph<
+  T extends { source: string; paragraphNumber: string; version?: number },
+>(regs: T[]): T[] {
+  const keyOf = (r: T) => `${r.source}::${r.paragraphNumber}`;
+  const best = new Map<string, T>();
+  for (const r of regs) {
+    if (isLivePasteReg(r)) continue;
+    const cur = best.get(keyOf(r));
+    if (!cur || (r.version ?? 1) > (cur.version ?? 1)) best.set(keyOf(r), r);
+  }
+  return regs.filter(r => isLivePasteReg(r) || best.get(keyOf(r)) === r);
+}
+
+const PINNED_CORPUS_SOURCE = /^corpus:(.+)@([0-9a-f]+)$/i;
+
+/**
+ * THE-808 (UC-REGVER-001, Re-Trigger von THE-804): Wie viele Projekt-Regulations
+ * stehen auf einem Korpus-Text, der sich seit der Übernahme geändert hat?
+ * Grundlage ist die festgehaltene Übernahme `sourceUrl = corpus:<regulationKey>@<hash>`.
+ * Der Crawler überschreibt geänderte Paragraphen an Ort und Stelle (`version`
+ * bleibt 1, nur `versionHash` wechselt, compliance-crawler routes/crawl.ts) —
+ * deshalb der Vergleich über den Hash-Präfix, nicht über `version`.
+ * WIRFT bei Korpus-Ausfall: ein Ausfall darf nie als „missing" zählen.
+ * Nur die aktive (höchste) Version je Paragraph und Projekt zählt (wie THE-807):
+ * eine neuere eingefügte Fassung löst die veraltete Übernahme ab.
+ * Liefert nur Zahlen (öffentlicher Health-Endpunkt).
+ */
+
+export interface PinnedTextStaleness {
+  total: number;
+  stale: number;
+  missing: number;
+}
+
+export async function pinnedTextStaleness(): Promise<PinnedTextStaleness> {
+  // Alle Fassungen laden (kleine Sammlung): ein ungepinnter Nachfolger muss
+  // den gepinnten Vorgänger verdrängen können.
+  const all = await Regulation.find({})
+    .select('projectId source paragraphNumber version sourceUrl')
+    .lean();
+  const byProject = new Map<string, typeof all>();
+  for (const r of all) {
+    const k = String(r.projectId);
+    const list = byProject.get(k);
+    if (list) list.push(r);
+    else byProject.set(k, [r]);
+  }
+  const rows = [...byProject.values()].flatMap(g => latestVersionPerParagraph(g));
+  const pins = rows.flatMap(r => {
+    const m = PINNED_CORPUS_SOURCE.exec(r.sourceUrl ?? '');
+    return m ? [{ key: m[1], hash: m[2].toLowerCase() }] : [];
+  });
+  if (pins.length === 0) return { total: 0, stale: 0, missing: 0 };
+
+  const docs = await CorpusRegulation()
+    .find({ regulationKey: { $in: [...new Set(pins.map(p => p.key))] } })
+    .select('regulationKey versionHash version')
+    .sort({ version: -1 })
+    .lean();
+  // Erste = höchste Version je Schlüssel gewinnt.
+  const hashByKey = new Map<string, string>();
+  for (const d of docs) {
+    if (!hashByKey.has(d.regulationKey)) hashByKey.set(d.regulationKey, String(d.versionHash ?? '').toLowerCase());
+  }
+
+  let stale = 0;
+  let missing = 0;
+  for (const p of pins) {
+    const current = hashByKey.get(p.key);
+    if (current === undefined) missing += 1;
+    else if (!current.startsWith(p.hash)) stale += 1;
+  }
+  return { total: pins.length, stale, missing };
 }
 
 function recordFallback(reason: keyof FallbackStats, context: Record<string, unknown>): void {

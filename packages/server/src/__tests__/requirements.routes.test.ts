@@ -336,6 +336,113 @@ describe('Requirements Routes (UC-REQGEN-001 / THE-304)', () => {
       expect(docs[0].description).toBe('Updated version of the description.');
     });
 
+    // THE-809 (UC-REGVER-001): erneutes Speichern bewahrt menschliche Entscheidungen.
+    function confirmBody(regulationId: string, over: Record<string, unknown> = {}) {
+      return {
+        regulationId,
+        sourceParagraph: 'a'.repeat(40),
+        requirements: [
+          {
+            title: 'Risikoanalyse durchführen',
+            description: 'First version of the description.',
+            priority: 'must' as const,
+            linkedElementIds: [] as string[],
+            ...over,
+          },
+        ],
+      };
+    }
+    const reqFilter = { projectId: new mongoose.Types.ObjectId(PROJECT_ID), title: 'Risikoanalyse durchführen' };
+
+    it('THE-809: re-confirm keeps status, createdBy and human gates, re-derives covered', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.updateOne(reqFilter, {
+        $set: {
+          status: 'done',
+          'gates.enforced': { state: 'yes', setBy: 'human', setAt: new Date().toISOString() },
+          'gates.attested': { state: 'yes', setBy: 'human', setAt: new Date().toISOString() },
+        },
+      });
+
+      const res = await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements`)
+        .send(confirmBody(String(reg._id), { description: 'Second version of the description.', linkedElementIds: ['el-1'] }));
+
+      expect(res.status).toBe(200);
+      const docs = await ComplianceRequirement.find(reqFilter).lean();
+      expect(docs).toHaveLength(1);
+      expect(docs[0].status).toBe('done');
+      expect(docs[0].createdBy).toBe('human');
+      expect(docs[0].description).toBe('Second version of the description.');
+      expect(docs[0].gates?.enforced.state).toBe('yes');
+      expect(docs[0].gates?.attested.state).toBe('yes');
+      expect(docs[0].gates?.covered.state).toBe('yes');
+    });
+
+    it('THE-809: a new requirement starts open with all three gates', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.status).toBe('open');
+      expect(doc?.createdBy).toBe('human');
+      expect(doc?.gates?.covered.state).toBe('no');
+      expect(doc?.gates?.enforced.state).toBe('unknown');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
+    it('THE-809: legacy requirement without gates keeps status and gets all three gates', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.collection.updateOne(reqFilter, { $set: { status: 'in_progress' }, $unset: { gates: '' } });
+
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.status).toBe('in_progress');
+      expect(doc?.gates?.covered.state).toBe('no');
+      expect(doc?.gates?.enforced.state).toBe('unknown');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
+    it('THE-809: partial gates with only covered get enforced and attested added', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.collection.updateOne(reqFilter, {
+        $set: { status: 'done', gates: { covered: { state: 'no', setBy: 'system' } } },
+      });
+
+      await request(app)
+        .post(`/api/projects/${PROJECT_ID}/requirements`)
+        .send(confirmBody(String(reg._id), { linkedElementIds: ['el-1'] }));
+
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.status).toBe('done');
+      expect(doc?.gates?.covered.state).toBe('yes');
+      expect(doc?.gates?.enforced.state).toBe('unknown');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
+    it('THE-809: partial gates keep a present human enforced and add the missing attested', async () => {
+      const reg = await Regulation.create(baseReg(PROJECT_ID));
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+      await ComplianceRequirement.collection.updateOne(reqFilter, {
+        $set: {
+          gates: {
+            covered: { state: 'no', setBy: 'system' },
+            enforced: { state: 'yes', setBy: 'human' },
+          },
+        },
+      });
+
+      await request(app).post(`/api/projects/${PROJECT_ID}/requirements`).send(confirmBody(String(reg._id)));
+
+      const doc = await ComplianceRequirement.findOne(reqFilter).lean();
+      expect(doc?.gates?.enforced.state).toBe('yes');
+      expect(doc?.gates?.enforced.setBy).toBe('human');
+      expect(doc?.gates?.attested.state).toBe('unknown');
+    });
+
     it('rejects empty requirements array', async () => {
       const reg = await Regulation.create(baseReg(PROJECT_ID));
       const res = await request(app)

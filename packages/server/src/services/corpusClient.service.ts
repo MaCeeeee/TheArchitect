@@ -270,8 +270,8 @@ export async function listTypingSummaries(): Promise<CorpusTypingSummary[]> {
 
 /**
  * Alle (aktuellsten) Korpus-Regulations zu den gegebenen Quellen. Nur die
- * höchste Version je regulationKey (der Crawler legt bei Änderung eine neue
- * Version an). Für den Projekt-Import (import-regulations-from-corpus.ts), weil
+ * höchste Version je regulationKey (der Crawler überschreibt Text und versionHash
+ * in `version: 1` an Ort und Stelle; mehrere Versionen sind nur Altbestand). Für den Projekt-Import (import-regulations-from-corpus.ts), weil
  * der Crawler in den kanonischen Korpus schreibt, nicht in den Projekt-Bestand.
  */
 export async function listCorpusBySource(sources: string[]): Promise<ICorpusRegulation[]> {

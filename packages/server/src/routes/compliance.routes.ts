@@ -34,6 +34,7 @@ import {
   type MappingRegulationInput,
 } from '../services/complianceMapping.service';
 import { resolveGovernedRegulations } from '../services/governedRetrieval.service';
+import { latestVersionPerParagraph } from '../services/regulationResolver.service';
 import { loadProjectCandidateElements } from '../services/complianceElements.service';
 import { findOutputsByRegulation } from '../services/contextTrace.service';
 import { log } from '../config/logger';
@@ -135,7 +136,12 @@ router.post(
         $in: requestedIds.map(id => new mongoose.Types.ObjectId(id)),
       };
     }
-    const regulations = await Regulation.find(regulationFilter).select('-embedding');
+    // THE-807 (UC-REGVER-001): ohne ausdrückliche IDs nur die höchste Fassung je
+    // Paragraph — mehrfach eingefügte Kopien würden sonst mehrfach gemappt.
+    // live-paste bleibt vollständig; es wird nichts gelöscht.
+    const allVersions = await Regulation.find(regulationFilter).select('-embedding');
+    const regulations =
+      requestedIds.length > 0 ? allVersions : latestVersionPerParagraph(allVersions);
 
     if (regulations.length === 0) {
       return res.json({

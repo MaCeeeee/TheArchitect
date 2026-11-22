@@ -593,42 +593,88 @@ router.post(
       }
     }
 
-    const ops = parsed.data.requirements.map(r => ({
-      updateOne: {
-        filter: {
+    // THE-809 (UC-REGVER-001): Seit THE-806 trifft erneutes Einfügen desselben
+    // Textes dieselbe regulationId. Erneutes Speichern darf menschliche
+    // Entscheidungen (status, createdBy, Tore enforced/attested) nicht
+    // überschreiben; `covered` wird mechanisch neu abgeleitet. Leser greifen
+    // ungeschützt auf gates.attested.state zu → nie ein halbes gates-Objekt.
+    const existingByTitle = new Map(
+      (
+        await ComplianceRequirement.find({
           projectId: projectObjectId,
           regulationId: regulationObjectId,
-          title: r.title,
-        },
-        update: {
-          $set: {
+          title: { $in: parsed.data.requirements.map(r => r.title) },
+        })
+          .select('title gates')
+          .lean()
+      ).map(d => [d.title, d]),
+    );
+
+    const ops = parsed.data.requirements.map(r => {
+      const covered = deriveCovered(r.linkedElementIds);
+      const existing = existingByTitle.get(r.title);
+      // THE-557: Deckung mechanisch — Mensch-Tore bleiben, wie sie sind (THE-809).
+      // Drei Fälle, in keinem Fall ein halbes gates-Objekt (auch nicht nach Lösch-Wettlauf):
+      let gatesSet: Record<string, unknown> = {};
+      let gatesOnInsert: Record<string, unknown> = {};
+      if (!existing) {
+        // Neu: alle drei Tore beim Einfügen.
+        gatesOnInsert = { gates: { ...emptyGates(), covered } };
+      } else if (existing.gates) {
+        // Vorhanden mit Toren: covered neu. Fehlende Teil-Tore (z. B. durch PATCH auf Legacy-Daten)
+        // je Tor ergänzen; vorhandene bleiben (nur $setOnInsert für den Lösch-Wettlauf).
+        // Nie derselbe Pfad in $set und $setOnInsert.
+        gatesSet = { 'gates.covered': covered };
+        for (const name of ['enforced', 'attested'] as const) {
+          if (existing.gates[name]?.state) {
+            gatesOnInsert[`gates.${name}`] = emptyGates()[name];
+          } else {
+            gatesSet[`gates.${name}`] = emptyGates()[name];
+          }
+        }
+      } else {
+        // Legacy ohne gates: vollständiges Objekt setzen, Status bleibt.
+        gatesSet = { gates: { ...emptyGates(), covered } };
+      }
+      return {
+        updateOne: {
+          filter: {
             projectId: projectObjectId,
             regulationId: regulationObjectId,
-            ...(normId ? { normId } : {}),
-            ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
-            contextTraceId,
-            sourceParagraph: parsed.data.sourceParagraph,
             title: r.title,
-            description: r.description,
-            priority: r.priority,
-            linkedElementIds: r.linkedElementIds,
-            status: 'open' as const,
-            createdBy: 'human' as const,
-            // THE-557: Deckung mechanisch bei der Anlage — Mensch-Tore bleiben unknown.
-            gates: { ...emptyGates(), covered: deriveCovered(r.linkedElementIds) },
-            // Preserve LLM explainability through human curation (optional, audit trail)
-            ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
-            ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
-            ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
-            ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
-            // ADR-0008 Phase 1: Rueckverweise der Kette — nur wenn das Item
-            // aus der Chain-Engine stammt; Alt-Items bleiben byte-gleich.
-            ...(chainRefsByTitle.has(r.title) && { chain: chainRefsByTitle.get(r.title) }),
           },
+          update: {
+            $set: {
+              projectId: projectObjectId,
+              regulationId: regulationObjectId,
+              ...(normId ? { normId } : {}),
+              ...(parsed.data.sectionEId ? { sectionEId: parsed.data.sectionEId } : {}),
+              contextTraceId,
+              sourceParagraph: parsed.data.sourceParagraph,
+              title: r.title,
+              description: r.description,
+              priority: r.priority,
+              linkedElementIds: r.linkedElementIds,
+              ...gatesSet,
+              // Preserve LLM explainability through human curation (optional, audit trail)
+              ...(r.extractionConfidence !== undefined && { extractionConfidence: r.extractionConfidence }),
+              ...(r.extractionRationale !== undefined && { extractionRationale: r.extractionRationale }),
+              ...(r.mappingConfidence !== undefined && { mappingConfidence: r.mappingConfidence }),
+              ...(r.mappingRationale !== undefined && { mappingRationale: r.mappingRationale }),
+              // ADR-0008 Phase 1: Rueckverweise der Kette — nur wenn das Item
+              // aus der Chain-Engine stammt; Alt-Items bleiben byte-gleich.
+              ...(chainRefsByTitle.has(r.title) && { chain: chainRefsByTitle.get(r.title) }),
+            },
+            $setOnInsert: {
+              status: 'open' as const,
+              createdBy: 'human' as const,
+              ...gatesOnInsert,
+            },
+          },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      };
+    });
 
     await ComplianceRequirement.bulkWrite(ops, { ordered: false });
 
