@@ -383,3 +383,18 @@ describe('LadderPanel', () => {
     expect(screen.queryByText(/^and \d+ more/)).not.toBeInTheDocument();
   });
 });
+
+test('UC-RING-001: the open panel shows a finding of the change folder check', () => {
+  const finding = { rule: 'write_write' as const, first: { id: 'S1', name: 'Review design' }, second: { id: 'S2', name: 'Review purchasing' }, part: { id: 'k', name: 'Cost estimate' }, text: 'WW text' };
+  const report: LadderReport = {
+    ...stopped,
+    changeRings: {
+      method: { id: 'PA-umlauf', name: 'Change folder check', question: 'q', formula: 'W(A) ∩ W(B) = ∅', limits: 'l' },
+      folders: [{ folder: { id: 'M', name: 'Change folder' }, parts: 12, steps: [finding.first, finding.second], start: finding.first, parallelPairs: 3, checked: true, findings: [finding], hints: [] }],
+      hints: [],
+    },
+  };
+  render(<LadderPanel report={report} />);
+  fireEvent.click(screen.getByRole('button', { expanded: false, name: /Model check/ }));
+  expect(screen.getByText('WW text')).toBeInTheDocument();
+});

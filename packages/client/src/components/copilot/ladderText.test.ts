@@ -147,7 +147,8 @@ describe('ladderText — every text is Simplified Technical English', () => {
     expect(Object.keys(ladderText).sort()).toEqual(['LADDER_MATH_TEXT', 'LADDER_TEXT']);
     // The Math level keeps the mathematical wording and is not checked. A new text belongs to
     // LADDER_TEXT unless it is shown only behind the Math button.
-    expect(Object.keys(LADDER_MATH_TEXT).sort()).toEqual(['limits', 'method', 'summary']);
+    expect(Object.keys(LADDER_MATH_TEXT).sort()).toEqual(['changeFolders', 'limits', 'method', 'summary']);
+    expect(LADDER_MATH_TEXT.changeFolders).toMatch(/^Bernstein conditions \(1966\)/);
     expect(LADDER_MATH_TEXT.summary(3, 3, 1, 0, 1)).toBe('3 contexts · 3 translations · 1 independent loop · 0 triple overlaps · dim H¹ = 1');
     expect(LADDER_MATH_TEXT.summary(1, 1, 1, 1, 1)).toBe('1 context · 1 translation · 1 independent loop · 1 triple overlap · dim H¹ = 1');
     expect(LADDER_MATH_TEXT.method('PA-kategorientheorie')).toBe('Method · PA-kategorientheorie');

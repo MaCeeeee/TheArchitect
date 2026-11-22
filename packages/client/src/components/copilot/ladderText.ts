@@ -66,6 +66,9 @@ export const LADDER_TEXT = {
       ...(closedPaths > 0 ? [counted(closedPaths, 'more closed path', 'more closed paths')] : []),
     ].join(' and ')}`,
   tolerance: (lower: string, upper: string) => `A result between ${lower} and ${upper} is equal to 1.`,
+  changeFoldersHeading: 'Change folders',
+  changeFolderClean: 'The check found no problem.',
+  mathOfChangeFolders: 'Math of the change folder check',
 };
 
 export const LADDER_MATH_TEXT = {
@@ -79,4 +82,6 @@ export const LADDER_MATH_TEXT = {
     ].join(' · '),
   method: (id: string) => `Method · ${id}`,
   limits: (limits: string) => `Limits: ${limits}`,
+  changeFolders:
+    'Bernstein conditions (1966): two steps without an order give the same result in every order only if neither writes a part that the other writes or reads.',
 };

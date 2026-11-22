@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Lock, Sigma } from 'lucide-react';
 import type { LadderReport, LadderRung } from '@thearchitect/shared';
+import ChangeRingSection from './ChangeRingSection';
 import CohomologyFinding from './CohomologyFinding';
 import { LADDER_TEXT } from './ladderText';
 import { MathToggle } from './MathToggle';
@@ -79,6 +80,8 @@ export default function LadderPanel({ report }: LadderPanelProps) {
           {report.cohomology.map((result) => (
             <CohomologyFinding key={result.quantity} result={result} method={report.cohomologyMethod} tolerance={report.tolerance} />
           ))}
+
+          <ChangeRingSection report={report.changeRings} />
 
           {oneAway.length > 0 && (
             <div className="space-y-0.5">
