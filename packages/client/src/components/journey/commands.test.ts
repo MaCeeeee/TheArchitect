@@ -1,6 +1,15 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { buildCommandRegistry, resolveActionRoute, type CommandContext } from './commands';
 import { useUIStore } from '../../stores/uiStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
+import { useArchitectureStore } from '../../stores/architectureStore';
+import { useRoadmapStore } from '../../stores/roadmapStore';
+
+vi.mock('../../services/api', () => ({
+  groupsAPI: { create: vi.fn() },
+  advisorAPI: { scan: vi.fn(), health: vi.fn(), ladder: vi.fn() },
+  architectureAPI: { createElement: vi.fn(), createConnection: vi.fn() },
+}));
 
 const ctx = (over: Partial<CommandContext> = {}): CommandContext => ({
   projectId: 'p1',
@@ -86,5 +95,50 @@ describe('buildCommandRegistry — show-all override (THE-500)', () => {
     buildCommandRegistry(c)['toggle:show-all'].run(c);
     expect(useUIStore.getState().salienceOverride).toBe(true);
     expect(c.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe('buildCommandRegistry — make a group (UC-METH-002)', () => {
+  test('action:make-group starts the group mode and does not navigate', () => {
+    const c = ctx();
+    useGroupModeStore.getState().reset();
+    buildCommandRegistry(c)['action:make-group'].run(c);
+    expect(useGroupModeStore.getState().active).toBe(true);
+    expect(useGroupModeStore.getState().projectId).toBe('p1');
+    expect(c.navigate).not.toHaveBeenCalled();
+    useGroupModeStore.getState().reset();
+  });
+
+  test('action:make-group is available only with a minimum of 2 elements in the model', () => {
+    const c = ctx();
+    const cmd = buildCommandRegistry(c)['action:make-group'];
+    useArchitectureStore.setState({ elements: [{ id: 'a' }] as never });
+    expect(cmd.available?.(c)).toBe(false);
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
+    expect(cmd.available?.(c)).toBe(true);
+    useArchitectureStore.setState({ elements: [] as never });
+  });
+
+  test('action:make-group is not available in the plateau view (the scene cannot select there)', () => {
+    const c = ctx();
+    useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
+    useUIStore.setState({ viewMode: '3d' });
+    useRoadmapStore.setState({ isPlateauViewActive: true });
+    expect(buildCommandRegistry(c)['action:make-group'].available?.(c)).toBe(false);
+    useRoadmapStore.setState({ isPlateauViewActive: false });
+    useArchitectureStore.setState({ elements: [] as never });
+  });
+
+  test('every navigating command declares its target, and the target is where run() goes', () => {
+    const c = ctx({ phase: 6 });
+    const all = Object.values(buildCommandRegistry(c));
+    // Only the two commands with an effect have no target; a forgotten go() replacement shows up here.
+    expect(all.filter((cmd) => cmd.target === undefined).map((cmd) => cmd.id).sort()).toEqual(['action:make-group', 'toggle:show-all']);
+    for (const cmd of all) {
+      if (cmd.target === undefined) continue;
+      const navigate = vi.fn();
+      cmd.run({ ...c, navigate });
+      expect(navigate).toHaveBeenCalledWith(cmd.target);
+    }
   });
 });

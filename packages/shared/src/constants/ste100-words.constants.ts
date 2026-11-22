@@ -12,16 +12,19 @@
 
 /** Approved dictionary words in the forms the texts use, lower case. */
 export const STE100_WORDS_IN_USE: readonly string[] = [
-  'a', 'add', 'after', 'agree', 'all', 'along', 'an', 'and', 'are', 'at', 'back', 'be', 'because', 'before', 'between', 'but',
-  'calculate', 'can', 'cannot', 'changes', 'check', 'compare', 'connect', 'connected', 'connects', 'counts',
-  'decrease', 'different', 'direction', 'do', 'does', 'each', 'equal', 'examine', 'examined', 'example',
-  'find', 'first', 'for', 'found', 'from', 'give', 'go', 'group', 'groups', 'has', 'have', 'how', 'in', 'include', 'is', 'it',
-  'item', 'its', 'large', 'limit', 'limits', 'make', 'many', 'maximum', 'minimum', 'more', 'multiplies',
-  'must', 'name', 'names', 'necessary', 'next', 'no', 'not', 'number', 'of', 'on', 'one', 'only', 'or',
-  'other', 'pair', 'pairs', 'part', 'parts', 'possible', 'problem', 'quantities', 'quantity', 'remove', 'result', 'same', 'set',
-  'sets', 'show', 'shows', 'small', 'start', 'started', 'starts', 'step', 'steps', 'stopped', 'stops', 'than', 'that', 'the',
-  'their', 'then', 'these', 'they', 'this', 'three', 'thru', 'time', 'to', 'together', 'too', 'two', 'unit',
-  'units', 'until', 'use', 'used', 'uses', 'which', 'with', 'without', 'you',
+  'a', 'add', 'after', 'again', 'agree', 'all', 'along', 'an', 'and', 'are', 'as', 'at', 'back', 'be',
+  'because', 'before', 'between', 'but', 'calculate', 'can', 'cancel', 'cannot', 'change', 'changed',
+  'changes', 'check', 'close', 'compare', 'completed', 'connect', 'connected', 'connects', 'counts',
+  'decrease', 'did', 'different', 'direction', 'do', 'does', 'each', 'equal', 'examine', 'examined',
+  'example', 'find', 'first', 'for', 'found', 'from', 'give', 'go', 'group', 'groups', 'has', 'have',
+  'how', 'in', 'include', 'is', 'it', 'item', 'its', 'large', 'limit', 'limits', 'made', 'make',
+  'many', 'maximum', 'minimum', 'mode', 'more', 'multiplies', 'must', 'name', 'names', 'necessary',
+  'next', 'no', 'not', 'number', 'of', 'on', 'one', 'only', 'or', 'other', 'pair', 'pairs', 'part',
+  'parts', 'possible', 'problem', 'procedure', 'quantities', 'quantity', 'remove', 'result', 'same',
+  'select', 'selected', 'set', 'sets', 'show', 'shows', 'small', 'start', 'started', 'starts', 'step',
+  'steps', 'stopped', 'stops', 'than', 'that', 'the', 'their', 'then', 'these', 'they', 'this',
+  'three', 'thru', 'time', 'to', 'together', 'too', 'two', 'type', 'unit', 'units', 'until', 'use',
+  'used', 'uses', 'which', 'with', 'without', 'write', 'you',
 ];
 
 /**

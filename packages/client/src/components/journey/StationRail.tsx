@@ -9,6 +9,8 @@ import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
 import { STATIONS, type StationKey } from './stations';
 import StationActions from './StationActions';
+import GroupModeBar from '../groups/GroupModeBar';
+import { useGroupModeStore } from '../../stores/groupModeStore';
 
 interface Props {
   projectId: string;
@@ -23,6 +25,7 @@ export default function StationRail({ projectId, station }: Props) {
   const pipelineStates = useComplianceStore((s) => s.pipelineStates);
   const snapshots = useComplianceStore((s) => s.snapshots);
   const loadPipelineStatus = useComplianceStore((s) => s.loadPipelineStatus);
+  const groupModeShown = useGroupModeStore((s) => s.projectId === projectId && (s.active || s.feedback !== null));
 
   // Same load + recompute pairing as PhaseBar.tsx:31-37 — the Rail is
   // self-sufficient: it loads the pipeline data its recompute reads.
@@ -39,8 +42,11 @@ export default function StationRail({ projectId, station }: Props) {
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 pointer-events-none">
       {/* The command surface: the station's ≤4 executable actions (THE-492).
-          Replaces Slice-1's navigation-only nextAction CTA. */}
-      <StationActions station={station} projectId={projectId} />
+          Replaces Slice-1's navigation-only nextAction CTA. While the group mode of
+          this project runs (or shows its feedback), it takes this place (UC-METH-002). */}
+      {groupModeShown
+        ? <GroupModeBar projectId={projectId} className="w-[420px] max-w-[90vw]" />
+        : <StationActions station={station} projectId={projectId} />}
 
       {/* The Rail */}
       <nav

@@ -92,3 +92,44 @@ describe('advisorStore.loadLadder', () => {
     expect(shown()?.timestamp).toBe('2026-11-20T12:00:05.000Z');
   });
 });
+
+describe('advisorStore — the ladder outlives the panel (UC-METH-002)', () => {
+  beforeEach(() => { ladder.mockReset(); useAdvisorStore.getState().clear(); });
+
+  test('clearScan removes the scan but keeps the ladder report', async () => {
+    ladder.mockResolvedValue(answer(report('p1')));
+    await useAdvisorStore.getState().loadLadder('p1');
+    useAdvisorStore.setState({ insights: [{ id: 'i' }] as never });
+    useAdvisorStore.getState().clearScan();
+    expect(useAdvisorStore.getState().insights).toEqual([]);
+    expect(shown()?.projectId).toBe('p1');
+  });
+
+  test('focusLadderRung marks a rung; loading another project removes the mark', async () => {
+    useAdvisorStore.getState().focusLadderRung(2);
+    expect(useAdvisorStore.getState().focusRung).toBe(2);
+    ladder.mockResolvedValue(answer(report('p2')));
+    await useAdvisorStore.getState().loadLadder('p2');
+    expect(useAdvisorStore.getState().focusRung).toBeNull();
+  });
+});
+
+describe('advisorStore.loadLadder — return value', () => {
+  beforeEach(() => { ladder.mockReset(); useAdvisorStore.getState().clear(); });
+
+  test('returns the report of its own request even when a newer request owns the store', async () => {
+    const first = pending();
+    ladder.mockReturnValueOnce(first.promise);
+    ladder.mockResolvedValueOnce(answer(report('p1', 'newer')));
+    const a = useAdvisorStore.getState().loadLadder('p1');
+    await useAdvisorStore.getState().loadLadder('p1');
+    first.resolve(answer(report('p1', 'older')));
+    expect((await a)?.timestamp).toBe('older');
+    expect(shown()?.timestamp).toBe('newer');
+  });
+
+  test('an error → null', async () => {
+    ladder.mockRejectedValue(new Error('x'));
+    expect(await useAdvisorStore.getState().loadLadder('p1')).toBeNull();
+  });
+});

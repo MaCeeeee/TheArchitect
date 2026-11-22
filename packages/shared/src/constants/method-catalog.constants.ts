@@ -5,6 +5,11 @@ const APP_TYPES = ['application_component', 'application'];
 /** Element types that count as a context (an area of the model): ArchiMate's composite elements. */
 export const CONTEXT_ELEMENT_TYPES: readonly string[] = ['grouping', 'location'];
 
+/** Index of the ladder step "Groups" (UC-METH-001). */
+export const LADDER_GROUPS_RUNG = 2 as const;
+/** Label of the ladder fact that counts groups with members. Client and server read the fact by this name. */
+export const LADDER_FACT_GROUPS_WITH_MEMBERS = 'groups with members';
+
 // rung = lowest rung whose structure the inputs need:
 // element fields only → 0, relationships → 1, contexts and translations that close a loop → 5
 

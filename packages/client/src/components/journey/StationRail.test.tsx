@@ -7,6 +7,7 @@ import { useJourneyStore, type PhaseInfo } from '../../stores/journeyStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import type { StationKey } from './stations';
 import StationRail from './StationRail';
+import { useGroupModeStore } from '../../stores/groupModeStore';
 
 type JourneyState = ReturnType<typeof useJourneyStore.getState>;
 
@@ -89,5 +90,31 @@ describe('StationRail (ADR-0005 AC-3)', () => {
   test('done stations expose a non-color complete signal for screen readers', () => {
     renderRail('model');
     expect(screen.getByRole('button', { name: /Vision.*complete/ })).toBeInTheDocument();
+  });
+});
+
+describe('StationRail — group mode (UC-METH-002)', () => {
+  beforeEach(() => {
+    seedStore();
+    useArchitectureStore.setState({ elements: Array.from({ length: 6 }, (_, i) => ({ id: `e${i}` })) as never });
+    useGroupModeStore.getState().reset();
+  });
+
+  test('station actions without the mode', () => {
+    renderRail('model');
+    expect(screen.getByRole('group', { name: 'Station actions' })).toBeInTheDocument();
+  });
+
+  test('group mode of this project → the rail shows the group mode instead of the station actions', () => {
+    useGroupModeStore.getState().start('p1');
+    renderRail('model');
+    expect(screen.getByText('Select the elements of the group.')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Station actions' })).not.toBeInTheDocument();
+  });
+
+  test('group mode of another project → station actions as before', () => {
+    useGroupModeStore.getState().start('p2');
+    renderRail('model');
+    expect(screen.getByRole('group', { name: 'Station actions' })).toBeInTheDocument();
   });
 });

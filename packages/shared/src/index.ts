@@ -16,6 +16,8 @@ export * from './types/ladder.types';
 export * from './types/changeRing.types';
 export * from './constants/access-vocabulary.constants';
 export * from './constants/method-catalog.constants';
+export * from './constants/group.constants';
+export * from './types/group.types';
 export * from './types/roadmap.types';
 export * from './types/stochastic.types';
 export * from './types/compliance.types';

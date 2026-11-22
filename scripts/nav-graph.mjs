@@ -142,6 +142,7 @@ function extractTargets(file) {
     { re: /to=\{?\s*[`'"]([^`'"]+)[`'"]/g,             trigger: '<Link to>' },
     { re: /route:\s*[`'"]([^`'"]+)[`'"]/g,             trigger: 'nextAction.route' },
     { re: /nav\(\s*[`'"]([^`'"]+)[`'"]/g,              trigger: 'command nav()' },
+    { re: /(?<!\w)(?<![^.]\.)go\(\s*[`'"]([^`'"]+)[`'"]/g,      trigger: 'command go()' },   // commands.ts: go(route) = { run: nav(route), target: route } (UC-METH-002)
     { re: /classicRoute:.*?[`'"]([^`'"]+)[`'"]/g,      trigger: 'station classicRoute' },
     { re: /window\.location\.href\s*=\s*[`'"]([^`'"]+)[`'"]/g, trigger: 'location.href', auth: true },
     { re: /<Navigate\s+to=[`'"]([^`'"]+)[`'"]/g,      trigger: '<Navigate>', auth: true },

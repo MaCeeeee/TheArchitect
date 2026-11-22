@@ -9,6 +9,8 @@ interface AdvisorState {
   totalElements: number;
   scanDurationMs: number;
   ladder: LadderReport | null;
+  /** Ladder rung the action field points at; the ladder panel opens and marks it (UC-METH-002). */
+  focusRung: number | null;
 
   // UI state
   isScanning: boolean;
@@ -17,7 +19,11 @@ interface AdvisorState {
 
   // Actions
   scan: (projectId: string) => Promise<void>;
-  loadLadder: (projectId: string) => Promise<void>;
+  /** Resolves to the report of its own request (null on an error), even when a newer request owns the store. */
+  loadLadder: (projectId: string) => Promise<LadderReport | null>;
+  /** Removes the scan only; the ladder report stays. */
+  clearScan: () => void;
+  focusLadderRung: (rung: number | null) => void;
   clear: () => void;
 }
 
@@ -31,6 +37,7 @@ export const useAdvisorStore = create<AdvisorState>((set) => ({
   totalElements: 0,
   scanDurationMs: 0,
   ladder: null,
+  focusRung: null,
   isScanning: false,
   lastScanAt: null,
   error: null,
@@ -60,11 +67,29 @@ export const useAdvisorStore = create<AdvisorState>((set) => ({
     const request = ++latestLadderRequest;
     try {
       const { data } = await advisorAPI.ladder(projectId);
-      if (request === latestLadderRequest) set({ ladder: data.data as LadderReport });
+      const report = data.data as LadderReport;
+      if (request === latestLadderRequest) {
+        set((s) => ({ ladder: report, focusRung: s.ladder?.projectId === report.projectId ? s.focusRung : null }));
+      }
+      return report;
     } catch {
       if (request === latestLadderRequest) set({ ladder: null }); // optional block — the scan stays usable without it
+      return null;
     }
   },
+
+  /** Removes the scan only. The ladder report stays: the action field reads it without the panel (UC-METH-002). */
+  clearScan: () => set({
+    healthScore: null,
+    insights: [],
+    totalElements: 0,
+    scanDurationMs: 0,
+    isScanning: false,
+    lastScanAt: null,
+    error: null,
+  }),
+
+  focusLadderRung: (rung) => set({ focusRung: rung }),
 
   clear: () => set({
     healthScore: null,
@@ -72,6 +97,7 @@ export const useAdvisorStore = create<AdvisorState>((set) => ({
     totalElements: 0,
     scanDurationMs: 0,
     ladder: null,
+    focusRung: null,
     isScanning: false,
     lastScanAt: null,
     error: null,

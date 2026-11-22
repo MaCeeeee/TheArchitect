@@ -18,47 +18,42 @@ const STATION_SECONDARY: Record<StationKey, string[]> = {
   track:   ['open:audit'],
 };
 
-/** A stable "route" for dedup: the target a command navigates to. Derived by
- *  running the command against a capturing navigate.
- *  ⚠️ This EXECUTES the command. Safe only for navigation-only commands — never
- *  put a side-effecting command (e.g. `toggle:show-all`, THE-500) into
- *  STATION_SECONDARY, or its effect fires on every chip build. */
-function routeOf(cmd: Command, ctx: CommandContext): string {
-  let captured = '';
-  cmd.run({ ...ctx, navigate: (to) => (captured = to) });
-  return captured;
-}
-
 export function getStationActions(
   station: StationKey,
   phases: PhaseInfo[],
   ctx: CommandContext,
+  lead: string[] = [],
 ): Command[] {
   const registry = buildCommandRegistry(ctx);
   const phase = STATIONS.find((s) => s.key === station)!.phase;
   const nextAction = phases.find((p) => p.phase === phase)?.nextAction ?? null;
 
   const out: Command[] = [];
+  const pushFromRegistry = (id: string) => {
+    const cmd = registry[id];
+    if (!cmd) return;
+    if (cmd.available && !cmd.available(ctx)) return;
+    out.push(cmd);
+  };
+
+  // Lead commands (e.g. the guided "Make a group", UC-METH-002) come before the phase next step.
+  for (const id of lead) pushFromRegistry(id);
 
   if (nextAction) {
     const route = resolveActionRoute(nextAction.route, ctx.projectId);
-    out.push({ id: 'primary', group: 'Next', label: nextAction.label, run: (c) => c.navigate(route) });
+    out.push({ id: 'primary', group: 'Next', label: nextAction.label, target: route, run: (c) => c.navigate(route) });
   }
 
-  for (const id of STATION_SECONDARY[station]) {
-    const cmd = registry[id];
-    if (!cmd) continue;
-    if (cmd.available && !cmd.available(ctx)) continue;
-    out.push(cmd);
-  }
+  for (const id of STATION_SECONDARY[station]) pushFromRegistry(id);
 
-  // Dedup by resolved route, keeping first occurrence; cap at MAX_ACTIONS.
+  // Dedup by the declared target (or the id for commands that do not navigate). Never by running
+  // a command: a command may have an effect (UC-METH-002). Keep the first occurrence; cap at MAX_ACTIONS.
   const seen = new Set<string>();
   const deduped: Command[] = [];
   for (const cmd of out) {
-    const route = routeOf(cmd, ctx);
-    if (seen.has(route)) continue;
-    seen.add(route);
+    const key = cmd.target ?? cmd.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
     deduped.push(cmd);
     if (deduped.length >= MAX_ACTIONS) break;
   }

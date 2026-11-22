@@ -13,6 +13,7 @@ import StationSheet from './StationSheet';
 import Sheet from './Sheet';
 import CommandMenu from './CommandMenu';
 import { useProjectData } from '../../hooks/useProjectData';
+import { useLadderSync } from '../groups/useLadderSync';
 import { useUIStore } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -24,6 +25,7 @@ import { decideTempo, markStationSeen } from './stationTempo';
 export default function JourneyShell() {
   const { projectId, station: stationParam } = useParams<{ projectId: string; station: string }>();
   const { loading, error } = useProjectData(projectId);
+  useLadderSync(projectId, !loading); // UC-METH-002 — the ladder report drives "Make a group" on station Model; one load when the data is in
   const elements = useArchitectureStore((s) => s.elements);
   const projectName = useArchitectureStore((s) => s.projectName);
   const selectedElementId = useArchitectureStore((s) => s.selectedElementId);

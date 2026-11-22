@@ -1,10 +1,11 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronRight, Circle, Lock, Sigma } from 'lucide-react';
 import type { LadderReport, LadderRung } from '@thearchitect/shared';
 import ChangeRingSection from './ChangeRingSection';
 import CohomologyFinding from './CohomologyFinding';
 import { LADDER_TEXT } from './ladderText';
 import { MathToggle } from './MathToggle';
+import { useAdvisorStore } from '../../stores/advisorStore';
 
 function RungIcon({ status }: { status: LadderRung['status'] }) {
   if (status === 'reached') return <CheckCircle2 size={10} className="text-[#00ff41] shrink-0 mt-0.5" />;
@@ -12,11 +13,21 @@ function RungIcon({ status }: { status: LadderRung['status'] }) {
   return <Lock size={10} className="text-[var(--text-disabled)] shrink-0 mt-0.5" />;
 }
 
-function RungRow({ rung }: { rung: LadderRung }) {
+function RungRow({ rung, focused = false }: { rung: LadderRung; focused?: boolean }) {
   const [mathOpen, setMathOpen] = useState(false);
   const mathId = useId();
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    if (focused) ref.current?.scrollIntoView?.({ block: 'nearest' });
+  }, [focused]);
   return (
-    <li className="flex gap-1.5" data-testid={`rung-${rung.index}`} data-status={rung.status}>
+    <li
+      ref={ref}
+      className={`flex gap-1.5${focused ? ' ring-1 ring-[#7c3aed] rounded px-1 -mx-1' : ''}`}
+      data-testid={`rung-${rung.index}`}
+      data-status={rung.status}
+      data-focused={focused ? 'true' : undefined}
+    >
       <RungIcon status={rung.status} />
       <div className="min-w-0 space-y-0.5">
         <p className="text-[10px] text-white [overflow-wrap:anywhere]">{`${rung.index} · ${rung.title}`}</p>
@@ -35,7 +46,7 @@ function RungRow({ rung }: { rung: LadderRung }) {
             <p key={warning} className="text-[8px] text-yellow-400 [overflow-wrap:anywhere]">{warning}</p>
           ))}
         {rung.status === 'open' && rung.next && (
-          <p className="text-[9px] text-[#7c3aed] [overflow-wrap:anywhere]">{LADDER_TEXT.nextStep(rung.next)}</p>
+          <p className="text-[9px] text-[#a78bfa] [overflow-wrap:anywhere]">{LADDER_TEXT.nextStep(rung.next)}</p>
         )}
       </div>
     </li>
@@ -48,6 +59,17 @@ interface LadderPanelProps {
 
 export default function LadderPanel({ report }: LadderPanelProps) {
   const [open, setOpen] = useState(false);
+  // UC-METH-002 (REQ .4) — the action field asks for a rung: open the panel and mark that row.
+  // The request is used once, so a later mount does not open the panel again.
+  const focusRung = useAdvisorStore((s) => s.focusRung);
+  const [marked, setMarked] = useState<number | null>(null);
+  useEffect(() => {
+    if (focusRung === null) return;
+    setOpen(true);
+    setMarked(focusRung);
+    useAdvisorStore.getState().focusLadderRung(null);
+  }, [focusRung]);
+
   if (!report) return null;
 
   // 'computable' in the report: the inputs are in the model and the step is reached.
@@ -73,7 +95,7 @@ export default function LadderPanel({ report }: LadderPanelProps) {
         <div className="px-2 pb-2 space-y-2">
           <ul className="space-y-1.5 list-none">
             {report.rungs.map((rung) => (
-              <RungRow key={rung.index} rung={rung} />
+              <RungRow key={rung.index} rung={rung} focused={marked === rung.index} />
             ))}
           </ul>
 

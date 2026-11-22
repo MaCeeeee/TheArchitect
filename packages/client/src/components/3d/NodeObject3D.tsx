@@ -7,6 +7,7 @@ import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useComplianceStore } from '../../stores/complianceStore';
+import { useGroupModeStore } from '../../stores/groupModeStore';
 import ArchiMateIconSprite from './ArchiMateIconSprite';
 import { computeRequirementCoverage } from '../../utils/coverageScore';
 import { getSensitivityColor } from './sensitivityColors';
@@ -61,6 +62,7 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
 
   const selectedId = useArchitectureStore((s) => s.selectedElementId);
   const selectedIds = useArchitectureStore((s) => s.selectedElementIds);
+  const inGroupSelection = useGroupModeStore((s) => s.active && s.selected.includes(element.id));
   const selectElement = useArchitectureStore((s) => s.selectElement);
   const toggleSelectElement = useArchitectureStore((s) => s.toggleSelectElement);
   const updateElement = useArchitectureStore((s) => s.updateElement);
@@ -68,7 +70,7 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
   const openContextMenu = useArchitectureStore((s) => s.openContextMenu);
   const setDraggingStore = useArchitectureStore((s) => s.setDragging);
 
-  const isSelected = selectedId === element.id || selectedIds.has(element.id);
+  const isSelected = selectedId === element.id || selectedIds.has(element.id) || inGroupSelection;
   const hypothesis = isAssumption(element);
   const layerColor = LAYER_COLORS[element.layer] || '#4a5a4a';
   const geometry = TYPE_GEOMETRY[element.type] || 'box';
@@ -266,6 +268,13 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
         const screenPos = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY };
         ui.openConnectionPicker(element.id, screenPos);
       }
+      return;
+    }
+
+    // UC-METH-002 — in the group mode a select adds the element to the group or removes it (no Shift).
+    const groupMode = useGroupModeStore.getState();
+    if (groupMode.active) {
+      if (groupMode.phase === 'select') groupMode.toggle(element.id);
       return;
     }
 

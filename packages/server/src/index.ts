@@ -27,6 +27,7 @@ import simulationRoutes from './routes/simulation.routes';
 import reportRoutes from './routes/report.routes';
 import invitationRoutes from './routes/invitation.routes';
 import advisorRoutes from './routes/advisor.routes';
+import groupRoutes from './routes/groups.routes';
 import roadmapRoutes from './routes/roadmap.routes';
 import demoRoutes from './routes/demo.routes';
 import blueprintRoutes from './routes/blueprint.routes';
@@ -186,6 +187,7 @@ async function main() {
   app.use('/api/projects', invitationRoutes);
   app.use('/api', invitationRoutes);
   app.use('/api/projects', advisorRoutes);
+  app.use('/api/projects', groupRoutes);
   app.use('/api/projects', roadmapRoutes);
   app.use('/api/demo', demoRoutes);
   app.use('/api', snapshotRoutes);        // Public: /api/snapshots/:token
