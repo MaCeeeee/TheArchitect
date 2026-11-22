@@ -5,7 +5,9 @@
  * Event, Business Object, Access, Triggering, Flow, read access, write access, path. A "closed path"
  * stays the term of the conversion factors; the change folder "goes back to its start".
  * Names of elements are shown in quotation marks; changeRingText.test.ts gives them to the guard by name.
- * These sentences are drafts until Task 6 has checked every word against ASD-STE100 Issue 9.
+ * Every word was checked against ASD-STE100 Issue 9 (scripts/ste100-check.py and by hand for part of
+ * speech and meaning). "Go back" is the STE word for "return" (GO, BACK); a relationship does not
+ * move, so it "connects" a later Process element to the start.
  */
 const counted = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 const q = (name: string) => `"${name}"`;
@@ -23,7 +25,7 @@ export const RING_TEXT = {
   noStart: (folder: string) =>
     `No Business Event starts the Process elements of ${q(folder)}. Connect a Business Event element to the first Process element with a Triggering relationship.`,
   severalStarts: (folder: string) =>
-    `More than one Process element of ${q(folder)} has a Triggering relationship from a Business Event. The check cannot find the first Process element. Connect a Business Event element only to the first Process element.`,
+    `More than one Process element of ${q(folder)} has a Triggering relationship or Flow relationship from a Business Event. The check cannot find the first Process element. Connect a Business Event element only to the first Process element.`,
   noOrder: (step: string, folder: string) =>
     `${q(step)} has no Triggering relationship or Flow relationship to the other Process elements of ${q(folder)}. Connect it to the Process element before it or after it.`,
   writeWrite: (first: string, second: string, part: string) =>
@@ -31,7 +33,7 @@ export const RING_TEXT = {
   writeRead: (writer: string, reader: string, part: string) =>
     `${q(writer)} has write access to ${q(part)} and ${q(reader)} has read access to it. ${NO_PATH}`,
   ringOpen: (folder: string, start: string) =>
-    `No Triggering relationship or Flow relationship goes back to ${q(start)}. The change folder ${q(folder)} does not go back to its start.`,
+    `No Triggering relationship or Flow relationship connects a Process element after ${q(start)} to ${q(start)}. The change folder ${q(folder)} does not go back to its start.`,
   unreadWrite: (writer: string, part: string) =>
     `${q(writer)} has write access to ${q(part)}. No Process element after ${q(writer)} has read access to ${q(part)}.`,
 };
