@@ -58,6 +58,8 @@ export interface ModelRelationship {
   type: string;
   translationFactor?: number | null;
   translationQuantity?: string | null;
+  /** Label of the relationship; the change folder check reads the access type from it (UC-RING-001). */
+  label?: string | null;
 }
 
 export interface QuantityComplex {
