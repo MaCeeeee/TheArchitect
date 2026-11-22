@@ -2,6 +2,7 @@
  * UC-RING-001 — change folder check on the gold folder of THE-819 and its variants.
  * Run: cd packages/server && npx jest src/__tests__/changeRing.test.ts
  */
+import { performance } from 'node:perf_hooks';
 import { assessChangeRings } from '../services/topology/changeRing';
 import {
   goldRing, legacyTypes, n1Sequenced, noStart, outsideIntake, secondEvent, secondFolder, twoUnknown, objectLevel, p1WriteWrite, p2WriteRead, ringOpen, RingModel, unknownLabel, unreadSolution,
@@ -196,5 +197,52 @@ describe('REQ-RING-001.4 (THE-824): hints name the next step', () => {
 
   test('the report names its method', () => {
     expect(run(goldRing()).method.id).toBe('PA-umlauf');
+  });
+});
+
+describe('limits: the check stays fast on large models', () => {
+  const timed = (m: RingModel) => {
+    const t0 = performance.now();
+    const report = assessChangeRings(m.elements, m.relationships);
+    return { report, ms: performance.now() - t0 };
+  };
+  const rel = (type: string, sourceId: string, targetId: string, label?: string) => ({ id: `${type}:${sourceId}->${targetId}`, sourceId, targetId, type, ...(label === undefined ? {} : { label }) });
+
+  test('200,001 business objects, 2,000 processes, 20,000 access relationships, no composition: under 1,500 ms', () => {
+    const elements = [
+      ...Array.from({ length: 200001 }, (_, i) => ({ id: `o${i}`, name: `Object ${i}`, type: 'business_object' })),
+      ...Array.from({ length: 2000 }, (_, i) => ({ id: `p${i}`, name: `Process ${i}`, type: 'process' })),
+    ];
+    const relationships = Array.from({ length: 20000 }, (_, i) => rel('access', `p${i % 2000}`, `o${(i * 7) % 200001}`, i % 2 === 0 ? 'writes' : 'reads'));
+    const { report, ms } = timed({ elements, relationships });
+    console.log(`limit (a): ${ms.toFixed(0)} ms`);
+    expect(report.folders).toEqual([]);
+    expect(ms).toBeLessThan(1500);
+  });
+
+  test('one folder, 1,000 parts, 1,000 parallel review steps: under 1,500 ms and 0 findings', () => {
+    const n = 1000;
+    const elements = [
+      { id: 'E', name: 'Event', type: 'business_event' },
+      { id: 'S', name: 'Start', type: 'process' },
+      { id: 'M', name: 'Folder', type: 'business_object' },
+      ...Array.from({ length: n }, (_, i) => ({ id: `q${i}`, name: `Part ${i}`, type: 'business_object' })),
+      ...Array.from({ length: n }, (_, i) => ({ id: `r${i}`, name: `Review ${i}`, type: 'process' })),
+    ];
+    const relationships = [
+      rel('triggering', 'E', 'S'),
+      rel('access', 'S', 'q0', 'write'),
+      rel('flow', 'r0', 'S'),
+      ...Array.from({ length: n }, (_, i) => rel('composition', 'M', `q${i}`)),
+      ...Array.from({ length: n }, (_, i) => rel('triggering', 'S', `r${i}`)),
+      // review i writes part i + 1 (part 0 is written by the start only); the last review writes nothing
+      ...Array.from({ length: n - 1 }, (_, i) => rel('access', `r${i}`, `q${i + 1}`, 'write')),
+      ...Array.from({ length: n }, (_, i) => rel('access', `r${i}`, 'q0', 'read')),
+    ];
+    const { report, ms } = timed({ elements, relationships });
+    console.log(`limit (b): ${ms.toFixed(0)} ms`);
+    expect(report.folders[0].checked).toBe(true);
+    expect(report.folders[0].findings).toEqual([]);
+    expect(ms).toBeLessThan(1500);
   });
 });

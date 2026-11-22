@@ -63,19 +63,28 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
   }
   const reachIn = (graph: Map<string, string[]>, from: string, skipInto?: string): Set<string> => {
     const seen = new Set<string>();
-    const stack = [...(graph.get(from) ?? [])];
+    const stack: string[] = [];
+    for (const t of graph.get(from) ?? []) stack.push(t);
     while (stack.length > 0) {
       const next = stack.pop()!;
       if (next === skipInto || seen.has(next)) continue;
       seen.add(next);
-      stack.push(...(graph.get(next) ?? []));
+      for (const t of graph.get(next) ?? []) stack.push(t);
     }
     return seen;
   };
 
+  const accessesByTarget = new Map<string, StepAccess[]>();
+  for (const a of accesses) {
+    const list = accessesByTarget.get(a.target);
+    if (list) list.push(a);
+    else accessesByTarget.set(a.target, [a]);
+  }
+
   function assessFolder(folder: RingElementRef): ChangeFolderResult {
     const parts = partsOf.get(folder.id)!;
-    const own = accesses.filter((a) => parts.has(a.target));
+    const own: StepAccess[] = [];
+    for (const p of parts) for (const a of accessesByTarget.get(p) ?? []) own.push(a);
     const steps = [...new Set(own.map((a) => a.step))].map(ref).sort(byName);
     const hints: RingHint[] = [];
     const result: ChangeFolderResult = { folder, parts: parts.size, steps, start: null, parallelPairs: 0, checked: false, findings: [], hints };
@@ -91,7 +100,7 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
     }
     const starts = steps.filter((s) => eventTargets.has(s.id));
     if (starts.length > 1) {
-      hints.push({ kind: 'several_starts', elementIds: starts.map((s) => s.id), text: RING_TEXT.severalStarts(folder.name, starts.length) });
+      hints.push({ kind: 'several_starts', elementIds: starts.map((s) => s.id), text: RING_TEXT.severalStarts(folder.name) });
     }
     if (starts.length === 0) hints.push({ kind: 'no_start', elementIds: [folder.id], text: RING_TEXT.noStart(folder.name) });
     if (starts.length === 1) result.start = starts[0];
@@ -103,9 +112,10 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
     const start = starts[0];
     const fromStart = reachIn(allSuccessors, start.id, start.id);
     const backEdges = orderEdges.filter((r) => r.targetId === start.id && fromStart.has(r.sourceId));
+    const backSet = new Set(backEdges);
     const successors = new Map<string, string[]>();
     for (const r of orderEdges) {
-      if (backEdges.includes(r)) continue;
+      if (backSet.has(r)) continue;
       if (!successors.has(r.sourceId)) successors.set(r.sourceId, []);
       successors.get(r.sourceId)!.push(r.targetId);
     }
@@ -126,7 +136,6 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
       if (a.kind !== 'write') reads.get(a.step)!.add(a.target);
       if (a.kind !== 'read') writes.get(a.step)!.add(a.target);
     }
-    const partRefs = [...parts].map(ref).sort(byName);
     const findings: RingFinding[] = [];
 
     for (let i = 0; i < steps.length; i++) {
@@ -135,7 +144,8 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
         const b = steps[j];
         if (ordered(a.id, b.id)) continue;
         result.parallelPairs++;
-        for (const p of partRefs) {
+        const candidates = new Set([...writes.get(a.id)!, ...writes.get(b.id)!]);
+        for (const p of [...candidates].map(ref).sort(byName)) {
           const aw = writes.get(a.id)!.has(p.id);
           const bw = writes.get(b.id)!.has(p.id);
           if (aw && bw) findings.push({ rule: 'write_write', first: a, second: b, part: p, text: RING_TEXT.writeWrite(a.name, b.name, p.name) });
@@ -150,6 +160,7 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
 
     const stepIds = new Set(steps.map((s) => s.id));
     for (const a of steps) {
+      // unordered set, used only with .some: its order never reaches the report
       const later = [...reach(a.id)].filter((t) => stepIds.has(t));
       if (later.length === 0) continue; // a last step writes the result of the folder
       for (const p of [...writes.get(a.id)!].map(ref).sort(byName)) {
@@ -169,7 +180,7 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
   const allParts = new Set([...partsOf.values()].flatMap((set) => [...set]));
   const candidates = elements.filter((e) => FOLDER_TYPES.has(e.type) && !partsOf.has(e.id) && !allParts.has(e.id)).map((e) => ref(e.id)).sort(byName);
   for (const object of candidates) {
-    const on = accesses.filter((a) => a.target === object.id);
+    const on = accessesByTarget.get(object.id) ?? [];
     const steps = new Set(on.map((a) => a.step));
     const writers = on.filter((a) => a.kind === 'write' || a.kind === 'readwrite');
     if (steps.size >= 2 && writers.length > 0) {

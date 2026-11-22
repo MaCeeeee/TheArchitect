@@ -94,7 +94,6 @@ export function legacyTypes(): RingModel {
   return { ...m, elements: m.elements.map((e) => (e.type === 'process' ? { ...e, type: 'business_process' } : e)) };
 }
 
-export const relOf = rel;
 /** A second Business Event that triggers one step. */
 export const secondEvent = (target: string, m: RingModel = goldRing()): RingModel => ({
   elements: [...m.elements, { id: 'E2', name: 'Escalation', type: 'business_event' }],
