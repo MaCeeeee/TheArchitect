@@ -23,7 +23,7 @@ export async function loadLadderInput(projectId: string): Promise<LadderInput> {
     `MATCH (s:ArchitectureElement {projectId: $projectId})-[r:CONNECTS_TO]->(t:ArchitectureElement {projectId: $projectId})
      RETURN coalesce(r.id, s.id + '->' + t.id + ':' + coalesce(r.type, '')) AS id,
             s.id AS sourceId, t.id AS targetId, r.type AS type,
-            r.translationFactor AS translationFactor, r.translationQuantity AS translationQuantity`,
+            r.translationFactor AS translationFactor, r.translationQuantity AS translationQuantity, r.label AS label`,
     { projectId },
   );
   const fieldExpr = CATALOG_FIELDS.map((field) => `sum(CASE WHEN e.${field} IS NOT NULL THEN 1 ELSE 0 END) AS ${field}`).join(', ');
@@ -52,6 +52,7 @@ export async function loadLadderInput(projectId: string): Promise<LadderInput> {
         type: String(row.get('type') ?? ''),
         translationFactor: factor == null ? null : coerceNeo4jNumber(factor, Number.NaN),
         translationQuantity: quantity == null ? null : String(quantity),
+        label: row.get('label') == null ? null : String(row.get('label')),
       };
     }),
     fieldCounts,

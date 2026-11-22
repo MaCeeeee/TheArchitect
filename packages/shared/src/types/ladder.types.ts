@@ -2,6 +2,7 @@
 // Rungs: 0 identity · 1 directed graph · 2 cover · 3 coefficients · 4 gluing testable · 5 cohomology
 
 import type { LadderRungIndex, MethodApplicability, MethodRef } from './method.types';
+import type { ChangeRingReport } from './changeRing.types';
 
 export type LadderRungStatus = 'reached' | 'open' | 'locked';
 
@@ -91,5 +92,7 @@ export interface LadderReport {
   tolerance: number;
   cohomologyMethod: MethodRef;
   methods: MethodApplicability[];
+  /** UC-RING-001: change folder check. Optional so that older reports and fixtures stay valid. */
+  changeRings?: ChangeRingReport;
   timestamp: string;
 }

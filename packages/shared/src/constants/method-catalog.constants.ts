@@ -103,6 +103,21 @@ export const METHOD_CATALOG: readonly MethodDefinition[] = [
     limits: 'Sound only for invertible numeric translations such as units or scales. A finding belongs to the whole loop, not to a single translation. Says nothing about translations that were never declared.',
     computedBy: 'ladder',
   },
+  {
+    // Not in the Formelbuch yet: number 21 is the next free number of the process book (UC-RING-001).
+    id: 'PA-umlauf', book: 'process', bookNumber: 21, rung: 1,
+    name: 'Change folder check (Bernstein conditions)',
+    question: 'Does a change folder end in the same state, whatever the order of its parallel steps?',
+    formula: 'W(A) ∩ W(B) = ∅ · W(A) ∩ R(B) = ∅ · R(A) ∩ W(B) = ∅',
+    inputs: [
+      { kind: 'elements', types: ['process', 'business_process'], min: 2, label: 'a minimum of 2 processes' },
+      { kind: 'relationships', types: ['composition'], min: 1, label: 'a composition relationship (an object with parts)' },
+      { kind: 'relationships', types: ['access'], min: 2, label: 'a minimum of 2 access relationships' },
+      { kind: 'relationships', types: ['flow', 'triggering'], min: 1, label: 'flow or triggering relationships between processes' },
+    ],
+    limits: 'Checks the model, not the running process. Sound only on parts: on a whole object every parallel pair would be reported. Reads the access type from the relationship label; an unknown label is never guessed.',
+    computedBy: 'ladder',
+  },
   // ── Formelbuch Daten- und Applikationsarchitektur (DA) ──
   {
     id: 'DA-kanonisch', book: 'data_application', bookNumber: 17, rung: 1,

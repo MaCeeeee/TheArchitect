@@ -29,6 +29,8 @@ describe('REQ-METH-001.1 method catalog', () => {
       .forEach((id) => expect(ids).toContain(id));
     expect(getMethod('PA-kategorientheorie')?.rung).toBe(5);
     expect(getMethod('PA-kategorientheorie')?.computedBy).toBe('ladder');
+    expect(getMethod('PA-umlauf')?.rung).toBe(1);
+    expect(getMethod('PA-umlauf')?.computedBy).toBe('ladder');
   });
 
   test('field inputs only name plain property identifiers (safe for Cypher)', () => {
