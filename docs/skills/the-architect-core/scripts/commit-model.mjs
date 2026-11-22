@@ -80,8 +80,11 @@ function autoLayout(elements) {
   const byKey = {};
   for (const e of elements) {
     const layer = e.layer || layerOf(e.type);
+    // Motivation groups by Y band, not by type: requirement/constraint, outcome/am_value
+    // and assessment/meaning share a band, and one centred row per type put both at x=0.
     const key = layer === 'strategy'
       ? (e.type === 'value_stream' ? 'vs' : (e.assumption ? 'cap-gap' : 'cap-have'))
+      : layer === 'motivation' ? `motivation@${yOf(layer, e.type)}`
       : `${layer}:${e.type}`;
     (byKey[key] ||= []).push(e);
   }

@@ -43,6 +43,9 @@ spread elements horizontally with X. Example for a typical vision:
 - goal: `z=0`, X 0
 - outcomes: `z=0`, X −6,0,6
 - principle: `z=0`, X off to a side (e.g. −10) so it doesn't stack under the goal
+- types that share a Y band (requirement/constraint, outcome/am_value,
+  assessment/meaning) share ONE X row — never give each its own centred row, or
+  the first of each lands on the same spot (`commit-model.mjs` autoLayout does this)
 
 **Strategy = the Value Stream View.** Value streams float (y 14.5) above
 capabilities (y 13); put capabilities directly below in Z rows, serving up:
