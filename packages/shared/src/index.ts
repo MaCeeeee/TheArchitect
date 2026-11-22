@@ -13,6 +13,8 @@ export * from './constants/password.constants';
 export * from './types/advisor.types';
 export * from './types/method.types';
 export * from './types/ladder.types';
+export * from './types/changeRing.types';
+export * from './constants/access-vocabulary.constants';
 export * from './constants/method-catalog.constants';
 export * from './types/roadmap.types';
 export * from './types/stochastic.types';
