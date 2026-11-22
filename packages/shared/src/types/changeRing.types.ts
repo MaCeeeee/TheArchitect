@@ -30,7 +30,7 @@ export interface RingFinding {
   text: string;
 }
 
-export type RingHintKind = 'no_folder' | 'object_without_parts' | 'too_few_steps' | 'unknown_access' | 'no_start' | 'no_order';
+export type RingHintKind = 'no_folder' | 'object_without_parts' | 'too_few_steps' | 'unknown_access' | 'no_start' | 'several_starts' | 'no_order';
 
 export interface RingHint {
   kind: RingHintKind;

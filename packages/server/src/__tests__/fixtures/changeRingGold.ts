@@ -93,3 +93,28 @@ export function legacyTypes(): RingModel {
   const m = goldRing();
   return { ...m, elements: m.elements.map((e) => (e.type === 'process' ? { ...e, type: 'business_process' } : e)) };
 }
+
+export const relOf = rel;
+/** A second Business Event that triggers one step. */
+export const secondEvent = (target: string, m: RingModel = goldRing()): RingModel => ({
+  elements: [...m.elements, { id: 'E2', name: 'Escalation', type: 'business_event' }],
+  relationships: [...m.relationships, rel('triggering', 'E2', target)],
+});
+/** A process outside the folder (no access) that triggers the start. */
+export const outsideIntake = (): RingModel => ({
+  elements: [...goldRing().elements, process('X', 'Intake')],
+  relationships: [...goldRing().relationships, rel('triggering', 'X', 'S0')],
+});
+/** A second folder with one part; its steps have no Business Event. */
+export const secondFolder = (): RingModel => ({
+  elements: [...goldRing().elements, object('M2', 'Second folder'), object('q2', 'Note')],
+  relationships: [
+    ...goldRing().relationships,
+    rel('composition', 'M2', 'q2'), rel('access', 'S5', 'q2', 'write'), rel('access', 'S6', 'q2', 'read'),
+  ],
+});
+/** Two unknown labels (S3 → vF and S2 → vE). */
+export const twoUnknown = (): RingModel => ({
+  ...goldRing(),
+  relationships: goldRing().relationships.map((r) => (r.id === 'access:S3->vF' || r.id === 'access:S2->vE' ? { ...r, label: 'accesses' } : r)),
+});

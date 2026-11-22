@@ -4,7 +4,7 @@
  */
 import { assessChangeRings } from '../services/topology/changeRing';
 import {
-  goldRing, legacyTypes, n1Sequenced, noStart, objectLevel, p1WriteWrite, p2WriteRead, ringOpen, RingModel, unknownLabel, unreadSolution,
+  goldRing, legacyTypes, n1Sequenced, noStart, outsideIntake, secondEvent, secondFolder, twoUnknown, objectLevel, p1WriteWrite, p2WriteRead, ringOpen, RingModel, unknownLabel, unreadSolution,
 } from './fixtures/changeRingGold';
 
 const run = (m: RingModel) => assessChangeRings(m.elements, m.relationships);
@@ -45,6 +45,47 @@ describe('REQ-RING-001.1 (THE-821): folder, parts, steps, order and start come f
     const m = goldRing();
     const r = assessChangeRings(m.elements, [...m.relationships, { id: 'x', sourceId: 'S1', targetId: 'ghost', type: 'access', label: 'write' }]);
     expect(r.folders[0].findings).toEqual([]);
+  });
+
+  test('a second Business Event into a step → hint several_starts, not checked', () => {
+    // sorted by name: "Decide change (ECO)" < "Raise change (ECR)" < "Review purchasing"
+    for (const [target, ids] of [['S4', ['S4', 'S0']], ['S2', ['S0', 'S2']]] as const) {
+      const f = only(secondEvent(target));
+      expect(f.hints.map((h) => h.kind)).toEqual(['several_starts']);
+      expect(f.hints[0].elementIds).toEqual(ids);
+      expect(f.checked).toBe(false);
+      expect(f.findings).toEqual([]);
+      expect(f.parallelPairs).toBe(0);
+      expect(f.start).toBeNull();
+    }
+  });
+
+  test('a forward edge from an outside process into the start stays order', () => {
+    const f = only(outsideIntake());
+    expect(f.parallelPairs).toBe(3);
+    expect(f.findings).toEqual([]);
+    expect(f.start?.name).toBe('Raise change (ECR)');
+    expect(f.checked).toBe(true);
+  });
+
+  test('order is computed per folder: a folder without its own Business Event gets no_start', () => {
+    const r = run(secondFolder());
+    expect(r.folders).toHaveLength(2);
+    const m = r.folders.find((x) => x.folder.id === 'M')!;
+    const m2 = r.folders.find((x) => x.folder.id === 'M2')!;
+    expect(m.parallelPairs).toBe(3);
+    expect(m.findings).toEqual([]);
+    expect(m2.hints.map((h) => h.kind)).toEqual(['no_start']);
+    expect(m2.checked).toBe(false);
+  });
+
+  test('unknown_access hints come in a deterministic order', () => {
+    const m = twoUnknown();
+    const rev = { elements: [...m.elements].reverse(), relationships: [...m.relationships].reverse() };
+    // by step name: "Review production" < "Review purchasing"
+    const ids = (x: RingModel) => only(x).hints.map((h) => h.elementIds);
+    expect(ids(m)).toEqual([['S3', 'vF'], ['S2', 'vE']]);
+    expect(ids(rev)).toEqual(ids(m));
   });
 });
 

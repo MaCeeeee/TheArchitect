@@ -22,6 +22,8 @@ export const RING_TEXT = {
     `The Access relationship from ${q(step)} to ${q(part)} does not show read access or write access. Give it the name "read" or "write".`,
   noStart: (folder: string) =>
     `No Business Event starts the Process elements of ${q(folder)}. Connect a Business Event element to the first Process element with a Triggering relationship.`,
+  severalStarts: (folder: string, starts: number) =>
+    `${starts} Business Event elements start Process elements of ${q(folder)}. The check cannot find the first Process element. Connect only one Business Event element to the first Process element.`,
   noOrder: (step: string, folder: string) =>
     `${q(step)} has no Triggering relationship or Flow relationship to the other Process elements of ${q(folder)}. Connect it to the Process element before it or after it.`,
   writeWrite: (first: string, second: string, part: string) =>

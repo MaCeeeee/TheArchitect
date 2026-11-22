@@ -52,32 +52,26 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
     .map((r) => ({ step: r.sourceId, target: r.targetId, kind: accessKindFromLabel(r.label) }));
 
   const orderEdges = rels.filter((r) => ORDER_TYPES.has(r.type) && STEP_TYPES.has(typeOf(r.sourceId)) && STEP_TYPES.has(typeOf(r.targetId)));
-  const startIds = new Set(
+  const eventTargets = new Set(
     rels.filter((r) => ORDER_TYPES.has(r.type) && START_TYPES.has(typeOf(r.sourceId)) && STEP_TYPES.has(typeOf(r.targetId))).map((r) => r.targetId),
   );
   const withOrder = new Set(orderEdges.flatMap((r) => [r.sourceId, r.targetId]));
-  const successors = new Map<string, string[]>();
+  const allSuccessors = new Map<string, string[]>();
   for (const r of orderEdges) {
-    if (startIds.has(r.targetId)) continue; // the edge back into a start is not order
-    if (!successors.has(r.sourceId)) successors.set(r.sourceId, []);
-    successors.get(r.sourceId)!.push(r.targetId);
+    if (!allSuccessors.has(r.sourceId)) allSuccessors.set(r.sourceId, []);
+    allSuccessors.get(r.sourceId)!.push(r.targetId);
   }
-  const reachCache = new Map<string, Set<string>>();
-  const reach = (from: string): Set<string> => {
-    const cached = reachCache.get(from);
-    if (cached) return cached;
+  const reachIn = (graph: Map<string, string[]>, from: string, skipInto?: string): Set<string> => {
     const seen = new Set<string>();
-    const stack = [...(successors.get(from) ?? [])];
+    const stack = [...(graph.get(from) ?? [])];
     while (stack.length > 0) {
       const next = stack.pop()!;
-      if (seen.has(next)) continue;
+      if (next === skipInto || seen.has(next)) continue;
       seen.add(next);
-      stack.push(...(successors.get(next) ?? []));
+      stack.push(...(graph.get(next) ?? []));
     }
-    reachCache.set(from, seen);
     return seen;
   };
-  const ordered = (a: string, b: string) => reach(a).has(b) || reach(b).has(a);
 
   function assessFolder(folder: RingElementRef): ChangeFolderResult {
     const parts = partsOf.get(folder.id)!;
@@ -89,15 +83,41 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
       hints.push({ kind: 'too_few_steps', elementIds: [folder.id], text: RING_TEXT.tooFewSteps(folder.name, steps.length) });
       return result;
     }
-    for (const a of own) {
-      if (a.kind === null) hints.push({ kind: 'unknown_access', elementIds: [a.step, a.target], text: RING_TEXT.unknownAccess(ref(a.step).name, ref(a.target).name) });
+    const unknown = own
+      .filter((a) => a.kind === null)
+      .sort((x, y) => byName(ref(x.step), ref(y.step)) || byName(ref(x.target), ref(y.target)));
+    for (const a of unknown) {
+      hints.push({ kind: 'unknown_access', elementIds: [a.step, a.target], text: RING_TEXT.unknownAccess(ref(a.step).name, ref(a.target).name) });
     }
-    const starts = steps.filter((s) => startIds.has(s.id));
-    result.start = starts[0] ?? null;
+    const starts = steps.filter((s) => eventTargets.has(s.id));
+    if (starts.length > 1) {
+      hints.push({ kind: 'several_starts', elementIds: starts.map((s) => s.id), text: RING_TEXT.severalStarts(folder.name, starts.length) });
+    }
     if (starts.length === 0) hints.push({ kind: 'no_start', elementIds: [folder.id], text: RING_TEXT.noStart(folder.name) });
+    if (starts.length === 1) result.start = starts[0];
     const loose = steps.filter((s) => !withOrder.has(s.id));
     for (const s of loose) hints.push({ kind: 'no_order', elementIds: [s.id], text: RING_TEXT.noOrder(s.name, folder.name) });
-    if (starts.length === 0 || loose.length > 0) return result; // never check on a guessed order
+    if (starts.length !== 1 || loose.length > 0) return result; // never check on a guessed order
+
+    // The back edges are the edges into the start from a step that the start reaches without them.
+    const start = starts[0];
+    const fromStart = reachIn(allSuccessors, start.id, start.id);
+    const backEdges = orderEdges.filter((r) => r.targetId === start.id && fromStart.has(r.sourceId));
+    const successors = new Map<string, string[]>();
+    for (const r of orderEdges) {
+      if (backEdges.includes(r)) continue;
+      if (!successors.has(r.sourceId)) successors.set(r.sourceId, []);
+      successors.get(r.sourceId)!.push(r.targetId);
+    }
+    const reachCache = new Map<string, Set<string>>();
+    const reach = (from: string): Set<string> => {
+      const cached = reachCache.get(from);
+      if (cached) return cached;
+      const seen = reachIn(successors, from);
+      reachCache.set(from, seen);
+      return seen;
+    };
+    const ordered = (a: string, b: string) => reach(a).has(b) || reach(b).has(a);
 
     const reads = new Map(steps.map((s) => [s.id, new Set<string>()]));
     const writes = new Map(steps.map((s) => [s.id, new Set<string>()]));
@@ -125,9 +145,8 @@ export function assessChangeRings(elements: ModelElement[], relationships: Model
       }
     }
 
-    const startSet = new Set(starts.map((s) => s.id));
-    const closes = orderEdges.some((r) => startSet.has(r.targetId) && starts.some((s) => reach(s.id).has(r.sourceId)));
-    if (!closes) findings.push({ rule: 'ring_open', first: starts[0], second: null, part: null, text: RING_TEXT.ringOpen(folder.name, starts[0].name) });
+    const closes = backEdges.length > 0;
+    if (!closes) findings.push({ rule: 'ring_open', first: start, second: null, part: null, text: RING_TEXT.ringOpen(folder.name, start.name) });
 
     const stepIds = new Set(steps.map((s) => s.id));
     for (const a of steps) {
