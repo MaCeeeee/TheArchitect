@@ -98,3 +98,62 @@ describe('REQ-RING-001.2 (THE-822): Bernstein conditions per pair and part — a
     expect(f.findings.filter((x) => x.rule === 'unread_write').map((x) => x.first.name)).toEqual(['Review design', 'Review production']);
   });
 });
+describe('REQ-RING-001.3 (THE-823): ring and unread parts', () => {
+  test('AC-1: gold → no ring_open, no unread_write', () => {
+    expect(only(goldRing()).findings.filter((x) => x.rule === 'ring_open' || x.rule === 'unread_write')).toEqual([]);
+  });
+
+  test('AC-2: without the edge back → exactly 1 ring_open at the start', () => {
+    expect(short(only(ringOpen()))).toEqual([['ring_open', 'Raise change (ECR)', null, null]]);
+  });
+
+  test('AC-3: nobody reads the technical solution → exactly 1 unread_write', () => {
+    expect(short(only(unreadSolution()))).toEqual([['unread_write', 'Review design', null, 'Technical solution']]);
+  });
+
+  test('the strict rule "the release reads all" is not checked (6 false findings in THE-819)', () => {
+    // the votes are read by the decision, not by the release: no finding
+    expect(only(goldRing()).findings).toEqual([]);
+  });
+});
+
+describe('REQ-RING-001.4 (THE-824): hints name the next step', () => {
+  test('AC-1: empty model → only the hint no_folder', () => {
+    const r = assessChangeRings([], []);
+    expect(r.folders).toEqual([]);
+    expect(r.hints.map((h) => h.kind)).toEqual(['no_folder']);
+  });
+
+  test('AC-2: one unknown label → exactly 1 hint naming step and part', () => {
+    const f = only(unknownLabel());
+    expect(f.hints).toHaveLength(1);
+    expect(f.hints[0].text).toContain('"Review production"');
+    expect(f.hints[0].text).toContain('"Vote production"');
+  });
+
+  test('AC-3: no Business Event → hint no_start, not checked, no pair findings from a guessed order', () => {
+    const f = only(noStart());
+    expect(f.hints.map((h) => h.kind)).toEqual(['no_start']);
+    expect(f.checked).toBe(false);
+    expect(f.findings).toEqual([]);
+    expect(f.parallelPairs).toBe(0);
+  });
+
+  test('a step without any order relationship → hint no_order, not checked', () => {
+    const m = goldRing();
+    const loose = { ...m, elements: [...m.elements, { id: 'S9', name: 'Ask legal', type: 'process' }], relationships: [...m.relationships, { id: 'a9', sourceId: 'S9', targetId: 'antrag', type: 'access', label: 'read' }] };
+    const f = only(loose);
+    expect(f.hints.map((h) => [h.kind, h.elementIds])).toEqual([['no_order', ['S9']]]);
+    expect(f.checked).toBe(false);
+  });
+
+  test('a folder with one step → hint too_few_steps', () => {
+    const m = goldRing();
+    const one = { ...m, relationships: m.relationships.filter((r) => r.type !== 'access' || r.sourceId === 'S0') };
+    expect(only(one).hints.map((h) => h.kind)).toEqual(['too_few_steps']);
+  });
+
+  test('the report names its method', () => {
+    expect(run(goldRing()).method.id).toBe('PA-umlauf');
+  });
+});
