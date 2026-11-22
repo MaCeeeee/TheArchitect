@@ -7,6 +7,7 @@
 - **Baut auf:** THE-538 (Katalog-Pivot, gemessen) · `docs/evals/typed-relation-experiment.md` (κ 0,308 → 0,681; `equal` 0/120) · `docs/strategy/2026-08-01-the538-dora-meldepflicht.md` (lex specialis; Wert-Zahl 16 → 5–6) · `docs/strategy/2026-08-01-the538-scf-durchrechnung.md` · Reg2Req (arXiv 2607.04448) · UGAF-ITS (2604.22789)
 - **Revidiert:** den Harmonisierungs-Entwurf in THE-438 („eine Pflicht, N Rechtsgrundlagen") · beendet THE-382 in seiner bisherigen Form
 - **Glossar:** `CONTEXT.md`, Abschnitt „Requirements (ISO/IEC/IEEE 15288:2023)"
+- **Ergänzt:** 2026-11-17 um E8 (Rolle formaler Verfahren), Entscheid THE-780 — siehe Abschnitt „Nachtrag" am Ende
 
 ## Kontext
 
@@ -72,3 +73,25 @@ Derselbe Maßstab wie „singulär". Der Regelfall ist die geteilte Maßnahme; d
 - Das SCF steht unter CC BY-ND: intern als Prüfmaßstab nutzbar, **nicht auslieferbar**. Und die Transitivität „gleiche Kontrolle ⇒ harmonisierbar" ist unsere Folgerung, nicht die Behauptung des SCF.
 - Belegt ist ein Ausschnitt aus drei Rechtsakten. Ob der Rahmen über andere Domänen trägt, ist offen.
 - Geurteilt wird **Umsetzbarkeit**, nicht Rechtmäßigkeit. Eine gemeinsame Maßnahme entbindet von keiner Rechtsgrundlage — das muss in der UI stehen.
+
+## Nachtrag 2026-11-17 — E8: Formale Verfahren sind Prüfinstrumente, nicht der Weg (THE-780)
+
+**E8 — Die Lücke ist eine Abfrage, keine Rechnung.** Der Hauptweg vom Gesetz zur Lücke ist die Kette dieser ADR: Klausel → typisierte Pflicht ⟨Handlung · Empfänger · Modalität · Bedingung⟩ → Systemanforderung → Maßnahme über `realization`. Die Lücke ist die Mengendifferenz *Pflichten an Adressat X, die kein Element realisiert* — eine Graph-Abfrage. Formale Verfahren (FCA, Topologie/Homologie, SAT/SMT, Kategorientheorie …) stehen **neben** dieser Kette als Prüfinstrumente und rücken nur dann in sie auf, wenn sie auf menschlich adjudiziertem Gold etwas finden, das die Abfrage und eine einfache Baseline nicht finden.
+
+**Begründung.** Vektorraum, Verband, Komplex und ArchiMate-Graph sind verschiedene mathematische Objekte; jeder Übergang verliert oder erfindet Struktur. Und der Schritt vom Text zum Soll — wer verpflichtet ist, was als erfüllt gilt — wird gesetzt, nicht abgeleitet. Alle bisherigen Messungen scheiterten genau dort:
+
+| Verfahren | Befund (17.11.2026) |
+|---|---|
+| FCA / Boolescher Rang | Rang = Zahl verschiedener Zeilen auf beiden vorhandenen Landschaften (req-self-v1 4/4, BSH 6/6, Fooling-Set gleich) — kein Gewinn über Gruppieren |
+| Homologie | H0 = die vorhandene Komponenten-Bündelung (`measureGrouping.ts`); b1 = 47 auf req-self-v1 ohne Gold, also ohne Aussage (ADR-0012) |
+| Z3 über Policies | Dev 1, Prod 0 SMT-Fälle |
+| „leere Zeile ⇒ Lücke" | 2 von 6 adjudizierten Leerzeilen sind Hard Negatives (DSGVO Art. 83, NIS2 Art. 22) — die Lücke hängt am Adressaten (THE-692) |
+| SVD / Korrespondenzanalyse (THE-781) | Residuen sagen ENISA-Abweichungen vom SCF nicht vorher: AUROC 0,568 = Nachbarzeilen-Baseline 0,565; Singulärwerte flach (5 Achsen = 31 % Trägheit) — keine wenigen Hauptachsen |
+
+**Regel für jeden Mathe-Spike** (verankert im Pre-Flight-Skill, Stufe 3): Vorregistrierung, Pflicht-Baseline „identische Zeilen gruppieren / einfache Graph-Abfrage", Kill-Kriterium — und Gold, auf dem noch nicht gerechnet wurde.
+
+**Verworfen:** ein mathematischer Rechenkern als Hauptweg. *Kommt zurück, wenn* eine menschlich adjudizierte Landschaft mit Teilüberlappung über ≥ 3 Gesetze oder Abhängigkeitsdaten zwischen Maßnahmen vorliegen.
+
+**Preis:** Ein Mathe-Kern als Burggraben ist zurückgestellt (kostet G5). Der Hauptweg hängt an der Adressaten-Gattung (THE-692) und am menschlichen Tor.
+
+**Ausdrücklich nicht betroffen:** Lernen mit Gold-Ausgang (adaptierter Encoder) und deterministische Mechanik für mechanisch Entscheidbares (Parser, Verdrängungs-Kante E6, Policy-Lint).

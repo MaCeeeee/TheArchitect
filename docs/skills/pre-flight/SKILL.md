@@ -63,6 +63,13 @@ Das Label ist die filterbare Unterscheidung — der Titel allein trug sie bis 20
 
 Ein Entscheidungs-Ticket braucht **Positiv- und Negativ-Kontrolle** in der Definition of Done — sonst misst es nur, was ohnehin geglaubt wird.
 
+**Mathe-Spikes** (FCA, Homologie, SAT/SMT, Kategorientheorie, Spektral …) brauchen zusätzlich, bevor sie laufen:
+- **Pflicht-Baseline** — „identische Zeilen gruppieren", Spaltengrad-Check bzw. die einfache Graph-Abfrage. Das Verfahren trägt nur, wenn es auf Gold etwas findet, das die Baseline nicht findet.
+- **Unverbrauchtes Gold** — vor dem Festschreiben der DoD prüfen, ob auf dem genannten Datensatz schon gerechnet wurde. Gesehene Daten ergeben keine blinde Messung.
+- **Gold-Ausgang für jeden neuen Befund** — was kein Mensch adjudizieren kann (z. B. Zyklen ohne Bedeutung), trägt keine Aussage (ADR-0012).
+
+Formale Verfahren sind Prüfinstrumente neben der Kette, nicht der Weg (ADR-0007 E8). *Präzedenz: THE-780 — FCA-Rang = verschiedene Zeilen auf beiden Landschaften, Homologie-H0 = vorhandene Bündelung; die DoD nannte Gold, auf dem am selben Tag schon gerechnet war.*
+
 **Pflichtblock „Optionen".** Eine Entscheidung *für* etwas ist immer auch eine Entscheidung *gegen* etwas. Beides gehört ins Ticket, sonst ist später weder nachvollziehbar, was verworfen wurde, noch warum. Mindestens zwei Optionen — und **„nichts tun / beim Bestehenden bleiben" ist immer eine davon.**
 
 | Option | Was sie kostet | Was sie verbaut oder eröffnet | Rückholbarkeit |
