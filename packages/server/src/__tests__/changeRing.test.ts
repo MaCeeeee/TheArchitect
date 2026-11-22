@@ -4,6 +4,7 @@
  */
 import { performance } from 'node:perf_hooks';
 import { assessChangeRings } from '../services/topology/changeRing';
+import { assessLadder } from '../services/topology/ladder';
 import {
   goldRing, legacyTypes, n1Sequenced, noStart, outsideIntake, secondEvent, secondFolder, twoUnknown, objectLevel, p1WriteWrite, p2WriteRead, ringOpen, RingModel, unknownLabel, unreadSolution,
 } from './fixtures/changeRingGold';
@@ -215,7 +216,6 @@ describe('limits: the check stays fast on large models', () => {
     ];
     const relationships = Array.from({ length: 20000 }, (_, i) => rel('access', `p${i % 2000}`, `o${(i * 7) % 200001}`, i % 2 === 0 ? 'writes' : 'reads'));
     const { report, ms } = timed({ elements, relationships });
-    console.log(`limit (a): ${ms.toFixed(0)} ms`);
     expect(report.folders).toEqual([]);
     expect(ms).toBeLessThan(1500);
   });
@@ -240,9 +240,23 @@ describe('limits: the check stays fast on large models', () => {
       ...Array.from({ length: n }, (_, i) => rel('access', `r${i}`, 'q0', 'read')),
     ];
     const { report, ms } = timed({ elements, relationships });
-    console.log(`limit (b): ${ms.toFixed(0)} ms`);
     expect(report.folders[0].checked).toBe(true);
     expect(report.folders[0].findings).toEqual([]);
     expect(ms).toBeLessThan(1500);
+  });
+});
+
+describe('REQ-RING-001.4 (THE-824): the method in the ladder report', () => {
+  const ladder = (m: RingModel) => assessLadder('p', { ...m, fieldCounts: {} }, new Date('2026-11-22T12:00:00Z'));
+  const status = (m: RingModel) => ladder(m).methods.find((x) => x.methodId === 'PA-umlauf')?.status;
+
+  test('AC-4: gold → computable, the report carries the folder', () => {
+    expect(status(goldRing())).toBe('computable');
+    expect(ladder(goldRing()).changeRings?.folders).toHaveLength(1);
+  });
+
+  test('AC-1: empty model → missing_input, hint no_folder', () => {
+    expect(status({ elements: [], relationships: [] })).toBe('missing_input');
+    expect(ladder({ elements: [], relationships: [] }).changeRings?.hints.map((h) => h.kind)).toEqual(['no_folder']);
   });
 });

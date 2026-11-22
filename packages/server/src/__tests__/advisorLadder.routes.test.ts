@@ -66,6 +66,34 @@ beforeEach(() => {
 });
 
 describe('GET /:projectId/advisor/ladder', () => {
+  test('UC-RING-001: the label of a relationship reaches the change folder check', async () => {
+    mockRunCypher
+      .mockResolvedValueOnce([
+        rec({ id: 'E', name: 'Change needed', type: 'business_event' }),
+        rec({ id: 'A', name: 'Review design', type: 'process' }),
+        rec({ id: 'B', name: 'Review purchasing', type: 'process' }),
+        rec({ id: 'M', name: 'Change folder', type: 'business_object' }),
+        rec({ id: 'k', name: 'Cost estimate', type: 'business_object' }),
+      ])
+      .mockResolvedValueOnce([
+        rec({ id: 'c', sourceId: 'M', targetId: 'k', type: 'composition', translationFactor: null, translationQuantity: null, label: null }),
+        rec({ id: 'e', sourceId: 'E', targetId: 'A', type: 'triggering', translationFactor: null, translationQuantity: null, label: null }),
+        rec({ id: 'x', sourceId: 'A', targetId: 'B', type: 'flow', translationFactor: null, translationQuantity: null, label: null }),
+        rec({ id: 'w1', sourceId: 'A', targetId: 'k', type: 'access', translationFactor: null, translationQuantity: null, label: 'writes' }),
+        rec({ id: 'w2', sourceId: 'B', targetId: 'k', type: 'access', translationFactor: null, translationQuantity: null, label: 'accesses' }),
+      ])
+      .mockResolvedValueOnce([rec({})]);
+
+    const res = await request(app()).get('/api/projects/p1/advisor/ladder');
+
+    expect(res.status).toBe(200);
+    const folder = res.body.data.changeRings.folders[0];
+    expect(folder.folder.name).toBe('Change folder');
+    // "writes" was read, "accesses" stays unknown → exactly one unknown_access hint for B
+    expect(folder.hints.filter((h: { kind: string }) => h.kind === 'unknown_access').map((h: { elementIds: string[] }) => h.elementIds)).toEqual([['B', 'k']]);
+    expect(String(mockRunCypher.mock.calls[1][0])).toMatch(/r\.label AS label/);
+  });
+
   test('builds the report from three read-only queries, behind viewer access', async () => {
     mockRunCypher
       .mockResolvedValueOnce([

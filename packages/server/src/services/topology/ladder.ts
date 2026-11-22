@@ -34,6 +34,7 @@ import type {
 } from '@thearchitect/shared';
 import { additiveToFactor, reals } from './abelianGroup';
 import { assessApplicability } from './applicability';
+import { assessChangeRings } from './changeRing';
 import { buildComplex, OrientedStep } from './cellComplex';
 import {
   buildContextStructure,
@@ -438,6 +439,7 @@ export function assessLadder(projectId: string, input: LadderInput, now: Date = 
     tolerance: LOOP_TOLERANCE,
     cohomologyMethod: toMethodRef(LOOP_CHECK_METHOD_ID),
     methods: assessApplicability(facts, highestRung),
+    changeRings: assessChangeRings(elements, relationships),
     timestamp: now.toISOString(),
   };
 }
