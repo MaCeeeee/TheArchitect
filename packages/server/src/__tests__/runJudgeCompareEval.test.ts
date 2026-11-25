@@ -28,6 +28,7 @@ import { loadDiscoveryGoldenSet, loadFixtureCorpus } from '../evals/discoveryGol
 import { readQueriesFile, DEFAULT_QUERIES_PATH, type QueriesFile } from '../scripts/build-discovery-eval-vectors';
 import { toFamily } from '../services/lawDiscovery.service';
 import { emptyUsage, type JudgeBackendSpec } from '../evals/judgeBackends';
+import { __resetJudgeCache } from '../services/lawJudge.service';
 import type Anthropic from '@anthropic-ai/sdk';
 
 function decision(caseId: string, family: string, gold: boolean, applies: boolean | null, confidence = 0.8): JudgeDecision {
@@ -192,6 +193,23 @@ describe('runBackend (cache + offline)', () => {
     const changed = { ...task, candidate: { ...task.candidate, retrievalScore: 0.9 } };
     const res = await runBackend(spec, [changed], { offline: true, cacheDir: dir, judge });
     expect(res[0]).toMatchObject({ applies: null, error: 'not cached (offline)' });
+  });
+
+  it('two live backends with the SAME model each call their own client (no in-process judge cache bleed)', async () => {
+    __resetJudgeCache();
+    const verdictJson = JSON.stringify({ family: 'dsgvo', applies: true, confidence: 0.9, reasoning: 'x', elementIds: [], keyParagraphs: [] });
+    const fakeClient = () => {
+      const create = jest.fn(async () => ({ content: [{ type: 'text', text: verdictJson }], usage: { input_tokens: 1, output_tokens: 1 } }));
+      return { client: { messages: { create } } as unknown as Anthropic, create };
+    };
+    const a = fakeClient();
+    const b = fakeClient();
+    const specA: JudgeBackendSpec = { id: 'haiku', kind: 'anthropic', model: 'claude-same' };
+    const specB: JudgeBackendSpec = { id: 'haiku-run2', kind: 'anthropic', model: 'claude-same' };
+    await runBackend(specA, [task], { offline: false, cacheDir: dir, client: a.client });
+    await runBackend(specB, [task], { offline: false, cacheDir: dir, client: b.client });
+    expect(a.create).toHaveBeenCalledTimes(1);
+    expect(b.create).toHaveBeenCalledTimes(1);
   });
 
   it('records judge errors without caching them', async () => {

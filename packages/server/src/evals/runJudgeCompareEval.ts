@@ -236,7 +236,11 @@ export async function runBackend(
           profileElements: [],
           candidate: task.candidate,
           projectId: `eval:${task.caseId}`,
-          corpusVersionHash: `eval:${task.caseId}:${task.family}`,
+          // Backend-Id im Key: judgeCandidate hat einen In-Process-Cache über
+          // (Profil, Familie, corpusVersionHash, Modell). Zwei Backends mit
+          // DEMSELBEN Modell (z. B. Rauschgrenzen-Lauf haiku vs. haiku-run2)
+          // bekämen sonst im selben Prozess die Verdicts des ersten zurück.
+          corpusVersionHash: `eval:${spec.id}:${task.caseId}:${task.family}`,
           model: judgeModelId(spec),
           anthropicClient: opts.client,
         });
