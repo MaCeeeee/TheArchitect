@@ -2,9 +2,9 @@
 
 **Spec:** Linear THE-793 mit REQ THE-794 … THE-797
 **Plan:** `docs/superpowers/plans/2026-11-20-the793-view-mode-entfernen.md`
-**Zweig:** `feat/uc-view-001-nur-3d` auf origin/master a0472be (uncommitted; am 27.11. von 576c39a rebased)
+**Zweig:** `feat/uc-view-001-nur-3d` auf origin/master a0472be (Commit 4221b91, PR #217; am 27.11. von 576c39a rebased)
 **Created:** 2026-11-20
-**Last Updated:** 2026-11-27 (nach Rebase auf a0472be und Browser-Beweis)
+**Last Updated:** 2026-11-27 (nach Rebase auf a0472be, Browser-Beweis und blinder Prüfung mit Browser)
 
 **Score:** WSJF 21/40 = 52,5 · Ousterhout: alle fünf Dimensionen niedrig; Watch-Point: 3D-Positionen und Kamera unverändert.
 **Netto-Delta:** 22 Dateien, +151 / −735 Zeilen (plus neuer Wächter-Test). Davon 5 Dateien aus dem Rebase: neuer Master-Code (#211, #214) benutzte noch `viewMode` und `focusedLayer`.
@@ -24,8 +24,8 @@
 | R-008 | `LayerPlane` ohne `viewMode`-Prop (THE-795) | Task 3, Step 5 | `3d/LayerPlane.tsx`, `PlateauRenderer.tsx`, `Scene.tsx` | blind S-009; tsc | PASS | Props: layerId, label, yPosition, color, offsetX?, workspaceName? |
 | R-009 | 3D-Licht, Hintergrund, HDRI, Grid, Bloom, HUDs wie vorher (THE-796) | Task 4, Step 1 | `3d/Scene.tsx` | Review gegen `git show HEAD:`; Browser | PASS | Review Chunk 2: jeder Wert = alter 3D-Wert. Browser 27.11.: Startansicht Zweig gegen Master: 56 von 207.060 Pixeln der Szene weichen ab (0,03 %, Bild 01). X-Ray-HUD und Plateau-HUD erscheinen (Bilder 07, 09) |
 | R-010 | Fly-to-Helfer wie vorher in 3D, inkl. X-Ray (THE-796) | Task 2 | `3d/ViewModeCamera.tsx`, `flyToStation.test.ts` | Tests; Review; Browser | PASS | flyToStation 7/7; Review Chunk 1: 3D-Zweige wörtlich. Browser 27.11.: F fliegt zum gewählten Element, auch bei eingeschaltetem X-Ray (Bilder 03, 05) |
-| R-011 | Pfeiltasten, 1–9, Home wechseln Workspaces (THE-796) | Task 2, Step 7 | `3d/ViewModeCamera.tsx` | Review; Browser | PARTIAL | Review: Handler = alter 3D-Pfad. Browser 27.11.: Home fährt die Kamera in die Übersicht (Bild 06); Pfeil rechts, Pfeil unten und 1 lösen keinen Fehler aus. Offen: Das Testprojekt hat nur einen Workspace, der Wechsel zwischen zwei Workspaces ist im Browser nicht gezeigt |
-| R-012 | Drag, Labels, Risiko-Licht, Hypothesen-Ring wie vorher (THE-796) | Task 3, Step 2 | `3d/NodeObject3D.tsx`, `ArchiMateIconSprite.tsx`, `PlateauElement.tsx` | Review; Browser | PARTIAL | Review: dragY = position3D.y, Ring 1.15, Label 3D-Stil. Browser 27.11.: Element gezogen, X 3 → 5, Y bleibt 8, Z bleibt 0; nach Neuladen steht es an der neuen Stelle (Bilder 04, 08). Label und Auswahlring sichtbar (Bild 02). Offen: Risiko-Licht nur im X-Ray gesehen, Hypothesen-Ring nicht (das Testprojekt hat keine Hypothese) |
+| R-011 | Pfeiltasten, 1–9, Home wechseln Workspaces (THE-796) | Task 2, Step 7 | `3d/ViewModeCamera.tsx` | Review; Browser | PASS | Review: Handler = alter 3D-Pfad. Blind S-012 (27.11., zwei Workspaces): Pfeil rechts wechselt von A nach B, Kamera fliegt von [20,15,20] nach [60,15,20]; Taste 1 zurück nach A; Home rahmt beide. Master identisch |
+| R-012 | Drag, Labels, Risiko-Licht, Hypothesen-Ring wie vorher (THE-796) | Task 3, Step 2 | `3d/NodeObject3D.tsx`, `ArchiMateIconSprite.tsx`, `PlateauElement.tsx` | Review; Browser | PARTIAL | Review: dragY = position3D.y, Ring 1.15, Label 3D-Stil. Browser 27.11.: Element gezogen, X 3 → 5, Y bleibt 8, Z bleibt 0; nach Neuladen steht es an der neuen Stelle (Bilder 04, 08). Label und Auswahlring sichtbar (Bild 02). Blind S-017: beim Ziehen bleibt y auf der Ebene (8 bzw. −4), jeder PUT trägt das unveränderte y, Master identisch. Offen: Risiko-Licht nur im X-Ray gesehen, Hypothesen-Ring nicht (das Testprojekt hat keine Hypothese; kein Szenario prüft ihn) |
 | R-013 | Plateau-Ansicht und X-Ray einschaltbar (THE-796) | Task 4, Task 5 | `Scene.tsx`, `Toolbar.tsx`, `RoadmapPanel.tsx` | Review; Browser | PASS | Review: X-Ray ruft `toggleXRay` direkt, Plateau-Guard entfällt. Browser 27.11.: X-Ray über „More actions“ ein und aus; Plateau-Ansicht aus dem Roadmap-Panel eingeschaltet, 19 von 207.060 Pixeln weichen vom Master ab (0,009 %, Bild 07) |
 | R-014 | Client-Suite grün, 2D-Fälle entfernt statt übersprungen (THE-797) | Task 2 Step 1, Task 6 Step 4 | `flyToStation.test.ts`, `uiStore.viewMode.test.ts` (neu) | `npm test`; blind S-018/S-019 | PASS | Nach Rebase (27.11.): 81 Dateien / 744 Tests passed, 0 failed, Exit 0; kein `.skip/.todo`. Der 2D-Fall in `sceneSelectable.test.ts` ist entfernt, nicht übersprungen. (Stand 21.11. auf 576c39a: 68 / 536, Exit 1 wegen 4 vorbestehender Teardown-Fehler) |
 | R-015 | `tsc -b` kalt 0 Fehler (THE-797) | Task 6, Step 4 | — | shared bauen, tsbuildinfo löschen, `npx tsc -b`; blind S-020 | PASS | Nach Rebase (27.11.): shared clean gebaut, tsbuildinfo gelöscht, `npx tsc -b` exit 0, keine Ausgabe. (21.11.: Kontrolle mit injiziertem Fehler meldete TS2322) |
@@ -37,11 +37,11 @@
 ## Coverage Summary
 
 - **Total Requirements:** 19
-- **Verified (PASS):** 17
-- **Partial (Code belegt, Browser nur zum Teil):** 2 (R-011, R-012)
+- **Verified (PASS):** 18
+- **Partial (Code belegt, Browser nur zum Teil):** 1 (R-012)
 - **Failed (FAIL):** 0
-- **Coverage:** 89 % voll, 100 % mindestens im Code belegt
-- **Nicht im Browser gezeigt:** Wechsel zwischen zwei Workspaces (R-011), Hypothesen-Ring und Risiko-Licht außerhalb von X-Ray (R-012). Dafür gilt bisher nur der Code-Review vom 21.11.
+- **Coverage:** 95 % voll, 100 % mindestens im Code belegt
+- **Nicht im Browser gezeigt:** Hypothesen-Ring und Risiko-Licht außerhalb von X-Ray (R-012). Dafür gilt bisher nur der Code-Review vom 21.11.
 
 ## Blinde Prüfung (21.11.)
 
@@ -57,6 +57,16 @@
 - **S-021:** ESLint ist im Repo nicht eingerichtet, auf Master wie auf dem Zweig.
 - S-018 und S-020 bestätigt der Prüfer unabhängig: 81 Dateien / 744 Tests, Exit 0; `tsc -b` kalt Exit 0.
 
+## Blinde Prüfung mit Browser (27.11., frischer Prüfer, a0472be..4221b91, Playwright auf dem lokalen Stack)
+
+19/22 PASS · 2 FAIL (S-006, S-011) · 1 UNEXECUTABLE (S-021). Beide Fehlschläge zeigen auf dem Master dasselbe Ergebnis.
+
+- **Browser-Szenarien S-004, S-012 … S-017: alle PASS,** je gegen den Master auf :3000 gegengeprüft. Belegt sind unter anderem: Ctrl/⌘+2/3 lassen die Kamera unverändert (Master schaltet auf `OrthographicCamera`), Workspace-Wechsel mit Pfeil, 1 und Home, Fly-to mit F, Fly-to auf die X-Ray-Position, X-Ray ohne „Switching to 3D“, Plateau-Ansicht aus dem Roadmap-Panel, Ziehen ohne Höhenänderung.
+- **S-006 (FAIL, zum dritten Mal, gleiche Diagnose → Loop-Budget aufgebraucht, Entscheidung beim PO):** wie oben, 11 Treffer nur in Dateien, die der PR nicht ändert.
+- **S-011 (FAIL, erstmals ausgeführt):** Alle Teile stimmen bis auf einen: Die WorkspaceBar steht oben in der 3D-Fläche, das Szenario erwartet sie unten. `WorkspaceBar.tsx` setzt `absolute top-3`, ist unverändert und muss es laut C-001 bleiben. Master identisch; die Szenen-Bilder von Zweig und Master weichen in 0 von 987.360 Pixeln ab.
+- **S-021 (UNEXECUTABLE):** ESLint ist im Repo nicht eingerichtet.
+- **Testdaten:** Der Prüfer hat im Testprojekt zwei Workspaces mit je drei Elementen angelegt (jetzt 34 Elemente) und die zwei gezogenen Elemente zurückgesetzt.
+
 ## Change Log
 
 | Date | Change | Affected IDs | Author |
@@ -69,3 +79,5 @@
 | 2026-11-27 | Rebase von 576c39a auf a0472be (9 Commits), kein Textkonflikt. Neuer Master-Code zog nach: `groups/sceneSelectable.ts` ohne `is3D`, vier Tests ohne `viewMode`/`focusedLayer` | R-004, R-005, R-014..R-016 | Execution |
 | 2026-11-27 | Browser-Beweis mit lokalem Testkonto (Demo-Projekt, 28 Elemente): R-001, R-002, R-009, R-010, R-013 von PARTIAL auf PASS; R-011 und R-012 bleiben PARTIAL | R-001, R-002, R-009..R-013 | Execution |
 | 2026-11-27 | Blinde Prüfung auf a0472be: 11/22 PASS, 1 FAIL (S-006, Szenario trifft unveränderte Dateien), 10 UNEXECUTABLE | alle | Blind verifier |
+| 2026-11-27 | Commit 4221b91, PR #217 geöffnet | alle | Execution |
+| 2026-11-27 | Blinde Prüfung mit Browser: 19/22 PASS, 2 FAIL (S-006 zum dritten Mal; S-011 WorkspaceBar oben statt unten, Master identisch), 1 UNEXECUTABLE. R-011 von PARTIAL auf PASS | R-011, R-012, alle | Blind verifier |
