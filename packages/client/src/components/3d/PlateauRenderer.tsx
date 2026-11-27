@@ -63,7 +63,6 @@ export default function PlateauRenderer() {
                 color={layer.color}
                 offsetX={offsetX}
                 workspaceName={layer.id === 'strategy' ? snapshot.label : undefined}
-                viewMode="3d"
               />
             ))}
 

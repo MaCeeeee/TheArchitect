@@ -23,7 +23,6 @@ import PlateauBar from '../ui/PlateauBar';
 import PlateauHUD from '../ui/PlateauHUD';
 import ActivityHUD from '../ui/ActivityHUD';
 import Minimap from '../ui/Minimap';
-import LayerNavigator from '../ui/LayerNavigator';
 import { acquireSceneSlot } from './sceneSingleton';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -47,12 +46,9 @@ export default function Scene() {
   const visibleLayers = useArchitectureStore((s) => s.visibleLayers);
   const clearSelection = useArchitectureStore((s) => s.clearSelection);
   const closeContextMenu = useArchitectureStore((s) => s.closeContextMenu);
-  const viewMode = useUIStore((s) => s.viewMode);
-  const focusedLayer = useUIStore((s) => s.focusedLayer);
   const isXRayActive = useXRayStore((s) => s.isActive);
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
-  const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
   // Track re-form (THE-500): station-driven, gated on computed plateaus — NOT
   // roadmaps.length. PlateauRenderer returns null with 0 snapshots, so gating on
   // the roadmap list alone would swap the box-world for a blank renderer.
@@ -60,9 +56,6 @@ export default function Scene() {
   const hasPlateaus = useRoadmapStore((s) => s.plateauSnapshots.length > 0);
   const trackReform = journeyStation === 'track' && hasPlateaus;
   const isActivityActive = useActivityViewStore((s) => s.isActive);
-  const exitActivityView = useActivityViewStore((s) => s.exit);
-  const is3D = viewMode === '3d';
-  const isLayerView = viewMode === 'layer';
 
   // WebGL context-loss recovery. The browser drops the GL context under memory
   // pressure or too many live contexts (many tabs). Without preventDefault() on
@@ -79,20 +72,6 @@ export default function Scene() {
     setContextLost(false);
   }, []);
 
-  // Guard: auto-deactivate Plateau View when leaving 3D mode
-  useEffect(() => {
-    if (!is3D && isPlateauActive) {
-      deactivatePlateauView();
-    }
-  }, [is3D, isPlateauActive, deactivatePlateauView]);
-
-  // Guard: auto-deactivate Activity View when leaving 3D mode
-  useEffect(() => {
-    if (!is3D && isActivityActive) {
-      exitActivityView();
-    }
-  }, [is3D, isActivityActive, exitActivityView]);
-
   const handleCanvasClick = () => {
     clearSelection();
     closeContextMenu();
@@ -102,7 +81,7 @@ export default function Scene() {
     <div className="relative w-full h-full">
       <Canvas
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
-        style={{ background: isXRayActive ? '#080e1a' : is3D ? '#0a0a0a' : '#0d1117' }}
+        style={{ background: isXRayActive ? '#080e1a' : '#0a0a0a' }}
         onPointerMissed={handleCanvasClick}
         onCreated={({ gl }) => {
           const canvas = gl.domElement;
@@ -111,15 +90,15 @@ export default function Scene() {
         }}
       >
         <Suspense fallback={null}>
-          {/* Lighting adapts to view mode */}
-          <ambientLight intensity={is3D ? (isXRayActive ? 0.25 : 0.4) : 0.8} />
-          <directionalLight position={[10, 20, 10]} intensity={is3D ? (isXRayActive ? 0.5 : 0.8) : 0.4} castShadow={is3D} />
-          {is3D && <pointLight position={[-10, 10, -10]} intensity={0.3} color="#00ff41" />}
+          {/* Lighting */}
+          <ambientLight intensity={isXRayActive ? 0.25 : 0.4} />
+          <directionalLight position={[10, 20, 10]} intensity={isXRayActive ? 0.5 : 0.8} castShadow />
+          <pointLight position={[-10, 10, -10]} intensity={0.3} color="#00ff41" />
 
           {/* Activity View: replaces normal rendering with pyramid drill-down */}
-          {isActivityActive && is3D ? (
+          {isActivityActive ? (
             <ActivityScene />
-          ) : (isPlateauActive || trackReform) && is3D ? (
+          ) : (isPlateauActive || trackReform) ? (
             <>
               <PlateauRenderer />
               <AgentAvatars3D />
@@ -131,8 +110,6 @@ export default function Scene() {
               {(workspaces.length > 0 ? workspaces : [{ id: 'default', name: '', offsetX: 0 }]).map((ws) =>
                 LAYER_CONFIG.map(
                   (layer) => {
-                    // In layer view, only show the focused layer
-                    if (isLayerView && layer.id !== focusedLayer) return null;
                     if (!visibleLayers.has(layer.id)) return null;
                     return (
                       <LayerPlane
@@ -143,7 +120,6 @@ export default function Scene() {
                         color={layer.color}
                         offsetX={ws.offsetX}
                         workspaceName={layer.id === 'strategy' && workspaces.length > 1 ? ws.name : undefined}
-                        viewMode={viewMode}
                       />
                     );
                   }
@@ -158,47 +134,43 @@ export default function Scene() {
               {!isXRayActive && <CursorOverlay />}
 
               {/* TransformationXRay renders its own lights, sub-views, and HUD */}
-              {is3D && <TransformationXRay />}
+              <TransformationXRay />
 
               {/* MiroFish Agent Avatars + Discussion Bubbles (visible during/after simulation) */}
-              {is3D && <AgentAvatars3D />}
-              {is3D && <DiscussionBubbles3D />}
-              {is3D && <PolicyBoard />}
+              <AgentAvatars3D />
+              <DiscussionBubbles3D />
+              <PolicyBoard />
             </>
           )}
 
-          {/* Grid only in 3D mode */}
-          {is3D && (
-            <Grid
-              args={[50, 50]}
-              position={[0, -6, 0]}
-              cellSize={1}
-              cellThickness={isXRayActive ? 0.2 : 0.5}
-              cellColor={isXRayActive ? '#0a0a0a' : '#111111'}
-              sectionSize={5}
-              sectionThickness={isXRayActive ? 0.3 : 1}
-              sectionColor={isXRayActive ? '#111111' : '#1a2a1a'}
-              fadeDistance={50}
-              infiniteGrid
-            />
-          )}
+          {/* Ground grid */}
+          <Grid
+            args={[50, 50]}
+            position={[0, -6, 0]}
+            cellSize={1}
+            cellThickness={isXRayActive ? 0.2 : 0.5}
+            cellColor={isXRayActive ? '#0a0a0a' : '#111111'}
+            sectionSize={5}
+            sectionThickness={isXRayActive ? 0.3 : 1}
+            sectionColor={isXRayActive ? '#111111' : '#1a2a1a'}
+            fadeDistance={50}
+            infiniteGrid
+          />
 
           <ViewModeCamera />
-          {is3D && <Environment files="/hdri/dikhololo_night_1k.hdr" />}
+          <Environment files="/hdri/dikhololo_night_1k.hdr" />
 
           {/* Bloom — luminous "glassy orb" glow on the emissive ArchiMate elements.
-              Labels are drei <Html> (DOM), so they stay crisp. Only in 3D. */}
-          {is3D && (
-            <EffectComposer>
-              <Bloom
-                intensity={isXRayActive ? 1.9 : 1.55}
-                luminanceThreshold={0.18}
-                luminanceSmoothing={0.45}
-                mipmapBlur
-                radius={0.85}
-              />
-            </EffectComposer>
-          )}
+              Labels are drei <Html> (DOM), so they stay crisp. */}
+          <EffectComposer>
+            <Bloom
+              intensity={isXRayActive ? 1.9 : 1.55}
+              luminanceThreshold={0.18}
+              luminanceSmoothing={0.45}
+              mipmapBlur
+              radius={0.85}
+            />
+          </EffectComposer>
         </Suspense>
       </Canvas>
 
@@ -206,20 +178,17 @@ export default function Scene() {
       {!isXRayActive && <ContextMenu3D />}
 
       {/* Workspace navigation bar (hidden during plateau view) */}
-      {!isXRayActive && !isPlateauActive && is3D && <WorkspaceBar />}
+      {!isXRayActive && !isPlateauActive && <WorkspaceBar />}
 
       {/* Plateau navigation bar + HUD */}
-      {isPlateauActive && is3D && !isActivityActive && <PlateauBar />}
-      {isPlateauActive && is3D && !isActivityActive && <PlateauHUD />}
+      {isPlateauActive && !isActivityActive && <PlateauBar />}
+      {isPlateauActive && !isActivityActive && <PlateauHUD />}
 
       {/* Activity-View HUD */}
-      {isActivityActive && is3D && <ActivityHUD />}
+      {isActivityActive && <ActivityHUD />}
 
       {/* Minimap */}
-      {!isXRayActive && !isPlateauActive && is3D && workspaces.length > 1 && <Minimap />}
-
-      {/* Layer Navigator - only in Layer view */}
-      {isLayerView && !isXRayActive && <LayerNavigator />}
+      {!isXRayActive && !isPlateauActive && workspaces.length > 1 && <Minimap />}
 
       {/* X-Ray HUD - rendered OUTSIDE Canvas so it stays fixed on screen */}
       {isXRayActive && <XRayHUD />}

@@ -10,13 +10,13 @@ import { useActivityViewStore } from '../../stores/activityViewStore';
 import { groupModeAvailableInScene } from './sceneSelectable';
 
 beforeEach(() => {
-  useUIStore.setState({ viewMode: '3d', journeyStation: null });
+  useUIStore.setState({ journeyStation: null });
   useRoadmapStore.setState({ isPlateauViewActive: false, plateauSnapshots: [] });
   useActivityViewStore.setState({ isActive: false });
 });
 
 describe('groupModeAvailableInScene', () => {
-  test('the normal 3D scene → available', () => {
+  test('the normal scene → available', () => {
     expect(groupModeAvailableInScene()).toBe(true);
   });
   test('plateau view → not available', () => {
@@ -32,10 +32,5 @@ describe('groupModeAvailableInScene', () => {
   test('activity view → not available', () => {
     useActivityViewStore.setState({ isActive: true });
     expect(groupModeAvailableInScene()).toBe(false);
-  });
-  test('not 3D: the scene shows the elements → available', () => {
-    useUIStore.setState({ viewMode: 'layer' });
-    useRoadmapStore.setState({ isPlateauViewActive: true });
-    expect(groupModeAvailableInScene()).toBe(true);
   });
 });

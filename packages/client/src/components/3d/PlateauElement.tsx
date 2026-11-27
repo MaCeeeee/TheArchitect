@@ -150,7 +150,6 @@ export default function PlateauElement({
         <ArchiMateIconSprite
           elementType={elementState.type}
           layerColor={layerColor}
-          is2DMode={false}
           opacity={opacity}
         />
       )}

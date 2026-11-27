@@ -8,7 +8,6 @@ import {
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
 import { useComplianceStore } from '../../stores/complianceStore';
-import { useUIStore } from '../../stores/uiStore';
 import { roadmapAPI } from '../../services/api';
 import type { RoadmapStrategy } from '@thearchitect/shared';
 import { flyToElement } from '../3d/CameraControls';
@@ -32,21 +31,16 @@ function formatCost(n: number) {
 
 function PlateauViewToggle() {
   const navigate = useNavigate();
-  const viewMode = useUIStore((s) => s.viewMode);
-  const setViewMode = useUIStore((s) => s.setViewMode);
   const isPlateauActive = useRoadmapStore((s) => s.isPlateauViewActive);
   const activatePlateauView = useRoadmapStore((s) => s.activatePlateauView);
   const deactivatePlateauView = useRoadmapStore((s) => s.deactivatePlateauView);
   const elements = useArchitectureStore((s) => s.elements);
   const projectId = useArchitectureStore((s) => s.projectId);
-  const is3D = viewMode === '3d';
 
   const handleToggle = () => {
     if (isPlateauActive) {
       deactivatePlateauView();
     } else {
-      // Ensure 3D mode is active
-      if (!is3D) setViewMode('3d');
       activatePlateauView(elements);
       // Navigate to project architecture view so user sees the 3D plateau
       if (projectId) {

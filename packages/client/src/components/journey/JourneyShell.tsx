@@ -44,7 +44,7 @@ export default function JourneyShell() {
   const conformanceGate = STATIONS.find((s) => s.key === station)?.conformanceGate;
 
   // Station drives the camera framing — and nothing else about how the world
-  // is drawn (Station ⟂ viewMode). Deliberately NOT depending on `elements`:
+  // is drawn. Deliberately NOT depending on `elements`:
   // we reframe on arrival at a station, not on every model edit.
   const lastArrivalKey = useRef('');
   useEffect(() => {
