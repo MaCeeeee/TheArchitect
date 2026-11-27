@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   Search, Star, Clock, ChevronRight, ChevronDown, X, AlertTriangle,
   Box, Circle, Cylinder, Diamond, Triangle, Octagon, Plus, Zap, Layers,
@@ -172,16 +172,10 @@ export default function ElementPalette({ onAddElement, onAddTemplate }: ElementP
   const favoriteTypes = useUIStore(s => s.favoriteTypes);
   const toggleFavoriteType = useUIStore(s => s.toggleFavoriteType);
   const addRecentType = useUIStore(s => s.addRecentType);
-  const focusedLayer = useUIStore(s => s.focusedLayer);
   const activeViewpoint = useUIStore(s => s.activeViewpoint);
   const elements = useArchitectureStore(s => s.elements);
 
-  const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([focusedLayer]));
-
-  // Auto-expand focused layer when it changes
-  useEffect(() => {
-    setExpandedLayers(prev => new Set(prev).add(focusedLayer));
-  }, [focusedLayer]);
+  const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set(['business']));
 
   // Viewpoint-allowed types (null = all allowed)
   const viewpointTypes = useMemo(() => {

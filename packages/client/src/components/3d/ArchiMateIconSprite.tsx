@@ -969,7 +969,6 @@ function getSpriteMaterial(
 interface ArchiMateIconSpriteProps {
   elementType: string;
   layerColor: string;
-  is2DMode: boolean;
   opacity?: number;
   scale?: number;
 }
@@ -977,7 +976,6 @@ interface ArchiMateIconSpriteProps {
 export default function ArchiMateIconSprite({
   elementType,
   layerColor,
-  is2DMode,
   opacity = 1,
   scale = 0.4,
 }: ArchiMateIconSpriteProps) {
@@ -986,10 +984,8 @@ export default function ArchiMateIconSprite({
     [elementType, layerColor, opacity],
   );
 
-  // In 3D mode: above the shape. In 2D mode: top-left corner of the flat card.
-  const position: [number, number, number] = is2DMode
-    ? [-0.7, 0.15, -0.4]
-    : [0, 0.85, 0.55];
+  // Above the shape, slightly towards the viewer.
+  const position: [number, number, number] = [0, 0.85, 0.55];
 
   return (
     <sprite

@@ -1,15 +1,11 @@
 import { create } from 'zustand';
-import type { ArchitectureLayer } from '@thearchitect/shared';
 import type { ElementType } from '@thearchitect/shared/src/types/architecture.types';
 import { type DockSide, loadSheetWidth, saveSheetWidth, loadSheetDock, saveSheetDock } from '../components/journey/sheetPrefs';
 import type { StationKey } from '../components/journey/stations';
 
-export type ViewMode = '3d' | '2d-topdown' | 'layer';
 type SidebarPanel = 'envision' | 'explorer' | 'architect' | 'analyze' | 'comply' | 'copilot' | 'none';
 
 interface UIState {
-  viewMode: ViewMode;
-  focusedLayer: ArchitectureLayer;
   sidebarPanel: SidebarPanel;
   isSidebarOpen: boolean;
   isPropertyPanelOpen: boolean;
@@ -51,8 +47,6 @@ interface UIState {
   setJourneyStation: (s: StationKey | null, instant: boolean) => void;
   toggleSalienceOverride: () => void;
 
-  setViewMode: (mode: ViewMode) => void;
-  setFocusedLayer: (layer: ArchitectureLayer) => void;
   setSidebarPanel: (panel: SidebarPanel) => void;
   toggleSidebar: () => void;
   togglePropertyPanel: () => void;
@@ -100,8 +94,6 @@ function loadShowAll(): boolean {
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  viewMode: '3d',
-  focusedLayer: 'business',
   sidebarPanel: 'envision',
   isSidebarOpen: true,
   isPropertyPanelOpen: true,
@@ -117,8 +109,6 @@ export const useUIStore = create<UIState>((set) => ({
   salienceInstant: true,
   salienceOverride: false,
 
-  setViewMode: (mode) => set({ viewMode: mode }),
-  setFocusedLayer: (layer) => set({ focusedLayer: layer }),
   setSidebarPanel: (panel) => set({ sidebarPanel: panel }),
   toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),
   togglePropertyPanel: () => set((s) => ({ isPropertyPanelOpen: !s.isPropertyPanelOpen })),

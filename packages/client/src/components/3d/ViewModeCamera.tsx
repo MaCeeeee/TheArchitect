@@ -1,14 +1,11 @@
 import { useRef, useEffect } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, OrthographicCamera, PerspectiveCamera } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
-import { useUIStore, ViewMode } from '../../stores/uiStore';
 import { useArchitectureStore } from '../../stores/architectureStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useRoadmapStore } from '../../stores/roadmapStore';
 import { useXRayStore } from '../../stores/xrayStore';
-import { ARCHITECTURE_LAYERS } from '@thearchitect/shared/src/constants/togaf.constants';
-import { computeViewPositions } from '../../hooks/useViewPositions';
 import type { StationKey } from '../journey/stations';
 import type { DockSide } from '../journey/sheetPrefs';
 
@@ -26,56 +23,22 @@ let flyProgress = 1;
 // ─── Public fly-to functions ──────────────────────────────────────────
 
 export function flyToElement(elementPosition: { x: number; y: number; z: number }, elementId?: string) {
-  const viewMode = useUIStore.getState().viewMode;
-
   // Resolve where the element is *actually rendered*. Sidebar callers pass
   // element.position3D, but X-Ray reflows elements onto bucket positions
-  // (xrayStore.computePositions) and 2D/Layer views compute their own grid
-  // (computeViewPositions). Without this lookup the camera flies to a phantom
-  // location while the user-selected element sits 10+ units away.
-  const resolvePosition = (): { x: number; y: number; z: number } => {
-    if (!elementId) return elementPosition;
-    // X-Ray override takes precedence (only in 3D view — the 2D/layer code
-    // path has its own grid and ignores X-Ray positioning).
-    if (viewMode === '3d') {
-      const { isActive, xrayPositions } = useXRayStore.getState();
-      if (isActive) {
-        const xp = xrayPositions.get(elementId);
-        if (xp) return xp;
-      }
-    }
-    return elementPosition;
-  };
-
-  const resolved = resolvePosition();
-
-  if (viewMode === '3d') {
-    const target = new THREE.Vector3(resolved.x, resolved.y, resolved.z);
-    flyTarget = {
-      position: target.clone().add(new THREE.Vector3(5, 4, 5)),
-      lookAt: target,
-    };
-  } else {
-    // Compute the actual view position for this element
-    let targetX = resolved.x;
-    let targetZ = resolved.z;
-
-    if (elementId) {
-      const { viewMode: vm, focusedLayer } = useUIStore.getState();
-      const elements = useArchitectureStore.getState().elements;
-      const viewPositions = computeViewPositions(vm, focusedLayer, elements);
-      const viewPos = viewPositions.positions.get(elementId);
-      if (viewPos) {
-        targetX = viewPos.x;
-        targetZ = viewPos.z;
-      }
-    }
-
-    flyTarget = {
-      position: new THREE.Vector3(targetX, viewMode === 'layer' ? 40 : 80, targetZ),
-      lookAt: new THREE.Vector3(targetX, 0, targetZ),
-    };
+  // (xrayStore.computePositions). Without this lookup the camera flies to a
+  // phantom location while the user-selected element sits 10+ units away.
+  let resolved = elementPosition;
+  if (elementId) {
+    const { isActive, xrayPositions } = useXRayStore.getState();
+    const xp = isActive ? xrayPositions.get(elementId) : undefined;
+    if (xp) resolved = xp;
   }
+
+  const target = new THREE.Vector3(resolved.x, resolved.y, resolved.z);
+  flyTarget = {
+    position: target.clone().add(new THREE.Vector3(5, 4, 5)),
+    lookAt: target,
+  };
   flyProgress = 0;
 }
 
@@ -112,61 +75,33 @@ export function flyBackToWorkspace() {
 }
 
 export function flyToWorkspace(offsetX: number) {
-  const viewMode = useUIStore.getState().viewMode;
-  if (viewMode === '3d') {
-    flyTarget = {
-      position: new THREE.Vector3(offsetX + 20, 15, 20),
-      lookAt: new THREE.Vector3(offsetX, 4, 0),
-    };
-  } else {
-    flyTarget = {
-      position: new THREE.Vector3(offsetX, viewMode === 'layer' ? 40 : 80, 0),
-      lookAt: new THREE.Vector3(offsetX, 0, 0),
-    };
-  }
+  flyTarget = {
+    position: new THREE.Vector3(offsetX + 20, 15, 20),
+    lookAt: new THREE.Vector3(offsetX, 4, 0),
+  };
   flyProgress = 0;
 }
 
 export function fitToScreen(elements: { id?: string; position3D: { x: number; y: number; z: number } }[]) {
   if (elements.length === 0) return;
-  const { viewMode, focusedLayer } = useUIStore.getState();
 
-  if (viewMode === '3d') {
-    const center = new THREE.Vector3();
-    for (const el of elements) {
-      center.add(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
-    }
-    center.divideScalar(elements.length);
-
-    let maxDist = 0;
-    for (const el of elements) {
-      const d = center.distanceTo(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
-      if (d > maxDist) maxDist = d;
-    }
-
-    const distance = Math.max(maxDist * 1.5, 15);
-    flyTarget = {
-      position: center.clone().add(new THREE.Vector3(distance * 0.6, distance * 0.5, distance * 0.6)),
-      lookAt: center,
-    };
-  } else {
-    // Use view positions for 2D/Layer center calculation
-    const allElements = useArchitectureStore.getState().elements;
-    const viewResult = computeViewPositions(viewMode, focusedLayer, allElements);
-    const positions = Array.from(viewResult.positions.values());
-    if (positions.length === 0) return;
-
-    const center = new THREE.Vector3();
-    for (const p of positions) {
-      center.add(new THREE.Vector3(p.x, 0, p.z));
-    }
-    center.divideScalar(positions.length);
-
-    flyTarget = {
-      position: new THREE.Vector3(center.x, viewMode === 'layer' ? 40 : 80, center.z),
-      lookAt: new THREE.Vector3(center.x, 0, center.z),
-    };
+  const center = new THREE.Vector3();
+  for (const el of elements) {
+    center.add(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
   }
+  center.divideScalar(elements.length);
+
+  let maxDist = 0;
+  for (const el of elements) {
+    const d = center.distanceTo(new THREE.Vector3(el.position3D.x, el.position3D.y, el.position3D.z));
+    if (d > maxDist) maxDist = d;
+  }
+
+  const distance = Math.max(maxDist * 1.5, 15);
+  flyTarget = {
+    position: center.clone().add(new THREE.Vector3(distance * 0.6, distance * 0.5, distance * 0.6)),
+    lookAt: center,
+  };
   flyProgress = 0;
 }
 
@@ -183,25 +118,15 @@ export function fitAllWorkspaces(workspaces: { offsetX: number }[]) {
   const span = maxX - minX + 30;
   const distance = Math.max(span * 0.7, 40);
 
-  const viewMode = useUIStore.getState().viewMode;
-  if (viewMode === '3d') {
-    flyTarget = {
-      position: new THREE.Vector3(centerX, distance * 0.5, distance * 0.6),
-      lookAt: new THREE.Vector3(centerX, 4, 0),
-    };
-  } else {
-    flyTarget = {
-      position: new THREE.Vector3(centerX, viewMode === 'layer' ? 40 : 80, 0),
-      lookAt: new THREE.Vector3(centerX, 0, 0),
-    };
-  }
+  flyTarget = {
+    position: new THREE.Vector3(centerX, distance * 0.5, distance * 0.6),
+    lookAt: new THREE.Vector3(centerX, 4, 0),
+  };
   flyProgress = 0;
 }
 
 // ─── Station framing (ADR-0005 / THE-482) ─────────────────────────────
-// A Station sets the camera framing *intent*; viewMode keeps owning the
-// projection (Station ⟂ viewMode). In 2D/layer the top-down constraint wins,
-// exactly like the other fly-to helpers above — we delegate to fitToScreen.
+// A Station sets the camera framing *intent*: its viewing angle and distance.
 // Vertical field-of-view of the perspective camera (see <PerspectiveCamera> below).
 // Single source so the Sheet-offset math stays in sync with what's actually rendered.
 const CAMERA_FOV_DEG = 60;
@@ -244,18 +169,6 @@ export function flyToStation(
   opts: StationFramingOptions = {},
 ) {
   if (elements.length === 0) return;
-  const viewMode = useUIStore.getState().viewMode;
-
-  if (viewMode !== '3d') {
-    // Projection wins: 2D/layer users get the same top-down fit they get today.
-    fitToScreen(elements);
-    // Carry the tempo onto whatever fitToScreen armed (THE-494). The
-    // flyProgress === 0 guard skips the case where fitToScreen no-opped
-    // (empty view positions) and a stale in-flight target is still armed.
-    if (opts.instant && flyTarget && flyProgress === 0) flyTarget.instant = true;
-    return;
-  }
-
   // Robust framing (THE-488): use the median centre and a MAD-trimmed radius so
   // a single element with a broken layout position — e.g. z=-1682 while the rest
   // sit within ±20 (data anomaly THE-490) — can't drag the centre off-screen or
@@ -311,58 +224,13 @@ export function __getFlyTargetForTests(): CameraTarget | null {
   return flyTarget;
 }
 
-// ─── Layer navigation helpers ─────────────────────────────────────────
-
-const LAYER_IDS = ARCHITECTURE_LAYERS.map((l) => l.id);
-
-export function nextLayer() {
-  const { focusedLayer, setFocusedLayer } = useUIStore.getState();
-  const idx = LAYER_IDS.indexOf(focusedLayer);
-  const next = LAYER_IDS[Math.min(idx + 1, LAYER_IDS.length - 1)];
-  setFocusedLayer(next);
-}
-
-export function prevLayer() {
-  const { focusedLayer, setFocusedLayer } = useUIStore.getState();
-  const idx = LAYER_IDS.indexOf(focusedLayer);
-  const prev = LAYER_IDS[Math.max(idx - 1, 0)];
-  setFocusedLayer(prev);
-}
-
 // ─── Component ────────────────────────────────────────────────────────
 
 export default function ViewModeCamera() {
   const controlsRef = useRef<any>(null);
   const perspRef = useRef<THREE.PerspectiveCamera>(null);
-  const orthoRef = useRef<THREE.OrthographicCamera>(null);
-  const { camera, size } = useThree();
+  const { camera } = useThree();
   const isDragging = useArchitectureStore((s) => s.isDragging);
-  const viewMode = useUIStore((s) => s.viewMode);
-  const prevViewMode = useRef<ViewMode>(viewMode);
-
-  // Animate camera on mode change
-  useEffect(() => {
-    if (prevViewMode.current === viewMode) return;
-    prevViewMode.current = viewMode;
-
-    if (viewMode === '3d') {
-      flyTarget = {
-        position: new THREE.Vector3(20, 15, 20),
-        lookAt: new THREE.Vector3(0, 4, 0),
-      };
-    } else if (viewMode === '2d-topdown') {
-      flyTarget = {
-        position: new THREE.Vector3(0, 80, 0),
-        lookAt: new THREE.Vector3(0, 0, 0),
-      };
-    } else if (viewMode === 'layer') {
-      flyTarget = {
-        position: new THREE.Vector3(0, 40, 0),
-        lookAt: new THREE.Vector3(0, 0, 0),
-      };
-    }
-    flyProgress = 0;
-  }, [viewMode]);
 
   // Fly-to animation
   useFrame((_, delta) => {
@@ -448,20 +316,11 @@ export default function ViewModeCamera() {
         return; // Don't process normal workspace navigation
       }
 
-      // Arrow keys for workspace navigation (3D/2D) or layer navigation (Layer)
+      // Arrow keys for workspace navigation
       const wsState = useWorkspaceStore.getState();
       const workspaces = wsState.workspaces;
 
-      if (useUIStore.getState().viewMode === 'layer') {
-        if (e.key === 'ArrowUp' && !e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          prevLayer();
-        }
-        if (e.key === 'ArrowDown' && !e.ctrlKey && !e.metaKey) {
-          e.preventDefault();
-          nextLayer();
-        }
-      } else if (workspaces.length > 1) {
+      if (workspaces.length > 1) {
         if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) {
           const idx = workspaces.findIndex((ws) => ws.id === wsState.activeWorkspaceId);
           const prev = idx > 0 ? idx - 1 : workspaces.length - 1;
@@ -481,14 +340,12 @@ export default function ViewModeCamera() {
         fitAllWorkspaces(workspaces);
       }
 
-      // Number keys 1-9 for workspace jump (only when not in layer mode)
-      if (useUIStore.getState().viewMode !== 'layer') {
-        const num = parseInt(e.key);
-        if (num >= 1 && num <= 9 && num <= workspaces.length && !e.ctrlKey && !e.metaKey) {
-          const ws = workspaces[num - 1];
-          wsState.setActiveWorkspace(ws.id);
-          flyToWorkspace(ws.offsetX);
-        }
+      // Number keys 1-9 for workspace jump
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 9 && num <= workspaces.length && !e.ctrlKey && !e.metaKey) {
+        const ws = workspaces[num - 1];
+        wsState.setActiveWorkspace(ws.id);
+        flyToWorkspace(ws.offsetX);
       }
     };
 
@@ -496,54 +353,27 @@ export default function ViewModeCamera() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const is2D = viewMode !== '3d';
-  const aspect = size.width / size.height;
-  const frustumSize = viewMode === 'layer' ? 25 : 50;
-
   return (
     <>
-      {/* Perspective camera for 3D mode */}
       <PerspectiveCamera
         ref={perspRef}
-        makeDefault={viewMode === '3d'}
+        makeDefault
         fov={CAMERA_FOV_DEG}
         near={0.1}
         far={1000}
         position={[20, 15, 20]}
       />
 
-      {/* Orthographic camera for 2D/Layer modes */}
-      <OrthographicCamera
-        ref={orthoRef}
-        makeDefault={is2D}
-        near={0.1}
-        far={500}
-        position={viewMode === 'layer' ? [0, 40, 0] : [0, 80, 0]}
-        left={-frustumSize * aspect}
-        right={frustumSize * aspect}
-        top={frustumSize}
-        bottom={-frustumSize}
-        zoom={viewMode === 'layer' ? 1.5 : 1}
-      />
-
       <OrbitControls
         ref={controlsRef}
         makeDefault
         enabled={!isDragging}
-        enableRotate={viewMode === '3d'}
+        enableRotate
         enableDamping
         dampingFactor={0.05}
-        minDistance={viewMode === '3d' ? 5 : undefined}
-        maxDistance={viewMode === '3d' ? 400 : undefined}
-        minZoom={is2D ? 0.2 : undefined}
-        maxZoom={is2D ? 5 : undefined}
-        maxPolarAngle={viewMode === '3d' ? Math.PI / 2.1 : undefined}
-        // In 2D modes: middle mouse = zoom, left = pan
-        mouseButtons={is2D ? {
-          LEFT: THREE.MOUSE.PAN as any,
-          MIDDLE: THREE.MOUSE.DOLLY as any,
-          RIGHT: THREE.MOUSE.PAN as any,
-        } : undefined}
+        minDistance={5}
+        maxDistance={400}
+        maxPolarAngle={Math.PI / 2.1}
       />
     </>
   );

@@ -22,6 +22,8 @@ const TGT = { id: 'tgt', name: 'Target App', type: 'application_component', laye
 const KEYS = ['Escape', 'ArrowDown', 'Backspace', 'Delete', 'c'] as const;
 
 let sceneSpy: Mock<(e: KeyboardEvent) => void>;
+// Set by the scene stand-in when an ArrowDown reaches it (the scene moves the camera on arrow keys).
+let sceneGotArrowDown = false;
 
 function openPicker() {
   useUIStore.setState({
@@ -31,7 +33,6 @@ function openPicker() {
     showConnectionPicker: true,
     connectionPickerPosition: { x: 100, y: 100 },
     activeViewpoint: null,
-    focusedLayer: 'application',
   });
 }
 
@@ -43,7 +44,6 @@ function closedPicker() {
     showConnectionPicker: false,
     connectionPickerPosition: null,
     activeViewpoint: null,
-    focusedLayer: 'application',
   });
 }
 
@@ -52,6 +52,7 @@ beforeEach(() => {
   // cast: the test elements carry only the fields the picker reads
   useArchitectureStore.setState({ projectId: null, elements: [SRC, TGT] as never, connections: [], selectedElementId: null, selectedElementIds: new Set<string>() });
   sceneSpy = vi.fn<(e: KeyboardEvent) => void>();
+  sceneGotArrowDown = false;
   window.addEventListener('keydown', sceneSpy); // bubble phase, like the scene handlers
 });
 
@@ -92,7 +93,7 @@ describe('ConnectionTypePicker — owns the keyboard while open (THE-810)', () =
       } else if (e.key === 'Escape') {
         useUIStore.getState().exitConnectionMode();
       } else if (e.key === 'ArrowDown') {
-        useUIStore.setState({ focusedLayer: 'technology' });
+        sceneGotArrowDown = true;
       }
     };
     beforeEach(() => window.addEventListener('keydown', standIn));
@@ -108,7 +109,7 @@ describe('ConnectionTypePicker — owns the keyboard while open (THE-810)', () =
       expect(ui.connectionSourceId).toBeNull();
     });
 
-    test('ArrowDown changes only the type; Enter then creates the next type, layer unchanged', () => {
+    test('ArrowDown changes only the type; Enter then creates the next type, the scene does not get the key', () => {
       const valid = getValidRelationships('application_component', 'application_component');
       const idx = valid.indexOf(getDefaultRelationship('application_component', 'application_component'));
       expect(idx, 'precondition: default must not be the last valid type').toBeLessThan(valid.length - 1);
@@ -121,7 +122,7 @@ describe('ConnectionTypePicker — owns the keyboard while open (THE-810)', () =
       const conns = useArchitectureStore.getState().connections;
       expect(conns).toHaveLength(1);
       expect(conns[0].type).toBe(valid[idx + 1]);
-      expect(useUIStore.getState().focusedLayer).toBe('application');
+      expect(sceneGotArrowDown).toBe(false);
     });
 
     test('Backspace with the picker open leaves both elements in place', () => {

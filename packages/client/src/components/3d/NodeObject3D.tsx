@@ -3,7 +3,7 @@ import { Html } from '@react-three/drei';
 import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useArchitectureStore, ArchitectureElement } from '../../stores/architectureStore';
-import { useUIStore, ViewMode } from '../../stores/uiStore';
+import { useUIStore } from '../../stores/uiStore';
 import { useXRayStore } from '../../stores/xrayStore';
 import { useSimulationStore } from '../../stores/simulationStore';
 import { useComplianceStore } from '../../stores/complianceStore';
@@ -39,7 +39,6 @@ const TYPE_GEOMETRY: Record<string, 'box' | 'sphere' | 'cylinder' | 'cone'> = {
 
 interface NodeObject3DProps {
   element: ArchitectureElement;
-  viewPosition?: { x: number; y: number; z: number };
   salience?: number;
   /** Force the label on (station focus is small + discriminating — THE-500). */
   labelForced?: boolean;
@@ -54,11 +53,10 @@ const HYPOTHESIS_DASH_ARC = (Math.PI * 2) / HYPOTHESIS_DASHES / 2;
 const _dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 const _intersection = new THREE.Vector3();
 
-export default function NodeObject3D({ element, viewPosition, salience = 1, labelForced = false }: NodeObject3DProps) {
+export default function NodeObject3D({ element, salience = 1, labelForced = false }: NodeObject3DProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const viewMode = useUIStore((s) => s.viewMode);
 
   const selectedId = useArchitectureStore((s) => s.selectedElementId);
   const selectedIds = useArchitectureStore((s) => s.selectedElementIds);
@@ -184,15 +182,11 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
     return pos;
   }, [isXRayActive, xrayPositions, element.id, xraySubView]);
 
-  const is2DMode = viewMode !== '3d';
-  const isLayerMode = viewMode === 'layer';
-
-  // Final position: X-Ray override > View mode position > Default 3D position
+  // Final position: X-Ray override > Default 3D position
   const finalPosition = useMemo((): [number, number, number] => {
     if (xrayPosition) return [xrayPosition.x, xrayPosition.y, xrayPosition.z];
-    if (viewPosition) return [viewPosition.x, viewPosition.y, viewPosition.z];
     return [element.position3D.x, element.position3D.y, element.position3D.z];
-  }, [xrayPosition, viewPosition, element.position3D]);
+  }, [xrayPosition, element.position3D]);
 
   const { raycaster, camera, gl } = useThree();
 
@@ -313,11 +307,11 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
     setDragging(true);
     setDraggingStore(true);
     pushHistory();
-    // In 2D/Layer modes, drag on Y=0.1 plane; in 3D, drag on element's Y layer
-    const dragY = is2DMode ? 0.1 : element.position3D.y;
+    // Drag on the element's own layer plane
+    const dragY = element.position3D.y;
     _dragPlane.set(new THREE.Vector3(0, 1, 0), -dragY);
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-  }, [element.position3D.y, is2DMode, pushHistory, setDraggingStore]);
+  }, [element.position3D.y, pushHistory, setDraggingStore]);
 
   const handlePointerMove = useCallback((e: ThreeEvent<PointerEvent>) => {
     if (!dragging) return;
@@ -352,12 +346,6 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
     // Policy tiles: flat engraved cards on the motivation layer
     if (isPolicyNode) {
       return <boxGeometry args={[2.5, 0.08, 1.4]} />;
-    }
-    if (is2DMode) {
-      // Flat card geometry for 2D/Layer views
-      const w = isLayerMode ? 3 : 2;
-      const h = isLayerMode ? 2 : 1.2;
-      return <boxGeometry args={[w, 0.08, h]} />;
     }
     switch (geometry) {
       case 'sphere':
@@ -459,7 +447,7 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {Array.from({ length: HYPOTHESIS_DASHES }, (_, i) => (
             <mesh key={i} rotation={[0, 0, (i * Math.PI * 2) / HYPOTHESIS_DASHES]}>
-              <torusGeometry args={[is2DMode ? (isLayerMode ? 1.9 : 1.3) : 1.15, 0.04, 6, 8, HYPOTHESIS_DASH_ARC]} />
+              <torusGeometry args={[1.15, 0.04, 6, 8, HYPOTHESIS_DASH_ARC]} />
               <meshBasicMaterial color={HYPOTHESIS_COLOR} transparent opacity={0.9} />
             </mesh>
           ))}
@@ -486,12 +474,11 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
       <ArchiMateIconSprite
         elementType={element.type}
         layerColor={baseColor}
-        is2DMode={is2DMode}
         opacity={materialOpacity}
       />
 
-      {/* Risk glow for high/critical (3D only) */}
-      {!is2DMode && (element.riskLevel === 'high' || element.riskLevel === 'critical') && (
+      {/* Risk glow for high/critical */}
+      {(element.riskLevel === 'high' || element.riskLevel === 'critical') && (
         <pointLight
           color={element.riskLevel === 'critical' ? '#ef4444' : '#f97316'}
           intensity={0.5}
@@ -499,27 +486,27 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
         />
       )}
 
-      {/* Label - always visible in 2D/Layer modes; in X-Ray only for critical path + hover/selection
+      {/* Label - in X-Ray only for critical path + hover/selection
           (color/size/glow already communicate the metric — labels would obscure connections) */}
-      {(is2DMode || hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath) || (journeyActive && !isXRayActive && labelForced)) && (
+      {(hovered || isSelected || (isXRayActive && xrayData?.isCriticalPath) || (journeyActive && !isXRayActive && labelForced)) && (
         <Html
-          position={isPolicyNode ? [0, 0.15, 0] : is2DMode ? [0, 0.2, 0] : [0, 1.2, 0]}
+          position={isPolicyNode ? [0, 0.15, 0] : [0, 1.2, 0]}
           center
           zIndexRange={[50, 0]}
           style={{
-            background: is2DMode ? 'transparent' : 'rgba(15, 23, 42, 0.9)',
-            border: is2DMode ? 'none' : `1px solid ${color}`,
+            background: 'rgba(15, 23, 42, 0.9)',
+            border: `1px solid ${color}`,
             borderRadius: '6px',
-            padding: is2DMode ? '2px 4px' : '4px 10px',
+            padding: '4px 10px',
             color: '#e0e0e0',
-            fontSize: is2DMode ? '10px' : '11px',
+            fontSize: '11px',
             fontWeight: 500,
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
-            textShadow: is2DMode ? '0 0 4px rgba(0,0,0,0.9)' : 'none',
+            textShadow: 'none',
           }}
         >
-          <div style={{ maxWidth: isPolicyNode ? '150px' : isLayerMode ? '120px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div style={{ maxWidth: isPolicyNode ? '150px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {element.name}
           </div>
           {isPolicyNode ? (
@@ -548,10 +535,6 @@ export default function NodeObject3D({ element, viewPosition, salience = 1, labe
                   ↓ €{xrayData.optimizationPotential >= 1000 ? `${(xrayData.optimizationPotential / 1000).toFixed(0)}K` : xrayData.optimizationPotential} savings
                 </span>
               )}
-            </div>
-          ) : isLayerMode ? (
-            <div style={{ fontSize: '8px', color: '#7a8a7a', marginTop: '1px' }}>
-              {element.type.replace(/_/g, ' ')} · {element.status}{hypothesis ? ' · assumption' : ''}
             </div>
           ) : (
             <div style={{ fontSize: '9px', color: '#7a8a7a', marginTop: '2px' }}>

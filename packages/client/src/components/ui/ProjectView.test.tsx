@@ -44,7 +44,7 @@ beforeEach(() => {
   useArchitectureStore.setState({ projectId: 'p1', elements: Array.from({ length: 6 }, (_, i) => ({ id: `e${i}`, name: `E${i}`, type: 'business_actor' })) as never, connections: [] });
   useJourneyStore.setState({ currentPhase: 2, phases: [phase(1), phase(2, { label: 'Add Connections', route: '__connection_mode__' }), phase(3), phase(4), phase(5), phase(6)] } as never);
   useAdvisorStore.setState({ ladder: null, focusRung: null });
-  useUIStore.setState({ isConnectionMode: false, connectionSourceId: null, viewMode: '3d', journeyStation: null });
+  useUIStore.setState({ isConnectionMode: false, connectionSourceId: null, journeyStation: null });
   useRoadmapStore.setState({ isPlateauViewActive: false, plateauSnapshots: [] });
   useGroupModeStore.getState().reset();
 });

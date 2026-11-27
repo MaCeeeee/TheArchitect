@@ -122,7 +122,6 @@ describe('buildCommandRegistry — make a group (UC-METH-002)', () => {
   test('action:make-group is not available in the plateau view (the scene cannot select there)', () => {
     const c = ctx();
     useArchitectureStore.setState({ elements: [{ id: 'a' }, { id: 'b' }] as never });
-    useUIStore.setState({ viewMode: '3d' });
     useRoadmapStore.setState({ isPlateauViewActive: true });
     expect(buildCommandRegistry(c)['action:make-group'].available?.(c)).toBe(false);
     useRoadmapStore.setState({ isPlateauViewActive: false });

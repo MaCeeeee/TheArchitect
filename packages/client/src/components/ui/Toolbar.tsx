@@ -4,8 +4,6 @@ import { useNavigate, useMatch } from 'react-router-dom';
 import {
   PanelLeftClose,
   PanelLeftOpen,
-  Box,
-  Grid3x3,
   Layers,
   ZoomIn,
   ZoomOut,
@@ -64,8 +62,6 @@ interface ToolbarProps {
 
 export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVImport, onOpenImportMapping, onOpenWalkthrough, onOpenRedundancyPanel, onOpenPatternLibrary, onOpenLiveMapping, onOpenRequirementsGenerator }: ToolbarProps) {
   const {
-    viewMode,
-    setViewMode,
     isSidebarOpen,
     toggleSidebar,
     toggleChat,
@@ -100,25 +96,6 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
   const moreRef = useRef<HTMLDivElement>(null);
   const viewpointRef = useRef<HTMLDivElement>(null);
 
-  // X-Ray guard: auto-switch to 3D when activating X-Ray
-  const handleXRayToggle = () => {
-    if (!isXRayActive && viewMode !== '3d') {
-      setViewMode('3d');
-      toast('Switching to 3D for X-Ray mode', { icon: '🔬' });
-      // Small delay to let camera animate, then toggle
-      setTimeout(() => toggleXRay(), 300);
-      return;
-    }
-    toggleXRay();
-  };
-
-  // Guard: deactivate X-Ray when switching away from 3D
-  const handleSetViewMode = (mode: typeof viewMode) => {
-    if (isXRayActive && mode !== '3d') {
-      toggleXRay();
-    }
-    setViewMode(mode);
-  };
   const advisorHealthScore = useAdvisorStore((s) => s.healthScore);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -194,20 +171,6 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         e.preventDefault();
         redo();
       }
-      // Ctrl+1/2/3 for view mode switching
-      if ((e.ctrlKey || e.metaKey) && e.key === '1') {
-        e.preventDefault();
-        handleSetViewMode('3d');
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '2') {
-        e.preventDefault();
-        handleSetViewMode('2d-topdown');
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '3') {
-        e.preventDefault();
-        handleSetViewMode('layer');
-      }
-
       // C = toggle connection mode
       if (e.key === 'c' && !e.ctrlKey && !e.metaKey && isProjectView) {
         e.preventDefault();
@@ -303,29 +266,8 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         )}
       </div>
 
-      {/* Center section - View modes + Viewpoint */}
+      {/* Center section - Viewpoint */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1 rounded-lg bg-[var(--surface-base)] p-0.5">
-          <ViewModeButton
-            icon={<Box size={16} />}
-            label="3D"
-            active={viewMode === '3d'}
-            onClick={() => handleSetViewMode('3d')}
-          />
-          <ViewModeButton
-            icon={<Grid3x3 size={16} />}
-            label="2D"
-            active={viewMode === '2d-topdown'}
-            onClick={() => handleSetViewMode('2d-topdown')}
-          />
-          <ViewModeButton
-            icon={<Layers size={16} />}
-            label="Layers"
-            active={viewMode === 'layer'}
-            onClick={() => handleSetViewMode('layer')}
-          />
-        </div>
-
         {/* Viewpoint selector */}
         {isProjectView && (
           <div className="relative" ref={viewpointRef}>
@@ -435,7 +377,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         {/* Phase-gated: X-Ray and Scenario visible from Phase 4+ */}
         {isToolbarActionVisible('xray', currentPhase, showAllSections) && (
           <>
-            <XRayButton isActive={isXRayActive} onClick={handleXRayToggle} />
+            <XRayButton isActive={isXRayActive} onClick={toggleXRay} />
             {projectId && (
               <button
                 onClick={() => setHealOpen(true)}
@@ -493,7 +435,7 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
               {!isToolbarActionVisible('xray', currentPhase, showAllSections) && (
                 <>
                   <div className="mx-2 my-1 h-px bg-[#1a2a1a]" />
-                  <button onClick={() => { handleXRayToggle(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
+                  <button onClick={() => { toggleXRay(); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
                     <ScanEye size={14} /> X-Ray Mode
                   </button>
                   <button onClick={() => { setScenarioMode(!isScenarioMode); setShowMoreMenu(false); }} className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[#d0d0d0] hover:bg-[#1a2a1a] transition">
@@ -558,32 +500,6 @@ export default function Toolbar({ onOpenBPMNImport, onOpenN8nImport, onOpenCSVIm
         />
       )}
     </header>
-  );
-}
-
-function ViewModeButton({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition ${
-        active
-          ? 'bg-[#00ff41] text-black shadow-[0_0_10px_rgba(0,255,65,0.3)]'
-          : 'text-[var(--text-secondary)] hover:text-white hover:bg-[var(--surface-raised)]'
-      }`}
-    >
-      {icon}
-      {label}
-    </button>
   );
 }
 
